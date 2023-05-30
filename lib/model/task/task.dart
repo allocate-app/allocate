@@ -1,5 +1,10 @@
+import 'dart:convert';
+//import 'dart:async';
 import 'package:equatable/equatable.dart';
-//import 'package:event/event.dart';
+import 'package:event/event.dart';
+//testing:
+import 'dart:io';
+
 
 enum Priority{low, medium, high}
 enum Progress{assigned, inProgress, completed}
@@ -15,91 +20,170 @@ mixin DeadLine{
 
 }
 
-mixin TaskManager{
+mixin TaskCollection{
   final _todos = <ToDo>[];
   final _completes = <ToDo>[];
 
   List<ToDo> get todos => _todos;
   List<ToDo> get completes => _completes;
-  void addTask(ToDo task) => {if(!_todos.contains(task)) _todos.add(task)};
-  void removeTask(ToDo task) => {_todos.remove(task)};
-
-  void completeTask(ToDo task)
+  bool addTask(ToDo task)
   {
-    removeTask(task);
-    _completes.add(task);
+    if(_todos.contains(task))
+      {
+        return false;
+      }
+    _todos.add(task);
+    // Subscribe to event.
+    task.onComplete + (task) => completeTask;
+    return true;
+  }
+  bool removeTask(ToDo task)
+  {
+    if(!_todos.remove(task))
+    {
+      return false;
+    }
+    // Unsubscribe to event.
+    task.onComplete - (task) => completeTask;
+    return true;
   }
 
-  void reOrderTask(ToDo task, int index)
-  {
-    removeTask(task);
-    _todos.insert(index, task);
-  }
+    bool completeTask(ToDo task)
+    {
+      if(!removeTask(task))
+      {
+        return false;
+      }
+      _completes.add(task);
+      return true;
+    }
+    // Lol.
+    bool unCompleteTask(ToDo task)
+    {
+      if(!_completes.remove(task))
+      {
+        return false;
+      }
+      return addTask(task);
+    }
 
-  void sortByName() => _todos.sort();
-  void sortByWeight() => _todos.sort((a, b) => a.weight.compareTo(b.weight));
-  void sortByPriority() => _todos.sort((a, b) => a.priority.index.compareTo(b.priority.index));
-  void sortByDate() => _todos.sort((a, b) => a.endDate!.compareTo(b.endDate!));
+    bool reOrderTask(ToDo task, int index)
+    {
+      if(!removeTask(task))
+      {
+        return false;
+      }
 
+      _todos.insert(index, task);
+      return true;
+    }
+
+    void sortByName() => _todos.sort();
+    void sortByWeight() => _todos.sort((a, b) => a.weight.compareTo(b.weight));
+    void sortByPriority() => _todos.sort((a, b) => a.priority.index.compareTo(b.priority.index));
+    void sortByDate() => _todos.sort((a, b) => a.endDate!.compareTo(b.endDate!));
 }
+
+
 
 abstract class ToDo with DeadLine, EquatableMixin implements Comparable<ToDo> {
   String name;
   int weight;
   Priority priority;
-  Progress progress;
+  Progress _progress = Progress.assigned;
+  // How the fuck do I use this thing.
+  var onComplete = Event();
 
-  ToDo({required this.name, this.weight = 0, this.priority = Priority.low, this.progress = Progress.assigned, DateTime? startDate, DateTime? endDate})
+  ToDo({required this.name, this.weight = 0, this.priority = Priority.low, DateTime? startDate, DateTime? endDate})
   {
     this.startDate = startDate;
     this.endDate = endDate;
   }
 
+  Progress get progress => _progress;
+  set progress(Progress state)
+  {
+    _progress = state;
+    if(state == Progress.completed)
+      {
+        onComplete.broadcast();
+      }
+  }
 
   @override
   int compareTo(ToDo t2) => name.compareTo(t2.name);
 
   @override
   List<Object> get props{
-    return [name, weight, priority, progress, startDate.toString(), endDate.toString()];
+    return [name, weight, priority, _progress, startDate.toString(), endDate.toString()];
   }
 }
 
 class Task extends ToDo{
-  Task({required super.name, super.weight, super.priority, super.progress, super.startDate, super.endDate});
+  Task({required super.name, super.weight, super.priority, super.startDate, super.endDate});
 
 }
-class LargeTask extends ToDo with DeadLine, TaskManager {
-  // For now. Consider thinking about whether this should be calculated.
-  static const maxSubTasks = 5;
-  // NEED TO OVERRIDE PROGRESS SETTER -> WHEN SUBTASKS AREN'T DONE.
-  LargeTask({required super.name, super.weight, super.priority, super.progress, super.startDate, super.endDate});
+class LargeTask extends ToDo with DeadLine, TaskCollection {
+  final maxSubTasks = 5;
 
-  void addSubTask(Task task)
+  LargeTask({required super.name, super.weight, super.priority, super.startDate, super.endDate});
+
+  @override
+  set progress(Progress state)
+  {
+    if(state == Progress.completed && todos.isNotEmpty)
+      {
+        state = confirmFinished();
+      }
+    super.progress = state;
+  }
+
+  Progress confirmFinished()
+  {
+    //REMOVE => refactor into async method.
+      print("Resolve all subtasks?");
+      var input = stdin.readLineSync(encoding: utf8);
+      if(input == 'y')
+        {
+          todos.forEach(completeTask);
+          return Progress.completed;
+        }
+      return Progress.inProgress;
+  }
+  // TODO: Error handling. Async + Db stuff.
+  bool addSubTask(Task task)
   {
     if(todos.length > maxSubTasks)
       {
-        // TODO: Handle this properly.
-        throw Error();
+        return false;
       }
 
-    addTask(task);
+    if(!addTask(task))
+      {
+        return false;
+      }
     updateWeight();
+    return true;
   }
-  void removeSubTask(Task task)
+  bool removeSubTask(Task task)
   {
-    removeTask(task);
+    if(!removeTask(task))
+      {
+        return false;
+      }
     updateWeight();
+    return true;
   }
-  void completeSubTask(Task task)
+  bool completeSubTask(Task task)
   {
-    completeTask(task);
+    if(!completeTask(task))
+      {
+        return false;
+      }
     updateWeight();
+    return true;
   }
   void updateWeight() => {weight = todos.fold(0, (p, c) => p + c.weight)};
-
-
-
 
   @override
   List<Object> get props => super.props..add(maxSubTasks);
