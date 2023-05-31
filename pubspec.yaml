@@ -28,6 +28,8 @@ environment:
 # the latest version available on pub.dev. To see which dependencies have newer
 # versions available, run `flutter pub outdated`.
 dependencies:
+  # Test API 0.6.0 still unstable? -> 1.24.3 when 0.6.0 is stable.
+  test: ^1.24.1
   flutter_local_notifications: ^14.1.0
   event: ^2.1.2
   equatable: ^2.0.5
