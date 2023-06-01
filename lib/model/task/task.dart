@@ -1,8 +1,7 @@
 import 'dart:convert';
-//import 'dart:async';
+import 'dart:async';
 import 'package:equatable/equatable.dart';
 import 'package:event/event.dart';
-//testing:
 import 'dart:io';
 
 
@@ -23,53 +22,53 @@ mixin DeadLine{
 mixin TaskCollection{
   final _todos = <ToDo>[];
   final _completes = <ToDo>[];
+  var sc = StreamController();
 
   List<ToDo> get todos => _todos;
   List<ToDo> get completes => _completes;
-  bool addTask(ToDo task)
+  bool _addTask(ToDo task)
   {
     if(_todos.contains(task))
       {
         return false;
       }
+    task.onComplete + (t) => completeTask(t!.task);
     _todos.add(task);
-    // Subscribe to event.
-    task.onComplete + (task) => completeTask;
+
     return true;
   }
-  bool removeTask(ToDo task)
+  bool _removeTask(ToDo task)
   {
     if(!_todos.remove(task))
     {
       return false;
     }
-    // Unsubscribe to event.
-    task.onComplete - (task) => completeTask;
     return true;
   }
 
     bool completeTask(ToDo task)
     {
-      if(!removeTask(task))
+      if(!_removeTask(task))
       {
         return false;
       }
       _completes.add(task);
+      task.onComplete - (t) => completeTask(t!.task);
       return true;
     }
-    // Lol.
+    // Lol. Refactor this.
     bool unCompleteTask(ToDo task)
     {
       if(!_completes.remove(task))
       {
         return false;
       }
-      return addTask(task);
+      return _addTask(task);
     }
 
     bool reOrderTask(ToDo task, int index)
     {
-      if(!removeTask(task))
+      if(!_removeTask(task))
       {
         return false;
       }
@@ -91,22 +90,20 @@ abstract class ToDo with DeadLine, EquatableMixin implements Comparable<ToDo> {
   int weight;
   Priority priority;
   Progress _progress = Progress.assigned;
-  // How the fuck do I use this thing.
-  var onComplete = Event();
+  var onComplete = Event<ToDoComplete>();
 
   ToDo({required this.name, this.weight = 0, this.priority = Priority.low, DateTime? startDate, DateTime? endDate})
   {
     this.startDate = startDate;
     this.endDate = endDate;
   }
-
   Progress get progress => _progress;
   set progress(Progress state)
   {
     _progress = state;
     if(state == Progress.completed)
       {
-        onComplete.broadcast();
+        onComplete.broadcast(ToDoComplete(this));
       }
   }
 
@@ -115,9 +112,16 @@ abstract class ToDo with DeadLine, EquatableMixin implements Comparable<ToDo> {
 
   @override
   List<Object> get props{
-    return [name, weight, priority, _progress, startDate.toString(), endDate.toString()];
+    return [name, weight, priority, progress, startDate.toString(), endDate.toString()];
   }
 }
+
+class ToDoComplete extends EventArgs
+{
+  ToDo task;
+  ToDoComplete(this.task);
+}
+
 
 class Task extends ToDo{
   Task({required super.name, super.weight, super.priority, super.startDate, super.endDate});
@@ -125,8 +129,7 @@ class Task extends ToDo{
 }
 class LargeTask extends ToDo with DeadLine, TaskCollection {
   final maxSubTasks = 5;
-
-  LargeTask({required super.name, super.weight, super.priority, super.startDate, super.endDate});
+  LargeTask({required super.name, super.priority, super.startDate, super.endDate});
 
   @override
   set progress(Progress state)
@@ -143,9 +146,13 @@ class LargeTask extends ToDo with DeadLine, TaskCollection {
     //REMOVE => refactor into async method.
       print("Resolve all subtasks?");
       var input = stdin.readLineSync(encoding: utf8);
+      print(input);
       if(input == 'y')
         {
-          todos.forEach(completeTask);
+          while(todos.isNotEmpty)
+            {
+              todos.first.progress = Progress.completed;
+            }
           return Progress.completed;
         }
       return Progress.inProgress;
@@ -158,7 +165,7 @@ class LargeTask extends ToDo with DeadLine, TaskCollection {
         return false;
       }
 
-    if(!addTask(task))
+    if(!_addTask(task))
       {
         return false;
       }
@@ -167,7 +174,7 @@ class LargeTask extends ToDo with DeadLine, TaskCollection {
   }
   bool removeSubTask(Task task)
   {
-    if(!removeTask(task))
+    if(!_removeTask(task))
       {
         return false;
       }
