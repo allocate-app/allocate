@@ -8,7 +8,7 @@ class FakeStdin extends Mock implements Stdin{}
 
 void main()
 {
-  group("Task tests", ()
+  group("Task tests CLI", ()
   {
     // Small Tasks.
     test("Task creation & Equals", ()
@@ -23,7 +23,7 @@ void main()
       expect(testTask.priority, Priority.low);
       expect(testTask.startDate, testDate);
       expect(testTask.endDate, testDate);
-      expect(testTask == equalsTask, true);
+      expect(testTask, equalsTask);
       expect(testTask == nonEqualsTask, false);
     });
 

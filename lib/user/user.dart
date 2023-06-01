@@ -28,10 +28,12 @@ class User
 
   Theme theme = Theme.dark;
   // Assume the user is okay when they first create a profile.
-  BrainState curBrainState = BrainState.okay;
+  BrainState curBrainState;
+  late Timer curTimer;
 
-  User(this.firstName, this.lastName, this.userName, this.userID, this.birthday, this.theme, this.curBrainState);
+  User({this.firstName, this.lastName, this.userName, this.userID, this.birthday, this.theme = Theme.dark, this.curBrainState = BrainState.okay});
 
+  int get eBandwidth => _eBandwidth;
   // Return to this
   set eBandwidth(int val)
   {
@@ -44,7 +46,10 @@ class User
     _eBandwidth = val;
     _dayBandwidth = remap(_dayBandwidth, oldBandwidth, _eBandwidth);
   }
+  int get dayBandwidth => _dayBandwidth;
+
   // Sets current break to remap proportionally in case it is changed during break time.
+  int get breakTime => _breakTime;
   set breakTime(int val)
   {
     int oldBreak = _breakTime;
@@ -52,22 +57,24 @@ class User
     _curBreak = remap(_curBreak, oldBreak, _breakTime);
 
   }
-  // General remap (x, inMin, inMax, outMin, outMax) => x * (outMax-outMin) / (inMax - outMax) + outMin;
+  int get curBreak => _curBreak;
+
+  // General remap (x, inMin, inMax, outMin, outMax) => x * (outMax-outMin) / (inMax - inMin) + outMin;
   // Using zeroes for min.
   int remap(int curVal, int inputMax, int outputMax)
   {
     // lol, slope * oldVal +
     num newBandwidth = (outputMax / inputMax) * curVal;
-    return (0.5 + newBandwidth) as int;
+    return newBandwidth.round();
   }
   void spend(int cost)
   {
     // This should never happen. Consider removing after handling UI.
-    if(cost > _eBandwidth)
+    if(cost > _dayBandwidth)
       {
         throw Error();
       }
-    _eBandwidth -= cost;
+    _dayBandwidth -= cost;
     checkBreak();
   }
 
@@ -80,11 +87,14 @@ class User
   }
 
   // Hook this into UI > notify user to take a break.
+  // This should likely be an event.
   void checkBreak()
   {
     if(_dayBandwidth % (_eBandwidth~/4) == 0)
       {
         curBrainState = BrainState.breakTime;
+        // It would also be good if I called the function.
+        countSeconds();
       }
   }
 
@@ -92,15 +102,16 @@ class User
   // This should probably hook into the UI in some fashion.
   void countSeconds()
   {
-    late Timer countDown = Timer.periodic(const Duration(seconds: 1), (timer)
+    curTimer = Timer.periodic(const Duration(seconds: 1), (timer)
     {
      _curBreak --;
      if(_curBreak <= 0 || curBrainState == BrainState.burnOut)
        {
-         timer.cancel();
          curBrainState = (curBrainState == BrainState.burnOut) ? BrainState.burnOut : BrainState.okay;
          _curBreak = _breakTime;
+         timer.cancel();
        }
+     // TODO: When UI, update here.
     }
     );
   }
