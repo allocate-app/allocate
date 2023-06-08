@@ -7,6 +7,7 @@ import 'dart:io';
 
 enum Priority{low, medium, high}
 enum Progress{assigned, inProgress, completed}
+enum Frequency{none, daily, weekly, monthly, yearly}
 
 mixin DeadLine{
   DateTime? startDate;
@@ -32,7 +33,11 @@ mixin TaskCollection{
       {
         return false;
       }
-    task.onComplete + (t) => completeTask(t!.task);
+    if(task is Completable<ToDo>)
+    {
+      var c = task as Completable<ToDo>;
+      c.onComplete + (t) => completeTask(t!.task);
+    }
     _todos.add(task);
 
     return true;
@@ -53,7 +58,12 @@ mixin TaskCollection{
         return false;
       }
       _completes.add(task);
-      task.onComplete - (t) => completeTask(t!.task);
+      if(task is Completable<ToDo>)
+        {
+          var c = task as Completable<ToDo>;
+          c.onComplete - (t) => completeTask(t!.task);
+        }
+
       return true;
     }
     // Lol. Refactor this.
@@ -83,37 +93,36 @@ mixin TaskCollection{
     void sortByDate() => _todos.sort((a, b) => a.endDate!.compareTo(b.endDate!));
 }
 
-
+interface class Completable<ToDo>{
+  final onComplete = Event<ToDoComplete>();
+  void broadcastComplete() => onComplete.broadcast();
+}
 
 abstract class ToDo with DeadLine, EquatableMixin implements Comparable<ToDo> {
   String name;
   int weight;
+  Duration expectedDuration;
   Priority priority;
-  Progress _progress = Progress.assigned;
-  var onComplete = Event<ToDoComplete>();
+  Progress progress = Progress.assigned;
+  Repeat? repeater;
 
-  ToDo({required this.name, this.weight = 0, this.priority = Priority.low, DateTime? startDate, DateTime? endDate})
+  ToDo({required this.name, this.weight = 0, this.expectedDuration = Duration.zero, this.priority = Priority.low, DateTime? startDate, DateTime? endDate, this.repeater})
   {
     this.startDate = startDate;
     this.endDate = endDate;
   }
-  Progress get progress => _progress;
-  set progress(Progress state)
-  {
-    _progress = state;
-    if(state == Progress.completed)
-      {
-        onComplete.broadcast(ToDoComplete(this));
-      }
+
+  Duration get realDuration {
+    // TODO: Refactor to use a weighted multiplier.
+    int factor = (weight > 0) ? weight : 1;
+    return expectedDuration * factor;
   }
 
   @override
   int compareTo(ToDo t2) => name.compareTo(t2.name);
 
   @override
-  List<Object> get props{
-    return [name, weight, priority, progress, startDate.toString(), endDate.toString()];
-  }
+  List<Object> get props => [name, weight, priority, progress, startDate.toString(), endDate.toString()];
 }
 
 class ToDoComplete extends EventArgs
@@ -123,23 +132,56 @@ class ToDoComplete extends EventArgs
 }
 
 
-class Task extends ToDo{
-  Task({required super.name, super.weight, super.priority, super.startDate, super.endDate});
-
-}
-class LargeTask extends ToDo with DeadLine, TaskCollection {
-  final maxSubTasks = 5;
-  LargeTask({required super.name, super.priority, super.startDate, super.endDate});
+class Task extends ToDo implements Completable<Task>{
+  Task({required super.name, super.weight, super.expectedDuration, super.priority, super.startDate, super.endDate});
+  @override
+  final onComplete = Event<ToDoComplete>();
 
   @override
   set progress(Progress state)
   {
-    if(state == Progress.completed && todos.isNotEmpty)
+    if(state == Progress.completed)
       {
-        state = confirmFinished();
+        broadcastComplete();
       }
     super.progress = state;
   }
+  @override
+  void broadcastComplete() => onComplete.broadcast(ToDoComplete(this));
+
+
+}
+class LargeTask extends ToDo with DeadLine, TaskCollection implements Completable<LargeTask> {
+  final maxSubTasks = 5;
+  LargeTask({required super.name, super.priority, super.startDate, super.endDate});
+
+  @override
+  final onComplete = Event<ToDoComplete>();
+
+  @override
+  set progress(Progress state)
+  {
+
+    if(state != Progress.completed)
+      {
+        super.progress = state;
+        return;
+      }
+
+    if(todos.isNotEmpty)
+    {
+      state = confirmFinished();
+    }
+
+    if(state == Progress.completed)
+      {
+        broadcastComplete();
+      }
+
+    super.progress == state;
+  }
+  @override
+  void broadcastComplete() => onComplete.broadcast(ToDoComplete(this));
 
   Progress confirmFinished()
   {
@@ -169,7 +211,7 @@ class LargeTask extends ToDo with DeadLine, TaskCollection {
       {
         return false;
       }
-    updateWeight();
+    updateWeight(task.weight);
     return true;
   }
   bool removeSubTask(Task task)
@@ -178,7 +220,7 @@ class LargeTask extends ToDo with DeadLine, TaskCollection {
       {
         return false;
       }
-    updateWeight();
+    updateWeight(-task.weight);
     return true;
   }
   bool completeSubTask(Task task)
@@ -187,13 +229,14 @@ class LargeTask extends ToDo with DeadLine, TaskCollection {
       {
         return false;
       }
-    updateWeight();
+    updateWeight(-task.weight);
     return true;
   }
-  void updateWeight() => {weight = todos.fold(0, (p, c) => p + c.weight)};
+  void updateWeight(int w){weight += w; weight = (weight > 0) ? weight : 0;}
+  void recalculateWeight() => {weight = _todos.fold(0, (p, c) => p + c.weight)};
 
   @override
-  List<Object> get props => super.props..add(maxSubTasks);
+  List<Object> get props => super.props..add([maxSubTasks, todos, completes]);
 }
 
 class Reminder with DeadLine {
@@ -203,4 +246,24 @@ class Reminder with DeadLine {
     this.startDate = startDate;
     this.endDate = endDate;
   }
+}
+
+class Repeat
+{
+  // Calculated from start date.
+  int? numDays;
+  bool? custom;
+  DateTime? startDate;
+  DateTime? endDate;
+  Frequency repeatFactor;
+
+  Repeat({this.numDays = 1, this.custom = false, this.startDate, this.endDate, this.repeatFactor = Frequency.none});
+
+  // Should probably have some sort of DateTime listener for the endDate.
+  // TODO: design this.
+  void endRepeat()
+  {
+    repeatFactor = Frequency.none;
+}
+
 }
