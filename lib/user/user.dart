@@ -1,4 +1,5 @@
 import "dart:async";
+import "../util/numbers.dart";
 // Add as needed. Extend in UI class to dynamically modulate widget themes.
 // Move this enum where it is most appropriate.
 enum Theme{light, dark}
@@ -8,8 +9,8 @@ enum BrainState{okay, breakTime, burnOut}
 class User
 {
   // This may be better handled within UI.
-  static const MIN_BANDWIDTH = 0;
-  static const MAX_BANDWIDTH = 150;
+  static const minBandwidth = 0;
+  static const maxBandwidth = 150;
   // These could probably go. Keeping for now.
   String? firstName;
   String? lastName;
@@ -38,13 +39,13 @@ class User
   set eBandwidth(int val)
   {
     int oldBandwidth = _eBandwidth;
-    if(val > MAX_BANDWIDTH)
+    if(val > maxBandwidth)
       {
         // Return to this and reconsider.
         throw Error();
       }
     _eBandwidth = val;
-    _dayBandwidth = remap(_dayBandwidth, oldBandwidth, _eBandwidth);
+    _dayBandwidth = remap(x: _dayBandwidth, inMin: 0, inMax: oldBandwidth, outMin: 0, outMax: _eBandwidth).round();
   }
   int get dayBandwidth => _dayBandwidth;
 
@@ -54,19 +55,11 @@ class User
   {
     int oldBreak = _breakTime;
     _breakTime = val;
-    _curBreak = remap(_curBreak, oldBreak, _breakTime);
+    _curBreak = remap(x:_curBreak, inMin: 0, inMax: oldBreak, outMin: 0, outMax: _breakTime).round();
 
   }
   int get curBreak => _curBreak;
 
-  // General remap (x, inMin, inMax, outMin, outMax) => x * (outMax-outMin) / (inMax - inMin) + outMin;
-  // Using zeroes for min.
-  int remap(int curVal, int inputMax, int outputMax)
-  {
-    // lol, slope * oldVal +
-    num newBandwidth = (outputMax / inputMax) * curVal;
-    return newBandwidth.round();
-  }
   void spend(int cost)
   {
     // This should never happen. Consider removing after handling UI.

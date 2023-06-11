@@ -1,82 +1,41 @@
-import "task.dart";
+import "todocollection.dart";
+import "routinetodo.dart";
+import "todo.dart";
+import "repeat.dart";
 
-enum RoutineTime{morning, afternoon, evening}
-
-class Routine extends ToDo{
+class Routine extends ToDo with ToDoCollection<RoutineToDo>{
   static const maxTasksPerRoutine = 10;
-  final _morning = <RoutineTask>[];
-  final _afternoon = <RoutineTask>[];
-  final _evening = <RoutineTask>[];
-
-  Routine({required super.name, super.weight = 0, super.priority = Priority.high,})
+  Routine({required super.name, super.weight = 0, super.priority = Priority.high})
   {
     repeater = Repeat(repeatFactor: Frequency.weekly);
   }
 
-  List<RoutineTask> get morning => _morning;
-  List<RoutineTask> get afternoon => _afternoon;
-  List<RoutineTask> get evening => _evening;
-
-  bool addRoutineTask(RoutineTask task)
+  void resetRoutine()
   {
-    List<RoutineTask> routine = switch(task.timeOfDay)
-    {
-      RoutineTime.morning => _morning,
-      RoutineTime.afternoon => _afternoon,
-      _ => _evening
-    };
-
-    if(routine.length > maxTasksPerRoutine)
+    for(ToDo rt in todos)
       {
-        return false;
+        rt.progress = Progress.assigned;
       }
-
-    updateWeight(task.weight);
-    return true;
   }
 
-  bool removeRoutineTask(RoutineTask task, RoutineTime time)
+  void updateWeight(int w) => weight = (weight + w > 0) ? weight + w : 0;
+  void recalculateWeight() => weight = calculateWeight();
+  void updateDuration(Duration d, bool add)
   {
-    switch(time){
-      case RoutineTime.morning:
-        if(!_morning.remove(task))
-        {
-          return false;
-        }
-        break;
-
-      case RoutineTime.evening:
-        if(!_evening.remove(task))
-        {
-          return false;
-        }
-        break;
-      default:
-        if(!_afternoon.remove(task))
-        {
-          return false;
-        }
-        break;
+    expectedDuration = (add)? expectedDuration + d : expectedDuration - d;
+    if(expectedDuration.isNegative)
+    {
+      expectedDuration = Duration.zero;
     }
-    updateWeight(-task.weight);
-    return true;
   }
+  void recalculateDuration() => expectedDuration = calculateDuration();
 
+  List<RoutineToDo> get morning => [...todos.where((rt) => rt.timeOfDay == RoutineTime.morning)];
+  List<RoutineToDo> get afternoon => [... todos.where((rt) => rt.timeOfDay == RoutineTime.afternoon)];
+  List<RoutineToDo> get evening => [... todos.where((rt) => rt.timeOfDay == RoutineTime.evening)];
 
-  void updateWeight(int w)
-  {
-    weight += w;
-  }
-  void recalculateWeight()
-  {
-    weight = _morning.fold(0, (p, c) => p + c.weight);
-    weight += _afternoon.fold(0, (p, c) => p + c.weight);
-    weight += _evening.fold(0, (p, c) => p + c.weight);
-  }
+  // Needs a bubble up for state changes.
 }
 
-class RoutineTask extends ToDo
-{
-  RoutineTime timeOfDay;
-  RoutineTask({required super.name, super.weight, super.expectedDuration, super.priority = Priority.high, super.startDate, super.endDate, this.timeOfDay = RoutineTime.afternoon});
-}
+
+
