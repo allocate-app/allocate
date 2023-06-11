@@ -12,7 +12,6 @@ mixin ToDoCollection<T extends ToDo> on ToDo {
 
   List<T> sorted({SortMethod sortBy = SortMethod.name, bool reverse = false})
   {
-    // This should be a copy of the user sorted list.
     var sorted = [...unComplete];
     switch(sortBy)
     {
@@ -73,16 +72,17 @@ mixin ToDoCollection<T extends ToDo> on ToDo {
 
   }
 
-  // push new to front of list.
   void add(T t) => todos.insert(0, t);
   void remove(T t) => todos.remove(t);
 
-  // TODO: Move to day view.
-  void reorder(T t, int i) {
-    //
-    int prevIndex = todos.indexOf(t);
-    todos[prevIndex] = todos[i];
-    todos[i] = t;
+  // For custom ordering. User swaps tasks in the view.
+  // Objects to be rearranged are swapped in the model.
+  // On update, custom order is maintained.
+  void reorder(T t1, T t2) {
+    int prevIndex = todos.indexOf(t1);
+    int newIndex = todos.indexOf(t2);
+    todos[prevIndex] = t2;
+    todos[newIndex] = t2;
   }
 
   int calculateWeight() => unComplete.fold(0, (p, c) => p + c.weight);
@@ -94,5 +94,12 @@ mixin ToDoCollection<T extends ToDo> on ToDo {
       {
         todos.remove(t);
       }
+  }
+  // Utility function to avoid task hogging.
+  // Called when user is hitting hard limit of tasks, to be determined later.
+  // ToDos are pushed to the front, older tasks will always be at the end of the list.
+  void pruneToDo()
+  {
+    todos.removeLast();
   }
 }

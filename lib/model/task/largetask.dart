@@ -2,7 +2,9 @@ import "todo.dart";
 import "task.dart";
 import "todocollection.dart";
 
-/// These
+/// These are mid-sized tasks, meant to be completed in a reasonable amount of time, roughly one
+/// to three days depending on the demands of the full task. They contain a small number of subtasks
+/// to help with organization and completion.
 
 class LargeTask extends ToDo
     with ToDoCollection<Task> {

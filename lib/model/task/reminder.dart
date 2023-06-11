@@ -1,8 +1,10 @@
+import "todostates.dart";
+
 /// This is a simple reminder object for things that aren't a "task"
 /// so much as they are a thing to remember.
 
 import "deadline.dart";
-class Reminder with DeadLine {
+class Reminder with DeadLine, ModelState<Reminder> {
   String name;
   Reminder({required this.name, DateTime? startDate, DateTime? endDate}) {
     this.startDate = (null != startDate) ? startDate: DateTime.now();

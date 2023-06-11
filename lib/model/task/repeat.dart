@@ -1,7 +1,8 @@
 import "package:equatable/equatable.dart";
+import "todostates.dart";
 
 enum Frequency { none, daily, weekly, monthly, yearly }
-class Repeat with EquatableMixin {
+class Repeat with EquatableMixin, ModelState<Repeat> {
   // Calculated from start date.
   int numDays;
   bool custom;
