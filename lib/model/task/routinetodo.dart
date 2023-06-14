@@ -13,4 +13,7 @@ class RoutineToDo extends ToDo {
       super.endDate,
       this.timeOfDay = RoutineTime.morning,
       super.repeat});
+
+  @override
+  List<Object> get props => super.props..add(timeOfDay);
 }

@@ -14,8 +14,6 @@ class Task extends ToDo {
       super.endDate,
       super.warnMe = false,
       super.repeat});
-
-
 }
 
 

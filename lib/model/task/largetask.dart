@@ -15,9 +15,9 @@ class LargeTask extends ToDo
   void updateWeight(int w) => weight = (weight + w > 0) ? weight + w : 0;
   void recalculateWeight() => weight = calculateWeight();
 
-  void updateDuration(Duration d, bool add)
+  void updateDuration(Duration d)
   {
-    expectedDuration = (add)? expectedDuration + d : expectedDuration - d;
+    expectedDuration += d;
     if(expectedDuration.isNegative)
     {
       expectedDuration = Duration.zero;
@@ -27,5 +27,5 @@ class LargeTask extends ToDo
   void recalculateDuration() => expectedDuration = calculateDuration();
 
   @override
-  List<Object> get props => super.props..add([maxSubTasks, todos]);
+  List<Object> get props => super.props..add(todos);
 }

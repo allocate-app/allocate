@@ -49,20 +49,20 @@ mixin ToDoCollection<T extends ToDo> on ToDo {
 
         if(reverse)
           {
-            sorted.sort((a, b) => b.startDate.compareTo(a.startDate));
+            sorted.sort((a, b) => b.deadline.startDate.compareTo(a.deadline.startDate));
           }
         else{
-          sorted.sort((a, b) => a.startDate.compareTo(b.startDate));
+          sorted.sort((a, b) => a.deadline.startDate.compareTo(b.deadline.startDate));
         }
         break;
       case SortMethod.endDate:
         if(reverse)
           {
-            sorted.sort((a, b) => b.endDate.compareTo(a.endDate));
+            sorted.sort((a, b) => b.deadline.endDate.compareTo(a.deadline.endDate));
           }
         else
           {
-            sorted.sort((a, b) => a.endDate.compareTo(b.endDate));
+            sorted.sort((a, b) => a.deadline.endDate.compareTo(b.deadline.endDate));
           }
         break;
       default:

@@ -1,26 +1,24 @@
 import "package:equatable/equatable.dart";
-import "todostates.dart";
-
 enum Frequency { none, daily, weekly, monthly, yearly }
-class Repeat with EquatableMixin, ModelState<Repeat> {
+class Repeat with EquatableMixin {
   // Calculated from start date.
   int numDays;
   bool custom;
-  DateTime startDate = DateTime.now();
+  DateTime startDate;
   DateTime? endDate;
-  Frequency repeatFactor;
+  Frequency frequency;
 
   Repeat(
       {this.numDays = 1,
         this.custom = false,
+        DateTime? startDate,
         this.endDate,
-        this.repeatFactor = Frequency.none});
+        this.frequency = Frequency.none}):
+      startDate = startDate ?? DateTime.now();
 
-  // Should probably have some sort of DateTime listener for the endDate.
-  // TODO: design this.
   void endRepeat() {
-    repeatFactor = Frequency.none;
+    frequency = Frequency.none;
   }
   @override
-  List<Object> get props => [numDays, custom, startDate, endDate.toString(), repeatFactor];
+  List<Object> get props => [numDays, custom, startDate, endDate.toString(), frequency];
 }

@@ -7,7 +7,7 @@ class Routine extends ToDo with ToDoCollection<RoutineToDo>{
   static const maxTasksPerRoutine = 10;
   Routine({required super.name, super.weight = 0, super.priority = Priority.high})
   {
-    repeater = Repeat(repeatFactor: Frequency.weekly);
+    repeat = Repeat(frequency: Frequency.daily);
   }
 
   void resetRoutine()
@@ -22,7 +22,7 @@ class Routine extends ToDo with ToDoCollection<RoutineToDo>{
   void recalculateWeight() => weight = calculateWeight();
   void updateDuration(Duration d, bool add)
   {
-    expectedDuration = (add)? expectedDuration + d : expectedDuration - d;
+    expectedDuration += d;
     if(expectedDuration.isNegative)
     {
       expectedDuration = Duration.zero;
@@ -34,7 +34,8 @@ class Routine extends ToDo with ToDoCollection<RoutineToDo>{
   List<RoutineToDo> get afternoon => [... todos.where((rt) => rt.timeOfDay == RoutineTime.afternoon)];
   List<RoutineToDo> get evening => [... todos.where((rt) => rt.timeOfDay == RoutineTime.evening)];
 
-  // Needs a bubble up for state changes.
+  @override
+  List<Object> get props => super.props..add([todos]);
 }
 
 

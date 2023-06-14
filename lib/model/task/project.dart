@@ -10,6 +10,6 @@ class Project extends ToDo with ToDoCollection<ToDo>{
   Project({required super.name, this.description, super.priority = Priority.low, super.startDate, super.endDate, super.warnMe});
 
   @override
-  List<Object> get props => super.props..add(todos);
+  List<Object> get props => super.props..add([todos, description]);
 
 }
