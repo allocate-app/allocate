@@ -4,6 +4,8 @@ import "deadline.dart";
 import "repeat.dart";
 
 enum Priority { low, medium, high }
+// TODO: Refactor Progress into just a boolean.
+// Done/NotDone
 enum Progress { assigned, inProgress, completed }
 
 abstract class ToDo with EquatableMixin {
@@ -13,6 +15,7 @@ abstract class ToDo with EquatableMixin {
   Priority priority;
   Progress progress = Progress.assigned;
   DeadLine deadline;
+  bool? myDay;
   Repeat repeat;
 
 
@@ -23,6 +26,7 @@ abstract class ToDo with EquatableMixin {
     DateTime? startDate,
     DateTime? endDate,
     bool warnMe = false,
+    this.myDay,
     Repeat? repeat}) :
       deadline = DeadLine(startDate: startDate, endDate: endDate, warnMe: warnMe),
       repeat = repeat ?? Repeat();

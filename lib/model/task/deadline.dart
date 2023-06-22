@@ -13,11 +13,11 @@ class DeadLine with EquatableMixin {
   /// Maybe do an alert object.
   void setNotification()
   {
-
+    // Get the cron package/localnotifications.
   }
   void cancelNotification()
   {
-
+    // ibid.
   }
 
   @override

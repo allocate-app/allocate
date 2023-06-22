@@ -1,7 +1,6 @@
 import "todo.dart";
-
 enum SortMethod {name, weight, priority, startDate, endDate, custom}
-mixin ToDoCollection<T extends ToDo> on ToDo {
+mixin ToDoCollection<T extends ToDo>{
 
   final todos = <T>[];
   // For views.
@@ -10,65 +9,65 @@ mixin ToDoCollection<T extends ToDo> on ToDo {
   List<T> get unComplete =>
       [...todos.where((t) => t.progress != Progress.completed)];
 
-  List<T> sorted({SortMethod sortBy = SortMethod.name, bool reverse = false})
+  List<T> sorted({List<T>? list, SortMethod sortBy = SortMethod.name, bool reverse = false})
   {
-    var sorted = [...unComplete];
+    list = list ?? unComplete;
     switch(sortBy)
     {
       case SortMethod.name:
         if(reverse)
           {
-            sorted.sort((a, b) => b.name.compareTo(a.name));
+            list.sort((a, b) => b.name.compareTo(a.name));
           }
         else
           {
-            sorted.sort((a, b) => a.name.compareTo(b.name));
+            list.sort((a, b) => a.name.compareTo(b.name));
           }
         break;
       case SortMethod.weight:
         if(reverse)
           {
-            sorted.sort((a, b) => b.weight.compareTo(a.weight));
+            list.sort((a, b) => b.weight.compareTo(a.weight));
           }
         else
           {
-            sorted.sort((a, b) => a.weight.compareTo(b.weight));
+            list.sort((a, b) => a.weight.compareTo(b.weight));
           }
         break;
       case SortMethod.priority:
         if(reverse)
           {
-            sorted.sort((a, b) => b.priority.index.compareTo(a.priority.index));
+            list.sort((a, b) => b.priority.index.compareTo(a.priority.index));
           }
         else
           {
-            sorted.sort((a, b) => a.priority.index.compareTo(b.priority.index));
+            list.sort((a, b) => a.priority.index.compareTo(b.priority.index));
           }
         break;
       case SortMethod.startDate:
 
         if(reverse)
           {
-            sorted.sort((a, b) => b.deadline.startDate.compareTo(a.deadline.startDate));
+            list.sort((a, b) => b.deadline.startDate.compareTo(a.deadline.startDate));
           }
         else{
-          sorted.sort((a, b) => a.deadline.startDate.compareTo(b.deadline.startDate));
+          list.sort((a, b) => a.deadline.startDate.compareTo(b.deadline.startDate));
         }
         break;
       case SortMethod.endDate:
         if(reverse)
           {
-            sorted.sort((a, b) => b.deadline.endDate.compareTo(a.deadline.endDate));
+            list.sort((a, b) => b.deadline.endDate.compareTo(a.deadline.endDate));
           }
         else
           {
-            sorted.sort((a, b) => a.deadline.endDate.compareTo(b.deadline.endDate));
+            list.sort((a, b) => a.deadline.endDate.compareTo(b.deadline.endDate));
           }
         break;
       default:
         break;
     }
-    return sorted;
+    return list;
 
   }
 
@@ -78,11 +77,12 @@ mixin ToDoCollection<T extends ToDo> on ToDo {
   // For custom ordering. User swaps tasks in the view.
   // Objects to be rearranged are swapped in the model.
   // On update, custom order is maintained.
-  void reorder(T t1, T t2) {
-    int prevIndex = todos.indexOf(t1);
-    int newIndex = todos.indexOf(t2);
-    todos[prevIndex] = t2;
-    todos[newIndex] = t2;
+  void reorder(T t1, T t2, {List<T>? list}) {
+    list = list?? todos;
+    int prevIndex = list.indexOf(t1);
+    int newIndex = list.indexOf(t2);
+    list[prevIndex] = t2;
+    list[newIndex] = t1;
   }
 
   int calculateWeight() => unComplete.fold(0, (p, c) => p + c.weight);

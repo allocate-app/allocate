@@ -5,6 +5,11 @@ import "repeat.dart";
 
 class Routine extends ToDo with ToDoCollection<RoutineToDo>{
   static const maxTasksPerRoutine = 10;
+  int numMorn = 0;
+  int numAft = 0;
+  int numEve = 0;
+
+  // This ^^ may be best handled via a RoutineViewModel.
   Routine({required super.name, super.weight = 0, super.priority = Priority.high})
   {
     repeat = Repeat(frequency: Frequency.daily);

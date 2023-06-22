@@ -9,8 +9,8 @@ void main()
     test("Bandwidth Remap", ()
         {
           User user = User();
-          user.eBandwidth = 150;
-          expect(user.eBandwidth, user.dayBandwidth);
+          user.bandwidth = 150;
+          expect(user.bandwidth, user.dayBandwidth);
 
         });
     test("Bandwidth Remap with cost", ()
@@ -18,7 +18,7 @@ void main()
       User user = User();
       // User has 100 units to spend.
       user.spend(20);
-      user.eBandwidth ~/= 2;
+      user.bandwidth ~/= 2;
       expect(user.dayBandwidth, 40);
     });
     test("Breaktime Remap", ()
@@ -32,7 +32,7 @@ void main()
       fakeAsync((async){
         User user = User();
         user.breakTime = 20;
-        user.curBrainState = BrainState.breakTime;
+        user.brainState = BrainState.breakTime;
 
         // countSeconds should be moved to a private function.
         user.countSeconds();
@@ -46,7 +46,7 @@ void main()
       fakeAsync((async) {
         User user = User();
         user.breakTime = 20;
-        user.curBrainState = BrainState.breakTime;
+        user.brainState = BrainState.breakTime;
         user.countSeconds();
         // Break should start.
         async.elapse(const Duration(seconds: 5));
@@ -60,10 +60,10 @@ void main()
       fakeAsync((async){
         User user = User();
         user.breakTime = 20;
-        user.curBrainState = BrainState.breakTime;
+        user.brainState = BrainState.breakTime;
         user.countSeconds();
         async.elapse(const Duration(seconds: 21));
-        expect(user.curBrainState, BrainState.okay);
+        expect(user.brainState, BrainState.okay);
         expect(user.curBreak, 20);
       });
     });
@@ -72,12 +72,12 @@ void main()
       fakeAsync((async){
         User user = User();
         user.breakTime = 20;
-        user.curBrainState = BrainState.breakTime;
+        user.brainState = BrainState.breakTime;
         user.countSeconds();
         async.elapse(const Duration(seconds: 15));
-        user.curBrainState = BrainState.burnOut;
+        user.brainState = BrainState.burnOut;
         async.elapse(const Duration(seconds: 1));
-        expect(user.curBrainState, BrainState.burnOut);
+        expect(user.brainState, BrainState.burnOut);
         expect(user.curBreak, 20);
       });
     });

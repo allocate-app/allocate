@@ -13,6 +13,7 @@ class Task extends ToDo {
       super.startDate,
       super.endDate,
       super.warnMe = false,
+      super.myDay,
       super.repeat});
 }
 
