@@ -3,6 +3,10 @@ import "routinetodo.dart";
 import "todo.dart";
 import "repeat.dart";
 
+
+//TODO: REIMPLEMENT THIS ENTIRELY.
+// THIS SHOULD HAVE SUBTASKS.
+// FACTOR IT OUT.
 class Routine extends ToDo with ToDoCollection<RoutineToDo>{
   static const maxTasksPerRoutine = 10;
   int numMorn = 0;

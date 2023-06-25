@@ -7,7 +7,7 @@ import "../model/task/largetask.dart";
 import "../model/task/routine.dart";
 import "../model/task/reminder.dart";
 import "../model/task/todocollection.dart";
-import "../model/task/project.dart";
+import "../model/task/group.dart";
 import "../model/taskrepository/repositoryprefs.dart";
 import "../model/taskrepository/todorepository.dart";
 import "../user/user.dart";

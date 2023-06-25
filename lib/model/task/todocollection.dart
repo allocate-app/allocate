@@ -57,11 +57,11 @@ mixin ToDoCollection<T extends ToDo>{
       case SortMethod.endDate:
         if(reverse)
           {
-            list.sort((a, b) => b.deadline.endDate.compareTo(a.deadline.endDate));
+            list.sort((a, b) => b.deadline.dueDate.compareTo(a.deadline.dueDate));
           }
         else
           {
-            list.sort((a, b) => a.deadline.endDate.compareTo(b.deadline.endDate));
+            list.sort((a, b) => a.deadline.dueDate.compareTo(b.deadline.dueDate));
           }
         break;
       default:

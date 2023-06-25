@@ -48,7 +48,7 @@ abstract class ToDoViewModel extends ChangeNotifier
   }
   set endDate(DateTime newEndDate)
   {
-    _toDo.deadline.endDate = newEndDate;
+    _toDo.deadline.dueDate = newEndDate;
     notifyListeners();
   }
 

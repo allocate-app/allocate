@@ -1,42 +1,36 @@
 import "package:equatable/equatable.dart";
 import "../../util/numbers.dart";
-import "repeat.dart";
 
 enum Priority { low, medium, high }
-
 abstract class ToDo with EquatableMixin implements Comparable<ToDo> {
   // To set the id in todoservice once db is handled.
   // SOMETHING akin to this:
   // FirebaseFirestore.instance.collection("tablename").doc().id;
-  int id;
+  int taskID;
+  int? groupID;
   String name;
   String description;
   int weight;
   Duration expectedDuration;
   Priority priority;
   bool completed = false;
-  // TODO: refactor start date out. Isn't necessary. Move to projects/deadlines.
-  DateTime startDate;
-  DateTime endDate;
+  DateTime dueDate;
   bool focusTask;
+  // TODO: repeat stuff. Not quite sure how to implement this yet.
   bool repeatable;
 
-  // TODO: redefine this later.
-  Repeat? repeat;
 
   ToDo(
-      {required this.id,
+      {required this.taskID,
+      this.groupID,
       required this.name,
-      required this.description,
+      this.description = "",
       this.weight = 0,
       this.expectedDuration = Duration.zero,
       this.priority = Priority.low,
-      DateTime? startDate,
-      DateTime? endDate,
+      DateTime? dueDate,
       this.focusTask = false,
-      this.repeatable = false})
-      : startDate = startDate ?? DateTime.now(),
-        endDate = endDate ?? DateTime.now();
+      this.repeatable = false}): dueDate = dueDate ?? DateTime.now();
 
   Duration get realDuration {
     num factor = smoothstep(x: weight, v0: 1, v1: 10);
@@ -48,5 +42,5 @@ abstract class ToDo with EquatableMixin implements Comparable<ToDo> {
 
   @override
   List<Object> get props =>
-      [id, name, description, weight, expectedDuration, priority, completed, startDate, endDate, focusTask, repeatable];
+      [taskID, name, description, weight, expectedDuration, priority, completed, dueDate, focusTask, repeatable];
 }
