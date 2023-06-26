@@ -1,5 +1,6 @@
 enum Theme{light, dark}
 
+// TODO: refactor back into user class?
 class UserPrefs
 {
   Theme theme;

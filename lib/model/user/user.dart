@@ -14,6 +14,12 @@ class User
 
   bool inMeltdown;
 
+  // Routine times
+
+  // NumSubtasksPerRoutine
+
+  // NumSubTasksPerLT.
+
   User({this.firstName, this.lastName, this.userName, this.userID, this.birthday, this.inMeltdown = false, this.bandwidth = 100, this.dayBandwidth=100});
 
   // TODO: Hashmap for routines > possibly factor into other class.

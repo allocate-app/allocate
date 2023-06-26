@@ -1,5 +1,6 @@
 import "package:equatable/equatable.dart";
 enum Frequency { none, daily, weekly, monthly, yearly }
+// TODO: This should be a repeatable interface.
 class Repeat with EquatableMixin {
   // Calculated from start date.
   int numDays;

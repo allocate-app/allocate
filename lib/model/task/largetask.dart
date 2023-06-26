@@ -6,6 +6,7 @@ import "todo.dart";
 /// to three days depending on the demands of the full task. They contain a small number of subtasks
 /// to help with organization and completion.
 
+// TODO: factor this to be used by Routine + Partition classes.
 class SubTask implements Copyable<SubTask>, Comparable<SubTask>{
   String name;
   bool completed;
@@ -74,7 +75,7 @@ class LargeTask extends ToDo implements Copyable<LargeTask>, Collection<SubTask>
   void reorder(int oldIndex, int newIndex) {
     if(oldIndex < newIndex)
       {
-        newIndex -= 1;
+        newIndex--;
       }
     SubTask st = subTasks.removeAt(oldIndex);
     subTasks.insert(newIndex, st);
@@ -89,6 +90,7 @@ class LargeTask extends ToDo implements Copyable<LargeTask>, Collection<SubTask>
   }
 
   //{Valid sort methods: name, weight}
+  // Consider SubtaskSortMethods, TaskSortMethds, etc.
   // TODO: Determine some way to limit which args?
   @override
   List<SubTask> sortBy({SortMethod sortMethod = SortMethod.name, bool descending = false}) {

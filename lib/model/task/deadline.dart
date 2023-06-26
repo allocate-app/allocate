@@ -1,3 +1,5 @@
+// TODO: refactor this once enum file written.
+import 'package:allocate/model/task/todo.dart';
 import 'package:equatable/equatable.dart';
 
 // TODO: REIMPLEMENT.
@@ -8,13 +10,17 @@ import 'package:equatable/equatable.dart';
 ///
 /// These should probably have priority.
 class DeadLine with EquatableMixin {
+  int deadlineID;
   DateTime startDate;
-  DateTime endDate;
+  DateTime dueDate;
+  String description;
   bool warnMe;
+  Priority priority;
 
-  DeadLine({DateTime? startDate, DateTime? endDate, this.warnMe = false}):
+
+  DeadLine({required this.deadlineID, DateTime? startDate, DateTime? dueDate, this.description = "", this.warnMe = false, this.priority = Priority.low}):
       startDate = startDate ?? DateTime.now(),
-      endDate = endDate ?? DateTime.now();
+      dueDate = dueDate ?? DateTime.now();
 
 
   /// TODO: Add functionality to send a push notification to the user when approaching the deadline
@@ -29,6 +35,6 @@ class DeadLine with EquatableMixin {
   }
 
   @override
-  List<Object?> get props => [startDate, endDate, warnMe];
+  List<Object?> get props => [startDate, dueDate, warnMe];
 
 }

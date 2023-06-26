@@ -1,50 +1,97 @@
-import "todocollection.dart";
-import "routinetodo.dart";
-import "todo.dart";
-import "repeat.dart";
+import "../../util/interfaces/collection.dart";
+// TODO: fix lt reference once subtasks factored out.
+import "../../util/interfaces/copyable.dart";
+import "../../util/numbers.dart";
+import "largetask.dart";
 
+enum RoutineTime{morning, afternoon, evening}
 
-//TODO: REIMPLEMENT THIS ENTIRELY.
-// THIS SHOULD HAVE SUBTASKS.
-// FACTOR IT OUT.
-class Routine extends ToDo with ToDoCollection<RoutineToDo>{
-  static const maxTasksPerRoutine = 10;
-  int numMorn = 0;
-  int numAft = 0;
-  int numEve = 0;
+// TODO: this should implement a repeatable interface, once written.
+// Store in a separate table.
+class Routine implements Collection<SubTask>, Comparable<Routine>, Copyable<Routine>{
+  // Factor this out to a user preferences class mb?
+  // Or a constructor setting > with a scale of 0-10?
+  // Not sure; figure this out.
 
-  // This ^^ may be best handled via a RoutineViewModel.
-  Routine({required super.name, super.weight = 0, super.priority = Priority.high})
+  // OR! Hear me out: a maximum weight? I am unsure.
+  int maxTasksPerRoutine = 10;
+  int routineID;
+  String name;
+  // Consider making this an ID.
+  RoutineTime routineTime;
+  int weight;
+  Duration expectedDuration;
+  // This may need to be a thing? not sure yet.
+  bool repeatable;
+  List<SubTask> routineTasks = [];
+
+  Routine({required this.routineID, required this.name, required this.routineTime, this.weight = 0, this.expectedDuration = const Duration(hours: 1), this.repeatable = true});
+
+  Duration get realDuration
   {
-    repeat = Repeat(frequency: Frequency.daily);
+    num factor = smoothstep(x: weight, v0: 1, v1: 10);
+    return expectedDuration * factor;
   }
 
-  void resetRoutine()
-  {
-    for(ToDo rt in todos)
+  @override
+  int compareTo(Routine r2) => name.compareTo(r2.name);
+
+  @override
+  void add(SubTask st) {
+    routineTasks.add(st);
+    updateWeight(st.weight);
+  }
+
+  @override
+  void remove(SubTask st) {
+    routineTasks.remove(st);
+    updateWeight(-st.weight);
+  }
+
+  @override
+  void reorder(int oldIndex, int newIndex) {
+    if(oldIndex < newIndex)
       {
-        rt.progress = Progress.assigned;
+        newIndex--;
       }
+    SubTask rt = routineTasks.removeAt(oldIndex);
+    routineTasks.insert(newIndex, rt);
+  }
+
+  @override
+  List<SubTask> sort() {
+    List<SubTask> sorted = List.from(routineTasks);
+    sorted.sort();
+    return sorted;
+  }
+
+  // Identical to large task sorting for subtasks.
+  @override
+  List<SubTask> sortBy() {
+    // TODO: implement sortBy
+    throw UnimplementedError();
   }
 
   void updateWeight(int w) => weight = (weight + w > 0) ? weight + w : 0;
-  void recalculateWeight() => weight = calculateWeight();
-  void updateDuration(Duration d, bool add)
-  {
-    expectedDuration += d;
-    if(expectedDuration.isNegative)
-    {
-      expectedDuration = Duration.zero;
-    }
-  }
-  void recalculateDuration() => expectedDuration = calculateDuration();
+  void recalculateWeight() => weight = routineTasks.fold(0, (p, c) => p + c.weight);
 
-  List<RoutineToDo> get morning => [...todos.where((rt) => rt.timeOfDay == RoutineTime.morning)];
-  List<RoutineToDo> get afternoon => [... todos.where((rt) => rt.timeOfDay == RoutineTime.afternoon)];
-  List<RoutineToDo> get evening => [... todos.where((rt) => rt.timeOfDay == RoutineTime.evening)];
+  //TODO: implement.
+  @override
+  List<Object> get props => [];
 
   @override
-  List<Object> get props => super.props..add([todos]);
+  Routine copy() {
+    // TODO: implement copy
+    throw UnimplementedError();
+  }
+
+  @override
+  Routine copyWith() {
+    // TODO: implement copyWith
+    throw UnimplementedError();
+  }
+
+
 }
 
 

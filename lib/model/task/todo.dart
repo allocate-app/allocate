@@ -1,6 +1,7 @@
 import "package:equatable/equatable.dart";
 import "../../util/numbers.dart";
 
+// TODO: refactor enum to enumfile.
 enum Priority { low, medium, high }
 abstract class ToDo with EquatableMixin implements Comparable<ToDo> {
   // To set the id in todoservice once db is handled.
