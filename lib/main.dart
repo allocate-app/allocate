@@ -1,41 +1,78 @@
+import "dart:async";
+import "dart:developer";
+
+import "package:allocate/services/isar_service.dart";
+import "package:allocate/services/supabase_service.dart";
 import 'package:flutter/material.dart';
+import "package:connectivity_plus/connectivity_plus.dart";
+import "package:internet_connection_checker/internet_connection_checker.dart";
+
+ValueNotifier<bool> isDeviceConnected = ValueNotifier(false);
 
 void main() {
-  runApp(const MyApp());
+  WidgetsFlutterBinding.ensureInitialized();
+  runApp(const App());
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class App extends StatefulWidget {
+  const App({super.key});
 
-  // This widget is the root of your application.
+  @override
+  _AppState createState() => _AppState();
+
+}
+
+class _AppState extends State<App>
+{
+  late StreamSubscription<ConnectivityResult> subscription;
+  @override
+  void initState()
+  {
+    IsarService.instance.init();
+    SupabaseService.instance.init();
+    super.initState();
+    subscription = Connectivity()
+        .onConnectivityChanged
+        .listen((ConnectivityResult result) async {
+      isDeviceConnected.value = await InternetConnectionChecker().hasConnection;
+      log("Internet Connected: $isDeviceConnected");
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // TRY THIS: Try running your application with "flutter run". You'll see
-        // the application has a blue toolbar. Then, without quitting the app,
-        // try changing the seedColor in the colorScheme below to Colors.green
-        // and then invoke "hot reload" (save your changes or press the "hot
-        // reload" button in a Flutter-supported IDE, or press "r" if you used
-        // the command line to start the app).
-        //
-        // Notice that the counter didn't reset back to zero; the application
-        // state is not lost during the reload. To reset the state, use hot
-        // restart instead.
-        //
-        // This works for code too, not just values: Most code changes can be
-        // tested with just a hot reload.
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        useMaterial3: true,
-      ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
-    );
+    // TODO: implement build
+    throw UnimplementedError();
   }
 }
 
+  // This widget is the root of your application.
+@override
+Widget build(BuildContext context) {
+  return MaterialApp(
+    title: 'Flutter Demo',
+    theme: ThemeData(
+      // This is the theme of your application.
+      //
+      // TRY THIS: Try running your application with "flutter run". You'll see
+      // the application has a blue toolbar. Then, without quitting the app,
+      // try changing the seedColor in the colorScheme below to Colors.green
+      // and then invoke "hot reload" (save your changes or press the "hot
+      // reload" button in a Flutter-supported IDE, or press "r" if you used
+      // the command line to start the app).
+      //
+      // Notice that the counter didn't reset back to zero; the application
+      // state is not lost during the reload. To reset the state, use hot
+      // restart instead.
+      //
+      // This works for code too, not just values: Most code changes can be
+      // tested with just a hot reload.
+      colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+      useMaterial3: true,
+    ),
+    home: const MyHomePage(title: 'Flutter Demo Home Page'),
+  );
+}
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key, required this.title});
 

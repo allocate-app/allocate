@@ -1,6 +1,9 @@
-// No tasks during burnout.
+import 'package:isar/isar.dart';
+@collection
 class User
 {
+  Id localID = Isar.autoIncrement;
+  int? id;
   // These could probably go. Keeping for now.
   String? firstName;
   String? lastName;
@@ -20,7 +23,7 @@ class User
 
   // NumSubTasksPerLT.
 
-  User({this.firstName, this.lastName, this.userName, this.userID, this.birthday, this.inMeltdown = false, this.bandwidth = 100, this.dayBandwidth=100});
+  User({this.id, this.firstName, this.lastName, this.userName, this.userID, this.birthday, this.inMeltdown = false, this.bandwidth = 100, this.dayBandwidth=100});
 
   // TODO: Hashmap for routines > possibly factor into other class.
   // By which I mean day of the week.

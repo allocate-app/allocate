@@ -1,98 +1,98 @@
-import "../../util/interfaces/collection.dart";
-// TODO: fix lt reference once subtasks factored out.
+import "dart:convert";
+import "package:allocate/model/task/subtask.dart";
+import "package:isar/isar.dart";
+import "../../util/enums.dart";
 import "../../util/interfaces/copyable.dart";
-import "../../util/numbers.dart";
-import "largetask.dart";
 
-enum RoutineTime{morning, afternoon, evening}
+// TODO: Does not need to be repeatable. Repeats are implicit > store a link in the user class.
+// TODO: Implement a provider class (UI).
+@collection
+class Routine implements Copyable<Routine> {
+  static const int maxTasksPerRoutine = 10;
+  Id id = Isar.autoIncrement;
 
-// TODO: this should implement a repeatable interface, once written.
-// Store in a separate table.
-class Routine implements Collection<SubTask>, Comparable<Routine>, Copyable<Routine>{
-  // Factor this out to a user preferences class mb?
-  // Or a constructor setting > with a scale of 0-10?
-  // Not sure; figure this out.
-
-  // OR! Hear me out: a maximum weight? I am unsure.
-  int maxTasksPerRoutine = 10;
-  int routineID;
-  String name;
-  // Consider making this an ID.
+  @Enumerated(EnumType.ordinal)
   RoutineTime routineTime;
+
+  String name;
   int weight;
-  Duration expectedDuration;
-  // This may need to be a thing? not sure yet.
-  bool repeatable;
-  List<SubTask> routineTasks = [];
+  int expectedDuration;
+  final List<SubTask> routineTasks;
+  bool isSynced;
+  bool toDelete;
 
-  Routine({required this.routineID, required this.name, required this.routineTime, this.weight = 0, this.expectedDuration = const Duration(hours: 1), this.repeatable = true});
+  Routine(
+      {required this.routineTime,
+      required this.name,
+      this.weight = 0,
+      Duration expectedDuration = const Duration(hours: 1),
+      List<SubTask>? routineTasks,
+      this.isSynced = true,
+      this.toDelete = false})
+      : expectedDuration = expectedDuration.inSeconds,
+        routineTasks = routineTasks ?? List.empty(growable: true);
 
-  Duration get realDuration
-  {
-    num factor = smoothstep(x: weight, v0: 1, v1: 10);
-    return expectedDuration * factor;
-  }
+  Routine.fromEntity({required Map<String, dynamic> entity})
+      : id = entity["id"] as Id,
+        routineTime = RoutineTime.values[entity["routineTime"]],
+        name = entity["name"] as String,
+        weight = entity["weight"] as int,
+        expectedDuration = entity["expectedDuration"],
+        routineTasks =
+            (jsonDecode(entity["routineTasks"])["routineTasks"] as List)
+                .map((rt) => SubTask.fromEntity(entity: rt))
+                .toList(),
+        isSynced = entity["isSynced"],
+        toDelete = entity["toDelete"];
+
+  Map<String, dynamic> toEntity() => {
+        "id": id,
+        "routineTime": routineTime.index,
+        "name": name,
+        "weight": weight,
+        "expectedDuration": expectedDuration,
+        "routineTasks": jsonEncode(routineTasks.map((rt) => rt.toEntity())),
+        "isSynced": isSynced,
+        "toDelete": toDelete
+      };
 
   @override
-  int compareTo(Routine r2) => name.compareTo(r2.name);
+  Routine copy() => Routine(
+      name: name,
+      routineTime: routineTime,
+      weight: weight,
+      expectedDuration: Duration(seconds: expectedDuration),
+      routineTasks: List.from(routineTasks));
 
   @override
-  void add(SubTask st) {
-    routineTasks.add(st);
-    updateWeight(st.weight);
-  }
-
-  @override
-  void remove(SubTask st) {
-    routineTasks.remove(st);
-    updateWeight(-st.weight);
-  }
-
-  @override
-  void reorder(int oldIndex, int newIndex) {
-    if(oldIndex < newIndex)
-      {
-        newIndex--;
-      }
-    SubTask rt = routineTasks.removeAt(oldIndex);
-    routineTasks.insert(newIndex, rt);
-  }
-
-  @override
-  List<SubTask> sort() {
-    List<SubTask> sorted = List.from(routineTasks);
-    sorted.sort();
-    return sorted;
-  }
-
-  // Identical to large task sorting for subtasks.
-  @override
-  List<SubTask> sortBy() {
-    // TODO: implement sortBy
-    throw UnimplementedError();
-  }
-
-  void updateWeight(int w) => weight = (weight + w > 0) ? weight + w : 0;
-  void recalculateWeight() => weight = routineTasks.fold(0, (p, c) => p + c.weight);
+  Routine copyWith({
+    String? name,
+    RoutineTime? routineTime,
+    int? weight,
+    Duration? expectedDuration,
+    List<SubTask>? routineTasks,
+  }) =>
+      Routine(
+          name: name ?? this.name,
+          routineTime: routineTime ?? this.routineTime,
+          weight: weight ?? this.weight,
+          expectedDuration:
+              expectedDuration ?? Duration(seconds: this.expectedDuration),
+          routineTasks: (null != routineTasks)
+              ? List.from(routineTasks)
+              : List.from(this.routineTasks));
 
   //TODO: implement.
-  @override
-  List<Object> get props => [];
 
   @override
-  Routine copy() {
-    // TODO: implement copy
-    throw UnimplementedError();
-  }
-
-  @override
-  Routine copyWith() {
-    // TODO: implement copyWith
-    throw UnimplementedError();
-  }
-
-
+  List<Object> get props => [
+        id,
+        routineTime,
+        name,
+        weight,
+        expectedDuration,
+        routineTasks,
+        isSynced,
+        toDelete
+      ];
 }
-
-
-

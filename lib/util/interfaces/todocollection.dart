@@ -1,5 +1,4 @@
-enum SortMethod {none, name, dueDate, weight, priority, duration}
-abstract interface class Collection<T>
+abstract interface class ToDoCollection<T>
 {
   void add(T t);
   void remove(T t);
