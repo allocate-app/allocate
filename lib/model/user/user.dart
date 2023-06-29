@@ -25,6 +25,5 @@ class User
 
   User({this.id, this.firstName, this.lastName, this.userName, this.userID, this.birthday, this.inMeltdown = false, this.bandwidth = 100, this.dayBandwidth=100});
 
-  // TODO: Hashmap for routines > possibly factor into other class.
-  // By which I mean day of the week.
+  // TODO: Hashmap for routines > Changed idea, written down, handled by todo.
 }

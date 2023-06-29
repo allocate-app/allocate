@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart';
 import '../model/task/todo.dart';
 import '../util/numbers.dart';
 
-class ToDoService with ChangeNotifier
+class ToDoService
 {
   // This may actually be able to stay.
   Duration realDuration(ToDo t) {

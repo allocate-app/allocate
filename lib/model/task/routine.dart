@@ -6,6 +6,8 @@ import "../../util/interfaces/copyable.dart";
 
 // TODO: Does not need to be repeatable. Repeats are implicit > store a link in the user class.
 // TODO: Implement a provider class (UI).
+
+// TODO: Routine Id for reordering.
 @collection
 class Routine implements Copyable<Routine> {
   static const int maxTasksPerRoutine = 10;
