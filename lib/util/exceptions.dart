@@ -10,3 +10,13 @@ class FailureToDeleteException implements Exception{
   String cause;
   FailureToDeleteException(this.cause);
 }
+
+class FailureToUpdateException implements Exception {
+  String cause;
+  FailureToUpdateException(this.cause);
+}
+
+class ListLimitExceededException implements Exception {
+  String cause;
+  ListLimitExceededException(this.cause);
+}

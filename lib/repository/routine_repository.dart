@@ -9,6 +9,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../main.dart';
 import '../model/task/routine.dart';
 import '../services/supabase_service.dart';
+import '../util/enums.dart';
 import '../util/exceptions.dart';
 import '../util/interfaces/repository.dart';
 
@@ -32,7 +33,7 @@ class RoutineRepository with ChangeNotifier implements Repository<Routine> {
 
     if(null == id)
     {
-      throw FailureToCreateException("Failed to save Routine");
+      throw FailureToCreateException("Failed to create routine locally");
     }
 
     routine.id = id!;
@@ -49,7 +50,7 @@ class RoutineRepository with ChangeNotifier implements Repository<Routine> {
 
       if(null == id)
       {
-        throw FailureToUploadException("Failed to Sync routine");
+        throw FailureToUploadException("Failed to sync routine on create");
       }
     }
   }
@@ -57,6 +58,110 @@ class RoutineRepository with ChangeNotifier implements Repository<Routine> {
   @override
   Future<void> update(Routine routine) async
   {
+    routine.isSynced = isDeviceConnected.value;
+
+    // This is just for error checking.
+    late int? id;
+    await _isarClient.writeTxn(() async {
+      id = await _isarClient.routines.put(routine);
+    });
+
+    if(null == id)
+      {
+        throw FailureToUpdateException("Failed to update routine locally");
+      }
+
+    if(isDeviceConnected.value)
+      {
+        Map<String, dynamic> routineEntity = routine.toEntity();
+        final List<Map<String, dynamic>> response = await _supabaseClient
+          .from("routines")
+          .update(routineEntity)
+          .select("id");
+
+        id = response.last["id"];
+        if(null == id)
+          {
+            throw FailureToUploadException("Failed to sync routine on update");
+          }
+      }
+
+  }
+  @override
+  Future<void> updateBatch(List<Routine> routines) async{
+    late List<int?> ids;
+    late int? id;
+
+    await _isarClient.writeTxn(() async {
+      ids = List<int?>.empty(growable: true);
+      for(Routine routine in routines)
+        {
+          routine.isSynced = isDevice.Connected.value;
+          id = await _isarClient.routines.put(routine);
+          ids.add(id);
+        }
+    });
+    if(ids.any((id) => null == id))
+    {
+      throw FailureToUpdateException("Failed to update routines locally");
+    }
+
+    if(isDevice.Connected.value)
+      {
+        ids.clear();
+        List<Map<String, dynamic>> routineEntities= routines.map((rt) => rt.toEntity()).toList();
+        for(Map<String, dynamic> routineEntity in routineEntities)
+          {
+            final List<Map<String, dynamic>> response = await _supabaseClient
+                .from("routines")
+                .update(routineEntity)
+                .select("id");
+            id = response.last["id"];
+            ids.add(id);
+          }
+        if(ids.any((id) => null == id))
+          {
+            throw FailureToUploadException("Failed to sync routines on update");
+          }
+      }
+
+  }
+  Future<void> retry(List<Routine> routines) async{
+    late List<int?> ids;
+    late int? id;
+
+    await _isarClient.writeTxn(() async {
+      ids = List<int?>.empty(growable: true);
+      for(Routine routine in routines)
+      {
+        routine.isSynced = isDevice.Connected.value;
+        id = await _isarClient.routines.put(routine);
+        ids.add(id);
+      }
+    });
+    if(ids.any((id) => null == id))
+    {
+      throw FailureToUpdateException("Failed to update routines locally");
+    }
+
+    if(isDevice.Connected.value)
+    {
+      ids.clear();
+      List<Map<String, dynamic>> routineEntities= routines.map((rt) => rt.toEntity()).toList();
+      for(Map<String, dynamic> routineEntity in routineEntities)
+      {
+        final List<Map<String, dynamic>> response = await _supabaseClient
+            .from("routines")
+            .upsert(routineEntity)
+            .select("id");
+        id = response.last["id"];
+        ids.add(id);
+      }
+      if(ids.any((id) => null == id))
+      {
+        throw FailureToUploadException("Failed to sync routines on update");
+      }
+    }
 
   }
 
@@ -86,7 +191,7 @@ class RoutineRepository with ChangeNotifier implements Repository<Routine> {
        }
        catch(error) {
          // I'm also unsure about this Exception.
-          throw FailureToDeleteException("Failed to Delete Routines");
+          throw FailureToDeleteException("Failed to delete routines");
         }
       }
 
@@ -107,6 +212,7 @@ class RoutineRepository with ChangeNotifier implements Repository<Routine> {
       if(ids.any((id) => null == id))
         {
           // Any unsynced stuff will just be caught on next sync.
+          // This may not need to be a thing to handle.
           throw FailureToUploadException("Failed to Sync Routines");
         }
     }
@@ -155,7 +261,7 @@ class RoutineRepository with ChangeNotifier implements Repository<Routine> {
   }
 
   @override
-  Future<List<Routine>> getRepoListBy({bool showLoading = true}) async {
+  Future<List<Routine>> getRepoListBy({bool showLoading = true, SortMethod sortMethod = SortMethod.none}) async {
     // TODO: implement getRepoListBy
     throw UnimplementedError();
   }

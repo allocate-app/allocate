@@ -1,8 +1,11 @@
 import "dart:convert";
 import "package:allocate/model/task/subtask.dart";
+import "package:allocate/util/numbers.dart";
 import "package:isar/isar.dart";
 import "../../util/enums.dart";
 import "../../util/interfaces/copyable.dart";
+
+part "routine.g.dart";
 
 // TODO: Does not need to be repeatable. Repeats are implicit > store a link in the user class.
 // TODO: Implement a provider class (UI).
@@ -19,7 +22,9 @@ class Routine implements Copyable<Routine> {
   String name;
   int weight;
   int expectedDuration;
+  int realDuration;
   final List<SubTask> routineTasks;
+  int? customViewIndex;
   bool isSynced;
   bool toDelete;
 
@@ -32,6 +37,7 @@ class Routine implements Copyable<Routine> {
       this.isSynced = true,
       this.toDelete = false})
       : expectedDuration = expectedDuration.inSeconds,
+        realDuration = (smoothstep(x: expectedDuration.inSeconds, v0:1, v1: 10) * expectedDuration.inSeconds)  as int,
         routineTasks = routineTasks ?? List.empty(growable: true);
 
   Routine.fromEntity({required Map<String, dynamic> entity})
@@ -40,10 +46,12 @@ class Routine implements Copyable<Routine> {
         name = entity["name"] as String,
         weight = entity["weight"] as int,
         expectedDuration = entity["expectedDuration"],
+        realDuration = entity["realDuration"],
         routineTasks =
             (jsonDecode(entity["routineTasks"])["routineTasks"] as List)
                 .map((rt) => SubTask.fromEntity(entity: rt))
                 .toList(),
+        customViewIndex = entity["customViewIndex"] as int?,
         isSynced = entity["isSynced"],
         toDelete = entity["toDelete"];
 
@@ -53,7 +61,9 @@ class Routine implements Copyable<Routine> {
         "name": name,
         "weight": weight,
         "expectedDuration": expectedDuration,
+        "realDuration" : realDuration,
         "routineTasks": jsonEncode(routineTasks.map((rt) => rt.toEntity())),
+        "customViewIndex" : customViewIndex,
         "isSynced": isSynced,
         "toDelete": toDelete
       };
@@ -84,7 +94,6 @@ class Routine implements Copyable<Routine> {
               ? List.from(routineTasks)
               : List.from(this.routineTasks));
 
-  //TODO: implement.
 
   @override
   List<Object> get props => [
@@ -94,6 +103,7 @@ class Routine implements Copyable<Routine> {
         weight,
         expectedDuration,
         routineTasks,
+        customViewIndex.toString(),
         isSynced,
         toDelete
       ];
