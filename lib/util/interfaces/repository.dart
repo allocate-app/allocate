@@ -1,5 +1,4 @@
-import '../enums.dart';
-
+import 'package:allocate/util/interfaces/sortable.dart';
 abstract interface class Repository<T>
 {
   Future<void> create(T t);
@@ -11,7 +10,7 @@ abstract interface class Repository<T>
   Future<void> syncRepo({bool showLoading = true});
   Future<void> fetchRepo({bool showLoading = true});
   // This would be how to sort. Fiiigure this out at some point.
-  Future<List<T>> getRepoList({bool showLoading = true});
-  Future<List<T>> getRepoListBy({bool showLoading = true, SortMethod sortMethod = SortMethod.none});
+  Future<List<T>> getRepoList();
+  Future<List<T>> getRepoListBy({required SortableView<T> sorter});
 
 }

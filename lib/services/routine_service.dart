@@ -1,10 +1,9 @@
 import 'package:allocate/util/exceptions.dart';
-
 import '../model/task/routine.dart';
 import '../model/task/subtask.dart';
 import '../util/enums.dart';
 import '../util/interfaces/repository.dart';
-import '../util/numbers.dart';
+import '../util/sorters/routine_sorter.dart';
 
 class RoutineService{
 
@@ -22,9 +21,8 @@ class RoutineService{
 
   Future<void> createRoutine(Routine r) async => _repository.create(r);
 
-
-  Future<List<Routine>> getRoutines() async => _repository.getRepoList();
-  Future<List<Routine>> getRoutinesBy({SortMethod sortMethod = SortMethod.none}) async => _repository.getRepoListBy(sortMethod: sortMethod);
+  Future<List<Routine>> getRoutines({RoutineTime timeOfDay = RoutineTime.morning}) async => _repository.getRepoList();
+  Future<List<Routine>> getRoutinesBy({required RoutineSortable routineSorter}) async => _repository.getRepoListBy(sorter: routineSorter);
 
   Future<void> updateRoutine(Routine rt) async => _repository.update(rt);
   Future<void> updateBatch(List<Routine> routines) async => _repository.updateBatch(routines);
@@ -42,6 +40,17 @@ class RoutineService{
     rt.weight += rt.weight;
     updateRoutine(rt);
   }
+
+  Future<void> updateRoutineTask(int oldWeight, int newWeight, Routine rt) async
+  {
+    rt.weight += (-oldWeight) + newWeight;
+    if(rt.weight < 0)
+      {
+        rt.weight = 0;
+      }
+    updateRoutine(rt);
+  }
+
   Future<void> deleteRoutineTask(SubTask st, Routine rt) async
   {
     bool removed = rt.routineTasks.remove(st);

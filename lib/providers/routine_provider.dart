@@ -7,10 +7,10 @@ import "../model/task/routine.dart";
 import '../util/enums.dart';
 import "../util/exceptions.dart";
 import '../util/interfaces/datacache.dart';
-import '../util/interfaces/sortable.dart';
+import '../util/sorters/routine_sorter.dart';
 
 // Providers are singletons.
-class RoutineProvider extends ChangeNotifier implements SortableView<Routine> {
+class RoutineProvider extends ChangeNotifier {
   static final RoutineProvider _instance = RoutineProvider._internal();
   static RoutineProvider get instance => _instance;
 
@@ -26,30 +26,27 @@ class RoutineProvider extends ChangeNotifier implements SortableView<Routine> {
   set routines(List<Routine> newRoutines) => dataCache.currents = newRoutines;
 
   List<Routine> get failCache => dataCache.cache;
+  RoutineSortable sorter = RoutineSorter();
 
-  @override
-  List<SortMethod> sortMethods = [
-    SortMethod.none,
-    SortMethod.name,
-    SortMethod.weight,
-    SortMethod.duration
-  ];
-  @override
-  SortMethod sortMethod = SortMethod.none;
-  @override
-  bool reverse = false;
-
-  SortMethod get curSortMethod => sortMethod;
-  set curSortMethod(SortMethod method) {
-    if (method == sortMethod) {
-      reverse = !reverse;
-      return;
-    }
-    sortMethod = method;
+  set timeOfDay(RoutineTime time)
+  {
+    sorter.timeOfDay = time;
     notifyListeners();
   }
 
-  bool get descending => reverse;
+
+  SortMethod get curSortMethod => sorter.sortMethod;
+  set curSortMethod(SortMethod method) {
+    if (method == sorter.sortMethod) {
+      sorter.descending = !sorter.descending;
+      return;
+    }
+    sorter.sortMethod = method;
+    notifyListeners();
+  }
+
+  bool get descending => sorter.descending;
+  List<SortMethod> get sortMethods => sorter.sortMethods;
 
   // ref.watch(RoutineProvider).
 
@@ -71,7 +68,6 @@ class RoutineProvider extends ChangeNotifier implements SortableView<Routine> {
     notifyListeners();
   }
   // Possibly refactor this so that it takes args instead of an object.
-  // TODO: addRoutineTask, updateRoutineTask, deleteRoutineTask.
   Future<void> addRoutineTask(SubTask st) async
   {
     try{
@@ -82,7 +78,42 @@ class RoutineProvider extends ChangeNotifier implements SortableView<Routine> {
       log(e.cause);
       // Throw some GUI error or something.
     }
+    notifyListeners();
+  }
 
+  Future<void> updateRoutineTask (int oldWeight, int newWeight) async
+  {
+    try{
+      _routineService.updateRoutineTask(oldWeight, newWeight, curRoutine);
+    }
+    on FailureToUpdateException catch (e)
+    {
+      log(e.cause);
+      failCache.add(curRoutine);
+    }
+    on FailureToUploadException catch (e)
+    {
+      log(e.cause);
+      failCache.add(curRoutine);
+    }
+    notifyListeners();
+  }
+
+  Future<void> deleteRoutineTask(SubTask st) async
+  {
+    try{
+      _routineService.deleteRoutineTask(st, curRoutine);
+    }
+    on FailureToUpdateException catch (e)
+    {
+      log(e.cause);
+      failCache.add(curRoutine);
+    }
+    on FailureToUploadException catch (e){
+      log(e.cause);
+      failCache.add(curRoutine);
+    }
+    notifyListeners();
   }
 
   // This should just be args.
@@ -102,8 +133,6 @@ class RoutineProvider extends ChangeNotifier implements SortableView<Routine> {
     try {
       _routineService.updateRoutine(rt);
     } on FailureToUploadException catch (e) {
-      // TODO: Figure out some sort of way to gracefully handle this.
-      // Possibly cache in memory for reattempt.
       log(e.cause);
       failCache.add(rt);
     } on FailureToUpdateException catch (e) {
@@ -144,8 +173,8 @@ class RoutineProvider extends ChangeNotifier implements SortableView<Routine> {
     try {
       _routineService.updateRoutine(curRoutine);
     } on FailureToDeleteException catch (e) {
-      // TODO: Finish handling after implemented.
       log(e.cause);
+      failCache.add(curRoutine);
     }
     notifyListeners();
   }
@@ -173,7 +202,25 @@ class RoutineProvider extends ChangeNotifier implements SortableView<Routine> {
   }
 
   Future<void> getRoutinesBy() async {
-    routines = await _routineService.getRoutinesBy(sortMethod: curSortMethod);
+    routines = await _routineService.getRoutinesBy(routineSorter: sorter);
+    notifyListeners();
+  }
+
+  Future<void> recalculateWeight() async {
+    try
+        {
+          _routineService.recalculateWeight(curRoutine);
+        }
+    on FailureToUploadException catch (e)
+    {
+      log(e.cause);
+      failCache.add(curRoutine);
+    }
+    on FailureToUpdateException catch (e){
+      log(e.cause);
+      failCache.add(curRoutine);
+    }
+
     notifyListeners();
   }
 
