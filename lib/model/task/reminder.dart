@@ -8,6 +8,7 @@ import "../../util/interfaces/copyable.dart";
 @collection
 class Reminder with EquatableMixin implements Copyable<Reminder> {
   Id id = Isar.autoIncrement;
+  int customViewIndex = -1;
   String name;
   DateTime dueDate;
   Reminder({required this.name, DateTime? dueDate})
@@ -21,12 +22,13 @@ class Reminder with EquatableMixin implements Copyable<Reminder> {
 
   Reminder.fromEntity({required Map<String, dynamic> entity})
       : id = entity["id"] as Id,
+        customViewIndex = entity["customViewIndex"] as int,
         name = entity["name"] as String,
         dueDate = DateTime.parse(entity["dueDate"]);
 
   Map<String, dynamic> toEntity() =>
-      {"id": id, "name": name, "dueDate": dueDate.toIso8601String()};
+      {"id": id, "customViewIndex": customViewIndex, "name": name, "dueDate": dueDate.toIso8601String()};
 
   @override
-  List<Object> get props => [name, dueDate];
+  List<Object> get props => [name, dueDate, customViewIndex];
 }
