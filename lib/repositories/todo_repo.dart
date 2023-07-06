@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart';
 import 'package:isar/isar.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/isar_service.dart';
@@ -9,11 +8,10 @@ import '../main.dart';
 import '../model/task/todo.dart';
 import '../util/enums.dart';
 import '../util/exceptions.dart';
-import '../util/interfaces/repository.dart';
 import '../util/interfaces/sortable.dart';
-import '../util/sorters/todo_sorter.dart';
+import '../util/interfaces/todo_repository.dart';
 
-class ToDoRepository implements Repository<ToDo>
+class ToDoRepo implements ToDoRepository
 {
   final SupabaseClient _supabaseClient = SupabaseService.supabaseClient;
   final Isar _isarClient = IsarService.isarClient;
@@ -215,17 +213,32 @@ class ToDoRepository implements Repository<ToDo>
     });
   }
 
+  /// These all require to be "completed = false."
   @override
-  Future<List<ToDo>> getRepoList() async{
-    return _isarClient.todos.filter()
+  Future<List<ToDo>> getRepoList() async => _isarClient.todos.filter()
         .sortByCustomViewIndex()
         .thenById()
         .findAll();
+
+  @override
+  Future<List<ToDo>> getRepoListBy({required SortableView<ToDo> sorter}) {
+    // TODO: implement getRepoListBy
+    throw UnimplementedError();
+  }
+  Future<List<ToDo>> getCompleted()
+  {
+    // TODO: implement getCompleted
+    throw UnimplementedError();
   }
 
   @override
-  Future<List<ToDo>> getRepoListBy({required covariant ToDoSortable sorter}) {
-    // TODO: implement getRepoListBy
+  Future<List<ToDo>> getMyDay() {
+    // TODO: implement getMyDay
+    throw UnimplementedError();
+  }
+  @override
+  Future<List<ToDo>> getRepoByGroupID({required int groupID}) {
+    // TODO: implement getRepoByGroupID
     throw UnimplementedError();
   }
 

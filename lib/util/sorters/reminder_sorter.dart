@@ -1,20 +1,18 @@
-import '../../model/task/routine.dart';
-import '../enums.dart';
+import '../../model/task/reminder.dart';
 import '../interfaces/sortable.dart';
+import '../enums.dart';
 
-class RoutineSorter implements SortableView<Routine>
-{
+class ReminderSorter implements SortableView<Reminder> {
   @override
   bool descending = false;
 
   @override
   SortMethod sortMethod = SortMethod.none;
 
+  @override
   static final List<SortMethod> sortMethods = [
     SortMethod.none,
     SortMethod.name,
-    SortMethod.weight,
-    SortMethod.duration
+    SortMethod.dueDate
   ];
-
 }

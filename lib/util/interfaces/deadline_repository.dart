@@ -1,8 +1,8 @@
 import '../../model/task/deadline.dart';
 import 'repository.dart';
 
-abstract interface class DeadLineRepository implements Repository<DeadLine>
+abstract interface class DeadlineRepository implements Repository<Deadline>
 {
-  // Overrides here. Atm. Not quite sure if anything is needed/req'd.
+  Future<List<Deadline>> getOverdues();
 }
 

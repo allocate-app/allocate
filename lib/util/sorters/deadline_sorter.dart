@@ -1,9 +1,9 @@
-import '../../model/task/routine.dart';
-import '../enums.dart';
+import 'package:allocate/util/enums.dart';
+
+import '../../model/task/deadline.dart';
 import '../interfaces/sortable.dart';
 
-class RoutineSorter implements SortableView<Routine>
-{
+class DeadlineSorter implements SortableView<Deadline> {
   @override
   bool descending = false;
 
@@ -13,8 +13,7 @@ class RoutineSorter implements SortableView<Routine>
   static final List<SortMethod> sortMethods = [
     SortMethod.none,
     SortMethod.name,
-    SortMethod.weight,
-    SortMethod.duration
+    SortMethod.dueDate,
+    SortMethod.priority
   ];
-
 }

@@ -15,9 +15,10 @@ import '../../util/interfaces/copyable.dart';
 part "deadline.g.dart";
 
 @collection
-class DeadLine with EquatableMixin implements Copyable<DeadLine> {
+class Deadline with EquatableMixin implements Copyable<Deadline> {
   Id id = Isar.autoIncrement;
   int customViewIndex = -1;
+  String name;
   String description;
   DateTime startDate;
   DateTime dueDate;
@@ -25,36 +26,38 @@ class DeadLine with EquatableMixin implements Copyable<DeadLine> {
   bool warnMe;
   @Enumerated(EnumType.ordinal)
   Priority priority;
-  bool isSynced;
+  bool isSynced = true;
+  bool toDelete = false;
 
 
-  DeadLine({this.description = "", DateTime? startDate, DateTime? dueDate, DateTime? warnDate, this.warnMe = false, this.priority = Priority.low, this.isSynced = true}):
+  Deadline({required this.name, this.description = "", DateTime? startDate, DateTime? dueDate, DateTime? warnDate, this.warnMe = false, this.priority = Priority.low}):
       startDate = startDate ?? DateTime.now(),
       dueDate = dueDate ?? DateTime.now(),
       warnDate = warnDate ?? DateTime.now().subtract(const Duration(days: 1));
 
-  DeadLine.fromEntity({required Map<String, dynamic> entity}) :
+  Deadline.fromEntity({required Map<String, dynamic> entity}) :
       id = entity["id"] as Id,
       customViewIndex = entity["customViewPosition"] as int,
+      name = entity["name"] as String,
       description = entity["description"] as String,
       startDate = DateTime.parse(entity["startDate"]),
       dueDate = DateTime.parse(entity["dueDate"]),
       warnDate = DateTime.parse(entity["warnDate"]),
       warnMe = entity["warnMe"] as bool,
       priority = Priority.values[entity["priority"]],
-      isSynced = entity["isSynced"] as bool;
+      isSynced = true,
+      toDelete = false;
 
   Map<String, dynamic> toEntity() => {
     "id" : id,
     "customViewPosition" : customViewIndex,
+    "name" : name,
     "description" : description,
     "startDate" : startDate.toIso8601String(),
     "dueDate" : dueDate.toIso8601String(),
     "warnDate" : warnDate.toIso8601String(),
     "warnMe" : warnMe,
-    "priority" : priority.index,
-    "isSynced" : isSynced
-  };
+    "priority" : priority.index};
 
   /// TODO: Add functionality to send a push notification to the user when approaching the deadline
   /// Maybe do an alert object. Or use firebase. Look this stuff up.
@@ -69,11 +72,12 @@ class DeadLine with EquatableMixin implements Copyable<DeadLine> {
   }
 
   @override
-  List<Object?> get props => [startDate, dueDate, warnMe];
+  List<Object?> get props => [startDate, dueDate, warnDate, warnMe];
 
   //TODO: may have to put custom view position.
   @override
-  DeadLine copy() => DeadLine(
+  Deadline copy() => Deadline(
+    name: name,
     description: description,
     startDate: startDate,
     dueDate: dueDate,
@@ -83,14 +87,16 @@ class DeadLine with EquatableMixin implements Copyable<DeadLine> {
   );
 
   @override
-  DeadLine copyWith({
+  Deadline copyWith({
+    String? name,
     String? description,
     DateTime? startDate,
     DateTime? dueDate,
     DateTime? warnDate,
     bool? warnMe,
     Priority? priority,
-}) => DeadLine(
+}) => Deadline(
+    name: name ?? this.name,
     description: description ?? this.description,
     startDate: startDate ?? this.startDate,
     dueDate: dueDate ?? this.dueDate,

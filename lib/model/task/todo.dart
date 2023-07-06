@@ -9,18 +9,18 @@ import "group.dart";
 part "todo.g.dart";
 
 // TODO: Implement a provider class (UI).
+
 final Map <TaskType, int> numTasks = {
   TaskType.small : 0,
   TaskType.large : 5,
   TaskType.huge : double.maxFinite.toInt()
 };
 
+// TODO: implement a subtask sorting object with serialization.
 class ToDo with EquatableMixin implements Copyable<ToDo> {
-  // To set the id in todoservice once db is handled.
-  // SOMETHING akin to this:
-  // FirebaseFirestore.instance.collection("tablename").doc().id;
   Id id = Isar.autoIncrement;
 
+  // TODO: refactor using GroupID; make these nullable, or default to -1.
   final group = IsarLink<Group>();
   int? groupPosition;
 
@@ -42,7 +42,7 @@ class ToDo with EquatableMixin implements Copyable<ToDo> {
   bool myDay;
   int? myDayPosition;
 
-  // TODO: repeat stuff. Handle in repository api.
+  // TODO: repeat stuff. Handle in service/repository..
   bool repeatable;
   Frequency frequency;
   List<bool> repeatDays;

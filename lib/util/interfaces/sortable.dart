@@ -2,7 +2,7 @@ import '../enums.dart';
 
 abstract interface class SortableView<T>
 {
-  late List<SortMethod> sortMethods;
-  late bool descending = false;
-  late SortMethod sortMethod = SortMethod.none;
+  static final List<SortMethod> sortMethods = List.empty(growable: false);
+  bool descending = false;
+  SortMethod sortMethod = SortMethod.none;
 }

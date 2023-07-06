@@ -11,6 +11,8 @@ class Reminder with EquatableMixin implements Copyable<Reminder> {
   int customViewIndex = -1;
   String name;
   DateTime dueDate;
+  bool isSynced = true;
+  bool toDelete = false;
   Reminder({required this.name, DateTime? dueDate})
       : dueDate = dueDate ?? DateTime.now();
 

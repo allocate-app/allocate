@@ -9,7 +9,7 @@ import "../model/task/reminder.dart";
 import "../model/task/todocollection.dart";
 import "../model/task/group.dart";
 import "../model/taskrepository/repositoryprefs.dart";
-import "../model/taskrepository/todo_repository.dart";
+import "../model/taskrepository/todo_repo.dart";
 import "../user/user.dart";
 class ToDoRepositoryViewModel extends ChangeNotifier
 {

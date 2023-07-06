@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:isar/isar.dart';
-import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/isar_service.dart';
 import '../services/supabase_service.dart';
@@ -9,32 +8,34 @@ import '../main.dart';
 import '../model/task/routine.dart';
 import '../util/enums.dart';
 import '../util/exceptions.dart';
-import '../util/interfaces/repository.dart';
-import '../util/sorters/routine_sorter.dart';
+import '../util/interfaces/routine_repository.dart';
+import '../util/interfaces/sortable.dart';
 
-class RoutineRepository implements Repository<Routine> {
+class RoutineRepo implements RoutineRepository{
   // DB Clients.
   final SupabaseClient _supabaseClient = SupabaseService.supabaseClient;
   final Isar _isarClient = IsarService.isarClient;
 
+  RoutineRepo();
+
   @override
-  Future<void> create(Routine rt) async {
-    rt.isSynced = isDeviceConnected.value;
+  Future<void> create(Routine routine) async {
+    routine.isSynced = isDeviceConnected.value;
 
     late int? id;
     await _isarClient.writeTxn(() async {
       //This will require to be corrected once db is generated.
-      id = await _isarClient.routines.put(rt);
+      id = await _isarClient.routines.put(routine);
     });
 
     if (null == id) {
       throw FailureToCreateException("Failed to create routine locally");
     }
 
-    rt.id = id!;
+    routine.id = id!;
 
     if (isDeviceConnected.value) {
-      Map<String, dynamic> routineEntity = rt.toEntity();
+      Map<String, dynamic> routineEntity = routine.toEntity();
       final List<Map<String, dynamic>> response = await _supabaseClient
           .from("routines")
           .insert(routineEntity)
@@ -49,13 +50,13 @@ class RoutineRepository implements Repository<Routine> {
   }
 
   @override
-  Future<void> update(Routine rt) async {
-    rt.isSynced = isDeviceConnected.value;
+  Future<void> update(Routine routine) async {
+    routine.isSynced = isDeviceConnected.value;
 
     // This is just for error checking.
     late int? id;
     await _isarClient.writeTxn(() async {
-      id = await _isarClient.routines.put(rt);
+      id = await _isarClient.routines.put(routine);
     });
 
     if (null == id) {
@@ -63,7 +64,7 @@ class RoutineRepository implements Repository<Routine> {
     }
 
     if (isDeviceConnected.value) {
-      Map<String, dynamic> routineEntity = rt.toEntity();
+      Map<String, dynamic> routineEntity = routine.toEntity();
       final List<Map<String, dynamic>> response = await _supabaseClient
           .from("routines")
           .update(routineEntity)
@@ -84,7 +85,7 @@ class RoutineRepository implements Repository<Routine> {
     await _isarClient.writeTxn(() async {
       ids = List<int?>.empty(growable: true);
       for (Routine routine in routines) {
-        routine.isSynced = isDevice.Connected.value;
+        routine.isSynced = isDeviceConnected.value;
         id = await _isarClient.routines.put(routine);
         ids.add(id);
       }
@@ -93,10 +94,10 @@ class RoutineRepository implements Repository<Routine> {
       throw FailureToUpdateException("Failed to update routines locally");
     }
 
-    if (isDevice.Connected.value) {
+    if (isDeviceConnected.value) {
       ids.clear();
       List<Map<String, dynamic>> routineEntities =
-          routines.map((rt) => rt.toEntity()).toList();
+          routines.map((routine) => routine.toEntity()).toList();
       for (Map<String, dynamic> routineEntity in routineEntities) {
         final List<Map<String, dynamic>> response = await _supabaseClient
             .from("routines")
@@ -112,8 +113,25 @@ class RoutineRepository implements Repository<Routine> {
   }
 
   @override
-  Future<void> delete(Routine rt) async {
-    //TODO: Finish this implementation.
+  Future<void> delete(Routine routine) async {
+    if(!isDeviceConnected.value)
+      {
+        routine.toDelete = true;
+        update(routine);
+        return;
+      }
+
+    try
+        {
+          await _supabaseClient
+              .from("routines")
+              .delete()
+              .eq("id", routine.id);
+        }
+    catch(error){
+      throw FailureToDeleteException("Failed to delete routine online");
+    }
+
   }
 
   @override
@@ -123,9 +141,9 @@ class RoutineRepository implements Repository<Routine> {
 
     await _isarClient.writeTxn(() async {
       ids = List<int?>.empty(growable: true);
-      for (Routine rt in routines) {
-        rt.isSynced = isDevice.Connected.value;
-        id = await _isarClient.routines.put(rt);
+      for (Routine routine in routines) {
+        routine.isSynced = isDeviceConnected.value;
+        id = await _isarClient.routines.put(routine);
         ids.add(id);
       }
     });
@@ -133,18 +151,17 @@ class RoutineRepository implements Repository<Routine> {
       throw FailureToUpdateException("Failed to update routines locally");
     }
 
-    if (isDevice.Connected.value) {
+    if (isDeviceConnected.value) {
       ids.clear();
-      List<Map<String, dynamic>> routineEntities =
-          routines.map((rt) => rt.toEntity()).toList();
-      for (Map<String, dynamic> routineEntity in routineEntities) {
-        final List<Map<String, dynamic>> response = await _supabaseClient
+      List<Map<String, dynamic>> routineEntities = routines.map((routine) => routine.toEntity()).toList();
+      final List<Map<String, dynamic>> responses = await _supabaseClient
             .from("routines")
-            .upsert(routineEntity)
+            .upsert(routineEntities)
             .select("id");
-        id = response.last["id"] as int?;
-        ids.add(id);
-      }
+
+    ids =
+    responses.map((response) => response["id"] as int?).toList();
+
       if (ids.any((id) => null == id)) {
         throw FailureToUploadException("Failed to sync routines on update");
       }
@@ -153,35 +170,30 @@ class RoutineRepository implements Repository<Routine> {
 
   // This predicates on having an internet connection.
   @override
-  Future<void> syncRepo({bool showLoading = true}) async {
+  Future<void> syncRepo() async {
     // Get the non-deleted stuff from Isar
     List<int> toDeletes = await getDeleteIds();
     if (toDeletes.isEmpty) {
-      return fetchRepo(showLoading: false);
+      return fetchRepo();
     }
 
     try {
       await _supabaseClient.from("routines").delete().in_("id", toDeletes);
-
-      await _isarClient.writeTxn(() async {
-        // Not sure if I want to store this -> returns a boolean for successful deletion.
-        await _isarClient.routines.deleteAll(toDeletes);
-      });
     } catch (error) {
       // I'm also unsure about this Exception.
-      throw FailureToDeleteException("Failed to delete routines");
+      throw FailureToDeleteException("Failed to delete routines on sync");
     }
 
     // Get the non-uploaded stuff from Isar.
     List<Routine> unsyncedRoutines = await getUnsynced();
 
     if (unsyncedRoutines.isEmpty) {
-      return fetchRepo(showLoading: false);
+      return fetchRepo();
     }
 
-    List<Map<String, dynamic>> syncEntities = unsyncedRoutines.map((rt) {
-      rt.isSynced = true;
-      return rt.toEntity();
+    List<Map<String, dynamic>> syncEntities = unsyncedRoutines.map((routine) {
+      routine.isSynced = true;
+      return routine.toEntity();
     }).toList();
 
     final List<Map<String, dynamic>> responses = await _supabaseClient
@@ -199,11 +211,11 @@ class RoutineRepository implements Repository<Routine> {
     }
 
     // Fetch from supabase.
-    fetchRepo(showLoading: false);
+    fetchRepo();
   }
 
   @override
-  Future<void> fetchRepo({bool showLoading = true}) async {
+  Future<void> fetchRepo() async {
     // This needs refactoring to work with a loading widget -> Factor into provider.
     // showLoading ? startLoading() : null;
     late List<Map<String, dynamic>> routineEntities;
@@ -219,7 +231,7 @@ class RoutineRepository implements Repository<Routine> {
       }
 
       List<Routine> routines =
-          routineEntities.map((rt) => Routine.fromEntity(entity: rt)).toList();
+          routineEntities.map((routine) => Routine.fromEntity(entity: routine)).toList();
       await _isarClient.writeTxn(() async {
         await _isarClient.clear();
         for (Routine routine in routines) {
@@ -227,63 +239,72 @@ class RoutineRepository implements Repository<Routine> {
         }
       });
     });
-    //stopLoading();
     // This should have a callback that gets the repo list by sort.
   }
 
   @override
-  Future<List<Routine>> getRepoList() async {
+  Future<List<Routine>> getRepoList({RoutineTime timeOfDay = RoutineTime.morning}) async {
     return _isarClient.routines
         .filter()
-        .sortByRoutineTime()
-        .thenByCustomViewIndex()
+        .routineTimeEqualTo(timeOfDay)
+        .sortByCustomViewIndex()
         .findAll();
   }
 
   @override
   Future<List<Routine>> getRepoListBy(
-      {required covariant RoutineSortable sorter}) async {
+      {RoutineTime timeOfDay = RoutineTime.morning, required SortableView<Routine> sorter}) async {
     switch (sorter.sortMethod) {
       case SortMethod.name:
         if (sorter.descending) {
           return _isarClient.routines
               .filter()
-              .routineTimeEqualTo(sorter.timeOfDay)
-              .sortByNameDesc();
+              .toDeleteEqualTo(false)
+              .routineTimeEqualTo(timeOfDay)
+              .sortByNameDesc()
+              .findAll();
         }
         return _isarClient.routines
             .filter()
-            .routineTimeEqualTo(sorter.timeOfDay)
-            .sortByName();
+            .toDeleteEqualTo(false)
+            .routineTimeEqualTo(timeOfDay)
+            .sortByName()
+            .findAll();
+
       case SortMethod.weight:
         if (sorter.descending) {
           return _isarClient.routines
               .filter()
-              .routineTimeEqualTo(sorter.timeOfDay)
-              .sortByWeightDesc();
+              .toDeleteEqualTo(false)
+              .routineTimeEqualTo(timeOfDay)
+              .sortByWeightDesc()
+              .findAll();
         }
         return _isarClient.routines
             .filter()
-            .routineTimeEqualTo(sorter.timeOfDay)
-            .sortByWeight();
+            .toDeleteEqualTo(false)
+            .routineTimeEqualTo(timeOfDay)
+            .sortByWeight()
+            .findAll();
 
       case SortMethod.duration:
         if (sorter.descending) {
           return _isarClient.routines
               .filter()
-              .routineTimeEqualTo(sorter.timeOfDay)
-              .sortByRealDurationDesc();
+              .toDeleteEqualTo(false)
+              .routineTimeEqualTo(timeOfDay)
+              .sortByRealDurationDesc()
+              .findAll();
         }
         return _isarClient.routines
             .filter()
-            .routineTimeEqualTo(sorter.timeOfDay)
-            .sortByRealDuration();
+            .toDeleteEqualTo(false)
+            .routineTimeEqualTo(timeOfDay)
+            .sortByRealDuration()
+            .findAll();
 
       default:
-        return _isarClient.routines
-            .filter()
-            .routineTimeEqualTo(sorter.timeOfDay)
-            .sortByCustomViewIndex();
+        return getRepoList(timeOfDay: timeOfDay);
     }
   }
 

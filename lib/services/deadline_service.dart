@@ -1,32 +1,37 @@
 import '../model/task/deadline.dart';
+import '../repositories/deadline_repo.dart';
 import '../util/interfaces/deadline_repository.dart';
+import '../util/interfaces/sortable.dart';
 
-class DeadLineService {
+class DeadlineService {
 
-  static final DeadLineService _instance = DeadLineService._internal();
+  // This is just default. Switch as needed.
+  DeadlineRepository _repository = DeadlineRepo();
 
-  late DeadLineRepository _repository;
+  set repository(DeadlineRepository repo) => _repository = repo;
 
-  set repository(DeadLineRepository repo) => _repository = repo;
+  Future<void> createDeadline({required Deadline deadline}) async => _repository.create(deadline);
 
-  Future<void> createDeadLine(DeadLine d) async => _repository.create(d);
-  Future<void> updateDeadLine(DeadLine d) async => _repository.update(d);
-  Future<void> updateBatch(List<DeadLine> deadlines) async => _repository.updateBatch(deadlines);
-  Future<void> retry(List<DeadLine> deadlines) async => _repository.retry(deadlines);
-  Future<void> deleteDeadLine(DeadLine d) async => _repository.delete(d);
+  Future<List<Deadline>> getDeadlines() async => _repository.getRepoList();
+  Future<List<Deadline>> getDeadlinesBy({required SortableView<Deadline> sorter}) async => _repository.getRepoListBy(sorter: sorter);
+  Future<List<Deadline>> getOverdues() async => _repository.getOverdues();
+
+  Future<void> updateDeadline({required Deadline deadline}) async => _repository.update(deadline);
+  Future<void> updateBatch({required List<Deadline> deadlines}) async => _repository.updateBatch(deadlines);
+
+  Future<void> deleteDeadline({required Deadline deadline}) async => _repository.delete(deadline);
   // TODO: Not sure abt showLoading.
-  Future<void> syncRepo() async => _repository.syncRepo(showLoading: false);
+  Future<void> retry({required List<Deadline> deadlines}) async => _repository.retry(deadlines);
+  // TODO: Figure out how to call this on a timer.
+  Future<void> syncRepo() async => _repository.syncRepo();
 
-  Future<List<DeadLine>> getDeadlines() async => _repository.getRepoList();
-  // TODO: this may need a covariant override.
-  Future<List<DeadLine>> getDeadLinesBy(Sorter<DeadLine> sorter) async => _repository.getRepoListBy(sorter: sorter);
 
-  Future<void> reorderDeadLines(List<DeadLine> deadlines, int oldIndex, int newIndex) async {
+  Future<void> reorderDeadlines({required List<Deadline> deadlines, required int oldIndex, required int newIndex}) async {
     if(oldIndex < newIndex)
       {
         newIndex--;
       }
-    DeadLine d = deadlines.removeAt(oldIndex);
+    Deadline d = deadlines.removeAt(oldIndex);
     deadlines.insert(newIndex, d);
     for(int i = 0; i < deadlines.length; i++)
       {
@@ -35,6 +40,5 @@ class DeadLineService {
     _repository.updateBatch(deadlines);
   }
 
-  DeadLineService._internal();
 
 }

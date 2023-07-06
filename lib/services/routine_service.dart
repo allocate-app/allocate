@@ -1,79 +1,90 @@
 import 'package:allocate/util/exceptions.dart';
 import '../model/task/routine.dart';
 import '../model/task/subtask.dart';
+import '../repositories/routine_repo.dart';
 import '../util/enums.dart';
-import '../util/interfaces/repository.dart';
-import '../util/sorters/routine_sorter.dart';
+import '../util/interfaces/routine_repository.dart';
+import '../util/interfaces/sortable.dart';
+import '../util/numbers.dart';
 
 class RoutineService{
 
+  RoutineService();
   // May need to construct this with the repository...?
-  /// TODO: Unimplemented CRUD,
-  /// TODO: named paraemeters.
-  /// Need to update routines, grab sorted views, etc.
-  /// Also likely need to add routine subtasks?  That may come via the provider.
-  static final RoutineService _instance = RoutineService._internal();
-  static RoutineService get instance => _instance;
+  /// TODO: named parameters
 
-  late Repository<Routine> _repository;
+  // This is just the default repo. Switch as needed for testing.
+  RoutineRepository _repository = RoutineRepo();
 
-  set repository(Repository<Routine> repo) => _repository = repo;
+  set repository(RoutineRepository repo) => _repository = repo;
 
-  Future<void> createRoutine(Routine r) async => _repository.create(r);
+  int recalculateWeight({List<SubTask>? routineTasks}) {
+    if(null == routineTasks || routineTasks.isEmpty)
+      {
+        return 0;
+      }
+    return routineTasks.fold(0, (p, c) => p + c.weight);
+  }
+
+  int getRealDuration({required int seconds})
+  => (smoothstep(x: seconds, v0: Routine.lowerBound, v1: Routine.upperBound) * seconds) as int;
+
+
+  Future<void> createRoutine({required Routine routine}) async => _repository.create(routine);
 
   Future<List<Routine>> getRoutines({RoutineTime timeOfDay = RoutineTime.morning}) async => _repository.getRepoList();
-  Future<List<Routine>> getRoutinesBy({required RoutineSortable routineSorter}) async => _repository.getRepoListBy(sorter: routineSorter);
+  Future<List<Routine>> getRoutinesBy({RoutineTime timeOfDay = RoutineTime.morning, required SortableView<Routine> routineSorter}) async => _repository.getRepoListBy(sorter: routineSorter);
 
-  Future<void> updateRoutine(Routine rt) async => _repository.update(rt);
-  Future<void> updateBatch(List<Routine> routines) async => _repository.updateBatch(routines);
-  Future<void> retry(List<Routine> routines) async => _repository.retry(routines);
-  Future<void> deleteRoutine (Routine rt) async => _repository.delete(rt);
+  Future<void> updateRoutine({required Routine routine}) async => _repository.update(routine);
+  Future<void> updateBatch({required List<Routine> routines}) async => _repository.updateBatch(routines);
 
-  Future<void> addRoutineTask(SubTask st, Routine rt) async
+  Future<void> deleteRoutine({Routine routine}) async => _repository.delete(routine);
+
+  Future<void> retry({List<Routine> routines}) async => _repository.retry(routines);
+  // TODO: Figure out how to call this on a timer.
+  Future<void> syncRepo() async => _repository.syncRepo();
+
+
+  Future<void> addRoutineTask({required SubTask subTask, required Routine routine}) async
   {
-    if(rt.routineTasks.length >= Routine.maxTasksPerRoutine)
+    if(routine.routineTasks.length >= Routine.maxTasksPerRoutine)
       {
         throw ListLimitExceededException("Routine limit exceeded");
       }
 
-    rt.routineTasks.add(st);
-    rt.weight += rt.weight;
-    updateRoutine(rt);
+    routine.routineTasks.add(subTask);
+    routine.weight += routine.weight;
+    updateRoutine(routine: routine);
   }
 
-  Future<void> updateRoutineTask(int oldWeight, int newWeight, Routine rt) async
+  Future<void> updateRoutineTask({required int oldWeight, required int newWeight, required Routine routine}) async
   {
-    rt.weight += (-oldWeight) + newWeight;
-    if(rt.weight < 0)
+    routine.weight += (-oldWeight) + newWeight;
+    if(routine.weight < 0)
       {
-        rt.weight = 0;
+        routine.weight = 0;
       }
-    updateRoutine(rt);
+    updateRoutine(routine: routine);
   }
 
-  Future<void> deleteRoutineTask(SubTask st, Routine rt) async
+  Future<void> deleteRoutineTask({required SubTask subTask, required Routine routine}) async
   {
-    bool removed = rt.routineTasks.remove(st);
+    bool removed = routine.routineTasks.remove(subTask);
     if(removed)
       {
-        rt.weight -= rt.weight;
+        routine.weight -= routine.weight;
       }
-    updateRoutine(rt);
+    updateRoutine(routine: routine);
   }
 
-  Future<void> recalculateWeight(Routine rt) async
-  {
-    rt.weight = rt.routineTasks.fold(0, (p, c) => p + c.weight);
-    updateRoutine(rt);
-  }
 
-  Future<void> reorderRoutines(List<Routine> routines, int oldIndex, int newIndex) async{
+  Future<void> reorderRoutines({required List<Routine> routines, required int oldIndex, required int newIndex}) async{
     if(oldIndex < newIndex)
       {
         newIndex--;
       }
-    Routine rt = routines.removeAt(oldIndex);
-    routines.insert(newIndex, rt);
+    Routine routine = routines.removeAt(oldIndex);
+    routines.insert(newIndex, routine);
     for(int i = 0; i < routines.length; i++)
       {
         routines[i].customViewIndex = i;
@@ -81,15 +92,14 @@ class RoutineService{
     _repository.updateBatch(routines);
   }
 
-  Future<void>reorderRoutineTask(Routine rt, int oldIndex, int newIndex) async {
+  Future<void>reorderRoutineTask({required Routine routine, required int oldIndex, required int newIndex}) async {
     if(oldIndex < newIndex)
       {
         newIndex--;
       }
-    SubTask st = rt.routineTasks.removeAt(oldIndex);
-    rt.routineTasks.insert(newIndex, st);
-    updateRoutine(rt);
+    SubTask st = routine.routineTasks.removeAt(oldIndex);
+    routine.routineTasks.insert(newIndex, st);
+    updateRoutine(routine: routine);
   }
 
-  RoutineService._internal();
 }

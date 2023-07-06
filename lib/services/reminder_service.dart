@@ -1,27 +1,33 @@
 import '../model/task/reminder.dart';
+import '../repositories/reminder_repo.dart';
 import '../util/interfaces/reminder_repository.dart';
+import '../util/interfaces/sortable.dart';
 
 class ReminderService {
 
-  static final ReminderService _instance = ReminderService._internal();
-
-  late ReminderRepository _repository;
+  //Default repo for now, switch as needed for testing.
+  ReminderRepository _repository = ReminderRepo();
 
   set repository(ReminderRepository repo) => _repository = repo;
 
-  Future<void> createReminder(Reminder r) async => _repository.create(r);
-  Future<void> updateReminder(Reminder r) async => _repository.update(r);
-  Future<void> updateBatch(List<Reminder> reminders) async => _repository.updateBatch(reminders);
-  Future<void> retry(List<Reminder> reminders) async => _repository.retry(reminders);
-  Future<void> deleteReminder(Reminder r) async => _repository.delete(r);
-  // TODO: Not sure abt showLoading.
-  Future<void> syncRepo() async => _repository.syncRepo(showLoading: false);
+  Future<void> createReminder({required Reminder reminder}) async => _repository.create(reminder);
 
-  Future<List<Reminder>> getDeadlines() async => _repository.getRepoList();
-  // TODO: this may need a covariant override.
-  Future<List<Reminder>> getRemindersBy(Sorter<Reminder> sorter) async => _repository.getRepoListBy(sorter: sorter);
+  Future<List<Reminder>> getReminders() async => _repository.getRepoList();
+  Future<List<Reminder>> getRemindersBy(
+      {required SortableView<Reminder> sorter}) async => _repository.getRepoListBy(sorter: sorter);
 
-  Future<void> reorderReminders(List<Reminder> reminders, int oldIndex, int newIndex) async {
+  Future<void> updateReminder({required Reminder reminder}) async => _repository.update(reminder);
+  Future<void> updateBatch({required List<Reminder> reminders}) async => _repository.updateBatch(reminders);
+
+  Future<void> deleteReminder({required Reminder reminder}) async => _repository.delete(reminder);
+
+  Future<void> retry({required List<Reminder> reminders}) async => _repository.retry(reminders);
+
+  Future<void> syncRepo() async => _repository.syncRepo();
+
+
+  Future<void> reorderReminders(
+      {required List<Reminder> reminders, required int oldIndex, required int newIndex}) async {
     if(oldIndex < newIndex)
     {
       newIndex--;
@@ -35,6 +41,5 @@ class ReminderService {
     _repository.updateBatch(reminders);
   }
 
-  ReminderService._internal();
 
 }

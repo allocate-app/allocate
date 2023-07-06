@@ -3,6 +3,7 @@ import 'package:isar/isar.dart';
 
 import '../../util/interfaces/copyable.dart';
 
+//TODO: refactor
 @embedded
 class SubTask with EquatableMixin implements Copyable<SubTask>, Comparable<SubTask>{
   String name;
@@ -33,6 +34,5 @@ class SubTask with EquatableMixin implements Copyable<SubTask>, Comparable<SubTa
   @override
   // TODO: implement props
   List<Object?> get props => [name, completed, weight];
-
 
 }

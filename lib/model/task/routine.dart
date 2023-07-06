@@ -7,13 +7,14 @@ import "../../util/interfaces/copyable.dart";
 
 part "routine.g.dart";
 
-// TODO: Does not need to be repeatable. Repeats are implicit > store a link in the user class.
-// TODO: Implement a provider class (UI).
+// TODO: implement a subtask sorting object and serialization.
 
-// TODO: Routine Id for reordering.
 @collection
 class Routine implements Copyable<Routine> {
   static const int maxTasksPerRoutine = 10;
+  static const int lowerBound = 1;
+  static const int upperBound = 10;
+
   Id id = Isar.autoIncrement;
 
   @Enumerated(EnumType.ordinal)
@@ -25,19 +26,19 @@ class Routine implements Copyable<Routine> {
   int realDuration;
   final List<SubTask> routineTasks;
   int? customViewIndex;
-  bool isSynced;
-  bool toDelete;
+  bool isSynced = true;
+  bool toDelete = false;
 
   Routine(
       {required this.routineTime,
       required this.name,
       this.weight = 0,
+        //TODO: Uh, Maybe make this settable?
       Duration expectedDuration = const Duration(hours: 1),
-      List<SubTask>? routineTasks,
-      this.isSynced = true,
-      this.toDelete = false})
+      int? realDuration,
+      List<SubTask>? routineTasks})
       : expectedDuration = expectedDuration.inSeconds,
-        realDuration = (smoothstep(x: expectedDuration.inSeconds, v0:1, v1: 10) * expectedDuration.inSeconds)  as int,
+        realDuration = realDuration ?? (smoothstep(x: expectedDuration.inSeconds, v0: lowerBound, v1: upperBound) * expectedDuration.inSeconds) as int,
         routineTasks = routineTasks ?? List.empty(growable: true);
 
   Routine.fromEntity({required Map<String, dynamic> entity})
@@ -52,8 +53,8 @@ class Routine implements Copyable<Routine> {
                 .map((rt) => SubTask.fromEntity(entity: rt))
                 .toList(),
         customViewIndex = entity["customViewIndex"] as int?,
-        isSynced = entity["isSynced"],
-        toDelete = entity["toDelete"];
+        isSynced = true,
+        toDelete = false;
 
   Map<String, dynamic> toEntity() => {
         "id": id,
@@ -63,9 +64,7 @@ class Routine implements Copyable<Routine> {
         "expectedDuration": expectedDuration,
         "realDuration" : realDuration,
         "routineTasks": jsonEncode(routineTasks.map((rt) => rt.toEntity())),
-        "customViewIndex" : customViewIndex,
-        "isSynced": isSynced,
-        "toDelete": toDelete
+        "customViewIndex" : customViewIndex
       };
 
   @override
