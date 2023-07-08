@@ -1,12 +1,13 @@
 import 'package:isar/isar.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../services/isar_service.dart';
+
 import '../model/task/deadline.dart';
+import '../services/isar_service.dart';
 import '../services/supabase_service.dart';
 import '../util/enums.dart';
 import '../util/exceptions.dart';
-import '../util/interfaces/deadline_repository.dart';
-import '../util/interfaces/sortable.dart';
+import '../util/interfaces/repository/deadline_repository.dart';
+import '../util/interfaces/sorting/sortable.dart';
 
 class DeadlineRepo implements DeadlineRepository {
   DeadlineRepo();
@@ -56,6 +57,8 @@ class DeadlineRepo implements DeadlineRepository {
     if (null == id) {
       throw FailureToUpdateException("Failed to update deadline locally");
     }
+
+    deadline.id = id!;
 
     if (isDeviceConnected.value) {
       Map<String, dynamic> deadlineEntity = deadline.toEntity();
@@ -125,14 +128,14 @@ class DeadlineRepo implements DeadlineRepository {
 
     if (isDeviceConnected.value) {
       ids.clear();
-      List<Map<String, dynamic>> deadlineEntities = deadlines.map((deadline) => deadline.toEntity()).toList();
+      List<Map<String, dynamic>> deadlineEntities =
+          deadlines.map((deadline) => deadline.toEntity()).toList();
       final List<Map<String, dynamic>> responses = await _supabaseClient
           .from("routines")
           .upsert(deadlineEntities)
           .select("id");
 
-      ids =
-          responses.map((response) => response["id"] as int?).toList();
+      ids = responses.map((response) => response["id"] as int?).toList();
 
       if (ids.any((id) => null == id)) {
         throw FailureToUploadException("Failed to sync deadlines on update");
@@ -142,6 +145,17 @@ class DeadlineRepo implements DeadlineRepository {
 
   @override
   Future<void> delete(Deadline deadline) async {
+    // TODO: NON-ONLINE IMPLEMENTATION, SYNC ISN'T CALLED.
+    // if (!user.syncOnline) {
+    //   late int? id;
+    //   await _isarClient.writeTxn(() async {
+    //     id = await _isarClient.deadlines.delete(deadline.id);
+    //   });
+    //   if (null == id) {
+    //     throw FailureToDeleteException("Failed to delete deadline locally");
+    //   }
+    //   return;
+    // }
     if (!isDeviceConnected.value) {
       deadline.toDelete = true;
       update(deadline);
@@ -172,7 +186,8 @@ class DeadlineRepo implements DeadlineRepository {
     List<Deadline> unsynceddeadlines = await getUnsynced();
 
     if (unsynceddeadlines.isNotEmpty) {
-      List<Map<String, dynamic>> syncEntities = unsynceddeadlines.map((deadline) {
+      List<Map<String, dynamic>> syncEntities =
+          unsynceddeadlines.map((deadline) {
         deadline.isSynced = true;
         return deadline.toEntity();
       }).toList();
@@ -208,8 +223,9 @@ class DeadlineRepo implements DeadlineRepository {
         return;
       }
 
-      List<Deadline> deadlines =
-          deadlineEntities.map((deadline) => Deadline.fromEntity(entity: deadline)).toList();
+      List<Deadline> deadlines = deadlineEntities
+          .map((deadline) => Deadline.fromEntity(entity: deadline))
+          .toList();
       await _isarClient.writeTxn(() async {
         await _isarClient.clear();
         for (Deadline d in deadlines) {
@@ -223,8 +239,12 @@ class DeadlineRepo implements DeadlineRepository {
   // CHECK THIS and put in proper query logic pls.
   // POSSIBLY PUT A HARD LIMIT?
   @override
-  Future<List<Deadline>> getRepoList() =>
-      _isarClient.deadlines.filter().toDeleteEqualTo(false).dueDateGreaterThan(yesterday).findAll();
+  Future<List<Deadline>> getRepoList() => _isarClient.deadlines
+      .filter()
+      .toDeleteEqualTo(false)
+      .dueDateGreaterThan(yesterday)
+      .sortByCustomViewIndex()
+      .findAll();
 
   @override
   Future<List<Deadline>> getRepoListBy(
@@ -289,5 +309,9 @@ class DeadlineRepo implements DeadlineRepository {
       _isarClient.deadlines.filter().isSyncedEqualTo(false).findAll();
 
   @override
-  Future<List<Deadline>> getOverdues() async => _isarClient.deadlines.filter().dueDateLessThan(const DateTime.now()).sortByDueDateDesc().findAll();
+  Future<List<Deadline>> getOverdues() async => _isarClient.deadlines
+      .filter()
+      .dueDateLessThan(const DateTime.now())
+      .sortByDueDateDesc()
+      .findAll();
 }

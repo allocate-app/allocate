@@ -1,7 +1,7 @@
 import 'package:allocate/util/enums.dart';
 
-import '../../model/task/deadline.dart';
-import '../interfaces/sortable.dart';
+import 'sortable.dart';
+import '../../../model/task/deadline.dart';
 
 class DeadlineSorter implements SortableView<Deadline> {
   @override

@@ -1,20 +1,17 @@
 import 'package:isar/isar.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../model/task/reminder.dart';
 import '../services/isar_service.dart';
 import '../services/supabase_service.dart';
-
-import '../model/task/reminder.dart';
 import '../util/enums.dart';
 import '../util/exceptions.dart';
-import '../util/interfaces/reminder_repository.dart';
-import '../util/interfaces/sortable.dart';
+import '../util/interfaces/repository/reminder_repository.dart';
+import '../util/interfaces/sorting/sortable.dart';
 
-class ReminderRepo implements ReminderRepository
-{
-
+class ReminderRepo implements ReminderRepository {
   ReminderRepo();
-  
+
   final SupabaseClient _supabaseClient = SupabaseService.supabaseClient;
   final Isar _isarClient = IsarService.isarClient;
 
@@ -29,27 +26,25 @@ class ReminderRepo implements ReminderRepository
     await _isarClient.writeTxn(() async {
       id = await _isarClient.reminders.put(reminder);
     });
-
-    if(null == id)
-    {
+    if (null == id) {
       throw FailureToCreateException("Failed to create reminder locally");
     }
 
-    if(isDeviceConnected.value)
-    {
+    reminder.id = id!;
+
+    if (isDeviceConnected.value) {
       Map<String, dynamic> reminderEntity = reminder.toEntity();
       final List<Map<String, dynamic>> response = await _supabaseClient
           .from("reminders")
           .insert(reminderEntity)
           .select("id");
       id = response.last["id"];
-      if(null == id)
-      {
+      if (null == id) {
         throw FailureToUploadException("Failed to sync reminder on create");
       }
     }
   }
-  
+
   @override
   Future<void> update(Reminder reminder) async {
     reminder.isSynced = isDeviceConnected.value;
@@ -59,13 +54,11 @@ class ReminderRepo implements ReminderRepository
       id = await _isarClient.reminders.put(reminder);
     });
 
-    if(null == id)
-    {
+    if (null == id) {
       throw FailureToUpdateException("Failed to update deadline locally");
     }
 
-    if(isDeviceConnected.value)
-    {
+    if (isDeviceConnected.value) {
       Map<String, dynamic> reminderEntity = reminder.toEntity();
       final List<Map<String, dynamic>> response = await _supabaseClient
           .from("reminders")
@@ -74,8 +67,7 @@ class ReminderRepo implements ReminderRepository
 
       id = response.last["id"];
 
-      if(null == id)
-      {
+      if (null == id) {
         throw FailureToUploadException("Failed to sync deadline on update");
       }
     }
@@ -87,24 +79,21 @@ class ReminderRepo implements ReminderRepository
     late int? id;
     await _isarClient.writeTxn(() async {
       ids = List<int?>.empty(growable: true);
-      for(Reminder reminder in reminders)
-      {
+      for (Reminder reminder in reminders) {
         reminder.isSynced = isDeviceConnected.value;
         id = await _isarClient.reminders.put(reminder);
         ids.add(id);
       }
     });
-    if(ids.any((id) => null == id))
-    {
+    if (ids.any((id) => null == id)) {
       throw FailureToUpdateException("Failed to update reminders locally");
     }
 
-    if(isDeviceConnected.value)
-    {
+    if (isDeviceConnected.value) {
       ids.clear();
-      List<Map<String, dynamic>> reminderEntities= reminders.map((reminder) => reminder.toEntity()).toList();
-      for(Map<String, dynamic> reminderEntity in reminderEntities)
-      {
+      List<Map<String, dynamic>> reminderEntities =
+          reminders.map((reminder) => reminder.toEntity()).toList();
+      for (Map<String, dynamic> reminderEntity in reminderEntities) {
         final List<Map<String, dynamic>> response = await _supabaseClient
             .from("reminders")
             .update(reminderEntity)
@@ -112,36 +101,38 @@ class ReminderRepo implements ReminderRepository
         id = response.last["id"];
         ids.add(id);
       }
-      if(ids.any((id) => null == id))
-      {
+      if (ids.any((id) => null == id)) {
         throw FailureToUploadException("Failed to sync reminders on update");
       }
     }
-
   }
-
-
 
   @override
   Future<void> delete(Reminder reminder) async {
-    if(!isDeviceConnected.value)
-    {
+    // TODO: NON-ONLINE IMPLEMENTATION, SYNC ISN'T CALLED.
+    // if (!user.syncOnline) {
+    //   late int? id;
+    //   await _isarClient.writeTxn(() async {
+    //     id = await _isarClient.reminders.delete(reminder.id);
+    //   });
+    //   if (null == id) {
+    //     throw FailureToDeleteException("Failed to delete reminder locally");
+    //   }
+    //   return;
+    // }
+    if (!isDeviceConnected.value) {
       reminder.toDelete = true;
       update(reminder);
       return;
     }
 
-    try
-    {
-      await _supabaseClient
-          .from("reminders")
-          .delete()
-          .eq("id", reminder.id);
-    }
-    catch(error){
+    try {
+      await _supabaseClient.from("reminders").delete().eq("id", reminder.id);
+    } catch (error) {
       throw FailureToDeleteException("Failed to delete reminder online");
     }
   }
+
   @override
   Future<void> retry(List<Reminder> reminders) async {
     late List<int?> ids;
@@ -149,28 +140,26 @@ class ReminderRepo implements ReminderRepository
 
     await _isarClient.writeTxn(() async {
       ids = List<int?>.empty(growable: true);
-      for(Reminder reminder in reminders)
-      {
+      for (Reminder reminder in reminders) {
         reminder.isSynced = isDeviceConnected.value;
         id = await _isarClient.reminders.put(reminder);
         ids.add(id);
       }
     });
-    if(ids.any((id) => null == id))
-    {
+    if (ids.any((id) => null == id)) {
       throw FailureToUpdateException("Failed to update reminders locally");
     }
 
     if (isDeviceConnected.value) {
       ids.clear();
-      List<Map<String, dynamic>> reminderEntities = reminders.map((reminder) => reminder.toEntity()).toList();
+      List<Map<String, dynamic>> reminderEntities =
+          reminders.map((reminder) => reminder.toEntity()).toList();
       final List<Map<String, dynamic>> responses = await _supabaseClient
           .from("reminder")
           .upsert(reminderEntities)
           .select("id");
 
-      ids =
-          responses.map((response) => response["id"] as int?).toList();
+      ids = responses.map((response) => response["id"] as int?).toList();
 
       if (ids.any((id) => null == id)) {
         throw FailureToUploadException("Failed to sync reminders on update");
@@ -211,7 +200,7 @@ class ReminderRepo implements ReminderRepository
         .select("id");
 
     List<int?> ids =
-    responses.map((response) => response["id"] as int?).toList();
+        responses.map((response) => response["id"] as int?).toList();
 
     if (ids.any((id) => null == id)) {
       throw FailureToUploadException("Failed to sync reminders");
@@ -220,6 +209,7 @@ class ReminderRepo implements ReminderRepository
     // Fetch from supabase.
     fetchRepo();
   }
+
   @override
   Future<void> fetchRepo() async {
     // This needs refactoring to work with a loading widget -> Factor into provider.
@@ -236,8 +226,9 @@ class ReminderRepo implements ReminderRepository
         return;
       }
 
-      List<Reminder> reminders =
-      reminderEntities.map((reminder) => Reminder.fromEntity(entity: reminder)).toList();
+      List<Reminder> reminders = reminderEntities
+          .map((reminder) => Reminder.fromEntity(entity: reminder))
+          .toList();
       await _isarClient.writeTxn(() async {
         await _isarClient.clear();
         for (Reminder reminder in reminders) {
@@ -251,58 +242,61 @@ class ReminderRepo implements ReminderRepository
   // CHECK THIS and put in proper query logic pls.
   // POSSIBLY PUT A HARD LIMIT?
   @override
-  Future<List<Reminder>> getRepoList() => _isarClient.reminders.filter().dueDateGreaterThan(yesterday).findAll();
+  Future<List<Reminder>> getRepoList() => _isarClient.reminders
+      .filter()
+      .toDeleteEqualTo(false)
+      .dueDateGreaterThan(yesterday)
+      .sortByCustomViewIndex()
+      .findAll();
 
   @override
-  Future<List<Reminder>> getRepoListBy({bool showLoading = true, required SortableView<Reminder> sorter}) async {
-    switch(sorter.sortMethod)
-    {
+  Future<List<Reminder>> getRepoListBy(
+      {bool showLoading = true, required SortableView<Reminder> sorter}) async {
+    switch (sorter.sortMethod) {
       case SortMethod.name:
-        if(sorter.descending)
-        {
+        if (sorter.descending) {
           return _isarClient.reminders
               .filter()
+              .toDeleteEqualTo(false)
               .dueDateGreaterThan(yesterday)
               .sortByNameDesc()
               .findAll();
-        }
-        else
-        {
+        } else {
           return _isarClient.reminders
               .filter()
+              .toDeleteEqualTo(false)
               .dueDateGreaterThan(yesterday)
               .sortByNameDesc()
               .findAll();
         }
       case SortMethod.priority:
-        if(sorter.descending)
-        {
-          return _isarClient.reminders
-              .filter().dueDateGreaterThan(yesterday)
-              .sortByPriorityDesc()
-              .findAll();
-        }
-        else
-        {
+        if (sorter.descending) {
           return _isarClient.reminders
               .filter()
+              .toDeleteEqualTo(false)
+              .dueDateGreaterThan(yesterday)
+              .sortByPriorityDesc()
+              .findAll();
+        } else {
+          return _isarClient.reminders
+              .filter()
+              .toDeleteEqualTo(false)
               .dueDateGreaterThan(yesterday)
               .sortByPriority()
               .findAll();
         }
       case SortMethod.dueDate:
-        if(sorter.descending)
-        {
+        if (sorter.descending) {
           return _isarClient.reminders
               .filter()
+              .toDeleteEqualTo(false)
               .dueDateGreaterThan(yesterday)
               .sortByDueDateDesc()
               .findAll();
-        }
-        else
-        {
+        } else {
           return _isarClient.reminders
               .filter()
+              .toDeleteEqualTo(false)
               .dueDateGreaterThan(yesterday)
               .sortByDueDate()
               .findAll();
@@ -312,6 +306,8 @@ class ReminderRepo implements ReminderRepository
     }
   }
 
-  Future<List<int>> getDeleteIds() async => _isarClient.reminders.filter().toDeleteEqualTo(true).idProperty.findAll();
-  Future<List<Reminder>> getUnsynced() async => _isarClient.reminders.filter().isSyncedEqualTo(false).findAll();
+  Future<List<int>> getDeleteIds() async =>
+      _isarClient.reminders.filter().toDeleteEqualTo(true).idProperty.findAll();
+  Future<List<Reminder>> getUnsynced() async =>
+      _isarClient.reminders.filter().isSyncedEqualTo(false).findAll();
 }

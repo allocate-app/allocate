@@ -1,11 +1,12 @@
 import 'dart:developer';
 
 import 'package:flutter/foundation.dart';
+
 import '../model/task/deadline.dart';
 import '../services/deadline_service.dart';
 import '../util/enums.dart';
 import '../util/exceptions.dart';
-import '../util/sorters/deadline_sorter.dart';
+import '../util/interfaces/sorting/deadline_sorter.dart';
 
 class DeadlineProvider extends ChangeNotifier {
   DeadlineProvider();
@@ -111,6 +112,7 @@ class DeadlineProvider extends ChangeNotifier {
       failCache.addAll(deadlines);
     }
   }
+
   Future<void> _reattemptUpdate() async {
     try {
       _deadlineService.retry(deadlines: failCache);
@@ -133,10 +135,11 @@ class DeadlineProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> reorderDeadlines({required List<Deadline> deadlines,
-    required int oldIndex, required int newIndex}) async {
+  Future<void> reorderDeadlines(
+      {required int oldIndex, required int newIndex}) async {
     try {
-      _deadlineService.reorderDeadlines(deadlines: deadlines, oldIndex: oldIndex, newIndex: newIndex);
+      _deadlineService.reorderDeadlines(
+          deadlines: deadlines, oldIndex: oldIndex, newIndex: newIndex);
     } on FailureToUpdateException catch (e) {
       log(e.cause);
       failCache.addAll(deadlines);
@@ -148,11 +151,8 @@ class DeadlineProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> getDeadlinesBy() async
-  {
+  Future<void> getDeadlinesBy() async {
     deadlines = await _deadlineService.getDeadlinesBy(sorter: sorter);
     notifyListeners();
   }
-
-
 }

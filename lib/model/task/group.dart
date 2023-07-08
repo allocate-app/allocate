@@ -1,22 +1,40 @@
+import 'package:allocate/model/task/todo.dart';
+import 'package:equatable/equatable.dart';
 import 'package:isar/isar.dart';
+
+import '../../util/interfaces/copyable.dart';
 
 part "group.g.dart";
 
 @collection
-class Group {
+class Group with EquatableMixin implements Copyable<Group> {
   Id id = Isar.autoIncrement;
+  int customViewIndex = -1;
   String name;
-  String? description;
-  Group({required this.name, this.description});
+  String description;
+  bool isSynced = false;
+  bool toDelete = false;
+  late List<ToDo> toDos;
 
-  Group.fromEntity({required Map<String, dynamic> entity}) :
-    id = entity["id"] as Id,
-    name = entity["name"] as String,
-    description = entity["description"] as String?;
+  Group({required this.name, this.description = ""});
 
-  Map<String, dynamic> toEntity() => {
-    "id" : id,
-    "name" : name,
-    "description" : description
-  };
+  Group.fromEntity({required Map<String, dynamic> entity})
+      : id = entity["id"] as Id,
+        name = entity["name"] as String,
+        description = entity["description"] as String;
+
+  Map<String, dynamic> toEntity() =>
+      {"id": id, "name": name, "description": description};
+
+  @override
+  Group copy() => Group(name: name, description: description);
+
+  @override
+  Group copyWith({String? name, String? description}) => Group(
+      name: name ?? this.name, description: description ?? this.description);
+
+  @override
+  // TODO: implement props
+  List<Object?> get props =>
+      [id, customViewIndex, name, description, isSynced, toDelete];
 }

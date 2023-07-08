@@ -3,36 +3,38 @@ import 'package:isar/isar.dart';
 
 import '../../util/interfaces/copyable.dart';
 
-//TODO: refactor
+part "subtask.g.dart";
+
 @embedded
-class SubTask with EquatableMixin implements Copyable<SubTask>, Comparable<SubTask>{
+class SubTask
+    with EquatableMixin
+    implements Copyable<SubTask>, Comparable<SubTask> {
   String name;
-  bool completed;
+  bool completed = false;
   int weight;
-  SubTask({this.name = "", this.weight = 0, this.completed = false});
+  SubTask({required this.name, this.weight = 0});
 
-  SubTask.fromEntity({required Map<String, dynamic> entity}) :
-      name = entity["name"] as String,
-      completed = entity["completed"] as bool,
-      weight = entity["weight"] as int;
+  SubTask.fromEntity({required Map<String, dynamic> entity})
+      : name = entity["name"] as String,
+        completed = entity["completed"] as bool,
+        weight = entity["weight"] as int;
 
-  Map<String, dynamic> toEntity() =>{
-    "name" : name,
-    "completed" : completed,
-    "weight" : weight,
-  };
+  Map<String, dynamic> toEntity() => {
+        "name": name,
+        "completed": completed,
+        "weight": weight,
+      };
 
   @override
   int compareTo(SubTask st2) => name.compareTo(st2.name);
 
   // Instead this might need to implement a serializable interface. Ditto for large tasks
   @override
-  SubTask copy() => SubTask(name: name, completed: completed, weight: weight);
+  SubTask copy() => SubTask(name: name, weight: weight);
   @override
-  SubTask copyWith({String? name, bool? completed, int? weight}) => SubTask(name: name ?? this.name, completed: completed ?? this.completed, weight: weight ?? this.weight);
+  SubTask copyWith({String? name, int? weight}) =>
+      SubTask(name: name ?? this.name, weight: weight ?? this.weight);
 
   @override
-  // TODO: implement props
   List<Object?> get props => [name, completed, weight];
-
 }

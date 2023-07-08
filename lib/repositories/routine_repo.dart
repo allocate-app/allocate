@@ -1,17 +1,19 @@
 import 'dart:async';
+
 import 'package:isar/isar.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../services/isar_service.dart';
-import '../services/supabase_service.dart';
+
 //TODO: Check this and determine how best to handle internet connection.
 import '../main.dart';
 import '../model/task/routine.dart';
+import '../services/isar_service.dart';
+import '../services/supabase_service.dart';
 import '../util/enums.dart';
 import '../util/exceptions.dart';
-import '../util/interfaces/routine_repository.dart';
-import '../util/interfaces/sortable.dart';
+import '../util/interfaces/repository/routine_repository.dart';
+import '../util/interfaces/sorting/sortable.dart';
 
-class RoutineRepo implements RoutineRepository{
+class RoutineRepo implements RoutineRepository {
   // DB Clients.
   final SupabaseClient _supabaseClient = SupabaseService.supabaseClient;
   final Isar _isarClient = IsarService.isarClient;
@@ -114,24 +116,28 @@ class RoutineRepo implements RoutineRepository{
 
   @override
   Future<void> delete(Routine routine) async {
-    if(!isDeviceConnected.value)
-      {
-        routine.toDelete = true;
-        update(routine);
-        return;
-      }
-
-    try
-        {
-          await _supabaseClient
-              .from("routines")
-              .delete()
-              .eq("id", routine.id);
-        }
-    catch(error){
-      throw FailureToDeleteException("Failed to delete routine online");
+    // TODO: NON-ONLINE IMPLEMENTATION, SYNC ISN'T CALLED.
+    // if (!user.syncOnline) {
+    //   late int? id;
+    //   await _isarClient.writeTxn(() async {
+    //     id = await _isarClient.routines.delete(routine.id);
+    //   });
+    //   if (null == id) {
+    //     throw FailureToDeleteException("Failed to delete routine locally");
+    //   }
+    //   return;
+    // }
+    if (!isDeviceConnected.value) {
+      routine.toDelete = true;
+      update(routine);
+      return;
     }
 
+    try {
+      await _supabaseClient.from("routines").delete().eq("id", routine.id);
+    } catch (error) {
+      throw FailureToDeleteException("Failed to delete routine online");
+    }
   }
 
   @override
@@ -153,14 +159,14 @@ class RoutineRepo implements RoutineRepository{
 
     if (isDeviceConnected.value) {
       ids.clear();
-      List<Map<String, dynamic>> routineEntities = routines.map((routine) => routine.toEntity()).toList();
+      List<Map<String, dynamic>> routineEntities =
+          routines.map((routine) => routine.toEntity()).toList();
       final List<Map<String, dynamic>> responses = await _supabaseClient
-            .from("routines")
-            .upsert(routineEntities)
-            .select("id");
+          .from("routines")
+          .upsert(routineEntities)
+          .select("id");
 
-    ids =
-    responses.map((response) => response["id"] as int?).toList();
+      ids = responses.map((response) => response["id"] as int?).toList();
 
       if (ids.any((id) => null == id)) {
         throw FailureToUploadException("Failed to sync routines on update");
@@ -230,8 +236,9 @@ class RoutineRepo implements RoutineRepository{
         return;
       }
 
-      List<Routine> routines =
-          routineEntities.map((routine) => Routine.fromEntity(entity: routine)).toList();
+      List<Routine> routines = routineEntities
+          .map((routine) => Routine.fromEntity(entity: routine))
+          .toList();
       await _isarClient.writeTxn(() async {
         await _isarClient.clear();
         for (Routine routine in routines) {
@@ -243,9 +250,11 @@ class RoutineRepo implements RoutineRepository{
   }
 
   @override
-  Future<List<Routine>> getRepoList({RoutineTime timeOfDay = RoutineTime.morning}) async {
+  Future<List<Routine>> getRepoList(
+      {RoutineTime timeOfDay = RoutineTime.morning}) async {
     return _isarClient.routines
         .filter()
+        .toDeleteEqualTo(false)
         .routineTimeEqualTo(timeOfDay)
         .sortByCustomViewIndex()
         .findAll();
@@ -253,7 +262,8 @@ class RoutineRepo implements RoutineRepository{
 
   @override
   Future<List<Routine>> getRepoListBy(
-      {RoutineTime timeOfDay = RoutineTime.morning, required SortableView<Routine> sorter}) async {
+      {RoutineTime timeOfDay = RoutineTime.morning,
+      required SortableView<Routine> sorter}) async {
     switch (sorter.sortMethod) {
       case SortMethod.name:
         if (sorter.descending) {

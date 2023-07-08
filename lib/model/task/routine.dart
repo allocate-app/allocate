@@ -1,7 +1,9 @@
 import "dart:convert";
+
 import "package:allocate/model/task/subtask.dart";
 import "package:allocate/util/numbers.dart";
 import "package:isar/isar.dart";
+
 import "../../util/enums.dart";
 import "../../util/interfaces/copyable.dart";
 
@@ -26,19 +28,18 @@ class Routine implements Copyable<Routine> {
   int realDuration;
   final List<SubTask> routineTasks;
   int? customViewIndex;
-  bool isSynced = true;
+  bool isSynced = false;
   bool toDelete = false;
 
   Routine(
       {required this.routineTime,
       required this.name,
       this.weight = 0,
-        //TODO: Uh, Maybe make this settable?
       Duration expectedDuration = const Duration(hours: 1),
-      int? realDuration,
       List<SubTask>? routineTasks})
       : expectedDuration = expectedDuration.inSeconds,
-        realDuration = realDuration ?? (smoothstep(x: expectedDuration.inSeconds, v0: lowerBound, v1: upperBound) * expectedDuration.inSeconds) as int,
+        realDuration = (smoothstep(x: weight, v0: lowerBound, v1: upperBound) *
+            expectedDuration.inSeconds) as int,
         routineTasks = routineTasks ?? List.empty(growable: true);
 
   Routine.fromEntity({required Map<String, dynamic> entity})
@@ -62,9 +63,9 @@ class Routine implements Copyable<Routine> {
         "name": name,
         "weight": weight,
         "expectedDuration": expectedDuration,
-        "realDuration" : realDuration,
+        "realDuration": realDuration,
         "routineTasks": jsonEncode(routineTasks.map((rt) => rt.toEntity())),
-        "customViewIndex" : customViewIndex
+        "customViewIndex": customViewIndex
       };
 
   @override
@@ -92,7 +93,6 @@ class Routine implements Copyable<Routine> {
           routineTasks: (null != routineTasks)
               ? List.from(routineTasks)
               : List.from(this.routineTasks));
-
 
   @override
   List<Object> get props => [

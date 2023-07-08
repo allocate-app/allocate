@@ -1,9 +1,8 @@
-import '../../model/task/routine.dart';
-import '../enums.dart';
-import '../interfaces/sortable.dart';
+import '../../../model/task/routine.dart';
+import '../../enums.dart';
+import 'sortable.dart';
 
-class RoutineSorter implements SortableView<Routine>
-{
+class RoutineSorter implements SortableView<Routine> {
   @override
   bool descending = false;
 
@@ -16,5 +15,4 @@ class RoutineSorter implements SortableView<Routine>
     SortMethod.weight,
     SortMethod.duration
   ];
-
 }

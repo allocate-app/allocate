@@ -1,4 +1,3 @@
-import 'package:allocate/model/task/todo.dart';
 import 'package:equatable/equatable.dart';
 import 'package:isar/isar.dart';
 
@@ -26,48 +25,53 @@ class Deadline with EquatableMixin implements Copyable<Deadline> {
   bool warnMe;
   @Enumerated(EnumType.ordinal)
   Priority priority;
-  bool isSynced = true;
+  bool isSynced = false;
   bool toDelete = false;
 
+  Deadline(
+      {required this.name,
+      this.description = "",
+      DateTime? startDate,
+      DateTime? dueDate,
+      DateTime? warnDate,
+      this.warnMe = false,
+      this.priority = Priority.low})
+      : startDate = startDate ?? DateTime.now(),
+        dueDate = dueDate ?? DateTime.now(),
+        warnDate = warnDate ?? DateTime.now().subtract(const Duration(days: 1));
 
-  Deadline({required this.name, this.description = "", DateTime? startDate, DateTime? dueDate, DateTime? warnDate, this.warnMe = false, this.priority = Priority.low}):
-      startDate = startDate ?? DateTime.now(),
-      dueDate = dueDate ?? DateTime.now(),
-      warnDate = warnDate ?? DateTime.now().subtract(const Duration(days: 1));
-
-  Deadline.fromEntity({required Map<String, dynamic> entity}) :
-      id = entity["id"] as Id,
-      customViewIndex = entity["customViewPosition"] as int,
-      name = entity["name"] as String,
-      description = entity["description"] as String,
-      startDate = DateTime.parse(entity["startDate"]),
-      dueDate = DateTime.parse(entity["dueDate"]),
-      warnDate = DateTime.parse(entity["warnDate"]),
-      warnMe = entity["warnMe"] as bool,
-      priority = Priority.values[entity["priority"]],
-      isSynced = true,
-      toDelete = false;
+  Deadline.fromEntity({required Map<String, dynamic> entity})
+      : id = entity["id"] as Id,
+        customViewIndex = entity["customViewPosition"] as int,
+        name = entity["name"] as String,
+        description = entity["description"] as String,
+        startDate = DateTime.parse(entity["startDate"]),
+        dueDate = DateTime.parse(entity["dueDate"]),
+        warnDate = DateTime.parse(entity["warnDate"]),
+        warnMe = entity["warnMe"] as bool,
+        priority = Priority.values[entity["priority"]],
+        isSynced = true,
+        toDelete = false;
 
   Map<String, dynamic> toEntity() => {
-    "id" : id,
-    "customViewPosition" : customViewIndex,
-    "name" : name,
-    "description" : description,
-    "startDate" : startDate.toIso8601String(),
-    "dueDate" : dueDate.toIso8601String(),
-    "warnDate" : warnDate.toIso8601String(),
-    "warnMe" : warnMe,
-    "priority" : priority.index};
+        "id": id,
+        "customViewPosition": customViewIndex,
+        "name": name,
+        "description": description,
+        "startDate": startDate.toIso8601String(),
+        "dueDate": dueDate.toIso8601String(),
+        "warnDate": warnDate.toIso8601String(),
+        "warnMe": warnMe,
+        "priority": priority.index
+      };
 
   /// TODO: Add functionality to send a push notification to the user when approaching the deadline
   /// Maybe do an alert object. Or use firebase. Look this stuff up.
   /// MOVE TO A SERVICE.
-  void setNotification()
-  {
+  void setNotification() {
     // Get the cron package/localnotifications.
   }
-  void cancelNotification()
-  {
+  void cancelNotification() {
     // ibid.
   }
 
@@ -77,14 +81,14 @@ class Deadline with EquatableMixin implements Copyable<Deadline> {
   //TODO: may have to put custom view position.
   @override
   Deadline copy() => Deadline(
-    name: name,
-    description: description,
-    startDate: startDate,
-    dueDate: dueDate,
-    warnDate: warnDate,
-    warnMe : warnMe,
-    priority: priority,
-  );
+        name: name,
+        description: description,
+        startDate: startDate,
+        dueDate: dueDate,
+        warnDate: warnDate,
+        warnMe: warnMe,
+        priority: priority,
+      );
 
   @override
   Deadline copyWith({
@@ -95,13 +99,13 @@ class Deadline with EquatableMixin implements Copyable<Deadline> {
     DateTime? warnDate,
     bool? warnMe,
     Priority? priority,
-}) => Deadline(
-    name: name ?? this.name,
-    description: description ?? this.description,
-    startDate: startDate ?? this.startDate,
-    dueDate: dueDate ?? this.dueDate,
-    warnDate: warnDate ?? this.warnDate,
-    warnMe: warnMe ?? this.warnMe,
-    priority: priority ?? this.priority
-  );
+  }) =>
+      Deadline(
+          name: name ?? this.name,
+          description: description ?? this.description,
+          startDate: startDate ?? this.startDate,
+          dueDate: dueDate ?? this.dueDate,
+          warnDate: warnDate ?? this.warnDate,
+          warnMe: warnMe ?? this.warnMe,
+          priority: priority ?? this.priority);
 }

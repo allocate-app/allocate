@@ -1,8 +1,8 @@
-import '../../model/task/reminder.dart';
-import '../interfaces/sortable.dart';
-import '../enums.dart';
+import '../../../model/task/group.dart';
+import '../../enums.dart';
+import 'sortable.dart';
 
-class ReminderSorter implements SortableView<Reminder> {
+class GroupSorter implements SortableView<Group> {
   @override
   bool descending = false;
 
@@ -13,6 +13,5 @@ class ReminderSorter implements SortableView<Reminder> {
   static final List<SortMethod> sortMethods = [
     SortMethod.none,
     SortMethod.name,
-    SortMethod.dueDate
   ];
 }

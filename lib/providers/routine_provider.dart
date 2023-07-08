@@ -1,12 +1,13 @@
 import 'dart:developer';
+
 import 'package:flutter/foundation.dart';
+
+import "../model/task/routine.dart";
 import '../model/task/subtask.dart';
 import '../services/routine_service.dart';
-import "../model/task/routine.dart";
 import '../util/enums.dart';
 import "../util/exceptions.dart";
-import '../util/sorters/routine_sorter.dart';
-
+import '../util/interfaces/sorting/routine_sorter.dart';
 
 /// NOTE: For UI stuff:
 /// In the form-input page class, declare local variables to hold each of the fields required.
@@ -15,7 +16,6 @@ import '../util/sorters/routine_sorter.dart';
 /// also: FUTURE BUILDER will be required for UI stuff.
 
 class RoutineProvider extends ChangeNotifier {
-
   RoutineProvider();
 
   // This may eventually be implemented as DI. Atm, no need to decouple.
@@ -35,20 +35,17 @@ class RoutineProvider extends ChangeNotifier {
 
   List<Routine> failCache = List.empty(growable: true);
 
-   RoutineSorter sorter = RoutineSorter();
+  RoutineSorter sorter = RoutineSorter();
 
   SortMethod get sortMethod => sorter.sortMethod;
-  set sortMethod(SortMethod method)
-  {
-    if(method == sorter.sortMethod)
-      {
-        sorter.descending = !sorter.descending;
-      }
-    else
-      {
-        sorter.sortMethod = method;
-        sorter.descending = false;
-      }
+
+  set sortMethod(SortMethod method) {
+    if (method == sorter.sortMethod) {
+      sorter.descending = !sorter.descending;
+    } else {
+      sorter.sortMethod = method;
+      sorter.descending = false;
+    }
     notifyListeners();
   }
 
@@ -65,18 +62,15 @@ class RoutineProvider extends ChangeNotifier {
   //   /// figure out User shared preferences for sortmethods.
   // }
 
-  Future<void> createRoutine({
-    required String name,
-    required timeOfDay,
-    List<SubTask>? routineTasks}) async {
+  Future<void> createRoutine(
+      {required String name,
+      required timeOfDay,
+      List<SubTask>? routineTasks}) async {
     curRoutine = Routine(
-      routineTime: timeOfDay,
-      name: name,
-      weight: _routineService.recalculateWeight(routineTasks: routineTasks),
-      realDuration: _routineService.getRealDuration(
-          seconds: const Duration(hours: 1).inSeconds),
-      routineTasks: routineTasks
-    );
+        routineTime: timeOfDay,
+        name: name,
+        weight: _routineService.recalculateWeight(routineTasks: routineTasks),
+        routineTasks: routineTasks);
     try {
       _routineService.createRoutine(routine: curRoutine);
     } on FailureToCreateException catch (e) {
@@ -92,45 +86,54 @@ class RoutineProvider extends ChangeNotifier {
   }
 
   // Possibly refactor this so that it takes args instead of an object.
-  Future<void> addRoutineTask({required SubTask subTask}) async
-  {
+  Future<void> addRoutineTask({required String name, int? weight}) async {
+    SubTask routineTask = SubTask(name: name, weight: weight ?? 0);
     try {
-      _routineService.addRoutineTask(subTask: subTask, routine: curRoutine);
+      _routineService.addRoutineTask(subTask: routineTask, routine: curRoutine);
       //_routine
-    }
-    on ListLimitExceededException catch (e) {
+    } on ListLimitExceededException catch (e) {
       log(e.cause);
       // Throw some GUI error or something.
     }
     notifyListeners();
   }
 
-  Future<void> updateRoutineTask({required int oldWeight, required int newWeight}) async
-  {
+  Future<void> updateRoutineTask({
+    required SubTask routineTask,
+    String? name,
+    int? weight,
+    bool? completed,
+  }) async {
+    // TODO: figure out whether this can be grabbed via gui.
+    int index = curRoutine.routineTasks.indexOf(routineTask);
+    int oldWeight = routineTask.weight;
+    SubTask newRoutineTask = routineTask.copyWith(name: name, weight: weight);
+    newRoutineTask.completed = completed ?? routineTask.completed;
+
     try {
-      _routineService.updateRoutineTask(oldWeight: oldWeight, newWeight: newWeight, routine: curRoutine);
-    }
-    on FailureToUpdateException catch (e) {
+      _routineService.updateRoutineTask(
+          oldWeight: oldWeight,
+          index: index,
+          routineTask: newRoutineTask,
+          routine: curRoutine);
+    } on FailureToUpdateException catch (e) {
       log(e.cause);
       failCache.add(curRoutine);
-    }
-    on FailureToUploadException catch (e) {
+    } on FailureToUploadException catch (e) {
       log(e.cause);
-      failCache.add(curRoutine);
+      updateRoutine();
     }
     notifyListeners();
   }
 
-  Future<void> deleteRoutineTask({required SubTask subTask}) async
-  {
+  Future<void> deleteRoutineTask({required SubTask subTask}) async {
     try {
-      _routineService.deleteRoutineTask(subTask: subTask, routine: curRoutine);
-    }
-    on FailureToUpdateException catch (e) {
+      _routineService.deleteRoutineTask(
+          routineTask: subTask, routine: curRoutine);
+    } on FailureToUpdateException catch (e) {
       log(e.cause);
       failCache.add(curRoutine);
-    }
-    on FailureToUploadException catch (e) {
+    } on FailureToUploadException catch (e) {
       log(e.cause);
       failCache.add(curRoutine);
     }
@@ -138,11 +141,12 @@ class RoutineProvider extends ChangeNotifier {
   }
 
   // This should just be args.
-  Future<void> updateRoutine({RoutineTime? routineTime,
-    String? name,
-    int? weight,
-    Duration? expectedDuration,
-    List<SubTask>? routineTasks}) async {
+  Future<void> updateRoutine(
+      {RoutineTime? routineTime,
+      String? name,
+      int? weight,
+      Duration? expectedDuration,
+      List<SubTask>? routineTasks}) async {
     Routine routine = curRoutine.copyWith(
         routineTime: routineTime,
         name: name,
@@ -163,7 +167,6 @@ class RoutineProvider extends ChangeNotifier {
     }
     notifyListeners();
   }
-
 
   Future<void> _updateBatch({required List<Routine> routines}) async {
     try {
@@ -201,10 +204,13 @@ class RoutineProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> reorderRoutines({required List<Routine> routines,
-      required int oldIndex, required int newIndex}) async {
+  Future<void> reorderRoutines(
+      {required List<Routine> routines,
+      required int oldIndex,
+      required int newIndex}) async {
     try {
-      _routineService.reorderRoutines(routines: routines, oldIndex: oldIndex, newIndex: newIndex);
+      _routineService.reorderRoutines(
+          routines: routines, oldIndex: oldIndex, newIndex: newIndex);
     } on FailureToUpdateException catch (e) {
       log(e.cause);
       failCache.addAll(routines);
@@ -216,28 +222,62 @@ class RoutineProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> getMorningsBy() async
-  {
-    mornings = await _routineService.getRoutinesBy(timeOfDay: RoutineTime.morning, routineSorter: sorter);
+  Future<void> reorderRoutineTask(
+      {required int oldIndex, required int newIndex}) async {
+    try {
+      _routineService.reorderRoutineTask(
+          routine: curRoutine, oldIndex: oldIndex, newIndex: newIndex);
+    } on FailureToUpdateException catch (e) {
+      log(e.cause);
+      failCache.add(curRoutine);
+    } on FailureToUploadException catch (e) {
+      log(e.cause);
+      // Re-store into local database, on total failure, cache.
+      updateRoutine();
+    }
     notifyListeners();
   }
-  Future<void> getAftsBy() async{
-    afternoons = await _routineService.getRoutinesBy(timeOfDay: RoutineTime.afternoon, routineSorter: sorter);
+
+  Future<void> _resetComplete({required Routine routine}) async {
+    routine.routineTasks.map((routineTask) => routineTask.completed = false);
+    _routineService.updateRoutine(routine: routine);
+  }
+
+  Future<void> _resetAllCompletes() async {
+    curMorning.routineTasks.map((routineTask) => routineTask.completed = false);
+    curAfternoon.routineTasks
+        .map((routineTask) => routineTask.completed = false);
+    curEvening.routineTasks.map((routineTask) => routineTask.completed = false);
+
+    _updateBatch(routines: [curMorning, curAfternoon, curEvening]);
+  }
+
+  Future<void> getMorningsBy() async {
+    mornings = await _routineService.getRoutinesBy(
+        timeOfDay: RoutineTime.morning, routineSorter: sorter);
     notifyListeners();
   }
-  Future<void> getEvesBy() async
-  {
-    evenings = await _routineService.getRoutinesBy(timeOfDay: RoutineTime.evening, routineSorter: sorter);
+
+  Future<void> getAftsBy() async {
+    afternoons = await _routineService.getRoutinesBy(
+        timeOfDay: RoutineTime.afternoon, routineSorter: sorter);
+    notifyListeners();
+  }
+
+  Future<void> getEvesBy() async {
+    evenings = await _routineService.getRoutinesBy(
+        timeOfDay: RoutineTime.evening, routineSorter: sorter);
     notifyListeners();
   }
 
   // Not quite sure if this is necessary, but keeping for now for UI.
-  Future<void> getAll() async
-  {
-    mornings = await _routineService.getRoutinesBy(timeOfDay: RoutineTime.morning, routineSorter: sorter);
-    afternoons = await _routineService.getRoutinesBy(timeOfDay: RoutineTime.afternoon, routineSorter: sorter);
-    evenings = await _routineService.getRoutinesBy(timeOfDay: RoutineTime.evening, routineSorter: sorter);
+  Future<void> getAll() async {
+    mornings = await _routineService.getRoutinesBy(
+        timeOfDay: RoutineTime.morning, routineSorter: sorter);
+    afternoons = await _routineService.getRoutinesBy(
+        timeOfDay: RoutineTime.afternoon, routineSorter: sorter);
+    evenings = await _routineService.getRoutinesBy(
+        timeOfDay: RoutineTime.evening, routineSorter: sorter);
     notifyListeners();
   }
-
 }
