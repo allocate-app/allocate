@@ -14,16 +14,19 @@ class ToDoService {
 
   set repository(ToDoRepository repo) => _repository = repo;
 
-  int recalculateWeight({List<SubTask>? subTasks}) {
-    if (null == subTasks || subTasks.isEmpty) {
-      return 0;
-    }
-    return subTasks.fold(0, (p, c) => p + c.weight);
+  void recalculateWeight({required ToDo toDo}) {
+    toDo.weight = toDo.subTasks.fold(0, (p, c) => p + c.weight);
   }
 
-  int getRealDuration({required int seconds, required int weight}) =>
-      (smoothstep(x: weight, v0: ToDo.lowerBound, v1: ToDo.upperBound) *
-          seconds) as int;
+  void setRealDuration({required ToDo toDo}) {
+    toDo.realDuration = (remap(
+            x: toDo.weight,
+            inMin: 0,
+            inMax: toDo.maxToDoWeight,
+            outMin: ToDo.lowerBound,
+            outMax: ToDo.upperBound) as int) *
+        toDo.expectedDuration;
+  }
 
   Future<void> createToDo({required ToDo toDo}) async =>
       _repository.create(toDo);

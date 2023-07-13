@@ -6,7 +6,6 @@ import "package:isar/isar.dart";
 
 import "../../util/enums.dart";
 import "../../util/interfaces/copyable.dart";
-import "../../util/numbers.dart";
 
 part "todo.g.dart";
 
@@ -21,11 +20,16 @@ class ToDo with EquatableMixin implements Copyable<ToDo> {
   };
   static const int lowerBound = 1;
   static const int upperBound = 10;
+  static const int maxTaskWeight = 5;
+  final int maxToDoWeight;
 
   Id id = Isar.autoIncrement;
 
+  @Index()
   int groupID = -1;
+  @Index()
   int groupIndex = -1;
+  @Index()
   int customViewIndex = -1;
 
   @Enumerated(EnumType.ordinal)
@@ -33,11 +37,14 @@ class ToDo with EquatableMixin implements Copyable<ToDo> {
   final int maxSubTasks;
   final List<SubTask> subTasks;
 
+  @Index()
   String name;
   String description;
+  @Index()
   int weight;
   // Stored in seconds.
   int expectedDuration;
+  @Index()
   int realDuration;
 
   @Enumerated(EnumType.ordinal)
@@ -46,13 +53,14 @@ class ToDo with EquatableMixin implements Copyable<ToDo> {
   DateTime dueDate;
 
   bool myDay;
-  int? myDayPosition;
 
   bool repeatable;
   Frequency frequency;
   List<bool> repeatDays;
   int repeatSkip;
+  @Index()
   bool isSynced = false;
+  @Index()
   bool toDelete = false;
 
   ToDo({
@@ -64,6 +72,7 @@ class ToDo with EquatableMixin implements Copyable<ToDo> {
     int? realDuration,
     this.priority = Priority.low,
     DateTime? dueDate,
+    this.myDay = false,
     this.repeatable = false,
     this.frequency = Frequency.once,
     List<bool>? repeatDays,
@@ -71,12 +80,12 @@ class ToDo with EquatableMixin implements Copyable<ToDo> {
     List<SubTask>? subTasks,
   })  : maxSubTasks = numTasks[taskType]!,
         expectedDuration = expectedDuration.inSeconds,
-        realDuration = realDuration ??
-            (smoothstep(x: weight, v0: lowerBound, v1: upperBound) *
-                expectedDuration.inSeconds) as int,
+        // This is explicitly calculated by the service.
+        realDuration = realDuration ?? expectedDuration.inSeconds,
         repeatDays = repeatDays ?? List.filled(7, false, growable: false),
         dueDate = dueDate ?? DateTime.now(),
-        subTasks = subTasks ?? List.empty(growable: true);
+        subTasks = subTasks ?? List.empty(growable: true),
+        maxToDoWeight = numTasks[taskType]! * maxTaskWeight;
 
   fromSubTask({required SubTask subTask}) => ToDo(
       taskType: TaskType.small, name: subTask.name, weight: subTask.weight);
@@ -86,8 +95,10 @@ class ToDo with EquatableMixin implements Copyable<ToDo> {
       : id = entity["id"] as Id,
         groupID = entity["groupID"] as int,
         groupIndex = entity["groupIndex"] as int,
+        customViewIndex = entity["customViewIndex"] as int,
         taskType = TaskType.values[entity["taskType"]],
         maxSubTasks = entity["maxSubTasks"] as int,
+        maxToDoWeight = (entity["maxSubTasks"] as int) * maxTaskWeight,
         name = entity["name"] as String,
         description = entity["description"] as String,
         weight = entity["weight"] as int,
@@ -96,7 +107,6 @@ class ToDo with EquatableMixin implements Copyable<ToDo> {
         priority = Priority.values[entity["priority"]],
         dueDate = DateTime.parse(entity["dueDate"]),
         myDay = entity["myDay"] as bool,
-        myDayPosition = entity["myDayPosition"] as int?,
         repeatable = entity["repeatable"] as bool,
         frequency = Frequency.values[entity["frequency"]],
         repeatDays = entity["repeatDays"],
@@ -111,6 +121,7 @@ class ToDo with EquatableMixin implements Copyable<ToDo> {
         "id": id,
         "groupID": groupID,
         "groupIndex": groupIndex,
+        "customViewIndex": customViewIndex,
         "taskType": taskType.index,
         "maxSubTasks": maxSubTasks,
         "name": name,
@@ -121,7 +132,6 @@ class ToDo with EquatableMixin implements Copyable<ToDo> {
         "priority": priority.index,
         "dueDate": dueDate.toIso8601String(),
         "myDay": myDay,
-        "myDayPosition": myDayPosition,
         "repeatable": repeatable,
         "frequency": frequency.index,
         "repeatDays": repeatDays,
@@ -147,7 +157,6 @@ class ToDo with EquatableMixin implements Copyable<ToDo> {
       repeatSkip: repeatSkip,
       subTasks: List.from(subTasks));
 
-  //TODO: remove myDay.
   @override
   ToDo copyWith({
     TaskType? taskType,

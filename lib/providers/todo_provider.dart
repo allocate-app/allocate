@@ -36,8 +36,7 @@ class ToDoProvider extends ChangeNotifier {
   bool get descending => sorter.descending;
   List<SortMethod> get sortMethods => sorter.sortMethods;
 
-  int recalculateWeight({List<SubTask>? subTasks}) =>
-      _todoService.recalculateWeight(subTasks: subTasks);
+  void recalculateWeight() => _todoService.recalculateWeight(toDo: curToDo);
 
   // Not quite sure how to handle weight yet.
   Future<void> createToDo({
@@ -84,7 +83,7 @@ class ToDoProvider extends ChangeNotifier {
       _todoService.addSubTask(subTask: subTask, toDo: curToDo);
     } on ListLimitExceededException catch (e) {
       log(e.cause);
-      //Throw some gui error thing?
+      failCache.add(curToDo);
     }
     notifyListeners();
   }
@@ -175,17 +174,17 @@ class ToDoProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> _updateBatch(List<ToDo> toDos) async {
-    try {
-      _todoService.updateBatch(toDos: toDos);
-    } on FailureToUploadException catch (e) {
-      log(e.cause);
-      failCache.addAll(toDos);
-    } on FailureToUpdateException catch (e) {
-      log(e.cause);
-      failCache.addAll(toDos);
-    }
-  }
+  // Future<void> _updateBatch(List<ToDo> toDos) async {
+  //   try {
+  //     _todoService.updateBatch(toDos: toDos);
+  //   } on FailureToUploadException catch (e) {
+  //     log(e.cause);
+  //     failCache.addAll(toDos);
+  //   } on FailureToUpdateException catch (e) {
+  //     log(e.cause);
+  //     failCache.addAll(toDos);
+  //   }
+  // }
 
   Future<void> _reattemptUpdate() async {
     try {
@@ -216,7 +215,7 @@ class ToDoProvider extends ChangeNotifier {
           toDos: todos, oldIndex: oldIndex, newIndex: newIndex);
     } on FailureToUpdateException catch (e) {
       log(e.cause);
-      _updateBatch(todos);
+      failCache.addAll(todos);
     }
   }
 
@@ -230,8 +229,7 @@ class ToDoProvider extends ChangeNotifier {
       failCache.add(curToDo);
     } on FailureToUploadException catch (e) {
       log(e.cause);
-      // Re-store into local database, on total failure, cache.
-      updateToDo();
+      failCache.add(curToDo);
     }
     notifyListeners();
   }

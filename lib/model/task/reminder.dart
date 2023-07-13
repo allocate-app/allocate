@@ -11,10 +11,15 @@ part "reminder.g.dart";
 @collection
 class Reminder with EquatableMixin implements Copyable<Reminder> {
   Id id = Isar.autoIncrement;
+  @Index()
   int customViewIndex = -1;
+  @Index()
   String name;
+  @Index()
   DateTime dueDate;
+  @Index()
   bool isSynced = false;
+  @Index()
   bool toDelete = false;
   Reminder({required this.name, DateTime? dueDate})
       : dueDate = dueDate ?? DateTime.now();

@@ -1,7 +1,6 @@
 import "dart:convert";
 
 import "package:allocate/model/task/subtask.dart";
-import "package:allocate/util/numbers.dart";
 import "package:isar/isar.dart";
 
 import "../../util/enums.dart";
@@ -16,19 +15,34 @@ class Routine implements Copyable<Routine> {
   static const int maxTasksPerRoutine = 10;
   static const int lowerBound = 1;
   static const int upperBound = 10;
+  static const int maxTaskWeight = 5;
+  static const int maxRoutineWeight = maxTaskWeight * maxTasksPerRoutine;
 
   Id id = Isar.autoIncrement;
 
   @Enumerated(EnumType.ordinal)
   RoutineTime routineTime;
 
+  @Index()
   String name;
+
+  @Index()
   int weight;
+
   int expectedDuration;
+
+  @Index()
   int realDuration;
+
   final List<SubTask> routineTasks;
+
+  @Index()
   int? customViewIndex;
+
+  @Index()
   bool isSynced = false;
+
+  @Index()
   bool toDelete = false;
 
   Routine(
@@ -36,10 +50,11 @@ class Routine implements Copyable<Routine> {
       required this.name,
       this.weight = 0,
       Duration expectedDuration = const Duration(hours: 1),
+      int? realDuration,
       List<SubTask>? routineTasks})
       : expectedDuration = expectedDuration.inSeconds,
-        realDuration = (smoothstep(x: weight, v0: lowerBound, v1: upperBound) *
-            expectedDuration.inSeconds) as int,
+        //This is explicitly calculated by the service.
+        realDuration = realDuration ?? expectedDuration.inSeconds,
         routineTasks = routineTasks ?? List.empty(growable: true);
 
   Routine.fromEntity({required Map<String, dynamic> entity})

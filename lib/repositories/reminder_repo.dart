@@ -243,9 +243,10 @@ class ReminderRepo implements ReminderRepository {
   // POSSIBLY PUT A HARD LIMIT?
   @override
   Future<List<Reminder>> getRepoList() => _isarClient.reminders
+      .where()
+      .dueDateGreaterThan(yesterday)
       .filter()
       .toDeleteEqualTo(false)
-      .dueDateGreaterThan(yesterday)
       .sortByCustomViewIndex()
       .findAll();
 
@@ -256,48 +257,54 @@ class ReminderRepo implements ReminderRepository {
       case SortMethod.name:
         if (sorter.descending) {
           return _isarClient.reminders
+              .where()
+              .dueDateGreaterThan(yesterday)
               .filter()
               .toDeleteEqualTo(false)
-              .dueDateGreaterThan(yesterday)
               .sortByNameDesc()
               .findAll();
         } else {
           return _isarClient.reminders
+              .where()
+              .dueDateGreaterThan(yesterday)
               .filter()
               .toDeleteEqualTo(false)
-              .dueDateGreaterThan(yesterday)
               .sortByNameDesc()
               .findAll();
         }
       case SortMethod.priority:
         if (sorter.descending) {
           return _isarClient.reminders
+              .where()
+              .dueDateGreaterThan(yesterday)
               .filter()
               .toDeleteEqualTo(false)
-              .dueDateGreaterThan(yesterday)
               .sortByPriorityDesc()
               .findAll();
         } else {
           return _isarClient.reminders
+              .where()
+              .dueDateGreaterThan(yesterday)
               .filter()
               .toDeleteEqualTo(false)
-              .dueDateGreaterThan(yesterday)
               .sortByPriority()
               .findAll();
         }
       case SortMethod.dueDate:
         if (sorter.descending) {
           return _isarClient.reminders
+              .where()
+              .dueDateGreaterThan(yesterday)
               .filter()
               .toDeleteEqualTo(false)
-              .dueDateGreaterThan(yesterday)
               .sortByDueDateDesc()
               .findAll();
         } else {
           return _isarClient.reminders
+              .where()
+              .dueDateGreaterThan(yesterday)
               .filter()
               .toDeleteEqualTo(false)
-              .dueDateGreaterThan(yesterday)
               .sortByDueDate()
               .findAll();
         }
@@ -307,7 +314,7 @@ class ReminderRepo implements ReminderRepository {
   }
 
   Future<List<int>> getDeleteIds() async =>
-      _isarClient.reminders.filter().toDeleteEqualTo(true).idProperty.findAll();
+      _isarClient.reminders.where().toDeleteEqualTo(true).idProperty.findAll();
   Future<List<Reminder>> getUnsynced() async =>
-      _isarClient.reminders.filter().isSyncedEqualTo(false).findAll();
+      _isarClient.reminders.where().isSyncedEqualTo(false).findAll();
 }

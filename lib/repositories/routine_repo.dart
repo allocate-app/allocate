@@ -81,6 +81,10 @@ class RoutineRepo implements RoutineRepository {
 
   @override
   Future<void> updateBatch(List<Routine> routines) async {
+    if (routines.isEmpty) {
+      return;
+    }
+
     late List<int?> ids;
     late int? id;
 
@@ -250,11 +254,16 @@ class RoutineRepo implements RoutineRepository {
   }
 
   @override
+  Future<Routine> getById({required int id}) async =>
+      _isarClient.routines.where().idEqualTo(id).findAll();
+
+  @override
   Future<List<Routine>> getRepoList(
       {RoutineTime timeOfDay = RoutineTime.morning}) async {
     return _isarClient.routines
-        .filter()
+        .where()
         .toDeleteEqualTo(false)
+        .filter()
         .routineTimeEqualTo(timeOfDay)
         .sortByCustomViewIndex()
         .findAll();
@@ -268,15 +277,17 @@ class RoutineRepo implements RoutineRepository {
       case SortMethod.name:
         if (sorter.descending) {
           return _isarClient.routines
-              .filter()
+              .where()
               .toDeleteEqualTo(false)
+              .filter()
               .routineTimeEqualTo(timeOfDay)
               .sortByNameDesc()
               .findAll();
         }
         return _isarClient.routines
-            .filter()
+            .where()
             .toDeleteEqualTo(false)
+            .filter()
             .routineTimeEqualTo(timeOfDay)
             .sortByName()
             .findAll();
@@ -284,15 +295,17 @@ class RoutineRepo implements RoutineRepository {
       case SortMethod.weight:
         if (sorter.descending) {
           return _isarClient.routines
-              .filter()
+              .where()
               .toDeleteEqualTo(false)
+              .filter()
               .routineTimeEqualTo(timeOfDay)
               .sortByWeightDesc()
               .findAll();
         }
         return _isarClient.routines
-            .filter()
+            .where()
             .toDeleteEqualTo(false)
+            .filter()
             .routineTimeEqualTo(timeOfDay)
             .sortByWeight()
             .findAll();
@@ -300,15 +313,17 @@ class RoutineRepo implements RoutineRepository {
       case SortMethod.duration:
         if (sorter.descending) {
           return _isarClient.routines
-              .filter()
+              .where()
               .toDeleteEqualTo(false)
+              .filter()
               .routineTimeEqualTo(timeOfDay)
               .sortByRealDurationDesc()
               .findAll();
         }
         return _isarClient.routines
-            .filter()
+            .where()
             .toDeleteEqualTo(false)
+            .filter()
             .routineTimeEqualTo(timeOfDay)
             .sortByRealDuration()
             .findAll();
@@ -320,7 +335,7 @@ class RoutineRepo implements RoutineRepository {
 
   // This needs to be from local.
   Future<List<int>> getDeleteIds() async =>
-      _isarClient.routines.filter().toDeleteEqualTo(true).idProperty.findAll();
+      _isarClient.routines.where().toDeleteEqualTo(true).idProperty.findAll();
   Future<List<Routine>> getUnsynced() async =>
-      _isarClient.routines.filter().isSyncedEqualTo(false).findAll();
+      _isarClient.routines.where().isSyncedEqualTo(false).findAll();
 }

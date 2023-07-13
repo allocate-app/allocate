@@ -101,17 +101,17 @@ class DeadlineProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> _updateBatch({required List<Deadline> deadlines}) async {
-    try {
-      _deadlineService.updateBatch(deadlines: deadlines);
-    } on FailureToUploadException catch (e) {
-      log(e.cause);
-      failCache.addAll(deadlines);
-    } on FailureToUpdateException catch (e) {
-      log(e.cause);
-      failCache.addAll(deadlines);
-    }
-  }
+  // Future<void> _updateBatch({required List<Deadline> deadlines}) async {
+  //   try {
+  //     _deadlineService.updateBatch(deadlines: deadlines);
+  //   } on FailureToUploadException catch (e) {
+  //     log(e.cause);
+  //     failCache.addAll(deadlines);
+  //   } on FailureToUpdateException catch (e) {
+  //     log(e.cause);
+  //     failCache.addAll(deadlines);
+  //   }
+  // }
 
   Future<void> _reattemptUpdate() async {
     try {
@@ -145,8 +145,7 @@ class DeadlineProvider extends ChangeNotifier {
       failCache.addAll(deadlines);
     } on FailureToUploadException catch (e) {
       log(e.cause);
-      // Re-store into local database, on total failure, cache.
-      _updateBatch(deadlines: deadlines);
+      failCache.addAll(deadlines);
     }
     notifyListeners();
   }

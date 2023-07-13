@@ -231,15 +231,19 @@ class ToDoRepo implements ToDoRepository {
     });
   }
 
+  @override
+  Future<ToDo> getById({required int id}) async =>
+      _isarClient.todos.where().idEquals(id).findAll();
+
   /// These all require to be "completed = false."
+
   @override
   Future<List<ToDo>> getRepoList() async => _isarClient.todos
-      .filter()
+      .where()
       .completedEqualTo(false)
+      .filter()
       .toDeleteEqualTo(false)
       .sortByCustomViewIndex()
-      // I believe this may actually be implicit.
-      //.thenById()
       .findAll();
 
   @override
@@ -248,75 +252,85 @@ class ToDoRepo implements ToDoRepository {
       case SortMethod.name:
         if (sorter.descending) {
           return _isarClient.todos
-              .filter()
+              .where()
               .completedEqualTo(false)
+              .filter()
               .toDeleteEqualTo(false)
               .sortByNameDesc()
               .findAll();
         }
         return _isarClient.todos
-            .filter()
+            .where()
             .completedEqualTo(false)
+            .filter()
             .toDeleteEqualTo(false)
             .sortByName()
             .findAll();
       case SortMethod.dueDate:
         if (sorter.descending) {
           return _isarClient.todos
-              .filter()
+              .where()
               .completedEqualTo(false)
+              .filter()
               .toDeleteEqualTo(false)
               .sortByDueDateDesc()
               .findAll();
         }
         return _isarClient.todos
-            .filter()
+            .where()
             .completedEqualTo(false)
+            .filter()
             .toDeleteEqualTo(false)
             .sortByDueDate()
             .findAll();
       case SortMethod.weight:
         if (sorter.descending) {
           return _isarClient.todos
-              .filter()
+              .where()
               .completedEqualTo(false)
+              .filter()
               .toDeleteEqualTo(false)
               .sortByWeightDesc()
               .findAll();
         }
         return _isarClient.todos
-            .filter()
+            .where()
             .completedEqualTo(false)
+            .filter()
             .toDeleteEqualTo(false)
             .sortByWeightDesc()
             .findAll();
       case SortMethod.priority:
         if (sorter.descending) {
           return _isarClient.todos
-              .filter()
+              .where()
               .completedEqualTo(false)
+              .filter()
               .toDeleteEqualTo(false)
               .sortByPriorityDesc()
               .findAll();
         }
         return _isarClient.todos
-            .filter()
+            .where()
             .completedEqualTo(false)
+            .filter()
             .toDeleteEqualTo(false)
             .sortByPriority()
             .findAll();
       case SortMethod.duration:
         if (sorter.descending) {
           return _isarClient.todos
-              .filter()
+              .where()
               .completedEqualTo(false)
+              .filter()
               .toDeleteEqualTo(false)
               .sortByRealDurationDesc()
               .findAll();
         }
         return _isarClient.todos
-            .filter()
+            .where()
             .completedEqualTo(false)
+            .filter()
             .toDeleteEqualTo(false)
             .sortByRealDuration()
             .findAll();
@@ -327,32 +341,35 @@ class ToDoRepo implements ToDoRepository {
 
   @override
   Future<List<ToDo>> getCompleted() async => _isarClient.todos
-      .filter()
+      .where()
       .completedEqualTo(true)
+      .filter()
       .toDeleteEqualTo(false)
       .findAll();
 
   @override
   Future<List<ToDo>> getMyDay() async => _isarClient.todos
-      .filter()
+      .where()
       .myDayEqualTo(true)
-      .completedEqualTo(false)
+      .filter()
       .toDeleteEqualTo(false)
+      .completedEqualTo(false)
       .sortByCustomViewIndex()
       .findAll();
 
   @override
   Future<List<ToDo>> getRepoByGroupID({required int groupID}) async =>
       _isarClient.todos
-          .filter()
+          .where()
           .groupIDEqualTo(groupID)
-          .completedEqualTo(false)
+          .filter()
           .toDeleteEqualTo(false)
+          .completedEqualTo(false)
           .sortByGroupIndex()
           .findAll();
 
   Future<List<int>> getDeleteIds() async =>
-      _isarClient.todos.filter().toDeleteEqualTo(true).idProperty.findAll();
+      _isarClient.todos.where().toDeleteEqualTo(true).idProperty.findAll();
   Future<List<ToDo>> getUnsynced() async =>
-      _isarClient.todos.filter().isSyncedEqualTo(false).findAll();
+      _isarClient.todos.where().isSyncedEqualTo(false).findAll();
 }

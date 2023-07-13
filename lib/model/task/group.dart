@@ -9,10 +9,14 @@ part "group.g.dart";
 @collection
 class Group with EquatableMixin implements Copyable<Group> {
   Id id = Isar.autoIncrement;
+  @Index()
   int customViewIndex = -1;
+  @Index()
   String name;
   String description;
+  @Index()
   bool isSynced = false;
+  @Index()
   bool toDelete = false;
   late List<ToDo> toDos;
 

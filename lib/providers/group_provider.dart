@@ -48,7 +48,7 @@ class GroupProvider extends ChangeNotifier {
       failCache.add(curGroup);
     } on FailureToUploadException catch (e) {
       log(e.cause);
-      updateGroup();
+      failCache.add(curGroup);
       return;
     }
 
@@ -73,17 +73,17 @@ class GroupProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> _updateBatch({required List<Group> groups}) async {
-    try {
-      _groupService.updateBatch(groups: groups);
-    } on FailureToUploadException catch (e) {
-      log(e.cause);
-      failCache.addAll(groups);
-    } on FailureToUpdateException catch (e) {
-      log(e.cause);
-      failCache.addAll(groups);
-    }
-  }
+  // Future<void> _updateBatch({required List<Group> groups}) async {
+  //   try {
+  //     _groupService.updateBatch(groups: groups);
+  //   } on FailureToUploadException catch (e) {
+  //     log(e.cause);
+  //     failCache.addAll(groups);
+  //   } on FailureToUpdateException catch (e) {
+  //     log(e.cause);
+  //     failCache.addAll(groups);
+  //   }
+  // }
 
   Future<void> _reattemptUpdate() async {
     try {
@@ -119,8 +119,7 @@ class GroupProvider extends ChangeNotifier {
       failCache.addAll(groups);
     } on FailureToUploadException catch (e) {
       log(e.cause);
-      // Re-store into local database, on total failure, cache.
-      _updateBatch(groups: groups);
+      failCache.addAll(groups);
     }
     notifyListeners();
   }

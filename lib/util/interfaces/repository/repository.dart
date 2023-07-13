@@ -12,4 +12,5 @@ abstract interface class Repository<T> {
   // This would be how to sort. Fiiigure this out at some point.
   Future<List<T>> getRepoList();
   Future<List<T>> getRepoListBy({required SortableView<T> sorter});
+  Future<T> getById({required int id});
 }

@@ -16,16 +16,21 @@ part "deadline.g.dart";
 @collection
 class Deadline with EquatableMixin implements Copyable<Deadline> {
   Id id = Isar.autoIncrement;
+  @Index()
   int customViewIndex = -1;
+  @Index()
   String name;
   String description;
   DateTime startDate;
+  @Index()
   DateTime dueDate;
   DateTime warnDate;
   bool warnMe;
   @Enumerated(EnumType.ordinal)
   Priority priority;
+  @Index()
   bool isSynced = false;
+  @Index()
   bool toDelete = false;
 
   Deadline(

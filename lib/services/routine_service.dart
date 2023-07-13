@@ -19,16 +19,18 @@ class RoutineService {
 
   set repository(RoutineRepository repo) => _repository = repo;
 
-  int recalculateWeight({List<SubTask>? routineTasks}) {
-    if (null == routineTasks || routineTasks.isEmpty) {
-      return 0;
-    }
-    return routineTasks.fold(0, (p, c) => p + c.weight);
+  void recalculateWeight({required Routine routine}) {
+    routine.weight = routine.routineTasks.fold(0, (p, c) => p + c.weight);
   }
 
-  int getRealDuration({required int seconds, required int weight}) =>
-      (smoothstep(x: weight, v0: Routine.lowerBound, v1: Routine.upperBound) *
-          seconds) as int;
+  void setRealDuration({required Routine routine}) =>
+      routine.realDuration = (remap(
+              x: routine.weight,
+              inMin: 0,
+              inMax: Routine.maxRoutineWeight,
+              outMin: Routine.lowerBound,
+              outMax: Routine.upperBound) as int) *
+          routine.expectedDuration;
 
   Future<void> createRoutine({required Routine routine}) async =>
       _repository.create(routine);
@@ -41,11 +43,11 @@ class RoutineService {
           required SortableView<Routine> routineSorter}) async =>
       _repository.getRepoListBy(sorter: routineSorter);
 
-  Future<void> updateRoutine({required Routine routine}) async {
-    routine.realDuration = getRealDuration(
-        seconds: routine.expectedDuration, weight: routine.weight);
-    return _repository.update(routine);
-  }
+  Future<Routine> getRoutineById({required int id}) async =>
+      _repository.getById(id: id);
+
+  Future<void> updateRoutine({required Routine routine}) async =>
+      _repository.update(routine);
 
   Future<void> updateBatch({required List<Routine> routines}) async =>
       _repository.updateBatch(routines);
@@ -58,6 +60,7 @@ class RoutineService {
   // TODO: Figure out how to call this on a timer.
   Future<void> syncRepo() async => _repository.syncRepo();
 
+  // TODO: Refactor this -> Subtask editing should just handle subtask add/subtract.
   Future<void> addRoutineTask(
       {required SubTask subTask, required Routine routine}) async {
     if (routine.routineTasks.length >= Routine.maxTasksPerRoutine) {
@@ -65,23 +68,20 @@ class RoutineService {
     }
 
     routine.routineTasks.add(subTask);
-    routine.weight += routine.weight;
-    updateRoutine(routine: routine);
+    routine.weight += subTask.weight;
   }
 
   Future<void> updateRoutineTask(
-      {required int oldWeight,
-      required index,
-      required SubTask routineTask,
+      {required SubTask oldTask,
+      required SubTask newTask,
       required Routine routine}) async {
-    routine.routineTasks[index] = routineTask;
-    routine.weight += (-oldWeight) + routineTask.weight;
+    int index = routine.routineTasks.indexOf(oldTask);
+    routine.weight += (-oldTask.weight) + newTask.weight;
+    routine.routineTasks[index] = newTask;
 
-    if (routine.weight < 0) {
-      routine.weight = 0;
+    if (routine.weight < 0 && routine.routineTasks.isNotEmpty) {
+      recalculateWeight(routine: routine);
     }
-
-    updateRoutine(routine: routine);
   }
 
   Future<void> deleteRoutineTask(
@@ -90,7 +90,6 @@ class RoutineService {
     if (removed) {
       routine.weight -= routineTask.weight;
     }
-    updateRoutine(routine: routine);
   }
 
   Future<void> reorderRoutineTask(
@@ -118,5 +117,21 @@ class RoutineService {
       routines[i].customViewIndex = i;
     }
     _repository.updateBatch(routines);
+  }
+
+  Future<void> resetRoutine({required Routine routine}) async {
+    routine.routineTasks.map((rt) => rt.completed = false);
+    updateRoutine(routine: routine);
+  }
+
+  Future<void> resetRoutines({required List<Routine?> routines}) async {
+    List<Routine> toUpdate = List.empty(growable: true);
+    for (Routine? routine in routines) {
+      if (null != routine) {
+        routine.routineTasks.map((rt) => rt.completed = false);
+        toUpdate.add(routine);
+      }
+    }
+    updateBatch(routines: toUpdate);
   }
 }
