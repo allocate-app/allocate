@@ -7,7 +7,7 @@ import '../model/task/subtask.dart';
 import '../services/routine_service.dart';
 import '../util/enums.dart';
 import "../util/exceptions.dart";
-import '../util/interfaces/sorting/routine_sorter.dart';
+import '../util/sorting/routine_sorter.dart';
 
 /// NOTE: For UI stuff:
 /// In the form-input page class, declare local variables to hold each of the fields required.

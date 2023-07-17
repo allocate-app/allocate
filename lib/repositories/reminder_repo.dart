@@ -7,7 +7,7 @@ import '../services/supabase_service.dart';
 import '../util/enums.dart';
 import '../util/exceptions.dart';
 import '../util/interfaces/repository/reminder_repository.dart';
-import '../util/interfaces/sorting/sortable.dart';
+import '../util/interfaces/sortable.dart';
 
 class ReminderRepo implements ReminderRepository {
   ReminderRepo();
@@ -238,9 +238,10 @@ class ReminderRepo implements ReminderRepository {
     });
   }
 
-  // Custom view position, reorderable list.
-  // CHECK THIS and put in proper query logic pls.
-  // POSSIBLY PUT A HARD LIMIT?
+  @override
+  Future<Reminder> getByID({required int id}) =>
+      _isarClient.reminders.where().idEqualTo(id).findAll();
+
   @override
   Future<List<Reminder>> getRepoList() => _isarClient.reminders
       .where()

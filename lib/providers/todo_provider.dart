@@ -7,7 +7,7 @@ import '../model/task/todo.dart';
 import '../services/todo_service.dart';
 import '../util/enums.dart';
 import '../util/exceptions.dart';
-import '../util/interfaces/sorting/todo_sorter.dart';
+import '../util/sorting/todo_sorter.dart';
 
 class ToDoProvider extends ChangeNotifier {
   ToDoProvider();
@@ -160,6 +160,16 @@ class ToDoProvider extends ChangeNotifier {
       toDelete: toDelete,
       subTasks: subTasks,
     );
+
+    if (null != expectedDuration &&
+        expectedDuration.inSeconds != curToDo.expectedDuration) {
+      _todoService.setRealDuration(toDo: toDo);
+    }
+
+    if (toDo.weight == 0 && toDo.subTasks.isNotEmpty) {
+      _todoService.recalculateWeight(toDo: toDo);
+    }
+
     toDo.id = curToDo.id;
     curToDo = toDo;
     try {

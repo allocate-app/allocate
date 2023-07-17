@@ -1,7 +1,7 @@
 import '../model/task/deadline.dart';
 import '../repositories/deadline_repo.dart';
 import '../util/interfaces/repository/deadline_repository.dart';
-import '../util/interfaces/sorting/sortable.dart';
+import '../util/interfaces/sortable.dart';
 
 class DeadlineService {
   // This is just default. Switch as needed.
@@ -16,6 +16,10 @@ class DeadlineService {
   Future<List<Deadline>> getDeadlinesBy(
           {required SortableView<Deadline> sorter}) async =>
       _repository.getRepoListBy(sorter: sorter);
+
+  Future<Deadline> getDeadlineByID({required int id}) =>
+      _repository.getByID(id: id);
+
   Future<List<Deadline>> getOverdues() async => _repository.getOverdues();
 
   Future<void> updateDeadline({required Deadline deadline}) async =>
@@ -25,7 +29,7 @@ class DeadlineService {
 
   Future<void> deleteDeadline({required Deadline deadline}) async =>
       _repository.delete(deadline);
-  // TODO: Not sure abt showLoading.
+
   Future<void> retry({required List<Deadline> deadlines}) async =>
       _repository.retry(deadlines);
   // TODO: Figure out how to call this on a timer.

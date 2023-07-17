@@ -1,29 +1,153 @@
+import 'dart:convert';
+
+import 'package:equatable/equatable.dart';
 import 'package:isar/isar.dart';
+
+import '../../util/enums.dart';
+import '../../util/interfaces/copyable.dart';
+import '../../util/sorting/deadline_sorter.dart';
+import '../../util/sorting/group_sorter.dart';
+import '../../util/sorting/reminder_sorter.dart';
+import '../../util/sorting/routine_sorter.dart';
+import '../../util/sorting/todo_sorter.dart';
+
+part "user.g.dart";
+
 @collection
-class User
-{
+class User with EquatableMixin implements Copyable<User> {
+  // Test these.
+  static const minBandwidth = 0;
+  static const maxBandwidth = 200;
+
   Id localID = Isar.autoIncrement;
-  int? id;
-  // These could probably go. Keeping for now.
-  String? firstName;
-  String? lastName;
-  // Kinda cheesy, but this is for me.
-  DateTime? birthday;
+
+  // Online stuff
+  bool syncOnline;
   String? userName;
-  // PWD in main.
-  int? userID;
-  int bandwidth = 100;
-  int dayBandwidth;
+  bool isSynced;
 
-  bool inMeltdown;
+  int bandwidth;
 
-  // Routine times
+  // User Theme.
+  @Enumerated(EnumType.ordinal)
+  Theme curTheme;
 
-  // NumSubtasksPerRoutine
+  // Routines
+  int? curMornID;
+  int? curAftID;
+  int? curEveID;
 
-  // NumSubTasksPerLT.
+  // Sorting preferences
+  GroupSorter? groupSorter;
+  DeadlineSorter? deadlineSorter;
+  ReminderSorter? reminderSorter;
+  RoutineSorter? routineSorter;
+  ToDoSorter? toDoSorter;
 
-  User({this.id, this.firstName, this.lastName, this.userName, this.userID, this.birthday, this.inMeltdown = false, this.bandwidth = 100, this.dayBandwidth=100});
+  User({
+    this.userName,
+    required this.syncOnline,
+    this.isSynced = false,
+    this.bandwidth = 100,
+    this.curTheme = Theme.dark,
+    this.curMornID,
+    this.curAftID,
+    this.curEveID,
+    this.groupSorter,
+    this.deadlineSorter,
+    this.reminderSorter,
+    this.routineSorter,
+    this.toDoSorter,
+  });
 
-  // TODO: Hashmap for routines > Changed idea, written down, handled by todo.
+  User.fromEntity({required Map<String, dynamic> entity})
+      : userName = entity["userName"] as String?,
+        syncOnline = true,
+        isSynced = entity["isSynced"],
+        bandwidth = entity["bandwidth"] as int,
+        curTheme = Theme.values[entity["curTheme"]],
+        curMornID = entity["curMornID"] as int?,
+        curAftID = entity["curAftID"] as int?,
+        curEveID = entity["curEveID"] as int?,
+        groupSorter = (null != jsonDecode(entity["groupSorter"]))
+            ? GroupSorter.fromEntity(entity: entity["groupSorter"])
+            : null,
+        deadlineSorter = (null != jsonDecode(entity["deadlineSorter"]))
+            ? DeadlineSorter.fromEntity(entity: entity["deadlineSorter"])
+            : null,
+        reminderSorter = (null != jsonDecode(entity["reminderSorter"]))
+            ? ReminderSorter.fromEntity(entity: entity["reminderSorter"])
+            : null,
+        routineSorter = (null != jsonDecode(entity["routineSorter"]))
+            ? RoutineSorter.fromEntity(entity: entity["routineSorter"])
+            : null,
+        toDoSorter = (null != jsonDecode(entity["toDoSorter "]))
+            ? ToDoSorter.fromEntity(entity: entity["toDoSorter"])
+            : null;
+
+  Map<String, dynamic> toEntity() => {
+        "userName": userName,
+        "isSynced": isSynced,
+        "bandwidth": bandwidth,
+        "curTheme": curTheme.index,
+        "curMornID": curMornID,
+        "curAftID": curAftID,
+        "curEveID": curEveID,
+        "groupSorter": (null != groupSorter) ? groupSorter!.toEntity() : null,
+        "reminderSorter":
+            (null != reminderSorter) ? reminderSorter!.toEntity() : null,
+        "routineSorter":
+            (null != routineSorter) ? routineSorter!.toEntity() : null,
+        "toDoSorter": (null != toDoSorter) ? toDoSorter!.toEntity() : null,
+      };
+
+  @override
+  User copy() => User(
+      userName: userName,
+      syncOnline: syncOnline,
+      bandwidth: bandwidth,
+      curTheme: curTheme,
+      curMornID: curMornID,
+      curAftID: curAftID,
+      curEveID: curEveID,
+      groupSorter: groupSorter,
+      deadlineSorter: deadlineSorter,
+      reminderSorter: reminderSorter,
+      routineSorter: routineSorter,
+      toDoSorter: toDoSorter,
+      isSynced: isSynced);
+
+  @override
+  User copyWith(
+          {String? userName,
+          bool? syncOnline,
+          int? bandwidth,
+          Theme? curTheme,
+          int? curMornID,
+          int? curAftID,
+          int? curEveID,
+          GroupSorter? groupSorter,
+          DeadlineSorter? deadlineSorter,
+          ReminderSorter? reminderSorter,
+          RoutineSorter? routineSorter,
+          ToDoSorter? toDoSorter,
+          bool? isSynced}) =>
+      User(
+          userName: userName ?? this.userName,
+          syncOnline: syncOnline ?? this.syncOnline,
+          bandwidth: bandwidth ?? this.bandwidth,
+          curTheme: curTheme ?? this.curTheme,
+          curMornID: curMornID ?? this.curMornID,
+          curAftID: curAftID ?? this.curAftID,
+          curEveID: curEveID ?? this.curEveID,
+          groupSorter: groupSorter ?? this.groupSorter,
+          deadlineSorter: deadlineSorter ?? this.deadlineSorter,
+          reminderSorter: reminderSorter ?? this.reminderSorter,
+          routineSorter: routineSorter ?? this.routineSorter,
+          toDoSorter: toDoSorter ?? this.toDoSorter,
+          isSynced: isSynced ?? this.isSynced);
+
+  @override
+  List<Object?> get props =>
+      [localID, syncOnline, userName, bandwidth, curMornID, curAftID, curEveID];
 }

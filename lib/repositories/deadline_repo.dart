@@ -7,7 +7,7 @@ import '../services/supabase_service.dart';
 import '../util/enums.dart';
 import '../util/exceptions.dart';
 import '../util/interfaces/repository/deadline_repository.dart';
-import '../util/interfaces/sorting/sortable.dart';
+import '../util/interfaces/sortable.dart';
 
 class DeadlineRepo implements DeadlineRepository {
   DeadlineRepo();
@@ -235,6 +235,10 @@ class DeadlineRepo implements DeadlineRepository {
     });
   }
 
+  @override
+  Future<Deadline> getByID({required int id}) async =>
+      await _isarClient.deadlines.where().idEqualTo(id).findAll();
+
   // Custom view position, reorderable list.
   // CHECK THIS and put in proper query logic pls.
   // POSSIBLY PUT A HARD LIMIT?
@@ -305,6 +309,7 @@ class DeadlineRepo implements DeadlineRepository {
 
   Future<List<int>> getDeleteIds() async =>
       _isarClient.deadlines.filter().toDeleteEqualTo(true).idProperty.findAll();
+
   Future<List<Deadline>> getUnsynced() async =>
       _isarClient.deadlines.filter().isSyncedEqualTo(false).findAll();
 

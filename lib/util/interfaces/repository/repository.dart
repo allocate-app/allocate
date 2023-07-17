@@ -1,4 +1,4 @@
-import 'package:allocate/util/interfaces/sorting/sortable.dart';
+import "../sortable.dart";
 
 abstract interface class Repository<T> {
   Future<void> create(T t);
@@ -12,5 +12,5 @@ abstract interface class Repository<T> {
   // This would be how to sort. Fiiigure this out at some point.
   Future<List<T>> getRepoList();
   Future<List<T>> getRepoListBy({required SortableView<T> sorter});
-  Future<T> getById({required int id});
+  Future<T> getByID({required int id});
 }

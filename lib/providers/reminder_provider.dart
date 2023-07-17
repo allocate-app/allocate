@@ -6,7 +6,7 @@ import '../model/task/reminder.dart';
 import '../services/reminder_service.dart';
 import '../util/enums.dart';
 import '../util/exceptions.dart';
-import '../util/interfaces/sorting/reminder_sorter.dart';
+import '../util/sorting/reminder_sorter.dart';
 
 class ReminderProvider extends ChangeNotifier {
   ReminderProvider();

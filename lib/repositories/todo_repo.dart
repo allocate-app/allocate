@@ -4,14 +4,13 @@ import 'package:isar/isar.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 //TODO: Check this and determine how best to handle internet connection.
-import '../main.dart';
 import '../model/task/todo.dart';
 import '../services/isar_service.dart';
 import '../services/supabase_service.dart';
 import '../util/enums.dart';
 import '../util/exceptions.dart';
 import '../util/interfaces/repository/todo_repository.dart';
-import '../util/interfaces/sorting/sortable.dart';
+import '../util/interfaces/sortable.dart';
 
 class ToDoRepo implements ToDoRepository {
   final SupabaseClient _supabaseClient = SupabaseService.supabaseClient;
@@ -232,7 +231,7 @@ class ToDoRepo implements ToDoRepository {
   }
 
   @override
-  Future<ToDo> getById({required int id}) async =>
+  Future<ToDo> getByID({required int id}) async =>
       _isarClient.todos.where().idEquals(id).findAll();
 
   /// These all require to be "completed = false."

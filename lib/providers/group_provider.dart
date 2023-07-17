@@ -7,7 +7,7 @@ import '../services/group_service.dart';
 import '../services/todo_service.dart';
 import '../util/enums.dart';
 import '../util/exceptions.dart';
-import '../util/interfaces/sorting/group_sorter.dart';
+import '../util/sorting/group_sorter.dart';
 
 class GroupProvider extends ChangeNotifier {
   GroupProvider();

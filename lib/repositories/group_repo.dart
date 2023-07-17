@@ -7,7 +7,7 @@ import '../services/supabase_service.dart';
 import '../util/enums.dart';
 import '../util/exceptions.dart';
 import '../util/interfaces/repository//group_repository.dart';
-import '../util/interfaces/sorting/sortable.dart';
+import '../util/interfaces/sortable.dart';
 
 class GroupRepo implements GroupRepository {
   GroupRepo();

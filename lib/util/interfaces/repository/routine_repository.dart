@@ -1,6 +1,6 @@
 import '../../../model/task/routine.dart';
 import '../../enums.dart';
-import '../sorting/sortable.dart';
+import '../sortable.dart';
 import 'repository.dart';
 
 // TODO: return here if the implementation requires different method.

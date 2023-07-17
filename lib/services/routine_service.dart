@@ -5,7 +5,7 @@ import '../model/task/subtask.dart';
 import '../repositories/routine_repo.dart';
 import '../util/enums.dart';
 import '../util/interfaces/repository/routine_repository.dart';
-import '../util/interfaces/sorting/sortable.dart';
+import '../util/interfaces/sortable.dart';
 import '../util/numbers.dart';
 
 class RoutineService {
@@ -44,7 +44,7 @@ class RoutineService {
       _repository.getRepoListBy(sorter: routineSorter);
 
   Future<Routine> getRoutineById({required int id}) async =>
-      _repository.getById(id: id);
+      _repository.getByID(id: id);
 
   Future<void> updateRoutine({required Routine routine}) async =>
       _repository.update(routine);

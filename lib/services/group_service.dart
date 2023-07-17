@@ -1,7 +1,7 @@
 import '../model/task/group.dart';
 import '../repositories/group_repo.dart';
 import '../util/interfaces/repository/group_repository.dart';
-import '../util/interfaces/sorting/sortable.dart';
+import '../util/interfaces/sortable.dart';
 
 class GroupService {
   //Default repo for now, switch as needed for testing.
@@ -16,6 +16,8 @@ class GroupService {
   Future<List<Group>> getGroupsBy(
           {required SortableView<Group> sorter}) async =>
       _repository.getRepoListBy(sorter: sorter);
+
+  Future<Group> getGroupByID({required int id}) => _repository.getByID(id: id);
 
   Future<void> updateGroup({required Group group}) async =>
       _repository.update(group);

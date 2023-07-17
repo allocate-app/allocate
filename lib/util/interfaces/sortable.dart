@@ -1,4 +1,4 @@
-import '../../enums.dart';
+import '../enums.dart';
 
 abstract interface class SortableView<T> {
   static final List<SortMethod> sortMethods = List.empty(growable: false);

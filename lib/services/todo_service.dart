@@ -3,7 +3,7 @@ import '../model/task/todo.dart';
 import '../repositories/todo_repo.dart';
 import '../util/exceptions.dart';
 import '../util/interfaces/repository/todo_repository.dart';
-import '../util/interfaces/sorting/sortable.dart';
+import '../util/interfaces/sortable.dart';
 import '../util/numbers.dart';
 
 class ToDoService {
@@ -36,16 +36,16 @@ class ToDoService {
           {required SortableView<ToDo> todoSorter}) async =>
       _repository.getRepoListBy(sorter: todoSorter);
 
+  Future<ToDo> getToDoByID({required int id}) async =>
+      _repository.getByID(id: id);
+
   Future<List<ToDo>> getMyDay() async => _repository.getMyDay();
   Future<List<ToDo>> getByGroup({required int groupID}) async =>
       _repository.getRepoByGroupID(groupID: groupID);
   Future<List<ToDo>> getCompleted() async => _repository.getCompleted();
 
-  Future<void> updateToDo({required ToDo toDo}) async {
-    toDo.realDuration =
-        getRealDuration(seconds: toDo.expectedDuration, weight: toDo.weight);
-    return _repository.update(toDo);
-  }
+  Future<void> updateToDo({required ToDo toDo}) async =>
+      _repository.update(toDo);
 
   Future<void> updateBatch({required List<ToDo> toDos}) async =>
       _repository.updateBatch(toDos);

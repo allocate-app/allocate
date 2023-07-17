@@ -6,7 +6,7 @@ import '../model/task/deadline.dart';
 import '../services/deadline_service.dart';
 import '../util/enums.dart';
 import '../util/exceptions.dart';
-import '../util/interfaces/sorting/deadline_sorter.dart';
+import '../util/sorting/deadline_sorter.dart';
 
 class DeadlineProvider extends ChangeNotifier {
   DeadlineProvider();

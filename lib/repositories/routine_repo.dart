@@ -11,7 +11,7 @@ import '../services/supabase_service.dart';
 import '../util/enums.dart';
 import '../util/exceptions.dart';
 import '../util/interfaces/repository/routine_repository.dart';
-import '../util/interfaces/sorting/sortable.dart';
+import '../util/interfaces/sortable.dart';
 
 class RoutineRepo implements RoutineRepository {
   // DB Clients.
@@ -254,7 +254,7 @@ class RoutineRepo implements RoutineRepository {
   }
 
   @override
-  Future<Routine> getById({required int id}) async =>
+  Future<Routine> getByID({required int id}) async =>
       _isarClient.routines.where().idEqualTo(id).findAll();
 
   @override

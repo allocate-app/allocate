@@ -1,7 +1,7 @@
 import '../model/task/reminder.dart';
 import '../repositories/reminder_repo.dart';
 import '../util/interfaces/repository/reminder_repository.dart';
-import '../util/interfaces/sorting/sortable.dart';
+import '../util/interfaces/sortable.dart';
 
 class ReminderService {
   //Default repo for now, switch as needed for testing.
@@ -16,6 +16,8 @@ class ReminderService {
   Future<List<Reminder>> getRemindersBy(
           {required SortableView<Reminder> sorter}) async =>
       _repository.getRepoListBy(sorter: sorter);
+
+  Future<Reminder> getReminderByID({required int id}) async => _repository.getByID(id: id);
 
   Future<void> updateReminder({required Reminder reminder}) async =>
       _repository.update(reminder);
