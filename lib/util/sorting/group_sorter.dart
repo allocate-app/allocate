@@ -12,6 +12,7 @@ class GroupSorter implements SortableView<Group> {
   bool descending;
 
   @override
+  @Enumerated(EnumType.ordinal)
   SortMethod sortMethod;
 
   GroupSorter({this.descending = false, this.sortMethod = SortMethod.none});

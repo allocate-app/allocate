@@ -12,6 +12,7 @@ class ReminderSorter implements SortableView<Reminder> {
   bool descending = false;
 
   @override
+  @Enumerated(EnumType.ordinal)
   SortMethod sortMethod = SortMethod.none;
 
   ReminderSorter({this.descending = false, this.sortMethod = SortMethod.none});

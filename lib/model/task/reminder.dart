@@ -8,7 +8,7 @@ part "reminder.g.dart";
 /// This is a simple reminder object for things that aren't a "task"
 /// so much as they are a thing to remember.
 /// TODO: remove comparable. Database will handle sorting.
-@collection
+@Collection(inheritance: false)
 class Reminder with EquatableMixin implements Copyable<Reminder> {
   Id id = Isar.autoIncrement;
   @Index()
@@ -43,6 +43,7 @@ class Reminder with EquatableMixin implements Copyable<Reminder> {
         "dueDate": dueDate.toIso8601String()
       };
 
+  @ignore
   @override
   List<Object> get props =>
       [name, dueDate, customViewIndex, isSynced, toDelete];

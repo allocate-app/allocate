@@ -6,7 +6,7 @@ import '../../util/interfaces/copyable.dart';
 
 part "group.g.dart";
 
-@collection
+@Collection(inheritance: false)
 class Group with EquatableMixin implements Copyable<Group> {
   Id id = Isar.autoIncrement;
   @Index()
@@ -18,6 +18,7 @@ class Group with EquatableMixin implements Copyable<Group> {
   bool isSynced = false;
   @Index()
   bool toDelete = false;
+  @ignore
   late List<ToDo> toDos;
 
   Group({required this.name, this.description = ""});
@@ -37,8 +38,8 @@ class Group with EquatableMixin implements Copyable<Group> {
   Group copyWith({String? name, String? description}) => Group(
       name: name ?? this.name, description: description ?? this.description);
 
+  @ignore
   @override
-  // TODO: implement props
   List<Object?> get props =>
       [id, customViewIndex, name, description, isSynced, toDelete];
 }

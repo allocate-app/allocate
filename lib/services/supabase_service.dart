@@ -8,10 +8,10 @@ class SupabaseService {
 
   static SupabaseClient get supabaseClient => _supabaseClient;
 
-  init() async {
+  init(String supabaseUrl, String anonKey) async {
     await Supabase.initialize(
-      url: "fakeurl",
-      anonKey: "public-anonkey",
+      url: supabaseUrl,
+      anonKey: anonKey,
     );
     _supabaseClient = Supabase.instance.client;
   }

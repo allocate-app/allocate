@@ -10,7 +10,7 @@ part "routine.g.dart";
 
 // TODO: implement a subtask sorting object and serialization.
 
-@collection
+@Collection(inheritance: false)
 class Routine implements Copyable<Routine> {
   static const int maxTasksPerRoutine = 10;
   static const int lowerBound = 1;

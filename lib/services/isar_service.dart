@@ -1,7 +1,20 @@
+import "dart:io";
+
 import "package:isar/isar.dart";
+import "package:path_provider/path_provider.dart";
+
+import "../model/task/deadline.dart";
+import "../model/task/group.dart";
+import "../model/task/reminder.dart";
+import "../model/task/routine.dart";
+import "../model/task/subtask.dart";
+import "../model/task/todo.dart";
+import "../model/user/user.dart";
 
 /// Singleton helper class for interfacing with Isar.
 /// Needs the schema to be generated.
+///
+/// TODO: add the directory
 
 class IsarService {
   static final IsarService _instance = IsarService._internal();
@@ -12,8 +25,12 @@ class IsarService {
 
   // This needs directory to be set
   // Add tables to this as necessary.
-  Future<void> init() async => _isarClient = await Isar.open(
-      [ToDoSchema, RoutineSchema, ReminderSchema, UserSchema, DeadLineSchema]);
+  Future<void> init() async {
+    final Directory dbStorageDir = await getApplicationSupportDirectory();
+    _isarClient = await Isar.open(
+        [ToDoSchema, RoutineSchema, ReminderSchema, UserSchema, DeadlineSchema],
+        directory: dbStorageDir.path);
+  }
 
   IsarService._internal();
 }

@@ -4,7 +4,7 @@ import '../../../model/task/routine.dart';
 import '../enums.dart';
 import '../interfaces/sortable.dart';
 
-part "routine_sorter.g.dart"
+part "routine_sorter.g.dart";
 
 @embedded
 class RoutineSorter implements SortableView<Routine> {
@@ -12,6 +12,7 @@ class RoutineSorter implements SortableView<Routine> {
   bool descending = false;
 
   @override
+  @Enumerated(EnumType.ordinal)
   SortMethod sortMethod = SortMethod.none;
   RoutineSorter({this.descending = false, this.sortMethod = SortMethod.none});
 

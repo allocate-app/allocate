@@ -13,7 +13,7 @@ import '../../util/sorting/todo_sorter.dart';
 
 part "user.g.dart";
 
-@collection
+@Collection(inheritance: false)
 class User with EquatableMixin implements Copyable<User> {
   // Test these.
   static const minBandwidth = 0;
@@ -23,7 +23,10 @@ class User with EquatableMixin implements Copyable<User> {
 
   // Online stuff
   bool syncOnline;
-  String? userName;
+
+  @Index(unique: true, replace: true)
+  String userName;
+
   bool isSynced;
 
   int bandwidth;
@@ -37,7 +40,7 @@ class User with EquatableMixin implements Copyable<User> {
   int? curAftID;
   int? curEveID;
 
-  // Sorting preferences
+  // Sorting preferences -> TODO: refactor to default arg prefs.
   GroupSorter? groupSorter;
   DeadlineSorter? deadlineSorter;
   ReminderSorter? reminderSorter;
@@ -45,7 +48,7 @@ class User with EquatableMixin implements Copyable<User> {
   ToDoSorter? toDoSorter;
 
   User({
-    this.userName,
+    required this.userName,
     required this.syncOnline,
     this.isSynced = false,
     this.bandwidth = 100,
@@ -61,7 +64,7 @@ class User with EquatableMixin implements Copyable<User> {
   });
 
   User.fromEntity({required Map<String, dynamic> entity})
-      : userName = entity["userName"] as String?,
+      : userName = entity["userName"] as String,
         syncOnline = true,
         isSynced = entity["isSynced"],
         bandwidth = entity["bandwidth"] as int,
@@ -147,6 +150,7 @@ class User with EquatableMixin implements Copyable<User> {
           toDoSorter: toDoSorter ?? this.toDoSorter,
           isSynced: isSynced ?? this.isSynced);
 
+  @ignore
   @override
   List<Object?> get props =>
       [localID, syncOnline, userName, bandwidth, curMornID, curAftID, curEveID];

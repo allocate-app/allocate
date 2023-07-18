@@ -1,17 +1,35 @@
 import "dart:async";
 import "dart:developer";
 
+import "package:allocate/providers/todo_provider.dart";
+import "package:allocate/providers/user_provider.dart";
 import "package:allocate/services/isar_service.dart";
 import "package:allocate/services/supabase_service.dart";
-import 'package:flutter/material.dart';
 import "package:connectivity_plus/connectivity_plus.dart";
+import 'package:flutter/material.dart';
 import "package:internet_connection_checker/internet_connection_checker.dart";
+import "package:provider/provider.dart";
 
 ValueNotifier<bool> isDeviceConnected = ValueNotifier(false);
-
+// TODO: Add proxy providers for the entire model. Refactor according to todoprovider
+// TODO: remove internet_connection_checker.
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(const App());
+  runApp(
+    MultiProvider(providers: [
+      ChangeNotifierProvider<UserProvider>(create: (_) => UserProvider()),
+      ChangeNotifierProxyProvider<UserProvider, ToDoProvider>(
+          create: (BuildContext context) => ToDoProvider(
+              sorter: Provider.of<UserProvider>(context, listen: false)
+                  .curUser
+                  .toDoSorter,
+              service: null),
+          update: (BuildContext context, UserProvider up, ToDoProvider? tp) {
+            tp?.setSorter(newSorter: up.curUser.toDoSorter);
+            return tp ?? ToDoProvider(sorter: up.curUser.toDoSorter);
+          }),
+    ], child: const App()),
+  );
 }
 
 class App extends StatefulWidget {
@@ -19,15 +37,12 @@ class App extends StatefulWidget {
 
   @override
   _AppState createState() => _AppState();
-
 }
 
-class _AppState extends State<App>
-{
+class _AppState extends State<App> {
   late StreamSubscription<ConnectivityResult> subscription;
   @override
-  void initState()
-  {
+  void initState() {
     IsarService.instance.init();
     SupabaseService.instance.init();
     super.initState();
@@ -46,7 +61,7 @@ class _AppState extends State<App>
   }
 }
 
-  // This widget is the root of your application.
+// This widget is the root of your application.
 @override
 Widget build(BuildContext context) {
   return MaterialApp(
@@ -73,6 +88,7 @@ Widget build(BuildContext context) {
     home: const MyHomePage(title: 'Flutter Demo Home Page'),
   );
 }
+
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key, required this.title});
 

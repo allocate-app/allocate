@@ -12,6 +12,7 @@ class DeadlineSorter implements SortableView<Deadline> {
   bool descending = false;
 
   @override
+  @Enumerated(EnumType.ordinal)
   SortMethod sortMethod = SortMethod.none;
   DeadlineSorter({this.descending = false, this.sortMethod = SortMethod.none});
 

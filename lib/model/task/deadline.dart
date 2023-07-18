@@ -13,7 +13,7 @@ import '../../util/interfaces/copyable.dart';
 
 part "deadline.g.dart";
 
-@collection
+@Collection(inheritance: false)
 class Deadline with EquatableMixin implements Copyable<Deadline> {
   Id id = Isar.autoIncrement;
   @Index()
@@ -36,14 +36,11 @@ class Deadline with EquatableMixin implements Copyable<Deadline> {
   Deadline(
       {required this.name,
       this.description = "",
-      DateTime? startDate,
-      DateTime? dueDate,
-      DateTime? warnDate,
+      required this.startDate,
+      required this.dueDate,
+      required this.warnDate,
       this.warnMe = false,
-      this.priority = Priority.low})
-      : startDate = startDate ?? DateTime.now(),
-        dueDate = dueDate ?? DateTime.now(),
-        warnDate = warnDate ?? DateTime.now().subtract(const Duration(days: 1));
+      this.priority = Priority.low});
 
   Deadline.fromEntity({required Map<String, dynamic> entity})
       : id = entity["id"] as Id,
@@ -70,20 +67,6 @@ class Deadline with EquatableMixin implements Copyable<Deadline> {
         "priority": priority.index
       };
 
-  /// TODO: Add functionality to send a push notification to the user when approaching the deadline
-  /// Maybe do an alert object. Or use firebase. Look this stuff up.
-  /// MOVE TO A SERVICE.
-  void setNotification() {
-    // Get the cron package/localnotifications.
-  }
-  void cancelNotification() {
-    // ibid.
-  }
-
-  @override
-  List<Object?> get props => [startDate, dueDate, warnDate, warnMe];
-
-  //TODO: may have to put custom view position.
   @override
   Deadline copy() => Deadline(
         name: name,
@@ -113,4 +96,8 @@ class Deadline with EquatableMixin implements Copyable<Deadline> {
           warnDate: warnDate ?? this.warnDate,
           warnMe: warnMe ?? this.warnMe,
           priority: priority ?? this.priority);
+
+  @ignore
+  @override
+  List<Object?> get props => [startDate, dueDate, warnDate, warnMe];
 }

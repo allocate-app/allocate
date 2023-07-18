@@ -237,7 +237,7 @@ class DeadlineRepo implements DeadlineRepository {
 
   @override
   Future<Deadline> getByID({required int id}) async =>
-      await _isarClient.deadlines.where().idEqualTo(id).findAll();
+      await _isarClient.deadlines.where().idEqualTo(id).findFirst();
 
   // Custom view position, reorderable list.
   // CHECK THIS and put in proper query logic pls.
@@ -307,8 +307,11 @@ class DeadlineRepo implements DeadlineRepository {
     }
   }
 
-  Future<List<int>> getDeleteIds() async =>
-      _isarClient.deadlines.filter().toDeleteEqualTo(true).idProperty.findAll();
+  Future<List<int>> getDeleteIds() async => _isarClient.deadlines
+      .filter()
+      .toDeleteEqualTo(true)
+      .idProperty()
+      .findAll();
 
   Future<List<Deadline>> getUnsynced() async =>
       _isarClient.deadlines.filter().isSyncedEqualTo(false).findAll();
@@ -316,7 +319,7 @@ class DeadlineRepo implements DeadlineRepository {
   @override
   Future<List<Deadline>> getOverdues() async => _isarClient.deadlines
       .filter()
-      .dueDateLessThan(const DateTime.now())
+      .dueDateLessThan(DateTime.now())
       .sortByDueDateDesc()
       .findAll();
 }

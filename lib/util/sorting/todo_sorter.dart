@@ -12,7 +12,9 @@ class ToDoSorter implements SortableView<ToDo> {
   bool descending = false;
 
   @override
+  @Enumerated(EnumType.ordinal)
   SortMethod sortMethod = SortMethod.none;
+
   ToDoSorter({this.descending = false, this.sortMethod = SortMethod.none});
 
   ToDoSorter.fromEntity({required Map<String, dynamic> entity})
@@ -23,5 +25,5 @@ class ToDoSorter implements SortableView<ToDo> {
       {"descending": descending, "sortMethod": sortMethod.index};
 
   @override
-  List<SortMethod> sortMethods = List.from(SortMethod.values);
+  static final List<SortMethod> sortMethods = List.from(SortMethod.values);
 }

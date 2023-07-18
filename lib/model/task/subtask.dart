@@ -5,14 +5,14 @@ import '../../util/interfaces/copyable.dart';
 
 part "subtask.g.dart";
 
-@embedded
+@Embedded(inheritance: false)
 class SubTask
     with EquatableMixin
     implements Copyable<SubTask>, Comparable<SubTask> {
   String name;
   bool completed = false;
   int weight;
-  SubTask({required this.name, this.weight = 0});
+  SubTask({this.name = "", this.weight = 0});
 
   SubTask.fromEntity({required Map<String, dynamic> entity})
       : name = entity["name"] as String,
@@ -35,6 +35,7 @@ class SubTask
   SubTask copyWith({String? name, int? weight}) =>
       SubTask(name: name ?? this.name, weight: weight ?? this.weight);
 
+  @ignore
   @override
   List<Object?> get props => [name, completed, weight];
 }

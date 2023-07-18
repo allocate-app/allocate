@@ -18,7 +18,7 @@ class ToDoRepo implements ToDoRepository {
 
   @override
   Future<void> create(ToDo todo) async {
-    todo.isSynced = isDeviceConnected.value;
+    todo.isSynced = (null != _supabaseClient.auth.currentSession);
 
     late int? id;
     await _isarClient.writeTxn(() async {
@@ -32,7 +32,7 @@ class ToDoRepo implements ToDoRepository {
 
     todo.id = id!;
 
-    if (isDeviceConnected.value) {
+    if (null != _supabaseClient.auth.currentSession) {
       Map<String, dynamic> todoEntity = todo.toEntity();
       final List<Map<String, dynamic>> response =
           await _supabaseClient.from("todos").insert(todoEntity).select("id");
@@ -47,7 +47,7 @@ class ToDoRepo implements ToDoRepository {
 
   @override
   Future<void> update(ToDo todo) async {
-    todo.isSynced = isDeviceConnected.value;
+    todo.isSynced = (null != _supabaseClient.auth.currentSession);
 
     // This is just for error checking.
     late int? id;
@@ -59,10 +59,10 @@ class ToDoRepo implements ToDoRepository {
       throw FailureToUpdateException("Failed to update todo locally");
     }
 
-    if (isDeviceConnected.value) {
+    if (null != _supabaseClient.auth.currentSession) {
       Map<String, dynamic> todoEntity = todo.toEntity();
       final List<Map<String, dynamic>> response =
-          await _supabaseClient.from("todos").update(todoEntity).select("id");
+          await _supabaseClient.from("todos").upsert(todoEntity).select("id");
 
       id = response.last["id"];
       if (null == id) {
@@ -79,7 +79,7 @@ class ToDoRepo implements ToDoRepository {
     await _isarClient.writeTxn(() async {
       ids = List<int?>.empty(growable: true);
       for (ToDo todo in todos) {
-        todo.isSynced = isDeviceConnected.value;
+        todo.isSynced = (null != _supabaseClient.auth.currentSession);
         id = await _isarClient.todos.put(todo);
         ids.add(id);
       }
@@ -88,66 +88,7 @@ class ToDoRepo implements ToDoRepository {
       throw FailureToUpdateException("Failed to update todos locally");
     }
 
-    if (isDeviceConnected.value) {
-      ids.clear();
-      List<Map<String, dynamic>> todoEntities =
-          todos.map((todo) => todo.toEntity()).toList();
-      for (Map<String, dynamic> todoEntity in todoEntities) {
-        final List<Map<String, dynamic>> response =
-            await _supabaseClient.from("todos").update(todoEntity).select("id");
-        id = response.last["id"] as int?;
-        ids.add(id);
-      }
-      if (ids.any((id) => null == id)) {
-        throw FailureToUploadException("Failed to sync todos on update");
-      }
-    }
-  }
-
-  @override
-  Future<void> delete(ToDo todo) async {
-    // TODO: NON-ONLINE IMPLEMENTATION, SYNC ISN'T CALLED.
-    // if (!user.syncOnline) {
-    //   late int? id;
-    //   await _isarClient.writeTxn(() async {
-    //     id = await _isarClient.todos.delete(todo.id);
-    //   });
-    //   if (null == id) {
-    //     throw FailureToDeleteException("Failed to delete todo locally");
-    //   }
-    //   return;
-    // }
-    if (!isDeviceConnected.value) {
-      todo.toDelete = true;
-      update(todo);
-      return;
-    }
-
-    try {
-      await _supabaseClient.from("todos").delete().eq("id", todo.id);
-    } catch (error) {
-      throw FailureToDeleteException("Failed to delete todo online");
-    }
-  }
-
-  @override
-  Future<void> retry(List<ToDo> todos) async {
-    late List<int?> ids;
-    late int? id;
-
-    await _isarClient.writeTxn(() async {
-      ids = List<int?>.empty(growable: true);
-      for (ToDo todo in todos) {
-        todo.isSynced = isDeviceConnected.value;
-        id = await _isarClient.todos.put(todo);
-        ids.add(id);
-      }
-    });
-    if (ids.any((id) => null == id)) {
-      throw FailureToUpdateException("Failed to update todos locally");
-    }
-
-    if (isDeviceConnected.value) {
+    if (null != _supabaseClient.auth.currentSession) {
       ids.clear();
       List<Map<String, dynamic>> todoEntities =
           todos.map((todo) => todo.toEntity()).toList();
@@ -163,7 +104,67 @@ class ToDoRepo implements ToDoRepository {
   }
 
   @override
-  Future<void> syncRepo({bool showLoading = true}) async {
+  Future<void> delete(ToDo todo) async {
+    if (null != _supabaseClient.auth.currentSession) {
+      todo.toDelete = true;
+      update(todo);
+      return;
+    }
+
+    try {
+      await _supabaseClient.from("todos").delete().eq("id", todo.id);
+      await _isarClient.writeTxn(() async {
+        await _isarClient.todos.delete(todo.id);
+      });
+    } catch (error) {
+      throw FailureToDeleteException("Failed to delete todo online");
+    }
+  }
+
+  // TODO: This method can just be update batch.
+  @override
+  Future<void> retry(List<ToDo> todos) async {
+    late List<int?> ids;
+    late int? id;
+
+    await _isarClient.writeTxn(() async {
+      ids = List<int?>.empty(growable: true);
+      for (ToDo todo in todos) {
+        todo.isSynced = (null != _supabaseClient.auth.currentSession);
+        id = await _isarClient.todos.put(todo);
+        ids.add(id);
+      }
+    });
+    if (ids.any((id) => null == id)) {
+      throw FailureToUpdateException("Failed to update todos locally");
+    }
+
+    if (null != _supabaseClient.auth.currentSession) {
+      ids.clear();
+      List<Map<String, dynamic>> todoEntities =
+          todos.map((todo) => todo.toEntity()).toList();
+      final List<Map<String, dynamic>> responses =
+          await _supabaseClient.from("todos").upsert(todoEntities).select("id");
+
+      ids = responses.map((response) => response["id"] as int?).toList();
+
+      if (ids.any((id) => null == id)) {
+        throw FailureToUploadException("Failed to sync todos on update");
+      }
+    }
+  }
+
+  // Call this on a timer if/when user is not syncing data.
+  @override
+  Future<void> clearLocalRepo() async {
+    List<int> toDeletes = await getDeleteIds();
+    await _isarClient.writeTxn(() async {
+      await _isarClient.todos.deleteAll(toDeletes);
+    });
+  }
+
+  @override
+  Future<void> syncRepo() async {
     List<int> toDeletes = await getDeleteIds();
     if (toDeletes.isEmpty) {
       return fetchRepo();
@@ -205,11 +206,11 @@ class ToDoRepo implements ToDoRepository {
   }
 
   @override
-  Future<void> fetchRepo({bool showLoading = true}) async {
+  Future<void> fetchRepo() async {
     late List<Map<String, dynamic>> todoEntities;
 
     await Future.delayed(const Duration(seconds: 1)).then((value) async {
-      if (!isDeviceConnected.value) {
+      if (null == _supabaseClient.auth.currentSession) {
         return;
       }
       todoEntities = await _supabaseClient.from("todos").select();
@@ -224,7 +225,7 @@ class ToDoRepo implements ToDoRepository {
       await _isarClient.writeTxn(() async {
         await _isarClient.clear();
         for (ToDo todo in todos) {
-          _isarClient.todos.put(todo);
+          await _isarClient.todos.put(todo);
         }
       });
     });

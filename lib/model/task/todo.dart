@@ -9,9 +9,10 @@ import "../../util/interfaces/copyable.dart";
 
 part "todo.g.dart";
 
-// TODO: Implement a provider class (UI).
+// TODO: refactor constructor -> take all logic out and place in provider class.
+// Then this can be built.
 
-// TODO: implement a subtask sorting object with serialization.
+@Collection(inheritance: false)
 class ToDo with EquatableMixin implements Copyable<ToDo> {
   static Map<TaskType, int> numTasks = {
     TaskType.small: 0,
@@ -196,7 +197,7 @@ class ToDo with EquatableMixin implements Copyable<ToDo> {
                   : null);
 
   @override
-  List<Object> get props => [
+  List<Object?> get props => [
         id,
         customViewIndex,
         groupID,

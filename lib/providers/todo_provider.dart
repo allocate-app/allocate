@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:developer';
 
 import 'package:flutter/foundation.dart';
@@ -9,19 +10,31 @@ import '../util/enums.dart';
 import '../util/exceptions.dart';
 import '../util/sorting/todo_sorter.dart';
 
-class ToDoProvider extends ChangeNotifier {
-  ToDoProvider();
-  // UI needs to have both a todo provider + group provider.
+// NOTE: Use futurebuilder for UI.
 
-  final ToDoService _todoService = ToDoService();
+class ToDoProvider extends ChangeNotifier {
+  // Not sure if I need the user. Tinker with this if needed.
+  // Might be an idea for running background timer functions.
+  //TODO: refactor -> get a reference to the user instead.
+  // On user set, reset the sorter.
+
+  late Timer syncTimer;
+
+  // User? _user;
+  ToDoProvider({ToDoSorter? sorter, ToDoService? service})
+      : _todoService = service ?? ToDoService(),
+        sorter = sorter ?? ToDoSorter();
+
+  final ToDoService _todoService;
 
   late ToDo curToDo;
 
   late List<ToDo> todos;
   List<ToDo> failCache = List.empty(growable: true);
 
-  ToDoSorter sorter = ToDoSorter();
+  ToDoSorter sorter;
 
+  // Keep these for testing.
   SortMethod get sortMethod => sorter.sortMethod;
   set curSortMethod(SortMethod method) {
     if (method == sorter.sortMethod) {
@@ -34,7 +47,9 @@ class ToDoProvider extends ChangeNotifier {
   }
 
   bool get descending => sorter.descending;
-  List<SortMethod> get sortMethods => sorter.sortMethods;
+  List<SortMethod> get sortMethods => ToDoSorter.sortMethods;
+
+  void setSorter({ToDoSorter? newSorter}) => sorter = newSorter ?? ToDoSorter();
 
   void recalculateWeight() => _todoService.recalculateWeight(toDo: curToDo);
 
@@ -246,21 +261,17 @@ class ToDoProvider extends ChangeNotifier {
 
   Future<void> getToDos() async {
     todos = await _todoService.getToDos();
-    notifyListeners();
   }
 
   Future<void> getToDosBy() async {
     todos = await _todoService.getToDosBy(todoSorter: sorter);
-    notifyListeners();
   }
 
   Future<void> getMyDay() async {
     todos = await _todoService.getMyDay();
-    notifyListeners();
   }
 
   Future<void> getCompleted() async {
     todos = await _todoService.getCompleted();
-    notifyListeners();
   }
 }

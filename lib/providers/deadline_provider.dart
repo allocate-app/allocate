@@ -44,14 +44,13 @@ class DeadlineProvider extends ChangeNotifier {
       DateTime? warnDate,
       bool warnMe = false,
       Priority priority = Priority.low}) async {
-    // TODO: Fix.
     curDeadline = Deadline(
       name: name,
       description: description,
-      startDate: startDate,
-      dueDate: dueDate,
+      startDate: startDate ?? DateTime.now(),
+      dueDate: dueDate ?? DateTime.now(),
       warnMe: warnMe,
-      warnDate: warnDate,
+      warnDate: warnDate ?? DateTime.now().subtract(const Duration(days: 1)),
       priority: priority,
     );
     try {
