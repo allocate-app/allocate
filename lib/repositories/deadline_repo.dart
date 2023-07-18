@@ -21,7 +21,7 @@ class DeadlineRepo implements DeadlineRepository {
 
   @override
   Future<void> create(Deadline deadline) async {
-    deadline.isSynced = isDeviceConnected.value;
+    deadline.isSynced = (null != _supabaseClient.auth.currentSession);
     late int? id;
 
     await _isarClient.writeTxn(() async {
@@ -32,7 +32,7 @@ class DeadlineRepo implements DeadlineRepository {
       throw FailureToCreateException("Failed to create deadline locally");
     }
 
-    if (isDeviceConnected.value) {
+    if (null != _supabaseClient.auth.currentSession) {
       Map<String, dynamic> deadlineEntity = deadline.toEntity();
       final List<Map<String, dynamic>> response = await _supabaseClient
           .from("deadlines")
@@ -47,7 +47,7 @@ class DeadlineRepo implements DeadlineRepository {
 
   @override
   Future<void> update(Deadline deadline) async {
-    deadline.isSynced = isDeviceConnected.value;
+    deadline.isSynced = (null != _supabaseClient.auth.currentSession);
 
     late int? id;
     await _isarClient.writeTxn(() async {
@@ -60,7 +60,7 @@ class DeadlineRepo implements DeadlineRepository {
 
     deadline.id = id!;
 
-    if (isDeviceConnected.value) {
+    if (null != _supabaseClient.auth.currentSession) {
       Map<String, dynamic> deadlineEntity = deadline.toEntity();
       final List<Map<String, dynamic>> response = await _supabaseClient
           .from("deadlines")
@@ -82,7 +82,7 @@ class DeadlineRepo implements DeadlineRepository {
     await _isarClient.writeTxn(() async {
       ids = List<int?>.empty(growable: true);
       for (Deadline deadline in deadlines) {
-        deadline.isSynced = isDeviceConnected.value;
+        deadline.isSynced = (null != _supabaseClient.auth.currentSession);
         id = await _isarClient.deadlines.put(deadline);
         ids.add(id);
       }
@@ -91,7 +91,7 @@ class DeadlineRepo implements DeadlineRepository {
       throw FailureToUpdateException("Failed to update deadlines locally");
     }
 
-    if (isDeviceConnected.value) {
+    if (null != _supabaseClient.auth.currentSession) {
       ids.clear();
       List<Map<String, dynamic>> deadlineEntities =
           deadlines.map((deadline) => deadline.toEntity()).toList();
@@ -117,7 +117,7 @@ class DeadlineRepo implements DeadlineRepository {
     await _isarClient.writeTxn(() async {
       ids = List<int?>.empty(growable: true);
       for (Deadline deadline in deadlines) {
-        deadline.isSynced = isDeviceConnected.value;
+        deadline.isSynced = (null != _supabaseClient.auth.currentSession);
         id = await _isarClient.deadlines.put(deadline);
         ids.add(id);
       }
@@ -126,7 +126,7 @@ class DeadlineRepo implements DeadlineRepository {
       throw FailureToUpdateException("Failed to update deadlines locally");
     }
 
-    if (isDeviceConnected.value) {
+    if (null != _supabaseClient.auth.currentSession) {
       ids.clear();
       List<Map<String, dynamic>> deadlineEntities =
           deadlines.map((deadline) => deadline.toEntity()).toList();
@@ -145,18 +145,7 @@ class DeadlineRepo implements DeadlineRepository {
 
   @override
   Future<void> delete(Deadline deadline) async {
-    // TODO: NON-ONLINE IMPLEMENTATION, SYNC ISN'T CALLED.
-    // if (!user.syncOnline) {
-    //   late int? id;
-    //   await _isarClient.writeTxn(() async {
-    //     id = await _isarClient.deadlines.delete(deadline.id);
-    //   });
-    //   if (null == id) {
-    //     throw FailureToDeleteException("Failed to delete deadline locally");
-    //   }
-    //   return;
-    // }
-    if (!isDeviceConnected.value) {
+    if (null == _supabaseClient.auth.currentSession) {
       deadline.toDelete = true;
       update(deadline);
       return;
@@ -167,6 +156,15 @@ class DeadlineRepo implements DeadlineRepository {
     } catch (error) {
       throw FailureToDeleteException("Failed to delete deadline online");
     }
+  }
+
+  // Call this on a timer if/when user is not syncing data.
+  @override
+  Future<void> clearLocalRepo() async {
+    List<int> toDeletes = await getDeleteIds();
+    await _isarClient.writeTxn(() async {
+      await _isarClient.deadlines.deleteAll(toDeletes);
+    });
   }
 
   @override
@@ -214,7 +212,7 @@ class DeadlineRepo implements DeadlineRepository {
     late List<Map<String, dynamic>> deadlineEntities;
 
     await Future.delayed(const Duration(seconds: 1)).then((value) async {
-      if (!isDeviceConnected.value) {
+      if (null == _supabaseClient.auth.currentSession) {
         return;
       }
       deadlineEntities = await _supabaseClient.from("deadlines").select();
@@ -236,8 +234,14 @@ class DeadlineRepo implements DeadlineRepository {
   }
 
   @override
-  Future<Deadline> getByID({required int id}) async =>
-      await _isarClient.deadlines.where().idEqualTo(id).findFirst();
+  Future<Deadline> getByID({required int id}) async {
+    Deadline? deadline =
+        await _isarClient.deadlines.where().idEqualTo(id).findFirst();
+    if (null == deadline) {
+      throw ObjectNotFoundException("Deadline: $id not found.");
+    }
+    return deadline!;
+  }
 
   // Custom view position, reorderable list.
   // CHECK THIS and put in proper query logic pls.

@@ -94,7 +94,14 @@ class UserStorageService {
     });
   }
 
-  Future<u.User> getUser() async => await _isarClient.users.findFirst();
+  Future<u.User> getUser() async {
+    List<u.User> users = await _isarClient.users.where().findAll();
+    if(users.length > 1 || users.isEmpty)
+      {
+        throw UserException("Multiple or No users in db");
+      }
+    return users.first;
+  }
   // Future<u.User> getUserByUserName({required String userName}) async =>
   //     await _isarClient.users.where().userNameEquals(userName).findAll();
 }

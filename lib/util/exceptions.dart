@@ -2,11 +2,13 @@ class FailureToCreateException implements Exception {
   String cause;
   FailureToCreateException(this.cause);
 }
-class FailureToUploadException implements Exception{
+
+class FailureToUploadException implements Exception {
   String cause;
   FailureToUploadException(this.cause);
 }
-class FailureToDeleteException implements Exception{
+
+class FailureToDeleteException implements Exception {
   String cause;
   FailureToDeleteException(this.cause);
 }
@@ -39,4 +41,14 @@ class UserExistsException implements Exception {
 class UserSyncException implements Exception {
   String cause;
   UserSyncException(this.cause);
+}
+
+class UserException implements Exception {
+  String cause;
+  UserException(this.cause);
+}
+
+class ObjectNotFoundException implements Exception {
+  String cause;
+  ObjectNotFoundException(this.cause);
 }
