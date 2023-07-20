@@ -109,17 +109,6 @@ class ReminderRepo implements ReminderRepository {
 
   @override
   Future<void> delete(Reminder reminder) async {
-    // TODO: NON-ONLINE IMPLEMENTATION, SYNC ISN'T CALLED.
-    // if (!user.syncOnline) {
-    //   late int? id;
-    //   await _isarClient.writeTxn(() async {
-    //     id = await _isarClient.reminders.delete(reminder.id);
-    //   });
-    //   if (null == id) {
-    //     throw FailureToDeleteException("Failed to delete reminder locally");
-    //   }
-    //   return;
-    // }
     if (null != _supabaseClient.auth.currentSession) {
       reminder.toDelete = true;
       update(reminder);
@@ -134,40 +123,7 @@ class ReminderRepo implements ReminderRepository {
   }
 
   @override
-  Future<void> retry(List<Reminder> reminders) async {
-    late List<int?> ids;
-    late int? id;
-
-    await _isarClient.writeTxn(() async {
-      ids = List<int?>.empty(growable: true);
-      for (Reminder reminder in reminders) {
-        reminder.isSynced = (null != _supabaseClient.auth.currentSession);
-        id = await _isarClient.reminders.put(reminder);
-        ids.add(id);
-      }
-    });
-    if (ids.any((id) => null == id)) {
-      throw FailureToUpdateException("Failed to update reminders locally");
-    }
-
-    if (null != _supabaseClient.auth.currentSession) {
-      ids.clear();
-      List<Map<String, dynamic>> reminderEntities =
-          reminders.map((reminder) => reminder.toEntity()).toList();
-      final List<Map<String, dynamic>> responses = await _supabaseClient
-          .from("reminder")
-          .upsert(reminderEntities)
-          .select("id");
-
-      ids = responses.map((response) => response["id"] as int?).toList();
-
-      if (ids.any((id) => null == id)) {
-        throw FailureToUploadException("Failed to sync reminders on update");
-      }
-    }
-  }
-
-  Future<void> clearLocalRepo() async {
+  Future<void> deleteLocal() async {
     List<int> toDeletes = await getDeleteIds();
     await _isarClient.writeTxn(() async {
       await _isarClient.reminders.deleteAll(toDeletes);
@@ -246,14 +202,8 @@ class ReminderRepo implements ReminderRepository {
   }
 
   @override
-  Future<Reminder> getByID({required int id}) async {
-    Reminder? reminder =
-        await _isarClient.reminders.where().idEqualTo(id).findFirst();
-    if (null == reminder) {
-      throw ObjectNotFoundException("Reminder: $id not found.");
-    }
-    return reminder;
-  }
+  Future<Reminder?> getByID({required int id}) async =>
+      await _isarClient.reminders.where().idEqualTo(id).findFirst();
 
   @override
   Future<List<Reminder>> getRepoList() => _isarClient.reminders

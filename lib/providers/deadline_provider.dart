@@ -1,17 +1,19 @@
+import 'dart:async';
 import 'dart:developer';
 
 import 'package:flutter/foundation.dart';
 
 import '../model/task/deadline.dart';
+import '../model/user/user.dart';
 import '../services/deadline_service.dart';
 import '../util/enums.dart';
 import '../util/exceptions.dart';
 import '../util/sorting/deadline_sorter.dart';
 
 class DeadlineProvider extends ChangeNotifier {
-  DeadlineProvider();
+  late Timer syncTimer;
 
-  final DeadlineService _deadlineService = DeadlineService();
+  final DeadlineService _deadlineService;
 
   late Deadline curDeadline;
 
@@ -19,7 +21,31 @@ class DeadlineProvider extends ChangeNotifier {
 
   List<Deadline> failCache = List.empty(growable: true);
 
-  DeadlineSorter sorter = DeadlineSorter();
+  late DeadlineSorter sorter;
+
+  User? user;
+  DeadlineProvider({this.user, DeadlineService? service})
+      : _deadlineService = service ?? DeadlineService() {
+    sorter = user?.deadlineSorter ?? DeadlineSorter();
+    startTimer();
+  }
+
+  void startTimer() {
+    syncTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
+      _reattemptUpdate();
+      if (user!.syncOnline) {
+        _syncRepo();
+      } else {
+        _deadlineService.clearDeletesLocalRepo();
+      }
+    });
+  }
+
+  void setUser({User? user}) {
+    user = user;
+    sorter = user?.deadlineSorter ?? sorter;
+    notifyListeners();
+  }
 
   SortMethod get sortMethod => sorter.sortMethod;
   set sortMethod(SortMethod method) {
@@ -35,6 +61,20 @@ class DeadlineProvider extends ChangeNotifier {
   bool get descending => sorter.descending;
 
   List<SortMethod> get sortMethods => DeadlineSorter.sortMethods;
+
+  Future<void> _syncRepo() async {
+    // Not quite sure how to handle this outside of gui warning.
+    try {
+      _deadlineService.syncRepo();
+    } on FailureToDeleteException catch (e) {
+      log(e.cause);
+      log("This is a fatal error.");
+    } on FailureToUploadException catch (e) {
+      log(e.cause);
+      log("This is a fatal error, supabase issue");
+    }
+    notifyListeners();
+  }
 
   Future<void> createDeadLine(
       {required String name,
@@ -100,21 +140,9 @@ class DeadlineProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Future<void> _updateBatch({required List<Deadline> deadlines}) async {
-  //   try {
-  //     _deadlineService.updateBatch(deadlines: deadlines);
-  //   } on FailureToUploadException catch (e) {
-  //     log(e.cause);
-  //     failCache.addAll(deadlines);
-  //   } on FailureToUpdateException catch (e) {
-  //     log(e.cause);
-  //     failCache.addAll(deadlines);
-  //   }
-  // }
-
   Future<void> _reattemptUpdate() async {
     try {
-      _deadlineService.retry(deadlines: failCache);
+      _deadlineService.updateBatch(deadlines: failCache);
       failCache.clear();
     } on FailureToUploadException catch (e) {
       log("DataCache - ${e.cause}");

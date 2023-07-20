@@ -11,9 +11,6 @@ import '../util/numbers.dart';
 
 class RoutineService {
   RoutineService();
-  // May need to construct this with the repository...?
-  /// TODO: Periodic function to reset subtask complete status.
-  /// Until/if subtasks are refactored into their own table.
 
   // This is just the default repo. Switch as needed for testing.
   RoutineRepository _repository = RoutineRepo();
@@ -56,7 +53,7 @@ class RoutineService {
           required SortableView<Routine> routineSorter}) async =>
       _repository.getRepoListBy(sorter: routineSorter);
 
-  Future<Routine> getRoutineById({required int id}) async =>
+  Future<Routine?> getRoutineById({required int id}) async =>
       _repository.getByID(id: id);
 
   Future<void> updateRoutine({required Routine routine}) async =>
@@ -68,12 +65,10 @@ class RoutineService {
   Future<void> deleteRoutine({required Routine routine}) async =>
       _repository.delete(routine);
 
-  Future<void> retry({required List<Routine> routines}) async =>
-      _repository.retry(routines);
-  // TODO: Figure out how to call this on a timer.
+  Future<void> clearDeletesLocalRepo() async => _repository.deleteLocal();
+
   Future<void> syncRepo() async => _repository.syncRepo();
 
-  // TODO: Refactor this -> Subtask editing should just handle subtask add/subtract.
   Future<void> addRoutineTask(
       {required SubTask subTask, required Routine routine}) async {
     if (routine.routineTasks.length >= Constants.maxNumTasks) {

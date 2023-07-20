@@ -17,7 +17,7 @@ class GroupService {
           {required SortableView<Group> sorter}) async =>
       _repository.getRepoListBy(sorter: sorter);
 
-  Future<Group> getGroupByID({required int id}) => _repository.getByID(id: id);
+  Future<Group?> getGroupByID({required int id}) => _repository.getByID(id: id);
 
   Future<void> updateGroup({required Group group}) async =>
       _repository.update(group);
@@ -27,8 +27,7 @@ class GroupService {
   Future<void> deleteGroup({required Group group}) async =>
       _repository.delete(group);
 
-  Future<void> retry({required List<Group> groups}) async =>
-      _repository.retry(groups);
+  Future<void> clearDeletesLocalRepo() async => _repository.deleteLocal();
 
   Future<void> syncRepo() async => _repository.syncRepo();
 

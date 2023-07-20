@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'dart:developer';
 
 import 'package:flutter/foundation.dart';
 
 import '../model/task/group.dart';
+import '../model/user/user.dart';
 import '../services/group_service.dart';
 import '../services/todo_service.dart';
 import '../util/enums.dart';
@@ -10,10 +12,9 @@ import '../util/exceptions.dart';
 import '../util/sorting/group_sorter.dart';
 
 class GroupProvider extends ChangeNotifier {
-  GroupProvider();
-
-  final GroupService _groupService = GroupService();
-  final ToDoService _toDoService = ToDoService();
+  late Timer syncTimer;
+  final GroupService _groupService;
+  final ToDoService _toDoService;
 
   late Group curGroup;
 
@@ -21,7 +22,33 @@ class GroupProvider extends ChangeNotifier {
 
   List<Group> failCache = List.empty(growable: true);
 
-  GroupSorter sorter = GroupSorter();
+  late GroupSorter sorter;
+
+  User? user;
+  GroupProvider(
+      {this.user, GroupService? groupService, ToDoService? toDoService})
+      : _groupService = groupService ?? GroupService(),
+        _toDoService = toDoService ?? ToDoService() {
+    sorter = user?.groupSorter ?? GroupSorter();
+    startTimer();
+  }
+
+  void startTimer() {
+    syncTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
+      _reattemptUpdate();
+      if (user!.syncOnline) {
+        _syncRepo();
+      } else {
+        _groupService.clearDeletesLocalRepo();
+      }
+    });
+  }
+
+  void setUser({User? user}) {
+    user = user;
+    sorter = user?.groupSorter ?? sorter;
+    notifyListeners();
+  }
 
   SortMethod get sortMethod => sorter.sortMethod;
 
@@ -38,6 +65,20 @@ class GroupProvider extends ChangeNotifier {
   bool get descending => sorter.descending;
 
   List<SortMethod> get sortMethods => GroupSorter.sortMethods;
+
+  Future<void> _syncRepo() async {
+    // Not quite sure how to handle this outside of gui warning.
+    try {
+      _groupService.syncRepo();
+    } on FailureToDeleteException catch (e) {
+      log(e.cause);
+      log("This is a fatal error.");
+    } on FailureToUploadException catch (e) {
+      log(e.cause);
+      log("This is a fatal error, supabase issue");
+    }
+    notifyListeners();
+  }
 
   Future<void> createGroup({required String name, String? description}) async {
     curGroup = Group(name: name, description: description ?? "");
@@ -73,21 +114,9 @@ class GroupProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Future<void> _updateBatch({required List<Group> groups}) async {
-  //   try {
-  //     _groupService.updateBatch(groups: groups);
-  //   } on FailureToUploadException catch (e) {
-  //     log(e.cause);
-  //     failCache.addAll(groups);
-  //   } on FailureToUpdateException catch (e) {
-  //     log(e.cause);
-  //     failCache.addAll(groups);
-  //   }
-  // }
-
   Future<void> _reattemptUpdate() async {
     try {
-      _groupService.retry(groups: failCache);
+      _groupService.updateBatch(groups: failCache);
       failCache.clear();
     } on FailureToUploadException catch (e) {
       log("DataCache - ${e.cause}");

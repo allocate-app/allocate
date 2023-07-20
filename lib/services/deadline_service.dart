@@ -17,7 +17,7 @@ class DeadlineService {
           {required SortableView<Deadline> sorter}) async =>
       _repository.getRepoListBy(sorter: sorter);
 
-  Future<Deadline> getDeadlineByID({required int id}) =>
+  Future<Deadline?> getDeadlineByID({required int id}) =>
       _repository.getByID(id: id);
 
   Future<List<Deadline>> getOverdues() async => _repository.getOverdues();
@@ -30,9 +30,8 @@ class DeadlineService {
   Future<void> deleteDeadline({required Deadline deadline}) async =>
       _repository.delete(deadline);
 
-  Future<void> retry({required List<Deadline> deadlines}) async =>
-      _repository.retry(deadlines);
-  // TODO: Figure out how to call this on a timer.
+  Future<void> clearDeletesLocalRepo() async => _repository.deleteLocal();
+
   Future<void> syncRepo() async => _repository.syncRepo();
 
   Future<void> reorderDeadlines(

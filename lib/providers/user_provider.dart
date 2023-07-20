@@ -14,6 +14,8 @@ import '../util/sorting/reminder_sorter.dart';
 import '../util/sorting/routine_sorter.dart';
 import '../util/sorting/todo_sorter.dart';
 
+// TODO: sorter set methods.
+
 class UserProvider extends ChangeNotifier {
   late Timer syncTimer;
   final _userStorageService = UserStorageService();
@@ -67,11 +69,12 @@ class UserProvider extends ChangeNotifier {
         curMornID: curMornID,
         curAftID: curAftID,
         curEveID: curEveID,
-        groupSorter: groupSorter,
-        deadlineSorter: deadlineSorter,
-        reminderSorter: reminderSorter,
-        routineSorter: routineSorter,
-        toDoSorter: toDoSorter);
+        groupSorter: groupSorter ?? GroupSorter(),
+        deadlineSorter: deadlineSorter ?? DeadlineSorter(),
+        reminderSorter: reminderSorter ?? ReminderSorter(),
+        routineSorter: routineSorter ?? RoutineSorter(),
+        toDoSorter: toDoSorter ?? ToDoSorter(),
+        lastOpened: DateTime.now());
 
     try {
       _userStorageService.createUser(user: curUser!);
@@ -98,7 +101,8 @@ class UserProvider extends ChangeNotifier {
       DeadlineSorter? deadlineSorter,
       ReminderSorter? reminderSorter,
       RoutineSorter? routineSorter,
-      ToDoSorter? toDoSorter}) async {
+      ToDoSorter? toDoSorter,
+      DateTime? lastOpened}) async {
     User user = curUser!.copyWith(
         userName: userName,
         syncOnline: syncOnline,
@@ -112,7 +116,8 @@ class UserProvider extends ChangeNotifier {
         deadlineSorter: deadlineSorter,
         reminderSorter: reminderSorter,
         routineSorter: routineSorter,
-        toDoSorter: toDoSorter);
+        toDoSorter: toDoSorter,
+        lastOpened: lastOpened);
 
     user.localID = curUser!.localID;
     curUser = user;

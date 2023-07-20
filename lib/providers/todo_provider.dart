@@ -14,19 +14,7 @@ import '../util/sorting/todo_sorter.dart';
 // NOTE: Use futurebuilder for UI.
 
 class ToDoProvider extends ChangeNotifier {
-  // Not sure if I need the user. Tinker with this if needed.
-  // Might be an idea for running background timer functions.
-  //TODO: refactor -> get a reference to the user instead.
-  // On user set, reset the sorter.
-
   late Timer syncTimer;
-
-  User? user;
-  ToDoProvider({this.user, ToDoService? service})
-      : _todoService = service ?? ToDoService() {
-    sorter = user?.toDoSorter ?? ToDoSorter();
-  }
-
   final ToDoService _todoService;
 
   late ToDo curToDo;
@@ -35,6 +23,24 @@ class ToDoProvider extends ChangeNotifier {
   List<ToDo> failCache = List.empty(growable: true);
 
   late ToDoSorter sorter;
+
+  User? user;
+  ToDoProvider({this.user, ToDoService? service})
+      : _todoService = service ?? ToDoService() {
+    sorter = user?.toDoSorter ?? ToDoSorter();
+    startTimer();
+  }
+
+  void startTimer() {
+    syncTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
+      _reattemptUpdate();
+      if (user!.syncOnline) {
+        _syncRepo();
+      } else {
+        _todoService.clearDeletesLocalRepo();
+      }
+    });
+  }
 
   // Keep these for testing.
   SortMethod get sortMethod => sorter.sortMethod;
@@ -66,6 +72,20 @@ class ToDoProvider extends ChangeNotifier {
   Future<void> recalculateRealDuration() async {
     _todoService.setRealDuration(toDo: curToDo);
     updateToDo();
+  }
+
+  Future<void> _syncRepo() async {
+    // Not quite sure how to handle this outside of gui warning.
+    try {
+      _todoService.syncRepo();
+    } on FailureToDeleteException catch (e) {
+      log(e.cause);
+      log("This is a fatal error.");
+    } on FailureToUploadException catch (e) {
+      log(e.cause);
+      log("This is a fatal error, supabase issue");
+    }
+    notifyListeners();
   }
 
   Future<void> createToDo({
@@ -242,7 +262,7 @@ class ToDoProvider extends ChangeNotifier {
 
   Future<void> _reattemptUpdate() async {
     try {
-      _todoService.retry(toDos: failCache);
+      _todoService.updateBatch(toDos: failCache);
       failCache.clear();
     } on FailureToUploadException catch (e) {
       log("DataCache - ${e.cause}");

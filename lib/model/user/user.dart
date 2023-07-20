@@ -40,28 +40,31 @@ class User with EquatableMixin implements Copyable<User> {
   int? curAftID;
   int? curEveID;
 
-  // Sorting preferences -> TODO: refactor to default arg prefs.
+  // Sorting preferences
   GroupSorter? groupSorter;
   DeadlineSorter? deadlineSorter;
   ReminderSorter? reminderSorter;
   RoutineSorter? routineSorter;
   ToDoSorter? toDoSorter;
 
-  User({
-    required this.userName,
-    required this.syncOnline,
-    this.isSynced = false,
-    this.bandwidth = 100,
-    this.curTheme = Theme.dark,
-    this.curMornID,
-    this.curAftID,
-    this.curEveID,
-    this.groupSorter,
-    this.deadlineSorter,
-    this.reminderSorter,
-    this.routineSorter,
-    this.toDoSorter,
-  });
+  // Last login.
+  DateTime lastOpened;
+
+  User(
+      {required this.userName,
+      required this.syncOnline,
+      this.isSynced = false,
+      this.bandwidth = 100,
+      this.curTheme = Theme.dark,
+      this.curMornID,
+      this.curAftID,
+      this.curEveID,
+      this.groupSorter,
+      this.deadlineSorter,
+      this.reminderSorter,
+      this.routineSorter,
+      this.toDoSorter,
+      required this.lastOpened});
 
   User.fromEntity({required Map<String, dynamic> entity})
       : userName = entity["userName"] as String,
@@ -86,7 +89,8 @@ class User with EquatableMixin implements Copyable<User> {
             : null,
         toDoSorter = (null != jsonDecode(entity["toDoSorter "]))
             ? ToDoSorter.fromEntity(entity: entity["toDoSorter"])
-            : null;
+            : null,
+        lastOpened = DateTime.parse(entity["lastOpened"]);
 
   Map<String, dynamic> toEntity() => {
         "userName": userName,
@@ -102,6 +106,7 @@ class User with EquatableMixin implements Copyable<User> {
         "routineSorter":
             (null != routineSorter) ? routineSorter!.toEntity() : null,
         "toDoSorter": (null != toDoSorter) ? toDoSorter!.toEntity() : null,
+        "lastOpened": lastOpened.toIso8601String()
       };
 
   @override
@@ -118,7 +123,8 @@ class User with EquatableMixin implements Copyable<User> {
       reminderSorter: reminderSorter,
       routineSorter: routineSorter,
       toDoSorter: toDoSorter,
-      isSynced: isSynced);
+      isSynced: isSynced,
+      lastOpened: lastOpened);
 
   @override
   User copyWith(
@@ -134,7 +140,8 @@ class User with EquatableMixin implements Copyable<User> {
           ReminderSorter? reminderSorter,
           RoutineSorter? routineSorter,
           ToDoSorter? toDoSorter,
-          bool? isSynced}) =>
+          bool? isSynced,
+          DateTime? lastOpened}) =>
       User(
           userName: userName ?? this.userName,
           syncOnline: syncOnline ?? this.syncOnline,
@@ -148,7 +155,8 @@ class User with EquatableMixin implements Copyable<User> {
           reminderSorter: reminderSorter ?? this.reminderSorter,
           routineSorter: routineSorter ?? this.routineSorter,
           toDoSorter: toDoSorter ?? this.toDoSorter,
-          isSynced: isSynced ?? this.isSynced);
+          isSynced: isSynced ?? this.isSynced,
+          lastOpened: lastOpened ?? this.lastOpened);
 
   @ignore
   @override

@@ -144,41 +144,42 @@ class RoutineRepo implements RoutineRepository {
     }
   }
 
+  // @override
+  // Future<void> retry(List<Routine> routines) async {
+  //   late List<int?> ids;
+  //   late int? id;
+  //
+  //   await _isarClient.writeTxn(() async {
+  //     ids = List<int?>.empty(growable: true);
+  //     for (Routine routine in routines) {
+  //       routine.isSynced = isDeviceConnected.value;
+  //       id = await _isarClient.routines.put(routine);
+  //       ids.add(id);
+  //     }
+  //   });
+  //   if (ids.any((id) => null == id)) {
+  //     throw FailureToUpdateException("Failed to update routines locally");
+  //   }
+  //
+  //   if (isDeviceConnected.value) {
+  //     ids.clear();
+  //     List<Map<String, dynamic>> routineEntities =
+  //         routines.map((routine) => routine.toEntity()).toList();
+  //     final List<Map<String, dynamic>> responses = await _supabaseClient
+  //         .from("routines")
+  //         .upsert(routineEntities)
+  //         .select("id");
+  //
+  //     ids = responses.map((response) => response["id"] as int?).toList();
+  //
+  //     if (ids.any((id) => null == id)) {
+  //       throw FailureToUploadException("Failed to sync routines on update");
+  //     }
+  //   }
+  // }
+
   @override
-  Future<void> retry(List<Routine> routines) async {
-    late List<int?> ids;
-    late int? id;
-
-    await _isarClient.writeTxn(() async {
-      ids = List<int?>.empty(growable: true);
-      for (Routine routine in routines) {
-        routine.isSynced = isDeviceConnected.value;
-        id = await _isarClient.routines.put(routine);
-        ids.add(id);
-      }
-    });
-    if (ids.any((id) => null == id)) {
-      throw FailureToUpdateException("Failed to update routines locally");
-    }
-
-    if (isDeviceConnected.value) {
-      ids.clear();
-      List<Map<String, dynamic>> routineEntities =
-          routines.map((routine) => routine.toEntity()).toList();
-      final List<Map<String, dynamic>> responses = await _supabaseClient
-          .from("routines")
-          .upsert(routineEntities)
-          .select("id");
-
-      ids = responses.map((response) => response["id"] as int?).toList();
-
-      if (ids.any((id) => null == id)) {
-        throw FailureToUploadException("Failed to sync routines on update");
-      }
-    }
-  }
-
-  Future<void> clearLocalRepo() async {
+  Future<void> deleteLocal() async {
     List<int> toDeletes = await getDeleteIds();
     await _isarClient.writeTxn(() async {
       await _isarClient.routines.deleteAll(toDeletes);
@@ -261,14 +262,8 @@ class RoutineRepo implements RoutineRepository {
   }
 
   @override
-  Future<Routine> getByID({required int id}) async {
-    Routine? routine =
-        await _isarClient.routines.where().idEqualTo(id).findFirst();
-    if (null == routine) {
-      throw ObjectNotFoundException("Routine: $id not found.");
-    }
-    return routine;
-  }
+  Future<Routine?> getByID({required int id}) async =>
+      await _isarClient.routines.where().idEqualTo(id).findFirst();
 
   @override
   Future<List<Routine>> getRepoList(

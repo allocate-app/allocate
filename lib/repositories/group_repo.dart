@@ -103,17 +103,6 @@ class GroupRepo implements GroupRepository {
 
   @override
   Future<void> delete(Group group) async {
-    // TODO: NON-ONLINE IMPLEMENTATION, SYNC ISN'T CALLED.
-    // if (!user.syncOnline) {
-    //   late int? id;
-    //   await _isarClient.writeTxn(() async {
-    //     id = await _isarClient.groups.delete(group.id);
-    //   });
-    //   if (null == id) {
-    //     throw FailureToDeleteException("Failed to delete group locally");
-    //   }
-    //   return;
-    // }
     if (null == _supabaseClient.auth.currentSession) {
       group.toDelete = true;
       update(group);
@@ -128,40 +117,7 @@ class GroupRepo implements GroupRepository {
   }
 
   @override
-  Future<void> retry(List<Group> groups) async {
-    late List<int?> ids;
-    late int? id;
-
-    await _isarClient.writeTxn(() async {
-      ids = List<int?>.empty(growable: true);
-      for (Group group in groups) {
-        group.isSynced = (null != _supabaseClient.auth.currentSession);
-        id = await _isarClient.groups.put(group);
-        ids.add(id);
-      }
-    });
-    if (ids.any((id) => null == id)) {
-      throw FailureToUpdateException("Failed to update groups locally");
-    }
-
-    if (null != _supabaseClient.auth.currentSession) {
-      ids.clear();
-      List<Map<String, dynamic>> groupEntities =
-          groups.map((group) => group.toEntity()).toList();
-      final List<Map<String, dynamic>> responses = await _supabaseClient
-          .from("group")
-          .upsert(groupEntities)
-          .select("id");
-
-      ids = responses.map((response) => response["id"] as int?).toList();
-
-      if (ids.any((id) => null == id)) {
-        throw FailureToUploadException("Failed to sync groups on update");
-      }
-    }
-  }
-
-  Future<void> clearLocalRepo() async {
+  Future<void> deleteLocal() async {
     List<int> toDeletes = await getDeleteIds();
     await _isarClient.writeTxn(() async {
       await _isarClient.groups.deleteAll(toDeletes);
@@ -238,13 +194,8 @@ class GroupRepo implements GroupRepository {
   }
 
   @override
-  Future<Group> getByID({required int id}) async {
-    Group? group = await _isarClient.groups.where().idEqualTo(id).findFirst();
-    if (null == group) {
-      throw ObjectNotFoundException("Group: $id not found.");
-    }
-    return group;
-  }
+  Future<Group?> getByID({required int id}) async =>
+      await _isarClient.groups.where().idEqualTo(id).findFirst();
 
   // Custom view position, reorderable list.
   // CHECK THIS and put in proper query logic pls.

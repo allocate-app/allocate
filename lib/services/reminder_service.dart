@@ -17,7 +17,8 @@ class ReminderService {
           {required SortableView<Reminder> sorter}) async =>
       _repository.getRepoListBy(sorter: sorter);
 
-  Future<Reminder> getReminderByID({required int id}) async => _repository.getByID(id: id);
+  Future<Reminder?> getReminderByID({required int id}) async =>
+      _repository.getByID(id: id);
 
   Future<void> updateReminder({required Reminder reminder}) async =>
       _repository.update(reminder);
@@ -27,8 +28,7 @@ class ReminderService {
   Future<void> deleteReminder({required Reminder reminder}) async =>
       _repository.delete(reminder);
 
-  Future<void> retry({required List<Reminder> reminders}) async =>
-      _repository.retry(reminders);
+  Future<void> clearDeletesLocalRepo() async => _repository.deleteLocal();
 
   Future<void> syncRepo() async => _repository.syncRepo();
 

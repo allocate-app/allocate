@@ -1,9 +1,11 @@
+import 'dart:async';
 import 'dart:developer';
 
 import 'package:flutter/foundation.dart';
 
 import "../model/task/routine.dart";
 import '../model/task/subtask.dart';
+import '../model/user/user.dart';
 import '../services/routine_service.dart';
 import '../util/enums.dart';
 import "../util/exceptions.dart";
@@ -16,54 +18,94 @@ import '../util/sorting/routine_sorter.dart';
 /// also: FUTURE BUILDER will be required for UI stuff.
 
 class RoutineProvider extends ChangeNotifier {
-  // This should initialize the morning/afternoon/evening routines.
-  RoutineProvider();
+  late Timer syncTimer;
 
-  // This may eventually be implemented as DI. Atm, no need to decouple.
-  final RoutineService _routineService = RoutineService();
+  final RoutineService _routineService;
 
+  User? user;
   late Routine curRoutine;
 
-  /// TODO: refactor into user class to hold ids.
-  Routine? _curMorning;
-  Routine? _curAfternoon;
-  Routine? _curEvening;
+  Routine? curMorning;
+  Routine? curAfternoon;
+  Routine? curEvening;
 
   late RoutineTime _timeOfDay;
 
   late List<Routine> routines;
-
   List<Routine> failCache = List.empty(growable: true);
 
-  RoutineSorter sorter = RoutineSorter();
+  late RoutineSorter sorter;
 
-  Routine? get curMorning => _curMorning;
-  set curMorning(Routine? newMorn) {
-    if (null != _curMorning) {
-      _resetRoutine(routine: _curMorning!);
-    }
-    _curMorning = newMorn;
+  // This should initialize the morning/afternoon/evening routines.
+  RoutineProvider({this.user, RoutineService? service})
+      : _routineService = service ?? RoutineService() {
+    sorter = user?.routineSorter ?? RoutineSorter();
+    //setRoutines();
+    startTimer();
+  }
+
+  void startTimer() {
+    syncTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
+      _reattemptUpdate();
+      if (user!.syncOnline) {
+        _syncRepo();
+      } else {
+        _routineService.clearDeletesLocalRepo();
+      }
+    });
+  }
+
+  void setUser({User? user}) {
+    user = user;
+    sorter = user?.routineSorter ?? sorter;
     notifyListeners();
   }
 
-  Routine? get curAfternoon => _curAfternoon;
-  set curAfternoon(Routine? newAft) {
-    if (null != _curAfternoon) {
-      _resetRoutine(routine: _curAfternoon!);
-    }
-    _curAfternoon = newAft;
+  // Call this in a future builder for the routines screen.
+  Future<void> setRoutines() async {
+    curMorning = (null != user?.curMornID)
+        ? await _routineService.getRoutineById(id: user!.curMornID!)
+        : null;
+
+    curAfternoon = (null != user?.curAftID)
+        ? await _routineService.getRoutineById(id: user!.curAftID!)
+        : null;
+
+    curEvening = (null != user?.curAftID)
+        ? await _routineService.getRoutineById(id: user!.curAftID!)
+        : null;
     notifyListeners();
   }
 
-  Routine? get curEvening => _curEvening;
-  set curEvening(Routine? newEve) {
-    if (null != _curEvening) {
-      _resetRoutine(routine: _curEvening!);
-    }
-    _curEvening = newEve;
-    notifyListeners();
-  }
+  // Routine? get curMorning => _curMorning;
+  // set curMorning(Routine? newMorn) {
+  //   if (null != _curMorning) {
+  //     _resetRoutine(routine: _curMorning!);
+  //   }
+  //   _curMorning = newMorn;
+  //   notifyListeners();
+  // }
+  //
+  // Routine? get curAfternoon => _curAfternoon;
+  // set curAfternoon(Routine? newAft) {
+  //   if (null != _curAfternoon) {
+  //     _resetRoutine(routine: _curAfternoon!);
+  //   }
+  //   _curAfternoon = newAft;
+  //   notifyListeners();
+  // }
+  //
+  // Routine? get curEvening => _curEvening;
+  // set curEvening(Routine? newEve) {
+  //   if (null != _curEvening) {
+  //     _resetRoutine(routine: _curEvening!);
+  //   }
+  //   _curEvening = newEve;
+  //   notifyListeners();
+  // }
 
+  // I am unsure as to why I wrote this and what it would accomplish.
+  // TODO: revisit this after gui.
   RoutineTime get timeOfDay => _timeOfDay;
   set timeOfDay(RoutineTime time) {
     _timeOfDay = time;
@@ -72,6 +114,8 @@ class RoutineProvider extends ChangeNotifier {
 
   SortMethod get sortMethod => sorter.sortMethod;
 
+  // This will likely need refactoring once gui.
+  // Sort method logic are all part of the user.
   set sortMethod(SortMethod method) {
     if (method == sorter.sortMethod) {
       sorter.descending = !sorter.descending;
@@ -94,6 +138,20 @@ class RoutineProvider extends ChangeNotifier {
   Future<void> recalculateRealDuration() async {
     _routineService.setRealDuration(routine: curRoutine);
     updateRoutine();
+  }
+
+  Future<void> _syncRepo() async {
+    // Not quite sure how to handle this outside of gui warning.
+    try {
+      _routineService.syncRepo();
+    } on FailureToDeleteException catch (e) {
+      log(e.cause);
+      log("This is a fatal error.");
+    } on FailureToUploadException catch (e) {
+      log(e.cause);
+      log("This is a fatal error, supabase issue");
+    }
+    notifyListeners();
   }
 
   Future<void> createRoutine(
@@ -235,7 +293,7 @@ class RoutineProvider extends ChangeNotifier {
   // Possibly user function?
   Future<void> _reattemptUpdate() async {
     try {
-      _routineService.retry(routines: failCache);
+      _routineService.updateBatch(routines: failCache);
       failCache.clear();
     } on FailureToUploadException catch (e) {
       log("DataCache - ${e.cause}");
@@ -287,7 +345,7 @@ class RoutineProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> _resetRoutine({required Routine routine}) async {
+  Future<void> resetRoutine({required Routine routine}) async {
     try {
       _routineService.resetRoutine(routine: routine);
     } on FailureToUpdateException catch (e) {
@@ -303,28 +361,28 @@ class RoutineProvider extends ChangeNotifier {
   Future<void> resetRoutines() async {
     try {
       _routineService
-          .resetRoutines(routines: [_curMorning, _curAfternoon, _curEvening]);
+          .resetRoutines(routines: [curMorning, curAfternoon, curEvening]);
     } on FailureToUpdateException catch (e) {
       log(e.cause);
-      if (null != _curMorning) {
-        failCache.add(_curMorning!);
+      if (null != curMorning) {
+        failCache.add(curMorning!);
       }
-      if (null != _curAfternoon) {
-        failCache.add(_curAfternoon!);
+      if (null != curAfternoon) {
+        failCache.add(curAfternoon!);
       }
-      if (null != _curEvening) {
-        failCache.add(_curEvening!);
+      if (null != curEvening) {
+        failCache.add(curEvening!);
       }
     } on FailureToUploadException catch (e) {
       log(e.cause);
-      if (null != _curMorning) {
-        failCache.add(_curMorning!);
+      if (null != curMorning) {
+        failCache.add(curMorning!);
       }
-      if (null != _curAfternoon) {
-        failCache.add(_curAfternoon!);
+      if (null != curAfternoon) {
+        failCache.add(curAfternoon!);
       }
-      if (null != _curEvening) {
-        failCache.add(_curEvening!);
+      if (null != curEvening) {
+        failCache.add(curEvening!);
       }
     }
     notifyListeners();

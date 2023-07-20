@@ -60,31 +60,36 @@ const UserSchema = CollectionSchema(
       name: r'isSynced',
       type: IsarType.bool,
     ),
-    r'reminderSorter': PropertySchema(
+    r'lastOpened': PropertySchema(
       id: 8,
+      name: r'lastOpened',
+      type: IsarType.dateTime,
+    ),
+    r'reminderSorter': PropertySchema(
+      id: 9,
       name: r'reminderSorter',
       type: IsarType.object,
       target: r'ReminderSorter',
     ),
     r'routineSorter': PropertySchema(
-      id: 9,
+      id: 10,
       name: r'routineSorter',
       type: IsarType.object,
       target: r'RoutineSorter',
     ),
     r'syncOnline': PropertySchema(
-      id: 10,
+      id: 11,
       name: r'syncOnline',
       type: IsarType.bool,
     ),
     r'toDoSorter': PropertySchema(
-      id: 11,
+      id: 12,
       name: r'toDoSorter',
       type: IsarType.object,
       target: r'ToDoSorter',
     ),
     r'userName': PropertySchema(
-      id: 12,
+      id: 13,
       name: r'userName',
       type: IsarType.string,
     )
@@ -197,26 +202,27 @@ void _userSerialize(
     object.groupSorter,
   );
   writer.writeBool(offsets[7], object.isSynced);
+  writer.writeDateTime(offsets[8], object.lastOpened);
   writer.writeObject<ReminderSorter>(
-    offsets[8],
+    offsets[9],
     allOffsets,
     ReminderSorterSchema.serialize,
     object.reminderSorter,
   );
   writer.writeObject<RoutineSorter>(
-    offsets[9],
+    offsets[10],
     allOffsets,
     RoutineSorterSchema.serialize,
     object.routineSorter,
   );
-  writer.writeBool(offsets[10], object.syncOnline);
+  writer.writeBool(offsets[11], object.syncOnline);
   writer.writeObject<ToDoSorter>(
-    offsets[11],
+    offsets[12],
     allOffsets,
     ToDoSorterSchema.serialize,
     object.toDoSorter,
   );
-  writer.writeString(offsets[12], object.userName);
+  writer.writeString(offsets[13], object.userName);
 }
 
 User _userDeserialize(
@@ -243,23 +249,24 @@ User _userDeserialize(
       allOffsets,
     ),
     isSynced: reader.readBoolOrNull(offsets[7]) ?? false,
+    lastOpened: reader.readDateTime(offsets[8]),
     reminderSorter: reader.readObjectOrNull<ReminderSorter>(
-      offsets[8],
+      offsets[9],
       ReminderSorterSchema.deserialize,
       allOffsets,
     ),
     routineSorter: reader.readObjectOrNull<RoutineSorter>(
-      offsets[9],
+      offsets[10],
       RoutineSorterSchema.deserialize,
       allOffsets,
     ),
-    syncOnline: reader.readBool(offsets[10]),
+    syncOnline: reader.readBool(offsets[11]),
     toDoSorter: reader.readObjectOrNull<ToDoSorter>(
-      offsets[11],
+      offsets[12],
       ToDoSorterSchema.deserialize,
       allOffsets,
     ),
-    userName: reader.readString(offsets[12]),
+    userName: reader.readString(offsets[13]),
   );
   object.localID = id;
   return object;
@@ -298,26 +305,28 @@ P _userDeserializeProp<P>(
     case 7:
       return (reader.readBoolOrNull(offset) ?? false) as P;
     case 8:
+      return (reader.readDateTime(offset)) as P;
+    case 9:
       return (reader.readObjectOrNull<ReminderSorter>(
         offset,
         ReminderSorterSchema.deserialize,
         allOffsets,
       )) as P;
-    case 9:
+    case 10:
       return (reader.readObjectOrNull<RoutineSorter>(
         offset,
         RoutineSorterSchema.deserialize,
         allOffsets,
       )) as P;
-    case 10:
-      return (reader.readBool(offset)) as P;
     case 11:
+      return (reader.readBool(offset)) as P;
+    case 12:
       return (reader.readObjectOrNull<ToDoSorter>(
         offset,
         ToDoSorterSchema.deserialize,
         allOffsets,
       )) as P;
-    case 12:
+    case 13:
       return (reader.readString(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -870,6 +879,59 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
+  QueryBuilder<User, User, QAfterFilterCondition> lastOpenedEqualTo(
+      DateTime value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'lastOpened',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<User, User, QAfterFilterCondition> lastOpenedGreaterThan(
+    DateTime value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'lastOpened',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<User, User, QAfterFilterCondition> lastOpenedLessThan(
+    DateTime value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'lastOpened',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<User, User, QAfterFilterCondition> lastOpenedBetween(
+    DateTime lower,
+    DateTime upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'lastOpened',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
   QueryBuilder<User, User, QAfterFilterCondition> localIDEqualTo(Id value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
@@ -1222,6 +1284,18 @@ extension UserQuerySortBy on QueryBuilder<User, User, QSortBy> {
     });
   }
 
+  QueryBuilder<User, User, QAfterSortBy> sortByLastOpened() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastOpened', Sort.asc);
+    });
+  }
+
+  QueryBuilder<User, User, QAfterSortBy> sortByLastOpenedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastOpened', Sort.desc);
+    });
+  }
+
   QueryBuilder<User, User, QAfterSortBy> sortBySyncOnline() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'syncOnline', Sort.asc);
@@ -1320,6 +1394,18 @@ extension UserQuerySortThenBy on QueryBuilder<User, User, QSortThenBy> {
     });
   }
 
+  QueryBuilder<User, User, QAfterSortBy> thenByLastOpened() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastOpened', Sort.asc);
+    });
+  }
+
+  QueryBuilder<User, User, QAfterSortBy> thenByLastOpenedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastOpened', Sort.desc);
+    });
+  }
+
   QueryBuilder<User, User, QAfterSortBy> thenByLocalID() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'localID', Sort.asc);
@@ -1394,6 +1480,12 @@ extension UserQueryWhereDistinct on QueryBuilder<User, User, QDistinct> {
     });
   }
 
+  QueryBuilder<User, User, QDistinct> distinctByLastOpened() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'lastOpened');
+    });
+  }
+
   QueryBuilder<User, User, QDistinct> distinctBySyncOnline() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'syncOnline');
@@ -1461,6 +1553,12 @@ extension UserQueryProperty on QueryBuilder<User, User, QQueryProperty> {
   QueryBuilder<User, bool, QQueryOperations> isSyncedProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'isSynced');
+    });
+  }
+
+  QueryBuilder<User, DateTime, QQueryOperations> lastOpenedProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'lastOpened');
     });
   }
 

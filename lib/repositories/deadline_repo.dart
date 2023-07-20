@@ -16,8 +16,8 @@ class DeadlineRepo implements DeadlineRepository {
   final SupabaseClient _supabaseClient = SupabaseService.supabaseClient;
   final Isar _isarClient = IsarService.isarClient;
 
-  // This may be best moved to the service, or update this value via the service.
-  DateTime yesterday = DateTime.now().subtract(const Duration(days: 1));
+  DateTime get yesterday => DateTime.now().subtract(const Duration(days: 1));
+  DateTime get today => DateTime.now();
 
   @override
   Future<void> create(Deadline deadline) async {
@@ -110,40 +110,6 @@ class DeadlineRepo implements DeadlineRepository {
   }
 
   @override
-  Future<void> retry(List<Deadline> deadlines) async {
-    late List<int?> ids;
-    late int? id;
-
-    await _isarClient.writeTxn(() async {
-      ids = List<int?>.empty(growable: true);
-      for (Deadline deadline in deadlines) {
-        deadline.isSynced = (null != _supabaseClient.auth.currentSession);
-        id = await _isarClient.deadlines.put(deadline);
-        ids.add(id);
-      }
-    });
-    if (ids.any((id) => null == id)) {
-      throw FailureToUpdateException("Failed to update deadlines locally");
-    }
-
-    if (null != _supabaseClient.auth.currentSession) {
-      ids.clear();
-      List<Map<String, dynamic>> deadlineEntities =
-          deadlines.map((deadline) => deadline.toEntity()).toList();
-      final List<Map<String, dynamic>> responses = await _supabaseClient
-          .from("routines")
-          .upsert(deadlineEntities)
-          .select("id");
-
-      ids = responses.map((response) => response["id"] as int?).toList();
-
-      if (ids.any((id) => null == id)) {
-        throw FailureToUploadException("Failed to sync deadlines on update");
-      }
-    }
-  }
-
-  @override
   Future<void> delete(Deadline deadline) async {
     if (null == _supabaseClient.auth.currentSession) {
       deadline.toDelete = true;
@@ -159,7 +125,8 @@ class DeadlineRepo implements DeadlineRepository {
   }
 
   // Call this on a timer if/when user is not syncing data.
-  Future<void> clearLocalRepo() async {
+  @override
+  Future<void> deleteLocal() async {
     List<int> toDeletes = await getDeleteIds();
     await _isarClient.writeTxn(() async {
       await _isarClient.deadlines.deleteAll(toDeletes);
@@ -233,22 +200,17 @@ class DeadlineRepo implements DeadlineRepository {
   }
 
   @override
-  Future<Deadline> getByID({required int id}) async {
-    Deadline? deadline =
-        await _isarClient.deadlines.where().idEqualTo(id).findFirst();
-    if (null == deadline) {
-      throw ObjectNotFoundException("Deadline: $id not found.");
-    }
-    return deadline;
-  }
+  Future<Deadline?> getByID({required int id}) async =>
+      await _isarClient.deadlines.where().idEqualTo(id).findFirst();
 
   // Custom view position, reorderable list.
   // CHECK THIS and put in proper query logic pls.
   // POSSIBLY PUT A HARD LIMIT?
   @override
   Future<List<Deadline>> getRepoList() => _isarClient.deadlines
-      .filter()
+      .where()
       .toDeleteEqualTo(false)
+      .filter()
       .dueDateGreaterThan(yesterday)
       .sortByCustomViewIndex()
       .findAll();
@@ -260,15 +222,17 @@ class DeadlineRepo implements DeadlineRepository {
       case SortMethod.name:
         if (sorter.descending) {
           return _isarClient.deadlines
-              .filter()
+              .where()
               .toDeleteEqualTo(false)
+              .filter()
               .dueDateGreaterThan(yesterday)
               .sortByNameDesc()
               .findAll();
         } else {
           return _isarClient.deadlines
-              .filter()
+              .where()
               .toDeleteEqualTo(false)
+              .filter()
               .dueDateGreaterThan(yesterday)
               .sortByName()
               .findAll();
@@ -276,15 +240,17 @@ class DeadlineRepo implements DeadlineRepository {
       case SortMethod.priority:
         if (sorter.descending) {
           return _isarClient.deadlines
-              .filter()
+              .where()
               .toDeleteEqualTo(false)
+              .filter()
               .dueDateGreaterThan(yesterday)
               .sortByPriorityDesc()
               .findAll();
         } else {
           return _isarClient.deadlines
-              .filter()
+              .where()
               .toDeleteEqualTo(false)
+              .filter()
               .dueDateGreaterThan(yesterday)
               .sortByPriority()
               .findAll();
@@ -292,15 +258,17 @@ class DeadlineRepo implements DeadlineRepository {
       case SortMethod.dueDate:
         if (sorter.descending) {
           return _isarClient.deadlines
-              .filter()
+              .where()
               .toDeleteEqualTo(false)
+              .filter()
               .dueDateGreaterThan(yesterday)
               .sortByDueDateDesc()
               .findAll();
         } else {
           return _isarClient.deadlines
-              .filter()
+              .where()
               .toDeleteEqualTo(false)
+              .filter()
               .dueDateGreaterThan(yesterday)
               .sortByDueDate()
               .findAll();
@@ -311,18 +279,18 @@ class DeadlineRepo implements DeadlineRepository {
   }
 
   Future<List<int>> getDeleteIds() async => _isarClient.deadlines
-      .filter()
+      .where()
       .toDeleteEqualTo(true)
       .idProperty()
       .findAll();
 
   Future<List<Deadline>> getUnsynced() async =>
-      _isarClient.deadlines.filter().isSyncedEqualTo(false).findAll();
+      _isarClient.deadlines.where().isSyncedEqualTo(false).findAll();
 
   @override
   Future<List<Deadline>> getOverdues() async => _isarClient.deadlines
       .filter()
-      .dueDateLessThan(DateTime.now())
+      .dueDateLessThan(today)
       .sortByDueDateDesc()
       .findAll();
 }

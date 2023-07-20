@@ -17,7 +17,7 @@ class ToDo with EquatableMixin implements Copyable<ToDo> {
   Id id = Isar.autoIncrement;
 
   @Index()
-  int groupID = -1;
+  int? groupID;
   @Index()
   int groupIndex = -1;
   @Index()
@@ -58,6 +58,7 @@ class ToDo with EquatableMixin implements Copyable<ToDo> {
   bool toDelete = false;
 
   ToDo({
+    this.groupID,
     required this.taskType,
     required this.name,
     this.description = "",

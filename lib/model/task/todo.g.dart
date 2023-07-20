@@ -332,6 +332,7 @@ ToDo _toDoDeserialize(
     expectedDuration: reader.readLong(offsets[4]),
     frequency: _ToDofrequencyValueEnumMap[reader.readByteOrNull(offsets[5])] ??
         Frequency.once,
+    groupID: reader.readLongOrNull(offsets[6]),
     myDay: reader.readBoolOrNull(offsets[9]) ?? false,
     name: reader.readString(offsets[10]),
     priority: _ToDopriorityValueEnumMap[reader.readByteOrNull(offsets[11])] ??
@@ -353,7 +354,6 @@ ToDo _toDoDeserialize(
   );
   object.completed = reader.readBool(offsets[0]);
   object.customViewIndex = reader.readLong(offsets[1]);
-  object.groupID = reader.readLong(offsets[6]);
   object.groupIndex = reader.readLong(offsets[7]);
   object.id = id;
   object.isSynced = reader.readBool(offsets[8]);
@@ -382,7 +382,7 @@ P _toDoDeserializeProp<P>(
       return (_ToDofrequencyValueEnumMap[reader.readByteOrNull(offset)] ??
           Frequency.once) as P;
     case 6:
-      return (reader.readLong(offset)) as P;
+      return (reader.readLongOrNull(offset)) as P;
     case 7:
       return (reader.readLong(offset)) as P;
     case 8:
@@ -617,7 +617,27 @@ extension ToDoQueryWhere on QueryBuilder<ToDo, ToDo, QWhereClause> {
     });
   }
 
-  QueryBuilder<ToDo, ToDo, QAfterWhereClause> groupIDEqualTo(int groupID) {
+  QueryBuilder<ToDo, ToDo, QAfterWhereClause> groupIDIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'groupID',
+        value: [null],
+      ));
+    });
+  }
+
+  QueryBuilder<ToDo, ToDo, QAfterWhereClause> groupIDIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'groupID',
+        lower: [null],
+        includeLower: false,
+        upper: [],
+      ));
+    });
+  }
+
+  QueryBuilder<ToDo, ToDo, QAfterWhereClause> groupIDEqualTo(int? groupID) {
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(IndexWhereClause.equalTo(
         indexName: r'groupID',
@@ -626,7 +646,7 @@ extension ToDoQueryWhere on QueryBuilder<ToDo, ToDo, QWhereClause> {
     });
   }
 
-  QueryBuilder<ToDo, ToDo, QAfterWhereClause> groupIDNotEqualTo(int groupID) {
+  QueryBuilder<ToDo, ToDo, QAfterWhereClause> groupIDNotEqualTo(int? groupID) {
     return QueryBuilder.apply(this, (query) {
       if (query.whereSort == Sort.asc) {
         return query
@@ -661,7 +681,7 @@ extension ToDoQueryWhere on QueryBuilder<ToDo, ToDo, QWhereClause> {
   }
 
   QueryBuilder<ToDo, ToDo, QAfterWhereClause> groupIDGreaterThan(
-    int groupID, {
+    int? groupID, {
     bool include = false,
   }) {
     return QueryBuilder.apply(this, (query) {
@@ -675,7 +695,7 @@ extension ToDoQueryWhere on QueryBuilder<ToDo, ToDo, QWhereClause> {
   }
 
   QueryBuilder<ToDo, ToDo, QAfterWhereClause> groupIDLessThan(
-    int groupID, {
+    int? groupID, {
     bool include = false,
   }) {
     return QueryBuilder.apply(this, (query) {
@@ -689,8 +709,8 @@ extension ToDoQueryWhere on QueryBuilder<ToDo, ToDo, QWhereClause> {
   }
 
   QueryBuilder<ToDo, ToDo, QAfterWhereClause> groupIDBetween(
-    int lowerGroupID,
-    int upperGroupID, {
+    int? lowerGroupID,
+    int? upperGroupID, {
     bool includeLower = true,
     bool includeUpper = true,
   }) {
@@ -1634,7 +1654,23 @@ extension ToDoQueryFilter on QueryBuilder<ToDo, ToDo, QFilterCondition> {
     });
   }
 
-  QueryBuilder<ToDo, ToDo, QAfterFilterCondition> groupIDEqualTo(int value) {
+  QueryBuilder<ToDo, ToDo, QAfterFilterCondition> groupIDIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'groupID',
+      ));
+    });
+  }
+
+  QueryBuilder<ToDo, ToDo, QAfterFilterCondition> groupIDIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'groupID',
+      ));
+    });
+  }
+
+  QueryBuilder<ToDo, ToDo, QAfterFilterCondition> groupIDEqualTo(int? value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
         property: r'groupID',
@@ -1644,7 +1680,7 @@ extension ToDoQueryFilter on QueryBuilder<ToDo, ToDo, QFilterCondition> {
   }
 
   QueryBuilder<ToDo, ToDo, QAfterFilterCondition> groupIDGreaterThan(
-    int value, {
+    int? value, {
     bool include = false,
   }) {
     return QueryBuilder.apply(this, (query) {
@@ -1657,7 +1693,7 @@ extension ToDoQueryFilter on QueryBuilder<ToDo, ToDo, QFilterCondition> {
   }
 
   QueryBuilder<ToDo, ToDo, QAfterFilterCondition> groupIDLessThan(
-    int value, {
+    int? value, {
     bool include = false,
   }) {
     return QueryBuilder.apply(this, (query) {
@@ -1670,8 +1706,8 @@ extension ToDoQueryFilter on QueryBuilder<ToDo, ToDo, QFilterCondition> {
   }
 
   QueryBuilder<ToDo, ToDo, QAfterFilterCondition> groupIDBetween(
-    int lower,
-    int upper, {
+    int? lower,
+    int? upper, {
     bool includeLower = true,
     bool includeUpper = true,
   }) {
@@ -3017,7 +3053,7 @@ extension ToDoQueryProperty on QueryBuilder<ToDo, ToDo, QQueryProperty> {
     });
   }
 
-  QueryBuilder<ToDo, int, QQueryOperations> groupIDProperty() {
+  QueryBuilder<ToDo, int?, QQueryOperations> groupIDProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'groupID');
     });

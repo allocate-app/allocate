@@ -48,7 +48,7 @@ class ToDoService {
           {required SortableView<ToDo> todoSorter}) async =>
       _repository.getRepoListBy(sorter: todoSorter);
 
-  Future<ToDo> getToDoByID({required int id}) async =>
+  Future<ToDo?> getToDoByID({required int id}) async =>
       _repository.getByID(id: id);
 
   Future<List<ToDo>> getMyDay() async => _repository.getMyDay();
@@ -67,11 +67,10 @@ class ToDoService {
   Future<void> updateBatch({required List<ToDo> toDos}) async =>
       _repository.updateBatch(toDos);
 
+  Future<void> clearDeletesLocalRepo() async => _repository.deleteLocal();
+
   Future<void> deleteToDo({required ToDo toDo}) async =>
       _repository.delete(toDo);
-
-  Future<void> retry({required List<ToDo> toDos}) async =>
-      _repository.retry(toDos);
 
   Future<void> syncRepo() async => _repository.syncRepo();
 

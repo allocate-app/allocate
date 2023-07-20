@@ -121,41 +121,9 @@ class ToDoRepo implements ToDoRepository {
     }
   }
 
-  // TODO: This method can just be update batch.
   @override
-  Future<void> retry(List<ToDo> toDos) async {
-    late List<int?> ids;
-    late int? id;
-
-    await _isarClient.writeTxn(() async {
-      ids = List<int?>.empty(growable: true);
-      for (ToDo todo in toDos) {
-        todo.isSynced = (null != _supabaseClient.auth.currentSession);
-        id = await _isarClient.toDos.put(todo);
-        ids.add(id);
-      }
-    });
-    if (ids.any((id) => null == id)) {
-      throw FailureToUpdateException("Failed to update toDos locally");
-    }
-
-    if (null != _supabaseClient.auth.currentSession) {
-      ids.clear();
-      List<Map<String, dynamic>> todoEntities =
-          toDos.map((todo) => todo.toEntity()).toList();
-      final List<Map<String, dynamic>> responses =
-          await _supabaseClient.from("toDos").upsert(todoEntities).select("id");
-
-      ids = responses.map((response) => response["id"] as int?).toList();
-
-      if (ids.any((id) => null == id)) {
-        throw FailureToUploadException("Failed to sync toDos on update");
-      }
-    }
-  }
-
   // Call this on a timer if/when user is not syncing data.
-  Future<void> clearLocalRepo() async {
+  Future<void> deleteLocal() async {
     List<int> toDeletes = await getDeleteIds();
     await _isarClient.writeTxn(() async {
       await _isarClient.toDos.deleteAll(toDeletes);
@@ -231,13 +199,8 @@ class ToDoRepo implements ToDoRepository {
   }
 
   @override
-  Future<ToDo> getByID({required int id}) async {
-    ToDo? toDo = await _isarClient.toDos.where().idEqualTo(id).findFirst();
-    if (null == toDo) {
-      throw ObjectNotFoundException("ToDo: $id not found.");
-    }
-    return toDo;
-  }
+  Future<ToDo?> getByID({required int id}) async =>
+      await _isarClient.toDos.where().idEqualTo(id).findFirst();
 
   /// These all require to be "completed = false."
 

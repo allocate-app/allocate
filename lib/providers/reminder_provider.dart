@@ -1,17 +1,18 @@
+import 'dart:async';
 import 'dart:developer';
 
 import 'package:flutter/foundation.dart';
 
 import '../model/task/reminder.dart';
+import '../model/user/user.dart';
 import '../services/reminder_service.dart';
 import '../util/enums.dart';
 import '../util/exceptions.dart';
 import '../util/sorting/reminder_sorter.dart';
 
 class ReminderProvider extends ChangeNotifier {
-  ReminderProvider();
-
-  final ReminderService _reminderService = ReminderService();
+  late Timer syncTimer;
+  final ReminderService _reminderService;
 
   late Reminder curReminder;
 
@@ -19,7 +20,31 @@ class ReminderProvider extends ChangeNotifier {
 
   List<Reminder> failCache = List.empty(growable: true);
 
-  ReminderSorter sorter = ReminderSorter();
+  late ReminderSorter sorter;
+
+  User? user;
+  ReminderProvider({this.user, ReminderService? service})
+      : _reminderService = service ?? ReminderService() {
+    sorter = user?.reminderSorter ?? ReminderSorter();
+    startTimer();
+  }
+
+  void setUser({User? user}) {
+    user = user;
+    sorter = user?.reminderSorter ?? sorter;
+    notifyListeners();
+  }
+
+  void startTimer() {
+    syncTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
+      _reattemptUpdate();
+      if (user!.syncOnline) {
+        _syncRepo();
+      } else {
+        _reminderService.clearDeletesLocalRepo();
+      }
+    });
+  }
 
   SortMethod get sortMethod => sorter.sortMethod;
 
@@ -36,6 +61,20 @@ class ReminderProvider extends ChangeNotifier {
   bool get descending => sorter.descending;
 
   List<SortMethod> get sortMethods => ReminderSorter.sortMethods;
+
+  Future<void> _syncRepo() async {
+    // Not quite sure how to handle this outside of gui warning.
+    try {
+      _reminderService.syncRepo();
+    } on FailureToDeleteException catch (e) {
+      log(e.cause);
+      log("This is a fatal error.");
+    } on FailureToUploadException catch (e) {
+      log(e.cause);
+      log("This is a fatal error, supabase issue");
+    }
+    notifyListeners();
+  }
 
   Future<void> createReminder({required String name, DateTime? dueDate}) async {
     curReminder = Reminder(name: name, dueDate: dueDate ?? DateTime.now());
@@ -71,21 +110,21 @@ class ReminderProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> _updateBatch({required List<Reminder> reminders}) async {
-    try {
-      _reminderService.updateBatch(reminders: reminders);
-    } on FailureToUploadException catch (e) {
-      log(e.cause);
-      failCache.addAll(reminders);
-    } on FailureToUpdateException catch (e) {
-      log(e.cause);
-      failCache.addAll(reminders);
-    }
-  }
+  // Future<void> _updateBatch({required List<Reminder> reminders}) async {
+  //   try {
+  //     _reminderService.updateBatch(reminders: reminders);
+  //   } on FailureToUploadException catch (e) {
+  //     log(e.cause);
+  //     failCache.addAll(reminders);
+  //   } on FailureToUpdateException catch (e) {
+  //     log(e.cause);
+  //     failCache.addAll(reminders);
+  //   }
+  // }
 
   Future<void> _reattemptUpdate() async {
     try {
-      _reminderService.retry(reminders: failCache);
+      _reminderService.updateBatch(reminders: failCache);
       failCache.clear();
     } on FailureToUploadException catch (e) {
       log("DataCache - ${e.cause}");
@@ -115,8 +154,7 @@ class ReminderProvider extends ChangeNotifier {
       failCache.addAll(reminders);
     } on FailureToUploadException catch (e) {
       log(e.cause);
-      // Re-store into local database, on total failure, cache.
-      _updateBatch(reminders: reminders);
+      failCache.addAll(reminders);
     }
     notifyListeners();
   }

@@ -1,6 +1,8 @@
 import "dart:async";
 import "dart:developer";
 
+import "package:allocate/providers/reminder_provider.dart";
+import "package:allocate/providers/routine_provider.dart";
 import "package:allocate/providers/todo_provider.dart";
 import "package:allocate/providers/user_provider.dart";
 import "package:allocate/services/isar_service.dart";
@@ -10,6 +12,9 @@ import "package:connectivity_plus/connectivity_plus.dart";
 import 'package:flutter/material.dart';
 import "package:internet_connection_checker/internet_connection_checker.dart";
 import "package:provider/provider.dart";
+
+import "providers/deadline_provider.dart";
+import "providers/group_provider.dart";
 
 ValueNotifier<bool> isDeviceConnected = ValueNotifier(false);
 // TODO: Add proxy providers for the entire model. Refactor according to todoprovider
@@ -27,6 +32,43 @@ void main() {
             tp?.setUser(user: up.curUser);
             return tp ?? ToDoProvider(user: up.curUser, service: null);
           }),
+      ChangeNotifierProxyProvider<UserProvider, RoutineProvider>(
+          create: (BuildContext context) => RoutineProvider(
+              user: Provider.of<UserProvider>(context, listen: false).curUser,
+              service: null),
+          update: (BuildContext context, UserProvider up, RoutineProvider? rp) {
+            rp?.setUser(user: up.curUser);
+            return rp ?? RoutineProvider(user: up.curUser, service: null);
+          }),
+      ChangeNotifierProxyProvider<UserProvider, ReminderProvider>(
+          create: (BuildContext context) => ReminderProvider(
+              user: Provider.of<UserProvider>(context, listen: false).curUser,
+              service: null),
+          update:
+              (BuildContext context, UserProvider up, ReminderProvider? rp) {
+            rp?.setUser(user: up.curUser);
+            return rp ?? ReminderProvider(user: up.curUser, service: null);
+          }),
+      ChangeNotifierProxyProvider<UserProvider, DeadlineProvider>(
+          create: (BuildContext context) => DeadlineProvider(
+              user: Provider.of<UserProvider>(context, listen: false).curUser,
+              service: null),
+          update:
+              (BuildContext context, UserProvider up, DeadlineProvider? dp) {
+            dp?.setUser(user: up.curUser);
+            return dp ?? DeadlineProvider(user: up.curUser, service: null);
+          }),
+      ChangeNotifierProxyProvider<UserProvider, GroupProvider>(
+          create: (BuildContext context) => GroupProvider(
+              user: Provider.of<UserProvider>(context, listen: false).curUser,
+              groupService: null,
+              toDoService: null),
+          update: (BuildContext context, UserProvider up, GroupProvider? gp) {
+            gp?.setUser(user: up.curUser);
+            return gp ??
+                GroupProvider(
+                    user: up.curUser, groupService: null, toDoService: null);
+          })
     ], child: const App()),
   );
 }
