@@ -1,6 +1,7 @@
 import "dart:convert";
 
 import "package:allocate/model/task/subtask.dart";
+import "package:equatable/equatable.dart";
 import "package:isar/isar.dart";
 
 import "../../util/enums.dart";
@@ -11,7 +12,7 @@ part "routine.g.dart";
 // Future TODO: subtask sorting
 
 @Collection(inheritance: false)
-class Routine implements Copyable<Routine> {
+class Routine with EquatableMixin implements Copyable<Routine> {
   Id id = Isar.autoIncrement;
 
   @Enumerated(EnumType.ordinal)

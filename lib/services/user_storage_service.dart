@@ -48,6 +48,8 @@ class UserStorageService {
       Map<String, dynamic> userEntity = user.toEntity();
       final List<Map<String, dynamic>> response =
           await _supabaseClient.from("users").upsert(userEntity).select("id");
+
+      id = response.last["id"];
       if (null == id) {
         throw FailureToUploadException("Failed to sync user on update");
       }

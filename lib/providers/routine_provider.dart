@@ -108,8 +108,7 @@ class RoutineProvider extends ChangeNotifier {
     int expectedDuration =
         duration?.inSeconds ?? (const Duration(hours: 1)).inSeconds;
     int realDuration = _routineService.calculateRealDuration(
-            weight: weight, duration: expectedDuration) ??
-        0;
+        weight: weight, duration: expectedDuration);
 
     curRoutine = Routine(
         routineTime: timeOfDay,

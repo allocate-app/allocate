@@ -161,7 +161,6 @@ class GroupRepo implements GroupRepository {
     }
   }
 
-  @override
   Future<void> clearLocalRepo() async {
     List<int> toDeletes = await getDeleteIds();
     await _isarClient.writeTxn(() async {

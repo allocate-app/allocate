@@ -195,6 +195,7 @@ class ToDoProvider extends ChangeNotifier {
       description: description,
       weight: weight,
       expectedDuration: expectedDuration,
+      realDuration: realDuration,
       priority: priority,
       dueDate: dueDate,
       myDay: myDay,
