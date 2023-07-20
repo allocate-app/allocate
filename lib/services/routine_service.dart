@@ -3,6 +3,7 @@ import 'package:allocate/util/exceptions.dart';
 import '../model/task/routine.dart';
 import '../model/task/subtask.dart';
 import '../repositories/routine_repo.dart';
+import '../util/constants.dart';
 import '../util/enums.dart';
 import '../util/interfaces/repository/routine_repository.dart';
 import '../util/interfaces/sortable.dart';
@@ -19,18 +20,30 @@ class RoutineService {
 
   set repository(RoutineRepository repo) => _repository = repo;
 
+  int calculateWeight({List<SubTask>? routineTasks}) =>
+      (routineTasks ?? List.empty(growable: false))
+          .fold(0, (p, c) => p + c.weight);
+
   void recalculateWeight({required Routine routine}) {
     routine.weight = routine.routineTasks.fold(0, (p, c) => p + c.weight);
   }
+
+  int calculateRealDuration({int? weight, int? duration}) => (remap(
+          x: weight ?? 0,
+          inMin: 0,
+          inMax: Constants.maxWeight,
+          outMin: Constants.lowerBound,
+          outMax: Constants.upperBound) *
+      (duration ?? 0)) as int;
 
   void setRealDuration({required Routine routine}) =>
       routine.realDuration = (remap(
               x: routine.weight,
               inMin: 0,
-              inMax: Routine.maxRoutineWeight,
-              outMin: Routine.lowerBound,
-              outMax: Routine.upperBound) as int) *
-          routine.expectedDuration;
+              inMax: Constants.maxWeight,
+              outMin: Constants.lowerBound,
+              outMax: Constants.upperBound) *
+          routine.expectedDuration) as int;
 
   Future<void> createRoutine({required Routine routine}) async =>
       _repository.create(routine);
@@ -63,7 +76,7 @@ class RoutineService {
   // TODO: Refactor this -> Subtask editing should just handle subtask add/subtract.
   Future<void> addRoutineTask(
       {required SubTask subTask, required Routine routine}) async {
-    if (routine.routineTasks.length >= Routine.maxTasksPerRoutine) {
+    if (routine.routineTasks.length >= Constants.maxNumTasks) {
       throw ListLimitExceededException("Routine limit exceeded");
     }
 

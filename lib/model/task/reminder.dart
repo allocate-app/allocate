@@ -21,8 +21,7 @@ class Reminder with EquatableMixin implements Copyable<Reminder> {
   bool isSynced = false;
   @Index()
   bool toDelete = false;
-  Reminder({required this.name, DateTime? dueDate})
-      : dueDate = dueDate ?? DateTime.now();
+  Reminder({required this.name, required this.dueDate});
 
   @override
   Reminder copy() => Reminder(name: name, dueDate: dueDate);

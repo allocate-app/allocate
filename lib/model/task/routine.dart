@@ -8,16 +8,10 @@ import "../../util/interfaces/copyable.dart";
 
 part "routine.g.dart";
 
-// TODO: implement a subtask sorting object and serialization.
+// Future TODO: subtask sorting
 
 @Collection(inheritance: false)
 class Routine implements Copyable<Routine> {
-  static const int maxTasksPerRoutine = 10;
-  static const int lowerBound = 1;
-  static const int upperBound = 10;
-  static const int maxTaskWeight = 5;
-  static const int maxRoutineWeight = maxTaskWeight * maxTasksPerRoutine;
-
   Id id = Isar.autoIncrement;
 
   @Enumerated(EnumType.ordinal)
@@ -37,7 +31,7 @@ class Routine implements Copyable<Routine> {
   final List<SubTask> routineTasks;
 
   @Index()
-  int? customViewIndex;
+  int customViewIndex = -1;
 
   @Index()
   bool isSynced = false;
@@ -49,13 +43,9 @@ class Routine implements Copyable<Routine> {
       {required this.routineTime,
       required this.name,
       this.weight = 0,
-      Duration expectedDuration = const Duration(hours: 1),
-      int? realDuration,
-      List<SubTask>? routineTasks})
-      : expectedDuration = expectedDuration.inSeconds,
-        //This is explicitly calculated by the service.
-        realDuration = realDuration ?? expectedDuration.inSeconds,
-        routineTasks = routineTasks ?? List.empty(growable: true);
+      required this.expectedDuration,
+      required this.realDuration,
+      required this.routineTasks});
 
   Routine.fromEntity({required Map<String, dynamic> entity})
       : id = entity["id"] as Id,
@@ -68,7 +58,7 @@ class Routine implements Copyable<Routine> {
             (jsonDecode(entity["routineTasks"])["routineTasks"] as List)
                 .map((rt) => SubTask.fromEntity(entity: rt))
                 .toList(),
-        customViewIndex = entity["customViewIndex"] as int?,
+        customViewIndex = entity["customViewIndex"] as int,
         isSynced = true,
         toDelete = false;
 
@@ -88,7 +78,8 @@ class Routine implements Copyable<Routine> {
       name: name,
       routineTime: routineTime,
       weight: weight,
-      expectedDuration: Duration(seconds: expectedDuration),
+      expectedDuration: expectedDuration,
+      realDuration: realDuration,
       routineTasks: List.from(routineTasks));
 
   @override
@@ -96,19 +87,19 @@ class Routine implements Copyable<Routine> {
     String? name,
     RoutineTime? routineTime,
     int? weight,
-    Duration? expectedDuration,
+    int? expectedDuration,
+    int? realDuration,
     List<SubTask>? routineTasks,
   }) =>
       Routine(
           name: name ?? this.name,
           routineTime: routineTime ?? this.routineTime,
           weight: weight ?? this.weight,
-          expectedDuration:
-              expectedDuration ?? Duration(seconds: this.expectedDuration),
-          routineTasks: (null != routineTasks)
-              ? List.from(routineTasks)
-              : List.from(this.routineTasks));
+          expectedDuration: expectedDuration ?? this.expectedDuration,
+          realDuration: realDuration ?? this.realDuration,
+          routineTasks: List.from(routineTasks ?? this.routineTasks));
 
+  @ignore
   @override
   List<Object> get props => [
         id,
@@ -117,7 +108,7 @@ class Routine implements Copyable<Routine> {
         weight,
         expectedDuration,
         routineTasks,
-        customViewIndex.toString(),
+        customViewIndex,
         isSynced,
         toDelete
       ];

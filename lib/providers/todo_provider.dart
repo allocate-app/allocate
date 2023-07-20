@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 
 import '../model/task/subtask.dart';
 import '../model/task/todo.dart';
+import '../model/user/user.dart';
 import '../services/todo_service.dart';
 import '../util/enums.dart';
 import '../util/exceptions.dart';
@@ -20,10 +21,11 @@ class ToDoProvider extends ChangeNotifier {
 
   late Timer syncTimer;
 
-  // User? _user;
-  ToDoProvider({ToDoSorter? sorter, ToDoService? service})
-      : _todoService = service ?? ToDoService(),
-        sorter = sorter ?? ToDoSorter();
+  User? user;
+  ToDoProvider({this.user, ToDoService? service})
+      : _todoService = service ?? ToDoService() {
+    sorter = user?.toDoSorter ?? ToDoSorter();
+  }
 
   final ToDoService _todoService;
 
@@ -32,7 +34,7 @@ class ToDoProvider extends ChangeNotifier {
   late List<ToDo> todos;
   List<ToDo> failCache = List.empty(growable: true);
 
-  ToDoSorter sorter;
+  late ToDoSorter sorter;
 
   // Keep these for testing.
   SortMethod get sortMethod => sorter.sortMethod;
@@ -49,36 +51,58 @@ class ToDoProvider extends ChangeNotifier {
   bool get descending => sorter.descending;
   List<SortMethod> get sortMethods => ToDoSorter.sortMethods;
 
-  void setSorter({ToDoSorter? newSorter}) => sorter = newSorter ?? ToDoSorter();
+  // Refactor this to set a user instead.
+  void setUser({User? user}) {
+    user = user;
+    sorter = user?.toDoSorter ?? sorter;
+    notifyListeners();
+  }
 
-  void recalculateWeight() => _todoService.recalculateWeight(toDo: curToDo);
+  Future<void> recalculateWeight() async {
+    _todoService.recalculateWeight(toDo: curToDo);
+    updateToDo();
+  }
 
-  // Not quite sure how to handle weight yet.
+  Future<void> recalculateRealDuration() async {
+    _todoService.setRealDuration(toDo: curToDo);
+    updateToDo();
+  }
+
   Future<void> createToDo({
     required TaskType taskType,
     required String name,
     String? description,
     int? weight,
+    Duration? duration,
     Priority? priority,
     DateTime? dueDate,
+    bool? myDay,
     bool? repeatable,
     Frequency? frequency,
     List<bool>? repeatDays,
     int? repeatSkip,
     List<SubTask>? subTasks,
   }) async {
+    weight = weight ?? _todoService.calculateWeight(subTasks: subTasks);
+    int expectedDuration =
+        duration?.inSeconds ?? (const Duration(hours: 1)).inSeconds;
+    int realDuration = _todoService.calculateRealDuration(
+        weight: weight, duration: expectedDuration);
     curToDo = ToDo(
         taskType: taskType,
         name: name,
         description: description ?? "",
-        weight: weight ?? 0,
+        weight: weight,
+        expectedDuration: expectedDuration,
+        realDuration: realDuration,
         priority: priority ?? Priority.low,
-        dueDate: dueDate,
+        dueDate: dueDate ?? DateTime.now(),
+        myDay: myDay ?? false,
         repeatable: repeatable ?? false,
         frequency: frequency ?? Frequency.once,
-        repeatDays: repeatDays,
+        repeatDays: repeatDays ?? List.filled(7, false, growable: false),
         repeatSkip: repeatSkip ?? 1,
-        subTasks: subTasks);
+        subTasks: subTasks ?? List.empty(growable: true));
     try {
       _todoService.createToDo(toDo: curToDo);
     } on FailureToCreateException catch (e) {
@@ -148,7 +172,7 @@ class ToDoProvider extends ChangeNotifier {
       String? name,
       String? description,
       int? weight,
-      Duration? expectedDuration,
+      Duration? duration,
       Priority? priority,
       DateTime? dueDate,
       bool? myDay,
@@ -159,6 +183,12 @@ class ToDoProvider extends ChangeNotifier {
       bool? isSynced,
       bool? toDelete,
       List<SubTask>? subTasks}) async {
+    int? expectedDuration = duration?.inSeconds;
+    int? realDuration = (null == expectedDuration)
+        ? null
+        : _todoService.calculateRealDuration(
+            weight: weight ?? curToDo.weight, duration: expectedDuration);
+
     ToDo toDo = curToDo.copyWith(
       taskType: taskType,
       name: name,
@@ -167,19 +197,13 @@ class ToDoProvider extends ChangeNotifier {
       expectedDuration: expectedDuration,
       priority: priority,
       dueDate: dueDate,
+      myDay: myDay,
       repeatable: repeatable,
       frequency: frequency,
       repeatDays: repeatDays,
       repeatSkip: repeatSkip,
-      isSynced: isSynced,
-      toDelete: toDelete,
       subTasks: subTasks,
     );
-
-    if (null != expectedDuration &&
-        expectedDuration.inSeconds != curToDo.expectedDuration) {
-      _todoService.setRealDuration(toDo: toDo);
-    }
 
     if (toDo.weight == 0 && toDo.subTasks.isNotEmpty) {
       _todoService.recalculateWeight(toDo: toDo);
@@ -195,6 +219,10 @@ class ToDoProvider extends ChangeNotifier {
     } on FailureToUpdateException catch (e) {
       log(e.cause);
       failCache.add(curToDo);
+    } on ListLimitExceededException catch (e) {
+      log(e.cause);
+      log("TODO ID: ${curToDo.id}, NAME: ${curToDo.name}");
+      // Throw some sort of gui error to re-edit screen & remove tasks.
     }
     notifyListeners();
   }

@@ -8,7 +8,7 @@ class SupabaseService {
 
   static SupabaseClient get supabaseClient => _supabaseClient;
 
-  init(String supabaseUrl, String anonKey) async {
+  init({required String supabaseUrl, required String anonKey}) async {
     await Supabase.initialize(
       url: supabaseUrl,
       anonKey: anonKey,

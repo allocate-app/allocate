@@ -88,19 +88,27 @@ class UserStorageService {
       u.User user = u.User.fromEntity(entity: userEntities.last);
 
       await _isarClient.writeTxn(() async {
-        await _isarClient.clear();
+        await _isarClient.users.clear();
         await _isarClient.users.put(user);
       });
     });
   }
 
-  Future<u.User> getUser() async {
+  Future<void> clearUser() async => await _isarClient.writeTxn(() async {
+        await _isarClient.users.clear();
+      });
+
+  Future<u.User?> getUser() async {
     List<u.User> users = await _isarClient.users.where().findAll();
-    if(users.length > 1 || users.isEmpty)
-      {
-        throw UserException("Multiple or No users in db");
-      }
-    return users.first;
+    if (users.length > 1) {
+      throw UserException("Multiple users in db");
+    }
+    try {
+      u.User user = users.first;
+      return user;
+    } on StateError catch (e) {
+      return null;
+    }
   }
   // Future<u.User> getUserByUserName({required String userName}) async =>
   //     await _isarClient.users.where().userNameEquals(userName).findAll();

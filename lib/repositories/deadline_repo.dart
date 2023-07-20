@@ -159,7 +159,6 @@ class DeadlineRepo implements DeadlineRepository {
   }
 
   // Call this on a timer if/when user is not syncing data.
-  @override
   Future<void> clearLocalRepo() async {
     List<int> toDeletes = await getDeleteIds();
     await _isarClient.writeTxn(() async {
@@ -225,7 +224,7 @@ class DeadlineRepo implements DeadlineRepository {
           .map((deadline) => Deadline.fromEntity(entity: deadline))
           .toList();
       await _isarClient.writeTxn(() async {
-        await _isarClient.clear();
+        await _isarClient.deadlines.clear();
         for (Deadline d in deadlines) {
           _isarClient.deadlines.put(d);
         }
@@ -240,7 +239,7 @@ class DeadlineRepo implements DeadlineRepository {
     if (null == deadline) {
       throw ObjectNotFoundException("Deadline: $id not found.");
     }
-    return deadline!;
+    return deadline;
   }
 
   // Custom view position, reorderable list.

@@ -23,7 +23,7 @@ class ToDoRepo implements ToDoRepository {
     late int? id;
     await _isarClient.writeTxn(() async {
       //This will require to be corrected once db is generated.
-      id = await _isarClient.todos.put(todo);
+      id = await _isarClient.toDos.put(todo);
     });
 
     if (null == id) {
@@ -35,7 +35,7 @@ class ToDoRepo implements ToDoRepository {
     if (null != _supabaseClient.auth.currentSession) {
       Map<String, dynamic> todoEntity = todo.toEntity();
       final List<Map<String, dynamic>> response =
-          await _supabaseClient.from("todos").insert(todoEntity).select("id");
+          await _supabaseClient.from("toDos").insert(todoEntity).select("id");
 
       id = response.last["id"];
 
@@ -52,7 +52,7 @@ class ToDoRepo implements ToDoRepository {
     // This is just for error checking.
     late int? id;
     await _isarClient.writeTxn(() async {
-      id = await _isarClient.todos.put(todo);
+      id = await _isarClient.toDos.put(todo);
     });
 
     if (null == id) {
@@ -62,7 +62,7 @@ class ToDoRepo implements ToDoRepository {
     if (null != _supabaseClient.auth.currentSession) {
       Map<String, dynamic> todoEntity = todo.toEntity();
       final List<Map<String, dynamic>> response =
-          await _supabaseClient.from("todos").upsert(todoEntity).select("id");
+          await _supabaseClient.from("toDos").upsert(todoEntity).select("id");
 
       id = response.last["id"];
       if (null == id) {
@@ -72,33 +72,33 @@ class ToDoRepo implements ToDoRepository {
   }
 
   @override
-  Future<void> updateBatch(List<ToDo> todos) async {
+  Future<void> updateBatch(List<ToDo> toDos) async {
     late List<int?> ids;
     late int? id;
 
     await _isarClient.writeTxn(() async {
       ids = List<int?>.empty(growable: true);
-      for (ToDo todo in todos) {
+      for (ToDo todo in toDos) {
         todo.isSynced = (null != _supabaseClient.auth.currentSession);
-        id = await _isarClient.todos.put(todo);
+        id = await _isarClient.toDos.put(todo);
         ids.add(id);
       }
     });
     if (ids.any((id) => null == id)) {
-      throw FailureToUpdateException("Failed to update todos locally");
+      throw FailureToUpdateException("Failed to update toDos locally");
     }
 
     if (null != _supabaseClient.auth.currentSession) {
       ids.clear();
       List<Map<String, dynamic>> todoEntities =
-          todos.map((todo) => todo.toEntity()).toList();
+          toDos.map((todo) => todo.toEntity()).toList();
       final List<Map<String, dynamic>> responses =
-          await _supabaseClient.from("todos").upsert(todoEntities).select("id");
+          await _supabaseClient.from("toDos").upsert(todoEntities).select("id");
 
       ids = responses.map((response) => response["id"] as int?).toList();
 
       if (ids.any((id) => null == id)) {
-        throw FailureToUploadException("Failed to sync todos on update");
+        throw FailureToUploadException("Failed to sync toDos on update");
       }
     }
   }
@@ -112,9 +112,9 @@ class ToDoRepo implements ToDoRepository {
     }
 
     try {
-      await _supabaseClient.from("todos").delete().eq("id", todo.id);
+      await _supabaseClient.from("toDos").delete().eq("id", todo.id);
       await _isarClient.writeTxn(() async {
-        await _isarClient.todos.delete(todo.id);
+        await _isarClient.toDos.delete(todo.id);
       });
     } catch (error) {
       throw FailureToDeleteException("Failed to delete todo online");
@@ -123,43 +123,42 @@ class ToDoRepo implements ToDoRepository {
 
   // TODO: This method can just be update batch.
   @override
-  Future<void> retry(List<ToDo> todos) async {
+  Future<void> retry(List<ToDo> toDos) async {
     late List<int?> ids;
     late int? id;
 
     await _isarClient.writeTxn(() async {
       ids = List<int?>.empty(growable: true);
-      for (ToDo todo in todos) {
+      for (ToDo todo in toDos) {
         todo.isSynced = (null != _supabaseClient.auth.currentSession);
-        id = await _isarClient.todos.put(todo);
+        id = await _isarClient.toDos.put(todo);
         ids.add(id);
       }
     });
     if (ids.any((id) => null == id)) {
-      throw FailureToUpdateException("Failed to update todos locally");
+      throw FailureToUpdateException("Failed to update toDos locally");
     }
 
     if (null != _supabaseClient.auth.currentSession) {
       ids.clear();
       List<Map<String, dynamic>> todoEntities =
-          todos.map((todo) => todo.toEntity()).toList();
+          toDos.map((todo) => todo.toEntity()).toList();
       final List<Map<String, dynamic>> responses =
-          await _supabaseClient.from("todos").upsert(todoEntities).select("id");
+          await _supabaseClient.from("toDos").upsert(todoEntities).select("id");
 
       ids = responses.map((response) => response["id"] as int?).toList();
 
       if (ids.any((id) => null == id)) {
-        throw FailureToUploadException("Failed to sync todos on update");
+        throw FailureToUploadException("Failed to sync toDos on update");
       }
     }
   }
 
   // Call this on a timer if/when user is not syncing data.
-  @override
   Future<void> clearLocalRepo() async {
     List<int> toDeletes = await getDeleteIds();
     await _isarClient.writeTxn(() async {
-      await _isarClient.todos.deleteAll(toDeletes);
+      await _isarClient.toDos.deleteAll(toDeletes);
     });
   }
 
@@ -171,10 +170,10 @@ class ToDoRepo implements ToDoRepository {
     }
 
     try {
-      await _supabaseClient.from("todos").delete().in_("id", toDeletes);
+      await _supabaseClient.from("toDos").delete().in_("id", toDeletes);
     } catch (error) {
       // I'm also unsure about this Exception.
-      throw FailureToDeleteException("Failed to delete todos on sync");
+      throw FailureToDeleteException("Failed to delete toDos on sync");
     }
 
     // Get the non-uploaded stuff from Isar.
@@ -190,7 +189,7 @@ class ToDoRepo implements ToDoRepository {
     }).toList();
 
     final List<Map<String, dynamic>> responses =
-        await _supabaseClient.from("todos").upsert(syncEntities).select("id");
+        await _supabaseClient.from("toDos").upsert(syncEntities).select("id");
 
     List<int?> ids =
         responses.map((response) => response["id"] as int?).toList();
@@ -198,7 +197,7 @@ class ToDoRepo implements ToDoRepository {
     if (ids.any((id) => null == id)) {
       // Any unsynced stuff will just be caught on next sync.
       // This may not need to be a thing to handle.
-      throw FailureToUploadException("Failed to sync todos");
+      throw FailureToUploadException("Failed to sync toDos");
     }
 
     // Fetch from supabase.
@@ -213,32 +212,37 @@ class ToDoRepo implements ToDoRepository {
       if (null == _supabaseClient.auth.currentSession) {
         return;
       }
-      todoEntities = await _supabaseClient.from("todos").select();
+      todoEntities = await _supabaseClient.from("toDos").select();
 
       if (todoEntities.isEmpty) {
         return;
       }
 
-      List<ToDo> todos = todoEntities
+      List<ToDo> toDos = todoEntities
           .map((routine) => ToDo.fromEntity(entity: routine))
           .toList();
       await _isarClient.writeTxn(() async {
-        await _isarClient.clear();
-        for (ToDo todo in todos) {
-          await _isarClient.todos.put(todo);
+        await _isarClient.toDos.clear();
+        for (ToDo todo in toDos) {
+          await _isarClient.toDos.put(todo);
         }
       });
     });
   }
 
   @override
-  Future<ToDo> getByID({required int id}) async =>
-      _isarClient.todos.where().idEquals(id).findAll();
+  Future<ToDo> getByID({required int id}) async {
+    ToDo? toDo = await _isarClient.toDos.where().idEqualTo(id).findFirst();
+    if (null == toDo) {
+      throw ObjectNotFoundException("ToDo: $id not found.");
+    }
+    return toDo;
+  }
 
   /// These all require to be "completed = false."
 
   @override
-  Future<List<ToDo>> getRepoList() async => _isarClient.todos
+  Future<List<ToDo>> getRepoList() async => _isarClient.toDos
       .where()
       .completedEqualTo(false)
       .filter()
@@ -251,7 +255,7 @@ class ToDoRepo implements ToDoRepository {
     switch (sorter.sortMethod) {
       case SortMethod.name:
         if (sorter.descending) {
-          return _isarClient.todos
+          return _isarClient.toDos
               .where()
               .completedEqualTo(false)
               .filter()
@@ -259,7 +263,7 @@ class ToDoRepo implements ToDoRepository {
               .sortByNameDesc()
               .findAll();
         }
-        return _isarClient.todos
+        return _isarClient.toDos
             .where()
             .completedEqualTo(false)
             .filter()
@@ -268,7 +272,7 @@ class ToDoRepo implements ToDoRepository {
             .findAll();
       case SortMethod.dueDate:
         if (sorter.descending) {
-          return _isarClient.todos
+          return _isarClient.toDos
               .where()
               .completedEqualTo(false)
               .filter()
@@ -276,7 +280,7 @@ class ToDoRepo implements ToDoRepository {
               .sortByDueDateDesc()
               .findAll();
         }
-        return _isarClient.todos
+        return _isarClient.toDos
             .where()
             .completedEqualTo(false)
             .filter()
@@ -285,7 +289,7 @@ class ToDoRepo implements ToDoRepository {
             .findAll();
       case SortMethod.weight:
         if (sorter.descending) {
-          return _isarClient.todos
+          return _isarClient.toDos
               .where()
               .completedEqualTo(false)
               .filter()
@@ -293,7 +297,7 @@ class ToDoRepo implements ToDoRepository {
               .sortByWeightDesc()
               .findAll();
         }
-        return _isarClient.todos
+        return _isarClient.toDos
             .where()
             .completedEqualTo(false)
             .filter()
@@ -302,7 +306,7 @@ class ToDoRepo implements ToDoRepository {
             .findAll();
       case SortMethod.priority:
         if (sorter.descending) {
-          return _isarClient.todos
+          return _isarClient.toDos
               .where()
               .completedEqualTo(false)
               .filter()
@@ -310,7 +314,7 @@ class ToDoRepo implements ToDoRepository {
               .sortByPriorityDesc()
               .findAll();
         }
-        return _isarClient.todos
+        return _isarClient.toDos
             .where()
             .completedEqualTo(false)
             .filter()
@@ -319,7 +323,7 @@ class ToDoRepo implements ToDoRepository {
             .findAll();
       case SortMethod.duration:
         if (sorter.descending) {
-          return _isarClient.todos
+          return _isarClient.toDos
               .where()
               .completedEqualTo(false)
               .filter()
@@ -327,7 +331,7 @@ class ToDoRepo implements ToDoRepository {
               .sortByRealDurationDesc()
               .findAll();
         }
-        return _isarClient.todos
+        return _isarClient.toDos
             .where()
             .completedEqualTo(false)
             .filter()
@@ -340,7 +344,7 @@ class ToDoRepo implements ToDoRepository {
   }
 
   @override
-  Future<List<ToDo>> getCompleted() async => _isarClient.todos
+  Future<List<ToDo>> getCompleted() async => _isarClient.toDos
       .where()
       .completedEqualTo(true)
       .filter()
@@ -348,7 +352,7 @@ class ToDoRepo implements ToDoRepository {
       .findAll();
 
   @override
-  Future<List<ToDo>> getMyDay() async => _isarClient.todos
+  Future<List<ToDo>> getMyDay() async => _isarClient.toDos
       .where()
       .myDayEqualTo(true)
       .filter()
@@ -359,7 +363,7 @@ class ToDoRepo implements ToDoRepository {
 
   @override
   Future<List<ToDo>> getRepoByGroupID({required int groupID}) async =>
-      _isarClient.todos
+      _isarClient.toDos
           .where()
           .groupIDEqualTo(groupID)
           .filter()
@@ -369,7 +373,7 @@ class ToDoRepo implements ToDoRepository {
           .findAll();
 
   Future<List<int>> getDeleteIds() async =>
-      _isarClient.todos.where().toDeleteEqualTo(true).idProperty.findAll();
+      _isarClient.toDos.where().toDeleteEqualTo(true).idProperty().findAll();
   Future<List<ToDo>> getUnsynced() async =>
-      _isarClient.todos.where().isSyncedEqualTo(false).findAll();
+      _isarClient.toDos.where().isSyncedEqualTo(false).findAll();
 }

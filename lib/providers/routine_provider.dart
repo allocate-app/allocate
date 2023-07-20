@@ -86,24 +86,38 @@ class RoutineProvider extends ChangeNotifier {
 
   List<SortMethod> get sortMethods => RoutineSorter.sortMethods;
 
-  void recalculateWeight() {
+  Future<void> recalculateWeight() async {
     _routineService.recalculateWeight(routine: curRoutine);
+    updateRoutine();
+  }
+
+  Future<void> recalculateRealDuration() async {
+    _routineService.setRealDuration(routine: curRoutine);
     updateRoutine();
   }
 
   Future<void> createRoutine(
       {required String name,
       required timeOfDay,
-      Duration? expectedDuration,
+      Duration? duration,
+      int? weight,
       List<SubTask>? routineTasks}) async {
+    weight =
+        weight ?? _routineService.calculateWeight(routineTasks: routineTasks);
+
+    int expectedDuration =
+        duration?.inSeconds ?? (const Duration(hours: 1)).inSeconds;
+    int realDuration = _routineService.calculateRealDuration(
+            weight: weight, duration: expectedDuration) ??
+        0;
+
     curRoutine = Routine(
         routineTime: timeOfDay,
         name: name,
-        expectedDuration: expectedDuration ?? const Duration(hours: 1),
-        routineTasks: routineTasks);
-
-    _routineService.setRealDuration(routine: curRoutine);
-    _routineService.recalculateWeight(routine: curRoutine);
+        weight: weight,
+        expectedDuration: expectedDuration,
+        realDuration: realDuration,
+        routineTasks: routineTasks ?? List.empty(growable: true));
 
     try {
       _routineService.createRoutine(routine: curRoutine);
@@ -111,6 +125,7 @@ class RoutineProvider extends ChangeNotifier {
       log(e.cause);
       failCache.add(curRoutine);
     } on FailureToUploadException catch (e) {
+      log(e.cause);
       failCache.add(curRoutine);
       return;
     }
@@ -172,18 +187,21 @@ class RoutineProvider extends ChangeNotifier {
       {RoutineTime? routineTime,
       String? name,
       int? weight,
-      Duration? expectedDuration,
+      Duration? duration,
       List<SubTask>? routineTasks}) async {
+    int? expectedDuration = duration?.inSeconds;
+    int? realDuration = (null == expectedDuration)
+        ? null
+        : _routineService.calculateRealDuration(
+            weight: weight ?? curRoutine.weight, duration: expectedDuration);
     Routine routine = curRoutine.copyWith(
         routineTime: routineTime,
         name: name,
         weight: weight,
         expectedDuration: expectedDuration,
+        realDuration: realDuration,
         routineTasks: routineTasks);
-    if (null != expectedDuration &&
-        expectedDuration.inSeconds != curRoutine.expectedDuration) {
-      _routineService.setRealDuration(routine: routine);
-    }
+
     if (routine.weight == 0 && routine.routineTasks.isNotEmpty) {
       _routineService.recalculateWeight(routine: routine);
     }

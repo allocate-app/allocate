@@ -14,16 +14,6 @@ part "todo.g.dart";
 
 @Collection(inheritance: false)
 class ToDo with EquatableMixin implements Copyable<ToDo> {
-  static Map<TaskType, int> numTasks = {
-    TaskType.small: 0,
-    TaskType.large: 5,
-    TaskType.huge: double.maxFinite.toInt()
-  };
-  static const int lowerBound = 1;
-  static const int upperBound = 10;
-  static const int maxTaskWeight = 5;
-  final int maxToDoWeight;
-
   Id id = Isar.autoIncrement;
 
   @Index()
@@ -35,7 +25,7 @@ class ToDo with EquatableMixin implements Copyable<ToDo> {
 
   @Enumerated(EnumType.ordinal)
   final TaskType taskType;
-  final int maxSubTasks;
+
   final List<SubTask> subTasks;
 
   @Index()
@@ -50,12 +40,15 @@ class ToDo with EquatableMixin implements Copyable<ToDo> {
 
   @Enumerated(EnumType.ordinal)
   Priority priority;
+  @Index()
   bool completed = false;
   DateTime dueDate;
 
+  @Index()
   bool myDay;
 
   bool repeatable;
+  @Enumerated(EnumType.ordinal)
   Frequency frequency;
   List<bool> repeatDays;
   int repeatSkip;
@@ -69,27 +62,17 @@ class ToDo with EquatableMixin implements Copyable<ToDo> {
     required this.name,
     this.description = "",
     this.weight = 0,
-    Duration expectedDuration = Duration.zero,
-    int? realDuration,
+    required this.expectedDuration,
+    required this.realDuration,
     this.priority = Priority.low,
-    DateTime? dueDate,
+    required this.dueDate,
     this.myDay = false,
     this.repeatable = false,
     this.frequency = Frequency.once,
-    List<bool>? repeatDays,
+    required this.repeatDays,
     this.repeatSkip = 1,
-    List<SubTask>? subTasks,
-  })  : maxSubTasks = numTasks[taskType]!,
-        expectedDuration = expectedDuration.inSeconds,
-        // This is explicitly calculated by the service.
-        realDuration = realDuration ?? expectedDuration.inSeconds,
-        repeatDays = repeatDays ?? List.filled(7, false, growable: false),
-        dueDate = dueDate ?? DateTime.now(),
-        subTasks = subTasks ?? List.empty(growable: true),
-        maxToDoWeight = numTasks[taskType]! * maxTaskWeight;
-
-  fromSubTask({required SubTask subTask}) => ToDo(
-      taskType: TaskType.small, name: subTask.name, weight: subTask.weight);
+    required this.subTasks,
+  });
 
   // -> From Entitiy.
   ToDo.fromEntity({required Map<String, dynamic> entity})
@@ -98,8 +81,6 @@ class ToDo with EquatableMixin implements Copyable<ToDo> {
         groupIndex = entity["groupIndex"] as int,
         customViewIndex = entity["customViewIndex"] as int,
         taskType = TaskType.values[entity["taskType"]],
-        maxSubTasks = entity["maxSubTasks"] as int,
-        maxToDoWeight = (entity["maxSubTasks"] as int) * maxTaskWeight,
         name = entity["name"] as String,
         description = entity["description"] as String,
         weight = entity["weight"] as int,
@@ -124,7 +105,6 @@ class ToDo with EquatableMixin implements Copyable<ToDo> {
         "groupIndex": groupIndex,
         "customViewIndex": customViewIndex,
         "taskType": taskType.index,
-        "maxSubTasks": maxSubTasks,
         "name": name,
         "description": description,
         "weight": weight,
@@ -148,7 +128,7 @@ class ToDo with EquatableMixin implements Copyable<ToDo> {
       name: name,
       description: description,
       weight: weight,
-      expectedDuration: Duration(seconds: expectedDuration),
+      expectedDuration: expectedDuration,
       realDuration: realDuration,
       priority: priority,
       dueDate: dueDate,
@@ -164,15 +144,15 @@ class ToDo with EquatableMixin implements Copyable<ToDo> {
     String? name,
     String? description,
     int? weight,
-    Duration? expectedDuration,
+    int? expectedDuration,
+    int? realDuration,
     Priority? priority,
     DateTime? dueDate,
+    bool? myDay,
     bool? repeatable,
     Frequency? frequency,
     List<bool>? repeatDays,
     int? repeatSkip,
-    bool? isSynced,
-    bool? toDelete,
     List<SubTask>? subTasks,
   }) =>
       ToDo(
@@ -180,29 +160,22 @@ class ToDo with EquatableMixin implements Copyable<ToDo> {
           name: name ?? this.name,
           description: description ?? this.description,
           weight: weight ?? this.weight,
-          expectedDuration:
-              expectedDuration ?? Duration(seconds: this.expectedDuration),
+          expectedDuration: expectedDuration ?? this.expectedDuration,
+          realDuration: realDuration ?? this.realDuration,
           priority: priority ?? this.priority,
           dueDate: dueDate ?? this.dueDate,
+          myDay: myDay ?? false,
           repeatable: repeatable ?? this.repeatable,
-          repeatDays: (null != repeatDays)
-              ? List.from(repeatDays)
-              : List.from(this.repeatDays),
+          repeatDays: List.from(repeatDays ?? this.repeatDays),
           repeatSkip: repeatSkip ?? this.repeatSkip,
-          subTasks: (null != subTasks &&
-                  subTasks.length <= numTasks[taskType ?? this.taskType]!)
-              ? List.from(subTasks)
-              : (this.subTasks.length <= numTasks[taskType ?? this.taskType]!)
-                  ? List.from(this.subTasks)
-                  : null);
-
+          subTasks: List.from(subTasks ?? this.subTasks));
+  @ignore
   @override
   List<Object?> get props => [
         id,
         customViewIndex,
         groupID,
         groupIndex,
-        maxSubTasks,
         name,
         description,
         weight,

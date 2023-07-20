@@ -5,6 +5,7 @@ import "package:allocate/providers/todo_provider.dart";
 import "package:allocate/providers/user_provider.dart";
 import "package:allocate/services/isar_service.dart";
 import "package:allocate/services/supabase_service.dart";
+import "package:allocate/util/constants.dart";
 import "package:connectivity_plus/connectivity_plus.dart";
 import 'package:flutter/material.dart';
 import "package:internet_connection_checker/internet_connection_checker.dart";
@@ -20,13 +21,11 @@ void main() {
       ChangeNotifierProvider<UserProvider>(create: (_) => UserProvider()),
       ChangeNotifierProxyProvider<UserProvider, ToDoProvider>(
           create: (BuildContext context) => ToDoProvider(
-              sorter: Provider.of<UserProvider>(context, listen: false)
-                  .curUser
-                  .toDoSorter,
+              user: Provider.of<UserProvider>(context, listen: false).curUser,
               service: null),
           update: (BuildContext context, UserProvider up, ToDoProvider? tp) {
-            tp?.setSorter(newSorter: up.curUser.toDoSorter);
-            return tp ?? ToDoProvider(sorter: up.curUser.toDoSorter);
+            tp?.setUser(user: up.curUser);
+            return tp ?? ToDoProvider(user: up.curUser, service: null);
           }),
     ], child: const App()),
   );
@@ -44,7 +43,9 @@ class _AppState extends State<App> {
   @override
   void initState() {
     IsarService.instance.init();
-    SupabaseService.instance.init();
+    SupabaseService.instance.init(
+        supabaseUrl: Constants.supabaseURL,
+        anonKey: Constants.supabaseAnnonKey);
     super.initState();
     subscription = Connectivity()
         .onConnectivityChanged

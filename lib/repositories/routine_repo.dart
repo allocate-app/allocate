@@ -178,6 +178,13 @@ class RoutineRepo implements RoutineRepository {
     }
   }
 
+  Future<void> clearLocalRepo() async {
+    List<int> toDeletes = await getDeleteIds();
+    await _isarClient.writeTxn(() async {
+      await _isarClient.routines.deleteAll(toDeletes);
+    });
+  }
+
   // This predicates on having an internet connection.
   @override
   Future<void> syncRepo() async {
@@ -244,7 +251,7 @@ class RoutineRepo implements RoutineRepository {
           .map((routine) => Routine.fromEntity(entity: routine))
           .toList();
       await _isarClient.writeTxn(() async {
-        await _isarClient.clear();
+        await _isarClient.routines.clear();
         for (Routine routine in routines) {
           _isarClient.routines.put(routine);
         }
@@ -254,8 +261,14 @@ class RoutineRepo implements RoutineRepository {
   }
 
   @override
-  Future<Routine> getByID({required int id}) async =>
-      _isarClient.routines.where().idEqualTo(id).findAll();
+  Future<Routine> getByID({required int id}) async {
+    Routine? routine =
+        await _isarClient.routines.where().idEqualTo(id).findFirst();
+    if (null == routine) {
+      throw ObjectNotFoundException("Routine: $id not found.");
+    }
+    return routine;
+  }
 
   @override
   Future<List<Routine>> getRepoList(
@@ -335,7 +348,7 @@ class RoutineRepo implements RoutineRepository {
 
   // This needs to be from local.
   Future<List<int>> getDeleteIds() async =>
-      _isarClient.routines.where().toDeleteEqualTo(true).idProperty.findAll();
+      _isarClient.routines.where().toDeleteEqualTo(true).idProperty().findAll();
   Future<List<Routine>> getUnsynced() async =>
       _isarClient.routines.where().isSyncedEqualTo(false).findAll();
 }

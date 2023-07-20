@@ -16,8 +16,21 @@ import '../util/sorting/todo_sorter.dart';
 
 class UserProvider extends ChangeNotifier {
   late Timer syncTimer;
+  final _userStorageService = UserStorageService();
+  final _authenticationService = AuthenticationService();
+
+  late User? curUser;
+
+  bool retry = false;
+
   UserProvider() {
     startTimer();
+    init();
+  }
+
+  Future<void> init() async {
+    getUser();
+    notifyListeners();
   }
 
   void startTimer() {
@@ -26,18 +39,11 @@ class UserProvider extends ChangeNotifier {
         retry = false;
         updateUser();
       }
-      if (curUser.syncOnline) {
+      if (curUser?.syncOnline ?? false) {
         syncUser();
       }
     });
   }
-
-  final _userStorageService = UserStorageService();
-  final _authenticationService = AuthenticationService();
-
-  late User curUser;
-
-  bool retry = false;
 
   Future<void> createUser(
       {required String userName,
@@ -68,7 +74,7 @@ class UserProvider extends ChangeNotifier {
         toDoSorter: toDoSorter);
 
     try {
-      _userStorageService.createUser(user: curUser);
+      _userStorageService.createUser(user: curUser!);
     } on FailureToCreateException catch (e) {
       log(e.cause);
       retry = true;
@@ -93,7 +99,7 @@ class UserProvider extends ChangeNotifier {
       ReminderSorter? reminderSorter,
       RoutineSorter? routineSorter,
       ToDoSorter? toDoSorter}) async {
-    User user = curUser.copyWith(
+    User user = curUser!.copyWith(
         userName: userName,
         syncOnline: syncOnline,
         isSynced: isSynced,
@@ -108,11 +114,11 @@ class UserProvider extends ChangeNotifier {
         routineSorter: routineSorter,
         toDoSorter: toDoSorter);
 
-    user.localID = curUser.localID;
+    user.localID = curUser!.localID;
     curUser = user;
 
     try {
-      _userStorageService.updateUser(user: curUser);
+      _userStorageService.updateUser(user: curUser!);
     } on FailureToUpdateException catch (e) {
       log(e.cause);
       retry = true;
@@ -144,11 +150,27 @@ class UserProvider extends ChangeNotifier {
     try {
       _authenticationService.signInEmailPassword(
           email: email, password: password);
-      updateUser(syncOnline: true);
+
+      // For switching users.
+      _userStorageService.fetchUser();
+
+      User? newUser = await _userStorageService.getUser();
+      curUser = newUser ?? curUser;
     } on LoginFailedException catch (e) {
       log(e.cause);
+      return;
       // uh, some sort of UI thing? -> warning popup.
+    } on UserSyncException catch (e) {
+      // I do not know how to handle this yet - Possibly an edge function in supabase.
+      log(e.cause);
+      log("This is a fatal error");
+      retry = true;
+      return;
+    } on UserException catch (e) {
+      log(e.cause);
+      _userStorageService.clearUser();
     }
+    updateUser(syncOnline: true);
   }
 
   Future<void> signOut() async {
@@ -158,7 +180,7 @@ class UserProvider extends ChangeNotifier {
 
   Future<void> syncUser() async {
     try {
-      await _userStorageService.syncUser(user: curUser);
+      await _userStorageService.syncUser(user: curUser!);
     } on FailureToUploadException catch (e) {
       log(e.cause);
       retry = true;
@@ -166,6 +188,7 @@ class UserProvider extends ChangeNotifier {
       log(e.cause);
       log("This is a fatal error");
       // Some sort of UI whoopsie.
+      // I do not know how to handle this yet.
       retry = true;
     }
   }

@@ -1,6 +1,7 @@
 import '../model/task/subtask.dart';
 import '../model/task/todo.dart';
 import '../repositories/todo_repo.dart';
+import '../util/constants.dart';
 import '../util/exceptions.dart';
 import '../util/interfaces/repository/todo_repository.dart';
 import '../util/interfaces/sortable.dart';
@@ -14,18 +15,29 @@ class ToDoService {
 
   set repository(ToDoRepository repo) => _repository = repo;
 
+  int calculateWeight({List<SubTask>? subTasks}) =>
+      (subTasks ?? List.empty(growable: false)).fold(0, (p, c) => p + c.weight);
+
   void recalculateWeight({required ToDo toDo}) {
     toDo.weight = toDo.subTasks.fold(0, (p, c) => p + c.weight);
   }
+
+  int calculateRealDuration({int? weight, int? duration}) => (remap(
+          x: weight ?? 0,
+          inMin: 0,
+          inMax: Constants.maxWeight,
+          outMin: Constants.lowerBound,
+          outMax: Constants.upperBound) *
+      (duration ?? 0)) as int;
 
   void setRealDuration({required ToDo toDo}) {
     toDo.realDuration = (remap(
             x: toDo.weight,
             inMin: 0,
-            inMax: toDo.maxToDoWeight,
-            outMin: ToDo.lowerBound,
-            outMax: ToDo.upperBound) as int) *
-        toDo.expectedDuration;
+            inMax: Constants.maxWeight,
+            outMin: Constants.lowerBound,
+            outMax: Constants.upperBound) *
+        toDo.expectedDuration) as int;
   }
 
   Future<void> createToDo({required ToDo toDo}) async =>
@@ -44,8 +56,13 @@ class ToDoService {
       _repository.getRepoByGroupID(groupID: groupID);
   Future<List<ToDo>> getCompleted() async => _repository.getCompleted();
 
-  Future<void> updateToDo({required ToDo toDo}) async =>
-      _repository.update(toDo);
+  Future<void> updateToDo({required ToDo toDo}) async {
+    if (toDo.subTasks.length > Constants.numTasks[toDo.taskType]!) {
+      throw ListLimitExceededException(
+          "Validation failed, subtask limit mismatch");
+    }
+    return _repository.update(toDo);
+  }
 
   Future<void> updateBatch({required List<ToDo> toDos}) async =>
       _repository.updateBatch(toDos);
@@ -60,7 +77,7 @@ class ToDoService {
 
   Future<void> addSubTask(
       {required SubTask subTask, required ToDo toDo}) async {
-    if (toDo.subTasks.length >= toDo.maxSubTasks) {
+    if (toDo.subTasks.length >= Constants.numTasks[toDo.taskType]!) {
       throw ListLimitExceededException("Max subtasks limit exceeded");
     }
     toDo.subTasks.add(subTask);

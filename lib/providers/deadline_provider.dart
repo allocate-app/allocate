@@ -50,7 +50,7 @@ class DeadlineProvider extends ChangeNotifier {
       startDate: startDate ?? DateTime.now(),
       dueDate: dueDate ?? DateTime.now(),
       warnMe: warnMe,
-      warnDate: warnDate ?? DateTime.now().subtract(const Duration(days: 1)),
+      warnDate: warnDate ?? DateTime.now(),
       priority: priority,
     );
     try {

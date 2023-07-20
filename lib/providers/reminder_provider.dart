@@ -38,7 +38,7 @@ class ReminderProvider extends ChangeNotifier {
   List<SortMethod> get sortMethods => ReminderSorter.sortMethods;
 
   Future<void> createReminder({required String name, DateTime? dueDate}) async {
-    curReminder = Reminder(name: name, dueDate: dueDate);
+    curReminder = Reminder(name: name, dueDate: dueDate ?? DateTime.now());
     try {
       _reminderService.createReminder(reminder: curReminder);
     } on FailureToCreateException catch (e) {

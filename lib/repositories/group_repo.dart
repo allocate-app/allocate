@@ -17,7 +17,7 @@ class GroupRepo implements GroupRepository {
 
   @override
   Future<void> create(Group group) async {
-    group.isSynced = isDeviceConnected.value;
+    group.isSynced = (null != _supabaseClient.auth.currentSession);
     late int? id;
 
     await _isarClient.writeTxn(() async {
@@ -30,7 +30,7 @@ class GroupRepo implements GroupRepository {
 
     group.id = id!;
 
-    if (isDeviceConnected.value) {
+    if (null != _supabaseClient.auth.currentSession) {
       Map<String, dynamic> groupEntity = group.toEntity();
       final List<Map<String, dynamic>> response =
           await _supabaseClient.from("groups").insert(groupEntity).select("id");
@@ -43,7 +43,7 @@ class GroupRepo implements GroupRepository {
 
   @override
   Future<void> update(Group group) async {
-    group.isSynced = isDeviceConnected.value;
+    group.isSynced = (null != _supabaseClient.auth.currentSession);
 
     late int? id;
     await _isarClient.writeTxn(() async {
@@ -54,7 +54,7 @@ class GroupRepo implements GroupRepository {
       throw FailureToUpdateException("Failed to update deadline locally");
     }
 
-    if (isDeviceConnected.value) {
+    if (null != _supabaseClient.auth.currentSession) {
       Map<String, dynamic> groupEntity = group.toEntity();
       final List<Map<String, dynamic>> response =
           await _supabaseClient.from("groups").update(groupEntity).select("id");
@@ -74,7 +74,7 @@ class GroupRepo implements GroupRepository {
     await _isarClient.writeTxn(() async {
       ids = List<int?>.empty(growable: true);
       for (Group group in groups) {
-        group.isSynced = isDeviceConnected.value;
+        group.isSynced = (null != _supabaseClient.auth.currentSession);
         id = await _isarClient.groups.put(group);
         ids.add(id);
       }
@@ -83,7 +83,7 @@ class GroupRepo implements GroupRepository {
       throw FailureToUpdateException("Failed to update groups locally");
     }
 
-    if (isDeviceConnected.value) {
+    if (null != _supabaseClient.auth.currentSession) {
       ids.clear();
       List<Map<String, dynamic>> groupEntities =
           groups.map((group) => group.toEntity()).toList();
@@ -114,7 +114,7 @@ class GroupRepo implements GroupRepository {
     //   }
     //   return;
     // }
-    if (!isDeviceConnected.value) {
+    if (null == _supabaseClient.auth.currentSession) {
       group.toDelete = true;
       update(group);
       return;
@@ -135,7 +135,7 @@ class GroupRepo implements GroupRepository {
     await _isarClient.writeTxn(() async {
       ids = List<int?>.empty(growable: true);
       for (Group group in groups) {
-        group.isSynced = isDeviceConnected.value;
+        group.isSynced = (null != _supabaseClient.auth.currentSession);
         id = await _isarClient.groups.put(group);
         ids.add(id);
       }
@@ -144,7 +144,7 @@ class GroupRepo implements GroupRepository {
       throw FailureToUpdateException("Failed to update groups locally");
     }
 
-    if (isDeviceConnected.value) {
+    if (null != _supabaseClient.auth.currentSession) {
       ids.clear();
       List<Map<String, dynamic>> groupEntities =
           groups.map((group) => group.toEntity()).toList();
@@ -159,6 +159,14 @@ class GroupRepo implements GroupRepository {
         throw FailureToUploadException("Failed to sync groups on update");
       }
     }
+  }
+
+  @override
+  Future<void> clearLocalRepo() async {
+    List<int> toDeletes = await getDeleteIds();
+    await _isarClient.writeTxn(() async {
+      await _isarClient.groups.deleteAll(toDeletes);
+    });
   }
 
   @override
@@ -209,7 +217,7 @@ class GroupRepo implements GroupRepository {
     late List<Map<String, dynamic>> groupEntities;
 
     await Future.delayed(const Duration(seconds: 1)).then((value) async {
-      if (!isDeviceConnected.value) {
+      if (null == _supabaseClient.auth.currentSession) {
         return;
       }
       groupEntities = await _supabaseClient.from("groups").select();
@@ -222,7 +230,7 @@ class GroupRepo implements GroupRepository {
           .map((group) => Group.fromEntity(entity: group))
           .toList();
       await _isarClient.writeTxn(() async {
-        await _isarClient.clear();
+        await _isarClient.groups.clear();
         for (Group group in groups) {
           _isarClient.groups.put(group);
         }
@@ -230,13 +238,22 @@ class GroupRepo implements GroupRepository {
     });
   }
 
+  @override
+  Future<Group> getByID({required int id}) async {
+    Group? group = await _isarClient.groups.where().idEqualTo(id).findFirst();
+    if (null == group) {
+      throw ObjectNotFoundException("Group: $id not found.");
+    }
+    return group;
+  }
+
   // Custom view position, reorderable list.
   // CHECK THIS and put in proper query logic pls.
   // POSSIBLY PUT A HARD LIMIT?
   @override
   Future<List<Group>> getRepoList() => _isarClient.groups
-      .filter()
-      .toDeleteEquals(false)
+      .where()
+      .toDeleteEqualTo(false)
       .sortByCustomViewIndex()
       .findAll();
 
@@ -264,7 +281,7 @@ class GroupRepo implements GroupRepository {
   }
 
   Future<List<int>> getDeleteIds() async =>
-      _isarClient.groups.filter().toDeleteEqualTo(true).idProperty.findAll();
+      _isarClient.groups.filter().toDeleteEqualTo(true).idProperty().findAll();
   Future<List<Group>> getUnsynced() async =>
       _isarClient.groups.filter().isSyncedEqualTo(false).findAll();
 }
