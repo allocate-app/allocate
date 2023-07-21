@@ -42,14 +42,19 @@ class ToDo with EquatableMixin implements Copyable<ToDo> {
   Priority priority;
   @Index()
   bool completed = false;
+  DateTime startDate;
   DateTime dueDate;
 
   @Index()
   bool myDay;
 
+  @Index()
   bool repeatable;
+
   @Enumerated(EnumType.ordinal)
   Frequency frequency;
+  @Enumerated(EnumType.ordinal)
+  CustomFrequency customFreq;
   List<bool> repeatDays;
   int repeatSkip;
   @Index()
@@ -66,10 +71,12 @@ class ToDo with EquatableMixin implements Copyable<ToDo> {
     required this.expectedDuration,
     required this.realDuration,
     this.priority = Priority.low,
+    required this.startDate,
     required this.dueDate,
     this.myDay = false,
     this.repeatable = false,
     this.frequency = Frequency.once,
+    this.customFreq = CustomFrequency.weekly,
     required this.repeatDays,
     this.repeatSkip = 1,
     required this.subTasks,
@@ -88,10 +95,12 @@ class ToDo with EquatableMixin implements Copyable<ToDo> {
         expectedDuration = entity["expectedDuration"] as int,
         realDuration = entity["realDuration"] as int,
         priority = Priority.values[entity["priority"]],
+        startDate = DateTime.parse(entity["startDate"]),
         dueDate = DateTime.parse(entity["dueDate"]),
         myDay = entity["myDay"] as bool,
         repeatable = entity["repeatable"] as bool,
         frequency = Frequency.values[entity["frequency"]],
+        customFreq = CustomFrequency.values[entity["customFreq"]],
         repeatDays = entity["repeatDays"],
         repeatSkip = entity["repeatSkip"] as int,
         subTasks = (jsonDecode(entity["subTasks"])["subTasks"]! as List)
@@ -112,10 +121,12 @@ class ToDo with EquatableMixin implements Copyable<ToDo> {
         "expectedDuration": expectedDuration,
         "realDuration": realDuration,
         "priority": priority.index,
+        "startDate": startDate.toIso8601String(),
         "dueDate": dueDate.toIso8601String(),
         "myDay": myDay,
         "repeatable": repeatable,
         "frequency": frequency.index,
+        "customFreq": customFreq.index,
         "repeatDays": repeatDays,
         "repeatSkip": repeatSkip,
         "subTasks": jsonEncode(subTasks.map((st) => st.toEntity())),
@@ -132,9 +143,11 @@ class ToDo with EquatableMixin implements Copyable<ToDo> {
       expectedDuration: expectedDuration,
       realDuration: realDuration,
       priority: priority,
+      startDate: startDate,
       dueDate: dueDate,
       repeatable: repeatable,
       frequency: frequency,
+      customFreq: customFreq,
       repeatDays: List.from(repeatDays),
       repeatSkip: repeatSkip,
       subTasks: List.from(subTasks));
@@ -148,10 +161,12 @@ class ToDo with EquatableMixin implements Copyable<ToDo> {
     int? expectedDuration,
     int? realDuration,
     Priority? priority,
+    DateTime? startDate,
     DateTime? dueDate,
     bool? myDay,
     bool? repeatable,
     Frequency? frequency,
+    CustomFrequency? customFreq,
     List<bool>? repeatDays,
     int? repeatSkip,
     List<SubTask>? subTasks,
@@ -164,9 +179,12 @@ class ToDo with EquatableMixin implements Copyable<ToDo> {
           expectedDuration: expectedDuration ?? this.expectedDuration,
           realDuration: realDuration ?? this.realDuration,
           priority: priority ?? this.priority,
+          startDate: startDate ?? this.startDate,
           dueDate: dueDate ?? this.dueDate,
           myDay: myDay ?? false,
           repeatable: repeatable ?? this.repeatable,
+          frequency: frequency ?? this.frequency,
+          customFreq: customFreq ?? this.customFreq,
           repeatDays: List.from(repeatDays ?? this.repeatDays),
           repeatSkip: repeatSkip ?? this.repeatSkip,
           subTasks: List.from(subTasks ?? this.subTasks));
@@ -183,10 +201,12 @@ class ToDo with EquatableMixin implements Copyable<ToDo> {
         expectedDuration,
         priority,
         completed,
+        startDate,
         dueDate,
         myDay,
         repeatable,
         frequency,
+        customFreq,
         repeatDays,
         repeatSkip,
         isSynced,

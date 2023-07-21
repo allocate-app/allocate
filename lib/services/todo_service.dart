@@ -1,7 +1,12 @@
+import 'dart:developer';
+
+import 'package:jiffy/jiffy.dart';
+
 import '../model/task/subtask.dart';
 import '../model/task/todo.dart';
 import '../repositories/todo_repo.dart';
 import '../util/constants.dart';
+import '../util/enums.dart';
 import '../util/exceptions.dart';
 import '../util/interfaces/repository/todo_repository.dart';
 import '../util/interfaces/sortable.dart';
@@ -20,6 +25,93 @@ class ToDoService {
 
   void recalculateWeight({required ToDo toDo}) {
     toDo.weight = toDo.subTasks.fold(0, (p, c) => p + c.weight);
+  }
+
+  Future<void> checkRepeating({required DateTime now}) async {
+    List<ToDo> toUpdate = List.empty(growable: true);
+
+    List<ToDo> repeatables = await _repository.getRepeatables();
+    for (ToDo toDo in repeatables) {
+      DateTime? nextRepeatDate = switch (toDo.frequency) {
+        (Frequency.daily) => Jiffy.parseFromDateTime(toDo.startDate)
+            .add(days: toDo.repeatSkip)
+            .dateTime,
+        (Frequency.weekly) => Jiffy.parseFromDateTime(toDo.startDate)
+            .add(weeks: toDo.repeatSkip)
+            .dateTime,
+        (Frequency.monthly) => Jiffy.parseFromDateTime(toDo.startDate)
+            .add(months: toDo.repeatSkip)
+            .dateTime,
+        (Frequency.yearly) => Jiffy.parseFromDateTime(toDo.startDate)
+            .add(years: toDo.repeatSkip)
+            .dateTime,
+        (Frequency.custom) => getCustom(toDo: toDo),
+        //Once should never repeat -> fixing asynchronously in case validation fails.
+        (Frequency.once) => null,
+      };
+      if (null == nextRepeatDate) {
+        toDo.repeatable = false;
+      }
+
+      if (now.isAfter(nextRepeatDate!)) {
+        int offset = Jiffy.parseFromDateTime(toDo.dueDate)
+            .diff(Jiffy.parseFromDateTime(toDo.startDate)) as int;
+
+        ToDo newToDo = toDo.copyWith(
+            startDate: nextRepeatDate,
+            dueDate: Jiffy.parseFromDateTime(toDo.dueDate)
+                .add(microseconds: offset)
+                .dateTime);
+
+        toDo.repeatable = false;
+        toUpdate.add(newToDo);
+      }
+
+      toUpdate.add(toDo);
+    }
+    updateBatch(toDos: toUpdate);
+  }
+
+  DateTime? getCustom({required ToDo toDo}) {
+    int numDays = 1;
+
+    // Weekday is 1-indexed.
+    int index = toDo.startDate.weekday % 7;
+    while (true) {
+      if (toDo.repeatDays[index] = true) {
+        break;
+      }
+      numDays += 1;
+      index = (index + 1) % 7;
+      // This will only happen if there are no repeat days in the list.
+      // This is an error and should be caught during validation.
+      // If it does somehow happen, assume it is once repeatable and thus repeated.
+      if (numDays > 7) {
+        log("Repeat Error: no repeating dates.");
+        return null;
+      }
+    }
+
+    // ie. if it is within the same week.
+    if (index + 1 > toDo.startDate.weekday) {
+      return Jiffy.parseFromDateTime(toDo.startDate)
+          .add(days: numDays)
+          .dateTime;
+    }
+
+    Jiffy nextRepeatJiffy = Jiffy.parseFromDateTime(toDo.startDate)
+        .add(days: numDays)
+        .subtract(weeks: 1);
+
+    // These should be handled within the validator.
+    switch (toDo.customFreq) {
+      case CustomFrequency.weekly:
+        return nextRepeatJiffy.add(weeks: toDo.repeatSkip).dateTime;
+      case CustomFrequency.monthly:
+        return nextRepeatJiffy.add(months: toDo.repeatSkip).dateTime;
+      case CustomFrequency.yearly:
+        return nextRepeatJiffy.add(years: toDo.repeatSkip).dateTime;
+    }
   }
 
   int calculateRealDuration({int? weight, int? duration}) => (remap(

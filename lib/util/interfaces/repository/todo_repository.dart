@@ -5,6 +5,7 @@ abstract interface class ToDoRepository implements Repository<ToDo> {
   Future<List<ToDo>> getRepoByGroupID({required int groupID});
   Future<List<ToDo>> getMyDay();
   Future<List<ToDo>> getCompleted();
+  Future<List<ToDo>> getRepeatables();
 
   //TODO: some sort of method to limit the query results?
 }

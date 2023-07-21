@@ -10,6 +10,8 @@ import '../../util/interfaces/copyable.dart';
 /// On each day, grab the "warn me's": if it's today & 10mins (aprox) before, WARN!.
 ///
 /// These should probably have priority.
+///
+/// TODO: add repeatable logic.
 
 part "deadline.g.dart";
 

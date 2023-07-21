@@ -8,6 +8,7 @@ part "reminder.g.dart";
 /// This is a simple reminder object for things that aren't a "task"
 /// so much as they are a thing to remember.
 /// TODO: remove comparable. Database will handle sorting.
+/// TODO: add repeatable logic once ToDo is finished.
 @Collection(inheritance: false)
 class Reminder with EquatableMixin implements Copyable<Reminder> {
   Id id = Isar.autoIncrement;

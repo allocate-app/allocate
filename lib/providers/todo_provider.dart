@@ -95,10 +95,12 @@ class ToDoProvider extends ChangeNotifier {
     int? weight,
     Duration? duration,
     Priority? priority,
+    DateTime? startDate,
     DateTime? dueDate,
     bool? myDay,
     bool? repeatable,
     Frequency? frequency,
+    CustomFrequency? customFreq,
     List<bool>? repeatDays,
     int? repeatSkip,
     List<SubTask>? subTasks,
@@ -108,6 +110,15 @@ class ToDoProvider extends ChangeNotifier {
         duration?.inSeconds ?? (const Duration(hours: 1)).inSeconds;
     int realDuration = _todoService.calculateRealDuration(
         weight: weight, duration: expectedDuration);
+
+    startDate = startDate ?? DateTime.now();
+    dueDate = dueDate ??
+        DateTime(startDate.year, startDate.month, startDate.day, 23, 59, 0);
+
+    if (startDate.isAfter(dueDate)) {
+      dueDate = startDate.add(const Duration(minutes: 15));
+    }
+
     curToDo = ToDo(
         taskType: taskType,
         name: name,
@@ -116,10 +127,12 @@ class ToDoProvider extends ChangeNotifier {
         expectedDuration: expectedDuration,
         realDuration: realDuration,
         priority: priority ?? Priority.low,
-        dueDate: dueDate ?? DateTime.now(),
+        startDate: startDate,
+        dueDate: dueDate,
         myDay: myDay ?? false,
         repeatable: repeatable ?? false,
         frequency: frequency ?? Frequency.once,
+        customFreq: customFreq ?? CustomFrequency.weekly,
         repeatDays: repeatDays ?? List.filled(7, false, growable: false),
         repeatSkip: repeatSkip ?? 1,
         subTasks: subTasks ?? List.empty(growable: true));
@@ -198,6 +211,7 @@ class ToDoProvider extends ChangeNotifier {
       bool? myDay,
       bool? repeatable,
       Frequency? frequency,
+      CustomFrequency? customFrequency,
       List<bool>? repeatDays,
       int? repeatSkip,
       bool? isSynced,
@@ -221,6 +235,7 @@ class ToDoProvider extends ChangeNotifier {
       myDay: myDay,
       repeatable: repeatable,
       frequency: frequency,
+      customFreq: customFrequency,
       repeatDays: repeatDays,
       repeatSkip: repeatSkip,
       subTasks: subTasks,
@@ -247,18 +262,6 @@ class ToDoProvider extends ChangeNotifier {
     }
     notifyListeners();
   }
-
-  // Future<void> _updateBatch(List<ToDo> toDos) async {
-  //   try {
-  //     _todoService.updateBatch(toDos: toDos);
-  //   } on FailureToUploadException catch (e) {
-  //     log(e.cause);
-  //     failCache.addAll(toDos);
-  //   } on FailureToUpdateException catch (e) {
-  //     log(e.cause);
-  //     failCache.addAll(toDos);
-  //   }
-  // }
 
   Future<void> _reattemptUpdate() async {
     try {

@@ -335,6 +335,10 @@ class ToDoRepo implements ToDoRepository {
           .sortByGroupIndex()
           .findAll();
 
+  @override
+  Future<List<ToDo>> getRepeatables() async =>
+      _isarClient.toDos.where().repeatableEqualTo(true).findAll();
+
   Future<List<int>> getDeleteIds() async =>
       _isarClient.toDos.where().toDeleteEqualTo(true).idProperty().findAll();
   Future<List<ToDo>> getUnsynced() async =>
