@@ -51,6 +51,9 @@ class ToDo with EquatableMixin implements Copyable<ToDo> {
   @Index()
   bool repeatable;
 
+  @Index()
+  int? repeatID;
+
   @Enumerated(EnumType.ordinal)
   Frequency frequency;
   @Enumerated(EnumType.ordinal)
@@ -64,6 +67,7 @@ class ToDo with EquatableMixin implements Copyable<ToDo> {
 
   ToDo({
     this.groupID,
+    this.repeatID,
     required this.taskType,
     required this.name,
     this.description = "",
@@ -86,6 +90,7 @@ class ToDo with EquatableMixin implements Copyable<ToDo> {
   ToDo.fromEntity({required Map<String, dynamic> entity})
       : id = entity["id"] as Id,
         groupID = entity["groupID"] as int,
+        repeatID = entity["repeatID"] as int,
         groupIndex = entity["groupIndex"] as int,
         customViewIndex = entity["customViewIndex"] as int,
         taskType = TaskType.values[entity["taskType"]],
@@ -112,6 +117,7 @@ class ToDo with EquatableMixin implements Copyable<ToDo> {
   Map<String, dynamic> toEntity() => {
         "id": id,
         "groupID": groupID,
+        "repeatID": repeatID,
         "groupIndex": groupIndex,
         "customViewIndex": customViewIndex,
         "taskType": taskType.index,
@@ -136,6 +142,8 @@ class ToDo with EquatableMixin implements Copyable<ToDo> {
 
   @override
   ToDo copy() => ToDo(
+      groupID: groupID,
+      repeatID: repeatID,
       taskType: taskType,
       name: name,
       description: description,
@@ -154,6 +162,8 @@ class ToDo with EquatableMixin implements Copyable<ToDo> {
 
   @override
   ToDo copyWith({
+    int? groupID,
+    int? repeatID,
     TaskType? taskType,
     String? name,
     String? description,
@@ -172,6 +182,8 @@ class ToDo with EquatableMixin implements Copyable<ToDo> {
     List<SubTask>? subTasks,
   }) =>
       ToDo(
+          repeatID: repeatID ?? this.repeatID,
+          groupID: groupID,
           taskType: taskType ?? this.taskType,
           name: name ?? this.name,
           description: description ?? this.description,

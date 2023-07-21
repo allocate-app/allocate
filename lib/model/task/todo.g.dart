@@ -95,40 +95,45 @@ const ToDoSchema = CollectionSchema(
       name: r'repeatDays',
       type: IsarType.boolList,
     ),
-    r'repeatSkip': PropertySchema(
+    r'repeatID': PropertySchema(
       id: 15,
+      name: r'repeatID',
+      type: IsarType.long,
+    ),
+    r'repeatSkip': PropertySchema(
+      id: 16,
       name: r'repeatSkip',
       type: IsarType.long,
     ),
     r'repeatable': PropertySchema(
-      id: 16,
+      id: 17,
       name: r'repeatable',
       type: IsarType.bool,
     ),
     r'startDate': PropertySchema(
-      id: 17,
+      id: 18,
       name: r'startDate',
       type: IsarType.dateTime,
     ),
     r'subTasks': PropertySchema(
-      id: 18,
+      id: 19,
       name: r'subTasks',
       type: IsarType.objectList,
       target: r'SubTask',
     ),
     r'taskType': PropertySchema(
-      id: 19,
+      id: 20,
       name: r'taskType',
       type: IsarType.byte,
       enumMap: _ToDotaskTypeEnumValueMap,
     ),
     r'toDelete': PropertySchema(
-      id: 20,
+      id: 21,
       name: r'toDelete',
       type: IsarType.bool,
     ),
     r'weight': PropertySchema(
-      id: 21,
+      id: 22,
       name: r'weight',
       type: IsarType.long,
     )
@@ -256,6 +261,19 @@ const ToDoSchema = CollectionSchema(
         )
       ],
     ),
+    r'repeatID': IndexSchema(
+      id: -1773997408086213934,
+      name: r'repeatID',
+      unique: false,
+      replace: false,
+      properties: [
+        IndexPropertySchema(
+          name: r'repeatID',
+          type: IndexType.value,
+          caseSensitive: false,
+        )
+      ],
+    ),
     r'isSynced': IndexSchema(
       id: -39763503327887510,
       name: r'isSynced',
@@ -332,18 +350,19 @@ void _toDoSerialize(
   writer.writeByte(offsets[12], object.priority.index);
   writer.writeLong(offsets[13], object.realDuration);
   writer.writeBoolList(offsets[14], object.repeatDays);
-  writer.writeLong(offsets[15], object.repeatSkip);
-  writer.writeBool(offsets[16], object.repeatable);
-  writer.writeDateTime(offsets[17], object.startDate);
+  writer.writeLong(offsets[15], object.repeatID);
+  writer.writeLong(offsets[16], object.repeatSkip);
+  writer.writeBool(offsets[17], object.repeatable);
+  writer.writeDateTime(offsets[18], object.startDate);
   writer.writeObjectList<SubTask>(
-    offsets[18],
+    offsets[19],
     allOffsets,
     SubTaskSchema.serialize,
     object.subTasks,
   );
-  writer.writeByte(offsets[19], object.taskType.index);
-  writer.writeBool(offsets[20], object.toDelete);
-  writer.writeLong(offsets[21], object.weight);
+  writer.writeByte(offsets[20], object.taskType.index);
+  writer.writeBool(offsets[21], object.toDelete);
+  writer.writeLong(offsets[22], object.weight);
 }
 
 ToDo _toDoDeserialize(
@@ -368,26 +387,27 @@ ToDo _toDoDeserialize(
         Priority.low,
     realDuration: reader.readLong(offsets[13]),
     repeatDays: reader.readBoolList(offsets[14]) ?? [],
-    repeatSkip: reader.readLongOrNull(offsets[15]) ?? 1,
-    repeatable: reader.readBoolOrNull(offsets[16]) ?? false,
-    startDate: reader.readDateTime(offsets[17]),
+    repeatID: reader.readLongOrNull(offsets[15]),
+    repeatSkip: reader.readLongOrNull(offsets[16]) ?? 1,
+    repeatable: reader.readBoolOrNull(offsets[17]) ?? false,
+    startDate: reader.readDateTime(offsets[18]),
     subTasks: reader.readObjectList<SubTask>(
-          offsets[18],
+          offsets[19],
           SubTaskSchema.deserialize,
           allOffsets,
           SubTask(),
         ) ??
         [],
-    taskType: _ToDotaskTypeValueEnumMap[reader.readByteOrNull(offsets[19])] ??
+    taskType: _ToDotaskTypeValueEnumMap[reader.readByteOrNull(offsets[20])] ??
         TaskType.small,
-    weight: reader.readLongOrNull(offsets[21]) ?? 0,
+    weight: reader.readLongOrNull(offsets[22]) ?? 0,
   );
   object.completed = reader.readBool(offsets[0]);
   object.customViewIndex = reader.readLong(offsets[2]);
   object.groupIndex = reader.readLong(offsets[8]);
   object.id = id;
   object.isSynced = reader.readBool(offsets[9]);
-  object.toDelete = reader.readBool(offsets[20]);
+  object.toDelete = reader.readBool(offsets[21]);
   return object;
 }
 
@@ -432,12 +452,14 @@ P _toDoDeserializeProp<P>(
     case 14:
       return (reader.readBoolList(offset) ?? []) as P;
     case 15:
-      return (reader.readLongOrNull(offset) ?? 1) as P;
+      return (reader.readLongOrNull(offset)) as P;
     case 16:
-      return (reader.readBoolOrNull(offset) ?? false) as P;
+      return (reader.readLongOrNull(offset) ?? 1) as P;
     case 17:
-      return (reader.readDateTime(offset)) as P;
+      return (reader.readBoolOrNull(offset) ?? false) as P;
     case 18:
+      return (reader.readDateTime(offset)) as P;
+    case 19:
       return (reader.readObjectList<SubTask>(
             offset,
             SubTaskSchema.deserialize,
@@ -445,12 +467,12 @@ P _toDoDeserializeProp<P>(
             SubTask(),
           ) ??
           []) as P;
-    case 19:
+    case 20:
       return (_ToDotaskTypeValueEnumMap[reader.readByteOrNull(offset)] ??
           TaskType.small) as P;
-    case 20:
-      return (reader.readBool(offset)) as P;
     case 21:
+      return (reader.readBool(offset)) as P;
+    case 22:
       return (reader.readLongOrNull(offset) ?? 0) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -583,6 +605,14 @@ extension ToDoQueryWhereSort on QueryBuilder<ToDo, ToDo, QWhere> {
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(
         const IndexWhereClause.any(indexName: r'repeatable'),
+      );
+    });
+  }
+
+  QueryBuilder<ToDo, ToDo, QAfterWhere> anyRepeatID() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(
+        const IndexWhereClause.any(indexName: r'repeatID'),
       );
     });
   }
@@ -1308,6 +1338,115 @@ extension ToDoQueryWhere on QueryBuilder<ToDo, ToDo, QWhereClause> {
               includeUpper: false,
             ));
       }
+    });
+  }
+
+  QueryBuilder<ToDo, ToDo, QAfterWhereClause> repeatIDIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'repeatID',
+        value: [null],
+      ));
+    });
+  }
+
+  QueryBuilder<ToDo, ToDo, QAfterWhereClause> repeatIDIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'repeatID',
+        lower: [null],
+        includeLower: false,
+        upper: [],
+      ));
+    });
+  }
+
+  QueryBuilder<ToDo, ToDo, QAfterWhereClause> repeatIDEqualTo(int? repeatID) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'repeatID',
+        value: [repeatID],
+      ));
+    });
+  }
+
+  QueryBuilder<ToDo, ToDo, QAfterWhereClause> repeatIDNotEqualTo(
+      int? repeatID) {
+    return QueryBuilder.apply(this, (query) {
+      if (query.whereSort == Sort.asc) {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'repeatID',
+              lower: [],
+              upper: [repeatID],
+              includeUpper: false,
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'repeatID',
+              lower: [repeatID],
+              includeLower: false,
+              upper: [],
+            ));
+      } else {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'repeatID',
+              lower: [repeatID],
+              includeLower: false,
+              upper: [],
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'repeatID',
+              lower: [],
+              upper: [repeatID],
+              includeUpper: false,
+            ));
+      }
+    });
+  }
+
+  QueryBuilder<ToDo, ToDo, QAfterWhereClause> repeatIDGreaterThan(
+    int? repeatID, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'repeatID',
+        lower: [repeatID],
+        includeLower: include,
+        upper: [],
+      ));
+    });
+  }
+
+  QueryBuilder<ToDo, ToDo, QAfterWhereClause> repeatIDLessThan(
+    int? repeatID, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'repeatID',
+        lower: [],
+        upper: [repeatID],
+        includeUpper: include,
+      ));
+    });
+  }
+
+  QueryBuilder<ToDo, ToDo, QAfterWhereClause> repeatIDBetween(
+    int? lowerRepeatID,
+    int? upperRepeatID, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'repeatID',
+        lower: [lowerRepeatID],
+        includeLower: includeLower,
+        upper: [upperRepeatID],
+        includeUpper: includeUpper,
+      ));
     });
   }
 
@@ -2323,6 +2462,74 @@ extension ToDoQueryFilter on QueryBuilder<ToDo, ToDo, QFilterCondition> {
     });
   }
 
+  QueryBuilder<ToDo, ToDo, QAfterFilterCondition> repeatIDIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'repeatID',
+      ));
+    });
+  }
+
+  QueryBuilder<ToDo, ToDo, QAfterFilterCondition> repeatIDIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'repeatID',
+      ));
+    });
+  }
+
+  QueryBuilder<ToDo, ToDo, QAfterFilterCondition> repeatIDEqualTo(int? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'repeatID',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<ToDo, ToDo, QAfterFilterCondition> repeatIDGreaterThan(
+    int? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'repeatID',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<ToDo, ToDo, QAfterFilterCondition> repeatIDLessThan(
+    int? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'repeatID',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<ToDo, ToDo, QAfterFilterCondition> repeatIDBetween(
+    int? lower,
+    int? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'repeatID',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
   QueryBuilder<ToDo, ToDo, QAfterFilterCondition> repeatSkipEqualTo(int value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
@@ -2817,6 +3024,18 @@ extension ToDoQuerySortBy on QueryBuilder<ToDo, ToDo, QSortBy> {
     });
   }
 
+  QueryBuilder<ToDo, ToDo, QAfterSortBy> sortByRepeatID() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'repeatID', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ToDo, ToDo, QAfterSortBy> sortByRepeatIDDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'repeatID', Sort.desc);
+    });
+  }
+
   QueryBuilder<ToDo, ToDo, QAfterSortBy> sortByRepeatSkip() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'repeatSkip', Sort.asc);
@@ -3071,6 +3290,18 @@ extension ToDoQuerySortThenBy on QueryBuilder<ToDo, ToDo, QSortThenBy> {
     });
   }
 
+  QueryBuilder<ToDo, ToDo, QAfterSortBy> thenByRepeatID() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'repeatID', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ToDo, ToDo, QAfterSortBy> thenByRepeatIDDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'repeatID', Sort.desc);
+    });
+  }
+
   QueryBuilder<ToDo, ToDo, QAfterSortBy> thenByRepeatSkip() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'repeatSkip', Sort.asc);
@@ -3237,6 +3468,12 @@ extension ToDoQueryWhereDistinct on QueryBuilder<ToDo, ToDo, QDistinct> {
     });
   }
 
+  QueryBuilder<ToDo, ToDo, QDistinct> distinctByRepeatID() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'repeatID');
+    });
+  }
+
   QueryBuilder<ToDo, ToDo, QDistinct> distinctByRepeatSkip() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'repeatSkip');
@@ -3368,6 +3605,12 @@ extension ToDoQueryProperty on QueryBuilder<ToDo, ToDo, QQueryProperty> {
   QueryBuilder<ToDo, List<bool>, QQueryOperations> repeatDaysProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'repeatDays');
+    });
+  }
+
+  QueryBuilder<ToDo, int?, QQueryOperations> repeatIDProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'repeatID');
     });
   }
 

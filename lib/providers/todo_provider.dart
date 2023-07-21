@@ -91,6 +91,7 @@ class ToDoProvider extends ChangeNotifier {
   Future<void> createToDo({
     required TaskType taskType,
     required String name,
+    int? groupID,
     String? description,
     int? weight,
     Duration? duration,
@@ -120,6 +121,7 @@ class ToDoProvider extends ChangeNotifier {
     }
 
     curToDo = ToDo(
+        groupID: groupID,
         taskType: taskType,
         name: name,
         description: description ?? "",
@@ -136,6 +138,11 @@ class ToDoProvider extends ChangeNotifier {
         repeatDays: repeatDays ?? List.filled(7, false, growable: false),
         repeatSkip: repeatSkip ?? 1,
         subTasks: subTasks ?? List.empty(growable: true));
+
+    if (curToDo.repeatable) {
+      curToDo.repeatID = curToDo.id;
+    }
+
     try {
       _todoService.createToDo(toDo: curToDo);
     } on FailureToCreateException catch (e) {
@@ -201,7 +208,8 @@ class ToDoProvider extends ChangeNotifier {
   }
 
   Future<void> updateToDo(
-      {TaskType? taskType,
+      {int? groupID,
+      TaskType? taskType,
       String? name,
       String? description,
       int? weight,
@@ -224,6 +232,7 @@ class ToDoProvider extends ChangeNotifier {
             weight: weight ?? curToDo.weight, duration: expectedDuration);
 
     ToDo toDo = curToDo.copyWith(
+      groupID: groupID,
       taskType: taskType,
       name: name,
       description: description,
@@ -246,6 +255,11 @@ class ToDoProvider extends ChangeNotifier {
     }
 
     toDo.id = curToDo.id;
+
+    if (toDo.repeatable) {
+      toDo.repeatID = curToDo.repeatID ?? curToDo.id;
+    }
+
     curToDo = toDo;
     try {
       _todoService.updateToDo(toDo: curToDo);
@@ -310,6 +324,11 @@ class ToDoProvider extends ChangeNotifier {
     }
     notifyListeners();
   }
+
+  Future<void> nextRepeat() async => _todoService.nextRepeatable(toDo: curToDo);
+
+  Future<void> deleteFutures() async =>
+      _todoService.deleteFutures(toDo: curToDo);
 
   Future<void> getToDos() async {
     todos = await _todoService.getToDos();

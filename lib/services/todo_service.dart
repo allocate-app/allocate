@@ -27,12 +27,7 @@ class ToDoService {
     toDo.weight = toDo.subTasks.fold(0, (p, c) => p + c.weight);
   }
 
-  Future<void> checkRepeating({required DateTime now}) async {
-    List<ToDo> toUpdate = List.empty(growable: true);
-
-    List<ToDo> repeatables = await _repository.getRepeatables();
-    for (ToDo toDo in repeatables) {
-      DateTime? nextRepeatDate = switch (toDo.frequency) {
+  DateTime? getRepeatDate({required ToDo toDo}) => switch (toDo.frequency) {
         (Frequency.daily) => Jiffy.parseFromDateTime(toDo.startDate)
             .add(days: toDo.repeatSkip)
             .dateTime,
@@ -49,11 +44,42 @@ class ToDoService {
         //Once should never repeat -> fixing asynchronously in case validation fails.
         (Frequency.once) => null,
       };
+
+  Future<void> nextRepeatable({required ToDo toDo}) async {
+    DateTime? nextRepeatDate = getRepeatDate(toDo: toDo);
+
+    if (null == nextRepeatDate) {
+      return;
+    }
+
+    int offset = Jiffy.parseFromDateTime(toDo.dueDate)
+        .diff(Jiffy.parseFromDateTime(toDo.startDate)) as int;
+
+    ToDo newToDo = toDo.copyWith(
+      startDate: nextRepeatDate,
+      dueDate: Jiffy.parseFromDateTime(toDo.dueDate)
+          .add(microseconds: offset)
+          .dateTime,
+    );
+
+    return updateToDo(toDo: newToDo);
+  }
+
+  Future<void> checkRepeating({required DateTime now}) async {
+    List<ToDo> toUpdate = List.empty(growable: true);
+
+    List<ToDo> repeatables = await _repository.getRepeatables();
+
+    for (ToDo toDo in repeatables) {
+      // This needs to be factored out into its own method.
+      DateTime? nextRepeatDate = getRepeatDate(toDo: toDo);
+
       if (null == nextRepeatDate) {
         toDo.repeatable = false;
+        continue;
       }
 
-      if (now.isAfter(nextRepeatDate!)) {
+      if (now.isAfter(nextRepeatDate)) {
         int offset = Jiffy.parseFromDateTime(toDo.dueDate)
             .diff(Jiffy.parseFromDateTime(toDo.startDate)) as int;
 
@@ -163,6 +189,9 @@ class ToDoService {
 
   Future<void> deleteToDo({required ToDo toDo}) async =>
       _repository.delete(toDo);
+
+  Future<void> deleteFutures({required ToDo toDo}) async =>
+      _repository.deleteFutures(toDo: toDo);
 
   Future<void> syncRepo() async => _repository.syncRepo();
 
