@@ -2,5 +2,6 @@ import '../../../model/task/reminder.dart';
 import 'repository.dart';
 
 abstract class ReminderRepository implements Repository<Reminder> {
-  // Interface defn' here.
+  Future<List<Reminder>> getRepeatables({DateTime? now});
+  Future<void> deleteFutures({required Reminder reminder});
 }

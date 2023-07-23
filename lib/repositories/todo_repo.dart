@@ -351,8 +351,12 @@ class ToDoRepo implements ToDoRepository {
           .findAll();
 
   @override
-  Future<List<ToDo>> getRepeatables() async =>
-      _isarClient.toDos.where().repeatableEqualTo(true).findAll();
+  Future<List<ToDo>> getRepeatables({DateTime? now}) async => _isarClient.toDos
+      .where()
+      .repeatableEqualTo(true)
+      .filter()
+      .dueDateLessThan(now ?? DateTime.now())
+      .findAll();
 
   Future<List<int>> getDeleteIds() async =>
       _isarClient.toDos.where().toDeleteEqualTo(true).idProperty().findAll();

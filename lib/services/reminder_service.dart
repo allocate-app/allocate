@@ -1,5 +1,10 @@
+import 'dart:developer';
+
+import 'package:jiffy/jiffy.dart';
+
 import '../model/task/reminder.dart';
 import '../repositories/reminder_repo.dart';
+import '../util/enums.dart';
 import '../util/interfaces/repository/reminder_repository.dart';
 import '../util/interfaces/sortable.dart';
 
@@ -8,6 +13,134 @@ class ReminderService {
   ReminderRepository _repository = ReminderRepo();
 
   set repository(ReminderRepository repo) => _repository = repo;
+
+  DateTime? getRepeatDate({required Reminder reminder}) =>
+      switch (reminder.frequency) {
+        (Frequency.daily) => Jiffy.parseFromDateTime(reminder.startDate)
+            .add(days: reminder.repeatSkip)
+            .dateTime,
+        (Frequency.weekly) => Jiffy.parseFromDateTime(reminder.startDate)
+            .add(weeks: reminder.repeatSkip)
+            .dateTime,
+        (Frequency.monthly) => Jiffy.parseFromDateTime(reminder.startDate)
+            .add(months: reminder.repeatSkip)
+            .dateTime,
+        (Frequency.yearly) => Jiffy.parseFromDateTime(reminder.startDate)
+            .add(years: reminder.repeatSkip)
+            .dateTime,
+        (Frequency.custom) => getCustom(reminder: reminder),
+        //Once should never repeat -> fixing asynchronously in case validation fails.
+        (Frequency.once) => null,
+      };
+
+  Future<void> nextRepeatable({required Reminder reminder}) async {
+    DateTime? nextRepeatDate = getRepeatDate(reminder: reminder);
+
+    if (null == nextRepeatDate) {
+      return;
+    }
+
+    int offset = Jiffy.parseFromDateTime(reminder.dueDate)
+        .diff(Jiffy.parseFromDateTime(reminder.startDate)) as int;
+
+    Reminder newReminder = reminder.copyWith(
+      startDate: nextRepeatDate,
+      dueDate: Jiffy.parseFromDateTime(reminder.dueDate)
+          .add(microseconds: offset)
+          .dateTime,
+    );
+
+    return updateReminder(reminder: newReminder);
+  }
+
+  Future<void> populateCalendar({required DateTime limit}) async {
+    DateTime startTime = DateTime.now();
+    while (startTime.isBefore(limit)) {
+      List<Reminder> repeatables =
+          await _repository.getRepeatables(now: startTime);
+
+      if (repeatables.isEmpty) {
+        break;
+      }
+      checkRepeating(now: startTime, repeatables: repeatables);
+
+      startTime.add(const Duration(days: 1));
+    }
+  }
+
+  // This is somewhat hacky, but populateCalendar needs an early escape.
+  Future<void> checkRepeating(
+      {required DateTime now, List<Reminder>? repeatables}) async {
+    List<Reminder> toUpdate = List.empty(growable: true);
+
+    repeatables = repeatables ?? await _repository.getRepeatables(now: now);
+
+    for (Reminder reminder in repeatables) {
+      // This needs to be factored out into its own method.
+      DateTime? nextRepeatDate = getRepeatDate(reminder: reminder);
+
+      if (null == nextRepeatDate) {
+        reminder.repeatable = false;
+        continue;
+      }
+
+      int offset = Jiffy.parseFromDateTime(reminder.dueDate)
+          .diff(Jiffy.parseFromDateTime(reminder.startDate)) as int;
+
+      Reminder newReminder = reminder.copyWith(
+          startDate: nextRepeatDate,
+          dueDate: Jiffy.parseFromDateTime(reminder.dueDate)
+              .add(microseconds: offset)
+              .dateTime);
+
+      reminder.repeatable = false;
+      toUpdate.add(newReminder);
+      toUpdate.add(reminder);
+    }
+    updateBatch(reminders: toUpdate);
+  }
+
+  DateTime? getCustom({required Reminder reminder}) {
+    int numDays = 1;
+
+    // Weekday is 1-indexed.
+    int index = reminder.startDate.weekday % 7;
+    while (true) {
+      if (reminder.repeatDays[index] = true) {
+        break;
+      }
+      numDays += 1;
+      index = (index + 1) % 7;
+      // This will only happen if there are no repeat days in the list.
+      // This is an error and should be caught during validation.
+      // If it does somehow happen, assume it is once repeatable and thus repeated.
+      if (numDays > 7) {
+        log("Repeat Error: no repeating dates.");
+        return null;
+      }
+    }
+
+    // ie. if it is within the same week.
+    if (index + 1 > reminder.startDate.weekday) {
+      return Jiffy.parseFromDateTime(reminder.startDate)
+          .add(days: numDays)
+          .dateTime;
+    }
+
+    Jiffy nextRepeatJiffy = Jiffy.parseFromDateTime(reminder.startDate)
+        .add(days: numDays)
+        .subtract(weeks: 1);
+
+    // These should be handled within the validator.
+    switch (reminder.customFreq) {
+      case CustomFrequency.weekly:
+        return nextRepeatJiffy.add(weeks: reminder.repeatSkip).dateTime;
+      case CustomFrequency.monthly:
+        return nextRepeatJiffy.add(months: reminder.repeatSkip).dateTime;
+      case CustomFrequency.yearly:
+        return nextRepeatJiffy.add(years: reminder.repeatSkip).dateTime;
+    }
+  }
 
   Future<void> createReminder({required Reminder reminder}) async =>
       _repository.create(reminder);
@@ -29,6 +162,8 @@ class ReminderService {
       _repository.delete(reminder);
 
   Future<void> clearDeletesLocalRepo() async => _repository.deleteLocal();
+  Future<void> deleteFutures({required Reminder reminder}) async =>
+      _repository.deleteFutures(reminder: reminder);
 
   Future<void> syncRepo() async => _repository.syncRepo();
 

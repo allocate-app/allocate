@@ -106,7 +106,7 @@ class ToDo with EquatableMixin implements Copyable<ToDo> {
         repeatable = entity["repeatable"] as bool,
         frequency = Frequency.values[entity["frequency"]],
         customFreq = CustomFrequency.values[entity["customFreq"]],
-        repeatDays = entity["repeatDays"],
+        repeatDays = entity["repeatDays"] as List<bool>,
         repeatSkip = entity["repeatSkip"] as int,
         subTasks = (jsonDecode(entity["subTasks"])["subTasks"]! as List)
             .map((st) => SubTask.fromEntity(entity: st))

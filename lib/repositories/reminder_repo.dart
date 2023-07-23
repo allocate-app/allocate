@@ -123,6 +123,18 @@ class ReminderRepo implements ReminderRepository {
   }
 
   @override
+  Future<void> deleteFutures({required Reminder reminder}) async {
+    List<Reminder> toDelete = await _isarClient.reminders
+        .where()
+        .repeatIDEqualTo(reminder.repeatID)
+        .filter()
+        .repeatableEqualTo(true)
+        .findAll();
+    toDelete.map((Reminder r) => r.toDelete = true);
+    updateBatch(toDelete);
+  }
+
+  @override
   Future<void> deleteLocal() async {
     List<int> toDeletes = await getDeleteIds();
     await _isarClient.writeTxn(() async {
@@ -258,6 +270,15 @@ class ReminderRepo implements ReminderRepository {
         return getRepoList();
     }
   }
+
+  @override
+  Future<List<Reminder>> getRepeatables({DateTime? now}) async =>
+      _isarClient.reminders
+          .where()
+          .repeatableEqualTo(true)
+          .filter()
+          .dueDateLessThan(now ?? DateTime.now())
+          .findAll();
 
   Future<List<int>> getDeleteIds() async => _isarClient.reminders
       .where()

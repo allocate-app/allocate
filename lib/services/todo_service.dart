@@ -65,10 +65,26 @@ class ToDoService {
     return updateToDo(toDo: newToDo);
   }
 
-  Future<void> checkRepeating({required DateTime now}) async {
+  Future<void> populateCalendar({required DateTime limit}) async {
+    DateTime startTime = DateTime.now();
+    while (startTime.isBefore(limit)) {
+      List<ToDo> repeatables = await _repository.getRepeatables(now: startTime);
+
+      if (repeatables.isEmpty) {
+        break;
+      }
+      checkRepeating(now: startTime, repeatables: repeatables);
+
+      startTime.add(const Duration(days: 1));
+    }
+  }
+
+  // This is somewhat hacky, but populateCalendar needs an early escape.
+  Future<void> checkRepeating(
+      {required DateTime now, List<ToDo>? repeatables}) async {
     List<ToDo> toUpdate = List.empty(growable: true);
 
-    List<ToDo> repeatables = await _repository.getRepeatables();
+    repeatables = repeatables ?? await _repository.getRepeatables(now: now);
 
     for (ToDo toDo in repeatables) {
       // This needs to be factored out into its own method.
@@ -79,20 +95,17 @@ class ToDoService {
         continue;
       }
 
-      if (now.isAfter(nextRepeatDate)) {
-        int offset = Jiffy.parseFromDateTime(toDo.dueDate)
-            .diff(Jiffy.parseFromDateTime(toDo.startDate)) as int;
+      int offset = Jiffy.parseFromDateTime(toDo.dueDate)
+          .diff(Jiffy.parseFromDateTime(toDo.startDate)) as int;
 
-        ToDo newToDo = toDo.copyWith(
-            startDate: nextRepeatDate,
-            dueDate: Jiffy.parseFromDateTime(toDo.dueDate)
-                .add(microseconds: offset)
-                .dateTime);
+      ToDo newToDo = toDo.copyWith(
+          startDate: nextRepeatDate,
+          dueDate: Jiffy.parseFromDateTime(toDo.dueDate)
+              .add(microseconds: offset)
+              .dateTime);
 
-        toDo.repeatable = false;
-        toUpdate.add(newToDo);
-      }
-
+      toDo.repeatable = false;
+      toUpdate.add(newToDo);
       toUpdate.add(toDo);
     }
     updateBatch(toDos: toUpdate);

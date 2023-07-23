@@ -76,8 +76,31 @@ class ReminderProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> createReminder({required String name, DateTime? dueDate}) async {
-    curReminder = Reminder(name: name, dueDate: dueDate ?? DateTime.now());
+  Future<void> createReminder(
+      {required String name,
+      DateTime? startDate,
+      DateTime? dueDate,
+      bool? repeatable,
+      List<bool>? repeatDays,
+      int? repeatSkip,
+      Frequency? frequency,
+      CustomFrequency? customFreq}) async {
+    curReminder = Reminder(
+      name: name,
+      startDate: startDate ?? DateTime.now(),
+      dueDate: dueDate ?? DateTime.now(),
+      repeatable: repeatable ?? false,
+      repeatDays: repeatDays ?? List.filled(7, false, growable: false),
+      repeatSkip: repeatSkip ?? 1,
+      frequency: frequency ?? Frequency.once,
+      customFreq: customFreq ?? CustomFrequency.weekly,
+    );
+
+    // Set the id on creation.
+    if (curReminder.repeatable) {
+      curReminder.repeatID = curReminder.id;
+    }
+
     try {
       _reminderService.createReminder(reminder: curReminder);
     } on FailureToCreateException catch (e) {
@@ -92,10 +115,31 @@ class ReminderProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> updateReminder({String? name, DateTime? dueDate}) async {
-    Reminder reminder = curReminder.copyWith(name: name, dueDate: dueDate);
+  Future<void> updateReminder(
+      {String? name,
+      DateTime? startDate,
+      DateTime? dueDate,
+      bool? repeatable,
+      List<bool>? repeatDays,
+      int? repeatSkip,
+      Frequency? frequency,
+      CustomFrequency? customFreq}) async {
+    Reminder reminder = curReminder.copyWith(
+        name: name,
+        startDate: startDate,
+        dueDate: dueDate,
+        repeatable: repeatable,
+        repeatSkip: repeatSkip,
+        frequency: frequency,
+        customFreq: customFreq);
+
     reminder.id = curReminder.id;
     reminder.customViewIndex = curReminder.customViewIndex;
+
+    if (reminder.repeatable) {
+      reminder.repeatID = curReminder.repeatID ?? curReminder.id;
+    }
+
     curReminder = reminder;
 
     try {
@@ -109,18 +153,6 @@ class ReminderProvider extends ChangeNotifier {
     }
     notifyListeners();
   }
-
-  // Future<void> _updateBatch({required List<Reminder> reminders}) async {
-  //   try {
-  //     _reminderService.updateBatch(reminders: reminders);
-  //   } on FailureToUploadException catch (e) {
-  //     log(e.cause);
-  //     failCache.addAll(reminders);
-  //   } on FailureToUpdateException catch (e) {
-  //     log(e.cause);
-  //     failCache.addAll(reminders);
-  //   }
-  // }
 
   Future<void> _reattemptUpdate() async {
     try {
