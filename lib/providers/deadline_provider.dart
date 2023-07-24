@@ -181,4 +181,8 @@ class DeadlineProvider extends ChangeNotifier {
     deadlines = await _deadlineService.getDeadlinesBy(sorter: sorter);
     notifyListeners();
   }
+
+  // TODO: implement this and handle null.
+  Future<Deadline?> getDeadlineByID({required int id}) async =>
+      getDeadlineByID(id: id);
 }
