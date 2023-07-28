@@ -15,6 +15,11 @@ import '../util/sorting/todo_sorter.dart';
 
 class ToDoProvider extends ChangeNotifier {
   late Timer syncTimer;
+
+  // TESTING ONLY.
+  late Timer testTimer;
+  late DateTime testDate;
+
   final ToDoService _todoService;
 
   late ToDo curToDo;
@@ -32,19 +37,22 @@ class ToDoProvider extends ChangeNotifier {
   }
 
   void startTimer() {
-    syncTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
-      _reattemptUpdate();
+    syncTimer = Timer.periodic(const Duration(seconds: 30), (timer) async {
+      await _reattemptUpdate();
       if (user!.syncOnline) {
         _syncRepo();
       } else {
         _todoService.clearDeletesLocalRepo();
       }
     });
+    testTimer = Timer.periodic(const Duration(days: 1), (timer) async {
+      await _todoService.checkRepeating(now: testDate);
+    });
   }
 
   // Keep these for testing.
   SortMethod get sortMethod => sorter.sortMethod;
-  set curSortMethod(SortMethod method) {
+  set sortMethod(SortMethod method) {
     if (method == sorter.sortMethod) {
       sorter.descending = !sorter.descending;
     } else {
@@ -161,8 +169,9 @@ class ToDoProvider extends ChangeNotifier {
     try {
       _todoService.addSubTask(subTask: subTask, toDo: curToDo);
     } on ListLimitExceededException catch (e) {
-      log(e.cause);
-      failCache.add(curToDo);
+      // TODO: figure out some way to actually handle this.
+      // Rethrowing right now for testing.
+      rethrow;
     }
     notifyListeners();
   }
@@ -217,6 +226,7 @@ class ToDoProvider extends ChangeNotifier {
       Priority? priority,
       DateTime? dueDate,
       bool? myDay,
+      bool? completed,
       bool? repeatable,
       Frequency? frequency,
       CustomFrequency? customFrequency,
@@ -242,6 +252,7 @@ class ToDoProvider extends ChangeNotifier {
       priority: priority,
       dueDate: dueDate,
       myDay: myDay,
+      completed: completed,
       repeatable: repeatable,
       frequency: frequency,
       customFreq: customFrequency,
@@ -289,7 +300,7 @@ class ToDoProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> deleteTodo() async {
+  Future<void> deleteToDo() async {
     try {
       _todoService.deleteToDo(toDo: curToDo);
     } on FailureToDeleteException catch (e) {
@@ -329,6 +340,9 @@ class ToDoProvider extends ChangeNotifier {
 
   Future<void> deleteFutures() async =>
       _todoService.deleteFutures(toDo: curToDo);
+
+  // TODO: Finish this implementation. Now, just testable.
+  Future<void> populateCalendar({required DateTime now}) async => _todoService.populateCalendar(limit: now);
 
   Future<void> getToDos() async {
     todos = await _todoService.getToDos();

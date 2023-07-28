@@ -87,7 +87,6 @@ class ToDoService {
     repeatables = repeatables ?? await _repository.getRepeatables(now: now);
 
     for (ToDo toDo in repeatables) {
-      // This needs to be factored out into its own method.
       DateTime? nextRepeatDate = getRepeatDate(toDo: toDo);
 
       if (null == nextRepeatDate) {

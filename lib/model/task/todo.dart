@@ -9,8 +9,6 @@ import "../../util/interfaces/copyable.dart";
 
 part "todo.g.dart";
 
-// TODO: refactor constructor -> take all logic out and place in provider class.
-// Then this can be built.
 
 @Collection(inheritance: false)
 class ToDo with EquatableMixin implements Copyable<ToDo> {
@@ -41,7 +39,7 @@ class ToDo with EquatableMixin implements Copyable<ToDo> {
   @Enumerated(EnumType.ordinal)
   Priority priority;
   @Index()
-  bool completed = false;
+  bool completed;
   DateTime startDate;
   DateTime dueDate;
 
@@ -78,6 +76,7 @@ class ToDo with EquatableMixin implements Copyable<ToDo> {
     required this.startDate,
     required this.dueDate,
     this.myDay = false,
+    this.completed = false,
     this.repeatable = false,
     this.frequency = Frequency.once,
     this.customFreq = CustomFrequency.weekly,
@@ -103,6 +102,7 @@ class ToDo with EquatableMixin implements Copyable<ToDo> {
         startDate = DateTime.parse(entity["startDate"]),
         dueDate = DateTime.parse(entity["dueDate"]),
         myDay = entity["myDay"] as bool,
+        completed = entity["completed"] as bool,
         repeatable = entity["repeatable"] as bool,
         frequency = Frequency.values[entity["frequency"]],
         customFreq = CustomFrequency.values[entity["customFreq"]],
@@ -130,6 +130,7 @@ class ToDo with EquatableMixin implements Copyable<ToDo> {
         "startDate": startDate.toIso8601String(),
         "dueDate": dueDate.toIso8601String(),
         "myDay": myDay,
+        "completed" : completed,
         "repeatable": repeatable,
         "frequency": frequency.index,
         "customFreq": customFreq.index,
@@ -153,6 +154,8 @@ class ToDo with EquatableMixin implements Copyable<ToDo> {
       priority: priority,
       startDate: startDate,
       dueDate: dueDate,
+      myDay: myDay,
+      completed: completed,
       repeatable: repeatable,
       frequency: frequency,
       customFreq: customFreq,
@@ -174,6 +177,7 @@ class ToDo with EquatableMixin implements Copyable<ToDo> {
     DateTime? startDate,
     DateTime? dueDate,
     bool? myDay,
+    bool? completed,
     bool? repeatable,
     Frequency? frequency,
     CustomFrequency? customFreq,
@@ -193,7 +197,8 @@ class ToDo with EquatableMixin implements Copyable<ToDo> {
           priority: priority ?? this.priority,
           startDate: startDate ?? this.startDate,
           dueDate: dueDate ?? this.dueDate,
-          myDay: myDay ?? false,
+          myDay: myDay ?? this.myDay,
+          completed: completed ?? this.completed,
           repeatable: repeatable ?? this.repeatable,
           frequency: frequency ?? this.frequency,
           customFreq: customFreq ?? this.customFreq,
