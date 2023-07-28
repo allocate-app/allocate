@@ -1,6 +1,6 @@
 import 'package:isar/isar.dart';
 
-import '../../../model/task/todo.dart';
+import '../../model/task/todo.dart';
 import '../enums.dart';
 import '../interfaces/sortable.dart';
 

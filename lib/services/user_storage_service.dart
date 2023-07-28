@@ -7,8 +7,8 @@ import 'isar_service.dart';
 import 'supabase_service.dart';
 
 class UserStorageService {
-  final SupabaseClient _supabaseClient = SupabaseService.supabaseClient;
-  final Isar _isarClient = IsarService.isarClient;
+  final SupabaseClient _supabaseClient = SupabaseService.instance.supabaseClient;
+  final Isar _isarClient = IsarService.instance.isarClient;
 
   Future<void> createUser({required u.User user}) async {
     user.isSynced = (null != _supabaseClient.auth.currentSession);

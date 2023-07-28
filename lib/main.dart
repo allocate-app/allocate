@@ -1,5 +1,6 @@
 import "dart:async";
 import "dart:developer";
+import "dart:ui";
 
 import "package:allocate/providers/reminder_provider.dart";
 import "package:allocate/providers/routine_provider.dart";
@@ -21,6 +22,7 @@ ValueNotifier<bool> isDeviceConnected = ValueNotifier(false);
 // TODO: remove internet_connection_checker.
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
+  DartPluginRegistrant.ensureInitialized();
   runApp(
     MultiProvider(providers: [
       ChangeNotifierProvider<UserProvider>(create: (_) => UserProvider()),

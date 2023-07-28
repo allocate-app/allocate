@@ -1,7 +1,7 @@
-import 'package:allocate/model/task/todo.dart';
 import 'package:equatable/equatable.dart';
 import 'package:isar/isar.dart';
 
+import 'todo.dart';
 import '../../util/interfaces/copyable.dart';
 
 part "group.g.dart";

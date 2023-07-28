@@ -1,6 +1,6 @@
 import "dart:convert";
 
-import "package:allocate/model/task/subtask.dart";
+import "subtask.dart";
 import "package:equatable/equatable.dart";
 import "package:isar/isar.dart";
 

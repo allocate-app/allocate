@@ -1,5 +1,5 @@
 import "dart:io";
-
+import "dart:async";
 import "package:isar/isar.dart";
 import "package:path_provider/path_provider.dart";
 
@@ -18,13 +18,19 @@ class IsarService {
   static final IsarService _instance = IsarService._internal();
   static IsarService get instance => _instance;
 
-  static late final Isar _isarClient;
-  static Isar get isarClient => _isarClient;
+  // These cannot be static for testing.
+  // May also not need to be static.
+  // static late final Isar _isarClient;
+  // static Isar get isarClient => _isarClient;
+
+  late Isar _isarClient;
+
+  Isar get isarClient => _isarClient;
 
   // This needs directory to be set
   // Add tables to this as necessary.
   Future<void> init() async {
-    final Directory dbStorageDir = await getApplicationSupportDirectory();
+    final Directory dbStorageDir = await getApplicationDocumentsDirectory();
     _isarClient = await Isar.open([
       ToDoSchema,
       RoutineSchema,

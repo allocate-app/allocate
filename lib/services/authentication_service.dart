@@ -5,7 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../util/interfaces/authenticator.dart';
 
 class AuthenticationService implements Authenticator {
-  final SupabaseClient _supabaseClient = SupabaseService.supabaseClient;
+  final SupabaseClient _supabaseClient = SupabaseService.instance.supabaseClient;
 
   @override
   Future<void> signUpEmailPassword(

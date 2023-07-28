@@ -12,8 +12,8 @@ import '../util/interfaces/sortable.dart';
 class ReminderRepo implements ReminderRepository {
   ReminderRepo();
 
-  final SupabaseClient _supabaseClient = SupabaseService.supabaseClient;
-  final Isar _isarClient = IsarService.isarClient;
+  final SupabaseClient _supabaseClient = SupabaseService.instance.supabaseClient;
+  final Isar _isarClient = IsarService.instance.isarClient;
 
   // This may be best moved to the service, or update this value via the service.
   DateTime yesterday = DateTime.now().subtract(const Duration(days: 1));

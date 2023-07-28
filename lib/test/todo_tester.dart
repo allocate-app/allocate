@@ -1,10 +1,20 @@
-import "package:allocate/model/task/todo.dart";
-import "package:allocate/util/exceptions.dart";
+import "dart:ui";
+import "dart:io" show Platform;
+import "package:flutter/material.dart";
+import "package:path_provider_linux/path_provider_linux.dart";
+import "package:path_provider_macos/path_provider_macos.dart";
+import "package:path_provider_windows/path_provider_windows.dart";
+import "package:supabase_flutter/supabase_flutter.dart";
+import "package:test/test.dart";
 import "package:fake_async/fake_async.dart";
 import "package:isar/isar.dart";
 import "package:jiffy/jiffy.dart";
+
+import "../model/task/todo.dart";
+import "../services/supabase_service.dart";
+import "../util/constants.dart";
+import "../util/exceptions.dart";
 import "package:mocktail/mocktail.dart";
-import "package:test/test.dart";
 
 import "../model/task/subtask.dart";
 import "../providers/todo_provider.dart";
@@ -12,6 +22,7 @@ import "../services/isar_service.dart";
 import "../util/enums.dart";
 
 /// Testing:
+/// TODO: fix tests to have enough waiting time.
 /// Initialize isar && clear db -> Setup func.
 ///
 /// Tests:
@@ -51,10 +62,29 @@ import "../util/enums.dart";
 /// Clear on end of testing -> end func.
 
 final IsarService isarService = IsarService.instance;
+final SupabaseService supabaseService = SupabaseService.instance;
+SupabaseClient? supabaseClient;
 Isar? isarClient;
 ToDoProvider? provider;
 
 void main(){
+  // This is for pathprovider.
+  if(Platform.isWindows){
+    PathProviderWindows.registerWith();
+  }else if(Platform.isMacOS){
+    PathProviderMacOS.registerWith();
+  }else{
+    PathProviderLinux.registerWith();
+  }
+
+  DartPluginRegistrant.ensureInitialized();
+
+  // RootIsolateToken rootIsolateToken = RootIsolateToken.instance!;
+  // BackgroundIsolateBinaryMessenger.ensureInitialized(rootIsolateToken);
+
+  // This is for async func calls.
+  WidgetsFlutterBinding.ensureInitialized();
+
   setUp(initTesting);
   tearDown(closeTesting);
 
@@ -69,7 +99,7 @@ void main(){
       expect(count != null, true, reason: "Collection is null");
       expect(count, 0, reason: "Database failed to clear");
 
-      closeTesting();
+      await closeTesting();
 
       expect(isarClient, null, reason: "Isar: Client failed to close");
       expect(provider, null, reason: "Provider: Client failed to close.");
@@ -80,10 +110,13 @@ void main(){
     test("ToDo creation: min requirements + defaults", () async {
       expect(null != provider, true, reason: "Provider is null");
       await provider!.createToDo(taskType: TaskType.small, name: 'TestSM');
-      int count = await isarClient?.toDos.count() ?? 0;
+      await Future.delayed(const Duration(seconds: 3));
+      await provider!.getToDos();
+      provider!.curToDo = provider!.todos.firstOrNull ?? provider!.curToDo;
+      int count = await isarClient!.toDos.count() ?? -1;
       expect(count, 1, reason: "toDo not placed in database \n"
-          "Provider todos: ${provider!.todos.toString()}");
-
+          "Provider todos: ${provider!.todos.toString()}\n"
+          "CurToDo id: ${provider!.curToDo.id}");
       expect(provider!.failCache.isEmpty, true, reason: "Update/Upload thrown \n ${provider!.failCache.toString()}");
     });
 
@@ -94,17 +127,31 @@ void main(){
 
     test("ListLimitExceeded thrown when subtask limit exceeded.", () async {
       await provider!.createToDo(taskType: TaskType.small, name: "TestSM");
-      expect(null != provider?.curToDo, true, reason: "Create failed");
-
+      await Future.delayed(const Duration(seconds: 3));
       // TODO: refactor this once getByID implemented.
-      await provider!.getToDosBy();
+      await provider!.getToDos();
+      ToDo? test = provider!.todos.firstOrNull;
+      expect(null != test, true, reason: "Create failed");
 
-      expect(provider?.addSubTask(name: "TestSubTask", weight: 1), throwsA(ListLimitExceededException), reason:"Failed to throw");
-      expect(provider!.failCache.isEmpty, true, reason: "Update/Upload thrown \n ${provider!.failCache.toString()}");
+      provider!.curToDo = provider!.todos.firstOrNull ?? provider!.curToDo;
+
+      try{
+        await provider!.addSubTask(name: "TestSubTask", weight: 1);
+        await Future.delayed(const Duration(seconds: 3));
+        await provider!.getToDos();
+        provider!.curToDo = provider!.todos.firstOrNull ?? provider!.curToDo;
+        // If this goes through, something is seriously wrong.
+        fail("Failed to throw, subtask added");
+      } catch (e) {
+        expect(e, isA<ListLimitExceededException>(), reason: "Failed to throw \n"
+            "${provider!.curToDo.subTasks.toList()}");
+        expect(provider!.failCache.isEmpty, true, reason: "Update/Upload thrown \n ${provider!.failCache.toString()}");
+      }
 
     });
 
     test("Update ToDo Data", () async {
+      //TODO: Fix tests from here.
       await provider!.createToDo(taskType: TaskType.small, name: "TestSM");
       expect(null != provider?.curToDo, true, reason: "Create failed");
 
@@ -860,24 +907,28 @@ void main(){
 }
 
 Future<void> initTesting() async {
-  initDatabase();
+  await initDatabase();
   provider = ToDoProvider();
 }
 Future<void> initDatabase() async {
-  isarService.init();
-  isarClient = IsarService.isarClient;
+  await Isar.initializeIsarCore(download: true);
+  await isarService.init();
+  await supabaseService.init(anonKey: Constants.supabaseAnnonKey, supabaseUrl: Constants.supabaseURL, mock: true);
+  isarClient = IsarService.instance.isarClient;
+  supabaseClient = SupabaseService.instance.supabaseClient;
   clearDatabase();
 }
 
 Future<void> clearDatabase() async => await isarClient?.writeTxn(() async {
-  await isarClient?.clear();
+  await isarClient!.clear();
 });
 Future<void> closeDatabase() async {
   await isarClient?.close(deleteFromDisk: true);
 }
 Future<void> closeTesting() async {
-  closeDatabase();
+  await closeDatabase();
   isarClient = null;
+  supabaseClient = null;
   provider?.syncTimer.cancel();
   provider?.testTimer.cancel();
   provider = null;

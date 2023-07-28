@@ -158,7 +158,7 @@ class ToDoService {
           inMax: Constants.maxWeight,
           outMin: Constants.lowerBound,
           outMax: Constants.upperBound) *
-      (duration ?? 0)) as int;
+      (duration ?? 0)).toInt();
 
   void setRealDuration({required ToDo toDo}) {
     toDo.realDuration = (remap(
@@ -167,7 +167,7 @@ class ToDoService {
             inMax: Constants.maxWeight,
             outMin: Constants.lowerBound,
             outMax: Constants.upperBound) *
-        toDo.expectedDuration) as int;
+        toDo.expectedDuration).toInt();
   }
 
   Future<void> createToDo({required ToDo toDo}) async =>

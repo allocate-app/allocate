@@ -13,8 +13,8 @@ class DeadlineRepo implements DeadlineRepository {
   DeadlineRepo();
 
   //DB Clients.
-  final SupabaseClient _supabaseClient = SupabaseService.supabaseClient;
-  final Isar _isarClient = IsarService.isarClient;
+  final SupabaseClient _supabaseClient = SupabaseService.instance.supabaseClient;
+  final Isar _isarClient = IsarService.instance.isarClient;
 
   DateTime get yesterday => DateTime.now().subtract(const Duration(days: 1));
   DateTime get today => DateTime.now();

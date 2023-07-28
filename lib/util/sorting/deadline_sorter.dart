@@ -1,6 +1,6 @@
 import 'package:isar/isar.dart';
 
-import '../../../model/task/deadline.dart';
+import '../../model/task/deadline.dart';
 import '../enums.dart';
 import '../interfaces/sortable.dart';
 

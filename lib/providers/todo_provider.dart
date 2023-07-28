@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:developer';
 
 import 'package:flutter/foundation.dart';
+import 'package:mocktail/mocktail.dart';
 
 import '../model/task/subtask.dart';
 import '../model/task/todo.dart';
@@ -39,7 +40,7 @@ class ToDoProvider extends ChangeNotifier {
   void startTimer() {
     syncTimer = Timer.periodic(const Duration(seconds: 30), (timer) async {
       await _reattemptUpdate();
-      if (user!.syncOnline) {
+      if (user?.syncOnline ?? false) {
         _syncRepo();
       } else {
         _todoService.clearDeletesLocalRepo();
@@ -156,9 +157,14 @@ class ToDoProvider extends ChangeNotifier {
     } on FailureToCreateException catch (e) {
       log(e.cause);
       failCache.add(curToDo);
+      // For testing
+      rethrow;
+      return;
     } on FailureToUploadException catch (e) {
       log(e.cause);
       failCache.add(curToDo);
+      // For testing
+      rethrow;
       return;
     }
     notifyListeners();
@@ -167,8 +173,9 @@ class ToDoProvider extends ChangeNotifier {
   Future<void> addSubTask({required String name, int? weight}) async {
     SubTask subTask = SubTask(name: name, weight: weight ?? 0);
     try {
-      _todoService.addSubTask(subTask: subTask, toDo: curToDo);
+      await _todoService.addSubTask(subTask: subTask, toDo: curToDo);
     } on ListLimitExceededException catch (e) {
+      log(e.cause);
       // TODO: figure out some way to actually handle this.
       // Rethrowing right now for testing.
       rethrow;
@@ -360,3 +367,5 @@ class ToDoProvider extends ChangeNotifier {
     todos = await _todoService.getCompleted();
   }
 }
+
+

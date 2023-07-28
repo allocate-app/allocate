@@ -13,8 +13,8 @@ import '../util/interfaces/repository/todo_repository.dart';
 import '../util/interfaces/sortable.dart';
 
 class ToDoRepo implements ToDoRepository {
-  final SupabaseClient _supabaseClient = SupabaseService.supabaseClient;
-  final Isar _isarClient = IsarService.isarClient;
+  final SupabaseClient _supabaseClient = SupabaseService.instance.supabaseClient;
+  final Isar _isarClient = IsarService.instance.isarClient;
 
   @override
   Future<void> create(ToDo todo) async {

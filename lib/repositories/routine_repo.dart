@@ -15,8 +15,8 @@ import '../util/interfaces/sortable.dart';
 
 class RoutineRepo implements RoutineRepository {
   // DB Clients.
-  final SupabaseClient _supabaseClient = SupabaseService.supabaseClient;
-  final Isar _isarClient = IsarService.isarClient;
+  final SupabaseClient _supabaseClient = SupabaseService.instance.supabaseClient;
+  final Isar _isarClient = IsarService.instance.isarClient;
 
   RoutineRepo();
 

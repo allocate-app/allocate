@@ -1,6 +1,6 @@
 import 'package:isar/isar.dart';
 
-import '../../../model/task/reminder.dart';
+import '../../model/task/reminder.dart';
 import '../enums.dart';
 import '../interfaces/sortable.dart';
 

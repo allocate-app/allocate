@@ -372,6 +372,7 @@ ToDo _toDoDeserialize(
   Map<Type, List<int>> allOffsets,
 ) {
   final object = ToDo(
+    completed: reader.readBoolOrNull(offsets[0]) ?? false,
     customFreq:
         _ToDocustomFreqValueEnumMap[reader.readByteOrNull(offsets[1])] ??
             CustomFrequency.weekly,
@@ -402,7 +403,6 @@ ToDo _toDoDeserialize(
         TaskType.small,
     weight: reader.readLongOrNull(offsets[22]) ?? 0,
   );
-  object.completed = reader.readBool(offsets[0]);
   object.customViewIndex = reader.readLong(offsets[2]);
   object.groupIndex = reader.readLong(offsets[8]);
   object.id = id;
@@ -419,7 +419,7 @@ P _toDoDeserializeProp<P>(
 ) {
   switch (propertyId) {
     case 0:
-      return (reader.readBool(offset)) as P;
+      return (reader.readBoolOrNull(offset) ?? false) as P;
     case 1:
       return (_ToDocustomFreqValueEnumMap[reader.readByteOrNull(offset)] ??
           CustomFrequency.weekly) as P;
