@@ -22,9 +22,9 @@ class ToDo with EquatableMixin implements Copyable<ToDo> {
   int customViewIndex = -1;
 
   @Enumerated(EnumType.ordinal)
-  final TaskType taskType;
+  TaskType taskType;
 
-  final List<SubTask> subTasks;
+  List<SubTask> subTasks;
 
   @Index()
   String name;
@@ -110,7 +110,7 @@ class ToDo with EquatableMixin implements Copyable<ToDo> {
         repeatSkip = entity["repeatSkip"] as int,
         subTasks = (jsonDecode(entity["subTasks"])["subTasks"]! as List)
             .map((st) => SubTask.fromEntity(entity: st))
-            .toList(),
+            .toList(growable: true),
         isSynced = entity["isSynced"] as bool,
         toDelete = entity["toDelete"] as bool;
 
@@ -161,7 +161,7 @@ class ToDo with EquatableMixin implements Copyable<ToDo> {
       customFreq: customFreq,
       repeatDays: List.from(repeatDays),
       repeatSkip: repeatSkip,
-      subTasks: List.from(subTasks));
+      subTasks: List.from(subTasks, growable: true));
 
   @override
   ToDo copyWith({
@@ -204,7 +204,7 @@ class ToDo with EquatableMixin implements Copyable<ToDo> {
           customFreq: customFreq ?? this.customFreq,
           repeatDays: List.from(repeatDays ?? this.repeatDays),
           repeatSkip: repeatSkip ?? this.repeatSkip,
-          subTasks: List.from(subTasks ?? this.subTasks));
+          subTasks: List.from(subTasks ?? this.subTasks, growable: true));
   @ignore
   @override
   List<Object?> get props => [

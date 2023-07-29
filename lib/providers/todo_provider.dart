@@ -170,115 +170,125 @@ class ToDoProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> addSubTask({required String name, int? weight}) async {
-    SubTask subTask = SubTask(name: name, weight: weight ?? 0);
-    try {
-      await _todoService.addSubTask(subTask: subTask, toDo: curToDo);
-    } on ListLimitExceededException catch (e) {
-      log(e.cause);
-      // TODO: figure out some way to actually handle this.
-      // Rethrowing right now for testing.
-      rethrow;
-    }
-    notifyListeners();
-  }
+  /// TODO: refactor this out.
+  /// Subtasks should be handled in the widget, assigned in the UI.
+  /// Update can just send curToDo -> editable widget.
+  // Future<void> addSubTask({required String name, int? weight}) async {
+  //   SubTask subTask = SubTask(name: name, weight: weight ?? 0);
+  //   try {
+  //     await _todoService.addSubTask(subTask: subTask, toDo: curToDo);
+  //   } on ListLimitExceededException catch (e) {
+  //     log(e.cause);
+  //     // TODO: figure out some way to actually handle this.
+  //     // Rethrowing right now for testing.
+  //     rethrow;
+  //   }
+  //   notifyListeners();
+  // }
+  //
+  // Future<void> updateSubTask(
+  //     {required SubTask subTask,
+  //     String? name,
+  //     int? weight,
+  //     bool? completed}) async {
+  //   int index = curToDo.subTasks.indexOf(subTask);
+  //   int oldWeight = subTask.weight;
+  //   SubTask newSubTask = subTask.copyWith(name: name, weight: weight);
+  //   newSubTask.completed = completed ?? subTask.completed;
+  //
+  //   try {
+  //     _todoService.updateSubTask(
+  //         oldWeight: oldWeight,
+  //         index: index,
+  //         subTask: newSubTask,
+  //         toDo: curToDo);
+  //   } on FailureToUpdateException catch (e) {
+  //     log(e.cause);
+  //     failCache.add(curToDo);
+  //   } on FailureToUploadException catch (e) {
+  //     log(e.cause);
+  //     failCache.add(curToDo);
+  //   }
+  //   notifyListeners();
+  // }
+  //
+  // Future<void> deleteSubTask({required SubTask subTask}) async {
+  //   try {
+  //     _todoService.deleteSubTask(subTask: subTask, toDo: curToDo);
+  //   } on FailureToUpdateException catch (e) {
+  //     log(e.cause);
+  //     failCache.add(curToDo);
+  //   } on FailureToUploadException catch (e) {
+  //     log(e.cause);
+  //     failCache.add(curToDo);
+  //   }
+  //
+  //   notifyListeners();
+  // }
 
-  Future<void> updateSubTask(
-      {required SubTask subTask,
-      String? name,
-      int? weight,
-      bool? completed}) async {
-    int index = curToDo.subTasks.indexOf(subTask);
-    int oldWeight = subTask.weight;
-    SubTask newSubTask = subTask.copyWith(name: name, weight: weight);
-    newSubTask.completed = completed ?? subTask.completed;
-
-    try {
-      _todoService.updateSubTask(
-          oldWeight: oldWeight,
-          index: index,
-          subTask: newSubTask,
-          toDo: curToDo);
-    } on FailureToUpdateException catch (e) {
-      log(e.cause);
-      failCache.add(curToDo);
-    } on FailureToUploadException catch (e) {
-      log(e.cause);
-      failCache.add(curToDo);
-    }
-    notifyListeners();
-  }
-
-  Future<void> deleteSubTask({required SubTask subTask}) async {
-    try {
-      _todoService.deleteSubTask(subTask: subTask, toDo: curToDo);
-    } on FailureToUpdateException catch (e) {
-      log(e.cause);
-      failCache.add(curToDo);
-    } on FailureToUploadException catch (e) {
-      log(e.cause);
-      failCache.add(curToDo);
-    }
-
-    notifyListeners();
-  }
-
+  // TODO: refactor all of this junk pls.
+  // Just modify in a reactive UI.
   Future<void> updateToDo(
-      {int? groupID,
-      TaskType? taskType,
-      String? name,
-      String? description,
-      int? weight,
-      Duration? duration,
-      Priority? priority,
-      DateTime? dueDate,
-      bool? myDay,
-      bool? completed,
-      bool? repeatable,
-      Frequency? frequency,
-      CustomFrequency? customFrequency,
-      List<bool>? repeatDays,
-      int? repeatSkip,
-      bool? isSynced,
-      bool? toDelete,
-      List<SubTask>? subTasks}) async {
-    int? expectedDuration = duration?.inSeconds;
-    int? realDuration = (null == expectedDuration)
-        ? null
-        : _todoService.calculateRealDuration(
-            weight: weight ?? curToDo.weight, duration: expectedDuration);
+      // {int? groupID,
+      // TaskType? taskType,
+      // String? name,
+      // String? description,
+      // int? weight,
+      // Duration? duration,
+      // Priority? priority,
+      // DateTime? dueDate,
+      // bool? myDay,
+      // bool? completed,
+      // bool? repeatable,
+      // Frequency? frequency,
+      // CustomFrequency? customFrequency,
+      // List<bool>? repeatDays,
+      // int? repeatSkip,
+      // bool? isSynced,
+      // bool? toDelete,
+      // List<SubTask>? subTasks}
+     ) async {
 
-    ToDo toDo = curToDo.copyWith(
-      groupID: groupID,
-      taskType: taskType,
-      name: name,
-      description: description,
-      weight: weight,
-      expectedDuration: expectedDuration,
-      realDuration: realDuration,
-      priority: priority,
-      dueDate: dueDate,
-      myDay: myDay,
-      completed: completed,
-      repeatable: repeatable,
-      frequency: frequency,
-      customFreq: customFrequency,
-      repeatDays: repeatDays,
-      repeatSkip: repeatSkip,
-      subTasks: subTasks,
-    );
+    // weight = weight ?? curToDo.weight;
+    // subTasks = subTasks ?? List.empty(growable: false);
+    //
+    // if (weight == 0 && subTasks.isNotEmpty) {
+    //   weight = _todoService.calculateWeight(subTasks: subTasks);
+    // }
+    //
+    // int? expectedDuration = duration?.inSeconds;
+    // int? realDuration = (null == expectedDuration)
+    //     ? null
+    //     : _todoService.calculateRealDuration(
+    //         weight: weight ?? curToDo.weight, duration: expectedDuration);
+    //
+    // ToDo toDo = curToDo.copyWith(
+    //   groupID: groupID,
+    //   taskType: taskType,
+    //   name: name,
+    //   description: description,
+    //   weight: weight,
+    //   expectedDuration: expectedDuration,
+    //   realDuration: realDuration,
+    //   priority: priority,
+    //   dueDate: dueDate,
+    //   myDay: myDay,
+    //   completed: completed,
+    //   repeatable: repeatable,
+    //   frequency: frequency,
+    //   customFreq: customFrequency,
+    //   repeatDays: repeatDays,
+    //   repeatSkip: repeatSkip,
+    //   subTasks: subTasks,
+    // );
+    //
+    // toDo.id = curToDo.id;
 
-    if (toDo.weight == 0 && toDo.subTasks.isNotEmpty) {
-      _todoService.recalculateWeight(toDo: toDo);
+    if (curToDo.repeatable) {
+      curToDo.repeatID = curToDo.repeatID ?? curToDo.id;
     }
 
-    toDo.id = curToDo.id;
-
-    if (toDo.repeatable) {
-      toDo.repeatID = curToDo.repeatID ?? curToDo.id;
-    }
-
-    curToDo = toDo;
+    //curToDo = toDo;
     try {
       _todoService.updateToDo(toDo: curToDo);
     } on FailureToUploadException catch (e) {

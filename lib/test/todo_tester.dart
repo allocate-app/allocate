@@ -125,120 +125,155 @@ void main(){
 
   group("ToDo Update", () {
 
-    test("ListLimitExceeded thrown when subtask limit exceeded.", () async {
+    /// TODO: listlimitexceeded should be validated somewhere else.
+    // test("ListLimitExceeded thrown when subtask limit exceeded.", () async {
+    //   await provider!.createToDo(taskType: TaskType.small, name: "TestSM");
+    //   await Future.delayed(const Duration(seconds: 3));
+    //   // TODO: refactor this once getByID implemented.
+    //   await provider!.getToDos();
+    //   ToDo? test = provider!.todos.firstOrNull;
+    //   expect(null != test, true, reason: "Create failed");
+    //
+    //   provider!.curToDo = provider!.todos.firstOrNull ?? provider!.curToDo;
+    //
+    //   try{
+    //     await provider!.addSubTask(name: "TestSubTask", weight: 1);
+    //     await Future.delayed(const Duration(seconds: 3));
+    //     await provider!.getToDos();
+    //     provider!.curToDo = provider!.todos.firstOrNull ?? provider!.curToDo;
+    //     // If this goes through, something is seriously wrong.
+    //     fail("Failed to throw, subtask added");
+    //   } catch (e) {
+    //     expect(e, isA<ListLimitExceededException>(), reason: "Failed to throw \n"
+    //         "${provider!.curToDo.subTasks.toList()}");
+    //     expect(provider!.failCache.isEmpty, true, reason: "Update/Upload thrown \n ${provider!.failCache.toString()}");
+    //   }
+    //
+    // });
+
+    test("Update ToDo Data", () async {
       await provider!.createToDo(taskType: TaskType.small, name: "TestSM");
       await Future.delayed(const Duration(seconds: 3));
       // TODO: refactor this once getByID implemented.
       await provider!.getToDos();
-      ToDo? test = provider!.todos.firstOrNull;
-      expect(null != test, true, reason: "Create failed");
 
-      provider!.curToDo = provider!.todos.firstOrNull ?? provider!.curToDo;
+      ToDo? tmp = provider!.todos.firstOrNull;
 
-      try{
-        await provider!.addSubTask(name: "TestSubTask", weight: 1);
-        await Future.delayed(const Duration(seconds: 3));
-        await provider!.getToDos();
-        provider!.curToDo = provider!.todos.firstOrNull ?? provider!.curToDo;
-        // If this goes through, something is seriously wrong.
-        fail("Failed to throw, subtask added");
-      } catch (e) {
-        expect(e, isA<ListLimitExceededException>(), reason: "Failed to throw \n"
-            "${provider!.curToDo.subTasks.toList()}");
-        expect(provider!.failCache.isEmpty, true, reason: "Update/Upload thrown \n ${provider!.failCache.toString()}");
-      }
-
-    });
-
-    test("Update ToDo Data", () async {
-      //TODO: Fix tests from here.
-      await provider!.createToDo(taskType: TaskType.small, name: "TestSM");
-      expect(null != provider?.curToDo, true, reason: "Create failed");
-
-      // TODO: refactor this once getByID implemented.
-      await provider!.getToDosBy();
-
-      ToDo? tmp = provider?.curToDo;
       expect(tmp != null, true, reason: "Temp is null");
 
-      await provider!.updateToDo(
-        taskType: TaskType.large,
-        priority: Priority.high,
-        subTasks: [SubTask(name: "ST1", weight: 1), SubTask(name: "ST2", weight: 2)]
-      );
+      provider!.curToDo = tmp ?? provider!.curToDo;
+      provider!.curToDo.taskType = TaskType.large;
+      provider!.curToDo.subTasks = [SubTask(name: "ST1", weight: 1), SubTask(name: "ST2", weight: 2)];
+
+      await provider!.updateToDo();
+
+
       expect(tmp != provider!.curToDo, true, reason: "Data failed to update");
 
+      await Future.delayed(const Duration(seconds: 3));
       // TODO: refactor once getByID() implemented.
       await provider!.getToDosBy();
-      ToDo? test = provider!.todos.firstOrNull;
-      expect(null != test, true, reason: "null ToDo failed to grab from db");
-      provider!.curToDo = test ?? provider!.curToDo;
+
+      tmp = provider!.todos.firstOrNull;
+      expect(null != tmp, true, reason: "null ToDo failed to grab from db");
+
+      provider!.curToDo = tmp ?? provider!.curToDo;
+
       expect(provider!.curToDo.weight, 3, reason: "Weight failed to recalculate\n"
           "Expected: 3, Actual ${provider!.curToDo.weight}");
+
       expect(provider!.failCache.isEmpty, true, reason: "Update/Upload thrown \n ${provider!.failCache.toString()}");
 
     });
 
-    test("Update ToDo Subtasks", () async {
-      await provider!.createToDo(taskType: TaskType.large, name: "TestSM", subTasks: [SubTask(name: "ST1", weight: 1), SubTask(name: "ST2", weight: 2)]);
+  /// TODO: subtasks needs to be refactored.
+    /// Lists are stored as fixed length. Adding subtasks should be validated in the UI.
 
-      expect(null != provider?.curToDo, true, reason: "Create failed");
-
-      // TODO: refactor this once getByID implemented.
-      await provider!.getToDosBy();
-
-      await provider!.addSubTask(name: "ST3", weight: 3);
-      expect(0 != provider!.curToDo.weight, true, reason: "Weight is null");
-      expect(provider!.curToDo.weight, 6, reason: "Weight failed to calculate"
-          "Expected: 6, Actual: ${provider!.curToDo.weight}");
-
-      await provider!.updateSubTask(subTask: SubTask(name: "ST3", weight: 3), name: "mST3", weight: 2);
-      SubTask? newST =(provider!.curToDo.subTasks.isNotEmpty) ? provider!.curToDo.subTasks.last : null;
-      expect(null != newST, true, reason: "newST is null");
-      expect(newST?.name, "mST3", reason: "Failed to update subtask name \n"
-          "newST: ${newST?.name}");
-      expect(provider!.curToDo.weight, 5, reason: "Weight calculations failed\n"
-          "Expected: 5, Actual: ${provider!.curToDo.weight}");
-
-      expect(provider!.failCache.isEmpty, true, reason: "Update/Upload thrown \n ${provider!.failCache.toString()}");
-
-
-    });
-    test("Reorder ToDo Subtasks", () async {
-      List<SubTask> wrongOrder = [SubTask(name: "ST1", weight: 1), SubTask(name: "ST2", weight: 2), SubTask(name: "ST3", weight: 3)];
-      List<SubTask> expectedOrder = [SubTask(name: "ST3", weight: 3), SubTask(name: "ST1", weight:1), SubTask(name: "ST2", weight: 2)];
-
-      await provider!.createToDo(taskType: TaskType.large, name: "TestSM", subTasks: wrongOrder);
-      expect(null != provider?.curToDo, true, reason: "Create failed");
-
-      //TODO: refactor when getByID implemented;
-      await provider!.getToDosBy();
-
-      ToDo? test = provider!.todos.firstOrNull;
-      expect(null != test, true, reason: "null ToDo failed to grab from db");
-      provider!.curToDo = test ?? provider!.curToDo;
-
-      await provider!.reorderSubTasks(oldIndex: 2, newIndex: 0);
-      await provider!.getToDosBy();
-      test = provider!.todos.firstOrNull;
-
-      expect(null != test, true, reason: "null ToDo, failed to grab from db again");
-      expect(provider!.curToDo == test, true, reason: "Failed to update ToDo in db\n"
-          "Todo: ${provider!.curToDo}\n"
-          "Test: $test");
-
-      provider!.curToDo = test ?? provider!.curToDo;
-
-      List<SubTask> cmpList = provider!.curToDo.subTasks;
-
-
-      expect(cmpList.toString().compareTo(expectedOrder.toString()), 0, reason: "Reordering failed\n"
-          "CurToDo: ${cmpList.toString()}\n"
-          "Expected: ${expectedOrder.toString()}");
-
-      expect(provider!.failCache.isEmpty, true, reason: "Update/Upload thrown \n ${provider!.failCache.toString()}");
-    });
-  });
+  //   test("Update ToDo Subtasks", () async {
+  //     await provider!.createToDo(taskType: TaskType.large, name: "TestLG", subTasks: List.from([SubTask(name: "ST1", weight: 1), SubTask(name: "ST2", weight: 2)], growable: true));
+  //     await Future.delayed(const Duration(seconds: 3));
+  //     // TODO: refactor once getbyID implemented.
+  //     await provider!.getToDos();
+  //
+  //     ToDo? tmp = provider!.todos.firstOrNull;
+  //     expect(null != tmp, true, reason: "Create failed");
+  //
+  //     provider!.curToDo = tmp ?? provider!.curToDo;
+  //
+  //     try{
+  //       provider!.curToDo.subTasks.add(SubTask(name: "TestST", weight: 1));
+  //     } on Error catch (e){
+  //       fail("List is not growable");
+  //     }
+  //
+  //     await provider!.addSubTask(name: "ST3", weight: 3);
+  //     await Future.delayed(const Duration(seconds: 3));
+  //     await provider!.getToDos();
+  //
+  //     tmp = provider!.todos.firstOrNull;
+  //     expect(null != tmp, true, reason: "Add subtask failed \n Provider todos: ${provider!.todos.toString()}\n Failcache: ${provider!.failCache}");
+  //
+  //     provider!.curToDo = tmp ?? provider!.curToDo;
+  //
+  //     expect(provider!.curToDo.weight, 6, reason: "Weight failed to calculate"
+  //         "Expected: 6, Actual: ${provider!.curToDo.weight}");
+  //
+  //     await provider!.updateSubTask(subTask: SubTask(name: "ST3", weight: 3), name: "mST3", weight: 2);
+  //     await Future.delayed(const Duration(seconds: 3));
+  //     await provider!.getToDos();
+  //     tmp = provider!.todos.firstOrNull;
+  //     expect(null != tmp, true, reason: "update subtask failed \n Provider todos: ${provider!.todos.toString()}\n Failcache: ${provider!.failCache}");
+  //     provider!.curToDo = tmp ?? provider!.curToDo;
+  //
+  //     SubTask? newST = provider!.curToDo.subTasks.lastOrNull;
+  //     expect(null != newST, true, reason: "newST is null \n Provider todos: ${provider!.todos.toString()} \n Failcache: ${provider!.failCache}");
+  //
+  //     expect(newST?.name, "mST3", reason: "Failed to update subtask name \n"
+  //         "newST: ${newST?.name}");
+  //
+  //     expect(provider!.curToDo.weight, 5, reason: "Weight calculations failed\n"
+  //         "Expected: 5, Actual: ${provider!.curToDo.weight}");
+  //
+  //     expect(provider!.failCache.isEmpty, true, reason: "Update/Upload thrown \n ${provider!.failCache.toString()}");
+  //
+  //
+  //   });
+  //   test("Reorder ToDo Subtasks", () async {
+  //     List<SubTask> wrongOrder = [SubTask(name: "ST1", weight: 1), SubTask(name: "ST2", weight: 2), SubTask(name: "ST3", weight: 3)];
+  //     List<SubTask> expectedOrder = [SubTask(name: "ST3", weight: 3), SubTask(name: "ST1", weight:1), SubTask(name: "ST2", weight: 2)];
+  //
+  //     await provider!.createToDo(taskType: TaskType.large, name: "TestSM", subTasks: wrongOrder);
+  //     await Future.delayed(const Duration(seconds: 3));
+  //     // TODO: get by ID.
+  //     await provider!.getToDos();
+  //     ToDo? tmp = provider!.todos.firstOrNull;
+  //     expect(null != tmp, true, reason: "Create failed");
+  //
+  //     provider!.curToDo = tmp ?? provider!.curToDo;
+  //
+  //     await provider!.reorderSubTasks(oldIndex: 2, newIndex: 0);
+  //     await Future.delayed(const Duration(seconds: 3));
+  //
+  //     await provider!.getToDosBy();
+  //     tmp = provider!.todos.firstOrNull;
+  //
+  //     expect(null != test, true, reason: "null ToDo, failed to grab from db again");
+  //     expect(provider!.curToDo == test, true, reason: "Failed to update ToDo in db\n"
+  //         "Todo: ${provider!.curToDo}\n"
+  //         "Test: $test");
+  //
+  //     provider!.curToDo = test ?? provider!.curToDo;
+  //
+  //     List<SubTask> cmpList = provider!.curToDo.subTasks;
+  //
+  //
+  //     expect(cmpList.toString().compareTo(expectedOrder.toString()), 0, reason: "Reordering failed\n"
+  //         "CurToDo: ${cmpList.toString()}\n"
+  //         "Expected: ${expectedOrder.toString()}");
+  //
+  //     expect(provider!.failCache.isEmpty, true, reason: "Update/Upload thrown \n ${provider!.failCache.toString()}");
+  //   });
+   });
 
   group("ToDo Read", () {
     // Define two ToDos and use a list to compare.
@@ -302,8 +337,9 @@ void main(){
           "Provider todos: ${provider!.todos.toString()}");
 
       provider!.curToDo = provider!.todos.firstOrNull ?? td1;
+      provider!.curToDo.myDay = true;
 
-      await provider!.updateToDo(myDay: true);
+      await provider!.updateToDo();
 
       await provider!.getMyDay();
 
@@ -311,8 +347,9 @@ void main(){
           "MyDay: ${provider!.todos.toString()}");
 
       provider!.curToDo = provider!.todos.firstOrNull ?? td1;
+      provider!.curToDo.myDay = false;
 
-      await provider!.updateToDo(myDay: false);
+      await provider!.updateToDo();
 
       await provider!.getMyDay();
 
