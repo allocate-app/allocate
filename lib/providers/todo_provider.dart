@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:developer';
 
 import 'package:flutter/foundation.dart';
-import 'package:mocktail/mocktail.dart';
 
 import '../model/task/subtask.dart';
 import '../model/task/todo.dart';
@@ -16,10 +15,6 @@ import '../util/sorting/todo_sorter.dart';
 
 class ToDoProvider extends ChangeNotifier {
   late Timer syncTimer;
-
-  // TESTING ONLY.
-  late Timer testTimer;
-  late DateTime testDate;
 
   final ToDoService _todoService;
 
@@ -45,9 +40,6 @@ class ToDoProvider extends ChangeNotifier {
       } else {
         _todoService.clearDeletesLocalRepo();
       }
-    });
-    testTimer = Timer.periodic(const Duration(days: 1), (timer) async {
-      await _todoService.checkRepeating(now: testDate);
     });
   }
 
@@ -149,7 +141,7 @@ class ToDoProvider extends ChangeNotifier {
         subTasks: subTasks ?? List.empty(growable: true));
 
     if (curToDo.repeatable) {
-      curToDo.repeatID = curToDo.id;
+      curToDo.repeatID = curToDo.hashCode;
     }
 
     try {
@@ -247,8 +239,7 @@ class ToDoProvider extends ChangeNotifier {
       // bool? isSynced,
       // bool? toDelete,
       // List<SubTask>? subTasks}
-     ) async {
-
+      ) async {
     // weight = weight ?? curToDo.weight;
     // subTasks = subTasks ?? List.empty(growable: false);
     //
@@ -285,8 +276,12 @@ class ToDoProvider extends ChangeNotifier {
     // toDo.id = curToDo.id;
 
     if (curToDo.repeatable) {
-      curToDo.repeatID = curToDo.repeatID ?? curToDo.id;
+      curToDo.repeatID = curToDo.repeatID ?? curToDo.hashCode;
     }
+    if (curToDo.taskType != TaskType.small) {
+      _todoService.recalculateWeight(toDo: curToDo);
+    }
+    _todoService.setRealDuration(toDo: curToDo);
 
     //curToDo = toDo;
     try {
@@ -353,13 +348,17 @@ class ToDoProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> checkRepeating({DateTime? now}) async =>
+      _todoService.checkRepeating(now: now ?? DateTime.now());
+
   Future<void> nextRepeat() async => _todoService.nextRepeatable(toDo: curToDo);
 
   Future<void> deleteFutures() async =>
       _todoService.deleteFutures(toDo: curToDo);
 
   // TODO: Finish this implementation. Now, just testable.
-  Future<void> populateCalendar({required DateTime now}) async => _todoService.populateCalendar(limit: now);
+  Future<void> populateCalendar({required DateTime now}) async =>
+      _todoService.populateCalendar(limit: now);
 
   Future<void> getToDos() async {
     todos = await _todoService.getToDos();
@@ -377,5 +376,3 @@ class ToDoProvider extends ChangeNotifier {
     todos = await _todoService.getCompleted();
   }
 }
-
-

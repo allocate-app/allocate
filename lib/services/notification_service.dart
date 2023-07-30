@@ -127,15 +127,6 @@ class NotificationService {
     }
   }
 
-  // Not sure whether to implement this.
-  // void _addBadge() {
-  //   FlutterAppBadger.updateBadgeCount(1);
-  // }
-  //
-  // void _removeBadge() {
-  //   FlutterAppBadger.removeBadge();
-  // }
-
   Future<void> handleAppLaunch() async {
     final NotificationAppLaunchDetails? notificationAppLaunchDetails =
         await flutterLocalNotificationsPlugin.getNotificationAppLaunchDetails();

@@ -91,6 +91,7 @@ class ToDoService {
 
       if (null == nextRepeatDate) {
         toDo.repeatable = false;
+        toUpdate.add(toDo);
         continue;
       }
 
@@ -99,7 +100,7 @@ class ToDoService {
 
       ToDo newToDo = toDo.copyWith(
           startDate: nextRepeatDate,
-          dueDate: Jiffy.parseFromDateTime(toDo.dueDate)
+          dueDate: Jiffy.parseFromDateTime(nextRepeatDate)
               .add(microseconds: offset)
               .dateTime);
 
@@ -116,7 +117,7 @@ class ToDoService {
     // Weekday is 1-indexed.
     int index = toDo.startDate.weekday % 7;
     while (true) {
-      if (toDo.repeatDays[index] = true) {
+      if (toDo.repeatDays[index] == true) {
         break;
       }
       numDays += 1;
@@ -153,21 +154,23 @@ class ToDoService {
   }
 
   int calculateRealDuration({int? weight, int? duration}) => (remap(
-          x: weight ?? 0,
-          inMin: 0,
-          inMax: Constants.maxWeight,
-          outMin: Constants.lowerBound,
-          outMax: Constants.upperBound) *
-      (duration ?? 0)).toInt();
+              x: weight ?? 0,
+              inMin: 0,
+              inMax: Constants.maxWeight,
+              outMin: Constants.lowerBound,
+              outMax: Constants.upperBound) *
+          (duration ?? 0))
+      .toInt();
 
   void setRealDuration({required ToDo toDo}) {
     toDo.realDuration = (remap(
-            x: toDo.weight,
-            inMin: 0,
-            inMax: Constants.maxWeight,
-            outMin: Constants.lowerBound,
-            outMax: Constants.upperBound) *
-        toDo.expectedDuration).toInt();
+                x: toDo.weight,
+                inMin: 0,
+                inMax: Constants.maxWeight,
+                outMin: Constants.lowerBound,
+                outMax: Constants.upperBound) *
+            toDo.expectedDuration)
+        .toInt();
   }
 
   Future<void> createToDo({required ToDo toDo}) async =>

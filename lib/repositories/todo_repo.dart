@@ -13,7 +13,8 @@ import '../util/interfaces/repository/todo_repository.dart';
 import '../util/interfaces/sortable.dart';
 
 class ToDoRepo implements ToDoRepository {
-  final SupabaseClient _supabaseClient = SupabaseService.instance.supabaseClient;
+  final SupabaseClient _supabaseClient =
+      SupabaseService.instance.supabaseClient;
   final Isar _isarClient = IsarService.instance.isarClient;
 
   @override
@@ -105,7 +106,7 @@ class ToDoRepo implements ToDoRepository {
 
   @override
   Future<void> delete(ToDo todo) async {
-    if (null != _supabaseClient.auth.currentSession) {
+    if (null == _supabaseClient.auth.currentSession) {
       todo.toDelete = true;
       update(todo);
       return;
@@ -280,7 +281,7 @@ class ToDoRepo implements ToDoRepository {
             .completedEqualTo(false)
             .filter()
             .toDeleteEqualTo(false)
-            .sortByWeightDesc()
+            .sortByWeight()
             .findAll();
       case SortMethod.priority:
         if (sorter.descending) {
@@ -351,12 +352,13 @@ class ToDoRepo implements ToDoRepository {
           .findAll();
 
   @override
-  Future<List<ToDo>> getRepeatables({DateTime? now}) async => _isarClient.toDos
-      .where()
-      .repeatableEqualTo(true)
-      .filter()
-      .dueDateLessThan(now ?? DateTime.now())
-      .findAll();
+  Future<List<ToDo>> getRepeatables({required DateTime now}) async =>
+      _isarClient.toDos
+          .where()
+          .repeatableEqualTo(true)
+          .filter()
+          .dueDateLessThan(now)
+          .findAll();
 
   Future<List<int>> getDeleteIds() async =>
       _isarClient.toDos.where().toDeleteEqualTo(true).idProperty().findAll();

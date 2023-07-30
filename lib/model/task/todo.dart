@@ -1,14 +1,13 @@
 import "dart:convert";
 
-import "subtask.dart";
 import "package:equatable/equatable.dart";
 import "package:isar/isar.dart";
 
 import "../../util/enums.dart";
 import "../../util/interfaces/copyable.dart";
+import "subtask.dart";
 
 part "todo.g.dart";
-
 
 @Collection(inheritance: false)
 class ToDo with EquatableMixin implements Copyable<ToDo> {
@@ -22,9 +21,9 @@ class ToDo with EquatableMixin implements Copyable<ToDo> {
   int customViewIndex = -1;
 
   @Enumerated(EnumType.ordinal)
-  TaskType taskType;
+  final TaskType taskType;
 
-  List<SubTask> subTasks;
+  final List<SubTask> subTasks;
 
   @Index()
   String name;
@@ -130,7 +129,7 @@ class ToDo with EquatableMixin implements Copyable<ToDo> {
         "startDate": startDate.toIso8601String(),
         "dueDate": dueDate.toIso8601String(),
         "myDay": myDay,
-        "completed" : completed,
+        "completed": completed,
         "repeatable": repeatable,
         "frequency": frequency.index,
         "customFreq": customFreq.index,
@@ -161,7 +160,7 @@ class ToDo with EquatableMixin implements Copyable<ToDo> {
       customFreq: customFreq,
       repeatDays: List.from(repeatDays),
       repeatSkip: repeatSkip,
-      subTasks: List.from(subTasks, growable: true));
+      subTasks: List.from(subTasks));
 
   @override
   ToDo copyWith({
@@ -204,11 +203,12 @@ class ToDo with EquatableMixin implements Copyable<ToDo> {
           customFreq: customFreq ?? this.customFreq,
           repeatDays: List.from(repeatDays ?? this.repeatDays),
           repeatSkip: repeatSkip ?? this.repeatSkip,
-          subTasks: List.from(subTasks ?? this.subTasks, growable: true));
+          subTasks: List.from(subTasks ?? this.subTasks));
   @ignore
   @override
   List<Object?> get props => [
         id,
+        repeatID,
         customViewIndex,
         groupID,
         groupIndex,
@@ -227,6 +227,16 @@ class ToDo with EquatableMixin implements Copyable<ToDo> {
         repeatDays,
         repeatSkip,
         isSynced,
+        subTasks,
         toDelete
       ];
+
+  @override
+  toString() =>
+      "ToDo(id: $id, repeatID: $repeatID customViewIndex: $customViewIndex, groupID: $groupID, groupIndex: $groupIndex,"
+      " name: $name, description: $description, weight: $weight, expectedDuration: $expectedDuration,"
+      " priority: $priority, completed: $completed, startDate: $startDate, dueDate: $dueDate, myDay: $myDay,"
+      "repeatable: $repeatable, frequency: $frequency, customFreq: $customFreq, repeatDays: $repeatDays,"
+      "repeatSkip: $repeatSkip, isSynced: $isSynced, subTasks: $subTasks,"
+      "toDelete: $toDelete)";
 }
