@@ -16,29 +16,29 @@ import '../util/sorting/todo_sorter.dart';
 class ToDoProvider extends ChangeNotifier {
   late Timer syncTimer;
 
-  final ToDoService _todoService;
+  final ToDoService _toDoService;
 
   late ToDo curToDo;
 
-  late List<ToDo> todos;
-  List<ToDo> failCache = List.empty(growable: true);
+  late List<ToDo> toDos;
+  // List<ToDo> failCache = List.empty(growable: true);
 
   late ToDoSorter sorter;
 
   User? user;
   ToDoProvider({this.user, ToDoService? service})
-      : _todoService = service ?? ToDoService() {
+      : _toDoService = service ?? ToDoService() {
     sorter = user?.toDoSorter ?? ToDoSorter();
     startTimer();
   }
 
   void startTimer() {
     syncTimer = Timer.periodic(const Duration(seconds: 30), (timer) async {
-      await _reattemptUpdate();
+      //await _reattemptUpdate();
       if (user?.syncOnline ?? false) {
         _syncRepo();
       } else {
-        _todoService.clearDeletesLocalRepo();
+        _toDoService.clearDeletesLocalRepo();
       }
     });
   }
@@ -66,25 +66,25 @@ class ToDoProvider extends ChangeNotifier {
   }
 
   Future<void> recalculateWeight() async {
-    _todoService.recalculateWeight(toDo: curToDo);
+    _toDoService.recalculateWeight(toDo: curToDo);
     updateToDo();
   }
 
   Future<void> recalculateRealDuration() async {
-    _todoService.setRealDuration(toDo: curToDo);
+    _toDoService.setRealDuration(toDo: curToDo);
     updateToDo();
   }
 
   Future<void> _syncRepo() async {
     // Not quite sure how to handle this outside of gui warning.
     try {
-      _todoService.syncRepo();
+      _toDoService.syncRepo();
     } on FailureToDeleteException catch (e) {
       log(e.cause);
-      log("This is a fatal error.");
+      rethrow;
     } on FailureToUploadException catch (e) {
       log(e.cause);
-      log("This is a fatal error, supabase issue");
+      rethrow;
     }
     notifyListeners();
   }
@@ -107,10 +107,10 @@ class ToDoProvider extends ChangeNotifier {
     int? repeatSkip,
     List<SubTask>? subTasks,
   }) async {
-    weight = weight ?? _todoService.calculateWeight(subTasks: subTasks);
+    weight = weight ?? _toDoService.calculateWeight(subTasks: subTasks);
     int expectedDuration =
         duration?.inSeconds ?? (const Duration(hours: 1)).inSeconds;
-    int realDuration = _todoService.calculateRealDuration(
+    int realDuration = _toDoService.calculateRealDuration(
         weight: weight, duration: expectedDuration);
 
     startDate = startDate ?? DateTime.now();
@@ -140,184 +140,49 @@ class ToDoProvider extends ChangeNotifier {
         repeatSkip: repeatSkip ?? 1,
         subTasks: subTasks ?? List.empty(growable: true));
 
-    if (curToDo.repeatable) {
-      curToDo.repeatID = curToDo.hashCode;
-    }
+    curToDo.repeatID = curToDo.hashCode;
 
     try {
-      _todoService.createToDo(toDo: curToDo);
+      _toDoService.createToDo(toDo: curToDo);
     } on FailureToCreateException catch (e) {
       log(e.cause);
-      failCache.add(curToDo);
-      // For testing
       rethrow;
-      return;
     } on FailureToUploadException catch (e) {
       log(e.cause);
-      failCache.add(curToDo);
-      // For testing
-      rethrow;
-      return;
+      curToDo.isSynced = false;
+      return updateToDo();
     }
     notifyListeners();
   }
 
-  /// TODO: refactor this out.
-  /// Subtasks should be handled in the widget, assigned in the UI.
-  /// Update can just send curToDo -> editable widget.
-  // Future<void> addSubTask({required String name, int? weight}) async {
-  //   SubTask subTask = SubTask(name: name, weight: weight ?? 0);
-  //   try {
-  //     await _todoService.addSubTask(subTask: subTask, toDo: curToDo);
-  //   } on ListLimitExceededException catch (e) {
-  //     log(e.cause);
-  //     // TODO: figure out some way to actually handle this.
-  //     // Rethrowing right now for testing.
-  //     rethrow;
-  //   }
-  //   notifyListeners();
-  // }
-  //
-  // Future<void> updateSubTask(
-  //     {required SubTask subTask,
-  //     String? name,
-  //     int? weight,
-  //     bool? completed}) async {
-  //   int index = curToDo.subTasks.indexOf(subTask);
-  //   int oldWeight = subTask.weight;
-  //   SubTask newSubTask = subTask.copyWith(name: name, weight: weight);
-  //   newSubTask.completed = completed ?? subTask.completed;
-  //
-  //   try {
-  //     _todoService.updateSubTask(
-  //         oldWeight: oldWeight,
-  //         index: index,
-  //         subTask: newSubTask,
-  //         toDo: curToDo);
-  //   } on FailureToUpdateException catch (e) {
-  //     log(e.cause);
-  //     failCache.add(curToDo);
-  //   } on FailureToUploadException catch (e) {
-  //     log(e.cause);
-  //     failCache.add(curToDo);
-  //   }
-  //   notifyListeners();
-  // }
-  //
-  // Future<void> deleteSubTask({required SubTask subTask}) async {
-  //   try {
-  //     _todoService.deleteSubTask(subTask: subTask, toDo: curToDo);
-  //   } on FailureToUpdateException catch (e) {
-  //     log(e.cause);
-  //     failCache.add(curToDo);
-  //   } on FailureToUploadException catch (e) {
-  //     log(e.cause);
-  //     failCache.add(curToDo);
-  //   }
-  //
-  //   notifyListeners();
-  // }
-
-  // TODO: refactor all of this junk pls.
-  // Just modify in a reactive UI.
-  Future<void> updateToDo(
-      // {int? groupID,
-      // TaskType? taskType,
-      // String? name,
-      // String? description,
-      // int? weight,
-      // Duration? duration,
-      // Priority? priority,
-      // DateTime? dueDate,
-      // bool? myDay,
-      // bool? completed,
-      // bool? repeatable,
-      // Frequency? frequency,
-      // CustomFrequency? customFrequency,
-      // List<bool>? repeatDays,
-      // int? repeatSkip,
-      // bool? isSynced,
-      // bool? toDelete,
-      // List<SubTask>? subTasks}
-      ) async {
-    // weight = weight ?? curToDo.weight;
-    // subTasks = subTasks ?? List.empty(growable: false);
-    //
-    // if (weight == 0 && subTasks.isNotEmpty) {
-    //   weight = _todoService.calculateWeight(subTasks: subTasks);
-    // }
-    //
-    // int? expectedDuration = duration?.inSeconds;
-    // int? realDuration = (null == expectedDuration)
-    //     ? null
-    //     : _todoService.calculateRealDuration(
-    //         weight: weight ?? curToDo.weight, duration: expectedDuration);
-    //
-    // ToDo toDo = curToDo.copyWith(
-    //   groupID: groupID,
-    //   taskType: taskType,
-    //   name: name,
-    //   description: description,
-    //   weight: weight,
-    //   expectedDuration: expectedDuration,
-    //   realDuration: realDuration,
-    //   priority: priority,
-    //   dueDate: dueDate,
-    //   myDay: myDay,
-    //   completed: completed,
-    //   repeatable: repeatable,
-    //   frequency: frequency,
-    //   customFreq: customFrequency,
-    //   repeatDays: repeatDays,
-    //   repeatSkip: repeatSkip,
-    //   subTasks: subTasks,
-    // );
-    //
-    // toDo.id = curToDo.id;
-
-    if (curToDo.repeatable) {
-      curToDo.repeatID = curToDo.repeatID ?? curToDo.hashCode;
-    }
+  Future<void> updateToDo() async {
     if (curToDo.taskType != TaskType.small) {
-      _todoService.recalculateWeight(toDo: curToDo);
+      _toDoService.recalculateWeight(toDo: curToDo);
     }
-    _todoService.setRealDuration(toDo: curToDo);
+    _toDoService.setRealDuration(toDo: curToDo);
 
-    //curToDo = toDo;
     try {
-      _todoService.updateToDo(toDo: curToDo);
+      _toDoService.updateToDo(toDo: curToDo);
+      // These will require to be caught in the gui to alert the user.
     } on FailureToUploadException catch (e) {
       log(e.cause);
-      failCache.add(curToDo);
+      rethrow;
     } on FailureToUpdateException catch (e) {
       log(e.cause);
-      failCache.add(curToDo);
-    } on ListLimitExceededException catch (e) {
-      log(e.cause);
-      log("TODO ID: ${curToDo.id}, NAME: ${curToDo.name}");
-      // Throw some sort of gui error to re-edit screen & remove tasks.
-    }
-    notifyListeners();
-  }
+      rethrow;
 
-  Future<void> _reattemptUpdate() async {
-    try {
-      _todoService.updateBatch(toDos: failCache);
-      failCache.clear();
-    } on FailureToUploadException catch (e) {
-      log("DataCache - ${e.cause}");
-    } on FailureToUpdateException catch (e) {
-      log("DataCache - ${e.cause}");
     }
+
     notifyListeners();
   }
 
   Future<void> deleteToDo() async {
     try {
-      _todoService.deleteToDo(toDo: curToDo);
+      _toDoService.deleteToDo(toDo: curToDo);
     } on FailureToDeleteException catch (e) {
       log(e.cause);
-      failCache.add(curToDo);
+      //failCache.add(curToDo);
+      rethrow;
     }
     notifyListeners();
   }
@@ -325,54 +190,62 @@ class ToDoProvider extends ChangeNotifier {
   Future<void> reorderToDos(
       {required int oldIndex, required int newIndex}) async {
     try {
-      _todoService.reorderTodos(
-          toDos: todos, oldIndex: oldIndex, newIndex: newIndex);
+      _toDoService.reorderTodos(
+          toDos: toDos, oldIndex: oldIndex, newIndex: newIndex);
     } on FailureToUpdateException catch (e) {
       log(e.cause);
-      failCache.addAll(todos);
+      rethrow;
+      //failCache.addAll(todos);
+    } on FailureToUploadException catch (e) {
+      log(e.cause);
+      rethrow;
     }
   }
 
   Future<void> reorderSubTasks(
       {required int oldIndex, required int newIndex}) async {
     try {
-      _todoService.reorderSubTask(
+      _toDoService.reorderSubTask(
           toDo: curToDo, oldIndex: oldIndex, newIndex: newIndex);
     } on FailureToUpdateException catch (e) {
       log(e.cause);
-      failCache.add(curToDo);
+      rethrow;
+      // failCache.add(curToDo);
     } on FailureToUploadException catch (e) {
       log(e.cause);
-      failCache.add(curToDo);
+      rethrow;
+      // failCache.add(curToDo);
     }
     notifyListeners();
   }
 
   Future<void> checkRepeating({DateTime? now}) async =>
-      _todoService.checkRepeating(now: now ?? DateTime.now());
+      _toDoService.checkRepeating(now: now ?? DateTime.now());
 
-  Future<void> nextRepeat() async => _todoService.nextRepeatable(toDo: curToDo);
+  Future<void> nextRepeat() async => _toDoService.nextRepeatable(toDo: curToDo);
 
   Future<void> deleteFutures() async =>
-      _todoService.deleteFutures(toDo: curToDo);
+      _toDoService.deleteFutures(toDo: curToDo);
 
   // TODO: Finish this implementation. Now, just testable.
-  Future<void> populateCalendar({required DateTime now}) async =>
-      _todoService.populateCalendar(limit: now);
+  Future<void> populateCalendar({DateTime? limit}) async =>
+      _toDoService.populateCalendar(limit: limit ?? DateTime.now());
+
+  // TODO: implement getToDoByID and handle null.
 
   Future<void> getToDos() async {
-    todos = await _todoService.getToDos();
+    toDos = await _toDoService.getToDos();
   }
 
   Future<void> getToDosBy() async {
-    todos = await _todoService.getToDosBy(todoSorter: sorter);
+    toDos = await _toDoService.getToDosBy(toDoSorter: sorter);
   }
 
   Future<void> getMyDay() async {
-    todos = await _todoService.getMyDay();
+    toDos = await _toDoService.getMyDay();
   }
 
   Future<void> getCompleted() async {
-    todos = await _todoService.getCompleted();
+    toDos = await _toDoService.getCompleted();
   }
 }

@@ -110,11 +110,11 @@ class ToDo with EquatableMixin implements Copyable<ToDo> {
         subTasks = (jsonDecode(entity["subTasks"])["subTasks"]! as List)
             .map((st) => SubTask.fromEntity(entity: st))
             .toList(growable: true),
-        isSynced = entity["isSynced"] as bool,
-        toDelete = entity["toDelete"] as bool;
+        isSynced = true,
+        toDelete = false;
 
+  // No id for syncing - assigned via autoincrement online.
   Map<String, dynamic> toEntity() => {
-        "id": id,
         "groupID": groupID,
         "repeatID": repeatID,
         "groupIndex": groupIndex,
@@ -136,8 +136,6 @@ class ToDo with EquatableMixin implements Copyable<ToDo> {
         "repeatDays": repeatDays,
         "repeatSkip": repeatSkip,
         "subTasks": jsonEncode(subTasks.map((st) => st.toEntity())),
-        "isSynced": isSynced,
-        "toDelete": toDelete
       };
 
   @override

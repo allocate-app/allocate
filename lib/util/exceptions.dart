@@ -18,6 +18,7 @@ class FailureToUpdateException implements Exception {
   FailureToUpdateException(this.cause);
 }
 
+// TODO: This can and likely should be removed.
 class ListLimitExceededException implements Exception {
   String cause;
   ListLimitExceededException(this.cause);

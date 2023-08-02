@@ -44,7 +44,7 @@ import "../util/enums.dart";
 ///       - Check whether it was successfully deleted.
 ///
 ///
-///   - Test failcache:
+// ///   - Test failcache:
 ///     - Intentionally invoke -> Requires supabase fake session or throw intentional isar error.
 ///
 ///   - Test recurring todos.
@@ -109,14 +109,14 @@ void main() {
       await provider!.createToDo(taskType: TaskType.small, name: 'TestSM');
       await Future.delayed(const Duration(seconds: 3));
       await provider!.getToDos();
-      provider!.curToDo = provider!.todos.firstOrNull ?? provider!.curToDo;
-      int count = await isarClient!.toDos.count() ?? -1;
+      provider!.curToDo = provider!.toDos.firstOrNull ?? provider!.curToDo;
+      int count = await isarClient!.toDos.count();
       expect(count, 1,
           reason: "toDo not placed in database \n"
-              "Provider todos: ${provider!.todos.toString()}\n"
+              "Provider todos: ${provider!.toDos.toString()}\n"
               "CurToDo id: ${provider!.curToDo.id}");
-      expect(provider!.failCache.isEmpty, true,
-          reason: "Update/Upload thrown \n ${provider!.failCache.toString()}");
+      // expect(provider!.failCache.isEmpty, true,
+      //     reason: "Update/Upload thrown \n ${provider!.failCache.toString()}");
     });
   });
 
@@ -132,7 +132,7 @@ void main() {
       // TODO: refactor this once getByID implemented.
       await provider!.getToDos();
 
-      ToDo? tmp = provider!.todos.firstOrNull;
+      ToDo? tmp = provider!.toDos.firstOrNull;
 
       expect(tmp != null, true, reason: "Temp is null");
 
@@ -143,7 +143,7 @@ void main() {
 
       await provider!.updateToDo();
 
-      provider!.curToDo = provider!.todos.firstOrNull ?? provider!.curToDo;
+      provider!.curToDo = provider!.toDos.firstOrNull ?? provider!.curToDo;
 
       expect(tmp != provider!.curToDo, true,
           reason:
@@ -153,7 +153,7 @@ void main() {
       // TODO: refactor once getByID() implemented.
       await provider!.getToDosBy();
 
-      tmp = provider!.todos.firstOrNull;
+      tmp = provider!.toDos.firstOrNull;
       expect(null != tmp, true, reason: "null ToDo failed to grab from db");
 
       provider!.curToDo = tmp ?? provider!.curToDo;
@@ -162,8 +162,8 @@ void main() {
           reason: "Weight failed to recalculate\n"
               "Expected: 3, Actual ${provider!.curToDo.weight}");
 
-      expect(provider!.failCache.isEmpty, true,
-          reason: "Update/Upload thrown \n ${provider!.failCache.toString()}");
+      // expect(provider!.failCache.isEmpty, true,
+      //     reason: "Update/Upload thrown \n ${provider!.failCache.toString()}");
     });
   });
 
@@ -210,12 +210,12 @@ void main() {
       await Future.delayed(const Duration(seconds: 3));
 
       await provider!.getToDos();
-      expect(provider!.todos.length == 2, true,
+      expect(provider!.toDos.length == 2, true,
           reason: "Insertion failure\n"
-              "Provider todos: ${provider!.todos.toString()}");
+              "Provider todos: ${provider!.toDos.toString()}");
 
-      expect(provider!.failCache.isEmpty, true,
-          reason: "Update/Upload thrown \n ${provider!.failCache.toString()}");
+      // expect(provider!.failCache.isEmpty, true,
+      //     reason: "Update/Upload thrown \n ${provider!.failCache.toString()}");
     });
 
     // TODO: implement get by id.
@@ -232,11 +232,11 @@ void main() {
       await Future.delayed(const Duration(seconds: 3));
 
       await provider!.getToDos();
-      expect(provider!.todos.length == 2, true,
+      expect(provider!.toDos.length == 2, true,
           reason: "Insertion failure\n"
-              "Provider todos: ${provider!.todos.toString()}");
+              "Provider todos: ${provider!.toDos.toString()}");
 
-      provider!.curToDo = provider!.todos.firstOrNull ?? td1;
+      provider!.curToDo = provider!.toDos.firstOrNull ?? td1;
       provider!.curToDo.myDay = true;
 
       await provider!.updateToDo();
@@ -244,11 +244,11 @@ void main() {
 
       await provider!.getMyDay();
 
-      expect(provider!.todos.length, 1,
+      expect(provider!.toDos.length, 1,
           reason: "Failed to set my day\n"
-              "MyDay: ${provider!.todos.toString()}");
+              "MyDay: ${provider!.toDos.toString()}");
 
-      provider!.curToDo = provider!.todos.firstOrNull ?? td1;
+      provider!.curToDo = provider!.toDos.firstOrNull ?? td1;
       provider!.curToDo.myDay = false;
 
       await provider!.updateToDo();
@@ -256,12 +256,12 @@ void main() {
 
       await provider!.getMyDay();
 
-      expect(provider!.todos.isEmpty, true,
+      expect(provider!.toDos.isEmpty, true,
           reason: "Failed to remove from myDay\n"
-              "Provider todos: ${provider!.todos.toString()}");
+              "Provider todos: ${provider!.toDos.toString()}");
 
-      expect(provider!.failCache.isEmpty, true,
-          reason: "Update/Upload thrown \n ${provider!.failCache.toString()}");
+      // expect(provider!.failCache.isEmpty, true,
+      //     reason: "Update/Upload thrown \n ${provider!.failCache.toString()}");
     });
 
     // Completed
@@ -274,11 +274,11 @@ void main() {
       await Future.delayed(const Duration(seconds: 3));
 
       await provider!.getToDos();
-      expect(provider!.todos.length == 2, true,
+      expect(provider!.toDos.length == 2, true,
           reason: "Insertion failure\n"
-              "Provider todos: ${provider!.todos.toString()}");
+              "Provider todos: ${provider!.toDos.toString()}");
 
-      provider!.curToDo = provider!.todos.firstOrNull ?? td1;
+      provider!.curToDo = provider!.toDos.firstOrNull ?? td1;
 
       provider!.curToDo.completed = true;
 
@@ -286,11 +286,11 @@ void main() {
       await Future.delayed(const Duration(seconds: 3));
 
       await provider!.getCompleted();
-      expect(provider!.todos.length, 1,
+      expect(provider!.toDos.length, 1,
           reason: "Failed to set completion \n"
-              "Provider todos: ${provider!.todos.toString()}");
+              "Provider todos: ${provider!.toDos.toString()}");
 
-      provider!.curToDo = provider!.todos.firstOrNull ?? td1;
+      provider!.curToDo = provider!.toDos.firstOrNull ?? td1;
       provider!.curToDo.completed = false;
 
       await provider!.updateToDo();
@@ -298,12 +298,12 @@ void main() {
 
       await provider!.getCompleted();
 
-      expect(provider!.todos.isEmpty, true,
+      expect(provider!.toDos.isEmpty, true,
           reason: "Failed to remove completion\n"
-              "Provider todos: ${provider!.todos.toString()}");
+              "Provider todos: ${provider!.toDos.toString()}");
 
-      expect(provider!.failCache.isEmpty, true,
-          reason: "Update/Upload thrown \n ${provider!.failCache.toString()}");
+      // expect(provider!.failCache.isEmpty, true,
+      //     reason: "Update/Upload thrown \n ${provider!.failCache.toString()}");
     });
 
     // Sorting.
@@ -317,13 +317,13 @@ void main() {
 
       await provider!.getToDos();
 
-      expect(provider!.todos.length == 2, true,
+      expect(provider!.toDos.length == 2, true,
           reason: "Insertion failure\n"
-              "Provider todos: ${provider!.todos.toString()}");
+              "Provider todos: ${provider!.toDos.toString()}");
 
-      expect(provider!.todos.toString(), td2First,
+      expect(provider!.toDos.toString(), td2First,
           reason: "Custom VI failed \n"
-              "Provider todos: ${provider!.todos.toString()}\n"
+              "Provider todos: ${provider!.toDos.toString()}\n"
               "Expected: $td2First");
 
       provider!.sorter.sortMethod = SortMethod.name;
@@ -331,23 +331,23 @@ void main() {
 
       await provider!.getToDosBy();
 
-      expect(provider!.todos.toString(), td1First,
+      expect(provider!.toDos.toString(), td1First,
           reason: "Sort by name failed\n"
               "SortMethod: ${provider!.sortMethod.name}, Descending: ${provider!.descending}\n"
-              "Provider todos: ${provider!.todos.toString()}\n"
+              "Provider todos: ${provider!.toDos.toString()}\n"
               "Expected: $td1First");
 
       provider!.sorter.descending = true;
       await provider!.getToDosBy();
 
-      expect(provider!.todos.toString(), td2First,
+      expect(provider!.toDos.toString(), td2First,
           reason: "Descending sort by name failed\n"
               "SortMethod: ${provider!.sortMethod.name}, Descending: ${provider!.descending}\n"
-              "Provider todos: ${provider!.todos.toString()}\n"
+              "Provider todos: ${provider!.toDos.toString()}\n"
               "Expected: $td2First");
 
-      expect(provider!.failCache.isEmpty, true,
-          reason: "Update/Upload thrown \n ${provider!.failCache.toString()}");
+      // expect(provider!.failCache.isEmpty, true,
+      //     reason: "Update/Upload thrown \n ${provider!.failCache.toString()}");
     });
 
     test("ToDo sort by dueDate", () async {
@@ -360,31 +360,31 @@ void main() {
 
       await provider!.getToDos();
 
-      expect(provider!.todos.length, 2, reason: "DB query failed");
-      expect(provider!.todos.toString(), td2First, reason: "Custom VI failed");
+      expect(provider!.toDos.length, 2, reason: "DB query failed");
+      expect(provider!.toDos.toString(), td2First, reason: "Custom VI failed");
 
       provider!.sorter.sortMethod = SortMethod.dueDate;
       provider!.sorter.descending = false;
 
       await provider!.getToDosBy();
 
-      expect(provider!.todos.toString(), td1First,
+      expect(provider!.toDos.toString(), td1First,
           reason: "Sort by dueDate failed\n"
               "SortMethod: ${provider!.sortMethod.name}, Descending: ${provider!.descending}\n"
-              "Provider todos: ${provider!.todos.toString()}\n"
+              "Provider todos: ${provider!.toDos.toString()}\n"
               "Expected: $td1First");
 
       provider!.sorter.descending = true;
       await provider!.getToDosBy();
 
-      expect(provider!.todos.toString(), td2First,
+      expect(provider!.toDos.toString(), td2First,
           reason: "Descending sort by dueDate failed\n"
               "SortMethod: ${provider!.sortMethod.name}, Descending: ${provider!.descending}\n"
-              "Provider todos: ${provider!.todos.toString()}\n"
+              "Provider todos: ${provider!.toDos.toString()}\n"
               "Expected: $td2First");
 
-      expect(provider!.failCache.isEmpty, true,
-          reason: "Update/Upload thrown \n ${provider!.failCache.toString()}");
+      // expect(provider!.failCache.isEmpty, true,
+      //     reason: "Update/Upload thrown \n ${provider!.failCache.toString()}");
     });
 
     test("ToDo sort by weight", () async {
@@ -397,31 +397,31 @@ void main() {
 
       await provider!.getToDos();
 
-      expect(provider!.todos.length, 2, reason: "DB query failed");
-      expect(provider!.todos.toString(), td2First, reason: "Custom VI failed");
+      expect(provider!.toDos.length, 2, reason: "DB query failed");
+      expect(provider!.toDos.toString(), td2First, reason: "Custom VI failed");
 
       provider!.sorter.sortMethod = SortMethod.weight;
       provider!.sorter.descending = false;
 
       await provider!.getToDosBy();
 
-      expect(provider!.todos.toString(), td1First,
+      expect(provider!.toDos.toString(), td1First,
           reason: "Sort by weight failed\n"
               "SortMethod: ${provider!.sortMethod.name}, Descending: ${provider!.descending}\n"
-              "Provider todos: ${provider!.todos.toString()}\n"
+              "Provider todos: ${provider!.toDos.toString()}\n"
               "Expected: $td1First");
 
       provider!.sorter.descending = true;
       await provider!.getToDosBy();
 
-      expect(provider!.todos.toString(), td2First,
+      expect(provider!.toDos.toString(), td2First,
           reason: "Descending sort by weight failed\n"
               "SortMethod: ${provider!.sortMethod.name}, Descending: ${provider!.descending}\n"
-              "Provider todos: ${provider!.todos.toString()}\n"
+              "Provider todos: ${provider!.toDos.toString()}\n"
               "Expected: $td2First");
 
-      expect(provider!.failCache.isEmpty, true,
-          reason: "Update/Upload thrown \n ${provider!.failCache.toString()}");
+      // expect(provider!.failCache.isEmpty, true,
+      //     reason: "Update/Upload thrown \n ${provider!.failCache.toString()}");
     });
 
     test("ToDo sort by RealDuration", () async {
@@ -433,31 +433,31 @@ void main() {
 
       await provider!.getToDos();
 
-      expect(provider!.todos.length, 2, reason: "DB query failed");
-      expect(provider!.todos.toString(), td2First, reason: "Custom VI failed");
+      expect(provider!.toDos.length, 2, reason: "DB query failed");
+      expect(provider!.toDos.toString(), td2First, reason: "Custom VI failed");
 
       provider!.sorter.sortMethod = SortMethod.duration;
       provider!.sorter.descending = false;
 
       await provider!.getToDosBy();
 
-      expect(provider!.todos.toString(), td1First,
+      expect(provider!.toDos.toString(), td1First,
           reason: "Sort by Duration failed\n"
               "SortMethod: ${provider!.sortMethod.name}, Descending: ${provider!.descending}\n"
-              "Provider todos: ${provider!.todos.toString()}\n"
+              "Provider todos: ${provider!.toDos.toString()}\n"
               "Expected: $td1First");
 
       provider!.sorter.descending = true;
       await provider!.getToDosBy();
 
-      expect(provider!.todos.toString(), td2First,
+      expect(provider!.toDos.toString(), td2First,
           reason: "Descending sort by Duration failed\n"
               "SortMethod: ${provider!.sortMethod.name}, Descending: ${provider!.descending}\n"
-              "Provider todos: ${provider!.todos.toString()}\n"
+              "Provider todos: ${provider!.toDos.toString()}\n"
               "Expected: $td2First");
 
-      expect(provider!.failCache.isEmpty, true,
-          reason: "Update/Upload thrown \n ${provider!.failCache.toString()}");
+      // expect(provider!.failCache.isEmpty, true,
+      //     reason: "Update/Upload thrown \n ${provider!.failCache.toString()}");
     });
 
     test("ToDo sort by Priority", () async {
@@ -469,32 +469,32 @@ void main() {
 
       await provider!.getToDos();
 
-      expect(provider!.todos.length, 2, reason: "DB query failed");
-      expect(provider!.todos.toString(), td2First, reason: "Custom VI failed");
+      expect(provider!.toDos.length, 2, reason: "DB query failed");
+      expect(provider!.toDos.toString(), td2First, reason: "Custom VI failed");
 
       provider!.sorter.sortMethod = SortMethod.priority;
       provider!.sorter.descending = false;
 
       await provider!.getToDosBy();
 
-      expect(provider!.todos.toString(), td1First,
+      expect(provider!.toDos.toString(), td1First,
           reason: "Sorting by priority failed \n"
               "SortMethod: ${provider!.sortMethod.name}, Descending: ${provider!.descending}\n"
-              "Provider todos: ${provider!.todos.toString()}\n"
+              "Provider todos: ${provider!.toDos.toString()}\n"
               "Expected: $td1First");
 
       provider!.sorter.descending = true;
 
       await provider!.getToDosBy();
 
-      expect(provider!.todos.toString(), td2First,
+      expect(provider!.toDos.toString(), td2First,
           reason: "Descending sort by priority failed\n"
               "SortMethod: ${provider!.sortMethod.name}, Descending: ${provider!.descending}\n"
-              "Provider todos: ${provider!.todos.toString()}\n"
+              "Provider todos: ${provider!.toDos.toString()}\n"
               "Expected: $td2First");
 
-      expect(provider!.failCache.isEmpty, true,
-          reason: "Update/Upload thrown \n ${provider!.failCache.toString()}");
+      // expect(provider!.failCache.isEmpty, true,
+      //     reason: "Update/Upload thrown \n ${provider!.failCache.toString()}");
     });
 
     // Reordering
@@ -509,8 +509,8 @@ void main() {
 
       await provider!.getToDos();
 
-      expect(provider!.todos.length, 2, reason: "DB query failed");
-      expect(provider!.todos.toString(), td2First, reason: "Custom VI failed");
+      expect(provider!.toDos.length, 2, reason: "DB query failed");
+      expect(provider!.toDos.toString(), td2First, reason: "Custom VI failed");
 
       await provider!.reorderToDos(oldIndex: 1, newIndex: 0);
 
@@ -519,14 +519,14 @@ void main() {
       provider!.sorter.sortMethod = SortMethod.none;
       await provider!.getToDosBy();
 
-      expect(provider!.todos.first.name, td1.name, reason: "CVI failed");
-      expect(provider!.todos.first.customViewIndex, 0,
-          reason: "CVI not set \n todos: ${provider!.todos.toString()}");
-      expect(provider!.todos.last.customViewIndex, 1,
-          reason: "CVI not set \n todos: ${provider!.todos.toString()}");
+      expect(provider!.toDos.first.name, td1.name, reason: "CVI failed");
+      expect(provider!.toDos.first.customViewIndex, 0,
+          reason: "CVI not set \n todos: ${provider!.toDos.toString()}");
+      expect(provider!.toDos.last.customViewIndex, 1,
+          reason: "CVI not set \n todos: ${provider!.toDos.toString()}");
 
-      expect(provider!.failCache.isEmpty, true,
-          reason: "Update/Upload thrown \n ${provider!.failCache.toString()}");
+      // expect(provider!.failCache.isEmpty, true,
+      //     reason: "Update/Upload thrown \n ${provider!.failCache.toString()}");
     });
   });
 
@@ -539,7 +539,7 @@ void main() {
 
       await provider!.getToDos();
 
-      expect(provider!.todos.length, 2, reason: "DB Query Failed");
+      expect(provider!.toDos.length, 2, reason: "DB Query Failed");
 
       expect(provider!.syncTimer.isActive, true, reason: "Timer failed to set");
 
@@ -548,9 +548,9 @@ void main() {
 
       await provider!.getToDos();
 
-      expect(provider!.todos.length, 1, reason: "Delete Routine failed");
+      expect(provider!.toDos.length, 1, reason: "Delete Routine failed");
 
-      expect(provider!.todos.firstOrNull?.name, "TD1",
+      expect(provider!.toDos.firstOrNull?.name, "TD1",
           reason: "Wrong task deleted");
 
       provider!.createToDo(taskType: TaskType.small, name: "TD2");
@@ -558,7 +558,7 @@ void main() {
       await Future.delayed(const Duration(seconds: 3));
 
       await provider!.getToDosBy();
-      provider!.curToDo = provider!.todos.firstOrNull ?? provider!.curToDo;
+      provider!.curToDo = provider!.toDos.firstOrNull ?? provider!.curToDo;
 
       await provider!.deleteToDo();
       await Future.delayed(const Duration(seconds: 3));
@@ -568,16 +568,16 @@ void main() {
 
       await provider!.getToDos();
 
-      expect(provider!.todos.length, 1,
+      expect(provider!.toDos.length, 1,
           reason: "Delete Routine failed for multiple delete");
 
-      provider!.curToDo = provider!.todos.firstOrNull ?? provider!.curToDo;
+      provider!.curToDo = provider!.toDos.firstOrNull ?? provider!.curToDo;
 
       expect(provider!.curToDo.name, "TD3", reason: "wrong todos deleted");
       await Future.delayed(const Duration(seconds: 30));
 
-      expect(provider!.failCache.isEmpty, true,
-          reason: "Update/Upload thrown \n ${provider!.failCache.toString()}");
+      // expect(provider!.failCache.isEmpty, true,
+      //     reason: "Update/Upload thrown \n ${provider!.failCache.toString()}");
     });
   });
 
@@ -586,7 +586,7 @@ void main() {
 
   // });
   //
-  // group("FailCache & Supabase", () {
+  // // group("FailCache & Supabase", () {
 
   // });
 
@@ -608,18 +608,18 @@ void main() {
 
       await provider!.getToDosBy();
 
-      expect(provider!.todos.isNotEmpty, true,
-          reason: "Db query failed \n ToDos: ${provider!.todos.toString()}");
-      expect(provider!.todos.length, 1,
-          reason: "More than one todo \n ToDos: ${provider!.todos.toString()}");
+      expect(provider!.toDos.isNotEmpty, true,
+          reason: "Db query failed \n ToDos: ${provider!.toDos.toString()}");
+      expect(provider!.toDos.length, 1,
+          reason: "More than one todo \n ToDos: ${provider!.toDos.toString()}");
 
-      provider!.curToDo = provider!.todos.firstOrNull ?? provider!.curToDo;
+      provider!.curToDo = provider!.toDos.firstOrNull ?? provider!.curToDo;
 
       expect(provider!.curToDo.repeatable, false,
           reason: "ToDo repeatable not properly removed");
 
-      expect(provider!.failCache.isEmpty, true,
-          reason: "Update/Upload thrown \n ${provider!.failCache.toString()}");
+      // expect(provider!.failCache.isEmpty, true,
+      //     reason: "Update/Upload thrown \n ${provider!.failCache.toString()}");
     });
 
     test("Daily Recurrence", () async {
@@ -636,7 +636,7 @@ void main() {
 
       await Future.delayed(const Duration(seconds: 5));
       await provider!.getToDosBy();
-      expect(provider!.todos.length, 1, reason: "Db not updating");
+      expect(provider!.toDos.length, 1, reason: "Db not updating");
 
       DateTime testDate = DateTime.now().add(const Duration(days: 1));
       for (int i = 1; i < 7; i++) {
@@ -647,25 +647,25 @@ void main() {
 
         await provider!.getToDosBy();
 
-        expect(provider!.todos.length, i + 1,
+        expect(provider!.toDos.length, i + 1,
             reason:
-                "Daily routine incorrect, ${provider!.todos.length}/${i + 1} \n todos: ${provider!.todos.toString()}");
+                "Daily routine incorrect, ${provider!.toDos.length}/${i + 1} \n todos: ${provider!.toDos.toString()}");
       }
 
       await Future.delayed(const Duration(seconds: 5));
       await provider!.getToDosBy();
 
-      expect(provider!.todos.length, 7,
+      expect(provider!.toDos.length, 7,
           reason:
-              "Daily routine failed \n ToDos: ${provider!.todos.toString()}");
+              "Daily routine failed \n ToDos: ${provider!.toDos.toString()}");
       expect(
-          provider!.todos.firstOrNull?.dueDate
+          provider!.toDos.firstOrNull?.dueDate
               .isAfter(provider!.curToDo.dueDate),
           true,
           reason:
-              "Repeat copy was unsuccessful \n todos: ${provider!.todos.toString()}");
-      expect(provider!.failCache.isEmpty, true,
-          reason: "Update/Upload thrown \n ${provider!.failCache.toString()}");
+              "Repeat copy was unsuccessful \n todos: ${provider!.toDos.toString()}");
+      // expect(provider!.failCache.isEmpty, true,
+      //     reason: "Update/Upload thrown \n ${provider!.failCache.toString()}");
     });
 
     test("Weekly Recurrence", () async {
@@ -682,7 +682,7 @@ void main() {
 
       await Future.delayed(const Duration(seconds: 5));
       await provider!.getToDosBy();
-      expect(provider!.todos.length, 1, reason: "Db not updating");
+      expect(provider!.toDos.length, 1, reason: "Db not updating");
 
       DateTime testDate = DateTime.now().add(const Duration(days: 1));
 
@@ -695,26 +695,26 @@ void main() {
 
         await provider!.getToDosBy();
 
-        expect(provider!.todos.length, i + 1,
+        expect(provider!.toDos.length, i + 1,
             reason:
-                "Weekly routine incorrect, ${provider!.todos.length}/${i + 1} \n todos: ${provider!.todos.toString()}");
+                "Weekly routine incorrect, ${provider!.toDos.length}/${i + 1} \n todos: ${provider!.toDos.toString()}");
       }
 
       await Future.delayed(const Duration(seconds: 5));
       await provider!.getToDosBy();
 
-      expect(provider!.todos.length, 4,
+      expect(provider!.toDos.length, 4,
           reason:
-              "Weekly routine failed \n ToDos: ${provider!.todos.toString()}");
+              "Weekly routine failed \n ToDos: ${provider!.toDos.toString()}");
       expect(
-          provider!.todos.firstOrNull?.dueDate
+          provider!.toDos.firstOrNull?.dueDate
               .isAfter(provider!.curToDo.dueDate),
           true,
           reason:
-              "Repeat copy was unsuccessful\n CurToDo: ${provider!.curToDo.dueDate}, Last: ${provider!.todos.first.dueDate} \n todos: ${provider!.todos.toString()}");
+              "Repeat copy was unsuccessful\n CurToDo: ${provider!.curToDo.dueDate}, Last: ${provider!.toDos.first.dueDate} \n todos: ${provider!.toDos.toString()}");
 
-      expect(provider!.failCache.isEmpty, true,
-          reason: "Update/Upload thrown \n ${provider!.failCache.toString()}");
+      // expect(provider!.failCache.isEmpty, true,
+      //     reason: "Update/Upload thrown \n ${provider!.failCache.toString()}");
     });
 
     test("Biweekly recurrence", () async {
@@ -742,17 +742,17 @@ void main() {
       // This is just to let the async function catch up.
       await Future.delayed(const Duration(seconds: 5));
       await provider!.getToDosBy();
-      expect(provider!.todos.length, 2,
+      expect(provider!.toDos.length, 2,
           reason:
-              "Biweekly Repeat broken\n ToDos: ${provider!.todos.toString()}");
+              "Biweekly Repeat broken\n ToDos: ${provider!.toDos.toString()}");
       expect(
-          provider!.todos.firstOrNull?.dueDate
+          provider!.toDos.firstOrNull?.dueDate
               .isAfter(provider!.curToDo.dueDate),
           true,
           reason:
-              "Copy Routine didn't work or sorting busted \n ToDos: ${provider!.todos.toString()}");
-      expect(provider!.failCache.isEmpty, true,
-          reason: "Update/Upload thrown \n ${provider!.failCache.toString()}");
+              "Copy Routine didn't work or sorting busted \n ToDos: ${provider!.toDos.toString()}");
+      // expect(provider!.failCache.isEmpty, true,
+      //     reason: "Update/Upload thrown \n ${provider!.failCache.toString()}");
     });
 
     test("Monthly Recurrence", () async {
@@ -769,7 +769,7 @@ void main() {
 
       await Future.delayed(const Duration(seconds: 5));
       await provider!.getToDosBy();
-      expect(provider!.todos.length, 1, reason: "Db not updating");
+      expect(provider!.toDos.length, 1, reason: "Db not updating");
 
       DateTime testDate = DateTime.now().add(const Duration(days: 1));
       for (int i = 1; i < 4; i++) {
@@ -779,25 +779,25 @@ void main() {
 
         await provider!.getToDosBy();
 
-        expect(provider!.todos.length, i + 1,
+        expect(provider!.toDos.length, i + 1,
             reason:
-                "Monthly routine incorrect, ${provider!.todos.length}/${i + 1} \n todos: ${provider!.todos.toString()}");
+                "Monthly routine incorrect, ${provider!.toDos.length}/${i + 1} \n todos: ${provider!.toDos.toString()}");
       }
 
       await Future.delayed(const Duration(seconds: 5));
       await provider!.getToDosBy();
 
-      expect(provider!.todos.length, 4,
+      expect(provider!.toDos.length, 4,
           reason:
-              "Monthly routine failed \n ToDos: ${provider!.todos.toString()}");
+              "Monthly routine failed \n ToDos: ${provider!.toDos.toString()}");
       expect(
-          provider!.todos.firstOrNull?.dueDate
+          provider!.toDos.firstOrNull?.dueDate
               .isAfter(provider!.curToDo.dueDate),
           true,
           reason:
-              "Repeat copy was unsuccessful \n todos: ${provider!.todos.toString()}");
-      expect(provider!.failCache.isEmpty, true,
-          reason: "Update/Upload thrown \n ${provider!.failCache.toString()}");
+              "Repeat copy was unsuccessful \n todos: ${provider!.toDos.toString()}");
+      // expect(provider!.failCache.isEmpty, true,
+      //     reason: "Update/Upload thrown \n ${provider!.failCache.toString()}");
     });
 
     test("Yearly Recurrence", () async {
@@ -814,7 +814,7 @@ void main() {
 
       await Future.delayed(const Duration(seconds: 5));
       await provider!.getToDosBy();
-      expect(provider!.todos.length, 1, reason: "Db not updating");
+      expect(provider!.toDos.length, 1, reason: "Db not updating");
 
       DateTime testDate = DateTime.now().add(const Duration(days: 1));
       for (int i = 1; i < 4; i++) {
@@ -824,25 +824,25 @@ void main() {
 
         await provider!.getToDosBy();
 
-        expect(provider!.todos.length, i + 1,
+        expect(provider!.toDos.length, i + 1,
             reason:
-                "Yearly routine incorrect, ${provider!.todos.length}/${i + 1} \n todos: ${provider!.todos.toString()}");
+                "Yearly routine incorrect, ${provider!.toDos.length}/${i + 1} \n todos: ${provider!.toDos.toString()}");
       }
 
       await Future.delayed(const Duration(seconds: 3));
       await provider!.getToDosBy();
 
-      expect(provider!.todos.length, 4,
+      expect(provider!.toDos.length, 4,
           reason:
-              "Yearly routine failed \n ToDos: ${provider!.todos.toString()}");
+              "Yearly routine failed \n ToDos: ${provider!.toDos.toString()}");
       expect(
-          provider!.todos.firstOrNull?.dueDate
+          provider!.toDos.firstOrNull?.dueDate
               .isAfter(provider!.curToDo.dueDate),
           true,
           reason:
-              "Repeat copy was unsuccessful \n todos: ${provider!.todos.toString()}");
-      expect(provider!.failCache.isEmpty, true,
-          reason: "Update/Upload thrown \n ${provider!.failCache.toString()}");
+              "Repeat copy was unsuccessful \n todos: ${provider!.toDos.toString()}");
+      // expect(provider!.failCache.isEmpty, true,
+      //     reason: "Update/Upload thrown \n ${provider!.failCache.toString()}");
     });
 
     test("Custom recurrence: Monday-Tuesday, biweekly", () async {
@@ -876,17 +876,17 @@ void main() {
       await Future.delayed(const Duration(seconds: 3));
       await provider!.getToDosBy();
 
-      expect(provider!.todos.length, 4,
+      expect(provider!.toDos.length, 4,
           reason:
-              "Mon-Tues biweekly (custom) routine failed \n todos: ${provider!.todos.toString()}");
+              "Mon-Tues biweekly (custom) routine failed \n todos: ${provider!.toDos.toString()}");
       expect(
-          provider!.todos.firstOrNull?.dueDate
+          provider!.toDos.firstOrNull?.dueDate
               .isAfter(provider!.curToDo.dueDate),
           true,
           reason:
-              "Copy Routine didn't work or sorting busted \n todos: ${provider!.todos.toString()}");
-      expect(provider!.failCache.isEmpty, true,
-          reason: "Update/Upload thrown \n ${provider!.failCache.toString()}");
+              "Copy Routine didn't work or sorting busted \n todos: ${provider!.toDos.toString()}");
+      // expect(provider!.failCache.isEmpty, true,
+      //     reason: "Update/Upload thrown \n ${provider!.failCache.toString()}");
     });
     test("Custom recurrence: Mon-Wed-Fri, monthly", () async {
       provider!.sorter.sortMethod = SortMethod.dueDate;
@@ -918,17 +918,17 @@ void main() {
       await Future.delayed(const Duration(seconds: 15));
       await provider!.getToDosBy();
 
-      expect(provider!.todos.length, 4,
+      expect(provider!.toDos.length, 4,
           reason:
-              "Mon-Tues biweekly (custom) routine failed \n todos: ${provider!.todos.toString()}");
+              "Mon-Tues biweekly (custom) routine failed \n todos: ${provider!.toDos.toString()}");
       expect(
-          provider!.todos.firstOrNull?.dueDate
+          provider!.toDos.firstOrNull?.dueDate
               .isAfter(provider!.curToDo.dueDate),
           true,
           reason:
-              "Copy Routine didn't work or sorting busted \n todos: ${provider!.todos.toString()}");
-      expect(provider!.failCache.isEmpty, true,
-          reason: "Update/Upload thrown \n ${provider!.failCache.toString()}");
+              "Copy Routine didn't work or sorting busted \n todos: ${provider!.toDos.toString()}");
+      // expect(provider!.failCache.isEmpty, true,
+      //     reason: "Update/Upload thrown \n ${provider!.failCache.toString()}");
     });
   });
 }

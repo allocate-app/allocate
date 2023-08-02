@@ -16,6 +16,8 @@ class DeadlineRepo implements DeadlineRepository {
   final SupabaseClient _supabaseClient = SupabaseService.instance.supabaseClient;
   final Isar _isarClient = IsarService.instance.isarClient;
 
+
+
   DateTime get yesterday => DateTime.now().subtract(const Duration(days: 1));
   DateTime get today => DateTime.now();
 
@@ -124,7 +126,13 @@ class DeadlineRepo implements DeadlineRepository {
     }
   }
 
-  // Call this on a timer if/when user is not syncing data.
+  @override
+  Future<void>deleteFutures({required Deadline deadline}) async {
+    List<Deadline> toDelete = await _isarClient.deadlines.where().repeatIDEqualTo(deadline.repeatID).filter().repeatableEqualTo(true).findAll();
+    toDelete.map((Deadline deadline) => deadline.toDelete = true);
+    updateBatch(toDelete);
+  }
+
   @override
   Future<void> deleteLocal() async {
     List<int> toDeletes = await getDeleteIds();
@@ -135,23 +143,29 @@ class DeadlineRepo implements DeadlineRepository {
 
   @override
   Future<void> syncRepo() async {
-    // Get the non-deleted stuff from Isar
+    if(null == _supabaseClient.auth.currentSession)
+      {
+        return fetchRepo();
+      }
+
     List<int> toDeletes = await getDeleteIds();
     if (toDeletes.isNotEmpty) {
       try {
         await _supabaseClient.from("deadlines").delete().in_("id", toDeletes);
       } catch (error) {
         // I'm also unsure about this Exception.
-        throw FailureToDeleteException("Failed to delete deadlines");
+        throw FailureToDeleteException("Failed to delete deadlines\n"
+            "Connection Status: ${null != _supabaseClient.auth.currentSession}\n"
+            "Time: ${DateTime.now()}");
       }
     }
 
     // Get the non-uploaded stuff from Isar.
-    List<Deadline> unsynceddeadlines = await getUnsynced();
+    List<Deadline> unsyncedDeadlines = await getUnsynced();
 
-    if (unsynceddeadlines.isNotEmpty) {
+    if (unsyncedDeadlines.isNotEmpty) {
       List<Map<String, dynamic>> syncEntities =
-          unsynceddeadlines.map((deadline) {
+          unsyncedDeadlines.map((deadline) {
         deadline.isSynced = true;
         return deadline.toEntity();
       }).toList();
@@ -165,9 +179,9 @@ class DeadlineRepo implements DeadlineRepository {
           responses.map((response) => response["id"] as int?).toList();
 
       if (ids.any((id) => null == id)) {
-        // Any unsynced stuff will just be caught on next sync.
-        // This may not need to be a thing to handle.
-        throw FailureToUploadException("Failed to Sync deadlines");
+        throw FailureToUploadException("Failed to Sync deadlines\n"
+            "Connection Status: ${null != _supabaseClient.auth.currentSession}\n"
+            "Time: ${DateTime.now()}");
       }
     }
     fetchRepo();
@@ -192,8 +206,8 @@ class DeadlineRepo implements DeadlineRepository {
           .toList();
       await _isarClient.writeTxn(() async {
         await _isarClient.deadlines.clear();
-        for (Deadline d in deadlines) {
-          _isarClient.deadlines.put(d);
+        for (Deadline deadline in deadlines) {
+          _isarClient.deadlines.put(deadline);
         }
       });
     });
@@ -201,11 +215,8 @@ class DeadlineRepo implements DeadlineRepository {
 
   @override
   Future<Deadline?> getByID({required int id}) async =>
-      await _isarClient.deadlines.where().idEqualTo(id).findFirst();
+      await _isarClient.deadlines.where().notificationIDEqualTo(id).findFirst();
 
-  // Custom view position, reorderable list.
-  // CHECK THIS and put in proper query logic pls.
-  // POSSIBLY PUT A HARD LIMIT?
   @override
   Future<List<Deadline>> getRepoList() => _isarClient.deadlines
       .where()
@@ -277,6 +288,14 @@ class DeadlineRepo implements DeadlineRepository {
         return getRepoList();
     }
   }
+  @override
+  Future<List<Deadline>> getRepeatables({required DateTime now}) async =>
+      _isarClient.deadlines
+          .where()
+          .repeatableEqualTo(true)
+          .filter()
+          .dueDateLessThan(now)
+          .findAll();
 
   Future<List<int>> getDeleteIds() async => _isarClient.deadlines
       .where()

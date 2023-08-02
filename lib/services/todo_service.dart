@@ -178,8 +178,8 @@ class ToDoService {
 
   Future<List<ToDo>> getToDos() async => _repository.getRepoList();
   Future<List<ToDo>> getToDosBy(
-          {required SortableView<ToDo> todoSorter}) async =>
-      _repository.getRepoListBy(sorter: todoSorter);
+          {required SortableView<ToDo> toDoSorter}) async =>
+      _repository.getRepoListBy(sorter: toDoSorter);
 
   Future<ToDo?> getToDoByID({required int id}) async =>
       _repository.getByID(id: id);
@@ -283,8 +283,8 @@ class ToDoService {
     if (oldIndex < newIndex) {
       newIndex--;
     }
-    ToDo todo = toDos.removeAt(oldIndex);
-    toDos.insert(newIndex, todo);
+    ToDo toDo = toDos.removeAt(oldIndex);
+    toDos.insert(newIndex, toDo);
     for (int i = 0; i < toDos.length; i++) {
       toDos[i].groupIndex = i;
     }
