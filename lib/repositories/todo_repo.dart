@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:isar/isar.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-//TODO: Check this and determine how best to handle internet connection.
 import '../model/task/todo.dart';
 import '../services/isar_service.dart';
 import '../services/supabase_service.dart';
@@ -30,7 +29,8 @@ class ToDoRepo implements ToDoRepository {
     if (null == id) {
       throw FailureToCreateException("Failed to create ToDo locally \n"
           "ToDo: ${toDo.toString()}\n"
-          "Time: ${DateTime.now()}");
+          "Time: ${DateTime.now()}\n"
+          "Isar Open: ${_isarClient.isOpen}");
     }
 
     if (null != _supabaseClient.auth.currentSession) {
@@ -43,7 +43,8 @@ class ToDoRepo implements ToDoRepository {
       if (null == id) {
         throw FailureToUploadException("Failed to sync ToDo on create\n"
             "ToDo: ${toDo.toString()}\n"
-            "Time: ${DateTime.now()}");
+            "Time: ${DateTime.now()}\n\n"
+            "Supabase Open: ${null != _supabaseClient.auth.currentSession}");
       }
     }
   }
@@ -59,7 +60,10 @@ class ToDoRepo implements ToDoRepository {
     });
 
     if (null == id) {
-      throw FailureToUpdateException("Failed to update ToDo locally");
+      throw FailureToUpdateException("Failed to update ToDo locally\n"
+          "ToDo: ${toDo.toString()}\n"
+          "Time: ${DateTime.now()}\n"
+          "Isar Open: ${_isarClient.isOpen}");
     }
 
     if (null != _supabaseClient.auth.currentSession) {
@@ -69,7 +73,10 @@ class ToDoRepo implements ToDoRepository {
 
       id = response.last["id"];
       if (null == id) {
-        throw FailureToUploadException("Failed to sync ToDo on update");
+        throw FailureToUploadException("Failed to sync ToDo on update\n"
+            "ToDo: ${toDo.toString()}\n"
+            "Time: ${DateTime.now()}\n"
+            "Supabase Open: ${null != _supabaseClient.auth.currentSession}");
       }
     }
   }
@@ -89,7 +96,8 @@ class ToDoRepo implements ToDoRepository {
     });
     if (ids.any((id) => null == id)) {
       throw FailureToUpdateException("Failed to update toDos locally \n"
-          "Time: ${DateTime.now()}"
+          "ToDo: ${toDos.toString()}\n"
+          "Time: ${DateTime.now()}\n"
           "Isar Open: ${_isarClient.isOpen}");
     }
 
@@ -104,6 +112,7 @@ class ToDoRepo implements ToDoRepository {
 
       if (ids.any((id) => null == id)) {
         throw FailureToUploadException("Failed to sync toDos on update \n"
+            "ToDo: ${toDos.toString()}\n"
             "Time: ${DateTime.now()}\n"
             "Supabase Open: ${null != _supabaseClient.auth.currentSession}");
       }
@@ -125,8 +134,9 @@ class ToDoRepo implements ToDoRepository {
       });
     } catch (error) {
       throw FailureToDeleteException("Failed to delete ToDo online\n"
-          "Connection Status: ${null != _supabaseClient.auth.currentSession}\n"
-          "Time: ${DateTime.now()}");
+          "ToDo: ${toDo.toString()}\n"
+          "Time: ${DateTime.now()}\n"
+          "Supabase Open: ${null != _supabaseClient.auth.currentSession}");
     }
   }
 
@@ -146,7 +156,6 @@ class ToDoRepo implements ToDoRepository {
   }
 
   @override
-  // Call this on a timer if/when user is not syncing data.
   Future<void> deleteLocal() async {
     List<int> toDeletes = await getDeleteIds();
     await _isarClient.writeTxn(() async {
@@ -156,18 +165,18 @@ class ToDoRepo implements ToDoRepository {
 
   @override
   Future<void> syncRepo() async {
-    if(null == _supabaseClient.auth.currentSession)
-      {
-        return fetchRepo();
-      }
+    if (null == _supabaseClient.auth.currentSession) {
+      return fetchRepo();
+    }
     List<int> toDeletes = await getDeleteIds();
-    if(toDeletes.isNotEmpty) {
+    if (toDeletes.isNotEmpty) {
       try {
         await _supabaseClient.from("toDos").delete().in_("id", toDeletes);
       } catch (error) {
         throw FailureToDeleteException("Failed to delete toDos on sync.\n"
-            "Connection Status: ${null != _supabaseClient.auth.currentSession}\n"
-            "Time: ${DateTime.now()}");
+            "ids: ${toDeletes.toString()}\n"
+            "Time: ${DateTime.now()}\n"
+            "Supabase Open: ${null != _supabaseClient.auth.currentSession}");
       }
     }
 
@@ -181,16 +190,17 @@ class ToDoRepo implements ToDoRepository {
       }).toList();
 
       final List<Map<String, dynamic>> responses =
-      await _supabaseClient.from("toDos").upsert(syncEntities).select("id");
+          await _supabaseClient.from("toDos").upsert(syncEntities).select("id");
 
       List<int?> ids =
-      responses.map((response) => response["id"] as int?).toList();
+          responses.map((response) => response["id"] as int?).toList();
 
       if (ids.any((id) => null == id)) {
         unsyncedToDos.map((toDo) => toDo.isSynced = false);
         throw FailureToUploadException("Failed to sync toDos\n"
-            "Connection Status: ${null != _supabaseClient.auth.currentSession}\n"
-            "Time: ${DateTime.now()}");
+            "ToDos: ${unsyncedToDos.toString()}\n"
+            "Time: ${DateTime.now()}\n"
+            "Supabase Open: ${null != _supabaseClient.auth.currentSession}");
       }
     }
     fetchRepo();
@@ -210,9 +220,8 @@ class ToDoRepo implements ToDoRepository {
         return;
       }
 
-      List<ToDo> toDos = toDoEntities
-          .map((toDo) => ToDo.fromEntity(entity: toDo))
-          .toList();
+      List<ToDo> toDos =
+          toDoEntities.map((toDo) => ToDo.fromEntity(entity: toDo)).toList();
       await _isarClient.writeTxn(() async {
         await _isarClient.toDos.clear();
         for (ToDo toDo in toDos) {
@@ -225,8 +234,6 @@ class ToDoRepo implements ToDoRepository {
   @override
   Future<ToDo?> getByID({required int id}) async =>
       await _isarClient.toDos.where().idEqualTo(id).findFirst();
-
-  /// These all require to be "completed = false."
 
   @override
   Future<List<ToDo>> getRepoList() async => _isarClient.toDos

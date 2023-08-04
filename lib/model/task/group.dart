@@ -1,8 +1,8 @@
 import 'package:equatable/equatable.dart';
 import 'package:isar/isar.dart';
 
-import 'todo.dart';
 import '../../util/interfaces/copyable.dart';
+import 'todo.dart';
 
 part "group.g.dart";
 
@@ -28,8 +28,7 @@ class Group with EquatableMixin implements Copyable<Group> {
         name = entity["name"] as String,
         description = entity["description"] as String;
 
-  Map<String, dynamic> toEntity() =>
-      {"id": id, "name": name, "description": description};
+  Map<String, dynamic> toEntity() => {"name": name, "description": description};
 
   @override
   Group copy() => Group(name: name, description: description);
@@ -42,4 +41,8 @@ class Group with EquatableMixin implements Copyable<Group> {
   @override
   List<Object?> get props =>
       [id, customViewIndex, name, description, isSynced, toDelete];
+  @override
+  String toString() =>
+      "Group(id: $id, customViewIndex: $customViewIndex, name: $name,"
+      "description: $description, isSynced: $isSynced, toDelete: $toDelete";
 }

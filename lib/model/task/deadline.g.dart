@@ -283,6 +283,7 @@ Deadline _deadlineDeserialize(
         _DeadlinepriorityValueEnumMap[reader.readByteOrNull(offsets[8])] ??
             Priority.low,
     repeatDays: reader.readBoolList(offsets[9]) ?? [],
+    repeatID: reader.readLongOrNull(offsets[10]),
     repeatSkip: reader.readLongOrNull(offsets[11]) ?? 1,
     repeatable: reader.readBoolOrNull(offsets[12]) ?? false,
     startDate: reader.readDateTime(offsets[13]),
@@ -292,7 +293,6 @@ Deadline _deadlineDeserialize(
   object.customViewIndex = reader.readLong(offsets[1]);
   object.id = id;
   object.isSynced = reader.readBool(offsets[5]);
-  object.repeatID = reader.readLongOrNull(offsets[10]);
   object.toDelete = reader.readBool(offsets[14]);
   return object;
 }

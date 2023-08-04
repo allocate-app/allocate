@@ -68,8 +68,7 @@ class NotificationService {
         onDidReceiveNotificationResponse: onDidReceiveNotificationResponse);
   }
 
-  // NOTE: id should be the object's hashcode.
-  // Store the object in the payload.
+  // NOTE: id should be the object's hashcode. Payload is TYPE\n notificationID.
   Future<void> scheduleNotification({
     required int id,
     required DateTime warnDate,
@@ -94,6 +93,12 @@ class NotificationService {
     await flutterLocalNotificationsPlugin.cancel(id);
   }
 
+  Future<void> cancelFutures({required List<int> ids}) async {
+    for (int id in ids) {
+      await flutterLocalNotificationsPlugin.cancel(id);
+    }
+  }
+
   Future<void> cancelAllNotifications() async {
     await flutterLocalNotificationsPlugin.cancelAll();
   }
@@ -115,11 +120,12 @@ class NotificationService {
     }
     // First string is the type, second is the id.
     switch (entities[0]) {
-      case "Deadline":
-        // Route to deadline screen, get by id.
+      case "DEADLINE":
+        // Route to deadline screen, get by notification ID.
+        // Design UI to take multiple args for initstate.
         break;
-      case "Reminder":
-        // Route to reminder screen, get by id.
+      case "REMINDER":
+        // Route to reminder screen, get by notification id.
         break;
       default:
         // Regular routing.

@@ -2,7 +2,6 @@ import "dart:convert";
 
 import "package:equatable/equatable.dart";
 import "package:isar/isar.dart";
-
 import "../../util/enums.dart";
 import "../../util/interfaces/copyable.dart";
 import "subtask.dart";
@@ -55,7 +54,7 @@ class ToDo with EquatableMixin implements Copyable<ToDo> {
   Frequency frequency;
   @Enumerated(EnumType.ordinal)
   CustomFrequency customFreq;
-  List<bool> repeatDays;
+  final List<bool> repeatDays;
   int repeatSkip;
   @Index()
   bool isSynced = false;
@@ -107,9 +106,10 @@ class ToDo with EquatableMixin implements Copyable<ToDo> {
         customFreq = CustomFrequency.values[entity["customFreq"]],
         repeatDays = entity["repeatDays"] as List<bool>,
         repeatSkip = entity["repeatSkip"] as int,
-        subTasks = (jsonDecode(entity["subTasks"])["subTasks"]! as List)
-            .map((st) => SubTask.fromEntity(entity: st))
-            .toList(growable: true),
+        subTasks = List.from(
+            (jsonDecode(entity["subTasks"]) as List)
+                .map((st) => SubTask.fromEntity(entity: st)),
+            growable: false),
         isSynced = true,
         toDelete = false;
 
@@ -135,7 +135,7 @@ class ToDo with EquatableMixin implements Copyable<ToDo> {
         "customFreq": customFreq.index,
         "repeatDays": repeatDays,
         "repeatSkip": repeatSkip,
-        "subTasks": jsonEncode(subTasks.map((st) => st.toEntity())),
+        "subTasks": jsonEncode(subTasks.map((st) => st.toEntity()).toList(growable: false)),
       };
 
   @override
@@ -230,11 +230,11 @@ class ToDo with EquatableMixin implements Copyable<ToDo> {
       ];
 
   @override
-  toString() =>
-      "ToDo(id: $id, repeatID: $repeatID customViewIndex: $customViewIndex, groupID: $groupID, groupIndex: $groupIndex,"
+  String toString() =>
+      "ToDo(id: $id, taskType: ${taskType.name} repeatID: $repeatID customViewIndex: $customViewIndex, groupID: $groupID, groupIndex: $groupIndex,"
       " name: $name, description: $description, weight: $weight, expectedDuration: $expectedDuration,"
-      " priority: $priority, completed: $completed, startDate: $startDate, dueDate: $dueDate, myDay: $myDay,"
-      "repeatable: $repeatable, frequency: $frequency, customFreq: $customFreq, repeatDays: $repeatDays,"
+      " priority: ${priority.name}, completed: $completed, startDate: $startDate, dueDate: $dueDate, myDay: $myDay,"
+      "repeatable: $repeatable, frequency: ${frequency.name}, customFreq: ${customFreq.name}, repeatDays: $repeatDays,"
       "repeatSkip: $repeatSkip, isSynced: $isSynced, subTasks: $subTasks,"
       "toDelete: $toDelete)";
 }

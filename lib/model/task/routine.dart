@@ -1,22 +1,20 @@
 import "dart:convert";
 
-import "subtask.dart";
 import "package:equatable/equatable.dart";
 import "package:isar/isar.dart";
 
 import "../../util/enums.dart";
 import "../../util/interfaces/copyable.dart";
+import "subtask.dart";
 
 part "routine.g.dart";
-
-// Future TODO: subtask sorting
 
 @Collection(inheritance: false)
 class Routine with EquatableMixin implements Copyable<Routine> {
   Id id = Isar.autoIncrement;
 
   @Enumerated(EnumType.ordinal)
-  RoutineTime routineTime;
+  final RoutineTime routineTime;
 
   @Index()
   String name;
@@ -55,22 +53,21 @@ class Routine with EquatableMixin implements Copyable<Routine> {
         weight = entity["weight"] as int,
         expectedDuration = entity["expectedDuration"],
         realDuration = entity["realDuration"],
-        routineTasks =
-            (jsonDecode(entity["routineTasks"])["routineTasks"] as List)
-                .map((rt) => SubTask.fromEntity(entity: rt))
-                .toList(),
+        routineTasks = List.from(
+            (jsonDecode(entity["routineTasks"]) as List)
+                .map((rt) => SubTask.fromEntity(entity: rt)),
+            growable: false),
         customViewIndex = entity["customViewIndex"] as int,
         isSynced = true,
         toDelete = false;
 
   Map<String, dynamic> toEntity() => {
-        "id": id,
         "routineTime": routineTime.index,
         "name": name,
         "weight": weight,
         "expectedDuration": expectedDuration,
         "realDuration": realDuration,
-        "routineTasks": jsonEncode(routineTasks.map((rt) => rt.toEntity())),
+        "routineTasks": jsonEncode(routineTasks.map((rt) => rt.toEntity()).toList(growable: false)),
         "customViewIndex": customViewIndex
       };
 
@@ -113,4 +110,9 @@ class Routine with EquatableMixin implements Copyable<Routine> {
         isSynced,
         toDelete
       ];
+
+  @override
+  String toString() => "Routine(id: $id, customViewIndex: $customViewIndex, "
+      "routineTime: ${routineTime.name}, name: $name, weight: $weight, expectedDuration: $expectedDuration,"
+      "routineTasks: $routineTasks, isSynced: $isSynced, toDelete: $toDelete)";
 }

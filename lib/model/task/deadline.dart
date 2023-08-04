@@ -6,12 +6,6 @@ import '../../util/interfaces/copyable.dart';
 
 /// DeadLines are meant for large-projects that have a due-date. They are just the project description
 /// and that alone, so as to not overwhelm with the temptation of overloading subtasks.
-/// Ideally, this is possibly something to store separately in the db.
-/// On each day, grab the "warn me's": if it's today & 10mins (aprox) before, WARN!.
-///
-/// These should probably have priority.
-///
-/// TODO: add repeatable logic & notification stuff.
 
 part "deadline.g.dart";
 
@@ -52,7 +46,8 @@ class Deadline with EquatableMixin implements Copyable<Deadline> {
   bool toDelete = false;
 
   Deadline(
-      {this.notificationID,
+      {this.repeatID,
+      this.notificationID,
       required this.name,
       this.description = "",
       required this.startDate,
@@ -69,7 +64,8 @@ class Deadline with EquatableMixin implements Copyable<Deadline> {
   Deadline.fromEntity({required Map<String, dynamic> entity})
       : id = entity["id"] as Id,
         customViewIndex = entity["customViewIndex"] as int,
-        notificationID = entity["notificationID"] as int,
+        repeatID = entity["repeatID"] as int?,
+        notificationID = entity["notificationID"] as int?,
         name = entity["name"] as String,
         description = entity["description"] as String,
         startDate = DateTime.parse(entity["startDate"]),
@@ -96,7 +92,7 @@ class Deadline with EquatableMixin implements Copyable<Deadline> {
         "warnDate": warnDate.toIso8601String(),
         "warnMe": warnMe,
         "priority": priority.index,
-        "repeatable" : repeatable,
+        "repeatable": repeatable,
         "frequency": frequency.index,
         "customFreq": customFreq.index,
         "repeatDays": repeatDays,
@@ -153,6 +149,7 @@ class Deadline with EquatableMixin implements Copyable<Deadline> {
   @ignore
   @override
   List<Object?> get props => [
+        id,
         notificationID,
         name,
         description,
@@ -167,4 +164,12 @@ class Deadline with EquatableMixin implements Copyable<Deadline> {
         repeatDays,
         repeatSkip,
       ];
+
+  @override
+  String toString() =>
+      "Deadline(id: $id, repeatID: $repeatID, customViewIndex: $customViewIndex,"
+      " name: $name, description: $description, startDate: $startDate, "
+      "dueDate $dueDate, warDate: $warnDate, warnMe: $warnMe, priority: "
+      "${priority.name}, repeatable: $repeatable, frequency: ${frequency.name}, "
+      "customFreq: ${customFreq.name}, repeatDays: $repeatDays, repeatSkip: $repeatSkip)";
 }

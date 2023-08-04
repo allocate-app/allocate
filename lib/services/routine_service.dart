@@ -1,5 +1,3 @@
-import 'package:allocate/util/exceptions.dart';
-
 import '../model/task/routine.dart';
 import '../model/task/subtask.dart';
 import '../repositories/routine_repo.dart';
@@ -10,8 +8,6 @@ import '../util/interfaces/sortable.dart';
 import '../util/numbers.dart';
 
 class RoutineService {
-  RoutineService();
-
   // This is just the default repo. Switch as needed for testing.
   RoutineRepository _repository = RoutineRepo();
 
@@ -69,49 +65,6 @@ class RoutineService {
 
   Future<void> syncRepo() async => _repository.syncRepo();
 
-  Future<void> addRoutineTask(
-      {required SubTask subTask, required Routine routine}) async {
-    if (routine.routineTasks.length >= Constants.maxNumTasks) {
-      throw ListLimitExceededException("Routine limit exceeded");
-    }
-
-    routine.routineTasks.add(subTask);
-    routine.weight += subTask.weight;
-  }
-
-  Future<void> updateRoutineTask(
-      {required SubTask oldTask,
-      required SubTask newTask,
-      required Routine routine}) async {
-    int index = routine.routineTasks.indexOf(oldTask);
-    routine.weight += (-oldTask.weight) + newTask.weight;
-    routine.routineTasks[index] = newTask;
-
-    if (routine.weight < 0 && routine.routineTasks.isNotEmpty) {
-      recalculateWeight(routine: routine);
-    }
-  }
-
-  Future<void> deleteRoutineTask(
-      {required SubTask routineTask, required Routine routine}) async {
-    bool removed = routine.routineTasks.remove(routineTask);
-    if (removed) {
-      routine.weight -= routineTask.weight;
-    }
-  }
-
-  Future<void> reorderRoutineTask(
-      {required Routine routine,
-      required int oldIndex,
-      required int newIndex}) async {
-    if (oldIndex < newIndex) {
-      newIndex--;
-    }
-    SubTask st = routine.routineTasks.removeAt(oldIndex);
-    routine.routineTasks.insert(newIndex, st);
-    updateRoutine(routine: routine);
-  }
-
   Future<void> reorderRoutines(
       {required List<Routine> routines,
       required int oldIndex,
@@ -129,7 +82,7 @@ class RoutineService {
 
   Future<void> resetRoutine({required Routine routine}) async {
     routine.routineTasks.map((rt) => rt.completed = false);
-    updateRoutine(routine: routine);
+    _repository.update(routine);
   }
 
   Future<void> resetRoutines({required List<Routine?> routines}) async {
@@ -140,6 +93,6 @@ class RoutineService {
         toUpdate.add(routine);
       }
     }
-    updateBatch(routines: toUpdate);
+    _repository.updateBatch(toUpdate);
   }
 }

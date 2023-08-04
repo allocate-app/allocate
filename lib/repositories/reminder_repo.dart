@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../model/task/reminder.dart';
 import '../services/isar_service.dart';
+import '../services/notification_service.dart';
 import '../services/supabase_service.dart';
 import '../util/enums.dart';
 import '../util/exceptions.dart';
@@ -10,13 +11,11 @@ import '../util/interfaces/repository/reminder_repository.dart';
 import '../util/interfaces/sortable.dart';
 
 class ReminderRepo implements ReminderRepository {
-  ReminderRepo();
-
-  final SupabaseClient _supabaseClient = SupabaseService.instance.supabaseClient;
+  final SupabaseClient _supabaseClient =
+      SupabaseService.instance.supabaseClient;
   final Isar _isarClient = IsarService.instance.isarClient;
 
-  // This may be best moved to the service, or update this value via the service.
-  DateTime yesterday = DateTime.now().subtract(const Duration(days: 1));
+  DateTime get yesterday => DateTime.now().subtract(const Duration(days: 1));
 
   @override
   Future<void> create(Reminder reminder) async {
@@ -27,7 +26,10 @@ class ReminderRepo implements ReminderRepository {
       id = await _isarClient.reminders.put(reminder);
     });
     if (null == id) {
-      throw FailureToCreateException("Failed to create reminder locally");
+      throw FailureToCreateException("Failed to create reminder locally\n"
+          "Reminder: ${reminder.toString()}\n"
+          "Time: ${DateTime.now()}\n"
+          "Isar Open: ${_isarClient.isOpen}");
     }
 
     reminder.id = id!;
@@ -40,7 +42,10 @@ class ReminderRepo implements ReminderRepository {
           .select("id");
       id = response.last["id"];
       if (null == id) {
-        throw FailureToUploadException("Failed to sync reminder on create");
+        throw FailureToUploadException("Failed to sync reminder on create\n"
+            "Reminder: ${reminder.toString()}\n"
+            "Time: ${DateTime.now()}\n\n"
+            "Supabase Open: ${null != _supabaseClient.auth.currentSession}");
       }
     }
   }
@@ -55,7 +60,10 @@ class ReminderRepo implements ReminderRepository {
     });
 
     if (null == id) {
-      throw FailureToUpdateException("Failed to update deadline locally");
+      throw FailureToUpdateException("Failed to update deadline locally\n"
+          "Reminder: ${reminder.toString()}\n"
+          "Time: ${DateTime.now()}\n"
+          "Isar Open: ${_isarClient.isOpen}");
     }
 
     if (null != _supabaseClient.auth.currentSession) {
@@ -68,7 +76,10 @@ class ReminderRepo implements ReminderRepository {
       id = response.last["id"];
 
       if (null == id) {
-        throw FailureToUploadException("Failed to sync deadline on update");
+        throw FailureToUploadException("Failed to sync deadline on update\n"
+            "Reminder: ${reminder.toString()}\n"
+            "Time: ${DateTime.now()}\n\n"
+            "Supabase Open: ${null != _supabaseClient.auth.currentSession}");
       }
     }
   }
@@ -86,7 +97,10 @@ class ReminderRepo implements ReminderRepository {
       }
     });
     if (ids.any((id) => null == id)) {
-      throw FailureToUpdateException("Failed to update reminders locally");
+      throw FailureToUpdateException("Failed to update reminders locally\n"
+          "Reminders: ${reminders.toString()}\n"
+          "Time: ${DateTime.now()}\n"
+          "Isar Open: ${_isarClient.isOpen}");
     }
 
     if (null != _supabaseClient.auth.currentSession) {
@@ -102,7 +116,10 @@ class ReminderRepo implements ReminderRepository {
         ids.add(id);
       }
       if (ids.any((id) => null == id)) {
-        throw FailureToUploadException("Failed to sync reminders on update");
+        throw FailureToUploadException("Failed to sync reminders on update\n"
+            "Reminders: ${reminders.toString()}\n"
+            "Time: ${DateTime.now()}\n\n"
+            "Supabase Open: ${null != _supabaseClient.auth.currentSession}");
       }
     }
   }
@@ -118,7 +135,10 @@ class ReminderRepo implements ReminderRepository {
     try {
       await _supabaseClient.from("reminders").delete().eq("id", reminder.id);
     } catch (error) {
-      throw FailureToDeleteException("Failed to delete reminder online");
+      throw FailureToDeleteException("Failed to delete reminder online\n"
+          "Reminder: ${reminder.toString()}\n"
+          "Time: ${DateTime.now()}\n\n"
+          "Supabase Open: ${null != _supabaseClient.auth.currentSession}");
     }
   }
 
@@ -131,6 +151,13 @@ class ReminderRepo implements ReminderRepository {
         .repeatableEqualTo(true)
         .findAll();
     toDelete.map((Reminder r) => r.toDelete = true);
+    List<int> cancelIDs = toDelete
+        .map((Reminder reminder) => reminder.notificationID!)
+        .toList(growable: false);
+
+    // This is a temporary implementation solution to handle bulk cancelling from repeating reminders
+    NotificationService.instance.cancelFutures(ids: cancelIDs);
+
     updateBatch(toDelete);
   }
 
@@ -143,42 +170,48 @@ class ReminderRepo implements ReminderRepository {
   }
 
   @override
-  Future<void> syncRepo({bool showLoading = true}) async {
-    // Get the non-deleted stuff from Isar
-    List<int> toDeletes = await getDeleteIds();
-    if (toDeletes.isEmpty) {
+  Future<void> syncRepo() async {
+    if (null == _supabaseClient.auth.currentSession) {
       return fetchRepo();
     }
 
-    try {
-      await _supabaseClient.from("reminders").delete().in_("id", toDeletes);
-    } catch (error) {
-      // I'm also unsure about this Exception.
-      throw FailureToDeleteException("Failed to delete reminders on sync");
+    List<int> toDeletes = await getDeleteIds();
+    if (toDeletes.isNotEmpty) {
+      try {
+        await _supabaseClient.from("reminders").delete().in_("id", toDeletes);
+      } catch (error) {
+        // I'm also unsure about this Exception.
+        throw FailureToDeleteException("Failed to delete reminders on sync\n"
+            "ids: ${toDeletes.toString()}\n"
+            "Time: ${DateTime.now()}\n\n"
+            "Supabase Open: ${null != _supabaseClient.auth.currentSession}");
+      }
     }
 
     // Get the non-uploaded stuff from Isar.
     List<Reminder> unsyncedReminders = await getUnsynced();
 
-    if (unsyncedReminders.isEmpty) {
-      return fetchRepo();
-    }
+    if (unsyncedReminders.isNotEmpty) {
+      List<Map<String, dynamic>> syncEntities =
+          unsyncedReminders.map((reminder) {
+        reminder.isSynced = true;
+        return reminder.toEntity();
+      }).toList();
 
-    List<Map<String, dynamic>> syncEntities = unsyncedReminders.map((reminder) {
-      reminder.isSynced = true;
-      return reminder.toEntity();
-    }).toList();
+      final List<Map<String, dynamic>> responses = await _supabaseClient
+          .from("reminders")
+          .upsert(syncEntities)
+          .select("id");
 
-    final List<Map<String, dynamic>> responses = await _supabaseClient
-        .from("reminders")
-        .upsert(syncEntities)
-        .select("id");
+      List<int?> ids =
+          responses.map((response) => response["id"] as int?).toList();
 
-    List<int?> ids =
-        responses.map((response) => response["id"] as int?).toList();
-
-    if (ids.any((id) => null == id)) {
-      throw FailureToUploadException("Failed to sync reminders");
+      if (ids.any((id) => null == id)) {
+        throw FailureToUploadException("Failed to sync reminders\n"
+            "Reminders: ${unsyncedReminders.toString()}\n"
+            "Time: ${DateTime.now()}\n\n"
+            "Supabase Open: ${null != _supabaseClient.auth.currentSession}");
+      }
     }
 
     // Fetch from supabase.
@@ -187,8 +220,6 @@ class ReminderRepo implements ReminderRepository {
 
   @override
   Future<void> fetchRepo() async {
-    // This needs refactoring to work with a loading widget -> Factor into provider.
-    // showLoading ? startLoading() : null;
     late List<Map<String, dynamic>> reminderEntities;
 
     await Future.delayed(const Duration(seconds: 1)).then((value) async {
@@ -213,9 +244,10 @@ class ReminderRepo implements ReminderRepository {
     });
   }
 
+  // The only need for this is to grab by notificationID for push notifications.
   @override
   Future<Reminder?> getByID({required int id}) async =>
-      await _isarClient.reminders.where().idEqualTo(id).findFirst();
+      await _isarClient.reminders.where().notificationIDEqualTo(id).findFirst();
 
   @override
   Future<List<Reminder>> getRepoList() => _isarClient.reminders
@@ -228,7 +260,7 @@ class ReminderRepo implements ReminderRepository {
 
   @override
   Future<List<Reminder>> getRepoListBy(
-      {bool showLoading = true, required SortableView<Reminder> sorter}) async {
+      {required SortableView<Reminder> sorter}) async {
     switch (sorter.sortMethod) {
       case SortMethod.name:
         if (sorter.descending) {

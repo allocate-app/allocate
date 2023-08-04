@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:developer';
 
 import 'package:flutter/foundation.dart';
+import 'package:jiffy/jiffy.dart';
 
 import '../model/task/deadline.dart';
 import '../model/user/user.dart';
@@ -22,8 +23,6 @@ class DeadlineProvider extends ChangeNotifier {
 
   late List<Deadline> deadlines;
 
-  //List<Deadline> failCache = List.empty(growable: true);
-
   late DeadlineSorter sorter;
 
   User? user;
@@ -35,7 +34,6 @@ class DeadlineProvider extends ChangeNotifier {
 
   void startTimer() {
     syncTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
-      //_reattemptUpdate();
       if (user!.syncOnline) {
         _syncRepo();
       } else {
@@ -98,7 +96,7 @@ class DeadlineProvider extends ChangeNotifier {
         DateTime(startDate.year, startDate.month, startDate.day, 23, 59, 0);
 
     if (startDate.isAfter(dueDate)) {
-      dueDate = startDate.add(const Duration(minutes: 15));
+      dueDate = startDate.add(const Duration(days: 1));
     }
 
     warnDate = warnDate ?? dueDate;
@@ -163,7 +161,6 @@ class DeadlineProvider extends ChangeNotifier {
     } on FailureToDeleteException catch (e) {
       log(e.cause);
       rethrow;
-      //failCache.add(curDeadline);
     }
     notifyListeners();
   }
@@ -176,35 +173,46 @@ class DeadlineProvider extends ChangeNotifier {
     } on FailureToUpdateException catch (e) {
       log(e.cause);
       rethrow;
-      //failCache.addAll(deadlines);
     } on FailureToUploadException catch (e) {
       log(e.cause);
       rethrow;
-      //failCache.addAll(deadlines);
     }
     notifyListeners();
   }
 
-  Future<void> checkRepeating({DateTime? now}) async => _deadlineService.checkRepeating(now: now?? DateTime.now());
-  Future<void> nextRepeat() async => _deadlineService.nextRepeatable(deadline: curDeadline);
-  Future<void> deleteFutures() async => _deadlineService.deleteFutures(deadline: curDeadline);
-  Future<void> populateCalendar({DateTime? limit}) async => _deadlineService.populateCalendar(limit: limit ?? DateTime.now());
+  // This also schedules notifications.
+  Future<void> checkRepeating({DateTime? now}) async =>
+      _deadlineService.checkRepeating(now: now ?? DateTime.now());
+  Future<void> nextRepeat() async =>
+      _deadlineService.nextRepeatable(deadline: curDeadline);
+  // This also cancels upcoming notifications.
+  Future<void> deleteFutures() async =>
+      _deadlineService.deleteFutures(deadline: curDeadline);
+  Future<void> populateCalendar({DateTime? limit}) async =>
+      _deadlineService.populateCalendar(limit: limit ?? DateTime.now());
 
-  Future<void> getDeadlines() async => deadlines = await _deadlineService.getDeadlines();
-  Future<void> getDeadlinesBy() async => deadlines = await _deadlineService.getDeadlinesBy(sorter: sorter);
+  Future<void> getDeadlines() async =>
+      deadlines = await _deadlineService.getDeadlines();
+  Future<void> getDeadlinesBy() async =>
+      deadlines = await _deadlineService.getDeadlinesBy(sorter: sorter);
 
-  // TODO: implement this and handle null.
-  Future<Deadline?> getDeadlineByID({required int id}) async =>
-      getDeadlineByID(id: id);
+  // These are for grabbing from payload.
+  Future<void> getDeadlineByID({required int id}) async =>
+      curDeadline = await _deadlineService.getDeadlineByID(id: id) ??
+          Deadline(
+              name: "",
+              startDate: DateTime.now(),
+              dueDate: DateTime.now().add(const Duration(days: 1)),
+              warnDate: DateTime.now().add(const Duration(days: 1)),
+              repeatDays: List.filled(7, false));
 
-  // TODO: refactor this into the deadline service?
-  // Need a way to get a list of ids to cancel => Revisit this.
   Future<void> scheduleNotification() async {
+    String newDue =
+        Jiffy.parseFromDateTime(curDeadline.dueDate).toLocal().toString();
     _notificationService.scheduleNotification(
         id: curDeadline.notificationID!,
         warnDate: curDeadline.warnDate,
-        message:
-            "${curDeadline.name} IS DUE: ${curDeadline.dueDate.toString()}",
+        message: "${curDeadline.name} IS DUE: $newDue",
         payload: "DEADLINE\n${curDeadline.notificationID}");
   }
 

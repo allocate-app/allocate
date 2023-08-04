@@ -14,14 +14,12 @@ import '../util/sorting/reminder_sorter.dart';
 import '../util/sorting/routine_sorter.dart';
 import '../util/sorting/todo_sorter.dart';
 
-// TODO: sorter set methods.
-
 class UserProvider extends ChangeNotifier {
   late Timer syncTimer;
   final _userStorageService = UserStorageService();
   final _authenticationService = AuthenticationService();
 
-  late User? curUser;
+  late User curUser;
 
   bool retry = false;
 
@@ -41,7 +39,7 @@ class UserProvider extends ChangeNotifier {
         retry = false;
         updateUser();
       }
-      if (curUser?.syncOnline ?? false) {
+      if (curUser.syncOnline) {
         syncUser();
       }
     });
@@ -77,59 +75,30 @@ class UserProvider extends ChangeNotifier {
         lastOpened: DateTime.now());
 
     try {
-      _userStorageService.createUser(user: curUser!);
+      _userStorageService.createUser(user: curUser);
     } on FailureToCreateException catch (e) {
       log(e.cause);
       retry = true;
+      rethrow;
     } on FailureToUploadException catch (e) {
       log(e.cause);
       retry = true;
+      rethrow;
     }
     notifyListeners();
   }
 
-  Future<void> updateUser(
-      {String? userName,
-      bool? syncOnline,
-      bool? isSynced,
-      int? bandwidth,
-      Theme? theme,
-      int? curMornID,
-      int? curAftID,
-      int? curEveID,
-      GroupSorter? groupSorter,
-      DeadlineSorter? deadlineSorter,
-      ReminderSorter? reminderSorter,
-      RoutineSorter? routineSorter,
-      ToDoSorter? toDoSorter,
-      DateTime? lastOpened}) async {
-    User user = curUser!.copyWith(
-        userName: userName,
-        syncOnline: syncOnline,
-        isSynced: isSynced,
-        bandwidth: bandwidth,
-        curTheme: theme,
-        curMornID: curMornID,
-        curAftID: curAftID,
-        curEveID: curEveID,
-        groupSorter: groupSorter,
-        deadlineSorter: deadlineSorter,
-        reminderSorter: reminderSorter,
-        routineSorter: routineSorter,
-        toDoSorter: toDoSorter,
-        lastOpened: lastOpened);
-
-    user.localID = curUser!.localID;
-    curUser = user;
-
+  Future<void> updateUser() async {
     try {
-      _userStorageService.updateUser(user: curUser!);
+      _userStorageService.updateUser(user: curUser);
     } on FailureToUpdateException catch (e) {
       log(e.cause);
       retry = true;
+      rethrow;
     } on FailureToUploadException catch (e) {
       log(e.cause);
       retry = true;
+      rethrow;
     }
     notifyListeners();
   }
@@ -139,15 +108,14 @@ class UserProvider extends ChangeNotifier {
       _authenticationService.signUpEmailPassword(
           email: email, password: password);
 
-      // Pop Up with button to move to log-in page?
-
       //Not sure.
     } on SignUpFailedException catch (e) {
       log(e.cause);
+      rethrow;
       // Uh, some sort of UI thing.
     } on UserExistsException catch (e) {
       log(e.cause);
-      // Route to log-in page, warn user that login exists.
+      rethrow;
     }
   }
 
@@ -161,42 +129,47 @@ class UserProvider extends ChangeNotifier {
 
       User? newUser = await _userStorageService.getUser();
       curUser = newUser ?? curUser;
+      curUser.syncOnline = true;
     } on LoginFailedException catch (e) {
       log(e.cause);
-      return;
+      rethrow;
       // uh, some sort of UI thing? -> warning popup.
     } on UserSyncException catch (e) {
       // I do not know how to handle this yet - Possibly an edge function in supabase.
       log(e.cause);
-      log("This is a fatal error");
-      retry = true;
-      return;
+      rethrow;
     } on UserException catch (e) {
       log(e.cause);
+      // If, for some reason, there are two users in the db,
+      // opting to keep the current user to serialize and deleting the others.
+      // This should have happened during the online fetch.
       _userStorageService.clearUser();
+      rethrow;
     }
-    updateUser(syncOnline: true);
+    updateUser();
   }
 
   Future<void> signOut() async {
     await _authenticationService.signOut();
-    updateUser(syncOnline: false);
+    curUser.syncOnline = false;
+    updateUser();
   }
 
   Future<void> syncUser() async {
     try {
-      await _userStorageService.syncUser(user: curUser!);
+      await _userStorageService.syncUser(user: curUser);
     } on FailureToUploadException catch (e) {
       log(e.cause);
       retry = true;
+      rethrow;
     } on UserSyncException catch (e) {
       log(e.cause);
-      log("This is a fatal error");
-      // Some sort of UI whoopsie.
-      // I do not know how to handle this yet.
       retry = true;
+      rethrow;
     }
   }
 
-  Future<void> getUser() async => curUser = await _userStorageService.getUser();
+  Future<void> getUser() async =>
+      curUser = await _userStorageService.getUser() ??
+          User(userName: '', syncOnline: false, lastOpened: DateTime.now());
 }

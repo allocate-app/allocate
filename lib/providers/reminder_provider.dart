@@ -2,9 +2,11 @@ import 'dart:async';
 import 'dart:developer';
 
 import 'package:flutter/foundation.dart';
+import 'package:jiffy/jiffy.dart';
 
 import '../model/task/reminder.dart';
 import '../model/user/user.dart';
+import '../services/notification_service.dart';
 import '../services/reminder_service.dart';
 import '../util/enums.dart';
 import '../util/exceptions.dart';
@@ -12,13 +14,14 @@ import '../util/sorting/reminder_sorter.dart';
 
 class ReminderProvider extends ChangeNotifier {
   late Timer syncTimer;
+
   final ReminderService _reminderService;
+  // Singleton for now. DI later.
+  final NotificationService _notificationService = NotificationService.instance;
 
   late Reminder curReminder;
 
   late List<Reminder> reminders;
-
-  List<Reminder> failCache = List.empty(growable: true);
 
   late ReminderSorter sorter;
 
@@ -29,21 +32,20 @@ class ReminderProvider extends ChangeNotifier {
     startTimer();
   }
 
-  void setUser({User? user}) {
-    user = user;
-    sorter = user?.reminderSorter ?? sorter;
-    notifyListeners();
-  }
-
   void startTimer() {
     syncTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
-      _reattemptUpdate();
       if (user!.syncOnline) {
         _syncRepo();
       } else {
         _reminderService.clearDeletesLocalRepo();
       }
     });
+  }
+
+  void setUser({User? user}) {
+    user = user;
+    sorter = user?.reminderSorter ?? sorter;
+    notifyListeners();
   }
 
   SortMethod get sortMethod => sorter.sortMethod;
@@ -68,10 +70,10 @@ class ReminderProvider extends ChangeNotifier {
       _reminderService.syncRepo();
     } on FailureToDeleteException catch (e) {
       log(e.cause);
-      log("This is a fatal error.");
+      rethrow;
     } on FailureToUploadException catch (e) {
       log(e.cause);
-      log("This is a fatal error, supabase issue");
+      rethrow;
     }
     notifyListeners();
   }
@@ -80,15 +82,27 @@ class ReminderProvider extends ChangeNotifier {
       {required String name,
       DateTime? startDate,
       DateTime? dueDate,
+      DateTime? warnDate,
       bool? repeatable,
       List<bool>? repeatDays,
       int? repeatSkip,
       Frequency? frequency,
       CustomFrequency? customFreq}) async {
+    startDate = startDate ?? DateTime.now();
+    dueDate =
+        DateTime(startDate.year, startDate.month, startDate.day, 23, 59, 0);
+
+    if (startDate.isAfter(dueDate)) {
+      dueDate = startDate.add(const Duration(minutes: 15));
+    }
+
+    warnDate = warnDate ?? dueDate;
+
     curReminder = Reminder(
       name: name,
-      startDate: startDate ?? DateTime.now(),
-      dueDate: dueDate ?? DateTime.now(),
+      startDate: startDate,
+      dueDate: dueDate,
+      warnDate: warnDate,
       repeatable: repeatable ?? false,
       repeatDays: repeatDays ?? List.filled(7, false, growable: false),
       repeatSkip: repeatSkip ?? 1,
@@ -96,72 +110,37 @@ class ReminderProvider extends ChangeNotifier {
       customFreq: customFreq ?? CustomFrequency.weekly,
     );
 
-    // Set the id on creation.
-    if (curReminder.repeatable) {
-      curReminder.repeatID = curReminder.id;
-    }
+    curReminder.repeatID = curReminder.hashCode;
+    curReminder.notificationID = curReminder.hashCode;
 
     try {
       _reminderService.createReminder(reminder: curReminder);
+      scheduleNotification();
     } on FailureToCreateException catch (e) {
       log(e.cause);
-      failCache.add(curReminder);
+      cancelNotification();
+      rethrow;
     } on FailureToUploadException catch (e) {
       log(e.cause);
-      updateReminder();
-      return;
+      curReminder.isSynced = false;
+      return updateReminder();
     }
-
     notifyListeners();
   }
 
-  Future<void> updateReminder(
-      {String? name,
-      DateTime? startDate,
-      DateTime? dueDate,
-      bool? repeatable,
-      List<bool>? repeatDays,
-      int? repeatSkip,
-      Frequency? frequency,
-      CustomFrequency? customFreq}) async {
-    Reminder reminder = curReminder.copyWith(
-        name: name,
-        startDate: startDate,
-        dueDate: dueDate,
-        repeatable: repeatable,
-        repeatSkip: repeatSkip,
-        frequency: frequency,
-        customFreq: customFreq);
-
-    reminder.id = curReminder.id;
-    reminder.customViewIndex = curReminder.customViewIndex;
-
-    if (reminder.repeatable) {
-      reminder.repeatID = curReminder.repeatID ?? curReminder.id;
-    }
-
-    curReminder = reminder;
+  Future<void> updateReminder() async {
+    cancelNotification();
+    scheduleNotification();
 
     try {
       _reminderService.updateReminder(reminder: curReminder);
     } on FailureToUploadException catch (e) {
       log(e.cause);
-      failCache.add(curReminder);
+      rethrow;
     } on FailureToUpdateException catch (e) {
       log(e.cause);
-      failCache.add(curReminder);
-    }
-    notifyListeners();
-  }
-
-  Future<void> _reattemptUpdate() async {
-    try {
-      _reminderService.updateBatch(reminders: failCache);
-      failCache.clear();
-    } on FailureToUploadException catch (e) {
-      log("DataCache - ${e.cause}");
-    } on FailureToUpdateException catch (e) {
-      log("DataCache - ${e.cause}");
+      cancelNotification();
+      rethrow;
     }
     notifyListeners();
   }
@@ -171,7 +150,7 @@ class ReminderProvider extends ChangeNotifier {
       _reminderService.deleteReminder(reminder: curReminder);
     } on FailureToDeleteException catch (e) {
       log(e.cause);
-      failCache.add(curReminder);
+      rethrow;
     }
     notifyListeners();
   }
@@ -183,16 +162,51 @@ class ReminderProvider extends ChangeNotifier {
           reminders: reminders, oldIndex: oldIndex, newIndex: newIndex);
     } on FailureToUpdateException catch (e) {
       log(e.cause);
-      failCache.addAll(reminders);
+      rethrow;
     } on FailureToUploadException catch (e) {
       log(e.cause);
-      failCache.addAll(reminders);
+      rethrow;
     }
     notifyListeners();
   }
 
-  Future<void> getRoutinesBy() async {
-    reminders = await _reminderService.getRemindersBy(sorter: sorter);
-    notifyListeners();
+  // This also schedules notifications.
+  Future<void> checkRepeating({DateTime? now}) async =>
+      _reminderService.checkRepeating(now: now ?? DateTime.now());
+  Future<void> nextRepeat() async =>
+      _reminderService.nextRepeatable(reminder: curReminder);
+  // This also cancels upcoming notifications.
+  Future<void> deleteFutures() async =>
+      _reminderService.deleteFutures(reminder: curReminder);
+  Future<void> populateCalendar({DateTime? limit}) async =>
+      _reminderService.populateCalendar(limit: limit ?? DateTime.now());
+
+  Future<void> getReminders() async =>
+      reminders = await _reminderService.getReminders();
+  Future<void> getRemindersBy() async =>
+      reminders = await _reminderService.getRemindersBy(sorter: sorter);
+
+  // For grabbing from payload.
+  Future<void> getReminderByID({required int id}) async =>
+      curReminder = await _reminderService.getReminderByID(id: id) ??
+          Reminder(
+              name: '',
+              startDate: DateTime.now(),
+              dueDate: DateTime.now(),
+              warnDate: DateTime.now(),
+              repeatDays: List.filled(7, false));
+
+  Future<void> scheduleNotification() async {
+    String newDue =
+        Jiffy.parseFromDateTime(curReminder.dueDate).toLocal().toString();
+    _notificationService.scheduleNotification(
+        id: curReminder.notificationID!,
+        warnDate: curReminder.warnDate,
+        message: "${curReminder.name} IS DUE: $newDue",
+        payload: "DEADLINE\n${curReminder.notificationID}");
+  }
+
+  Future<void> cancelNotification() async {
+    _notificationService.cancelNotification(id: curReminder.notificationID!);
   }
 }
