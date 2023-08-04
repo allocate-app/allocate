@@ -7,6 +7,7 @@ import '../model/task/subtask.dart';
 import '../model/task/todo.dart';
 import '../model/user/user.dart';
 import '../services/todo_service.dart';
+import '../util/constants.dart';
 import '../util/enums.dart';
 import '../util/exceptions.dart';
 import '../util/sorting/todo_sorter.dart';
@@ -21,7 +22,6 @@ class ToDoProvider extends ChangeNotifier {
   late ToDo curToDo;
 
   late List<ToDo> toDos;
-  // List<ToDo> failCache = List.empty(growable: true);
 
   late ToDoSorter sorter;
 
@@ -34,7 +34,6 @@ class ToDoProvider extends ChangeNotifier {
 
   void startTimer() {
     syncTimer = Timer.periodic(const Duration(seconds: 30), (timer) async {
-      //await _reattemptUpdate();
       if (user?.syncOnline ?? false) {
         _syncRepo();
       } else {
@@ -43,8 +42,14 @@ class ToDoProvider extends ChangeNotifier {
     });
   }
 
-  // Keep these for testing.
+  void setUser({User? user}) {
+    user = user;
+    sorter = user?.toDoSorter ?? sorter;
+    notifyListeners();
+  }
+
   SortMethod get sortMethod => sorter.sortMethod;
+
   set sortMethod(SortMethod method) {
     if (method == sorter.sortMethod) {
       sorter.descending = !sorter.descending;
@@ -56,14 +61,8 @@ class ToDoProvider extends ChangeNotifier {
   }
 
   bool get descending => sorter.descending;
-  List<SortMethod> get sortMethods => ToDoSorter.sortMethods;
 
-  // Refactor this to set a user instead.
-  void setUser({User? user}) {
-    user = user;
-    sorter = user?.toDoSorter ?? sorter;
-    notifyListeners();
-  }
+  List<SortMethod> get sortMethods => ToDoSorter.sortMethods;
 
   Future<void> recalculateWeight() async {
     _toDoService.recalculateWeight(toDo: curToDo);
@@ -76,7 +75,6 @@ class ToDoProvider extends ChangeNotifier {
   }
 
   Future<void> _syncRepo() async {
-    // Not quite sure how to handle this outside of gui warning.
     try {
       _toDoService.syncRepo();
     } on FailureToDeleteException catch (e) {
@@ -89,6 +87,7 @@ class ToDoProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Subtasks are fixed length.
   Future<void> createToDo({
     required TaskType taskType,
     required String name,
@@ -107,6 +106,11 @@ class ToDoProvider extends ChangeNotifier {
     int? repeatSkip,
     List<SubTask>? subTasks,
   }) async {
+    subTasks =
+        (null != subTasks && subTasks.length == Constants.numTasks[taskType]!)
+            ? subTasks
+            : List.filled(Constants.numTasks[taskType]!, SubTask());
+
     weight = weight ?? _toDoService.calculateWeight(subTasks: subTasks);
     int expectedDuration =
         duration?.inSeconds ?? (const Duration(hours: 1)).inSeconds;
@@ -138,7 +142,7 @@ class ToDoProvider extends ChangeNotifier {
         customFreq: customFreq ?? CustomFrequency.weekly,
         repeatDays: repeatDays ?? List.filled(7, false, growable: false),
         repeatSkip: repeatSkip ?? 1,
-        subTasks: subTasks ?? List.empty(growable: true));
+        subTasks: subTasks);
 
     curToDo.repeatID = curToDo.hashCode;
 
@@ -163,16 +167,13 @@ class ToDoProvider extends ChangeNotifier {
 
     try {
       _toDoService.updateToDo(toDo: curToDo);
-      // These will require to be caught in the gui to alert the user.
     } on FailureToUploadException catch (e) {
       log(e.cause);
       rethrow;
     } on FailureToUpdateException catch (e) {
       log(e.cause);
       rethrow;
-
     }
-
     notifyListeners();
   }
 
@@ -181,7 +182,6 @@ class ToDoProvider extends ChangeNotifier {
       _toDoService.deleteToDo(toDo: curToDo);
     } on FailureToDeleteException catch (e) {
       log(e.cause);
-      //failCache.add(curToDo);
       rethrow;
     }
     notifyListeners();
@@ -195,28 +195,10 @@ class ToDoProvider extends ChangeNotifier {
     } on FailureToUpdateException catch (e) {
       log(e.cause);
       rethrow;
-      //failCache.addAll(todos);
     } on FailureToUploadException catch (e) {
       log(e.cause);
       rethrow;
     }
-  }
-
-  Future<void> reorderSubTasks(
-      {required int oldIndex, required int newIndex}) async {
-    try {
-      _toDoService.reorderSubTask(
-          toDo: curToDo, oldIndex: oldIndex, newIndex: newIndex);
-    } on FailureToUpdateException catch (e) {
-      log(e.cause);
-      rethrow;
-      // failCache.add(curToDo);
-    } on FailureToUploadException catch (e) {
-      log(e.cause);
-      rethrow;
-      // failCache.add(curToDo);
-    }
-    notifyListeners();
   }
 
   Future<void> checkRepeating({DateTime? now}) async =>
@@ -227,11 +209,22 @@ class ToDoProvider extends ChangeNotifier {
   Future<void> deleteFutures() async =>
       _toDoService.deleteFutures(toDo: curToDo);
 
-  // TODO: Finish this implementation. Now, just testable.
+  // TODO: Finish testing.
   Future<void> populateCalendar({DateTime? limit}) async =>
       _toDoService.populateCalendar(limit: limit ?? DateTime.now());
 
-  // TODO: implement getToDoByID and handle null.
+  Future<void> getToDoByID({required int id}) async =>
+      curToDo = await _toDoService.getToDoByID(id: id) ??
+          ToDo(
+              taskType: TaskType.small,
+              name: '',
+              expectedDuration: 0,
+              realDuration: 0,
+              startDate: DateTime.now(),
+              dueDate: DateTime.now(),
+              repeatDays: List.filled(7, false),
+              subTasks:
+                  List.filled(Constants.numTasks[TaskType.small]!, SubTask()));
 
   Future<void> getToDos() async {
     toDos = await _toDoService.getToDos();

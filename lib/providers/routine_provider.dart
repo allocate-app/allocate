@@ -7,6 +7,7 @@ import "../model/task/routine.dart";
 import '../model/task/subtask.dart';
 import '../model/user/user.dart';
 import '../services/routine_service.dart';
+import '../util/constants.dart';
 import '../util/enums.dart';
 import "../util/exceptions.dart";
 import '../util/sorting/routine_sorter.dart';
@@ -32,7 +33,6 @@ class RoutineProvider extends ChangeNotifier {
   late RoutineTime _timeOfDay;
 
   late List<Routine> routines;
-  List<Routine> failCache = List.empty(growable: true);
 
   late RoutineSorter sorter;
 
@@ -40,14 +40,13 @@ class RoutineProvider extends ChangeNotifier {
   RoutineProvider({this.user, RoutineService? service})
       : _routineService = service ?? RoutineService() {
     sorter = user?.routineSorter ?? RoutineSorter();
-    //setRoutines();
+    setRoutines();
     startTimer();
   }
 
   void startTimer() {
     syncTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
-      _reattemptUpdate();
-      if (user!.syncOnline) {
+      if (user?.syncOnline ?? false) {
         _syncRepo();
       } else {
         _routineService.clearDeletesLocalRepo();
@@ -63,52 +62,17 @@ class RoutineProvider extends ChangeNotifier {
 
   // Call this in a future builder for the routines screen.
   Future<void> setRoutines() async {
-    curMorning = (null != user?.curMornID)
+    curMorning = (null != user?.curMornID!)
         ? await _routineService.getRoutineById(id: user!.curMornID!)
         : null;
 
-    curAfternoon = (null != user?.curAftID)
+    curAfternoon = (null != user?.curAftID!)
         ? await _routineService.getRoutineById(id: user!.curAftID!)
         : null;
 
-    curEvening = (null != user?.curAftID)
+    curEvening = (null != user?.curAftID!)
         ? await _routineService.getRoutineById(id: user!.curAftID!)
         : null;
-    notifyListeners();
-  }
-
-  // Routine? get curMorning => _curMorning;
-  // set curMorning(Routine? newMorn) {
-  //   if (null != _curMorning) {
-  //     _resetRoutine(routine: _curMorning!);
-  //   }
-  //   _curMorning = newMorn;
-  //   notifyListeners();
-  // }
-  //
-  // Routine? get curAfternoon => _curAfternoon;
-  // set curAfternoon(Routine? newAft) {
-  //   if (null != _curAfternoon) {
-  //     _resetRoutine(routine: _curAfternoon!);
-  //   }
-  //   _curAfternoon = newAft;
-  //   notifyListeners();
-  // }
-  //
-  // Routine? get curEvening => _curEvening;
-  // set curEvening(Routine? newEve) {
-  //   if (null != _curEvening) {
-  //     _resetRoutine(routine: _curEvening!);
-  //   }
-  //   _curEvening = newEve;
-  //   notifyListeners();
-  // }
-
-  // I am unsure as to why I wrote this and what it would accomplish.
-  // TODO: revisit this after gui.
-  RoutineTime get timeOfDay => _timeOfDay;
-  set timeOfDay(RoutineTime time) {
-    _timeOfDay = time;
     notifyListeners();
   }
 
@@ -154,12 +118,18 @@ class RoutineProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Subtasks are fixed-length.
   Future<void> createRoutine(
       {required String name,
       required timeOfDay,
       Duration? duration,
       int? weight,
       List<SubTask>? routineTasks}) async {
+    routineTasks =
+        (null != routineTasks && routineTasks.length == Constants.maxNumTasks)
+            ? routineTasks
+            : List.filled(Constants.maxNumTasks, SubTask());
+
     weight =
         weight ?? _routineService.calculateWeight(routineTasks: routineTasks);
 
@@ -174,131 +144,32 @@ class RoutineProvider extends ChangeNotifier {
         weight: weight,
         expectedDuration: expectedDuration,
         realDuration: realDuration,
-        routineTasks: routineTasks ?? List.empty(growable: true));
+        routineTasks: routineTasks);
 
     try {
       _routineService.createRoutine(routine: curRoutine);
     } on FailureToCreateException catch (e) {
       log(e.cause);
-      failCache.add(curRoutine);
+      rethrow;
     } on FailureToUploadException catch (e) {
       log(e.cause);
-      failCache.add(curRoutine);
-      return;
-    }
-
-    notifyListeners();
-  }
-
-  // TODO: this may actually be best removed, or refactored
-  // Possibly refactor this so that it takes args instead of an object.
-  Future<void> addRoutineTask({required String name, int? weight}) async {
-    SubTask routineTask = SubTask(name: name, weight: weight ?? 0);
-    try {
-      _routineService.addRoutineTask(subTask: routineTask, routine: curRoutine);
-      //_routine
-    } on ListLimitExceededException catch (e) {
-      log(e.cause);
-      // Throw some GUI error or something.
+      curRoutine.isSynced = false;
+      return updateRoutine();
     }
     notifyListeners();
   }
 
-  Future<void> updateRoutineTask(
-      {required SubTask routineTask,
-      String? name,
-      int? weight,
-      bool? completed}) async {
-    SubTask newRoutineTask = routineTask.copyWith(name: name, weight: weight);
-    newRoutineTask.completed = completed ?? routineTask.completed;
-
-    try {
-      _routineService.updateRoutineTask(
-          oldTask: routineTask, newTask: newRoutineTask, routine: curRoutine);
-    } on FailureToUpdateException catch (e) {
-      log(e.cause);
-      failCache.add(curRoutine);
-    } on FailureToUploadException catch (e) {
-      log(e.cause);
-      failCache.add(curRoutine);
-    }
-    notifyListeners();
-  }
-
-  Future<void> deleteRoutineTask({required SubTask routineTask}) async {
-    try {
-      _routineService.deleteRoutineTask(
-          routineTask: routineTask, routine: curRoutine);
-    } on FailureToUpdateException catch (e) {
-      log(e.cause);
-      failCache.add(curRoutine);
-    } on FailureToUploadException catch (e) {
-      log(e.cause);
-      failCache.add(curRoutine);
-    }
-    notifyListeners();
-  }
-
-  // This should just be args.
-  Future<void> updateRoutine(
-      {RoutineTime? routineTime,
-      String? name,
-      int? weight,
-      Duration? duration,
-      List<SubTask>? routineTasks}) async {
-    int? expectedDuration = duration?.inSeconds;
-    int? realDuration = (null == expectedDuration)
-        ? null
-        : _routineService.calculateRealDuration(
-            weight: weight ?? curRoutine.weight, duration: expectedDuration);
-    Routine routine = curRoutine.copyWith(
-        routineTime: routineTime,
-        name: name,
-        weight: weight,
-        expectedDuration: expectedDuration,
-        realDuration: realDuration,
-        routineTasks: routineTasks);
-
-    if (routine.weight == 0 && routine.routineTasks.isNotEmpty) {
-      _routineService.recalculateWeight(routine: routine);
-    }
-    routine.id = curRoutine.id;
-    routine.customViewIndex = curRoutine.customViewIndex;
-    curRoutine = routine;
+  Future<void> updateRoutine() async {
+    _routineService.recalculateWeight(routine: curRoutine);
+    _routineService.setRealDuration(routine: curRoutine);
     try {
       _routineService.updateRoutine(routine: curRoutine);
     } on FailureToUploadException catch (e) {
       log(e.cause);
-      failCache.add(curRoutine);
+      rethrow;
     } on FailureToUpdateException catch (e) {
       log(e.cause);
-      failCache.add(curRoutine);
-    }
-    notifyListeners();
-  }
-
-  // Future<void> _updateBatch({required List<Routine> routines}) async {
-  //   try {
-  //     _routineService.updateBatch(routines: routines);
-  //   } on FailureToUploadException catch (e) {
-  //     log(e.cause);
-  //     failCache.addAll(routines);
-  //   } on FailureToUpdateException catch (e) {
-  //     log(e.cause);
-  //     failCache.addAll(routines);
-  //   }
-  // }
-
-  // This should probably be privately called on a timer.
-  // Possibly user function?
-  Future<void> _reattemptUpdate() async {
-    try {
-      _routineService.updateBatch(routines: failCache);
-      failCache.clear();
-    } on FailureToUploadException catch (e) {
-      log("DataCache - ${e.cause}");
-    } on FailureToUpdateException catch (e) {
-      log("DataCache - ${e.cause}");
+      rethrow;
     }
     notifyListeners();
   }
@@ -308,7 +179,7 @@ class RoutineProvider extends ChangeNotifier {
       _routineService.deleteRoutine(routine: curRoutine);
     } on FailureToDeleteException catch (e) {
       log(e.cause);
-      failCache.add(curRoutine);
+      rethrow;
     }
     notifyListeners();
   }
@@ -322,38 +193,23 @@ class RoutineProvider extends ChangeNotifier {
           routines: routines, oldIndex: oldIndex, newIndex: newIndex);
     } on FailureToUpdateException catch (e) {
       log(e.cause);
-      failCache.addAll(routines);
+      rethrow;
     } on FailureToUploadException catch (e) {
       log(e.cause);
-      failCache.addAll(routines);
+      rethrow;
     }
     notifyListeners();
   }
 
-  Future<void> reorderRoutineTask(
-      {required int oldIndex, required int newIndex}) async {
+  Future<void> resetRoutine() async {
     try {
-      _routineService.reorderRoutineTask(
-          routine: curRoutine, oldIndex: oldIndex, newIndex: newIndex);
+      _routineService.resetRoutine(routine: curRoutine);
     } on FailureToUpdateException catch (e) {
       log(e.cause);
-      failCache.add(curRoutine);
+      rethrow;
     } on FailureToUploadException catch (e) {
       log(e.cause);
-      failCache.add(curRoutine);
-    }
-    notifyListeners();
-  }
-
-  Future<void> resetRoutine({required Routine routine}) async {
-    try {
-      _routineService.resetRoutine(routine: routine);
-    } on FailureToUpdateException catch (e) {
-      log(e.cause);
-      failCache.add(routine);
-    } on FailureToUploadException catch (e) {
-      log(e.cause);
-      failCache.add(routine);
+      rethrow;
     }
   }
 
@@ -364,26 +220,7 @@ class RoutineProvider extends ChangeNotifier {
           .resetRoutines(routines: [curMorning, curAfternoon, curEvening]);
     } on FailureToUpdateException catch (e) {
       log(e.cause);
-      if (null != curMorning) {
-        failCache.add(curMorning!);
-      }
-      if (null != curAfternoon) {
-        failCache.add(curAfternoon!);
-      }
-      if (null != curEvening) {
-        failCache.add(curEvening!);
-      }
-    } on FailureToUploadException catch (e) {
-      log(e.cause);
-      if (null != curMorning) {
-        failCache.add(curMorning!);
-      }
-      if (null != curAfternoon) {
-        failCache.add(curAfternoon!);
-      }
-      if (null != curEvening) {
-        failCache.add(curEvening!);
-      }
+      rethrow;
     }
     notifyListeners();
   }
@@ -392,4 +229,13 @@ class RoutineProvider extends ChangeNotifier {
       _routineService.getRoutines(timeOfDay: _timeOfDay);
   Future<void> getRoutinesBy() async => _routineService.getRoutinesBy(
       timeOfDay: _timeOfDay, routineSorter: sorter);
+
+  Future<void> getRoutineByID({required int id}) async =>
+      curRoutine = await _routineService.getRoutineById(id: id) ??
+          Routine(
+              routineTime: RoutineTime.morning,
+              name: '',
+              expectedDuration: 0,
+              realDuration: 0,
+              routineTasks: List.filled(Constants.maxNumTasks, SubTask()));
 }

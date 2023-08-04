@@ -7,14 +7,11 @@ import '../model/task/todo.dart';
 import '../repositories/todo_repo.dart';
 import '../util/constants.dart';
 import '../util/enums.dart';
-import '../util/exceptions.dart';
 import '../util/interfaces/repository/todo_repository.dart';
 import '../util/interfaces/sortable.dart';
 import '../util/numbers.dart';
 
 class ToDoService {
-  ToDoService();
-
   // This is just the default repo. Switch as needed for testing.
   ToDoRepository _repository = ToDoRepo();
 
@@ -25,6 +22,26 @@ class ToDoService {
 
   void recalculateWeight({required ToDo toDo}) {
     toDo.weight = toDo.subTasks.fold(0, (p, c) => p + c.weight);
+  }
+
+  int calculateRealDuration({int? weight, int? duration}) => (remap(
+              x: weight ?? 0,
+              inMin: 0,
+              inMax: Constants.maxWeight,
+              outMin: Constants.lowerBound,
+              outMax: Constants.upperBound) *
+          (duration ?? 0))
+      .toInt();
+
+  void setRealDuration({required ToDo toDo}) {
+    toDo.realDuration = (remap(
+                x: toDo.weight,
+                inMin: 0,
+                inMax: Constants.maxWeight,
+                outMin: Constants.lowerBound,
+                outMax: Constants.upperBound) *
+            toDo.expectedDuration)
+        .toInt();
   }
 
   DateTime? getRepeatDate({required ToDo toDo}) => switch (toDo.frequency) {
@@ -57,7 +74,7 @@ class ToDoService {
 
     ToDo newToDo = toDo.copyWith(
       startDate: nextRepeatDate,
-      dueDate: Jiffy.parseFromDateTime(toDo.dueDate)
+      dueDate: Jiffy.parseFromDateTime(nextRepeatDate)
           .add(microseconds: offset)
           .dateTime,
     );
@@ -153,26 +170,6 @@ class ToDoService {
     }
   }
 
-  int calculateRealDuration({int? weight, int? duration}) => (remap(
-              x: weight ?? 0,
-              inMin: 0,
-              inMax: Constants.maxWeight,
-              outMin: Constants.lowerBound,
-              outMax: Constants.upperBound) *
-          (duration ?? 0))
-      .toInt();
-
-  void setRealDuration({required ToDo toDo}) {
-    toDo.realDuration = (remap(
-                x: toDo.weight,
-                inMin: 0,
-                inMax: Constants.maxWeight,
-                outMin: Constants.lowerBound,
-                outMax: Constants.upperBound) *
-            toDo.expectedDuration)
-        .toInt();
-  }
-
   Future<void> createToDo({required ToDo toDo}) async =>
       _repository.create(toDo);
 
@@ -189,75 +186,26 @@ class ToDoService {
       _repository.getRepoByGroupID(groupID: groupID);
   Future<List<ToDo>> getCompleted() async => _repository.getCompleted();
 
-  Future<void> updateToDo({required ToDo toDo}) async {
-    if (toDo.subTasks.length > Constants.numTasks[toDo.taskType]!) {
-      throw ListLimitExceededException(
-          "Validation failed, subtask limit mismatch");
-    }
-    return _repository.update(toDo);
-  }
+  Future<void> updateToDo({required ToDo toDo}) async =>
+      _repository.update(toDo);
 
   Future<void> updateBatch({required List<ToDo> toDos}) async =>
       _repository.updateBatch(toDos);
 
-  Future<void> clearDeletesLocalRepo() async => _repository.deleteLocal();
-
   Future<void> deleteToDo({required ToDo toDo}) async =>
       _repository.delete(toDo);
+
+  Future<void> clearDeletesLocalRepo() async => _repository.deleteLocal();
 
   Future<void> deleteFutures({required ToDo toDo}) async =>
       _repository.deleteFutures(toDo: toDo);
 
   Future<void> syncRepo() async => _repository.syncRepo();
 
-  Future<void> addSubTask(
-      {required SubTask subTask, required ToDo toDo}) async {
-    if (toDo.subTasks.length >= Constants.numTasks[toDo.taskType]!) {
-      throw ListLimitExceededException("Max subtasks limit exceeded");
-    }
-    toDo.subTasks.add(subTask);
-    toDo.weight += toDo.weight;
-    updateToDo(toDo: toDo);
-  }
-
-  Future<void> updateSubTask(
-      {required int oldWeight,
-      required int index,
-      required SubTask subTask,
-      required ToDo toDo}) async {
-    toDo.subTasks[index] = subTask;
-    toDo.weight += (-oldWeight) + subTask.weight;
-
-    if (toDo.weight < 0) {
-      toDo.weight = 0;
-    }
-    updateToDo(toDo: toDo);
-  }
-
-  Future<void> deleteSubTask(
-      {required SubTask subTask, required ToDo toDo}) async {
-    bool removed = toDo.subTasks.remove(subTask);
-    if (removed) {
-      toDo.weight -= subTask.weight;
-    }
-    updateToDo(toDo: toDo);
-  }
-
-  Future<void> reorderSubTask(
-      {required ToDo toDo,
-      required int oldIndex,
-      required int newIndex}) async {
-    if (oldIndex < newIndex) {
-      newIndex--;
-    }
-    SubTask st = toDo.subTasks.removeAt(oldIndex);
-    toDo.subTasks.insert(newIndex, st);
-    updateToDo(toDo: toDo);
-  }
-
+  // Likely better to not use.
   Future<void> toggleMyDay({required ToDo toDo}) async {
     toDo.myDay = !toDo.myDay;
-    updateToDo(toDo: toDo);
+    _repository.update(toDo);
   }
 
   // This is for my day.

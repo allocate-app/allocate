@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:isar/isar.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -7,7 +9,8 @@ import 'isar_service.dart';
 import 'supabase_service.dart';
 
 class UserStorageService {
-  final SupabaseClient _supabaseClient = SupabaseService.instance.supabaseClient;
+  final SupabaseClient _supabaseClient =
+      SupabaseService.instance.supabaseClient;
   final Isar _isarClient = IsarService.instance.isarClient;
 
   Future<void> createUser({required u.User user}) async {
@@ -18,7 +21,8 @@ class UserStorageService {
       id = await _isarClient.users.put(user);
     });
     if (null == id) {
-      throw FailureToCreateException("Failed to create user locally");
+      throw FailureToCreateException("Failed to create user locally \n"
+          "User: ${user.toString()}");
     }
 
     user.localID = id!;
@@ -109,9 +113,8 @@ class UserStorageService {
       u.User user = users.first;
       return user;
     } on StateError catch (e) {
+      log(e.message);
       return null;
     }
   }
-  // Future<u.User> getUserByUserName({required String userName}) async =>
-  //     await _isarClient.users.where().userNameEquals(userName).findAll();
 }

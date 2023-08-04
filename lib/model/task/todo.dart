@@ -55,7 +55,7 @@ class ToDo with EquatableMixin implements Copyable<ToDo> {
   Frequency frequency;
   @Enumerated(EnumType.ordinal)
   CustomFrequency customFreq;
-  List<bool> repeatDays;
+  final List<bool> repeatDays;
   int repeatSkip;
   @Index()
   bool isSynced = false;
@@ -230,11 +230,11 @@ class ToDo with EquatableMixin implements Copyable<ToDo> {
       ];
 
   @override
-  toString() =>
-      "ToDo(id: $id, repeatID: $repeatID customViewIndex: $customViewIndex, groupID: $groupID, groupIndex: $groupIndex,"
+  String toString() =>
+      "ToDo(id: $id, taskType: ${taskType.name} repeatID: $repeatID customViewIndex: $customViewIndex, groupID: $groupID, groupIndex: $groupIndex,"
       " name: $name, description: $description, weight: $weight, expectedDuration: $expectedDuration,"
-      " priority: $priority, completed: $completed, startDate: $startDate, dueDate: $dueDate, myDay: $myDay,"
-      "repeatable: $repeatable, frequency: $frequency, customFreq: $customFreq, repeatDays: $repeatDays,"
+      " priority: ${priority.name}, completed: $completed, startDate: $startDate, dueDate: $dueDate, myDay: $myDay,"
+      "repeatable: $repeatable, frequency: ${frequency.name}, customFreq: ${customFreq.name}, repeatDays: $repeatDays,"
       "repeatSkip: $repeatSkip, isSynced: $isSynced, subTasks: $subTasks,"
       "toDelete: $toDelete)";
 }

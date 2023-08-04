@@ -44,7 +44,6 @@ import "../util/enums.dart";
 ///       - Check whether it was successfully deleted.
 ///
 ///
-// ///   - Test failcache:
 ///     - Intentionally invoke -> Requires supabase fake session or throw intentional isar error.
 ///
 ///   - Test recurring todos.

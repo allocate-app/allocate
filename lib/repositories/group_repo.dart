@@ -10,9 +10,8 @@ import '../util/interfaces/repository//group_repository.dart';
 import '../util/interfaces/sortable.dart';
 
 class GroupRepo implements GroupRepository {
-  GroupRepo();
-
-  final SupabaseClient _supabaseClient = SupabaseService.instance.supabaseClient;
+  final SupabaseClient _supabaseClient =
+      SupabaseService.instance.supabaseClient;
   final Isar _isarClient = IsarService.instance.isarClient;
 
   @override
@@ -25,7 +24,10 @@ class GroupRepo implements GroupRepository {
     });
 
     if (null == id) {
-      throw FailureToCreateException("Failed to create group locally");
+      throw FailureToCreateException("Failed to create group locally\n"
+          "Group: ${group.toString()}\n"
+          "Time: ${DateTime.now()}\n"
+          "Isar Open: ${_isarClient.isOpen}");
     }
 
     group.id = id!;
@@ -51,7 +53,10 @@ class GroupRepo implements GroupRepository {
     });
 
     if (null == id) {
-      throw FailureToUpdateException("Failed to update deadline locally");
+      throw FailureToUpdateException("Failed to update deadline locally\n"
+          "Group: ${group.toString()}\n"
+          "Time: ${DateTime.now()}\n"
+          "Isar Open: ${_isarClient.isOpen}");
     }
 
     if (null != _supabaseClient.auth.currentSession) {
@@ -62,7 +67,10 @@ class GroupRepo implements GroupRepository {
       id = response.last["id"];
 
       if (null == id) {
-        throw FailureToUploadException("Failed to sync deadline on update");
+        throw FailureToUploadException("Failed to sync deadline on update\n"
+            "Group: ${group.toString()}\n"
+            "Time: ${DateTime.now()}\n\n"
+            "Supabase Open: ${null != _supabaseClient.auth.currentSession}");
       }
     }
   }
@@ -80,7 +88,10 @@ class GroupRepo implements GroupRepository {
       }
     });
     if (ids.any((id) => null == id)) {
-      throw FailureToUpdateException("Failed to update groups locally");
+      throw FailureToUpdateException("Failed to update groups locally\n"
+          "Groups: ${groups.toString()}\n"
+          "Time: ${DateTime.now()}\n"
+          "Isar Open: ${_isarClient.isOpen}");
     }
 
     if (null != _supabaseClient.auth.currentSession) {
@@ -96,7 +107,10 @@ class GroupRepo implements GroupRepository {
         ids.add(id);
       }
       if (ids.any((id) => null == id)) {
-        throw FailureToUploadException("Failed to sync groups on update");
+        throw FailureToUploadException("Failed to sync groups on update\n"
+            "Groups: ${groups.toString()}\n"
+            "Time: ${DateTime.now()}\n\n"
+            "Supabase Open: ${null != _supabaseClient.auth.currentSession}");
       }
     }
   }
@@ -112,7 +126,10 @@ class GroupRepo implements GroupRepository {
     try {
       await _supabaseClient.from("groups").delete().eq("id", group.id);
     } catch (error) {
-      throw FailureToDeleteException("Failed to delete group online");
+      throw FailureToDeleteException("Failed to delete group online\n"
+          "Group: ${group.toString()}\n"
+          "Time: ${DateTime.now()}\n\n"
+          "Supabase Open: ${null != _supabaseClient.auth.currentSession}");
     }
   }
 
@@ -125,50 +142,54 @@ class GroupRepo implements GroupRepository {
   }
 
   @override
-  Future<void> syncRepo({bool showLoading = true}) async {
-    // Get the non-deleted stuff from Isar
-    List<int> toDeletes = await getDeleteIds();
-    if (toDeletes.isEmpty) {
+  Future<void> syncRepo() async {
+    if (null == _supabaseClient.auth.currentSession) {
       return fetchRepo();
     }
-
-    try {
-      await _supabaseClient.from("groups").delete().in_("id", toDeletes);
-    } catch (error) {
-      // I'm also unsure about this Exception.
-      throw FailureToDeleteException("Failed to delete groups on sync");
+    // Get the non-deleted stuff from Isar
+    List<int> toDeletes = await getDeleteIds();
+    if (toDeletes.isNotEmpty) {
+      try {
+        await _supabaseClient.from("groups").delete().in_("id", toDeletes);
+      } catch (error) {
+        // I'm also unsure about this Exception.
+        throw FailureToDeleteException("Failed to delete groups on sync\n"
+            "Group: ${toDeletes.toString()}\n"
+            "Time: ${DateTime.now()}\n\n"
+            "Supabase Open: ${null != _supabaseClient.auth.currentSession}");
+      }
     }
 
     // Get the non-uploaded stuff from Isar.
     List<Group> unsyncedGroups = await getUnsynced();
 
-    if (unsyncedGroups.isEmpty) {
-      return fetchRepo();
+    if (unsyncedGroups.isNotEmpty) {
+      List<Map<String, dynamic>> syncEntities = unsyncedGroups.map((group) {
+        group.isSynced = true;
+        return group.toEntity();
+      }).toList();
+
+      final List<Map<String, dynamic>> responses = await _supabaseClient
+          .from("groups")
+          .upsert(syncEntities)
+          .select("id");
+
+      List<int?> ids =
+          responses.map((response) => response["id"] as int?).toList();
+
+      if (ids.any((id) => null == id)) {
+        throw FailureToUploadException("Failed to sync groups\n"
+            "Groups: ${unsyncedGroups.toString()}\n"
+            "Time: ${DateTime.now()}\n\n"
+            "Supabase Open: ${null != _supabaseClient.auth.currentSession}");
+      }
     }
-
-    List<Map<String, dynamic>> syncEntities = unsyncedGroups.map((group) {
-      group.isSynced = true;
-      return group.toEntity();
-    }).toList();
-
-    final List<Map<String, dynamic>> responses =
-        await _supabaseClient.from("groups").upsert(syncEntities).select("id");
-
-    List<int?> ids =
-        responses.map((response) => response["id"] as int?).toList();
-
-    if (ids.any((id) => null == id)) {
-      throw FailureToUploadException("Failed to sync groups");
-    }
-
     // Fetch from supabase.
     fetchRepo();
   }
 
   @override
   Future<void> fetchRepo() async {
-    // This needs refactoring to work with a loading widget -> Factor into provider.
-    // showLoading ? startLoading() : null;
     late List<Map<String, dynamic>> groupEntities;
 
     await Future.delayed(const Duration(seconds: 1)).then((value) async {
@@ -209,7 +230,7 @@ class GroupRepo implements GroupRepository {
 
   @override
   Future<List<Group>> getRepoListBy(
-      {bool showLoading = true, required SortableView<Group> sorter}) async {
+      {required SortableView<Group> sorter}) async {
     switch (sorter.sortMethod) {
       case SortMethod.name:
         if (sorter.descending) {

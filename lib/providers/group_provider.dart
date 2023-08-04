@@ -20,8 +20,6 @@ class GroupProvider extends ChangeNotifier {
 
   late List<Group> groups;
 
-  List<Group> failCache = List.empty(growable: true);
-
   late GroupSorter sorter;
 
   User? user;
@@ -35,7 +33,6 @@ class GroupProvider extends ChangeNotifier {
 
   void startTimer() {
     syncTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
-      _reattemptUpdate();
       if (user!.syncOnline) {
         _syncRepo();
       } else {
@@ -72,10 +69,10 @@ class GroupProvider extends ChangeNotifier {
       _groupService.syncRepo();
     } on FailureToDeleteException catch (e) {
       log(e.cause);
-      log("This is a fatal error.");
+      rethrow;
     } on FailureToUploadException catch (e) {
       log(e.cause);
-      log("This is a fatal error, supabase issue");
+      rethrow;
     }
     notifyListeners();
   }
@@ -86,42 +83,24 @@ class GroupProvider extends ChangeNotifier {
       _groupService.createGroup(group: curGroup);
     } on FailureToCreateException catch (e) {
       log(e.cause);
-      failCache.add(curGroup);
+      rethrow;
     } on FailureToUploadException catch (e) {
       log(e.cause);
-      failCache.add(curGroup);
-      return;
+      curGroup.isSynced = false;
+      return updateGroup();
     }
-
     notifyListeners();
   }
 
-  Future<void> updateGroup({String? name, String? description}) async {
-    Group group = curGroup.copyWith(name: name, description: description);
-    group.id = curGroup.id;
-    group.customViewIndex = curGroup.customViewIndex;
-    curGroup = group;
-
+  Future<void> updateGroup() async {
     try {
       _groupService.updateGroup(group: curGroup);
     } on FailureToUploadException catch (e) {
       log(e.cause);
-      failCache.add(curGroup);
+      rethrow;
     } on FailureToUpdateException catch (e) {
       log(e.cause);
-      failCache.add(curGroup);
-    }
-    notifyListeners();
-  }
-
-  Future<void> _reattemptUpdate() async {
-    try {
-      _groupService.updateBatch(groups: failCache);
-      failCache.clear();
-    } on FailureToUploadException catch (e) {
-      log("DataCache - ${e.cause}");
-    } on FailureToUpdateException catch (e) {
-      log("DataCache - ${e.cause}");
+      rethrow;
     }
     notifyListeners();
   }
@@ -131,7 +110,7 @@ class GroupProvider extends ChangeNotifier {
       _groupService.deleteGroup(group: curGroup);
     } on FailureToDeleteException catch (e) {
       log(e.cause);
-      failCache.add(curGroup);
+      rethrow;
     }
     notifyListeners();
   }
@@ -145,10 +124,10 @@ class GroupProvider extends ChangeNotifier {
           groups: groups, oldIndex: oldIndex, newIndex: newIndex);
     } on FailureToUpdateException catch (e) {
       log(e.cause);
-      failCache.addAll(groups);
+      rethrow;
     } on FailureToUploadException catch (e) {
       log(e.cause);
-      failCache.addAll(groups);
+      rethrow;
     }
     notifyListeners();
   }
@@ -160,11 +139,20 @@ class GroupProvider extends ChangeNotifier {
           toDos: curGroup.toDos, oldIndex: oldIndex, newIndex: newIndex);
     } on FailureToUpdateException catch (e) {
       log(e.cause);
-      failCache.add(curGroup);
+      rethrow;
     } on FailureToUploadException catch (e) {
       log(e.cause);
-      failCache.add(curGroup);
+      rethrow;
     }
+    notifyListeners();
+  }
+
+  Future<void> getGroups() async {
+    groups = await _groupService.getGroups();
+    for (Group g in groups) {
+      g.toDos = await _toDoService.getByGroup(groupID: g.id);
+    }
+    notifyListeners();
   }
 
   Future<void> getGroupsBy() async {
@@ -174,4 +162,7 @@ class GroupProvider extends ChangeNotifier {
     }
     notifyListeners();
   }
+
+  Future<void> getGroupByID({required int id}) async =>
+      await _groupService.getGroupByID(id: id) ?? Group(name: '');
 }

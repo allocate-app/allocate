@@ -7,29 +7,31 @@ import '../repositories/deadline_repo.dart';
 import '../util/enums.dart';
 import '../util/interfaces/repository/deadline_repository.dart';
 import '../util/interfaces/sortable.dart';
+import 'notification_service.dart';
 
 class DeadlineService {
   DeadlineRepository _repository = DeadlineRepo();
 
   set repository(DeadlineRepository repo) => _repository = repo;
 
-  DateTime? getRepeatDate({required Deadline deadline}) => switch (deadline.frequency) {
-    (Frequency.daily) => Jiffy.parseFromDateTime(deadline.startDate)
-        .add(days: deadline.repeatSkip)
-        .dateTime,
-    (Frequency.weekly) => Jiffy.parseFromDateTime(deadline.startDate)
-        .add(weeks: deadline.repeatSkip)
-        .dateTime,
-    (Frequency.monthly) => Jiffy.parseFromDateTime(deadline.startDate)
-        .add(months: deadline.repeatSkip)
-        .dateTime,
-    (Frequency.yearly) => Jiffy.parseFromDateTime(deadline.startDate)
-        .add(years: deadline.repeatSkip)
-        .dateTime,
-    (Frequency.custom) => getCustom(deadline: deadline),
-  //Once should never repeat -> fixing asynchronously in case validation fails.
-    (Frequency.once) => null,
-  };
+  DateTime? getRepeatDate({required Deadline deadline}) =>
+      switch (deadline.frequency) {
+        (Frequency.daily) => Jiffy.parseFromDateTime(deadline.startDate)
+            .add(days: deadline.repeatSkip)
+            .dateTime,
+        (Frequency.weekly) => Jiffy.parseFromDateTime(deadline.startDate)
+            .add(weeks: deadline.repeatSkip)
+            .dateTime,
+        (Frequency.monthly) => Jiffy.parseFromDateTime(deadline.startDate)
+            .add(months: deadline.repeatSkip)
+            .dateTime,
+        (Frequency.yearly) => Jiffy.parseFromDateTime(deadline.startDate)
+            .add(years: deadline.repeatSkip)
+            .dateTime,
+        (Frequency.custom) => getCustom(deadline: deadline),
+        //Once should never repeat -> fixing asynchronously in case validation fails.
+        (Frequency.once) => null,
+      };
 
   Future<void> nextRepeatable({required Deadline deadline}) async {
     DateTime? nextRepeatDate = getRepeatDate(deadline: deadline);
@@ -38,15 +40,32 @@ class DeadlineService {
       return;
     }
 
-    int offset = Jiffy.parseFromDateTime(deadline.dueDate)
+    int dueOffset = Jiffy.parseFromDateTime(deadline.dueDate)
+        .diff(Jiffy.parseFromDateTime(deadline.startDate)) as int;
+
+    int warnOffset = Jiffy.parseFromDateTime(deadline.warnDate)
         .diff(Jiffy.parseFromDateTime(deadline.startDate)) as int;
 
     Deadline newDeadline = deadline.copyWith(
-      startDate: nextRepeatDate,
-      dueDate: Jiffy.parseFromDateTime(deadline.dueDate)
-          .add(microseconds: offset)
-          .dateTime,
-    );
+        startDate: nextRepeatDate,
+        dueDate: Jiffy.parseFromDateTime(nextRepeatDate)
+            .add(microseconds: dueOffset)
+            .dateTime,
+        warnDate: Jiffy.parseFromDateTime(nextRepeatDate)
+            .add(microseconds: warnOffset)
+            .dateTime);
+
+    // Scheduling logic.
+    newDeadline.notificationID = newDeadline.hashCode;
+    if (newDeadline.warnMe) {
+      String newDue =
+          Jiffy.parseFromDateTime(newDeadline.dueDate).toLocal().toString();
+      NotificationService.instance.scheduleNotification(
+          id: newDeadline.notificationID!,
+          warnDate: newDeadline.warnDate,
+          message: "${newDeadline.name} IS DUE: $newDue",
+          payload: "DEADLINE\n${newDeadline.notificationID}");
+    }
 
     return updateDeadline(deadline: newDeadline);
   }
@@ -54,7 +73,8 @@ class DeadlineService {
   Future<void> populateCalendar({required DateTime limit}) async {
     DateTime startTime = DateTime.now();
     while (startTime.isBefore(limit)) {
-      List<Deadline> repeatables = await _repository.getRepeatables(now: startTime);
+      List<Deadline> repeatables =
+          await _repository.getRepeatables(now: startTime);
 
       if (repeatables.isEmpty) {
         break;
@@ -84,14 +104,30 @@ class DeadlineService {
       int dueOffset = Jiffy.parseFromDateTime(deadline.dueDate)
           .diff(Jiffy.parseFromDateTime(deadline.startDate)) as int;
 
-      int warnOffset = Jiffy.parseFromDateTime(deadline.warnDate).diff(Jiffy.parseFromDateTime(deadline.startDate)) as int;
+      int warnOffset = Jiffy.parseFromDateTime(deadline.warnDate)
+          .diff(Jiffy.parseFromDateTime(deadline.startDate)) as int;
 
       Deadline newDeadline = deadline.copyWith(
           startDate: nextRepeatDate,
           dueDate: Jiffy.parseFromDateTime(nextRepeatDate)
               .add(microseconds: dueOffset)
               .dateTime,
-          warnDate: Jiffy.parseFromDateTime(nextRepeatDate).add(microseconds:warnOffset).dateTime);
+          warnDate: Jiffy.parseFromDateTime(nextRepeatDate)
+              .add(microseconds: warnOffset)
+              .dateTime);
+
+      newDeadline.notificationID = newDeadline.hashCode;
+
+      // Scheduling logic.
+      if (newDeadline.warnMe) {
+        String newDue =
+            Jiffy.parseFromDateTime(newDeadline.dueDate).toLocal().toString();
+        NotificationService.instance.scheduleNotification(
+            id: newDeadline.notificationID!,
+            warnDate: newDeadline.warnDate,
+            message: "${newDeadline.name} IS DUE: $newDue",
+            payload: "DEADLINE\n${newDeadline.notificationID!}");
+      }
 
       deadline.repeatable = false;
       toUpdate.add(newDeadline);
@@ -164,7 +200,8 @@ class DeadlineService {
       _repository.delete(deadline);
 
   Future<void> clearDeletesLocalRepo() async => _repository.deleteLocal();
-  Future<void> deleteFutures({required Deadline deadline}) async => _repository.deleteFutures(deadline: deadline);
+  Future<void> deleteFutures({required Deadline deadline}) async =>
+      _repository.deleteFutures(deadline: deadline);
 
   Future<void> syncRepo() async => _repository.syncRepo();
 

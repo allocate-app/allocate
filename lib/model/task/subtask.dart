@@ -38,4 +38,7 @@ class SubTask
   @ignore
   @override
   List<Object?> get props => [name, completed, weight];
+  @override
+  String toString() =>
+      "SubTask(name: $name, weight: $weight, completed: $completed)";
 }

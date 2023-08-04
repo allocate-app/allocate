@@ -15,19 +15,14 @@ part "user.g.dart";
 
 @Collection(inheritance: false)
 class User with EquatableMixin implements Copyable<User> {
-  // Test these.
-  static const minBandwidth = 0;
-  static const maxBandwidth = 200;
-
   Id localID = Isar.autoIncrement;
 
   // Online stuff
   bool syncOnline;
+  bool isSynced;
 
   @Index(unique: true, replace: true)
   String userName;
-
-  bool isSynced;
 
   int bandwidth;
 
@@ -160,6 +155,28 @@ class User with EquatableMixin implements Copyable<User> {
 
   @ignore
   @override
-  List<Object?> get props =>
-      [localID, syncOnline, userName, bandwidth, curMornID, curAftID, curEveID];
+  List<Object?> get props => [
+        localID,
+        syncOnline,
+        userName,
+        bandwidth,
+        curTheme,
+        curMornID,
+        curAftID,
+        curEveID,
+        groupSorter,
+        deadlineSorter,
+        reminderSorter,
+        routineSorter,
+        isSynced,
+        lastOpened
+      ];
+
+  @override
+  toString() =>
+      "userName: $userName, syncOnline: $syncOnline, bandwidth: $bandwidth, "
+      "curTheme: ${curTheme.name}, curMornID: $curMornID, curAftID: $curAftID, curEveID: $curEveID,"
+      "groupSorter: $groupSorter, deadlineSorter: $deadlineSorter,"
+      "reminderSorter: $reminderSorter, routineSorter: $routineSorter, "
+      "isSynced: $isSynced, lastOpened: $lastOpened";
 }

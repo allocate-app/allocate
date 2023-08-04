@@ -8,23 +8,25 @@ part "reminder.g.dart";
 
 /// This is a simple reminder object for things that aren't a "task"
 /// so much as they are a thing to remember.
-/// TODO: remove comparable. Database will handle sorting.
-/// TODO: add repeatable logic once ToDo is finished.
 @Collection(inheritance: false)
 class Reminder with EquatableMixin implements Copyable<Reminder> {
   Id id = Isar.autoIncrement;
   @Index()
   int customViewIndex = -1;
   @Index()
+  int? repeatID;
+  @Index()
+  int? notificationID;
+
+  @Index()
   String name;
 
   DateTime startDate;
   @Index()
   DateTime dueDate;
+  DateTime warnDate;
   @Index()
   bool repeatable;
-  @Index()
-  int? repeatID;
   @Enumerated(EnumType.ordinal)
   Frequency frequency;
   @Enumerated(EnumType.ordinal)
@@ -38,10 +40,12 @@ class Reminder with EquatableMixin implements Copyable<Reminder> {
 
   Reminder(
       {this.repeatID,
+      this.notificationID,
       required this.name,
       this.repeatable = false,
       required this.startDate,
       required this.dueDate,
+      required this.warnDate,
       required this.repeatDays,
       this.repeatSkip = 1,
       this.frequency = Frequency.once,
@@ -53,6 +57,7 @@ class Reminder with EquatableMixin implements Copyable<Reminder> {
         name: name,
         startDate: startDate,
         dueDate: dueDate,
+        warnDate: warnDate,
         repeatable: repeatable,
         repeatDays: List.from(repeatDays),
         repeatSkip: repeatSkip,
@@ -63,6 +68,7 @@ class Reminder with EquatableMixin implements Copyable<Reminder> {
           String? name,
           DateTime? startDate,
           DateTime? dueDate,
+          DateTime? warnDate,
           bool? repeatable,
           List<bool>? repeatDays,
           int? repeatSkip,
@@ -73,6 +79,7 @@ class Reminder with EquatableMixin implements Copyable<Reminder> {
           name: name ?? this.name,
           startDate: startDate ?? this.startDate,
           dueDate: dueDate ?? this.dueDate,
+          warnDate: warnDate ?? this.warnDate,
           repeatable: repeatable ?? this.repeatable,
           repeatDays: List.from(repeatDays ?? this.repeatDays),
           repeatSkip: repeatSkip ?? this.repeatSkip,
@@ -80,25 +87,30 @@ class Reminder with EquatableMixin implements Copyable<Reminder> {
           customFreq: customFreq ?? this.customFreq);
 
   Reminder.fromEntity({required Map<String, dynamic> entity})
-      : repeatID = entity["repeatID"] as int?,
-        id = entity["id"] as Id,
+      : id = entity["id"] as Id,
         customViewIndex = entity["customViewIndex"] as int,
+        repeatID = entity["repeatID"] as int?,
+        notificationID = entity["notificationID"] as int?,
         name = entity["name"] as String,
         startDate = DateTime.parse(entity["startDate"]),
         dueDate = DateTime.parse(entity["dueDate"]),
+        warnDate = DateTime.parse(entity["warnDate"]),
         frequency = Frequency.values[entity["frequency"]],
         customFreq = CustomFrequency.values[entity["customFrequency"]],
         repeatable = entity["repeatable"] as bool,
         repeatDays = entity["repeatDays"] as List<bool>,
-        repeatSkip = entity["repeatSkip"] as int;
+        repeatSkip = entity["repeatSkip"] as int,
+        isSynced = true,
+        toDelete = false;
 
   Map<String, dynamic> toEntity() => {
-        "repeatID": repeatID,
-        "id": id,
         "customViewIndex": customViewIndex,
+        "repeatID": repeatID,
+        "notificationID": notificationID,
         "name": name,
         "startDate": startDate.toIso8601String(),
         "dueDate": dueDate.toIso8601String(),
+        "warnDate": warnDate.toIso8601String(),
         "frequency": frequency.index,
         "customFreq": customFreq.index,
         "repeatable": repeatable,
@@ -108,6 +120,28 @@ class Reminder with EquatableMixin implements Copyable<Reminder> {
 
   @ignore
   @override
-  List<Object> get props =>
-      [name, dueDate, customViewIndex, isSynced, toDelete];
+  List<Object?> get props => [
+        id,
+        notificationID,
+        repeatID,
+        customViewIndex,
+        name,
+        startDate,
+        dueDate,
+        warnDate,
+        frequency,
+        customFreq,
+        repeatable,
+        repeatDays,
+        repeatSkip,
+        isSynced,
+        toDelete
+      ];
+  @override
+  String toString() =>
+      "Reminder(id: $id, notificationID: $notificationID, repeatID: $repeatID,"
+      "customViewIndex: $customViewIndex, name: $name, startDate: $startDate,"
+      "dueDate: $dueDate, warnDate: $warnDate, frequency: ${frequency.name}, "
+      "customFreq: ${customFreq.name}, repeatable: $repeatable, repeatDays: $repeatDays,"
+      " repeatSkip: $repeatSkip, isSynced: $isSynced, toDelete: $toDelete)";
 }

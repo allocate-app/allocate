@@ -7,6 +7,7 @@ import '../repositories/reminder_repo.dart';
 import '../util/enums.dart';
 import '../util/interfaces/repository/reminder_repository.dart';
 import '../util/interfaces/sortable.dart';
+import 'notification_service.dart';
 
 class ReminderService {
   //Default repo for now, switch as needed for testing.
@@ -40,15 +41,30 @@ class ReminderService {
       return;
     }
 
-    int offset = Jiffy.parseFromDateTime(reminder.dueDate)
+    int dueOffset = Jiffy.parseFromDateTime(reminder.dueDate)
+        .diff(Jiffy.parseFromDateTime(reminder.startDate)) as int;
+
+    int warnOffset = Jiffy.parseFromDateTime(reminder.warnDate)
         .diff(Jiffy.parseFromDateTime(reminder.startDate)) as int;
 
     Reminder newReminder = reminder.copyWith(
-      startDate: nextRepeatDate,
-      dueDate: Jiffy.parseFromDateTime(reminder.dueDate)
-          .add(microseconds: offset)
-          .dateTime,
-    );
+        startDate: nextRepeatDate,
+        dueDate: Jiffy.parseFromDateTime(nextRepeatDate)
+            .add(microseconds: dueOffset)
+            .dateTime,
+        warnDate: Jiffy.parseFromDateTime(nextRepeatDate)
+            .add(microseconds: warnOffset)
+            .dateTime);
+
+    String newDue =
+        Jiffy.parseFromDateTime(newReminder.dueDate).toLocal().toString();
+
+    newReminder.notificationID = newReminder.hashCode;
+    NotificationService.instance.scheduleNotification(
+        id: newReminder.notificationID!,
+        warnDate: newReminder.warnDate,
+        message: "${newReminder.name} IS DUE: $newDue",
+        payload: "REMINDER\n${newReminder.notificationID!}");
 
     return updateReminder(reminder: newReminder);
   }
@@ -84,14 +100,25 @@ class ReminderService {
         continue;
       }
 
-      int offset = Jiffy.parseFromDateTime(reminder.dueDate)
+      int dueOffset = Jiffy.parseFromDateTime(reminder.dueDate)
+          .diff(Jiffy.parseFromDateTime(reminder.startDate)) as int;
+
+      int warnOffset = Jiffy.parseFromDateTime(reminder.warnDate)
           .diff(Jiffy.parseFromDateTime(reminder.startDate)) as int;
 
       Reminder newReminder = reminder.copyWith(
           startDate: nextRepeatDate,
-          dueDate: Jiffy.parseFromDateTime(reminder.dueDate)
-              .add(microseconds: offset)
+          dueDate: Jiffy.parseFromDateTime(nextRepeatDate)
+              .add(microseconds: dueOffset)
+              .dateTime,
+          warnDate: Jiffy.parseFromDateTime(nextRepeatDate)
+              .add(microseconds: warnOffset)
               .dateTime);
+
+      newReminder.notificationID = newReminder.hashCode;
+
+      String newDue = Jiffy.parseFromDateTime(newReminder.dueDate).toLocal().toString();
+      NotificationService.instance.scheduleNotification(id: newReminder.notificationID!, warnDate: newReminder.warnDate, message: "${newReminder.name} is DUE: $newDue ", payload: "REMINDER\n${newReminder.notificationID!}");
 
       reminder.repeatable = false;
       toUpdate.add(newReminder);
