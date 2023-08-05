@@ -1,11 +1,13 @@
 import 'package:allocate/services/supabase_service.dart';
 import 'package:allocate/util/exceptions.dart';
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../util/interfaces/authenticator.dart';
 
 class AuthenticationService implements Authenticator {
-  final SupabaseClient _supabaseClient = SupabaseService.instance.supabaseClient;
+  final SupabaseClient _supabaseClient =
+      SupabaseService.instance.supabaseClient;
 
   @override
   Future<void> signUpEmailPassword(
@@ -13,6 +15,7 @@ class AuthenticationService implements Authenticator {
     final response = await _supabaseClient.auth.signUp(
       email: email,
       password: password,
+      emailRedirectTo: (kIsWeb) ? null : "io.supabase.flutter://login/",
     );
     final userID = response.user?.id;
     if (null == userID) {
@@ -39,5 +42,20 @@ class AuthenticationService implements Authenticator {
   @override
   Future<void> signOut() async {
     await _supabaseClient.auth.signOut();
+  }
+
+  // TODO: Finish these -- They will need screens.
+  Future<void> updateEmail({required String newEmail}) async {
+    await _supabaseClient.auth.resend(
+        type: OtpType.emailChange,
+        email: newEmail,
+        emailRedirectTo:
+            (kIsWeb) ? null : "io.supabase.flutter://update-email/");
+  }
+
+  // TODO: finish these -- They will need screens
+  Future<void> passwordRecovery({required String email}) async {
+    await _supabaseClient.auth.resetPasswordForEmail(email,
+        redirectTo: (kIsWeb) ? null : "io.supabase.flutter://password/");
   }
 }

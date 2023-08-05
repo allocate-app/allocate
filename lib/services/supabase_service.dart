@@ -22,9 +22,7 @@ class SupabaseService {
     }
 
     await Supabase.initialize(
-      url: supabaseUrl,
-      anonKey: anonKey,
-    );
+        url: supabaseUrl, anonKey: anonKey, authCallbackUrlHostname: "login");
     _supabaseClient = Supabase.instance.client;
   }
 
@@ -46,13 +44,14 @@ class FakeGoTrue extends Fake implements GoTrueClient {
     createdAt: DateTime.now().toIso8601String(),
   );
   @override
-  Future<AuthResponse> signInWithPassword({String? email,
-  String? phone,
-  required String password,
-  String? captchaToken}) async {
+  Future<AuthResponse> signInWithPassword(
+      {String? email,
+      String? phone,
+      required String password,
+      String? captchaToken}) async {
     return AuthResponse(session: null, user: _user);
   }
+
   @override
   Session? get currentSession => null;
-
 }

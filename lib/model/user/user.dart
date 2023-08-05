@@ -62,7 +62,8 @@ class User with EquatableMixin implements Copyable<User> {
       required this.lastOpened});
 
   User.fromEntity({required Map<String, dynamic> entity})
-      : userName = entity["userName"] as String,
+      : localID = entity["localID"] as int,
+        userName = entity["userName"] as String,
         syncOnline = true,
         isSynced = entity["isSynced"],
         bandwidth = entity["bandwidth"] as int,

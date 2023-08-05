@@ -28,6 +28,11 @@ class Win32Window {
   Win32Window();
   virtual ~Win32Window();
 
+  // Dispatches link if any.
+  // This method enables our app to be with a single instance too.
+  // This is optional but mandatory if you want to catch further links in same app.
+  bool SendAppLinkToInstance(const std::wstring& title);
+
   // Creates a win32 window with |title| that is positioned and sized using
   // |origin| and |size|. New windows are created on the default monitor. Window
   // sizes are specified to the OS in physical pixels, hence to ensure a

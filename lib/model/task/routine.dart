@@ -63,12 +63,13 @@ class Routine with EquatableMixin implements Copyable<Routine> {
 
   Map<String, dynamic> toEntity() => {
         "routineTime": routineTime.index,
+        "customViewIndex": customViewIndex,
         "name": name,
         "weight": weight,
         "expectedDuration": expectedDuration,
         "realDuration": realDuration,
-        "routineTasks": jsonEncode(routineTasks.map((rt) => rt.toEntity()).toList(growable: false)),
-        "customViewIndex": customViewIndex
+        "routineTasks": jsonEncode(
+            routineTasks.map((rt) => rt.toEntity()).toList(growable: false))
       };
 
   @override

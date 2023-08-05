@@ -1,5 +1,3 @@
-import "dart:async";
-import "dart:developer";
 import "dart:ui";
 
 import "package:allocate/providers/reminder_provider.dart";
@@ -9,17 +7,12 @@ import "package:allocate/providers/user_provider.dart";
 import "package:allocate/services/isar_service.dart";
 import "package:allocate/services/supabase_service.dart";
 import "package:allocate/util/constants.dart";
-import "package:connectivity_plus/connectivity_plus.dart";
 import 'package:flutter/material.dart';
-import "package:internet_connection_checker/internet_connection_checker.dart";
 import "package:provider/provider.dart";
 
 import "providers/deadline_provider.dart";
 import "providers/group_provider.dart";
 
-ValueNotifier<bool> isDeviceConnected = ValueNotifier(false);
-// TODO: Add proxy providers for the entire model. Refactor according to todoprovider
-// TODO: remove internet_connection_checker.
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   DartPluginRegistrant.ensureInitialized();
@@ -83,7 +76,6 @@ class App extends StatefulWidget {
 }
 
 class _AppState extends State<App> {
-  late StreamSubscription<ConnectivityResult> subscription;
   @override
   void initState() {
     IsarService.instance.init();
@@ -91,12 +83,6 @@ class _AppState extends State<App> {
         supabaseUrl: Constants.supabaseURL,
         anonKey: Constants.supabaseAnnonKey);
     super.initState();
-    subscription = Connectivity()
-        .onConnectivityChanged
-        .listen((ConnectivityResult result) async {
-      isDeviceConnected.value = await InternetConnectionChecker().hasConnection;
-      log("Internet Connected: $isDeviceConnected");
-    });
   }
 
   @override
