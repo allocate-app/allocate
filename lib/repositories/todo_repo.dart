@@ -356,6 +356,16 @@ class ToDoRepo implements ToDoRepository {
       .findAll();
 
   @override
+  Future<int> getMyDayWeight() async => _isarClient.toDos
+      .where()
+      .myDayEqualTo(true)
+      .filter()
+      .toDeleteEqualTo(false)
+      .completedEqualTo(false)
+      .weightProperty()
+      .sum();
+
+  @override
   Future<List<ToDo>> getRepoByGroupID({required int groupID}) async =>
       _isarClient.toDos
           .where()
