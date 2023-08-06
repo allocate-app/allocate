@@ -62,6 +62,8 @@ class ToDoService {
         (Frequency.once) => null,
       };
 
+  Future<int> getMyDayWeight() async => await _repository.getMyDayWeight();
+
   Future<void> nextRepeatable({required ToDo toDo}) async {
     DateTime? nextRepeatDate = getRepeatDate(toDo: toDo);
 

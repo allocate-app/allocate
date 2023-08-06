@@ -40,9 +40,17 @@ class RoutineProvider extends ChangeNotifier {
   RoutineProvider({this.user, RoutineService? service})
       : _routineService = service ?? RoutineService() {
     sorter = user?.routineSorter ?? RoutineSorter();
-    setRoutines();
+  }
+
+  Future<void> init() async {
+    await setRoutines();
     startTimer();
   }
+
+  int get routineWeight =>
+      (curMorning?.weight ?? 0) +
+      (curAfternoon?.weight ?? 0) +
+      (curEvening?.weight ?? 0);
 
   void startTimer() {
     syncTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
@@ -57,7 +65,7 @@ class RoutineProvider extends ChangeNotifier {
   void setUser({User? user}) {
     user = user;
     sorter = user?.routineSorter ?? sorter;
-    notifyListeners();
+    setRoutines();
   }
 
   // Call this in a future builder for the routines screen.

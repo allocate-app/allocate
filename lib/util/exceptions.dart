@@ -49,6 +49,11 @@ class UserException implements Exception {
   UserException(this.cause);
 }
 
+class NoUserException implements Exception {
+  String cause;
+  NoUserException(this.cause);
+}
+
 class ObjectNotFoundException implements Exception {
   String cause;
   ObjectNotFoundException(this.cause);

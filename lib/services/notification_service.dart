@@ -114,6 +114,9 @@ class NotificationService {
     LineSplitter lineSplitter = const LineSplitter();
     List<String> entities = lineSplitter.convert(payload);
 
+    // TODO: Remove payload. Just route to "Notifications Pg"
+    // In the payload, log the index value to send as an arg.
+
     if (entities.isEmpty || entities.length > 2) {
       // Go through regular routing routine.
       return;

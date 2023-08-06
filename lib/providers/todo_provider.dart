@@ -19,7 +19,7 @@ class ToDoProvider extends ChangeNotifier {
 
   final ToDoService _toDoService;
 
-  late ToDo curToDo;
+  ToDo? curToDo;
 
   late List<ToDo> toDos;
 
@@ -29,6 +29,10 @@ class ToDoProvider extends ChangeNotifier {
   ToDoProvider({this.user, ToDoService? service})
       : _toDoService = service ?? ToDoService() {
     sorter = user?.toDoSorter ?? ToDoSorter();
+    init();
+  }
+
+  Future<void> init() async {
     startTimer();
   }
 
@@ -64,13 +68,15 @@ class ToDoProvider extends ChangeNotifier {
 
   List<SortMethod> get sortMethods => ToDoSorter.sortMethods;
 
+  Future<int> getMyDayWeight() async => _toDoService.getMyDayWeight();
+
   Future<void> recalculateWeight() async {
-    _toDoService.recalculateWeight(toDo: curToDo);
+    _toDoService.recalculateWeight(toDo: curToDo!);
     updateToDo();
   }
 
   Future<void> recalculateRealDuration() async {
-    _toDoService.setRealDuration(toDo: curToDo);
+    _toDoService.setRealDuration(toDo: curToDo!);
     updateToDo();
   }
 
@@ -106,10 +112,14 @@ class ToDoProvider extends ChangeNotifier {
     int? repeatSkip,
     List<SubTask>? subTasks,
   }) async {
-    subTasks =
-        (null != subTasks && subTasks.length == Constants.numTasks[taskType]!)
-            ? subTasks
-            : List.filled(Constants.numTasks[taskType]!, SubTask());
+    List<SubTask> buffer =
+        List.filled(Constants.numTasks[taskType]!, SubTask());
+
+    if (null != subTasks && buffer.isNotEmpty) {
+      List.copyRange(buffer, 0, subTasks, 0, Constants.numTasks[taskType]!);
+    }
+
+    subTasks = buffer;
 
     weight = weight ?? _toDoService.calculateWeight(subTasks: subTasks);
     int expectedDuration =
@@ -144,29 +154,29 @@ class ToDoProvider extends ChangeNotifier {
         repeatSkip: repeatSkip ?? 1,
         subTasks: subTasks);
 
-    curToDo.repeatID = curToDo.hashCode;
+    curToDo!.repeatID = curToDo.hashCode;
 
     try {
-      _toDoService.createToDo(toDo: curToDo);
+      _toDoService.createToDo(toDo: curToDo!);
     } on FailureToCreateException catch (e) {
       log(e.cause);
       rethrow;
     } on FailureToUploadException catch (e) {
       log(e.cause);
-      curToDo.isSynced = false;
+      curToDo!.isSynced = false;
       return updateToDo();
     }
     notifyListeners();
   }
 
   Future<void> updateToDo() async {
-    if (curToDo.taskType != TaskType.small) {
-      _toDoService.recalculateWeight(toDo: curToDo);
+    if (curToDo!.taskType != TaskType.small) {
+      _toDoService.recalculateWeight(toDo: curToDo!);
     }
-    _toDoService.setRealDuration(toDo: curToDo);
+    _toDoService.setRealDuration(toDo: curToDo!);
 
     try {
-      _toDoService.updateToDo(toDo: curToDo);
+      _toDoService.updateToDo(toDo: curToDo!);
     } on FailureToUploadException catch (e) {
       log(e.cause);
       rethrow;
@@ -179,7 +189,7 @@ class ToDoProvider extends ChangeNotifier {
 
   Future<void> deleteToDo() async {
     try {
-      _toDoService.deleteToDo(toDo: curToDo);
+      _toDoService.deleteToDo(toDo: curToDo!);
     } on FailureToDeleteException catch (e) {
       log(e.cause);
       rethrow;
@@ -204,15 +214,17 @@ class ToDoProvider extends ChangeNotifier {
   Future<void> checkRepeating({DateTime? now}) async =>
       _toDoService.checkRepeating(now: now ?? DateTime.now());
 
-  Future<void> nextRepeat() async => _toDoService.nextRepeatable(toDo: curToDo);
+  Future<void> nextRepeat() async =>
+      _toDoService.nextRepeatable(toDo: curToDo!);
 
   Future<void> deleteFutures() async =>
-      _toDoService.deleteFutures(toDo: curToDo);
+      _toDoService.deleteFutures(toDo: curToDo!);
 
   // TODO: Finish testing.
   Future<void> populateCalendar({DateTime? limit}) async =>
       _toDoService.populateCalendar(limit: limit ?? DateTime.now());
 
+  // TODO: Refactor this to throw an error - Catch & Create.
   Future<void> getToDoByID({required int id}) async =>
       curToDo = await _toDoService.getToDoByID(id: id) ??
           ToDo(
