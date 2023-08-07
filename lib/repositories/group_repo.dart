@@ -214,40 +214,83 @@ class GroupRepo implements GroupRepository {
     });
   }
 
+  // Streaming - > possibly set fireImmediately.
+  @override
+  Stream<List<Group>> stream({required SortableView<Group> sorter}) async* {
+    switch (sorter.sortMethod) {
+      case SortMethod.name:
+        if (sorter.descending) {
+          yield* _isarClient.groups
+              .where()
+              .toDeleteEqualTo(false)
+              .sortByNameDesc()
+              .thenByLastUpdatedDesc()
+              .watch();
+        } else {
+          yield* _isarClient.groups
+              .where()
+              .toDeleteEqualTo(false)
+              .sortByName()
+              .thenByLastUpdatedDesc()
+              .watch();
+        }
+      default:
+        yield* _isarClient.groups
+            .where()
+            .toDeleteEqualTo(false)
+            .sortByCustomViewIndex()
+            .thenByLastUpdatedDesc()
+            .watch();
+    }
+  }
+
+  @override
+  Future<List<Group>> searchGroups({required String searchString}) async =>
+      await _isarClient.groups
+          .filter()
+          .nameContains(searchString, caseSensitive: false)
+          .limit(5)
+          .findAll();
+
   @override
   Future<Group?> getByID({required int id}) async =>
       await _isarClient.groups.where().idEqualTo(id).findFirst();
 
-  // Custom view position, reorderable list.
-  // CHECK THIS and put in proper query logic pls.
-  // POSSIBLY PUT A HARD LIMIT?
+  // Basic query logic.
   @override
-  Future<List<Group>> getRepoList() => _isarClient.groups
-      .where()
-      .toDeleteEqualTo(false)
-      .sortByCustomViewIndex()
-      .findAll();
+  Future<List<Group>> getRepoList({required int limit, int offset = 0}) =>
+      _isarClient.groups
+          .where()
+          .toDeleteEqualTo(false)
+          .sortByCustomViewIndex()
+          .thenByLastUpdatedDesc()
+          .limit(limit)
+          .findAll();
 
+  // TODO: Fix this, add limit/offset logic -> Try to hide params.
   @override
   Future<List<Group>> getRepoListBy(
-      {required SortableView<Group> sorter}) async {
+      {required SortableView<Group> sorter,
+      required int limit,
+      int offset = 0}) async {
     switch (sorter.sortMethod) {
       case SortMethod.name:
         if (sorter.descending) {
           return _isarClient.groups
-              .filter()
+              .where()
               .toDeleteEqualTo(false)
               .sortByNameDesc()
+              .limit(limit)
               .findAll();
         } else {
           return _isarClient.groups
-              .filter()
+              .where()
               .toDeleteEqualTo(false)
               .sortByNameDesc()
               .findAll();
         }
       default:
-        return getRepoList();
+        return getRepoList(limit: limit, offset: offset);
     }
   }
 

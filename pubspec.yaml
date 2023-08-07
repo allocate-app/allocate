@@ -57,6 +57,9 @@ dependencies:
   path_provider_macos: ^2.0.7
   msix: ^3.16.1
   auto_route: ^7.8.0
+  intl: ^0.18.1
+  dropdown_search: ^5.0.6
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

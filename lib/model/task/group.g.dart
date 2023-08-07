@@ -32,13 +32,18 @@ const GroupSchema = CollectionSchema(
       name: r'isSynced',
       type: IsarType.bool,
     ),
-    r'name': PropertySchema(
+    r'lastUpdated': PropertySchema(
       id: 3,
+      name: r'lastUpdated',
+      type: IsarType.dateTime,
+    ),
+    r'name': PropertySchema(
+      id: 4,
       name: r'name',
       type: IsarType.string,
     ),
     r'toDelete': PropertySchema(
-      id: 4,
+      id: 5,
       name: r'toDelete',
       type: IsarType.bool,
     )
@@ -100,6 +105,19 @@ const GroupSchema = CollectionSchema(
           caseSensitive: false,
         )
       ],
+    ),
+    r'lastUpdated': IndexSchema(
+      id: 8989359681631629925,
+      name: r'lastUpdated',
+      unique: false,
+      replace: false,
+      properties: [
+        IndexPropertySchema(
+          name: r'lastUpdated',
+          type: IndexType.value,
+          caseSensitive: false,
+        )
+      ],
     )
   },
   links: {},
@@ -130,8 +148,9 @@ void _groupSerialize(
   writer.writeLong(offsets[0], object.customViewIndex);
   writer.writeString(offsets[1], object.description);
   writer.writeBool(offsets[2], object.isSynced);
-  writer.writeString(offsets[3], object.name);
-  writer.writeBool(offsets[4], object.toDelete);
+  writer.writeDateTime(offsets[3], object.lastUpdated);
+  writer.writeString(offsets[4], object.name);
+  writer.writeBool(offsets[5], object.toDelete);
 }
 
 Group _groupDeserialize(
@@ -142,12 +161,13 @@ Group _groupDeserialize(
 ) {
   final object = Group(
     description: reader.readStringOrNull(offsets[1]) ?? "",
-    name: reader.readString(offsets[3]),
+    lastUpdated: reader.readDateTime(offsets[3]),
+    name: reader.readString(offsets[4]),
   );
   object.customViewIndex = reader.readLong(offsets[0]);
   object.id = id;
   object.isSynced = reader.readBool(offsets[2]);
-  object.toDelete = reader.readBool(offsets[4]);
+  object.toDelete = reader.readBool(offsets[5]);
   return object;
 }
 
@@ -165,8 +185,10 @@ P _groupDeserializeProp<P>(
     case 2:
       return (reader.readBool(offset)) as P;
     case 3:
-      return (reader.readString(offset)) as P;
+      return (reader.readDateTime(offset)) as P;
     case 4:
+      return (reader.readString(offset)) as P;
+    case 5:
       return (reader.readBool(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -212,6 +234,14 @@ extension GroupQueryWhereSort on QueryBuilder<Group, Group, QWhere> {
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(
         const IndexWhereClause.any(indexName: r'toDelete'),
+      );
+    });
+  }
+
+  QueryBuilder<Group, Group, QAfterWhere> anyLastUpdated() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(
+        const IndexWhereClause.any(indexName: r'lastUpdated'),
       );
     });
   }
@@ -503,6 +533,96 @@ extension GroupQueryWhere on QueryBuilder<Group, Group, QWhereClause> {
       }
     });
   }
+
+  QueryBuilder<Group, Group, QAfterWhereClause> lastUpdatedEqualTo(
+      DateTime lastUpdated) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'lastUpdated',
+        value: [lastUpdated],
+      ));
+    });
+  }
+
+  QueryBuilder<Group, Group, QAfterWhereClause> lastUpdatedNotEqualTo(
+      DateTime lastUpdated) {
+    return QueryBuilder.apply(this, (query) {
+      if (query.whereSort == Sort.asc) {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'lastUpdated',
+              lower: [],
+              upper: [lastUpdated],
+              includeUpper: false,
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'lastUpdated',
+              lower: [lastUpdated],
+              includeLower: false,
+              upper: [],
+            ));
+      } else {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'lastUpdated',
+              lower: [lastUpdated],
+              includeLower: false,
+              upper: [],
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'lastUpdated',
+              lower: [],
+              upper: [lastUpdated],
+              includeUpper: false,
+            ));
+      }
+    });
+  }
+
+  QueryBuilder<Group, Group, QAfterWhereClause> lastUpdatedGreaterThan(
+    DateTime lastUpdated, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'lastUpdated',
+        lower: [lastUpdated],
+        includeLower: include,
+        upper: [],
+      ));
+    });
+  }
+
+  QueryBuilder<Group, Group, QAfterWhereClause> lastUpdatedLessThan(
+    DateTime lastUpdated, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'lastUpdated',
+        lower: [],
+        upper: [lastUpdated],
+        includeUpper: include,
+      ));
+    });
+  }
+
+  QueryBuilder<Group, Group, QAfterWhereClause> lastUpdatedBetween(
+    DateTime lowerLastUpdated,
+    DateTime upperLastUpdated, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'lastUpdated',
+        lower: [lowerLastUpdated],
+        includeLower: includeLower,
+        upper: [upperLastUpdated],
+        includeUpper: includeUpper,
+      ));
+    });
+  }
 }
 
 extension GroupQueryFilter on QueryBuilder<Group, Group, QFilterCondition> {
@@ -751,6 +871,59 @@ extension GroupQueryFilter on QueryBuilder<Group, Group, QFilterCondition> {
     });
   }
 
+  QueryBuilder<Group, Group, QAfterFilterCondition> lastUpdatedEqualTo(
+      DateTime value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'lastUpdated',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<Group, Group, QAfterFilterCondition> lastUpdatedGreaterThan(
+    DateTime value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'lastUpdated',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<Group, Group, QAfterFilterCondition> lastUpdatedLessThan(
+    DateTime value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'lastUpdated',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<Group, Group, QAfterFilterCondition> lastUpdatedBetween(
+    DateTime lower,
+    DateTime upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'lastUpdated',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
   QueryBuilder<Group, Group, QAfterFilterCondition> nameEqualTo(
     String value, {
     bool caseSensitive = true,
@@ -931,6 +1104,18 @@ extension GroupQuerySortBy on QueryBuilder<Group, Group, QSortBy> {
     });
   }
 
+  QueryBuilder<Group, Group, QAfterSortBy> sortByLastUpdated() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastUpdated', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Group, Group, QAfterSortBy> sortByLastUpdatedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastUpdated', Sort.desc);
+    });
+  }
+
   QueryBuilder<Group, Group, QAfterSortBy> sortByName() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'name', Sort.asc);
@@ -1005,6 +1190,18 @@ extension GroupQuerySortThenBy on QueryBuilder<Group, Group, QSortThenBy> {
     });
   }
 
+  QueryBuilder<Group, Group, QAfterSortBy> thenByLastUpdated() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastUpdated', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Group, Group, QAfterSortBy> thenByLastUpdatedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastUpdated', Sort.desc);
+    });
+  }
+
   QueryBuilder<Group, Group, QAfterSortBy> thenByName() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'name', Sort.asc);
@@ -1050,6 +1247,12 @@ extension GroupQueryWhereDistinct on QueryBuilder<Group, Group, QDistinct> {
     });
   }
 
+  QueryBuilder<Group, Group, QDistinct> distinctByLastUpdated() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'lastUpdated');
+    });
+  }
+
   QueryBuilder<Group, Group, QDistinct> distinctByName(
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
@@ -1086,6 +1289,12 @@ extension GroupQueryProperty on QueryBuilder<Group, Group, QQueryProperty> {
   QueryBuilder<Group, bool, QQueryOperations> isSyncedProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'isSynced');
+    });
+  }
+
+  QueryBuilder<Group, DateTime, QQueryOperations> lastUpdatedProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'lastUpdated');
     });
   }
 

@@ -11,3 +11,5 @@ enum SortMethod { none, name, dueDate, weight, priority, duration }
 enum RoutineTime { morning, afternoon, evening }
 
 enum Theme { light, dark, hiContrast }
+
+enum WeekDays { monday, tuesday, wednesday, thursday, friday, saturday, sunday }

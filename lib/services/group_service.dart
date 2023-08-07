@@ -9,12 +9,20 @@ class GroupService {
 
   set repository(GroupRepository repo) => _repository = repo;
 
+  Stream<List<Group>> streamGroups({required SortableView<Group> sorter}) =>
+      _repository.stream(sorter: sorter);
+
   Future<void> createGroup({required Group group}) async =>
       _repository.create(group);
 
+  Future<List<Group>> searchGroups({required String searchString}) async =>
+      _repository.searchGroups(searchString: searchString);
+
   Future<List<Group>> getGroups() async => _repository.getRepoList();
   Future<List<Group>> getGroupsBy(
-          {required SortableView<Group> sorter}) async =>
+          {required SortableView<Group> sorter,
+          required int limit,
+          required int offset}) async =>
       _repository.getRepoListBy(sorter: sorter);
 
   Future<Group?> getGroupByID({required int id}) => _repository.getByID(id: id);

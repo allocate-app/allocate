@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:developer';
 
 import 'package:flutter/foundation.dart';
+import 'package:isar/isar.dart';
 
 import '../model/task/group.dart';
 import '../model/user/user.dart';
@@ -78,7 +79,10 @@ class GroupProvider extends ChangeNotifier {
   }
 
   Future<void> createGroup({required String name, String? description}) async {
-    curGroup = Group(name: name, description: description ?? "");
+    curGroup = Group(
+        name: name,
+        description: description ?? "",
+        lastUpdated: DateTime.now());
     try {
       _groupService.createGroup(group: curGroup);
     } on FailureToCreateException catch (e) {
@@ -93,6 +97,7 @@ class GroupProvider extends ChangeNotifier {
   }
 
   Future<void> updateGroup() async {
+    curGroup.lastUpdated = DateTime.now();
     try {
       _groupService.updateGroup(group: curGroup);
     } on FailureToUploadException catch (e) {
@@ -147,7 +152,7 @@ class GroupProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> getGroups() async {
+  Future<void> setGroups() async {
     groups = await _groupService.getGroups();
     for (Group g in groups) {
       g.toDos = await _toDoService.getByGroup(groupID: g.id);
@@ -155,14 +160,35 @@ class GroupProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> getGroupsBy() async {
-    groups = await _groupService.getGroupsBy(sorter: sorter);
+  // TODO: refactor this to be max integer.
+  Future<void> setGroupsBy() async {
+    groups = await _groupService.getGroupsBy(
+        sorter: sorter, limit: Isar.maxId, offset: 0);
     for (Group g in groups) {
       g.toDos = await _toDoService.getByGroup(groupID: g.id);
     }
     notifyListeners();
   }
 
+  // This returns an async generator, fyi.
+  Stream<List<Group>> streamGroups() =>
+      _groupService.streamGroups(sorter: sorter);
+
+  Future<List<Group>> searchGroups({required String searchString}) async =>
+      _groupService.searchGroups(searchString: searchString);
+
+  // TODO DB QUERIES
+  Future<List<Group>> getGroupsBy(
+          {required int limit, required int offset}) async =>
+      await _groupService.getGroupsBy(
+          sorter: sorter, limit: limit, offset: offset);
+  // Future<List<Group>> getRecents() async => await _groupService.getRecents();
+  // Future<List<Group>> getSuggested({required String suggestion}) async =>
+  //     await _groupService.getSuggested(search: suggestion);
+
+  // Kay, so most of these will likely need refactoring.
+  // Oh well.
   Future<void> getGroupByID({required int id}) async =>
-      await _groupService.getGroupByID(id: id) ?? Group(name: '');
+      await _groupService.getGroupByID(id: id) ??
+      Group(name: '', lastUpdated: DateTime.now());
 }

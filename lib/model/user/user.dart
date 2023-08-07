@@ -21,6 +21,8 @@ class User with EquatableMixin implements Copyable<User> {
   bool syncOnline;
   bool isSynced;
 
+  bool checkDelete;
+
   @Index(unique: true, replace: true)
   String userName;
 
@@ -48,6 +50,7 @@ class User with EquatableMixin implements Copyable<User> {
   User(
       {required this.userName,
       required this.syncOnline,
+      this.checkDelete = true,
       this.isSynced = false,
       this.bandwidth = 100,
       this.curTheme = Theme.dark,
@@ -65,6 +68,7 @@ class User with EquatableMixin implements Copyable<User> {
       : localID = entity["localID"] as int,
         userName = entity["userName"] as String,
         syncOnline = true,
+        checkDelete = entity["checkDelete"],
         isSynced = entity["isSynced"],
         bandwidth = entity["bandwidth"] as int,
         curTheme = Theme.values[entity["curTheme"]],
@@ -91,6 +95,7 @@ class User with EquatableMixin implements Copyable<User> {
   Map<String, dynamic> toEntity() => {
         "userName": userName,
         "isSynced": isSynced,
+        "checkDelete": checkDelete,
         "bandwidth": bandwidth,
         "curTheme": curTheme.index,
         "curMornID": curMornID,

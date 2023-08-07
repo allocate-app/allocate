@@ -22,74 +22,79 @@ const UserSchema = CollectionSchema(
       name: r'bandwidth',
       type: IsarType.long,
     ),
-    r'curAftID': PropertySchema(
+    r'checkDelete': PropertySchema(
       id: 1,
+      name: r'checkDelete',
+      type: IsarType.bool,
+    ),
+    r'curAftID': PropertySchema(
+      id: 2,
       name: r'curAftID',
       type: IsarType.long,
     ),
     r'curEveID': PropertySchema(
-      id: 2,
+      id: 3,
       name: r'curEveID',
       type: IsarType.long,
     ),
     r'curMornID': PropertySchema(
-      id: 3,
+      id: 4,
       name: r'curMornID',
       type: IsarType.long,
     ),
     r'curTheme': PropertySchema(
-      id: 4,
+      id: 5,
       name: r'curTheme',
       type: IsarType.byte,
       enumMap: _UsercurThemeEnumValueMap,
     ),
     r'deadlineSorter': PropertySchema(
-      id: 5,
+      id: 6,
       name: r'deadlineSorter',
       type: IsarType.object,
       target: r'DeadlineSorter',
     ),
     r'groupSorter': PropertySchema(
-      id: 6,
+      id: 7,
       name: r'groupSorter',
       type: IsarType.object,
       target: r'GroupSorter',
     ),
     r'isSynced': PropertySchema(
-      id: 7,
+      id: 8,
       name: r'isSynced',
       type: IsarType.bool,
     ),
     r'lastOpened': PropertySchema(
-      id: 8,
+      id: 9,
       name: r'lastOpened',
       type: IsarType.dateTime,
     ),
     r'reminderSorter': PropertySchema(
-      id: 9,
+      id: 10,
       name: r'reminderSorter',
       type: IsarType.object,
       target: r'ReminderSorter',
     ),
     r'routineSorter': PropertySchema(
-      id: 10,
+      id: 11,
       name: r'routineSorter',
       type: IsarType.object,
       target: r'RoutineSorter',
     ),
     r'syncOnline': PropertySchema(
-      id: 11,
+      id: 12,
       name: r'syncOnline',
       type: IsarType.bool,
     ),
     r'toDoSorter': PropertySchema(
-      id: 12,
+      id: 13,
       name: r'toDoSorter',
       type: IsarType.object,
       target: r'ToDoSorter',
     ),
     r'userName': PropertySchema(
-      id: 13,
+      id: 14,
       name: r'userName',
       type: IsarType.string,
     )
@@ -185,44 +190,45 @@ void _userSerialize(
   Map<Type, List<int>> allOffsets,
 ) {
   writer.writeLong(offsets[0], object.bandwidth);
-  writer.writeLong(offsets[1], object.curAftID);
-  writer.writeLong(offsets[2], object.curEveID);
-  writer.writeLong(offsets[3], object.curMornID);
-  writer.writeByte(offsets[4], object.curTheme.index);
+  writer.writeBool(offsets[1], object.checkDelete);
+  writer.writeLong(offsets[2], object.curAftID);
+  writer.writeLong(offsets[3], object.curEveID);
+  writer.writeLong(offsets[4], object.curMornID);
+  writer.writeByte(offsets[5], object.curTheme.index);
   writer.writeObject<DeadlineSorter>(
-    offsets[5],
+    offsets[6],
     allOffsets,
     DeadlineSorterSchema.serialize,
     object.deadlineSorter,
   );
   writer.writeObject<GroupSorter>(
-    offsets[6],
+    offsets[7],
     allOffsets,
     GroupSorterSchema.serialize,
     object.groupSorter,
   );
-  writer.writeBool(offsets[7], object.isSynced);
-  writer.writeDateTime(offsets[8], object.lastOpened);
+  writer.writeBool(offsets[8], object.isSynced);
+  writer.writeDateTime(offsets[9], object.lastOpened);
   writer.writeObject<ReminderSorter>(
-    offsets[9],
+    offsets[10],
     allOffsets,
     ReminderSorterSchema.serialize,
     object.reminderSorter,
   );
   writer.writeObject<RoutineSorter>(
-    offsets[10],
+    offsets[11],
     allOffsets,
     RoutineSorterSchema.serialize,
     object.routineSorter,
   );
-  writer.writeBool(offsets[11], object.syncOnline);
+  writer.writeBool(offsets[12], object.syncOnline);
   writer.writeObject<ToDoSorter>(
-    offsets[12],
+    offsets[13],
     allOffsets,
     ToDoSorterSchema.serialize,
     object.toDoSorter,
   );
-  writer.writeString(offsets[13], object.userName);
+  writer.writeString(offsets[14], object.userName);
 }
 
 User _userDeserialize(
@@ -233,40 +239,41 @@ User _userDeserialize(
 ) {
   final object = User(
     bandwidth: reader.readLongOrNull(offsets[0]) ?? 100,
-    curAftID: reader.readLongOrNull(offsets[1]),
-    curEveID: reader.readLongOrNull(offsets[2]),
-    curMornID: reader.readLongOrNull(offsets[3]),
-    curTheme: _UsercurThemeValueEnumMap[reader.readByteOrNull(offsets[4])] ??
+    checkDelete: reader.readBoolOrNull(offsets[1]) ?? true,
+    curAftID: reader.readLongOrNull(offsets[2]),
+    curEveID: reader.readLongOrNull(offsets[3]),
+    curMornID: reader.readLongOrNull(offsets[4]),
+    curTheme: _UsercurThemeValueEnumMap[reader.readByteOrNull(offsets[5])] ??
         Theme.dark,
     deadlineSorter: reader.readObjectOrNull<DeadlineSorter>(
-      offsets[5],
+      offsets[6],
       DeadlineSorterSchema.deserialize,
       allOffsets,
     ),
     groupSorter: reader.readObjectOrNull<GroupSorter>(
-      offsets[6],
+      offsets[7],
       GroupSorterSchema.deserialize,
       allOffsets,
     ),
-    isSynced: reader.readBoolOrNull(offsets[7]) ?? false,
-    lastOpened: reader.readDateTime(offsets[8]),
+    isSynced: reader.readBoolOrNull(offsets[8]) ?? false,
+    lastOpened: reader.readDateTime(offsets[9]),
     reminderSorter: reader.readObjectOrNull<ReminderSorter>(
-      offsets[9],
+      offsets[10],
       ReminderSorterSchema.deserialize,
       allOffsets,
     ),
     routineSorter: reader.readObjectOrNull<RoutineSorter>(
-      offsets[10],
+      offsets[11],
       RoutineSorterSchema.deserialize,
       allOffsets,
     ),
-    syncOnline: reader.readBool(offsets[11]),
+    syncOnline: reader.readBool(offsets[12]),
     toDoSorter: reader.readObjectOrNull<ToDoSorter>(
-      offsets[12],
+      offsets[13],
       ToDoSorterSchema.deserialize,
       allOffsets,
     ),
-    userName: reader.readString(offsets[13]),
+    userName: reader.readString(offsets[14]),
   );
   object.localID = id;
   return object;
@@ -282,51 +289,53 @@ P _userDeserializeProp<P>(
     case 0:
       return (reader.readLongOrNull(offset) ?? 100) as P;
     case 1:
-      return (reader.readLongOrNull(offset)) as P;
+      return (reader.readBoolOrNull(offset) ?? true) as P;
     case 2:
       return (reader.readLongOrNull(offset)) as P;
     case 3:
       return (reader.readLongOrNull(offset)) as P;
     case 4:
+      return (reader.readLongOrNull(offset)) as P;
+    case 5:
       return (_UsercurThemeValueEnumMap[reader.readByteOrNull(offset)] ??
           Theme.dark) as P;
-    case 5:
+    case 6:
       return (reader.readObjectOrNull<DeadlineSorter>(
         offset,
         DeadlineSorterSchema.deserialize,
         allOffsets,
       )) as P;
-    case 6:
+    case 7:
       return (reader.readObjectOrNull<GroupSorter>(
         offset,
         GroupSorterSchema.deserialize,
         allOffsets,
       )) as P;
-    case 7:
-      return (reader.readBoolOrNull(offset) ?? false) as P;
     case 8:
-      return (reader.readDateTime(offset)) as P;
+      return (reader.readBoolOrNull(offset) ?? false) as P;
     case 9:
+      return (reader.readDateTime(offset)) as P;
+    case 10:
       return (reader.readObjectOrNull<ReminderSorter>(
         offset,
         ReminderSorterSchema.deserialize,
         allOffsets,
       )) as P;
-    case 10:
+    case 11:
       return (reader.readObjectOrNull<RoutineSorter>(
         offset,
         RoutineSorterSchema.deserialize,
         allOffsets,
       )) as P;
-    case 11:
-      return (reader.readBool(offset)) as P;
     case 12:
+      return (reader.readBool(offset)) as P;
+    case 13:
       return (reader.readObjectOrNull<ToDoSorter>(
         offset,
         ToDoSorterSchema.deserialize,
         allOffsets,
       )) as P;
-    case 13:
+    case 14:
       return (reader.readString(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -578,6 +587,16 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
         includeLower: includeLower,
         upper: upper,
         includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<User, User, QAfterFilterCondition> checkDeleteEqualTo(
+      bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'checkDelete',
+        value: value,
       ));
     });
   }
@@ -1224,6 +1243,18 @@ extension UserQuerySortBy on QueryBuilder<User, User, QSortBy> {
     });
   }
 
+  QueryBuilder<User, User, QAfterSortBy> sortByCheckDelete() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'checkDelete', Sort.asc);
+    });
+  }
+
+  QueryBuilder<User, User, QAfterSortBy> sortByCheckDeleteDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'checkDelete', Sort.desc);
+    });
+  }
+
   QueryBuilder<User, User, QAfterSortBy> sortByCurAftID() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'curAftID', Sort.asc);
@@ -1331,6 +1362,18 @@ extension UserQuerySortThenBy on QueryBuilder<User, User, QSortThenBy> {
   QueryBuilder<User, User, QAfterSortBy> thenByBandwidthDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'bandwidth', Sort.desc);
+    });
+  }
+
+  QueryBuilder<User, User, QAfterSortBy> thenByCheckDelete() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'checkDelete', Sort.asc);
+    });
+  }
+
+  QueryBuilder<User, User, QAfterSortBy> thenByCheckDeleteDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'checkDelete', Sort.desc);
     });
   }
 
@@ -1450,6 +1493,12 @@ extension UserQueryWhereDistinct on QueryBuilder<User, User, QDistinct> {
     });
   }
 
+  QueryBuilder<User, User, QDistinct> distinctByCheckDelete() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'checkDelete');
+    });
+  }
+
   QueryBuilder<User, User, QDistinct> distinctByCurAftID() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'curAftID');
@@ -1510,6 +1559,12 @@ extension UserQueryProperty on QueryBuilder<User, User, QQueryProperty> {
   QueryBuilder<User, int, QQueryOperations> bandwidthProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'bandwidth');
+    });
+  }
+
+  QueryBuilder<User, bool, QQueryOperations> checkDeleteProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'checkDelete');
     });
   }
 

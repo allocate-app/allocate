@@ -6,7 +6,10 @@ import 'repository.dart';
 abstract interface class RoutineRepository implements Repository<Routine> {
   @override
   Future<List<Routine>> getRepoList(
-      {RoutineTime timeOfDay = RoutineTime.morning});
+      {required int limit,
+      int offset = 0,
+      required SortableView<Routine> sorter,
+      RoutineTime timeOfDay = RoutineTime.morning});
   @override
   Future<List<Routine>> getRepoListBy(
       {RoutineTime timeOfDay = RoutineTime.morning,
