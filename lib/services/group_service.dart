@@ -18,14 +18,18 @@ class GroupService {
   Future<List<Group>> searchGroups({required String searchString}) async =>
       _repository.searchGroups(searchString: searchString);
 
-  Future<List<Group>> getGroups() async => _repository.getRepoList();
+  Future<List<Group>> getGroups({int limit = 50}) async =>
+      _repository.getRepoList(limit: limit);
   Future<List<Group>> getGroupsBy(
           {required SortableView<Group> sorter,
-          required int limit,
-          required int offset}) async =>
-      _repository.getRepoListBy(sorter: sorter);
+          int limit = 50,
+          int offset = 0}) async =>
+      _repository.getRepoListBy(sorter: sorter, limit: limit, offset: offset);
 
   Future<Group?> getGroupByID({required int id}) => _repository.getByID(id: id);
+
+  Future<List<Group>> mostRecent({int limit = 5}) async =>
+      _repository.mostRecent(limit: limit);
 
   Future<void> updateGroup({required Group group}) async =>
       _repository.update(group);

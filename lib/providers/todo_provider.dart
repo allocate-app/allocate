@@ -26,8 +26,7 @@ class ToDoProvider extends ChangeNotifier {
   late ToDoSorter sorter;
 
   User? user;
-  ToDoProvider({this.user, ToDoService? service})
-      : _toDoService = service ?? ToDoService() {
+  ToDoProvider({this.user, ToDoService? service}) : _toDoService = service ?? ToDoService() {
     sorter = user?.toDoSorter ?? ToDoSorter();
     init();
   }
@@ -65,6 +64,8 @@ class ToDoProvider extends ChangeNotifier {
   }
 
   bool get descending => sorter.descending;
+  int calculateRealDuration({int? weight, int? duration}) =>
+      _toDoService.calculateRealDuration(weight: weight, duration: duration);
 
   List<SortMethod> get sortMethods => ToDoSorter.sortMethods;
 
@@ -112,8 +113,7 @@ class ToDoProvider extends ChangeNotifier {
     int? repeatSkip,
     List<SubTask>? subTasks,
   }) async {
-    List<SubTask> buffer =
-        List.filled(Constants.numTasks[taskType]!, SubTask());
+    List<SubTask> buffer = List.filled(Constants.numTasks[taskType]!, SubTask());
 
     if (null != subTasks && buffer.isNotEmpty) {
       List.copyRange(buffer, 0, subTasks, 0, Constants.numTasks[taskType]!);
@@ -122,14 +122,12 @@ class ToDoProvider extends ChangeNotifier {
     subTasks = buffer;
 
     weight = weight ?? _toDoService.calculateWeight(subTasks: subTasks);
-    int expectedDuration =
-        duration?.inSeconds ?? (const Duration(hours: 1)).inSeconds;
-    int realDuration = _toDoService.calculateRealDuration(
-        weight: weight, duration: expectedDuration);
+    int expectedDuration = duration?.inSeconds ?? (const Duration(hours: 1)).inSeconds;
+    int realDuration =
+        _toDoService.calculateRealDuration(weight: weight, duration: expectedDuration);
 
     startDate = startDate ?? DateTime.now();
-    dueDate = dueDate ??
-        DateTime(startDate.year, startDate.month, startDate.day, 23, 59, 0);
+    dueDate = dueDate ?? DateTime(startDate.year, startDate.month, startDate.day, 23, 59, 0);
 
     if (startDate.isAfter(dueDate)) {
       dueDate = startDate.add(const Duration(minutes: 15));
@@ -197,11 +195,9 @@ class ToDoProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> reorderToDos(
-      {required int oldIndex, required int newIndex}) async {
+  Future<void> reorderToDos({required int oldIndex, required int newIndex}) async {
     try {
-      _toDoService.reorderTodos(
-          toDos: toDos, oldIndex: oldIndex, newIndex: newIndex);
+      _toDoService.reorderTodos(toDos: toDos, oldIndex: oldIndex, newIndex: newIndex);
     } on FailureToUpdateException catch (e) {
       log(e.cause);
       rethrow;
@@ -214,11 +210,9 @@ class ToDoProvider extends ChangeNotifier {
   Future<void> checkRepeating({DateTime? now}) async =>
       _toDoService.checkRepeating(now: now ?? DateTime.now());
 
-  Future<void> nextRepeat() async =>
-      _toDoService.nextRepeatable(toDo: curToDo!);
+  Future<void> nextRepeat() async => _toDoService.nextRepeatable(toDo: curToDo!);
 
-  Future<void> deleteFutures() async =>
-      _toDoService.deleteFutures(toDo: curToDo!);
+  Future<void> deleteFutures() async => _toDoService.deleteFutures(toDo: curToDo!);
 
   // TODO: Finish testing.
   Future<void> populateCalendar({DateTime? limit}) async =>
@@ -235,8 +229,7 @@ class ToDoProvider extends ChangeNotifier {
               startDate: DateTime.now(),
               dueDate: DateTime.now(),
               repeatDays: List.filled(7, false),
-              subTasks:
-                  List.filled(Constants.numTasks[TaskType.small]!, SubTask()));
+              subTasks: List.filled(Constants.numTasks[TaskType.small]!, SubTask()));
 
   Future<void> getToDos() async {
     toDos = await _toDoService.getToDos();

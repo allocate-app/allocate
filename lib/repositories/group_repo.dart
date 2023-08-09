@@ -215,6 +215,7 @@ class GroupRepo implements GroupRepository {
   }
 
   // Streaming - > possibly set fireImmediately.
+  // May not even use this yet.
   @override
   Stream<List<Group>> stream({required SortableView<Group> sorter}) async* {
     switch (sorter.sortMethod) {
@@ -253,12 +254,20 @@ class GroupRepo implements GroupRepository {
           .findAll();
 
   @override
+  Future<List<Group>> mostRecent({int limit = 50}) async =>
+      await _isarClient.groups
+          .where()
+          .sortByLastUpdatedDesc()
+          .limit(limit)
+          .findAll();
+
+  @override
   Future<Group?> getByID({required int id}) async =>
       await _isarClient.groups.where().idEqualTo(id).findFirst();
 
   // Basic query logic.
   @override
-  Future<List<Group>> getRepoList({required int limit, int offset = 0}) =>
+  Future<List<Group>> getRepoList({int limit = 50, int offset = 0}) =>
       _isarClient.groups
           .where()
           .toDeleteEqualTo(false)
@@ -267,11 +276,10 @@ class GroupRepo implements GroupRepository {
           .limit(limit)
           .findAll();
 
-  // TODO: Fix this, add limit/offset logic -> Try to hide params.
   @override
   Future<List<Group>> getRepoListBy(
       {required SortableView<Group> sorter,
-      required int limit,
+      int limit = 50,
       int offset = 0}) async {
     switch (sorter.sortMethod) {
       case SortMethod.name:
@@ -280,6 +288,7 @@ class GroupRepo implements GroupRepository {
               .where()
               .toDeleteEqualTo(false)
               .sortByNameDesc()
+              .offset(offset)
               .limit(limit)
               .findAll();
         } else {
@@ -287,6 +296,8 @@ class GroupRepo implements GroupRepository {
               .where()
               .toDeleteEqualTo(false)
               .sortByNameDesc()
+              .offset(offset)
+              .limit(limit)
               .findAll();
         }
       default:

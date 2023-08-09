@@ -12,8 +12,8 @@ abstract interface class Repository<T> {
   Future<void> deleteLocal();
   Future<void> syncRepo();
   Future<void> fetchRepo();
-  Future<List<T>> getRepoList(
-      {required SortableView<T> sorter, required int limit, int offset});
-  Future<List<T>> getRepoListBy({required SortableView<T> sorter});
+  Future<List<T>> getRepoList({int limit = 50, int offset = 0});
+  Future<List<T>> getRepoListBy(
+      {int limit = 50, int offset = 0, required SortableView<T> sorter});
   Future<T?> getByID({required int id});
 }

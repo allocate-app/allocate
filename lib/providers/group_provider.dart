@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:developer';
 
 import 'package:flutter/foundation.dart';
-import 'package:isar/isar.dart';
 
 import '../model/task/group.dart';
 import '../model/user/user.dart';
@@ -160,10 +159,9 @@ class GroupProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // TODO: refactor this to be max integer.
   Future<void> setGroupsBy() async {
-    groups = await _groupService.getGroupsBy(
-        sorter: sorter, limit: Isar.maxId, offset: 0);
+    groups =
+        await _groupService.getGroupsBy(sorter: sorter, limit: 50, offset: 0);
     for (Group g in groups) {
       g.toDos = await _toDoService.getByGroup(groupID: g.id);
     }
@@ -182,12 +180,10 @@ class GroupProvider extends ChangeNotifier {
           {required int limit, required int offset}) async =>
       await _groupService.getGroupsBy(
           sorter: sorter, limit: limit, offset: offset);
-  // Future<List<Group>> getRecents() async => await _groupService.getRecents();
-  // Future<List<Group>> getSuggested({required String suggestion}) async =>
-  //     await _groupService.getSuggested(search: suggestion);
 
-  // Kay, so most of these will likely need refactoring.
-  // Oh well.
+  Future<List<Group>> mostRecent({int limit = 5}) async =>
+      await _groupService.mostRecent(limit: 5);
+
   Future<void> getGroupByID({required int id}) async =>
       await _groupService.getGroupByID(id: id) ??
       Group(name: '', lastUpdated: DateTime.now());

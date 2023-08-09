@@ -19,6 +19,8 @@ class UserProvider extends ChangeNotifier {
   final _userStorageService = UserStorageService();
   final _authenticationService = AuthenticationService();
 
+  int myDayTotal = 0;
+
   User? curUser;
 
   bool retry = false;
@@ -27,8 +29,7 @@ class UserProvider extends ChangeNotifier {
     init();
   }
 
-  Future<User?> get loadedUser async =>
-      curUser ?? await _userStorageService.getUser();
+  Future<User?> get loadedUser async => curUser ?? await _userStorageService.getUser();
 
   Future<void> init() async {
     startTimer();
@@ -107,8 +108,7 @@ class UserProvider extends ChangeNotifier {
 
   Future<void> signUp({required String email, required String password}) async {
     try {
-      _authenticationService.signUpEmailPassword(
-          email: email, password: password);
+      _authenticationService.signUpEmailPassword(email: email, password: password);
 
       //Not sure.
     } on SignUpFailedException catch (e) {
@@ -123,8 +123,7 @@ class UserProvider extends ChangeNotifier {
 
   Future<void> signIn({required String email, required String password}) async {
     try {
-      _authenticationService.signInEmailPassword(
-          email: email, password: password);
+      _authenticationService.signInEmailPassword(email: email, password: password);
 
       // For switching users.
       _userStorageService.fetchUser();
