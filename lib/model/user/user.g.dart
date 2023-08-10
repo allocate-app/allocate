@@ -142,41 +142,34 @@ int _userEstimateSize(
   {
     final value = object.deadlineSorter;
     if (value != null) {
-      bytesCount += 3 +
-          DeadlineSorterSchema.estimateSize(
-              value, allOffsets[DeadlineSorter]!, allOffsets);
+      bytesCount +=
+          3 + DeadlineSorterSchema.estimateSize(value, allOffsets[DeadlineSorter]!, allOffsets);
     }
   }
   {
     final value = object.groupSorter;
     if (value != null) {
-      bytesCount += 3 +
-          GroupSorterSchema.estimateSize(
-              value, allOffsets[GroupSorter]!, allOffsets);
+      bytesCount += 3 + GroupSorterSchema.estimateSize(value, allOffsets[GroupSorter]!, allOffsets);
     }
   }
   {
     final value = object.reminderSorter;
     if (value != null) {
-      bytesCount += 3 +
-          ReminderSorterSchema.estimateSize(
-              value, allOffsets[ReminderSorter]!, allOffsets);
+      bytesCount +=
+          3 + ReminderSorterSchema.estimateSize(value, allOffsets[ReminderSorter]!, allOffsets);
     }
   }
   {
     final value = object.routineSorter;
     if (value != null) {
-      bytesCount += 3 +
-          RoutineSorterSchema.estimateSize(
-              value, allOffsets[RoutineSorter]!, allOffsets);
+      bytesCount +=
+          3 + RoutineSorterSchema.estimateSize(value, allOffsets[RoutineSorter]!, allOffsets);
     }
   }
   {
     final value = object.toDoSorter;
     if (value != null) {
-      bytesCount += 3 +
-          ToDoSorterSchema.estimateSize(
-              value, allOffsets[ToDoSorter]!, allOffsets);
+      bytesCount += 3 + ToDoSorterSchema.estimateSize(value, allOffsets[ToDoSorter]!, allOffsets);
     }
   }
   bytesCount += 3 + object.userName.length * 3;
@@ -243,8 +236,7 @@ User _userDeserialize(
     curAftID: reader.readLongOrNull(offsets[2]),
     curEveID: reader.readLongOrNull(offsets[3]),
     curMornID: reader.readLongOrNull(offsets[4]),
-    curTheme: _UsercurThemeValueEnumMap[reader.readByteOrNull(offsets[5])] ??
-        Theme.dark,
+    curTheme: _UsercurThemeValueEnumMap[reader.readByteOrNull(offsets[5])] ?? UserThemeData.dark,
     deadlineSorter: reader.readObjectOrNull<DeadlineSorter>(
       offsets[6],
       DeadlineSorterSchema.deserialize,
@@ -297,8 +289,7 @@ P _userDeserializeProp<P>(
     case 4:
       return (reader.readLongOrNull(offset)) as P;
     case 5:
-      return (_UsercurThemeValueEnumMap[reader.readByteOrNull(offset)] ??
-          Theme.dark) as P;
+      return (_UsercurThemeValueEnumMap[reader.readByteOrNull(offset)] ?? UserThemeData.dark) as P;
     case 6:
       return (reader.readObjectOrNull<DeadlineSorter>(
         offset,
@@ -348,9 +339,9 @@ const _UsercurThemeEnumValueMap = {
   'hiContrast': 2,
 };
 const _UsercurThemeValueEnumMap = {
-  0: Theme.light,
-  1: Theme.dark,
-  2: Theme.hiContrast,
+  0: UserThemeData.light,
+  1: UserThemeData.dark,
+  2: UserThemeData.hiContrast,
 };
 
 Id _userGetId(User object) {
@@ -468,8 +459,7 @@ extension UserQueryWhere on QueryBuilder<User, User, QWhereClause> {
     });
   }
 
-  QueryBuilder<User, User, QAfterWhereClause> localIDLessThan(Id localID,
-      {bool include = false}) {
+  QueryBuilder<User, User, QAfterWhereClause> localIDLessThan(Id localID, {bool include = false}) {
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(
         IdWhereClause.lessThan(upper: localID, includeUpper: include),
@@ -502,8 +492,7 @@ extension UserQueryWhere on QueryBuilder<User, User, QWhereClause> {
     });
   }
 
-  QueryBuilder<User, User, QAfterWhereClause> userNameNotEqualTo(
-      String userName) {
+  QueryBuilder<User, User, QAfterWhereClause> userNameNotEqualTo(String userName) {
     return QueryBuilder.apply(this, (query) {
       if (query.whereSort == Sort.asc) {
         return query
@@ -591,8 +580,7 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> checkDeleteEqualTo(
-      bool value) {
+  QueryBuilder<User, User, QAfterFilterCondition> checkDeleteEqualTo(bool value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
         property: r'checkDelete',
@@ -805,7 +793,7 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> curThemeEqualTo(Theme value) {
+  QueryBuilder<User, User, QAfterFilterCondition> curThemeEqualTo(UserThemeData value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
         property: r'curTheme',
@@ -815,7 +803,7 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
   }
 
   QueryBuilder<User, User, QAfterFilterCondition> curThemeGreaterThan(
-    Theme value, {
+    UserThemeData value, {
     bool include = false,
   }) {
     return QueryBuilder.apply(this, (query) {
@@ -828,7 +816,7 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
   }
 
   QueryBuilder<User, User, QAfterFilterCondition> curThemeLessThan(
-    Theme value, {
+    UserThemeData value, {
     bool include = false,
   }) {
     return QueryBuilder.apply(this, (query) {
@@ -841,8 +829,8 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
   }
 
   QueryBuilder<User, User, QAfterFilterCondition> curThemeBetween(
-    Theme lower,
-    Theme upper, {
+    UserThemeData lower,
+    UserThemeData upper, {
     bool includeLower = true,
     bool includeUpper = true,
   }) {
@@ -898,8 +886,7 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> lastOpenedEqualTo(
-      DateTime value) {
+  QueryBuilder<User, User, QAfterFilterCondition> lastOpenedEqualTo(DateTime value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
         property: r'lastOpened',
@@ -1035,8 +1022,7 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> syncOnlineEqualTo(
-      bool value) {
+  QueryBuilder<User, User, QAfterFilterCondition> syncOnlineEqualTo(bool value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
         property: r'syncOnline',
@@ -1160,8 +1146,7 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> userNameMatches(
-      String pattern,
+  QueryBuilder<User, User, QAfterFilterCondition> userNameMatches(String pattern,
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.matches(
@@ -1192,36 +1177,31 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
 }
 
 extension UserQueryObject on QueryBuilder<User, User, QFilterCondition> {
-  QueryBuilder<User, User, QAfterFilterCondition> deadlineSorter(
-      FilterQuery<DeadlineSorter> q) {
+  QueryBuilder<User, User, QAfterFilterCondition> deadlineSorter(FilterQuery<DeadlineSorter> q) {
     return QueryBuilder.apply(this, (query) {
       return query.object(q, r'deadlineSorter');
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> groupSorter(
-      FilterQuery<GroupSorter> q) {
+  QueryBuilder<User, User, QAfterFilterCondition> groupSorter(FilterQuery<GroupSorter> q) {
     return QueryBuilder.apply(this, (query) {
       return query.object(q, r'groupSorter');
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> reminderSorter(
-      FilterQuery<ReminderSorter> q) {
+  QueryBuilder<User, User, QAfterFilterCondition> reminderSorter(FilterQuery<ReminderSorter> q) {
     return QueryBuilder.apply(this, (query) {
       return query.object(q, r'reminderSorter');
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> routineSorter(
-      FilterQuery<RoutineSorter> q) {
+  QueryBuilder<User, User, QAfterFilterCondition> routineSorter(FilterQuery<RoutineSorter> q) {
     return QueryBuilder.apply(this, (query) {
       return query.object(q, r'routineSorter');
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> toDoSorter(
-      FilterQuery<ToDoSorter> q) {
+  QueryBuilder<User, User, QAfterFilterCondition> toDoSorter(FilterQuery<ToDoSorter> q) {
     return QueryBuilder.apply(this, (query) {
       return query.object(q, r'toDoSorter');
     });
@@ -1541,8 +1521,7 @@ extension UserQueryWhereDistinct on QueryBuilder<User, User, QDistinct> {
     });
   }
 
-  QueryBuilder<User, User, QDistinct> distinctByUserName(
-      {bool caseSensitive = true}) {
+  QueryBuilder<User, User, QDistinct> distinctByUserName({bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'userName', caseSensitive: caseSensitive);
     });
@@ -1586,14 +1565,13 @@ extension UserQueryProperty on QueryBuilder<User, User, QQueryProperty> {
     });
   }
 
-  QueryBuilder<User, Theme, QQueryOperations> curThemeProperty() {
+  QueryBuilder<User, UserThemeData, QQueryOperations> curThemeProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'curTheme');
     });
   }
 
-  QueryBuilder<User, DeadlineSorter?, QQueryOperations>
-      deadlineSorterProperty() {
+  QueryBuilder<User, DeadlineSorter?, QQueryOperations> deadlineSorterProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'deadlineSorter');
     });
@@ -1617,8 +1595,7 @@ extension UserQueryProperty on QueryBuilder<User, User, QQueryProperty> {
     });
   }
 
-  QueryBuilder<User, ReminderSorter?, QQueryOperations>
-      reminderSorterProperty() {
+  QueryBuilder<User, ReminderSorter?, QQueryOperations> reminderSorterProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'reminderSorter');
     });

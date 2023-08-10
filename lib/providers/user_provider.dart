@@ -53,7 +53,7 @@ class UserProvider extends ChangeNotifier {
       bool syncOnline = false,
       bool? isSynced,
       int? bandwidth,
-      Theme? theme,
+      UserThemeData? theme,
       int? curMornID,
       int? curAftID,
       int? curEveID,
@@ -66,7 +66,7 @@ class UserProvider extends ChangeNotifier {
         userName: userName,
         syncOnline: syncOnline,
         isSynced: isSynced ?? false,
-        curTheme: theme ?? Theme.dark,
+        curTheme: theme ?? UserThemeData.dark,
         curMornID: curMornID,
         curAftID: curAftID,
         curEveID: curEveID,
@@ -76,6 +76,9 @@ class UserProvider extends ChangeNotifier {
         routineSorter: routineSorter ?? RoutineSorter(),
         toDoSorter: toDoSorter ?? ToDoSorter(),
         lastOpened: DateTime.now());
+    // This WILL require a "check close" parameter.
+    // TODO: implement checkClose preference.
+    // If this needs to scale, migrate data to a userprefs table and relate by uid.
 
     try {
       _userStorageService.createUser(user: curUser!);

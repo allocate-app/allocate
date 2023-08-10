@@ -101,11 +101,13 @@ class ToDoProvider extends ChangeNotifier {
     int? groupID,
     String? description,
     int? weight,
-    Duration? duration,
+    int? expectedDuration,
+    int? realDuration,
     Priority? priority,
     DateTime? startDate,
     DateTime? dueDate,
     bool? myDay,
+    bool? completed,
     bool? repeatable,
     Frequency? frequency,
     CustomFrequency? customFreq,
@@ -122,8 +124,8 @@ class ToDoProvider extends ChangeNotifier {
     subTasks = buffer;
 
     weight = weight ?? _toDoService.calculateWeight(subTasks: subTasks);
-    int expectedDuration = duration?.inSeconds ?? (const Duration(hours: 1)).inSeconds;
-    int realDuration =
+    expectedDuration = expectedDuration ?? (const Duration(hours: 1)).inSeconds;
+    realDuration = realDuration ??
         _toDoService.calculateRealDuration(weight: weight, duration: expectedDuration);
 
     startDate = startDate ?? DateTime.now();
@@ -145,6 +147,7 @@ class ToDoProvider extends ChangeNotifier {
         startDate: startDate,
         dueDate: dueDate,
         myDay: myDay ?? false,
+        completed: completed ?? false,
         repeatable: repeatable ?? false,
         frequency: frequency ?? Frequency.once,
         customFreq: customFreq ?? CustomFrequency.weekly,
@@ -214,7 +217,8 @@ class ToDoProvider extends ChangeNotifier {
 
   Future<void> deleteFutures() async => _toDoService.deleteFutures(toDo: curToDo!);
 
-  // TODO: Finish testing.
+  // TODO: Finish testing - Hold off -> May not be needed.
+  // Will be populated on calendar view.
   Future<void> populateCalendar({DateTime? limit}) async =>
       _toDoService.populateCalendar(limit: limit ?? DateTime.now());
 

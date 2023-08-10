@@ -23,35 +23,29 @@ void main() {
       ChangeNotifierProvider<UserProvider>(create: (_) => UserProvider()),
       ChangeNotifierProxyProvider<UserProvider, ToDoProvider>(
           create: (BuildContext context) => ToDoProvider(
-              user: Provider.of<UserProvider>(context, listen: false).curUser,
-              service: null),
+              user: Provider.of<UserProvider>(context, listen: false).curUser, service: null),
           update: (BuildContext context, UserProvider up, ToDoProvider? tp) {
             tp?.setUser(user: up.curUser);
             return tp ?? ToDoProvider(user: up.curUser, service: null);
           }),
       ChangeNotifierProxyProvider<UserProvider, RoutineProvider>(
           create: (BuildContext context) => RoutineProvider(
-              user: Provider.of<UserProvider>(context, listen: false).curUser,
-              service: null),
+              user: Provider.of<UserProvider>(context, listen: false).curUser, service: null),
           update: (BuildContext context, UserProvider up, RoutineProvider? rp) {
             rp?.setUser(user: up.curUser);
             return rp ?? RoutineProvider(user: up.curUser, service: null);
           }),
       ChangeNotifierProxyProvider<UserProvider, ReminderProvider>(
           create: (BuildContext context) => ReminderProvider(
-              user: Provider.of<UserProvider>(context, listen: false).curUser,
-              service: null),
-          update:
-              (BuildContext context, UserProvider up, ReminderProvider? rp) {
+              user: Provider.of<UserProvider>(context, listen: false).curUser, service: null),
+          update: (BuildContext context, UserProvider up, ReminderProvider? rp) {
             rp?.setUser(user: up.curUser);
             return rp ?? ReminderProvider(user: up.curUser, service: null);
           }),
       ChangeNotifierProxyProvider<UserProvider, DeadlineProvider>(
           create: (BuildContext context) => DeadlineProvider(
-              user: Provider.of<UserProvider>(context, listen: false).curUser,
-              service: null),
-          update:
-              (BuildContext context, UserProvider up, DeadlineProvider? dp) {
+              user: Provider.of<UserProvider>(context, listen: false).curUser, service: null),
+          update: (BuildContext context, UserProvider up, DeadlineProvider? dp) {
             dp?.setUser(user: up.curUser);
             return dp ?? DeadlineProvider(user: up.curUser, service: null);
           }),
@@ -62,9 +56,7 @@ void main() {
               toDoService: null),
           update: (BuildContext context, UserProvider up, GroupProvider? gp) {
             gp?.setUser(user: up.curUser);
-            return gp ??
-                GroupProvider(
-                    user: up.curUser, groupService: null, toDoService: null);
+            return gp ?? GroupProvider(user: up.curUser, groupService: null, toDoService: null);
           })
     ], child: const MyApp()),
   );
@@ -72,6 +64,10 @@ void main() {
 
 class MyApp extends StatefulWidget {
   const MyApp({super.key});
+
+  // NOTE: Will need to set a watcher for the user's current theme prefs.
+  // Bind accordingly and set the default to system.
+  // Also, make themes.
 
   @override
   State<MyApp> createState() => _MyAppState();
@@ -83,14 +79,12 @@ class _MyAppState extends State<MyApp> {
   @override
   void initState() {
     IsarService.instance.init();
-    SupabaseService.instance.init(
-        supabaseUrl: Constants.supabaseURL,
-        anonKey: Constants.supabaseAnnonKey);
+    SupabaseService.instance
+        .init(supabaseUrl: Constants.supabaseURL, anonKey: Constants.supabaseAnnonKey);
     super.initState();
 
     // These are really not all that important.
-    SupabaseService.instance.supabaseClient.auth.onAuthStateChange
-        .listen((data) {
+    SupabaseService.instance.supabaseClient.auth.onAuthStateChange.listen((data) {
       final AuthChangeEvent event = data.event;
       if (event == AuthChangeEvent.signedIn) {
         _appRouter
@@ -107,6 +101,9 @@ class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp.router(
+      // Change this as necessary
+      // Store themes in a static ui class - and a hashtable for theme values.
+      theme: ThemeData(useMaterial3: true),
       routerConfig: _appRouter.config(
           // Deeplink interceptor -> Only if necessary.
           // deepLinkBuilder: (deeplink) {

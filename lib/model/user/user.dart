@@ -30,7 +30,7 @@ class User with EquatableMixin implements Copyable<User> {
 
   // User Theme.
   @Enumerated(EnumType.ordinal)
-  Theme curTheme;
+  UserThemeData curTheme;
 
   // Routines
   int? curMornID;
@@ -53,7 +53,7 @@ class User with EquatableMixin implements Copyable<User> {
       this.checkDelete = true,
       this.isSynced = false,
       this.bandwidth = 100,
-      this.curTheme = Theme.dark,
+      this.curTheme = UserThemeData.dark,
       this.curMornID,
       this.curAftID,
       this.curEveID,
@@ -71,7 +71,7 @@ class User with EquatableMixin implements Copyable<User> {
         checkDelete = entity["checkDelete"],
         isSynced = entity["isSynced"],
         bandwidth = entity["bandwidth"] as int,
-        curTheme = Theme.values[entity["curTheme"]],
+        curTheme = UserThemeData.values[entity["curTheme"]],
         curMornID = entity["curMornID"] as int?,
         curAftID = entity["curAftID"] as int?,
         curEveID = entity["curEveID"] as int?,
@@ -102,10 +102,8 @@ class User with EquatableMixin implements Copyable<User> {
         "curAftID": curAftID,
         "curEveID": curEveID,
         "groupSorter": (null != groupSorter) ? groupSorter!.toEntity() : null,
-        "reminderSorter":
-            (null != reminderSorter) ? reminderSorter!.toEntity() : null,
-        "routineSorter":
-            (null != routineSorter) ? routineSorter!.toEntity() : null,
+        "reminderSorter": (null != reminderSorter) ? reminderSorter!.toEntity() : null,
+        "routineSorter": (null != routineSorter) ? routineSorter!.toEntity() : null,
         "toDoSorter": (null != toDoSorter) ? toDoSorter!.toEntity() : null,
         "lastOpened": lastOpened.toIso8601String()
       };
@@ -132,7 +130,7 @@ class User with EquatableMixin implements Copyable<User> {
           {String? userName,
           bool? syncOnline,
           int? bandwidth,
-          Theme? curTheme,
+          UserThemeData? curTheme,
           int? curMornID,
           int? curAftID,
           int? curEveID,
@@ -179,8 +177,7 @@ class User with EquatableMixin implements Copyable<User> {
       ];
 
   @override
-  toString() =>
-      "userName: $userName, syncOnline: $syncOnline, bandwidth: $bandwidth, "
+  toString() => "userName: $userName, syncOnline: $syncOnline, bandwidth: $bandwidth, "
       "curTheme: ${curTheme.name}, curMornID: $curMornID, curAftID: $curAftID, curEveID: $curEveID,"
       "groupSorter: $groupSorter, deadlineSorter: $deadlineSorter,"
       "reminderSorter: $reminderSorter, routineSorter: $routineSorter, "

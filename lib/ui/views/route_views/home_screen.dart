@@ -36,9 +36,7 @@ class _HomeScreen extends State<HomeScreen> implements CrossBuild {
   static const List<NavigationDrawerDestination> destinations = [
     // HOME - My Day
     NavigationDrawerDestination(
-        icon: Icon(Icons.house_outlined),
-        label: Text("Home"),
-        selectedIcon: Icon(Icons.house)),
+        icon: Icon(Icons.house_outlined), label: Text("Home"), selectedIcon: Icon(Icons.house)),
 
     // Notifications (ie, overdue)
     NavigationDrawerDestination(
@@ -66,18 +64,17 @@ class _HomeScreen extends State<HomeScreen> implements CrossBuild {
 
     // TODO: Clean up aggregate logic. Factor into method.
     // User verification can go -> Is handled in splash scrn.
-    final UserProvider userProvider =
-        Provider.of<UserProvider>(context, listen: false);
+    final UserProvider userProvider = Provider.of<UserProvider>(context, listen: false);
 
-    final RoutineProvider routineProvider =
-        Provider.of<RoutineProvider>(context, listen: false);
-    final ToDoProvider toDoProvider =
-        Provider.of<ToDoProvider>(context, listen: false);
+    final RoutineProvider routineProvider = Provider.of<RoutineProvider>(context, listen: false);
+    final ToDoProvider toDoProvider = Provider.of<ToDoProvider>(context, listen: false);
     Future.wait([
       userProvider.loadedUser,
+      toDoProvider.getMyDayWeight(),
       Future.delayed(const Duration(milliseconds: 2000))
     ]).then((responseList) {
       user = userProvider.curUser ?? responseList.first;
+      dayWeight = responseList[1];
 
       if (null == user) {
         return context.router.replace(const InitUserRoute());
@@ -92,11 +89,9 @@ class _HomeScreen extends State<HomeScreen> implements CrossBuild {
 
         routineProvider.resetRoutines();
 
-        Provider.of<ReminderProvider>(context, listen: false)
-            .checkRepeating(now: now);
+        Provider.of<ReminderProvider>(context, listen: false).checkRepeating(now: now);
 
-        Provider.of<DeadlineProvider>(context, listen: false)
-            .checkRepeating(now: now);
+        Provider.of<DeadlineProvider>(context, listen: false).checkRepeating(now: now);
       }
 
       user!.lastOpened = now;
@@ -105,9 +100,8 @@ class _HomeScreen extends State<HomeScreen> implements CrossBuild {
     }).catchError((e) {
       UserException userException = e as UserException;
       log(userException.cause);
-      return context.router.replace((null == userProvider.curUser)
-          ? const InitUserRoute()
-          : const HomeRoute());
+      return context.router
+          .replace((null == userProvider.curUser) ? const InitUserRoute() : const HomeRoute());
     }, test: (e) => e is UserException);
   }
 
@@ -130,8 +124,7 @@ class _HomeScreen extends State<HomeScreen> implements CrossBuild {
           // Children are the other thingies
           NavigationDrawer(
             selectedIndex: selectedPageIndex,
-            onDestinationSelected: (int index) =>
-                setState(() => selectedPageIndex = index),
+            onDestinationSelected: (int index) => setState(() => selectedPageIndex = index),
             children: [
               // Header -- Search Bar? User settings
               Container(),
@@ -152,17 +145,22 @@ class _HomeScreen extends State<HomeScreen> implements CrossBuild {
     );
   }
 
+  // TODO: Refactor this, but seems to work.
   @override
   Widget buildMobile({required BuildContext context}) {
     return Scaffold(
-      appBar: AppBar(),
-      body: SafeArea(child: [MyDayScreen()][selectedPageIndex]),
-      drawer: NavigationDrawer(
-        selectedIndex: selectedPageIndex,
-        onDestinationSelected: (int index) =>
-            setState(() => selectedPageIndex = index),
-        children: [],
-      ),
-    );
+        appBar: AppBar(),
+        body: SafeArea(child: [MyDayScreen()][selectedPageIndex]),
+        drawer: NavigationDrawer(
+          selectedIndex: selectedPageIndex,
+          onDestinationSelected: (int index) => setState(() => selectedPageIndex = index),
+          children: [],
+        ),
+        floatingActionButton: FloatingActionButton(
+          onPressed: () => (dayWeight < user!.bandwidth)
+              ? showDialog(
+                  context: context, builder: (BuildContext context) => const CreateToDoScreen())
+              : null,
+        ));
   }
 }

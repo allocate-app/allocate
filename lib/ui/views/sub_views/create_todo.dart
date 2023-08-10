@@ -1,10 +1,10 @@
-import "dart:io";
+import "dart:math";
 
 import "package:allocate/util/constants.dart";
-import "package:allocate/util/interfaces/crossbuild.dart";
 import "package:flutter/material.dart";
 import "package:flutter/semantics.dart";
 import "package:intl/intl.dart";
+import "package:jiffy/jiffy.dart";
 import "package:provider/provider.dart";
 
 import "../../../model/task/group.dart";
@@ -13,7 +13,9 @@ import "../../../providers/group_provider.dart";
 import "../../../providers/todo_provider.dart";
 import "../../../providers/user_provider.dart";
 import "../../../util/enums.dart";
+import "../../../util/exceptions.dart";
 import "../../../util/numbers.dart";
+import "../../widgets/paddedDivider.dart";
 
 /// Basic UI list order (Mobile):
 /// Title
@@ -33,39 +35,11 @@ class CreateToDoScreen extends StatefulWidget {
   State<CreateToDoScreen> createState() => _CreateToDoScreen();
 }
 
-class _CreateToDoScreen extends State<CreateToDoScreen> implements CrossBuild {
-  static const double padding = 8.0;
-  static const int historyLength = 5;
-  static const double smallRoundCorners = 50;
-  static const double lgRoundCorners = 30;
+class _CreateToDoScreen extends State<CreateToDoScreen> {
   late bool checkClose;
   late bool checkDelete;
 
-  static const String lowBattery = "🪫";
-  static const String fullBattery = "🔋";
-
-  static const Map<int, Icon> batteryIcons = {
-    0: Icon(Icons.battery_full_outlined),
-    1: Icon(Icons.battery_5_bar_outlined),
-    2: Icon(Icons.battery_4_bar_outlined),
-    3: Icon(Icons.battery_3_bar_outlined),
-    4: Icon(Icons.battery_2_bar_outlined),
-  };
-
-  static const Map<int, Icon> selectedBatteryIcons = {
-    0: Icon(Icons.battery_full),
-    1: Icon(Icons.battery_5_bar),
-    2: Icon(Icons.battery_4_bar),
-    3: Icon(Icons.battery_3_bar),
-    4: Icon(Icons.battery_2_bar),
-  };
-  static const Map<Priority, Icon> priorityIcon = {
-    Priority.low: Icon(Icons.low_priority_outlined),
-    Priority.medium: Icon(Icons.priority_high),
-    Priority.high: Icon(Icons.local_fire_department_outlined),
-  };
-
-  // Provider (Needs user values).
+  // Provider (Needs user values) -> Refactor to DI for testing.
   late final UserProvider userProvider;
   late final ToDoProvider toDoProvider;
   late final GroupProvider groupProvider;
@@ -113,18 +87,21 @@ class _CreateToDoScreen extends State<CreateToDoScreen> implements CrossBuild {
 
   // DateTimes
   DateTime? startDate;
+  DateTime? startTime;
   DateTime? dueDate;
+  DateTime? dueTime;
 
   // Repeat
   late Frequency frequency;
-  // Only show on frequency.custom;
-  late CustomFrequency customFrequency;
-  // Only expose this when weekly/daily/monthly,yearly;
+  late CustomFrequency customFreq;
+
+  late TextEditingController repeatSkipEditingController;
   late int repeatSkip;
 
   // Days of the week -> Need an enum, names map to indices.
   // ON creation -> Loop and map values
-  late Set set;
+  late Set<int> weekDaySet;
+  late List<bool> weekDays;
 
   late final List<SubTask> subTasks;
 
@@ -139,11 +116,40 @@ class _CreateToDoScreen extends State<CreateToDoScreen> implements CrossBuild {
   @override
   void initState() {
     super.initState();
-    userProvider = Provider.of<UserProvider>(context, listen: false);
-    toDoProvider = Provider.of<ToDoProvider>(context, listen: false);
-    groupProvider = Provider.of<GroupProvider>(context, listen: false);
+    initializeProviders();
     //
+
+    initializeControllers();
+
+    // Refactor this into the user provider class.
+    initializeParameters();
+  }
+
+  void initializeParameters() {
+    // Refactor this into the user provider class.
     checkClose = false;
+    taskType = TaskType.small;
+
+    name = "";
+    description = "";
+
+    weight = 0;
+    sumWeight = 0;
+
+    completed = false;
+    expectedDuration = 0;
+    realDuration = 0;
+
+    frequency = Frequency.once;
+    customFreq = CustomFrequency.weekly;
+
+    repeatSkip = 1;
+
+    subTasks = List.filled(Constants.maxNumTasks, SubTask());
+    weekDaySet = <int>{};
+  }
+
+  void initializeControllers() {
     scrollController = ScrollController();
     scrollPhysics = const BouncingScrollPhysics();
     nameEditingController = TextEditingController();
@@ -169,21 +175,20 @@ class _CreateToDoScreen extends State<CreateToDoScreen> implements CrossBuild {
       description = newText;
     });
 
-    taskType = TaskType.small;
+    repeatSkipEditingController = TextEditingController();
+    repeatSkipEditingController.addListener(() {
+      checkClose = true;
+      String newText = descriptionEditingController.text;
+      SemanticsService.announce(newText, Directionality.of(context));
+      repeatSkip = int.tryParse(newText) ?? repeatSkip;
+      repeatSkip = max(repeatSkip, 1);
+    });
+  }
 
-    name = "";
-    description = "";
-
-    weight = 0;
-    sumWeight = 0;
-
-    completed = false;
-    expectedDuration = 0;
-    realDuration = 0;
-
-    repeatSkip = 1;
-
-    subTasks = List.filled(Constants.maxNumTasks, SubTask());
+  void initializeProviders() {
+    userProvider = Provider.of<UserProvider>(context, listen: false);
+    toDoProvider = Provider.of<ToDoProvider>(context, listen: false);
+    groupProvider = Provider.of<GroupProvider>(context, listen: false);
   }
 
   @override
@@ -191,6 +196,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> implements CrossBuild {
     nameEditingController.dispose();
     groupEditingController.dispose();
     descriptionEditingController.dispose();
+    repeatSkipEditingController.dispose();
     super.dispose();
   }
 
@@ -200,7 +206,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> implements CrossBuild {
     setState(() {
       checkClose = true;
       groupID = group.id;
-      if (searchHistory.length >= historyLength) {
+      if (searchHistory.length >= Constants.historyLength) {
         searchHistory.removeLast();
       }
 
@@ -217,127 +223,399 @@ class _CreateToDoScreen extends State<CreateToDoScreen> implements CrossBuild {
     });
   }
 
+  bool validateData() {
+    bool valid = true;
+    if (groupEditingController.text.isEmpty) {
+      groupID = null;
+    }
+    if (nameEditingController.text.isEmpty) {
+      valid = false;
+      nameErrorText = "Enter Task Name";
+    }
+    if (frequency == Frequency.custom) {
+      if (weekDaySet.isEmpty) {
+        weekDaySet.add((startDate?.day ?? DateTime.now().day) - 1);
+      }
+    } else {
+      customFreq = CustomFrequency.weekly;
+    }
+
+    return valid;
+  }
+
   Icon getBatteryIcon({required int weight, required bool selected}) {
     weight =
         remap(x: weight, inMin: 0, inMax: Constants.maxTaskWeight, outMin: 2, outMax: 4) as int;
     if (selected) {
-      return selectedBatteryIcons[weight]!;
+      return Constants.selectedBatteryIcons[weight]!;
     }
-    return batteryIcons[weight]!;
+    return Constants.batteryIcons[weight]!;
   }
 
   @override
   Widget build(BuildContext context) {
-    if (Platform.isAndroid || Platform.isIOS) {
-      return buildMobile(context: context);
-    }
-    return buildDesktop(context: context);
-  }
+    final Color errorColor = Theme.of(context).colorScheme.error;
 
-  @override
-  Widget buildDesktop({required BuildContext context}) {
-    // LOL lord help me.
-    // At the very least, a lot of this logic can be copied over.
-    return Dialog();
-  }
-
-  @override
-  Widget buildMobile({required BuildContext context}) {
+    bool largeScreen = (MediaQuery.of(context).size.width >= Constants.landscapePx);
     return Dialog(
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(Constants.roundedCorners))),
       child: Padding(
-          padding: const EdgeInsets.all(padding),
-          child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Title && Close Button
-                Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [const Text("New Task"), buildCloseButton(context)]),
-                ListView(
-                  controller: scrollController,
-                  physics: scrollPhysics,
+          padding: const EdgeInsets.all(Constants.padding),
+          // These are just for shape.
+          child: Row(
+            mainAxisSize: (largeScreen) ? MainAxisSize.min : MainAxisSize.max,
+            children: [
+              Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.max,
                   children: [
-                    // Title + status
-                    buildNameTile(),
-                    // TaskType
-                    buildTaskType(),
-                    // Subtasks
-                    (taskType != TaskType.small)
-                        ? Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: padding),
-                            child: buildSubTasksList(),
-                          )
-                        : const SizedBox.shrink(),
+                    // Title && Close Button
+                    Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [const Text("New Task"), buildCloseButton(context)]),
+                    ListView(
+                      controller: scrollController,
+                      physics: scrollPhysics,
+                      children: [
+                        // Title + status
+                        buildNameTile(),
+                        // TaskType
+                        buildTaskType(),
+                        // Subtasks
+                        (taskType != TaskType.small)
+                            ? Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
+                                child: buildSubTasksList(),
+                              )
+                            : const SizedBox.shrink(),
 
-                    buildWeightTile(),
+                        buildWeightTile(),
 
-                    const Divider(),
-                    // My Day
-                    buildMyDayTile(),
-                    const Divider(),
-                    // Priority
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: padding),
-                      child: buildPriorityTile(),
+                        const Divider(),
+                        // My Day
+                        buildMyDayTile(),
+                        const Divider(),
+                        // Priority
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
+                          child: buildPriorityTile(),
+                        ),
+
+                        const PaddedDivider(padding: Constants.padding),
+
+                        // Group Picker
+                        // TODO: figure out how to make this work with screen readers.
+                        // I don't know if SemanticsService will actually work.
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
+                          child: buildGroupBar(),
+                        ),
+
+                        const PaddedDivider(padding: Constants.padding),
+
+                        // Description
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
+                          child: buildDescriptionTile(
+                              descriptionSize: (largeScreen)
+                                  ? Constants.descripSizeDesktop
+                                  : Constants.descripSizeMobile),
+                        ),
+
+                        const PaddedDivider(padding: Constants.padding),
+                        // Expected Duration / RealDuration -> Show status, on click, open a dialog.
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
+                          child: buildDurationTile(context),
+                        ),
+
+                        const PaddedDivider(padding: Constants.padding),
+                        // DateTime -> Show status, on click, open a dialog.
+                        //startDate
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
+                          child: buildDateTile(context),
+                        ),
+
+                        const PaddedDivider(padding: Constants.padding),
+                        // Time
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
+                          child: buildTimeTile(),
+                        ),
+
+                        const PaddedDivider(padding: Constants.padding),
+                        // Repeatable Stuff -> Show status, on click, open a dialog.
+                        buildRepeatableTile(context),
+                      ],
                     ),
 
-                    const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: padding),
-                      child: Divider(),
-                    ),
+                    // Create Button
+                    Row(mainAxisAlignment: MainAxisAlignment.end, children: [
+                      IconButton.filled(
+                          icon: const Icon(Icons.add_outlined),
+                          selectedIcon: const Icon(Icons.add),
+                          onPressed: () async {
+                            bool validData = validateData();
+                            if (validData) {
+                              weekDaySet.map((wd) => weekDays[wd] = true);
+                              await toDoProvider
+                                  .createToDo(
+                                    groupID: groupID,
+                                    taskType: taskType,
+                                    name: name,
+                                    description: description,
+                                    weight: weight,
+                                    expectedDuration: expectedDuration,
+                                    realDuration: realDuration,
+                                    priority: priority,
+                                    startDate: startDate,
+                                    dueDate: dueDate,
+                                    myDay: myDay,
+                                    completed: completed,
+                                    repeatable: frequency != Frequency.once,
+                                    frequency: frequency,
+                                    customFreq: customFreq,
+                                    repeatDays: weekDays,
+                                    repeatSkip: repeatSkip,
+                                    subTasks: subTasks,
+                                  )
+                                  .then((value) => Navigator.pop(context))
+                                  .catchError((e) {
+                                ScaffoldMessenger.maybeOf(context)?.showSnackBar(SnackBar(
+                                  content: Text(e.cause, style: TextStyle(color: errorColor)),
+                                  action: SnackBarAction(label: "Dismiss", onPressed: () {}),
+                                  duration: const Duration(milliseconds: 1500),
+                                  behavior: SnackBarBehavior.floating,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(Constants.circular),
+                                  ),
+                                  width: (MediaQuery.sizeOf(context).width) / 2,
+                                  padding:
+                                      const EdgeInsets.symmetric(horizontal: Constants.padding),
+                                ));
+                              },
+                                      test: (e) =>
+                                          e is FailureToCreateException ||
+                                          e is FailureToUploadException);
+                            }
+                            // Then save.
+                          })
+                    ])
+                  ]),
+            ],
+          )),
+    );
+  }
 
-                    // Group Picker
-                    // TODO: figure out how to make this work with screen readers.
-                    // I don't know if SemanticsService will actually work.
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: padding),
-                      child: buildGroupBar(),
-                    ),
+  ListTile buildRepeatableTile(BuildContext context) {
+    return ListTile(
+        leading: const Icon(Icons.event_repeat_outlined),
+        title: (frequency == Frequency.once)
+            ? const Text("Set Recurring?")
+            : Text(toBeginningOfSentenceCase(frequency.name)!),
+        onTap: () {
+          // Caching bc of conditional rendering.
+          Frequency cacheFreq = frequency;
+          CustomFrequency cacheCustom = customFreq;
+          Set<int> cacheWeekdays = Set.from(weekDaySet);
+          int cacheSkip = repeatSkip;
 
-                    const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: padding),
-                      child: Divider(),
-                    ),
+          showDialog(
+              context: context,
+              builder: (BuildContext context) {
+                return buildRepeatableDialog(
+                    cacheFreq, cacheCustom, cacheSkip, cacheWeekdays, context);
+              });
+        },
+        trailing: IconButton(
+            icon: const Icon(Icons.close),
+            onPressed: () => setState(() {
+                  frequency = Frequency.once;
+                  customFreq = CustomFrequency.weekly;
+                })));
+  }
 
-                    // Description
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: padding),
-                      child: buildDescriptionTile(),
-                    ),
+  Dialog buildRepeatableDialog(Frequency cacheFreq, CustomFrequency cacheCustom, int cacheSkip,
+      Set<int> cacheWeekdays, BuildContext context) {
+    return Dialog(
+        child: Padding(
+      padding: const EdgeInsets.all(Constants.padding),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Row(mainAxisAlignment: MainAxisAlignment.start, children: [Text("Set Recurring")]),
+          // Segmented button
+          SegmentedButton<Frequency>(
+            segments: Frequency.values
+                .map((Frequency frequency) => ButtonSegment<Frequency>(
+                      value: frequency,
+                      label: Text("${toBeginningOfSentenceCase(frequency.name)}"),
+                    ))
+                .toList(growable: false),
+            selected: <Frequency>{frequency},
+            onSelectionChanged: (Set<Frequency> newSelection) => setState(() {
+              checkClose = true;
+              frequency = newSelection.first;
+            }),
+          ),
+          // Conditional, custom rendering widget.
+          (frequency == Frequency.once)
+              ? const SizedBox.shrink()
+              : Column(children: [
+                  // Segmented CustomFreq button.
+                  SegmentedButton<int>(
+                      multiSelectionEnabled: true,
+                      segments: const [
+                        ButtonSegment<int>(
+                          value: DateTime.sunday - 1,
+                          label: Text("Sun"),
+                        ),
+                        ButtonSegment<int>(value: DateTime.monday - 1, label: Text("Mon")),
+                        ButtonSegment<int>(value: DateTime.tuesday - 1, label: Text("Tues")),
+                        ButtonSegment<int>(value: DateTime.wednesday - 1, label: Text("Wed")),
+                        ButtonSegment<int>(value: DateTime.thursday - 1, label: Text("Thur")),
+                        ButtonSegment<int>(value: DateTime.friday - 1, label: Text("Fri")),
+                        ButtonSegment<int>(value: DateTime.saturday - 1, label: Text("Sat")),
+                      ],
+                      selected: weekDaySet,
+                      onSelectionChanged: (Set<int> newSelection) => setState(() {
+                            checkClose = true;
+                            weekDaySet = newSelection;
+                          }))
+                ]),
 
-                    const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: padding),
-                      child: Divider(),
+          (frequency != Frequency.once)
+              ? Row(
+                  children: [
+                    const Text("Repeat every: "),
+                    // RETURN HERE
+                    TextField(
+                      controller: repeatSkipEditingController,
+                      keyboardType: TextInputType.number,
                     ),
-                    // Expected Duration / RealDuration -> Show status, on click, open a dialog.
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: padding),
-                      child: buildDurationTile(context),
-                    ),
-
-                    const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: padding),
-                      child: Divider(),
-                    ),
-                    // DateTime -> Show status, on click, open a dialog.
-
-                    const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: padding),
-                      child: Divider(),
-                    ),
-                    // Repeatable Stuff -> Show status, on click, open a dialog.
-
-                    // Segmented buttons for days of week.
-                    const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: padding),
-                      child: Divider(),
-                    ),
+                    (frequency != Frequency.custom)
+                        ? switch (frequency) {
+                            Frequency.daily => const Text("days"),
+                            Frequency.weekly => const Text("weeks"),
+                            Frequency.monthly => const Text("months"),
+                            Frequency.yearly => const Text("years"),
+                            _ => const Text("")
+                          }
+                        : switch (customFreq) {
+                            CustomFrequency.weekly => const Text("weeks"),
+                            CustomFrequency.monthly => const Text("months"),
+                            CustomFrequency.yearly => const Text("years"),
+                          },
                   ],
-                ),
+                )
+              : const SizedBox.shrink(),
+          Padding(
+              padding: const EdgeInsets.all(Constants.padding),
+              child: Row(mainAxisAlignment: MainAxisAlignment.end, children: [
+                FilledButton.tonal(
+                    onPressed: () {
+                      setState(() {
+                        frequency = cacheFreq;
+                        customFreq = cacheCustom;
+                        repeatSkip = cacheSkip;
+                        weekDaySet = cacheWeekdays;
+                      });
+                      Navigator.pop(context);
+                    },
+                    child: const Text("Cancel")),
+                FilledButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                  },
+                  child: const Text("Save"),
+                )
+              ]))
+        ],
+      ),
+    ));
+  }
 
-                // Create Button
-              ])),
+  ListTile buildTimeTile() {
+    return ListTile(
+        leading: const Icon(Icons.schedule_outlined),
+        title: (null == startTime && null == dueTime)
+            ? const Text("Add Times")
+            : Row(children: [
+                (null == startTime)
+                    ? const Text("Start Time")
+                    : Text(Jiffy.parseFromDateTime(startTime!).format(pattern: "hh:mm a")),
+                const Text("-"),
+                (null == dueTime)
+                    ? const Icon(Icons.history_toggle_off_outlined)
+                    : const Icon(Icons.schedule_outlined),
+                (null == dueTime)
+                    ? const Text("Due Time")
+                    : Text(Jiffy.parseFromDateTime(dueTime!).format(pattern: "hh:mm a")),
+              ]),
+        trailing: IconButton(
+          icon: const Icon(Icons.close),
+          onPressed: () => setState(() {
+            startTime = null;
+            dueTime = null;
+          }),
+        ));
+  }
+
+  ListTile buildDateTile(BuildContext context) {
+    return ListTile(
+      leading: const Icon(Icons.today_outlined),
+      // TODO: finish start and end + time.
+      title: (null == startDate && null == dueDate)
+          ? const Text("Add Dates")
+          : Row(
+              children: [
+                (null == startDate)
+                    ? const Text("Start Date")
+                    : Text(Jiffy.parseFromDateTime(startDate!).format(pattern: "MMM d")),
+                const Text("-"),
+                (null == dueDate)
+                    ? const Icon(Icons.today_outlined)
+                    : const Icon(Icons.event_outlined),
+                (null == dueDate)
+                    ? const Text("Due Date")
+                    : Text(
+                        Jiffy.parseFromDateTime(dueDate!).format(pattern: "MMM d"),
+                      )
+              ],
+            ),
+      trailing: IconButton(
+          icon: const Icon(Icons.close),
+          onPressed: () => setState(() {
+                if (null != startDate) {
+                  weekDaySet.remove(startDate!.day);
+                }
+
+                startDate = null;
+                dueDate = null;
+              })),
+      onTap: () async {
+        DateTimeRange? initialRange = (null != startDate && null != dueDate)
+            ? DateTimeRange(start: startDate!, end: dueDate!)
+            : null;
+        final DateTimeRange? picked = await showDateRangePicker(
+          context: context,
+          firstDate: DateTime(2015, 8),
+          lastDate: DateTime(2101),
+          initialDateRange: initialRange,
+          fieldStartLabelText: "Start Date",
+          fieldEndLabelText: "Due Date",
+        );
+
+        if (null != picked) {
+          setState(() {
+            startDate = picked.start;
+            dueDate = picked.end;
+            weekDaySet.add(startDate!.day);
+          });
+        }
+      },
     );
   }
 
@@ -352,8 +630,9 @@ class _CreateToDoScreen extends State<CreateToDoScreen> implements CrossBuild {
               ? Slider(
                   value: weight as double,
                   max: Constants.maxTaskWeight as double,
-                  label:
-                      (weight > (Constants.maxTaskWeight / 2).round()) ? fullBattery : lowBattery,
+                  label: (weight > (Constants.maxTaskWeight / 2).round())
+                      ? Constants.fullBattery
+                      : Constants.lowBattery,
                   divisions: Constants.maxTaskWeight,
                   onChanged: (value) => setState(() {
                     checkClose = true;
@@ -362,7 +641,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> implements CrossBuild {
                 )
               : Slider(
                   value: sumWeight as double,
-                  max: Constants.maxNumTasks * Constants.numTasks[taskType]! as double,
+                  max: Constants.maxTaskWeight * Constants.numTasks[taskType]! as double,
                   divisions: Constants.numTasks[taskType],
                   onChanged: null),
           const Icon(Icons.battery_2_bar),
@@ -416,8 +695,8 @@ class _CreateToDoScreen extends State<CreateToDoScreen> implements CrossBuild {
                                       max: Constants.maxTaskWeight as double,
                                       label: (subTasks[index].weight >
                                               (Constants.maxTaskWeight / 2).round())
-                                          ? fullBattery
-                                          : lowBattery,
+                                          ? Constants.fullBattery
+                                          : Constants.lowBattery,
                                       divisions: Constants.maxTaskWeight,
                                       onChanged: (value) => setState(() {
                                         checkClose = true;
@@ -482,7 +761,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> implements CrossBuild {
         selectedIcon: const Icon(Icons.flag_circle),
         segments: Priority.values
             .map((Priority type) => ButtonSegment<Priority>(
-                icon: priorityIcon[type],
+                icon: Constants.priorityIcon[type],
                 value: type,
                 label: Text("${toBeginningOfSentenceCase(type.name)}")))
             .toList(growable: false),
@@ -493,15 +772,15 @@ class _CreateToDoScreen extends State<CreateToDoScreen> implements CrossBuild {
             }));
   }
 
-  TextField buildDescriptionTile() {
+  TextField buildDescriptionTile({required int descriptionSize}) {
     return TextField(
         controller: descriptionEditingController,
         maxLines: null,
-        minLines: 5,
+        minLines: descriptionSize,
         decoration: const InputDecoration(
           labelText: "Description",
           border: OutlineInputBorder(
-              borderRadius: BorderRadius.all(Radius.circular(smallRoundCorners)),
+              borderRadius: BorderRadius.all(Radius.circular(Constants.circular)),
               borderSide: BorderSide(
                 strokeAlign: BorderSide.strokeAlignOutside,
               )),
@@ -532,69 +811,79 @@ class _CreateToDoScreen extends State<CreateToDoScreen> implements CrossBuild {
 
     return Dialog(
         child: Padding(
-            padding: const EdgeInsets.all(padding),
-            child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  TextField(
-                      controller: TextEditingController(
-                        text: "$hours",
-                      ),
-                      keyboardType: TextInputType.number,
-                      onChanged: (value) {
-                        hours = int.tryParse(value) ?? 0;
-                        SemanticsService.announce("$hours hours", Directionality.of(context));
-                      }),
-                  const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: padding), child: Text(":")),
-                  TextField(
-                      controller: TextEditingController(
-                        text: "$minutes",
-                      ),
-                      keyboardType: TextInputType.number,
-                      onChanged: (value) {
-                        minutes = int.tryParse(value) ?? 0;
-                        SemanticsService.announce("$minutes minutes", Directionality.of(context));
-                      }),
-                  const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: padding), child: Text(":")),
-                  TextField(
-                      controller: TextEditingController(
-                        text: "$seconds",
-                      ),
-                      keyboardType: TextInputType.number,
-                      onChanged: (value) {
-                        hours = int.tryParse(value) ?? 0;
-                        SemanticsService.announce("$seconds seconds", Directionality.of(context));
-                      }),
-                ],
-              ),
-              Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
-                OutlinedButton(
-                    onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
-                FilledButton.tonal(
-                  onPressed: () {
-                    setState(() {
-                      checkClose = true;
-                      expectedDuration = seconds + (60 * minutes) + (3600 * hours);
-                      realDuration = toDoProvider.calculateRealDuration(
-                          weight: (taskType == TaskType.small) ? weight : sumWeight,
-                          duration: expectedDuration);
-                    });
-                    Navigator.pop(context);
-                  },
-                  child: const Text("Done"),
-                )
-              ])
-            ])));
+            padding: const EdgeInsets.all(Constants.padding),
+            child: Row(
+              mainAxisSize: MainAxisSize.max,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      TextField(
+                          controller: TextEditingController(
+                            text: "$hours",
+                          ),
+                          keyboardType: TextInputType.number,
+                          onChanged: (value) {
+                            hours = int.tryParse(value) ?? hours;
+                            SemanticsService.announce("$hours hours", Directionality.of(context));
+                          }),
+                      const Padding(
+                          padding: EdgeInsets.symmetric(horizontal: Constants.padding),
+                          child: Text(":")),
+                      TextField(
+                          controller: TextEditingController(
+                            text: "$minutes",
+                          ),
+                          keyboardType: TextInputType.number,
+                          onChanged: (value) {
+                            minutes = int.tryParse(value) ?? minutes;
+                            SemanticsService.announce(
+                                "$minutes minutes", Directionality.of(context));
+                          }),
+                      const Padding(
+                          padding: EdgeInsets.symmetric(horizontal: Constants.padding),
+                          child: Text(":")),
+                      TextField(
+                          controller: TextEditingController(
+                            text: "$seconds",
+                          ),
+                          keyboardType: TextInputType.number,
+                          onChanged: (value) {
+                            hours = int.tryParse(value) ?? seconds;
+                            SemanticsService.announce(
+                                "$seconds seconds", Directionality.of(context));
+                          }),
+                    ],
+                  ),
+                  Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
+                    OutlinedButton(
+                        onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
+                    FilledButton.tonal(
+                      onPressed: () {
+                        setState(() {
+                          checkClose = true;
+                          expectedDuration = seconds + (60 * minutes) + (3600 * hours);
+                          realDuration = toDoProvider.calculateRealDuration(
+                              weight: (taskType == TaskType.small) ? weight : sumWeight,
+                              duration: expectedDuration);
+                        });
+                        Navigator.pop(context);
+                      },
+                      child: const Text("Done"),
+                    )
+                  ])
+                ]),
+              ],
+            )));
   }
 
   TextField buildToDoName() {
     return TextField(
       decoration: InputDecoration(
         border: const OutlineInputBorder(
-            borderRadius: BorderRadius.all(Radius.circular(lgRoundCorners)),
+            borderRadius: BorderRadius.all(Radius.circular(Constants.roundedCorners)),
             borderSide: BorderSide(
               strokeAlign: BorderSide.strokeAlignOutside,
             )),
@@ -622,7 +911,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> implements CrossBuild {
                           children: [
                             const Icon(Icons.drag_handle_rounded),
                             Padding(
-                              padding: const EdgeInsets.all(padding),
+                              padding: const EdgeInsets.all(Constants.padding),
                               child: FilledButton.icon(
                                 onPressed: () {
                                   discard = true;
@@ -633,7 +922,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> implements CrossBuild {
                               ),
                             ),
                             Padding(
-                                padding: const EdgeInsets.all(padding),
+                                padding: const EdgeInsets.all(Constants.padding),
                                 child: FilledButton.tonalIcon(
                                   onPressed: () => Navigator.pop(context),
                                   label: const Text("Continue Editing"),
@@ -694,15 +983,20 @@ class _CreateToDoScreen extends State<CreateToDoScreen> implements CrossBuild {
 
   SearchAnchor buildGroupBar() {
     return SearchAnchor.bar(
-        barHintText: "Search Groups",
+        barHintText: (null == groupID) ? "Search Groups" : groupEditingController.text,
         suggestionsBuilder: (context, SearchController controller) {
           if (controller.text.isEmpty) {
             if (searchHistory.isNotEmpty) {
-              return searchHistory.map((MapEntry<String, int> groupData) => ListTile(
-                  leading: const Icon(Icons.history),
-                  title: Text(groupData.key),
-                  onTap: () =>
-                      handleHistorySelection(groupData: groupData, controller: controller)));
+              return searchHistory
+                  .map((MapEntry<String, int> groupData) => ListTile(
+                      leading: const Icon(Icons.history),
+                      title: Text(groupData.key),
+                      onTap: () =>
+                          handleHistorySelection(groupData: groupData, controller: controller),
+                      trailing: IconButton(
+                          icon: const Icon(Icons.close_outlined),
+                          onPressed: () => setState(() => groupID = null))))
+                  .toList();
             }
             final searchFuture = groupProvider.mostRecent(limit: 5);
             return [buildGroupList(searchFuture, controller)];
