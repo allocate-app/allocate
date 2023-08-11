@@ -44,48 +44,53 @@ const ReminderSchema = CollectionSchema(
       name: r'isSynced',
       type: IsarType.bool,
     ),
-    r'name': PropertySchema(
+    r'lastUpdated': PropertySchema(
       id: 5,
+      name: r'lastUpdated',
+      type: IsarType.dateTime,
+    ),
+    r'name': PropertySchema(
+      id: 6,
       name: r'name',
       type: IsarType.string,
     ),
     r'notificationID': PropertySchema(
-      id: 6,
+      id: 7,
       name: r'notificationID',
       type: IsarType.long,
     ),
     r'repeatDays': PropertySchema(
-      id: 7,
+      id: 8,
       name: r'repeatDays',
       type: IsarType.boolList,
     ),
     r'repeatID': PropertySchema(
-      id: 8,
+      id: 9,
       name: r'repeatID',
       type: IsarType.long,
     ),
     r'repeatSkip': PropertySchema(
-      id: 9,
+      id: 10,
       name: r'repeatSkip',
       type: IsarType.long,
     ),
     r'repeatable': PropertySchema(
-      id: 10,
+      id: 11,
       name: r'repeatable',
       type: IsarType.bool,
     ),
     r'startDate': PropertySchema(
-      id: 11,
+      id: 12,
       name: r'startDate',
       type: IsarType.dateTime,
     ),
     r'toDelete': PropertySchema(
-      id: 12,
+      id: 13,
       name: r'toDelete',
       type: IsarType.bool,
     ),
     r'warnDate': PropertySchema(
-      id: 13,
+      id: 14,
       name: r'warnDate',
       type: IsarType.dateTime,
     )
@@ -199,6 +204,19 @@ const ReminderSchema = CollectionSchema(
           caseSensitive: false,
         )
       ],
+    ),
+    r'lastUpdated': IndexSchema(
+      id: 8989359681631629925,
+      name: r'lastUpdated',
+      unique: false,
+      replace: false,
+      properties: [
+        IndexPropertySchema(
+          name: r'lastUpdated',
+          type: IndexType.value,
+          caseSensitive: false,
+        )
+      ],
     )
   },
   links: {},
@@ -231,15 +249,16 @@ void _reminderSerialize(
   writer.writeDateTime(offsets[2], object.dueDate);
   writer.writeByte(offsets[3], object.frequency.index);
   writer.writeBool(offsets[4], object.isSynced);
-  writer.writeString(offsets[5], object.name);
-  writer.writeLong(offsets[6], object.notificationID);
-  writer.writeBoolList(offsets[7], object.repeatDays);
-  writer.writeLong(offsets[8], object.repeatID);
-  writer.writeLong(offsets[9], object.repeatSkip);
-  writer.writeBool(offsets[10], object.repeatable);
-  writer.writeDateTime(offsets[11], object.startDate);
-  writer.writeBool(offsets[12], object.toDelete);
-  writer.writeDateTime(offsets[13], object.warnDate);
+  writer.writeDateTime(offsets[5], object.lastUpdated);
+  writer.writeString(offsets[6], object.name);
+  writer.writeLong(offsets[7], object.notificationID);
+  writer.writeBoolList(offsets[8], object.repeatDays);
+  writer.writeLong(offsets[9], object.repeatID);
+  writer.writeLong(offsets[10], object.repeatSkip);
+  writer.writeBool(offsets[11], object.repeatable);
+  writer.writeDateTime(offsets[12], object.startDate);
+  writer.writeBool(offsets[13], object.toDelete);
+  writer.writeDateTime(offsets[14], object.warnDate);
 }
 
 Reminder _reminderDeserialize(
@@ -256,19 +275,20 @@ Reminder _reminderDeserialize(
     frequency:
         _ReminderfrequencyValueEnumMap[reader.readByteOrNull(offsets[3])] ??
             Frequency.once,
-    name: reader.readString(offsets[5]),
-    notificationID: reader.readLongOrNull(offsets[6]),
-    repeatDays: reader.readBoolList(offsets[7]) ?? [],
-    repeatID: reader.readLongOrNull(offsets[8]),
-    repeatSkip: reader.readLongOrNull(offsets[9]) ?? 1,
-    repeatable: reader.readBoolOrNull(offsets[10]) ?? false,
-    startDate: reader.readDateTime(offsets[11]),
-    warnDate: reader.readDateTime(offsets[13]),
+    lastUpdated: reader.readDateTime(offsets[5]),
+    name: reader.readString(offsets[6]),
+    notificationID: reader.readLongOrNull(offsets[7]),
+    repeatDays: reader.readBoolList(offsets[8]) ?? [],
+    repeatID: reader.readLongOrNull(offsets[9]),
+    repeatSkip: reader.readLongOrNull(offsets[10]) ?? 1,
+    repeatable: reader.readBoolOrNull(offsets[11]) ?? false,
+    startDate: reader.readDateTime(offsets[12]),
+    warnDate: reader.readDateTime(offsets[14]),
   );
   object.customViewIndex = reader.readLong(offsets[1]);
   object.id = id;
   object.isSynced = reader.readBool(offsets[4]);
-  object.toDelete = reader.readBool(offsets[12]);
+  object.toDelete = reader.readBool(offsets[13]);
   return object;
 }
 
@@ -292,22 +312,24 @@ P _reminderDeserializeProp<P>(
     case 4:
       return (reader.readBool(offset)) as P;
     case 5:
-      return (reader.readString(offset)) as P;
-    case 6:
-      return (reader.readLongOrNull(offset)) as P;
-    case 7:
-      return (reader.readBoolList(offset) ?? []) as P;
-    case 8:
-      return (reader.readLongOrNull(offset)) as P;
-    case 9:
-      return (reader.readLongOrNull(offset) ?? 1) as P;
-    case 10:
-      return (reader.readBoolOrNull(offset) ?? false) as P;
-    case 11:
       return (reader.readDateTime(offset)) as P;
+    case 6:
+      return (reader.readString(offset)) as P;
+    case 7:
+      return (reader.readLongOrNull(offset)) as P;
+    case 8:
+      return (reader.readBoolList(offset) ?? []) as P;
+    case 9:
+      return (reader.readLongOrNull(offset)) as P;
+    case 10:
+      return (reader.readLongOrNull(offset) ?? 1) as P;
+    case 11:
+      return (reader.readBoolOrNull(offset) ?? false) as P;
     case 12:
-      return (reader.readBool(offset)) as P;
+      return (reader.readDateTime(offset)) as P;
     case 13:
+      return (reader.readBool(offset)) as P;
+    case 14:
       return (reader.readDateTime(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -412,6 +434,14 @@ extension ReminderQueryWhereSort on QueryBuilder<Reminder, Reminder, QWhere> {
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(
         const IndexWhereClause.any(indexName: r'toDelete'),
+      );
+    });
+  }
+
+  QueryBuilder<Reminder, Reminder, QAfterWhere> anyLastUpdated() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(
+        const IndexWhereClause.any(indexName: r'lastUpdated'),
       );
     });
   }
@@ -1063,6 +1093,96 @@ extension ReminderQueryWhere on QueryBuilder<Reminder, Reminder, QWhereClause> {
       }
     });
   }
+
+  QueryBuilder<Reminder, Reminder, QAfterWhereClause> lastUpdatedEqualTo(
+      DateTime lastUpdated) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'lastUpdated',
+        value: [lastUpdated],
+      ));
+    });
+  }
+
+  QueryBuilder<Reminder, Reminder, QAfterWhereClause> lastUpdatedNotEqualTo(
+      DateTime lastUpdated) {
+    return QueryBuilder.apply(this, (query) {
+      if (query.whereSort == Sort.asc) {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'lastUpdated',
+              lower: [],
+              upper: [lastUpdated],
+              includeUpper: false,
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'lastUpdated',
+              lower: [lastUpdated],
+              includeLower: false,
+              upper: [],
+            ));
+      } else {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'lastUpdated',
+              lower: [lastUpdated],
+              includeLower: false,
+              upper: [],
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'lastUpdated',
+              lower: [],
+              upper: [lastUpdated],
+              includeUpper: false,
+            ));
+      }
+    });
+  }
+
+  QueryBuilder<Reminder, Reminder, QAfterWhereClause> lastUpdatedGreaterThan(
+    DateTime lastUpdated, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'lastUpdated',
+        lower: [lastUpdated],
+        includeLower: include,
+        upper: [],
+      ));
+    });
+  }
+
+  QueryBuilder<Reminder, Reminder, QAfterWhereClause> lastUpdatedLessThan(
+    DateTime lastUpdated, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'lastUpdated',
+        lower: [],
+        upper: [lastUpdated],
+        includeUpper: include,
+      ));
+    });
+  }
+
+  QueryBuilder<Reminder, Reminder, QAfterWhereClause> lastUpdatedBetween(
+    DateTime lowerLastUpdated,
+    DateTime upperLastUpdated, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'lastUpdated',
+        lower: [lowerLastUpdated],
+        includeLower: includeLower,
+        upper: [upperLastUpdated],
+        includeUpper: includeUpper,
+      ));
+    });
+  }
 }
 
 extension ReminderQueryFilter
@@ -1340,6 +1460,60 @@ extension ReminderQueryFilter
       return query.addFilterCondition(FilterCondition.equalTo(
         property: r'isSynced',
         value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<Reminder, Reminder, QAfterFilterCondition> lastUpdatedEqualTo(
+      DateTime value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'lastUpdated',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<Reminder, Reminder, QAfterFilterCondition>
+      lastUpdatedGreaterThan(
+    DateTime value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'lastUpdated',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<Reminder, Reminder, QAfterFilterCondition> lastUpdatedLessThan(
+    DateTime value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'lastUpdated',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<Reminder, Reminder, QAfterFilterCondition> lastUpdatedBetween(
+    DateTime lower,
+    DateTime upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'lastUpdated',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
       ));
     });
   }
@@ -1961,6 +2135,18 @@ extension ReminderQuerySortBy on QueryBuilder<Reminder, Reminder, QSortBy> {
     });
   }
 
+  QueryBuilder<Reminder, Reminder, QAfterSortBy> sortByLastUpdated() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastUpdated', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Reminder, Reminder, QAfterSortBy> sortByLastUpdatedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastUpdated', Sort.desc);
+    });
+  }
+
   QueryBuilder<Reminder, Reminder, QAfterSortBy> sortByName() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'name', Sort.asc);
@@ -2132,6 +2318,18 @@ extension ReminderQuerySortThenBy
     });
   }
 
+  QueryBuilder<Reminder, Reminder, QAfterSortBy> thenByLastUpdated() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastUpdated', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Reminder, Reminder, QAfterSortBy> thenByLastUpdatedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastUpdated', Sort.desc);
+    });
+  }
+
   QueryBuilder<Reminder, Reminder, QAfterSortBy> thenByName() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'name', Sort.asc);
@@ -2261,6 +2459,12 @@ extension ReminderQueryWhereDistinct
     });
   }
 
+  QueryBuilder<Reminder, Reminder, QDistinct> distinctByLastUpdated() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'lastUpdated');
+    });
+  }
+
   QueryBuilder<Reminder, Reminder, QDistinct> distinctByName(
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
@@ -2353,6 +2557,12 @@ extension ReminderQueryProperty
   QueryBuilder<Reminder, bool, QQueryOperations> isSyncedProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'isSynced');
+    });
+  }
+
+  QueryBuilder<Reminder, DateTime, QQueryOperations> lastUpdatedProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'lastUpdated');
     });
   }
 

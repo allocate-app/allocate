@@ -8,13 +8,12 @@ import '../services/isar_service.dart';
 import '../services/supabase_service.dart';
 import '../util/enums.dart';
 import '../util/exceptions.dart';
-import '../util/interfaces/repository/routine_repository.dart';
+import '../util/interfaces/repository/model/routine_repository.dart';
 import '../util/interfaces/sortable.dart';
 
 class RoutineRepo implements RoutineRepository {
   // DB Clients.
-  final SupabaseClient _supabaseClient =
-      SupabaseService.instance.supabaseClient;
+  final SupabaseClient _supabaseClient = SupabaseService.instance.supabaseClient;
   final Isar _isarClient = IsarService.instance.isarClient;
 
   @override
@@ -36,10 +35,8 @@ class RoutineRepo implements RoutineRepository {
 
     if (null != _supabaseClient.auth.currentSession) {
       Map<String, dynamic> routineEntity = routine.toEntity();
-      final List<Map<String, dynamic>> response = await _supabaseClient
-          .from("routines")
-          .insert(routineEntity)
-          .select("id");
+      final List<Map<String, dynamic>> response =
+          await _supabaseClient.from("routines").insert(routineEntity).select("id");
 
       id = response.last["id"];
 
@@ -71,10 +68,8 @@ class RoutineRepo implements RoutineRepository {
 
     if (null != _supabaseClient.auth.currentSession) {
       Map<String, dynamic> routineEntity = routine.toEntity();
-      final List<Map<String, dynamic>> response = await _supabaseClient
-          .from("routines")
-          .upsert(routineEntity)
-          .select("id");
+      final List<Map<String, dynamic>> response =
+          await _supabaseClient.from("routines").upsert(routineEntity).select("id");
 
       id = response.last["id"] as int?;
       if (null == id) {
@@ -114,10 +109,8 @@ class RoutineRepo implements RoutineRepository {
       ids.clear();
       List<Map<String, dynamic>> routineEntities =
           routines.map((routine) => routine.toEntity()).toList();
-      final List<Map<String, dynamic>> response = await _supabaseClient
-          .from("routines")
-          .upsert(routineEntities)
-          .select("id");
+      final List<Map<String, dynamic>> response =
+          await _supabaseClient.from("routines").upsert(routineEntities).select("id");
 
       ids = response.map((response) => response["id"] as int?).toList();
 
@@ -183,13 +176,10 @@ class RoutineRepo implements RoutineRepository {
         return routine.toEntity();
       }).toList();
 
-      final List<Map<String, dynamic>> responses = await _supabaseClient
-          .from("routines")
-          .upsert(syncEntities)
-          .select("id");
+      final List<Map<String, dynamic>> responses =
+          await _supabaseClient.from("routines").upsert(syncEntities).select("id");
 
-      List<int?> ids =
-          responses.map((response) => response["id"] as int?).toList();
+      List<int?> ids = responses.map((response) => response["id"] as int?).toList();
 
       if (ids.any((id) => null == id)) {
         throw FailureToUploadException("Failed to sync routines\n"
@@ -215,9 +205,8 @@ class RoutineRepo implements RoutineRepository {
         return;
       }
 
-      List<Routine> routines = routineEntities
-          .map((routine) => Routine.fromEntity(entity: routine))
-          .toList();
+      List<Routine> routines =
+          routineEntities.map((routine) => Routine.fromEntity(entity: routine)).toList();
       await _isarClient.writeTxn(() async {
         await _isarClient.routines.clear();
         for (Routine routine in routines) {
@@ -227,43 +216,49 @@ class RoutineRepo implements RoutineRepository {
     });
   }
 
+  // TODO: possibly factor the magic number out.
+  @override
+  Future<List<Routine>> search({required String searchString}) async => await _isarClient.routines
+      .filter()
+      .nameContains(searchString, caseSensitive: false)
+      .limit(5)
+      .findAll();
+
+  @override
+  Future<List<Routine>> mostRecent({int limit = 50}) async =>
+      await _isarClient.routines.where().sortByLastUpdatedDesc().limit(limit).findAll();
+
   @override
   Future<Routine?> getByID({required int id}) async =>
       await _isarClient.routines.where().idEqualTo(id).findFirst();
 
   @override
-  Future<List<Routine>> getRepoList(
-      {RoutineTime timeOfDay = RoutineTime.morning}) async {
+  Future<List<Routine>> getRepoList({int limit = 50, int offset = 0}) async {
     return _isarClient.routines
         .where()
         .toDeleteEqualTo(false)
-        .filter()
-        .routineTimeEqualTo(timeOfDay)
         .sortByCustomViewIndex()
+        .thenByLastUpdated()
+        .offset(offset)
+        .limit(limit)
         .findAll();
   }
 
   @override
   Future<List<Routine>> getRepoListBy(
-      {RoutineTime timeOfDay = RoutineTime.morning,
-      required SortableView<Routine> sorter}) async {
+      {int limit = 50, int offset = 0, required SortableView<Routine> sorter}) async {
     switch (sorter.sortMethod) {
       case SortMethod.name:
         if (sorter.descending) {
-          return _isarClient.routines
-              .where()
-              .toDeleteEqualTo(false)
-              .filter()
-              .routineTimeEqualTo(timeOfDay)
-              .sortByNameDesc()
-              .findAll();
+          return _isarClient.routines.where().toDeleteEqualTo(false).sortByNameDesc().findAll();
         }
         return _isarClient.routines
             .where()
             .toDeleteEqualTo(false)
-            .filter()
-            .routineTimeEqualTo(timeOfDay)
             .sortByName()
+            .thenByLastUpdated()
+            .offset(offset)
+            .limit(limit)
             .findAll();
 
       case SortMethod.weight:
@@ -271,17 +266,19 @@ class RoutineRepo implements RoutineRepository {
           return _isarClient.routines
               .where()
               .toDeleteEqualTo(false)
-              .filter()
-              .routineTimeEqualTo(timeOfDay)
               .sortByWeightDesc()
+              .thenByLastUpdated()
+              .offset(offset)
+              .limit(limit)
               .findAll();
         }
         return _isarClient.routines
             .where()
             .toDeleteEqualTo(false)
-            .filter()
-            .routineTimeEqualTo(timeOfDay)
             .sortByWeight()
+            .thenByLastUpdated()
+            .offset(offset)
+            .limit(limit)
             .findAll();
 
       case SortMethod.duration:
@@ -289,21 +286,23 @@ class RoutineRepo implements RoutineRepository {
           return _isarClient.routines
               .where()
               .toDeleteEqualTo(false)
-              .filter()
-              .routineTimeEqualTo(timeOfDay)
               .sortByRealDurationDesc()
+              .thenByLastUpdated()
+              .offset(offset)
+              .limit(limit)
               .findAll();
         }
         return _isarClient.routines
             .where()
             .toDeleteEqualTo(false)
-            .filter()
-            .routineTimeEqualTo(timeOfDay)
             .sortByRealDuration()
+            .thenByLastUpdated()
+            .offset(offset)
+            .limit(limit)
             .findAll();
 
       default:
-        return getRepoList(timeOfDay: timeOfDay);
+        return getRepoList(limit: limit, offset: offset);
     }
   }
 

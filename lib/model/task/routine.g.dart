@@ -32,27 +32,26 @@ const RoutineSchema = CollectionSchema(
       name: r'isSynced',
       type: IsarType.bool,
     ),
-    r'name': PropertySchema(
+    r'lastUpdated': PropertySchema(
       id: 3,
+      name: r'lastUpdated',
+      type: IsarType.dateTime,
+    ),
+    r'name': PropertySchema(
+      id: 4,
       name: r'name',
       type: IsarType.string,
     ),
     r'realDuration': PropertySchema(
-      id: 4,
+      id: 5,
       name: r'realDuration',
       type: IsarType.long,
     ),
     r'routineTasks': PropertySchema(
-      id: 5,
+      id: 6,
       name: r'routineTasks',
       type: IsarType.objectList,
       target: r'SubTask',
-    ),
-    r'routineTime': PropertySchema(
-      id: 6,
-      name: r'routineTime',
-      type: IsarType.byte,
-      enumMap: _RoutineroutineTimeEnumValueMap,
     ),
     r'toDelete': PropertySchema(
       id: 7,
@@ -148,6 +147,19 @@ const RoutineSchema = CollectionSchema(
           caseSensitive: false,
         )
       ],
+    ),
+    r'lastUpdated': IndexSchema(
+      id: 8989359681631629925,
+      name: r'lastUpdated',
+      unique: false,
+      replace: false,
+      properties: [
+        IndexPropertySchema(
+          name: r'lastUpdated',
+          type: IndexType.value,
+          caseSensitive: false,
+        )
+      ],
     )
   },
   links: {},
@@ -185,15 +197,15 @@ void _routineSerialize(
   writer.writeLong(offsets[0], object.customViewIndex);
   writer.writeLong(offsets[1], object.expectedDuration);
   writer.writeBool(offsets[2], object.isSynced);
-  writer.writeString(offsets[3], object.name);
-  writer.writeLong(offsets[4], object.realDuration);
+  writer.writeDateTime(offsets[3], object.lastUpdated);
+  writer.writeString(offsets[4], object.name);
+  writer.writeLong(offsets[5], object.realDuration);
   writer.writeObjectList<SubTask>(
-    offsets[5],
+    offsets[6],
     allOffsets,
     SubTaskSchema.serialize,
     object.routineTasks,
   );
-  writer.writeByte(offsets[6], object.routineTime.index);
   writer.writeBool(offsets[7], object.toDelete);
   writer.writeLong(offsets[8], object.weight);
 }
@@ -206,18 +218,16 @@ Routine _routineDeserialize(
 ) {
   final object = Routine(
     expectedDuration: reader.readLong(offsets[1]),
-    name: reader.readString(offsets[3]),
-    realDuration: reader.readLong(offsets[4]),
+    lastUpdated: reader.readDateTime(offsets[3]),
+    name: reader.readString(offsets[4]),
+    realDuration: reader.readLong(offsets[5]),
     routineTasks: reader.readObjectList<SubTask>(
-          offsets[5],
+          offsets[6],
           SubTaskSchema.deserialize,
           allOffsets,
           SubTask(),
         ) ??
         [],
-    routineTime:
-        _RoutineroutineTimeValueEnumMap[reader.readByteOrNull(offsets[6])] ??
-            RoutineTime.morning,
     weight: reader.readLongOrNull(offsets[8]) ?? 0,
   );
   object.customViewIndex = reader.readLong(offsets[0]);
@@ -241,10 +251,12 @@ P _routineDeserializeProp<P>(
     case 2:
       return (reader.readBool(offset)) as P;
     case 3:
-      return (reader.readString(offset)) as P;
+      return (reader.readDateTime(offset)) as P;
     case 4:
-      return (reader.readLong(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 5:
+      return (reader.readLong(offset)) as P;
+    case 6:
       return (reader.readObjectList<SubTask>(
             offset,
             SubTaskSchema.deserialize,
@@ -252,9 +264,6 @@ P _routineDeserializeProp<P>(
             SubTask(),
           ) ??
           []) as P;
-    case 6:
-      return (_RoutineroutineTimeValueEnumMap[reader.readByteOrNull(offset)] ??
-          RoutineTime.morning) as P;
     case 7:
       return (reader.readBool(offset)) as P;
     case 8:
@@ -263,17 +272,6 @@ P _routineDeserializeProp<P>(
       throw IsarError('Unknown property with id $propertyId');
   }
 }
-
-const _RoutineroutineTimeEnumValueMap = {
-  'morning': 0,
-  'afternoon': 1,
-  'evening': 2,
-};
-const _RoutineroutineTimeValueEnumMap = {
-  0: RoutineTime.morning,
-  1: RoutineTime.afternoon,
-  2: RoutineTime.evening,
-};
 
 Id _routineGetId(Routine object) {
   return object.id;
@@ -330,6 +328,14 @@ extension RoutineQueryWhereSort on QueryBuilder<Routine, Routine, QWhere> {
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(
         const IndexWhereClause.any(indexName: r'toDelete'),
+      );
+    });
+  }
+
+  QueryBuilder<Routine, Routine, QAfterWhere> anyLastUpdated() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(
+        const IndexWhereClause.any(indexName: r'lastUpdated'),
       );
     });
   }
@@ -803,6 +809,96 @@ extension RoutineQueryWhere on QueryBuilder<Routine, Routine, QWhereClause> {
       }
     });
   }
+
+  QueryBuilder<Routine, Routine, QAfterWhereClause> lastUpdatedEqualTo(
+      DateTime lastUpdated) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'lastUpdated',
+        value: [lastUpdated],
+      ));
+    });
+  }
+
+  QueryBuilder<Routine, Routine, QAfterWhereClause> lastUpdatedNotEqualTo(
+      DateTime lastUpdated) {
+    return QueryBuilder.apply(this, (query) {
+      if (query.whereSort == Sort.asc) {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'lastUpdated',
+              lower: [],
+              upper: [lastUpdated],
+              includeUpper: false,
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'lastUpdated',
+              lower: [lastUpdated],
+              includeLower: false,
+              upper: [],
+            ));
+      } else {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'lastUpdated',
+              lower: [lastUpdated],
+              includeLower: false,
+              upper: [],
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'lastUpdated',
+              lower: [],
+              upper: [lastUpdated],
+              includeUpper: false,
+            ));
+      }
+    });
+  }
+
+  QueryBuilder<Routine, Routine, QAfterWhereClause> lastUpdatedGreaterThan(
+    DateTime lastUpdated, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'lastUpdated',
+        lower: [lastUpdated],
+        includeLower: include,
+        upper: [],
+      ));
+    });
+  }
+
+  QueryBuilder<Routine, Routine, QAfterWhereClause> lastUpdatedLessThan(
+    DateTime lastUpdated, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'lastUpdated',
+        lower: [],
+        upper: [lastUpdated],
+        includeUpper: include,
+      ));
+    });
+  }
+
+  QueryBuilder<Routine, Routine, QAfterWhereClause> lastUpdatedBetween(
+    DateTime lowerLastUpdated,
+    DateTime upperLastUpdated, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'lastUpdated',
+        lower: [lowerLastUpdated],
+        includeLower: includeLower,
+        upper: [upperLastUpdated],
+        includeUpper: includeUpper,
+      ));
+    });
+  }
 }
 
 extension RoutineQueryFilter
@@ -974,6 +1070,59 @@ extension RoutineQueryFilter
       return query.addFilterCondition(FilterCondition.equalTo(
         property: r'isSynced',
         value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<Routine, Routine, QAfterFilterCondition> lastUpdatedEqualTo(
+      DateTime value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'lastUpdated',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<Routine, Routine, QAfterFilterCondition> lastUpdatedGreaterThan(
+    DateTime value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'lastUpdated',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<Routine, Routine, QAfterFilterCondition> lastUpdatedLessThan(
+    DateTime value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'lastUpdated',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<Routine, Routine, QAfterFilterCondition> lastUpdatedBetween(
+    DateTime lower,
+    DateTime upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'lastUpdated',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
       ));
     });
   }
@@ -1249,59 +1398,6 @@ extension RoutineQueryFilter
     });
   }
 
-  QueryBuilder<Routine, Routine, QAfterFilterCondition> routineTimeEqualTo(
-      RoutineTime value) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'routineTime',
-        value: value,
-      ));
-    });
-  }
-
-  QueryBuilder<Routine, Routine, QAfterFilterCondition> routineTimeGreaterThan(
-    RoutineTime value, {
-    bool include = false,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        include: include,
-        property: r'routineTime',
-        value: value,
-      ));
-    });
-  }
-
-  QueryBuilder<Routine, Routine, QAfterFilterCondition> routineTimeLessThan(
-    RoutineTime value, {
-    bool include = false,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.lessThan(
-        include: include,
-        property: r'routineTime',
-        value: value,
-      ));
-    });
-  }
-
-  QueryBuilder<Routine, Routine, QAfterFilterCondition> routineTimeBetween(
-    RoutineTime lower,
-    RoutineTime upper, {
-    bool includeLower = true,
-    bool includeUpper = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.between(
-        property: r'routineTime',
-        lower: lower,
-        includeLower: includeLower,
-        upper: upper,
-        includeUpper: includeUpper,
-      ));
-    });
-  }
-
   QueryBuilder<Routine, Routine, QAfterFilterCondition> toDeleteEqualTo(
       bool value) {
     return QueryBuilder.apply(this, (query) {
@@ -1416,6 +1512,18 @@ extension RoutineQuerySortBy on QueryBuilder<Routine, Routine, QSortBy> {
     });
   }
 
+  QueryBuilder<Routine, Routine, QAfterSortBy> sortByLastUpdated() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastUpdated', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Routine, Routine, QAfterSortBy> sortByLastUpdatedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastUpdated', Sort.desc);
+    });
+  }
+
   QueryBuilder<Routine, Routine, QAfterSortBy> sortByName() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'name', Sort.asc);
@@ -1437,18 +1545,6 @@ extension RoutineQuerySortBy on QueryBuilder<Routine, Routine, QSortBy> {
   QueryBuilder<Routine, Routine, QAfterSortBy> sortByRealDurationDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'realDuration', Sort.desc);
-    });
-  }
-
-  QueryBuilder<Routine, Routine, QAfterSortBy> sortByRoutineTime() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'routineTime', Sort.asc);
-    });
-  }
-
-  QueryBuilder<Routine, Routine, QAfterSortBy> sortByRoutineTimeDesc() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'routineTime', Sort.desc);
     });
   }
 
@@ -1527,6 +1623,18 @@ extension RoutineQuerySortThenBy
     });
   }
 
+  QueryBuilder<Routine, Routine, QAfterSortBy> thenByLastUpdated() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastUpdated', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Routine, Routine, QAfterSortBy> thenByLastUpdatedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastUpdated', Sort.desc);
+    });
+  }
+
   QueryBuilder<Routine, Routine, QAfterSortBy> thenByName() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'name', Sort.asc);
@@ -1548,18 +1656,6 @@ extension RoutineQuerySortThenBy
   QueryBuilder<Routine, Routine, QAfterSortBy> thenByRealDurationDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'realDuration', Sort.desc);
-    });
-  }
-
-  QueryBuilder<Routine, Routine, QAfterSortBy> thenByRoutineTime() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'routineTime', Sort.asc);
-    });
-  }
-
-  QueryBuilder<Routine, Routine, QAfterSortBy> thenByRoutineTimeDesc() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'routineTime', Sort.desc);
     });
   }
 
@@ -1608,6 +1704,12 @@ extension RoutineQueryWhereDistinct
     });
   }
 
+  QueryBuilder<Routine, Routine, QDistinct> distinctByLastUpdated() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'lastUpdated');
+    });
+  }
+
   QueryBuilder<Routine, Routine, QDistinct> distinctByName(
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
@@ -1618,12 +1720,6 @@ extension RoutineQueryWhereDistinct
   QueryBuilder<Routine, Routine, QDistinct> distinctByRealDuration() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'realDuration');
-    });
-  }
-
-  QueryBuilder<Routine, Routine, QDistinct> distinctByRoutineTime() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addDistinctBy(r'routineTime');
     });
   }
 
@@ -1666,6 +1762,12 @@ extension RoutineQueryProperty
     });
   }
 
+  QueryBuilder<Routine, DateTime, QQueryOperations> lastUpdatedProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'lastUpdated');
+    });
+  }
+
   QueryBuilder<Routine, String, QQueryOperations> nameProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'name');
@@ -1682,12 +1784,6 @@ extension RoutineQueryProperty
       routineTasksProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'routineTasks');
-    });
-  }
-
-  QueryBuilder<Routine, RoutineTime, QQueryOperations> routineTimeProperty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addPropertyName(r'routineTime');
     });
   }
 

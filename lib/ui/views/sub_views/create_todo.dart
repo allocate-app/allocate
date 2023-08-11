@@ -103,7 +103,9 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
   late Set<int> weekDaySet;
   late List<bool> weekDays;
 
+  late final List<TextEditingController> subTaskEditingController;
   late final List<SubTask> subTasks;
+  late int shownTasks;
 
   // NOTE: On submit: run validation logic ->
   // Check fields, ensure valid:
@@ -117,12 +119,11 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
   void initState() {
     super.initState();
     initializeProviders();
-    //
-
-    initializeControllers();
 
     // Refactor this into the user provider class.
     initializeParameters();
+
+    initializeControllers();
   }
 
   void initializeParameters() {
@@ -137,16 +138,20 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
     sumWeight = 0;
 
     completed = false;
+    myDay = false;
     expectedDuration = 0;
     realDuration = 0;
+    searchHistory = List.empty(growable: true);
 
     frequency = Frequency.once;
     customFreq = CustomFrequency.weekly;
 
     repeatSkip = 1;
 
-    subTasks = List.filled(Constants.maxNumTasks, SubTask());
+    subTasks = List.generate(Constants.maxNumTasks, (_) => SubTask());
+    shownTasks = 0;
     weekDaySet = <int>{};
+    weekDays = List.generate(7, (_) => false);
   }
 
   void initializeControllers() {
@@ -183,6 +188,15 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
       repeatSkip = int.tryParse(newText) ?? repeatSkip;
       repeatSkip = max(repeatSkip, 1);
     });
+
+    subTaskEditingController = List.generate(subTasks.length, (_) => TextEditingController());
+    for (int i = 0; i < subTaskEditingController.length; i++) {
+      subTaskEditingController[i].addListener(() {
+        checkClose = true;
+        String newText = descriptionEditingController.text;
+        SemanticsService.announce(newText, Directionality.of(context));
+      });
+    }
   }
 
   void initializeProviders() {
@@ -197,6 +211,9 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
     groupEditingController.dispose();
     descriptionEditingController.dispose();
     repeatSkipEditingController.dispose();
+    for (TextEditingController controller in subTaskEditingController) {
+      controller.dispose();
+    }
     super.dispose();
   }
 
@@ -244,8 +261,12 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
   }
 
   Icon getBatteryIcon({required int weight, required bool selected}) {
+    int numTasks = (taskType == TaskType.small) ? 1 : Constants.numTasks[taskType]!;
+
+    // Getting zerodiv, lol.
     weight =
-        remap(x: weight, inMin: 0, inMax: Constants.maxTaskWeight, outMin: 2, outMax: 4) as int;
+        remap(x: weight, inMin: 0, inMax: Constants.maxTaskWeight * numTasks, outMin: 0, outMax: 5)
+            .toInt();
     if (selected) {
       return Constants.selectedBatteryIcons[weight]!;
     }
@@ -261,151 +282,200 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
       shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.all(Radius.circular(Constants.roundedCorners))),
       child: Padding(
-          padding: const EdgeInsets.all(Constants.padding),
-          // These are just for shape.
-          child: Row(
-            mainAxisSize: (largeScreen) ? MainAxisSize.min : MainAxisSize.max,
+        padding: const EdgeInsets.all(Constants.padding),
+        child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.max,
             children: [
-              Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  mainAxisSize: MainAxisSize.max,
+              // Title && Close Button
+              Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: Constants.padding),
+                  child: Text(
+                    "New Task",
+                    overflow: TextOverflow.ellipsis,
+                    style: Constants.headerStyle,
+                  ),
+                ),
+                buildCloseButton(context)
+              ]),
+              const PaddedDivider(padding: Constants.padding),
+              Expanded(
+                child: ListView(
+                  shrinkWrap: true,
+                  controller: scrollController,
+                  physics: scrollPhysics,
                   children: [
-                    // Title && Close Button
-                    Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [const Text("New Task"), buildCloseButton(context)]),
-                    ListView(
-                      controller: scrollController,
-                      physics: scrollPhysics,
-                      children: [
-                        // Title + status
-                        buildNameTile(),
-                        // TaskType
-                        buildTaskType(),
-                        // Subtasks
-                        (taskType != TaskType.small)
-                            ? Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
-                                child: buildSubTasksList(),
-                              )
-                            : const SizedBox.shrink(),
+                    // Title + status
+                    Padding(
+                      padding: EdgeInsets.symmetric(
+                          horizontal: (largeScreen) ? Constants.innerPadding : Constants.padding),
+                      child: buildNameTile(),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
+                      child: buildWeightTile(),
+                    ),
+                    const PaddedDivider(padding: Constants.innerPadding),
+                    // TaskType
+                    const Center(child: Text("Task Type", style: Constants.headerStyle)),
+                    Padding(
+                      padding: const EdgeInsets.all(Constants.innerPadding),
+                      child: buildTaskTypeButton(),
+                    ),
+                    // Subtasks
+                    (taskType != TaskType.small)
+                        ? Padding(
+                            padding: const EdgeInsets.fromLTRB(Constants.padding,
+                                Constants.padding / 2, Constants.padding, Constants.innerPadding),
+                            child: Container(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: Constants.innerPadding),
+                              decoration: BoxDecoration(
+                                border: Border.all(strokeAlign: BorderSide.strokeAlignOutside),
+                                borderRadius: BorderRadius.circular(Constants.roundedCorners),
+                              ),
+                              child: Column(children: [
+                                buildSubTasksList(),
+                                (shownTasks < Constants.numTasks[taskType]!)
+                                    ? ListTile(
+                                        leading: const Icon(Icons.add_outlined),
+                                        title: const Text("Add a step"),
+                                        onTap: () => setState(() {
+                                              shownTasks++;
+                                              shownTasks = min(shownTasks, Constants.maxNumTasks);
+                                            }))
+                                    : const SizedBox.shrink(),
+                              ]),
+                            ),
+                          )
+                        : const SizedBox.shrink(),
 
-                        buildWeightTile(),
-
-                        const Divider(),
-                        // My Day
-                        buildMyDayTile(),
-                        const Divider(),
-                        // Priority
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
-                          child: buildPriorityTile(),
-                        ),
-
-                        const PaddedDivider(padding: Constants.padding),
-
-                        // Group Picker
-                        // TODO: figure out how to make this work with screen readers.
-                        // I don't know if SemanticsService will actually work.
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
-                          child: buildGroupBar(),
-                        ),
-
-                        const PaddedDivider(padding: Constants.padding),
-
-                        // Description
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
-                          child: buildDescriptionTile(
-                              descriptionSize: (largeScreen)
-                                  ? Constants.descripSizeDesktop
-                                  : Constants.descripSizeMobile),
-                        ),
-
-                        const PaddedDivider(padding: Constants.padding),
-                        // Expected Duration / RealDuration -> Show status, on click, open a dialog.
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
-                          child: buildDurationTile(context),
-                        ),
-
-                        const PaddedDivider(padding: Constants.padding),
-                        // DateTime -> Show status, on click, open a dialog.
-                        //startDate
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
-                          child: buildDateTile(context),
-                        ),
-
-                        const PaddedDivider(padding: Constants.padding),
-                        // Time
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
-                          child: buildTimeTile(),
-                        ),
-
-                        const PaddedDivider(padding: Constants.padding),
-                        // Repeatable Stuff -> Show status, on click, open a dialog.
-                        buildRepeatableTile(context),
-                      ],
+                    const PaddedDivider(padding: Constants.padding),
+                    // My Day
+                    buildMyDayTile(),
+                    const PaddedDivider(padding: Constants.padding),
+                    // Priority
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: Constants.padding),
+                      child: Center(child: Text("Priority", style: Constants.headerStyle)),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
+                      child: buildPriorityTile(),
                     ),
 
-                    // Create Button
-                    Row(mainAxisAlignment: MainAxisAlignment.end, children: [
-                      IconButton.filled(
-                          icon: const Icon(Icons.add_outlined),
-                          selectedIcon: const Icon(Icons.add),
-                          onPressed: () async {
-                            bool validData = validateData();
-                            if (validData) {
-                              weekDaySet.map((wd) => weekDays[wd] = true);
-                              await toDoProvider
-                                  .createToDo(
-                                    groupID: groupID,
-                                    taskType: taskType,
-                                    name: name,
-                                    description: description,
-                                    weight: weight,
-                                    expectedDuration: expectedDuration,
-                                    realDuration: realDuration,
-                                    priority: priority,
-                                    startDate: startDate,
-                                    dueDate: dueDate,
-                                    myDay: myDay,
-                                    completed: completed,
-                                    repeatable: frequency != Frequency.once,
-                                    frequency: frequency,
-                                    customFreq: customFreq,
-                                    repeatDays: weekDays,
-                                    repeatSkip: repeatSkip,
-                                    subTasks: subTasks,
-                                  )
-                                  .then((value) => Navigator.pop(context))
-                                  .catchError((e) {
-                                ScaffoldMessenger.maybeOf(context)?.showSnackBar(SnackBar(
-                                  content: Text(e.cause, style: TextStyle(color: errorColor)),
-                                  action: SnackBarAction(label: "Dismiss", onPressed: () {}),
-                                  duration: const Duration(milliseconds: 1500),
-                                  behavior: SnackBarBehavior.floating,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(Constants.circular),
-                                  ),
-                                  width: (MediaQuery.sizeOf(context).width) / 2,
-                                  padding:
-                                      const EdgeInsets.symmetric(horizontal: Constants.padding),
-                                ));
-                              },
-                                      test: (e) =>
-                                          e is FailureToCreateException ||
-                                          e is FailureToUploadException);
-                            }
-                            // Then save.
-                          })
-                    ])
-                  ]),
-            ],
-          )),
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 8.0),
+                      child: PaddedDivider(padding: Constants.innerPadding),
+                    ),
+
+                    // Group Picker
+                    // TODO: figure out how to make this work with screen readers.
+                    // I don't know if SemanticsService will actually work.
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
+                      child: buildGroupBar(),
+                    ),
+
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: Constants.padding),
+                      child: PaddedDivider(padding: Constants.innerPadding),
+                    ),
+
+                    // Description
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
+                      child: buildDescriptionTile(
+                          descriptionSize: (largeScreen)
+                              ? Constants.descripSizeDesktop
+                              : Constants.descripSizeMobile),
+                    ),
+
+                    const PaddedDivider(padding: Constants.innerPadding),
+                    // Expected Duration / RealDuration -> Show status, on click, open a dialog.
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
+                      child: buildDurationTile(context),
+                    ),
+
+                    const PaddedDivider(padding: Constants.innerPadding),
+                    // DateTime -> Show status, on click, open a dialog.
+                    //startDate
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
+                      child: buildDateTile(context),
+                    ),
+
+                    const PaddedDivider(padding: Constants.innerPadding),
+                    // Time
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
+                      child: buildTimeTile(),
+                    ),
+
+                    const PaddedDivider(padding: Constants.innerPadding),
+                    // Repeatable Stuff -> Show status, on click, open a dialog.
+                    buildRepeatableTile(context),
+                  ],
+                ),
+              ),
+
+              const PaddedDivider(padding: Constants.padding),
+              // Create Button - could be a stack
+              Row(mainAxisAlignment: MainAxisAlignment.end, children: [
+                FilledButton.icon(
+                    label: const Text("Create Task"),
+                    icon: const Icon(Icons.add),
+                    onPressed: () async {
+                      bool validData = validateData();
+                      if (validData) {
+                        weekDaySet.map((wd) => weekDays[wd] = true);
+                        await toDoProvider
+                            .createToDo(
+                              groupID: groupID,
+                              taskType: taskType,
+                              name: name,
+                              description: description,
+                              weight: weight,
+                              expectedDuration: expectedDuration,
+                              realDuration: realDuration,
+                              priority: priority,
+                              startDate: startDate,
+                              dueDate: dueDate,
+                              myDay: myDay,
+                              completed: completed,
+                              repeatable: frequency != Frequency.once,
+                              frequency: frequency,
+                              customFreq: customFreq,
+                              repeatDays: weekDays,
+                              repeatSkip: repeatSkip,
+                              subTasks: subTasks,
+                            )
+                            .then((value) => Navigator.pop(context))
+                            .catchError((e) {
+                          ScaffoldMessenger.maybeOf(context)?.showSnackBar(SnackBar(
+                            content: Text(e.cause,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(color: errorColor)),
+                            action: SnackBarAction(label: "Dismiss", onPressed: () {}),
+                            duration: const Duration(milliseconds: 1500),
+                            behavior: SnackBarBehavior.floating,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(Constants.circular),
+                            ),
+                            width: (MediaQuery.sizeOf(context).width) / 2,
+                            padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
+                          ));
+                        },
+                                test: (e) =>
+                                    e is FailureToCreateException || e is FailureToUploadException);
+                      }
+                      // Then save.
+                    })
+              ])
+            ]),
+      ),
     );
   }
 
@@ -413,8 +483,14 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
     return ListTile(
         leading: const Icon(Icons.event_repeat_outlined),
         title: (frequency == Frequency.once)
-            ? const Text("Set Recurring?")
-            : Text(toBeginningOfSentenceCase(frequency.name)!),
+            ? const Text(
+                "Set Recurring?",
+                overflow: TextOverflow.ellipsis,
+              )
+            : Text(
+                toBeginningOfSentenceCase(frequency.name)!,
+                overflow: TextOverflow.ellipsis,
+              ),
         onTap: () {
           // Caching bc of conditional rendering.
           Frequency cacheFreq = frequency;
@@ -445,13 +521,21 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Row(mainAxisAlignment: MainAxisAlignment.start, children: [Text("Set Recurring")]),
+          const Row(mainAxisAlignment: MainAxisAlignment.start, children: [
+            Text(
+              "Set Recurring",
+              overflow: TextOverflow.ellipsis,
+            )
+          ]),
           // Segmented button
           SegmentedButton<Frequency>(
             segments: Frequency.values
                 .map((Frequency frequency) => ButtonSegment<Frequency>(
                       value: frequency,
-                      label: Text("${toBeginningOfSentenceCase(frequency.name)}"),
+                      label: Text(
+                        "${toBeginningOfSentenceCase(frequency.name)}",
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ))
                 .toList(growable: false),
             selected: <Frequency>{frequency},
@@ -489,18 +573,32 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
           (frequency != Frequency.once)
               ? Row(
                   children: [
-                    const Text("Repeat every: "),
-                    // RETURN HERE
+                    const Text(
+                      "Repeat every: ",
+                      overflow: TextOverflow.ellipsis,
+                    ),
                     TextField(
                       controller: repeatSkipEditingController,
                       keyboardType: TextInputType.number,
                     ),
                     (frequency != Frequency.custom)
                         ? switch (frequency) {
-                            Frequency.daily => const Text("days"),
-                            Frequency.weekly => const Text("weeks"),
-                            Frequency.monthly => const Text("months"),
-                            Frequency.yearly => const Text("years"),
+                            Frequency.daily => const Text(
+                                "days",
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            Frequency.weekly => const Text(
+                                "weeks",
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            Frequency.monthly => const Text(
+                                "months",
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            Frequency.yearly => const Text(
+                                "years",
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             _ => const Text("")
                           }
                         : switch (customFreq) {
@@ -621,96 +719,140 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
 
   Column buildWeightTile() {
     return Column(children: [
-      const Text("How draining is this task?"),
-      // Ternary widget pls.
-      Row(
-        children: [
-          const Icon(Icons.battery_full),
-          (taskType == TaskType.small)
-              ? Slider(
-                  value: weight as double,
-                  max: Constants.maxTaskWeight as double,
-                  label: (weight > (Constants.maxTaskWeight / 2).round())
-                      ? Constants.fullBattery
-                      : Constants.lowBattery,
-                  divisions: Constants.maxTaskWeight,
-                  onChanged: (value) => setState(() {
-                    checkClose = true;
-                    weight = value as int;
-                  }),
-                )
-              : Slider(
-                  value: sumWeight as double,
-                  max: Constants.maxTaskWeight * Constants.numTasks[taskType]! as double,
-                  divisions: Constants.numTasks[taskType],
-                  onChanged: null),
-          const Icon(Icons.battery_2_bar),
-        ],
+      Padding(
+        padding: const EdgeInsets.all(Constants.padding),
+        child: Stack(
+          alignment: Alignment.centerLeft,
+          children: [
+            const Text("Task Strain", style: Constants.headerStyle),
+            Align(
+              alignment: Alignment.center,
+              child: Transform.scale(
+                scale: Constants.batteryScale,
+                child: Transform.rotate(
+                    angle: -pi / 2,
+                    child: IconButton(
+                      icon: getBatteryIcon(
+                          weight: (taskType == TaskType.small) ? weight : sumWeight,
+                          selected: false),
+                      onPressed: null,
+                    )),
+              ),
+            ),
+          ],
+        ),
       ),
+      (taskType == TaskType.small)
+          ? Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                const Icon(Icons.battery_full),
+                Expanded(
+                  child: Slider(
+                    value: weight.toDouble(),
+                    max: Constants.maxTaskWeight.toDouble(),
+                    label: (weight > (Constants.maxTaskWeight / 2).floor())
+                        ? " $weight ${Constants.lowBattery}"
+                        : " $weight ${Constants.fullBattery}",
+                    divisions: Constants.maxTaskWeight,
+                    onChanged: (value) => setState(() {
+                      checkClose = true;
+                      weight = value.toInt();
+                    }),
+                  ),
+                ),
+                const Icon(Icons.battery_1_bar),
+              ],
+            )
+          : const SizedBox.shrink(),
     ]);
   }
 
   ListView buildSubTasksList() {
     return ListView.separated(
-      itemCount: subTasks.length,
+      shrinkWrap: true,
+      itemCount: min(Constants.numTasks[taskType]!, shownTasks),
       separatorBuilder: (context, index) => const Divider(),
       itemBuilder: (BuildContext context, int index) {
         return CheckboxListTile(
+            checkboxShape: const CircleBorder(),
             controlAffinity: ListTileControlAffinity.leading,
             shape: const CircleBorder(),
-            title: TextField(
-                controller: TextEditingController(text: subTasks[index].name),
-                decoration: const InputDecoration(labelText: "Add step"),
-                onChanged: (value) => setState(() {
-                      SemanticsService.announce(value, Directionality.of(context));
-                      checkClose = true;
-                      subTasks[index].name = value;
-                    })),
+            title: Row(
+              children: [
+                IconButton(
+                  icon: Constants.batteryIcons[subTasks[index].weight]!,
+                  selectedIcon: Constants.selectedBatteryIcons[subTasks[index].weight]!,
+                  onPressed: () {
+                    showModalBottomSheet<void>(
+                        context: context,
+                        builder: (BuildContext context) {
+                          return StatefulBuilder(
+                            builder: (context, setState) => Center(
+                                heightFactor: 1,
+                                child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(Icons.drag_handle_rounded),
+                                      const Text("Task Strain", style: Constants.headerStyle),
+                                      Padding(
+                                          padding: const EdgeInsets.all(Constants.padding),
+                                          child: Row(
+                                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                            children: [
+                                              const Icon(Icons.battery_full),
+                                              Expanded(
+                                                child: Slider(
+                                                  value: subTasks[index].weight.toDouble(),
+                                                  max: Constants.maxTaskWeight.toDouble(),
+                                                  label: (subTasks[index].weight >
+                                                          (Constants.maxTaskWeight / 2).floor())
+                                                      ? " ${subTasks[index].weight} ${Constants.lowBattery}"
+                                                      : " ${subTasks[index].weight} ${Constants.fullBattery}",
+                                                  divisions: Constants.maxTaskWeight,
+                                                  onChanged: (value) => setState(() {
+                                                    checkClose = true;
+                                                    subTasks[index].weight = value.toInt();
+                                                  }),
+                                                ),
+                                              ),
+                                              const Icon(Icons.battery_1_bar),
+                                            ],
+                                          )),
+                                    ])),
+                          );
+                        }).whenComplete(() => setState(() {}));
+                  },
+                ),
+                Expanded(
+                  child: TextField(
+                    controller: subTaskEditingController[index],
+                  ),
+                ),
+              ],
+            ),
             value: subTasks[index].completed,
             onChanged: (bool? value) => setState(() {
                   checkClose = true;
                   subTasks[index].completed = value!;
                 }),
-            // Subtask weight
+
+            // Delete Subtask
             secondary: IconButton(
-              icon: getBatteryIcon(weight: subTasks[index].weight, selected: false),
-              selectedIcon: getBatteryIcon(weight: subTasks[index].weight, selected: true),
-              onPressed: () {
-                showModalBottomSheet(
-                    context: context,
-                    builder: (BuildContext context) {
-                      return Center(
-                          heightFactor: 1,
-                          child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(Icons.drag_handle_rounded),
-                                const Text("How draining is this task?"),
-                                Row(
-                                  children: [
-                                    const Icon(Icons.battery_full),
-                                    Slider(
-                                      value: subTasks[index].weight as double,
-                                      max: Constants.maxTaskWeight as double,
-                                      label: (subTasks[index].weight >
-                                              (Constants.maxTaskWeight / 2).round())
-                                          ? Constants.fullBattery
-                                          : Constants.lowBattery,
-                                      divisions: Constants.maxTaskWeight,
-                                      onChanged: (value) => setState(() {
-                                        checkClose = true;
-                                        subTasks[index].weight = value as int;
-                                        sumWeight = subTasks.fold(0, (p, c) => p + c.weight);
-                                      }),
-                                    ),
-                                    const Icon(Icons.battery_2_bar),
-                                  ],
-                                ),
-                              ]));
-                    });
-              },
-            ));
+                icon: const Icon(Icons.delete),
+                onPressed: () => setState(() {
+                      for (int i = index; i < subTasks.length - 1; i++) {
+                        subTasks[i] = subTasks[i + 1].copy();
+                        subTaskEditingController[i].text = subTasks[i + 1].name;
+                      }
+                      subTasks[subTasks.length - 1] = SubTask();
+                      subTaskEditingController[subTasks.length - 1].text =
+                          subTasks[subTasks.length - 1].name;
+
+                      shownTasks--;
+                      shownTasks = max(shownTasks, 0);
+                    })));
       },
     );
   }
@@ -718,14 +860,22 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
   Row buildNameTile() {
     return Row(
       children: [
-        Checkbox(
-            value: completed,
-            onChanged: (bool? value) => setState(() {
-                  checkClose = true;
-                  completed = value!;
-                }),
-            shape: const CircleBorder()),
-        buildToDoName(),
+        Transform.scale(
+          scale: Constants.checkboxScale,
+          child: Checkbox(
+              splashRadius: 15,
+              value: completed,
+              onChanged: (bool? value) => setState(() {
+                    checkClose = true;
+                    completed = value!;
+                  }),
+              shape: const CircleBorder()),
+        ),
+        Expanded(
+            child: Padding(
+          padding: const EdgeInsets.all(Constants.padding),
+          child: buildToDoName(),
+        )),
       ],
     );
   }
@@ -780,7 +930,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
         decoration: const InputDecoration(
           labelText: "Description",
           border: OutlineInputBorder(
-              borderRadius: BorderRadius.all(Radius.circular(Constants.circular)),
+              borderRadius: BorderRadius.all(Radius.circular(Constants.roundedCorners)),
               borderSide: BorderSide(
                 strokeAlign: BorderSide.strokeAlignOutside,
               )),
@@ -820,41 +970,47 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
-                      TextField(
-                          controller: TextEditingController(
-                            text: "$hours",
-                          ),
-                          keyboardType: TextInputType.number,
-                          onChanged: (value) {
-                            hours = int.tryParse(value) ?? hours;
-                            SemanticsService.announce("$hours hours", Directionality.of(context));
-                          }),
+                      SizedBox(
+                        child: TextField(
+                            controller: TextEditingController(
+                              text: "$hours",
+                            ),
+                            keyboardType: TextInputType.number,
+                            onChanged: (value) {
+                              hours = int.tryParse(value) ?? hours;
+                              SemanticsService.announce("$hours hours", Directionality.of(context));
+                            }),
+                      ),
                       const Padding(
                           padding: EdgeInsets.symmetric(horizontal: Constants.padding),
                           child: Text(":")),
-                      TextField(
-                          controller: TextEditingController(
-                            text: "$minutes",
-                          ),
-                          keyboardType: TextInputType.number,
-                          onChanged: (value) {
-                            minutes = int.tryParse(value) ?? minutes;
-                            SemanticsService.announce(
-                                "$minutes minutes", Directionality.of(context));
-                          }),
+                      SizedBox(
+                        child: TextField(
+                            controller: TextEditingController(
+                              text: "$minutes",
+                            ),
+                            keyboardType: TextInputType.number,
+                            onChanged: (value) {
+                              minutes = int.tryParse(value) ?? minutes;
+                              SemanticsService.announce(
+                                  "$minutes minutes", Directionality.of(context));
+                            }),
+                      ),
                       const Padding(
                           padding: EdgeInsets.symmetric(horizontal: Constants.padding),
                           child: Text(":")),
-                      TextField(
-                          controller: TextEditingController(
-                            text: "$seconds",
-                          ),
-                          keyboardType: TextInputType.number,
-                          onChanged: (value) {
-                            hours = int.tryParse(value) ?? seconds;
-                            SemanticsService.announce(
-                                "$seconds seconds", Directionality.of(context));
-                          }),
+                      SizedBox(
+                        child: TextField(
+                            controller: TextEditingController(
+                              text: "$seconds",
+                            ),
+                            keyboardType: TextInputType.number,
+                            onChanged: (value) {
+                              hours = int.tryParse(value) ?? seconds;
+                              SemanticsService.announce(
+                                  "$seconds seconds", Directionality.of(context));
+                            }),
+                      ),
                     ],
                   ),
                   Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
@@ -882,6 +1038,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
   TextField buildToDoName() {
     return TextField(
       decoration: InputDecoration(
+        contentPadding: const EdgeInsets.all(Constants.innerPadding),
         border: const OutlineInputBorder(
             borderRadius: BorderRadius.all(Radius.circular(Constants.roundedCorners)),
             borderSide: BorderSide(
@@ -942,7 +1099,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
         selectedIcon: const Icon(Icons.close));
   }
 
-  SegmentedButton<TaskType> buildTaskType() {
+  SegmentedButton<TaskType> buildTaskTypeButton() {
     return SegmentedButton<TaskType>(
         segments: TaskType.values
             .map((TaskType type) => ButtonSegment<TaskType>(
@@ -989,13 +1146,11 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
             if (searchHistory.isNotEmpty) {
               return searchHistory
                   .map((MapEntry<String, int> groupData) => ListTile(
-                      leading: const Icon(Icons.history),
-                      title: Text(groupData.key),
-                      onTap: () =>
-                          handleHistorySelection(groupData: groupData, controller: controller),
-                      trailing: IconButton(
-                          icon: const Icon(Icons.close_outlined),
-                          onPressed: () => setState(() => groupID = null))))
+                        leading: const Icon(Icons.history),
+                        title: Text(groupData.key),
+                        onTap: () =>
+                            handleHistorySelection(groupData: groupData, controller: controller),
+                      ))
                   .toList();
             }
             final searchFuture = groupProvider.mostRecent(limit: 5);

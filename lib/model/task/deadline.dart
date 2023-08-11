@@ -45,6 +45,9 @@ class Deadline with EquatableMixin implements Copyable<Deadline> {
   @Index()
   bool toDelete = false;
 
+  @Index()
+  DateTime lastUpdated;
+
   Deadline(
       {this.repeatID,
       this.notificationID,
@@ -59,7 +62,8 @@ class Deadline with EquatableMixin implements Copyable<Deadline> {
       this.frequency = Frequency.once,
       this.customFreq = CustomFrequency.weekly,
       required this.repeatDays,
-      this.repeatSkip = 1});
+      this.repeatSkip = 1,
+      required this.lastUpdated});
 
   Deadline.fromEntity({required Map<String, dynamic> entity})
       : id = entity["id"] as Id,
@@ -78,6 +82,7 @@ class Deadline with EquatableMixin implements Copyable<Deadline> {
         customFreq = CustomFrequency.values[entity["customFreq"]],
         repeatDays = entity["repeatDays"] as List<bool>,
         repeatSkip = entity["repeatSkip"] as int,
+        lastUpdated = DateTime.parse(entity["lastUpdated"]),
         isSynced = true,
         toDelete = false;
 
@@ -97,6 +102,7 @@ class Deadline with EquatableMixin implements Copyable<Deadline> {
         "customFreq": customFreq.index,
         "repeatDays": repeatDays,
         "repeatSkip": repeatSkip,
+        "lastUpdated": lastUpdated.toIso8601String()
       };
 
   @override
@@ -114,6 +120,7 @@ class Deadline with EquatableMixin implements Copyable<Deadline> {
         customFreq: customFreq,
         repeatDays: List.from(repeatDays),
         repeatSkip: repeatSkip,
+        lastUpdated: lastUpdated,
       );
 
   @override
@@ -130,7 +137,8 @@ class Deadline with EquatableMixin implements Copyable<Deadline> {
           Frequency? frequency,
           CustomFrequency? customFreq,
           List<bool>? repeatDays,
-          int? repeatSkip}) =>
+          int? repeatSkip,
+          DateTime? lastUpdated}) =>
       Deadline(
           notificationID: notificationID ?? this.notificationID,
           name: name ?? this.name,
@@ -144,7 +152,8 @@ class Deadline with EquatableMixin implements Copyable<Deadline> {
           frequency: frequency ?? this.frequency,
           customFreq: customFreq ?? this.customFreq,
           repeatDays: List.from(repeatDays ?? this.repeatDays),
-          repeatSkip: repeatSkip ?? this.repeatSkip);
+          repeatSkip: repeatSkip ?? this.repeatSkip,
+          lastUpdated: lastUpdated ?? this.lastUpdated);
 
   @ignore
   @override
@@ -163,13 +172,13 @@ class Deadline with EquatableMixin implements Copyable<Deadline> {
         customFreq,
         repeatDays,
         repeatSkip,
+        lastUpdated,
       ];
 
   @override
-  String toString() =>
-      "Deadline(id: $id, repeatID: $repeatID, customViewIndex: $customViewIndex,"
+  String toString() => "Deadline(id: $id, repeatID: $repeatID, customViewIndex: $customViewIndex,"
       " name: $name, description: $description, startDate: $startDate, "
       "dueDate $dueDate, warDate: $warnDate, warnMe: $warnMe, priority: "
       "${priority.name}, repeatable: $repeatable, frequency: ${frequency.name}, "
-      "customFreq: ${customFreq.name}, repeatDays: $repeatDays, repeatSkip: $repeatSkip)";
+      "customFreq: ${customFreq.name}, repeatDays: $repeatDays, repeatSkip: $repeatSkip, lastUpdated: $lastUpdated)";
 }

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:isar/isar.dart';
+import 'package:jiffy/jiffy.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../model/task/todo.dart';
@@ -8,13 +9,14 @@ import '../services/isar_service.dart';
 import '../services/supabase_service.dart';
 import '../util/enums.dart';
 import '../util/exceptions.dart';
-import '../util/interfaces/repository/todo_repository.dart';
+import '../util/interfaces/repository/model/todo_repository.dart';
 import '../util/interfaces/sortable.dart';
 
 class ToDoRepo implements ToDoRepository {
-  final SupabaseClient _supabaseClient =
-      SupabaseService.instance.supabaseClient;
+  final SupabaseClient _supabaseClient = SupabaseService.instance.supabaseClient;
   final Isar _isarClient = IsarService.instance.isarClient;
+
+  DateTime get today => Jiffy.now().startOf(Unit.day).dateTime;
 
   @override
   Future<void> create(ToDo toDo) async {
@@ -103,8 +105,7 @@ class ToDoRepo implements ToDoRepository {
 
     if (null != _supabaseClient.auth.currentSession) {
       ids.clear();
-      List<Map<String, dynamic>> toDoEntities =
-          toDos.map((toDo) => toDo.toEntity()).toList();
+      List<Map<String, dynamic>> toDoEntities = toDos.map((toDo) => toDo.toEntity()).toList();
       final List<Map<String, dynamic>> responses =
           await _supabaseClient.from("toDos").upsert(toDoEntities).select("id");
 
@@ -143,10 +144,10 @@ class ToDoRepo implements ToDoRepository {
   // This is a "Set stuff up for the next delete on sync" kind of delete.
   // They will be hidden from the view, and removed in the background.
   @override
-  Future<void> deleteFutures({required ToDo toDo}) async {
+  Future<void> deleteFutures({required ToDo deleteFrom}) async {
     List<ToDo> toDelete = await _isarClient.toDos
         .where()
-        .repeatIDEqualTo(toDo.repeatID)
+        .repeatIDEqualTo(deleteFrom.repeatID)
         .filter()
         .repeatableEqualTo(true)
         .findAll();
@@ -192,8 +193,7 @@ class ToDoRepo implements ToDoRepository {
       final List<Map<String, dynamic>> responses =
           await _supabaseClient.from("toDos").upsert(syncEntities).select("id");
 
-      List<int?> ids =
-          responses.map((response) => response["id"] as int?).toList();
+      List<int?> ids = responses.map((response) => response["id"] as int?).toList();
 
       if (ids.any((id) => null == id)) {
         unsyncedToDos.map((toDo) => toDo.isSynced = false);
@@ -220,8 +220,7 @@ class ToDoRepo implements ToDoRepository {
         return;
       }
 
-      List<ToDo> toDos =
-          toDoEntities.map((toDo) => ToDo.fromEntity(entity: toDo)).toList();
+      List<ToDo> toDos = toDoEntities.map((toDo) => ToDo.fromEntity(entity: toDo)).toList();
       await _isarClient.writeTxn(() async {
         await _isarClient.toDos.clear();
         for (ToDo toDo in toDos) {
@@ -232,20 +231,35 @@ class ToDoRepo implements ToDoRepository {
   }
 
   @override
+  Future<List<ToDo>> search({required String searchString}) async => await _isarClient.toDos
+      .filter()
+      .nameContains(searchString, caseSensitive: false)
+      .limit(5)
+      .findAll();
+
+  @override
+  Future<List<ToDo>> mostRecent({int limit = 50}) async =>
+      await _isarClient.toDos.where().sortByLastUpdatedDesc().limit(limit).findAll();
+
+  @override
   Future<ToDo?> getByID({required int id}) async =>
       await _isarClient.toDos.where().idEqualTo(id).findFirst();
 
   @override
-  Future<List<ToDo>> getRepoList() async => _isarClient.toDos
+  Future<List<ToDo>> getRepoList({int limit = 50, int offset = 0}) async => _isarClient.toDos
       .where()
       .completedEqualTo(false)
       .filter()
       .toDeleteEqualTo(false)
       .sortByCustomViewIndex()
+      .thenByLastUpdated()
+      .offset(offset)
+      .limit(limit)
       .findAll();
 
   @override
-  Future<List<ToDo>> getRepoListBy({required SortableView<ToDo> sorter}) async {
+  Future<List<ToDo>> getRepoListBy(
+      {int limit = 50, int offset = 0, required SortableView<ToDo> sorter}) async {
     switch (sorter.sortMethod) {
       case SortMethod.name:
         if (sorter.descending) {
@@ -255,6 +269,9 @@ class ToDoRepo implements ToDoRepository {
               .filter()
               .toDeleteEqualTo(false)
               .sortByNameDesc()
+              .thenByLastUpdated()
+              .offset(offset)
+              .limit(limit)
               .findAll();
         }
         return _isarClient.toDos
@@ -263,6 +280,9 @@ class ToDoRepo implements ToDoRepository {
             .filter()
             .toDeleteEqualTo(false)
             .sortByName()
+            .thenByLastUpdated()
+            .offset(offset)
+            .limit(limit)
             .findAll();
       case SortMethod.dueDate:
         if (sorter.descending) {
@@ -272,6 +292,9 @@ class ToDoRepo implements ToDoRepository {
               .filter()
               .toDeleteEqualTo(false)
               .sortByDueDateDesc()
+              .thenByLastUpdated()
+              .offset(offset)
+              .limit(limit)
               .findAll();
         }
         return _isarClient.toDos
@@ -280,6 +303,9 @@ class ToDoRepo implements ToDoRepository {
             .filter()
             .toDeleteEqualTo(false)
             .sortByDueDate()
+            .thenByLastUpdated()
+            .offset(offset)
+            .limit(limit)
             .findAll();
       case SortMethod.weight:
         if (sorter.descending) {
@@ -289,6 +315,9 @@ class ToDoRepo implements ToDoRepository {
               .filter()
               .toDeleteEqualTo(false)
               .sortByWeightDesc()
+              .thenByLastUpdated()
+              .offset(offset)
+              .limit(limit)
               .findAll();
         }
         return _isarClient.toDos
@@ -297,6 +326,9 @@ class ToDoRepo implements ToDoRepository {
             .filter()
             .toDeleteEqualTo(false)
             .sortByWeight()
+            .thenByLastUpdated()
+            .offset(offset)
+            .limit(limit)
             .findAll();
       case SortMethod.priority:
         if (sorter.descending) {
@@ -306,6 +338,9 @@ class ToDoRepo implements ToDoRepository {
               .filter()
               .toDeleteEqualTo(false)
               .sortByPriorityDesc()
+              .thenByLastUpdated()
+              .offset(offset)
+              .limit(limit)
               .findAll();
         }
         return _isarClient.toDos
@@ -314,6 +349,9 @@ class ToDoRepo implements ToDoRepository {
             .filter()
             .toDeleteEqualTo(false)
             .sortByPriority()
+            .thenByLastUpdated()
+            .offset(offset)
+            .limit(limit)
             .findAll();
       case SortMethod.duration:
         if (sorter.descending) {
@@ -323,6 +361,9 @@ class ToDoRepo implements ToDoRepository {
               .filter()
               .toDeleteEqualTo(false)
               .sortByRealDurationDesc()
+              .thenByLastUpdated()
+              .offset(offset)
+              .limit(limit)
               .findAll();
         }
         return _isarClient.toDos
@@ -331,6 +372,9 @@ class ToDoRepo implements ToDoRepository {
             .filter()
             .toDeleteEqualTo(false)
             .sortByRealDuration()
+            .thenByLastUpdated()
+            .offset(offset)
+            .limit(limit)
             .findAll();
       default:
         return getRepoList();
@@ -338,35 +382,44 @@ class ToDoRepo implements ToDoRepository {
   }
 
   @override
-  Future<List<ToDo>> getCompleted() async => _isarClient.toDos
+  Future<List<ToDo>> getCompleted({int limit = 50, int offset = 0}) async => _isarClient.toDos
       .where()
       .completedEqualTo(true)
       .filter()
       .toDeleteEqualTo(false)
+      .sortByLastUpdated()
+      .offset(offset)
+      .limit(limit)
       .findAll();
 
   @override
-  Future<List<ToDo>> getMyDay() async => _isarClient.toDos
+  Future<List<ToDo>> getMyDay({int limit = 50, int offset = 0}) async => _isarClient.toDos
       .where()
       .myDayEqualTo(true)
       .filter()
       .toDeleteEqualTo(false)
       .completedEqualTo(false)
       .sortByCustomViewIndex()
+      .thenByLastUpdated()
+      .offset(offset)
+      .limit(limit)
       .findAll();
 
   @override
-  Future<int> getMyDayWeight() async => _isarClient.toDos
+  Future<int> getMyDayWeight({int limit = 50, int offset = 0}) async => _isarClient.toDos
       .where()
       .myDayEqualTo(true)
       .filter()
       .toDeleteEqualTo(false)
       .completedEqualTo(false)
+      .offset(offset)
+      .limit(limit)
       .weightProperty()
       .sum();
 
   @override
-  Future<List<ToDo>> getRepoByGroupID({required int groupID}) async =>
+  Future<List<ToDo>> getRepoByGroupID(
+          {required int groupID, int limit = 50, int offset = 0}) async =>
       _isarClient.toDos
           .where()
           .groupIDEqualTo(groupID)
@@ -374,19 +427,30 @@ class ToDoRepo implements ToDoRepository {
           .toDeleteEqualTo(false)
           .completedEqualTo(false)
           .sortByGroupIndex()
+          .thenByLastUpdated()
+          .offset(offset)
+          .limit(limit)
           .findAll();
 
   @override
-  Future<List<ToDo>> getRepeatables({required DateTime now}) async =>
-      _isarClient.toDos
-          .where()
-          .repeatableEqualTo(true)
-          .filter()
-          .dueDateLessThan(now)
-          .findAll();
+  Future<List<ToDo>> getRepeatables({DateTime? now}) async => _isarClient.toDos
+      .where()
+      .repeatableEqualTo(true)
+      .filter()
+      .dueDateLessThan(now ?? today)
+      .findAll();
 
   Future<List<int>> getDeleteIds() async =>
       _isarClient.toDos.where().toDeleteEqualTo(true).idProperty().findAll();
   Future<List<ToDo>> getUnsynced() async =>
       _isarClient.toDos.where().isSyncedEqualTo(false).findAll();
+  @override
+  Future<List<ToDo>> getOverdues({int limit = 50, int offset = 0}) async => await _isarClient.toDos
+      .filter()
+      .dueDateLessThan(today)
+      .sortByDueDate()
+      .thenByLastUpdated()
+      .offset(offset)
+      .limit(limit)
+      .findAll();
 }

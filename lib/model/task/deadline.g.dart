@@ -49,59 +49,64 @@ const DeadlineSchema = CollectionSchema(
       name: r'isSynced',
       type: IsarType.bool,
     ),
-    r'name': PropertySchema(
+    r'lastUpdated': PropertySchema(
       id: 6,
+      name: r'lastUpdated',
+      type: IsarType.dateTime,
+    ),
+    r'name': PropertySchema(
+      id: 7,
       name: r'name',
       type: IsarType.string,
     ),
     r'notificationID': PropertySchema(
-      id: 7,
+      id: 8,
       name: r'notificationID',
       type: IsarType.long,
     ),
     r'priority': PropertySchema(
-      id: 8,
+      id: 9,
       name: r'priority',
       type: IsarType.byte,
       enumMap: _DeadlinepriorityEnumValueMap,
     ),
     r'repeatDays': PropertySchema(
-      id: 9,
+      id: 10,
       name: r'repeatDays',
       type: IsarType.boolList,
     ),
     r'repeatID': PropertySchema(
-      id: 10,
+      id: 11,
       name: r'repeatID',
       type: IsarType.long,
     ),
     r'repeatSkip': PropertySchema(
-      id: 11,
+      id: 12,
       name: r'repeatSkip',
       type: IsarType.long,
     ),
     r'repeatable': PropertySchema(
-      id: 12,
+      id: 13,
       name: r'repeatable',
       type: IsarType.bool,
     ),
     r'startDate': PropertySchema(
-      id: 13,
+      id: 14,
       name: r'startDate',
       type: IsarType.dateTime,
     ),
     r'toDelete': PropertySchema(
-      id: 14,
+      id: 15,
       name: r'toDelete',
       type: IsarType.bool,
     ),
     r'warnDate': PropertySchema(
-      id: 15,
+      id: 16,
       name: r'warnDate',
       type: IsarType.dateTime,
     ),
     r'warnMe': PropertySchema(
-      id: 16,
+      id: 17,
       name: r'warnMe',
       type: IsarType.bool,
     )
@@ -215,6 +220,19 @@ const DeadlineSchema = CollectionSchema(
           caseSensitive: false,
         )
       ],
+    ),
+    r'lastUpdated': IndexSchema(
+      id: 8989359681631629925,
+      name: r'lastUpdated',
+      unique: false,
+      replace: false,
+      properties: [
+        IndexPropertySchema(
+          name: r'lastUpdated',
+          type: IndexType.value,
+          caseSensitive: false,
+        )
+      ],
     )
   },
   links: {},
@@ -249,17 +267,18 @@ void _deadlineSerialize(
   writer.writeDateTime(offsets[3], object.dueDate);
   writer.writeByte(offsets[4], object.frequency.index);
   writer.writeBool(offsets[5], object.isSynced);
-  writer.writeString(offsets[6], object.name);
-  writer.writeLong(offsets[7], object.notificationID);
-  writer.writeByte(offsets[8], object.priority.index);
-  writer.writeBoolList(offsets[9], object.repeatDays);
-  writer.writeLong(offsets[10], object.repeatID);
-  writer.writeLong(offsets[11], object.repeatSkip);
-  writer.writeBool(offsets[12], object.repeatable);
-  writer.writeDateTime(offsets[13], object.startDate);
-  writer.writeBool(offsets[14], object.toDelete);
-  writer.writeDateTime(offsets[15], object.warnDate);
-  writer.writeBool(offsets[16], object.warnMe);
+  writer.writeDateTime(offsets[6], object.lastUpdated);
+  writer.writeString(offsets[7], object.name);
+  writer.writeLong(offsets[8], object.notificationID);
+  writer.writeByte(offsets[9], object.priority.index);
+  writer.writeBoolList(offsets[10], object.repeatDays);
+  writer.writeLong(offsets[11], object.repeatID);
+  writer.writeLong(offsets[12], object.repeatSkip);
+  writer.writeBool(offsets[13], object.repeatable);
+  writer.writeDateTime(offsets[14], object.startDate);
+  writer.writeBool(offsets[15], object.toDelete);
+  writer.writeDateTime(offsets[16], object.warnDate);
+  writer.writeBool(offsets[17], object.warnMe);
 }
 
 Deadline _deadlineDeserialize(
@@ -277,23 +296,24 @@ Deadline _deadlineDeserialize(
     frequency:
         _DeadlinefrequencyValueEnumMap[reader.readByteOrNull(offsets[4])] ??
             Frequency.once,
-    name: reader.readString(offsets[6]),
-    notificationID: reader.readLongOrNull(offsets[7]),
+    lastUpdated: reader.readDateTime(offsets[6]),
+    name: reader.readString(offsets[7]),
+    notificationID: reader.readLongOrNull(offsets[8]),
     priority:
-        _DeadlinepriorityValueEnumMap[reader.readByteOrNull(offsets[8])] ??
+        _DeadlinepriorityValueEnumMap[reader.readByteOrNull(offsets[9])] ??
             Priority.low,
-    repeatDays: reader.readBoolList(offsets[9]) ?? [],
-    repeatID: reader.readLongOrNull(offsets[10]),
-    repeatSkip: reader.readLongOrNull(offsets[11]) ?? 1,
-    repeatable: reader.readBoolOrNull(offsets[12]) ?? false,
-    startDate: reader.readDateTime(offsets[13]),
-    warnDate: reader.readDateTime(offsets[15]),
-    warnMe: reader.readBoolOrNull(offsets[16]) ?? false,
+    repeatDays: reader.readBoolList(offsets[10]) ?? [],
+    repeatID: reader.readLongOrNull(offsets[11]),
+    repeatSkip: reader.readLongOrNull(offsets[12]) ?? 1,
+    repeatable: reader.readBoolOrNull(offsets[13]) ?? false,
+    startDate: reader.readDateTime(offsets[14]),
+    warnDate: reader.readDateTime(offsets[16]),
+    warnMe: reader.readBoolOrNull(offsets[17]) ?? false,
   );
   object.customViewIndex = reader.readLong(offsets[1]);
   object.id = id;
   object.isSynced = reader.readBool(offsets[5]);
-  object.toDelete = reader.readBool(offsets[14]);
+  object.toDelete = reader.readBool(offsets[15]);
   return object;
 }
 
@@ -319,27 +339,29 @@ P _deadlineDeserializeProp<P>(
     case 5:
       return (reader.readBool(offset)) as P;
     case 6:
-      return (reader.readString(offset)) as P;
+      return (reader.readDateTime(offset)) as P;
     case 7:
-      return (reader.readLongOrNull(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 8:
+      return (reader.readLongOrNull(offset)) as P;
+    case 9:
       return (_DeadlinepriorityValueEnumMap[reader.readByteOrNull(offset)] ??
           Priority.low) as P;
-    case 9:
-      return (reader.readBoolList(offset) ?? []) as P;
     case 10:
-      return (reader.readLongOrNull(offset)) as P;
+      return (reader.readBoolList(offset) ?? []) as P;
     case 11:
-      return (reader.readLongOrNull(offset) ?? 1) as P;
+      return (reader.readLongOrNull(offset)) as P;
     case 12:
-      return (reader.readBoolOrNull(offset) ?? false) as P;
+      return (reader.readLongOrNull(offset) ?? 1) as P;
     case 13:
-      return (reader.readDateTime(offset)) as P;
+      return (reader.readBoolOrNull(offset) ?? false) as P;
     case 14:
-      return (reader.readBool(offset)) as P;
-    case 15:
       return (reader.readDateTime(offset)) as P;
+    case 15:
+      return (reader.readBool(offset)) as P;
     case 16:
+      return (reader.readDateTime(offset)) as P;
+    case 17:
       return (reader.readBoolOrNull(offset) ?? false) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -454,6 +476,14 @@ extension DeadlineQueryWhereSort on QueryBuilder<Deadline, Deadline, QWhere> {
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(
         const IndexWhereClause.any(indexName: r'toDelete'),
+      );
+    });
+  }
+
+  QueryBuilder<Deadline, Deadline, QAfterWhere> anyLastUpdated() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(
+        const IndexWhereClause.any(indexName: r'lastUpdated'),
       );
     });
   }
@@ -1105,6 +1135,96 @@ extension DeadlineQueryWhere on QueryBuilder<Deadline, Deadline, QWhereClause> {
       }
     });
   }
+
+  QueryBuilder<Deadline, Deadline, QAfterWhereClause> lastUpdatedEqualTo(
+      DateTime lastUpdated) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'lastUpdated',
+        value: [lastUpdated],
+      ));
+    });
+  }
+
+  QueryBuilder<Deadline, Deadline, QAfterWhereClause> lastUpdatedNotEqualTo(
+      DateTime lastUpdated) {
+    return QueryBuilder.apply(this, (query) {
+      if (query.whereSort == Sort.asc) {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'lastUpdated',
+              lower: [],
+              upper: [lastUpdated],
+              includeUpper: false,
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'lastUpdated',
+              lower: [lastUpdated],
+              includeLower: false,
+              upper: [],
+            ));
+      } else {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'lastUpdated',
+              lower: [lastUpdated],
+              includeLower: false,
+              upper: [],
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'lastUpdated',
+              lower: [],
+              upper: [lastUpdated],
+              includeUpper: false,
+            ));
+      }
+    });
+  }
+
+  QueryBuilder<Deadline, Deadline, QAfterWhereClause> lastUpdatedGreaterThan(
+    DateTime lastUpdated, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'lastUpdated',
+        lower: [lastUpdated],
+        includeLower: include,
+        upper: [],
+      ));
+    });
+  }
+
+  QueryBuilder<Deadline, Deadline, QAfterWhereClause> lastUpdatedLessThan(
+    DateTime lastUpdated, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'lastUpdated',
+        lower: [],
+        upper: [lastUpdated],
+        includeUpper: include,
+      ));
+    });
+  }
+
+  QueryBuilder<Deadline, Deadline, QAfterWhereClause> lastUpdatedBetween(
+    DateTime lowerLastUpdated,
+    DateTime upperLastUpdated, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'lastUpdated',
+        lower: [lowerLastUpdated],
+        includeLower: includeLower,
+        upper: [upperLastUpdated],
+        includeUpper: includeUpper,
+      ));
+    });
+  }
 }
 
 extension DeadlineQueryFilter
@@ -1514,6 +1634,60 @@ extension DeadlineQueryFilter
       return query.addFilterCondition(FilterCondition.equalTo(
         property: r'isSynced',
         value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<Deadline, Deadline, QAfterFilterCondition> lastUpdatedEqualTo(
+      DateTime value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'lastUpdated',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<Deadline, Deadline, QAfterFilterCondition>
+      lastUpdatedGreaterThan(
+    DateTime value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'lastUpdated',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<Deadline, Deadline, QAfterFilterCondition> lastUpdatedLessThan(
+    DateTime value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'lastUpdated',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<Deadline, Deadline, QAfterFilterCondition> lastUpdatedBetween(
+    DateTime lower,
+    DateTime upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'lastUpdated',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
       ));
     });
   }
@@ -2210,6 +2384,18 @@ extension DeadlineQuerySortBy on QueryBuilder<Deadline, Deadline, QSortBy> {
     });
   }
 
+  QueryBuilder<Deadline, Deadline, QAfterSortBy> sortByLastUpdated() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastUpdated', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Deadline, Deadline, QAfterSortBy> sortByLastUpdatedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastUpdated', Sort.desc);
+    });
+  }
+
   QueryBuilder<Deadline, Deadline, QAfterSortBy> sortByName() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'name', Sort.asc);
@@ -2417,6 +2603,18 @@ extension DeadlineQuerySortThenBy
     });
   }
 
+  QueryBuilder<Deadline, Deadline, QAfterSortBy> thenByLastUpdated() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastUpdated', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Deadline, Deadline, QAfterSortBy> thenByLastUpdatedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastUpdated', Sort.desc);
+    });
+  }
+
   QueryBuilder<Deadline, Deadline, QAfterSortBy> thenByName() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'name', Sort.asc);
@@ -2577,6 +2775,12 @@ extension DeadlineQueryWhereDistinct
     });
   }
 
+  QueryBuilder<Deadline, Deadline, QDistinct> distinctByLastUpdated() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'lastUpdated');
+    });
+  }
+
   QueryBuilder<Deadline, Deadline, QDistinct> distinctByName(
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
@@ -2687,6 +2891,12 @@ extension DeadlineQueryProperty
   QueryBuilder<Deadline, bool, QQueryOperations> isSyncedProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'isSynced');
+    });
+  }
+
+  QueryBuilder<Deadline, DateTime, QQueryOperations> lastUpdatedProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'lastUpdated');
     });
   }
 

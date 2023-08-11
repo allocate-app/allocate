@@ -3,7 +3,6 @@ import "dart:convert";
 import "package:equatable/equatable.dart";
 import "package:isar/isar.dart";
 
-import "../../util/enums.dart";
 import "../../util/interfaces/copyable.dart";
 import "subtask.dart";
 
@@ -12,9 +11,6 @@ part "routine.g.dart";
 @Collection(inheritance: false)
 class Routine with EquatableMixin implements Copyable<Routine> {
   Id id = Isar.autoIncrement;
-
-  @Enumerated(EnumType.ordinal)
-  final RoutineTime routineTime;
 
   @Index()
   String name;
@@ -38,17 +34,19 @@ class Routine with EquatableMixin implements Copyable<Routine> {
   @Index()
   bool toDelete = false;
 
+  @Index()
+  DateTime lastUpdated;
+
   Routine(
-      {required this.routineTime,
-      required this.name,
+      {required this.name,
       this.weight = 0,
       required this.expectedDuration,
       required this.realDuration,
-      required this.routineTasks});
+      required this.routineTasks,
+      required this.lastUpdated});
 
   Routine.fromEntity({required Map<String, dynamic> entity})
       : id = entity["id"] as Id,
-        routineTime = RoutineTime.values[entity["routineTime"]],
         name = entity["name"] as String,
         weight = entity["weight"] as int,
         expectedDuration = entity["expectedDuration"],
@@ -59,61 +57,60 @@ class Routine with EquatableMixin implements Copyable<Routine> {
             growable: false),
         customViewIndex = entity["customViewIndex"] as int,
         isSynced = true,
-        toDelete = false;
+        toDelete = false,
+        lastUpdated = DateTime.parse(entity["lastUpdated"]);
 
   Map<String, dynamic> toEntity() => {
-        "routineTime": routineTime.index,
         "customViewIndex": customViewIndex,
         "name": name,
         "weight": weight,
         "expectedDuration": expectedDuration,
         "realDuration": realDuration,
-        "routineTasks": jsonEncode(
-            routineTasks.map((rt) => rt.toEntity()).toList(growable: false))
+        "routineTasks": jsonEncode(routineTasks.map((rt) => rt.toEntity()).toList(growable: false)),
+        "lastUpdated": lastUpdated.toIso8601String(),
       };
 
   @override
   Routine copy() => Routine(
       name: name,
-      routineTime: routineTime,
       weight: weight,
       expectedDuration: expectedDuration,
       realDuration: realDuration,
-      routineTasks: List.from(routineTasks));
+      routineTasks: List.from(routineTasks),
+      lastUpdated: lastUpdated);
 
   @override
-  Routine copyWith({
-    String? name,
-    RoutineTime? routineTime,
-    int? weight,
-    int? expectedDuration,
-    int? realDuration,
-    List<SubTask>? routineTasks,
-  }) =>
+  Routine copyWith(
+          {String? name,
+          int? weight,
+          int? expectedDuration,
+          int? realDuration,
+          List<SubTask>? routineTasks,
+          DateTime? lastUpdated}) =>
       Routine(
           name: name ?? this.name,
-          routineTime: routineTime ?? this.routineTime,
           weight: weight ?? this.weight,
           expectedDuration: expectedDuration ?? this.expectedDuration,
           realDuration: realDuration ?? this.realDuration,
-          routineTasks: List.from(routineTasks ?? this.routineTasks));
+          routineTasks: List.from(routineTasks ?? this.routineTasks),
+          lastUpdated: lastUpdated ?? this.lastUpdated);
 
   @ignore
   @override
   List<Object> get props => [
         id,
-        routineTime,
         name,
         weight,
         expectedDuration,
         routineTasks,
         customViewIndex,
         isSynced,
-        toDelete
+        toDelete,
+        lastUpdated
       ];
 
   @override
   String toString() => "Routine(id: $id, customViewIndex: $customViewIndex, "
-      "routineTime: ${routineTime.name}, name: $name, weight: $weight, expectedDuration: $expectedDuration,"
-      "routineTasks: $routineTasks, isSynced: $isSynced, toDelete: $toDelete)";
+      "name: $name, weight: $weight, expectedDuration: $expectedDuration,"
+      "routineTasks: $routineTasks, isSynced: $isSynced, toDelete: $toDelete, lastUpdated: $lastUpdated)";
 }

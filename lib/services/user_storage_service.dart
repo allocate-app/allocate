@@ -1,19 +1,18 @@
 import 'dart:developer';
 
 import 'package:isar/isar.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' hide User;
 
-import "../model/user/user.dart" as u;
+import "../model/user/user.dart";
 import '../util/exceptions.dart';
 import 'isar_service.dart';
 import 'supabase_service.dart';
 
 class UserStorageService {
-  final SupabaseClient _supabaseClient =
-      SupabaseService.instance.supabaseClient;
+  final SupabaseClient _supabaseClient = SupabaseService.instance.supabaseClient;
   final Isar _isarClient = IsarService.instance.isarClient;
 
-  Future<void> createUser({required u.User user}) async {
+  Future<void> createUser({required User user}) async {
     user.isSynced = (null != _supabaseClient.auth.currentSession);
 
     late int? id;
@@ -39,7 +38,7 @@ class UserStorageService {
     }
   }
 
-  Future<void> updateUser({required u.User user}) async {
+  Future<void> updateUser({required User user}) async {
     user.isSynced = (null != _supabaseClient.auth.currentSession);
     late int? id;
     await _isarClient.writeTxn(() async {
@@ -60,7 +59,7 @@ class UserStorageService {
     }
   }
 
-  Future<void> syncUser({required u.User user}) async {
+  Future<void> syncUser({required User user}) async {
     if (user.isSynced) {
       return fetchUser();
     }
@@ -87,11 +86,10 @@ class UserStorageService {
       }
       userEntities = await _supabaseClient.from("users").select();
       if (userEntities.length > 1 || userEntities.isEmpty) {
-        throw UserSyncException(
-            "ERROR - Number of users found: ${userEntities.length}");
+        throw UserSyncException("ERROR - Number of users found: ${userEntities.length}");
       }
 
-      u.User user = u.User.fromEntity(entity: userEntities.last);
+      User user = User.fromEntity(entity: userEntities.last);
 
       await _isarClient.writeTxn(() async {
         await _isarClient.users.clear();
@@ -104,13 +102,13 @@ class UserStorageService {
         await _isarClient.users.clear();
       });
 
-  Future<u.User?> getUser() async {
-    List<u.User> users = await _isarClient.users.where().findAll();
+  Future<User?> getUser() async {
+    List<User> users = await _isarClient.users.where().findAll();
     if (users.length > 1) {
       throw UserException("Multiple users in db");
     }
     try {
-      u.User user = users.first;
+      User user = users.first;
       return user;
     } on StateError catch (e) {
       log(e.message);

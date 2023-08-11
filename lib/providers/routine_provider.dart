@@ -24,13 +24,11 @@ class RoutineProvider extends ChangeNotifier {
   final RoutineService _routineService;
 
   User? user;
-  late Routine curRoutine;
+  Routine? curRoutine;
 
   Routine? curMorning;
   Routine? curAfternoon;
   Routine? curEvening;
-
-  late RoutineTime _timeOfDay;
 
   late List<Routine> routines;
 
@@ -48,9 +46,7 @@ class RoutineProvider extends ChangeNotifier {
   }
 
   int get routineWeight =>
-      (curMorning?.weight ?? 0) +
-      (curAfternoon?.weight ?? 0) +
-      (curEvening?.weight ?? 0);
+      (curMorning?.weight ?? 0) + (curAfternoon?.weight ?? 0) + (curEvening?.weight ?? 0);
 
   void startTimer() {
     syncTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
@@ -103,12 +99,12 @@ class RoutineProvider extends ChangeNotifier {
   List<SortMethod> get sortMethods => RoutineSorter.sortMethods;
 
   Future<void> recalculateWeight() async {
-    _routineService.recalculateWeight(routine: curRoutine);
+    _routineService.recalculateWeight(routine: curRoutine!);
     updateRoutine();
   }
 
   Future<void> recalculateRealDuration() async {
-    _routineService.setRealDuration(routine: curRoutine);
+    _routineService.setRealDuration(routine: curRoutine!);
     updateRoutine();
   }
 
@@ -129,49 +125,51 @@ class RoutineProvider extends ChangeNotifier {
   // Subtasks are fixed-length.
   Future<void> createRoutine(
       {required String name,
-      required timeOfDay,
-      Duration? duration,
+      int? expectedDuration,
+      int? realDuration,
       int? weight,
       List<SubTask>? routineTasks}) async {
-    routineTasks =
-        (null != routineTasks && routineTasks.length == Constants.maxNumTasks)
-            ? routineTasks
-            : List.filled(Constants.maxNumTasks, SubTask());
+    // This should never happen, TODO: remove later.
+    routineTasks = (null != routineTasks && routineTasks.length == Constants.maxNumTasks)
+        ? routineTasks
+        : List.filled(Constants.maxNumTasks, SubTask());
 
-    weight =
-        weight ?? _routineService.calculateWeight(routineTasks: routineTasks);
+    weight = weight ?? _routineService.calculateWeight(routineTasks: routineTasks);
 
-    int expectedDuration =
-        duration?.inSeconds ?? (const Duration(hours: 1)).inSeconds;
-    int realDuration = _routineService.calculateRealDuration(
-        weight: weight, duration: expectedDuration);
+    expectedDuration = expectedDuration ?? (const Duration(hours: 1)).inSeconds;
+    realDuration = realDuration ??
+        _routineService.calculateRealDuration(weight: weight, duration: expectedDuration);
 
     curRoutine = Routine(
-        routineTime: timeOfDay,
         name: name,
         weight: weight,
         expectedDuration: expectedDuration,
         realDuration: realDuration,
-        routineTasks: routineTasks);
+        routineTasks: routineTasks,
+        lastUpdated: DateTime.now());
 
     try {
-      _routineService.createRoutine(routine: curRoutine);
+      _routineService.createRoutine(routine: curRoutine!);
     } on FailureToCreateException catch (e) {
       log(e.cause);
       rethrow;
     } on FailureToUploadException catch (e) {
       log(e.cause);
-      curRoutine.isSynced = false;
+      curRoutine!.isSynced = false;
       return updateRoutine();
     }
     notifyListeners();
   }
 
   Future<void> updateRoutine() async {
-    _routineService.recalculateWeight(routine: curRoutine);
-    _routineService.setRealDuration(routine: curRoutine);
+    // TODO: Remove these two lines, it's redundant.
+    _routineService.recalculateWeight(routine: curRoutine!);
+    _routineService.setRealDuration(routine: curRoutine!);
+
+    curRoutine!.lastUpdated = DateTime.now();
+
     try {
-      _routineService.updateRoutine(routine: curRoutine);
+      _routineService.updateRoutine(routine: curRoutine!);
     } on FailureToUploadException catch (e) {
       log(e.cause);
       rethrow;
@@ -184,7 +182,7 @@ class RoutineProvider extends ChangeNotifier {
 
   Future<void> deleteRoutine() async {
     try {
-      _routineService.deleteRoutine(routine: curRoutine);
+      _routineService.deleteRoutine(routine: curRoutine!);
     } on FailureToDeleteException catch (e) {
       log(e.cause);
       rethrow;
@@ -193,12 +191,9 @@ class RoutineProvider extends ChangeNotifier {
   }
 
   Future<void> reorderRoutines(
-      {required List<Routine> routines,
-      required int oldIndex,
-      required int newIndex}) async {
+      {required List<Routine> routines, required int oldIndex, required int newIndex}) async {
     try {
-      _routineService.reorderRoutines(
-          routines: routines, oldIndex: oldIndex, newIndex: newIndex);
+      _routineService.reorderRoutines(routines: routines, oldIndex: oldIndex, newIndex: newIndex);
     } on FailureToUpdateException catch (e) {
       log(e.cause);
       rethrow;
@@ -210,8 +205,9 @@ class RoutineProvider extends ChangeNotifier {
   }
 
   Future<void> resetRoutine() async {
+    curRoutine!.lastUpdated = DateTime.now();
     try {
-      _routineService.resetRoutine(routine: curRoutine);
+      _routineService.resetRoutine(routine: curRoutine!);
     } on FailureToUpdateException catch (e) {
       log(e.cause);
       rethrow;
@@ -223,9 +219,11 @@ class RoutineProvider extends ChangeNotifier {
 
   // This is to be called once per day after midnight;
   Future<void> resetRoutines() async {
+    curMorning?.lastUpdated = DateTime.now();
+    curAfternoon?.lastUpdated = DateTime.now();
+    curEvening?.lastUpdated = DateTime.now();
     try {
-      _routineService
-          .resetRoutines(routines: [curMorning, curAfternoon, curEvening]);
+      _routineService.resetRoutines(routines: [curMorning, curAfternoon, curEvening]);
     } on FailureToUpdateException catch (e) {
       log(e.cause);
       rethrow;
@@ -233,17 +231,33 @@ class RoutineProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> getRoutines() async =>
-      _routineService.getRoutines(timeOfDay: _timeOfDay);
-  Future<void> getRoutinesBy() async => _routineService.getRoutinesBy(
-      timeOfDay: _timeOfDay, routineSorter: sorter);
+  Future<List<Routine>> getRoutines({int limit = 50, int offset = 0}) async =>
+      _routineService.getRoutines(limit: limit, offset: offset);
 
-  Future<void> getRoutineByID({required int id}) async =>
+  Future<void> setRoutineList({int limit = 50, int offset = 0}) async =>
+      _routineService.getRoutines(limit: limit, offset: offset);
+
+  Future<List<Routine>> getRoutinesBy({int limit = 50, int offset = 0}) async =>
+      _routineService.getRoutinesBy(routineSorter: sorter, limit: limit, offset: offset);
+
+  Future<void> setRoutineListBy({int limit = 50, int offset = 0}) async =>
+      _routineService.getRoutinesBy(routineSorter: sorter, limit: limit, offset: offset);
+
+  Future<List<Routine>> searchRoutines({required String searchString}) async =>
+      _routineService.searchRoutines(searchString: searchString);
+
+  Future<List<Routine>> mostRecent({int limit = 5}) async =>
+      await _routineService.mostRecent(limit: 5);
+
+  Future<Routine?> getRoutineByID({required int id}) async =>
+      await _routineService.getRoutineById(id: id);
+
+  Future<void> setRoutineByID({required int id}) async =>
       curRoutine = await _routineService.getRoutineById(id: id) ??
           Routine(
-              routineTime: RoutineTime.morning,
               name: '',
               expectedDuration: 0,
               realDuration: 0,
-              routineTasks: List.filled(Constants.maxNumTasks, SubTask()));
+              routineTasks: List.filled(Constants.maxNumTasks, SubTask()),
+              lastUpdated: DateTime.now());
 }

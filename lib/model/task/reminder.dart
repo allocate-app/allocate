@@ -37,6 +37,8 @@ class Reminder with EquatableMixin implements Copyable<Reminder> {
   bool isSynced = false;
   @Index()
   bool toDelete = false;
+  @Index()
+  DateTime lastUpdated;
 
   Reminder(
       {this.repeatID,
@@ -49,19 +51,20 @@ class Reminder with EquatableMixin implements Copyable<Reminder> {
       required this.repeatDays,
       this.repeatSkip = 1,
       this.frequency = Frequency.once,
-      this.customFreq = CustomFrequency.weekly});
+      this.customFreq = CustomFrequency.weekly,
+      required this.lastUpdated});
 
   @override
   Reminder copy() => Reminder(
-        repeatID: repeatID,
-        name: name,
-        startDate: startDate,
-        dueDate: dueDate,
-        warnDate: warnDate,
-        repeatable: repeatable,
-        repeatDays: List.from(repeatDays),
-        repeatSkip: repeatSkip,
-      );
+      repeatID: repeatID,
+      name: name,
+      startDate: startDate,
+      dueDate: dueDate,
+      warnDate: warnDate,
+      repeatable: repeatable,
+      repeatDays: List.from(repeatDays),
+      repeatSkip: repeatSkip,
+      lastUpdated: lastUpdated);
   @override
   Reminder copyWith(
           {int? repeatID,
@@ -73,7 +76,8 @@ class Reminder with EquatableMixin implements Copyable<Reminder> {
           List<bool>? repeatDays,
           int? repeatSkip,
           Frequency? frequency,
-          CustomFrequency? customFreq}) =>
+          CustomFrequency? customFreq,
+          DateTime? lastUpdated}) =>
       Reminder(
           repeatID: repeatID ?? this.repeatID,
           name: name ?? this.name,
@@ -84,7 +88,8 @@ class Reminder with EquatableMixin implements Copyable<Reminder> {
           repeatDays: List.from(repeatDays ?? this.repeatDays),
           repeatSkip: repeatSkip ?? this.repeatSkip,
           frequency: frequency ?? this.frequency,
-          customFreq: customFreq ?? this.customFreq);
+          customFreq: customFreq ?? this.customFreq,
+          lastUpdated: lastUpdated ?? this.lastUpdated);
 
   Reminder.fromEntity({required Map<String, dynamic> entity})
       : id = entity["id"] as Id,
@@ -101,7 +106,8 @@ class Reminder with EquatableMixin implements Copyable<Reminder> {
         repeatDays = entity["repeatDays"] as List<bool>,
         repeatSkip = entity["repeatSkip"] as int,
         isSynced = true,
-        toDelete = false;
+        toDelete = false,
+        lastUpdated = DateTime.parse(entity["lastUpdated"]);
 
   Map<String, dynamic> toEntity() => {
         "customViewIndex": customViewIndex,
@@ -116,6 +122,7 @@ class Reminder with EquatableMixin implements Copyable<Reminder> {
         "repeatable": repeatable,
         "repeatDays": repeatDays,
         "repeatSkip": repeatSkip,
+        "lastUpdated": lastUpdated
       };
 
   @ignore
@@ -138,8 +145,7 @@ class Reminder with EquatableMixin implements Copyable<Reminder> {
         toDelete
       ];
   @override
-  String toString() =>
-      "Reminder(id: $id, notificationID: $notificationID, repeatID: $repeatID,"
+  String toString() => "Reminder(id: $id, notificationID: $notificationID, repeatID: $repeatID,"
       "customViewIndex: $customViewIndex, name: $name, startDate: $startDate,"
       "dueDate: $dueDate, warnDate: $warnDate, frequency: ${frequency.name}, "
       "customFreq: ${customFreq.name}, repeatable: $repeatable, repeatDays: $repeatDays,"

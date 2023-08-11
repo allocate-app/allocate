@@ -1,0 +1,130 @@
+// This will need to be a basic scaffold with floating action button
+// Return here once DI refactor, and test pages/functions accoringly.
+
+import 'dart:ui';
+
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import '../providers/deadline_provider.dart';
+import '../providers/group_provider.dart';
+import '../providers/reminder_provider.dart';
+import '../providers/routine_provider.dart';
+import '../providers/todo_provider.dart';
+import '../providers/user_provider.dart';
+import '../services/isar_service.dart';
+import '../services/supabase_service.dart';
+import '../ui/views/sub_views/create_todo.dart';
+import '../util/constants.dart';
+
+/// Flutter code sample for [FloatingActionButton].
+
+void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  DartPluginRegistrant.ensureInitialized();
+
+  runApp(MultiProvider(providers: [
+    ChangeNotifierProvider<UserProvider>(create: (_) => UserProvider()),
+    ChangeNotifierProxyProvider<UserProvider, ToDoProvider>(
+        create: (BuildContext context) => ToDoProvider(
+            user: Provider.of<UserProvider>(context, listen: false).curUser, service: null),
+        update: (BuildContext context, UserProvider up, ToDoProvider? tp) {
+          tp?.setUser(user: up.curUser);
+          return tp ?? ToDoProvider(user: up.curUser, service: null);
+        }),
+    ChangeNotifierProxyProvider<UserProvider, RoutineProvider>(
+        create: (BuildContext context) => RoutineProvider(
+            user: Provider.of<UserProvider>(context, listen: false).curUser, service: null),
+        update: (BuildContext context, UserProvider up, RoutineProvider? rp) {
+          rp?.setUser(user: up.curUser);
+          return rp ?? RoutineProvider(user: up.curUser, service: null);
+        }),
+    ChangeNotifierProxyProvider<UserProvider, ReminderProvider>(
+        create: (BuildContext context) => ReminderProvider(
+            user: Provider.of<UserProvider>(context, listen: false).curUser, service: null),
+        update: (BuildContext context, UserProvider up, ReminderProvider? rp) {
+          rp?.setUser(user: up.curUser);
+          return rp ?? ReminderProvider(user: up.curUser, service: null);
+        }),
+    ChangeNotifierProxyProvider<UserProvider, DeadlineProvider>(
+        create: (BuildContext context) => DeadlineProvider(
+            user: Provider.of<UserProvider>(context, listen: false).curUser, service: null),
+        update: (BuildContext context, UserProvider up, DeadlineProvider? dp) {
+          dp?.setUser(user: up.curUser);
+          return dp ?? DeadlineProvider(user: up.curUser, service: null);
+        }),
+    ChangeNotifierProxyProvider<UserProvider, GroupProvider>(
+        create: (BuildContext context) => GroupProvider(
+            user: Provider.of<UserProvider>(context, listen: false).curUser,
+            groupService: null,
+            toDoService: null),
+        update: (BuildContext context, UserProvider up, GroupProvider? gp) {
+          gp?.setUser(user: up.curUser);
+          return gp ?? GroupProvider(user: up.curUser, groupService: null, toDoService: null);
+        })
+  ], child: const UITester()));
+}
+
+class UITester extends StatelessWidget {
+  const UITester({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      theme: ThemeData(useMaterial3: true),
+      // Switch this out as needed.
+      home: const FormTester(),
+    );
+  }
+}
+
+class FormTester extends StatefulWidget {
+  const FormTester({super.key});
+
+  @override
+  State<FormTester> createState() => _FormTester();
+}
+
+class _FormTester extends State<FormTester> {
+  @override
+  void initState() {
+    IsarService.instance.init(debug: true);
+    SupabaseService.instance.init(
+        supabaseUrl: Constants.supabaseURL,
+        anonKey: Constants.supabaseAnnonKey,
+        client: FakeSupabase());
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    IsarService.instance.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('FormTester'),
+      ),
+      body: const Center(child: Text('Press the button below!')),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => showDialog(
+            context: context,
+            builder: (BuildContext context) {
+              return const CreateToDoScreen();
+              // return const UpdateToDoScreen();
+              // return const CreateRoutineScreen();
+              // return const UpdateRoutineScreen();
+              // return const CreateDeadlineScreen();
+              // return const UpdateDeadlineScreen();
+              // return const CreateReminderScreen();
+              // return const UpdateReminderScreen();
+            }),
+        backgroundColor: Colors.pink,
+        child: const Icon(Icons.navigation),
+      ),
+    );
+  }
+}

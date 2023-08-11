@@ -7,7 +7,7 @@ import '../model/task/todo.dart';
 import '../repositories/todo_repo.dart';
 import '../util/constants.dart';
 import '../util/enums.dart';
-import '../util/interfaces/repository/todo_repository.dart';
+import '../util/interfaces/repository/model/todo_repository.dart';
 import '../util/interfaces/sortable.dart';
 import '../util/numbers.dart';
 
@@ -45,18 +45,14 @@ class ToDoService {
   }
 
   DateTime? getRepeatDate({required ToDo toDo}) => switch (toDo.frequency) {
-        (Frequency.daily) => Jiffy.parseFromDateTime(toDo.startDate)
-            .add(days: toDo.repeatSkip)
-            .dateTime,
-        (Frequency.weekly) => Jiffy.parseFromDateTime(toDo.startDate)
-            .add(weeks: toDo.repeatSkip)
-            .dateTime,
-        (Frequency.monthly) => Jiffy.parseFromDateTime(toDo.startDate)
-            .add(months: toDo.repeatSkip)
-            .dateTime,
-        (Frequency.yearly) => Jiffy.parseFromDateTime(toDo.startDate)
-            .add(years: toDo.repeatSkip)
-            .dateTime,
+        (Frequency.daily) =>
+          Jiffy.parseFromDateTime(toDo.startDate).add(days: toDo.repeatSkip).dateTime,
+        (Frequency.weekly) =>
+          Jiffy.parseFromDateTime(toDo.startDate).add(weeks: toDo.repeatSkip).dateTime,
+        (Frequency.monthly) =>
+          Jiffy.parseFromDateTime(toDo.startDate).add(months: toDo.repeatSkip).dateTime,
+        (Frequency.yearly) =>
+          Jiffy.parseFromDateTime(toDo.startDate).add(years: toDo.repeatSkip).dateTime,
         (Frequency.custom) => getCustom(toDo: toDo),
         //Once should never repeat -> fixing asynchronously in case validation fails.
         (Frequency.once) => null,
@@ -71,14 +67,12 @@ class ToDoService {
       return;
     }
 
-    int offset = Jiffy.parseFromDateTime(toDo.dueDate)
-        .diff(Jiffy.parseFromDateTime(toDo.startDate)) as int;
+    int offset =
+        Jiffy.parseFromDateTime(toDo.dueDate).diff(Jiffy.parseFromDateTime(toDo.startDate)) as int;
 
     ToDo newToDo = toDo.copyWith(
       startDate: nextRepeatDate,
-      dueDate: Jiffy.parseFromDateTime(nextRepeatDate)
-          .add(microseconds: offset)
-          .dateTime,
+      dueDate: Jiffy.parseFromDateTime(nextRepeatDate).add(microseconds: offset).dateTime,
     );
 
     return updateToDo(toDo: newToDo);
@@ -99,8 +93,7 @@ class ToDoService {
   }
 
   // This is somewhat hacky, but populateCalendar needs an early escape.
-  Future<void> checkRepeating(
-      {required DateTime now, List<ToDo>? repeatables}) async {
+  Future<void> checkRepeating({required DateTime now, List<ToDo>? repeatables}) async {
     List<ToDo> toUpdate = List.empty(growable: true);
 
     repeatables = repeatables ?? await _repository.getRepeatables(now: now);
@@ -119,9 +112,7 @@ class ToDoService {
 
       ToDo newToDo = toDo.copyWith(
           startDate: nextRepeatDate,
-          dueDate: Jiffy.parseFromDateTime(nextRepeatDate)
-              .add(microseconds: offset)
-              .dateTime);
+          dueDate: Jiffy.parseFromDateTime(nextRepeatDate).add(microseconds: offset).dateTime);
 
       toDo.repeatable = false;
       toUpdate.add(newToDo);
@@ -152,14 +143,11 @@ class ToDoService {
 
     // ie. if it is within the same week.
     if (index + 1 > toDo.startDate.weekday) {
-      return Jiffy.parseFromDateTime(toDo.startDate)
-          .add(days: numDays)
-          .dateTime;
+      return Jiffy.parseFromDateTime(toDo.startDate).add(days: numDays).dateTime;
     }
 
-    Jiffy nextRepeatJiffy = Jiffy.parseFromDateTime(toDo.startDate)
-        .add(days: numDays)
-        .subtract(weeks: 1);
+    Jiffy nextRepeatJiffy =
+        Jiffy.parseFromDateTime(toDo.startDate).add(days: numDays).subtract(weeks: 1);
 
     // These should be handled within the validator.
     switch (toDo.customFreq) {
@@ -172,35 +160,41 @@ class ToDoService {
     }
   }
 
-  Future<void> createToDo({required ToDo toDo}) async =>
-      _repository.create(toDo);
+  Future<void> createToDo({required ToDo toDo}) async => _repository.create(toDo);
 
-  Future<List<ToDo>> getToDos() async => _repository.getRepoList();
+  Future<List<ToDo>> searchToDos({required String searchString}) async =>
+      _repository.search(searchString: searchString);
+
+  Future<List<ToDo>> getToDos({int limit = 50, int offset = 0}) async =>
+      _repository.getRepoList(limit: limit, offset: offset);
   Future<List<ToDo>> getToDosBy(
-          {required SortableView<ToDo> toDoSorter}) async =>
-      _repository.getRepoListBy(sorter: toDoSorter);
+          {required SortableView<ToDo> toDoSorter, int limit = 50, int offset = 0}) async =>
+      _repository.getRepoListBy(sorter: toDoSorter, limit: limit, offset: offset);
 
-  Future<ToDo?> getToDoByID({required int id}) async =>
-      _repository.getByID(id: id);
+  Future<List<ToDo>> getOverdues({int limit = 50, int offset = 0}) async =>
+      _repository.getOverdues(limit: limit, offset: offset);
 
-  Future<List<ToDo>> getMyDay() async => _repository.getMyDay();
+  Future<ToDo?> getToDoByID({required int id}) async => _repository.getByID(id: id);
+
+  Future<List<ToDo>> mostRecent({int limit = 5}) async => _repository.mostRecent(limit: limit);
+
+  Future<List<ToDo>> getMyDay({int limit = 50, int offset = 0}) async =>
+      _repository.getMyDay(limit: limit, offset: offset);
   Future<List<ToDo>> getByGroup({required int groupID}) async =>
       _repository.getRepoByGroupID(groupID: groupID);
-  Future<List<ToDo>> getCompleted() async => _repository.getCompleted();
+  Future<List<ToDo>> getCompleted({int limit = 50, int offset = 0}) async =>
+      _repository.getCompleted(limit: limit, offset: offset);
 
-  Future<void> updateToDo({required ToDo toDo}) async =>
-      _repository.update(toDo);
+  Future<void> updateToDo({required ToDo toDo}) async => _repository.update(toDo);
 
-  Future<void> updateBatch({required List<ToDo> toDos}) async =>
-      _repository.updateBatch(toDos);
+  Future<void> updateBatch({required List<ToDo> toDos}) async => _repository.updateBatch(toDos);
 
-  Future<void> deleteToDo({required ToDo toDo}) async =>
-      _repository.delete(toDo);
+  Future<void> deleteToDo({required ToDo toDo}) async => _repository.delete(toDo);
 
   Future<void> clearDeletesLocalRepo() async => _repository.deleteLocal();
 
   Future<void> deleteFutures({required ToDo toDo}) async =>
-      _repository.deleteFutures(toDo: toDo);
+      _repository.deleteFutures(deleteFrom: toDo);
 
   Future<void> syncRepo() async => _repository.syncRepo();
 
@@ -212,9 +206,7 @@ class ToDoService {
 
   // This is for my day.
   Future<void> reorderTodos(
-      {required List<ToDo> toDos,
-      required int oldIndex,
-      required int newIndex}) async {
+      {required List<ToDo> toDos, required int oldIndex, required int newIndex}) async {
     if (oldIndex < newIndex) {
       newIndex--;
     }
@@ -227,9 +219,7 @@ class ToDoService {
   }
 
   Future<void> reorderGroupTasks(
-      {required List<ToDo> toDos,
-      required int oldIndex,
-      required int newIndex}) async {
+      {required List<ToDo> toDos, required int oldIndex, required int newIndex}) async {
     if (oldIndex < newIndex) {
       newIndex--;
     }

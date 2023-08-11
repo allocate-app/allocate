@@ -18,6 +18,7 @@ import "providers/group_provider.dart";
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   DartPluginRegistrant.ensureInitialized();
+  // Factor this MP out into a method pls.
   runApp(
     MultiProvider(providers: [
       ChangeNotifierProvider<UserProvider>(create: (_) => UserProvider()),

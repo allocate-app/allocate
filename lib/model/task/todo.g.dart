@@ -69,71 +69,76 @@ const ToDoSchema = CollectionSchema(
       name: r'isSynced',
       type: IsarType.bool,
     ),
-    r'myDay': PropertySchema(
+    r'lastUpdated': PropertySchema(
       id: 10,
+      name: r'lastUpdated',
+      type: IsarType.dateTime,
+    ),
+    r'myDay': PropertySchema(
+      id: 11,
       name: r'myDay',
       type: IsarType.bool,
     ),
     r'name': PropertySchema(
-      id: 11,
+      id: 12,
       name: r'name',
       type: IsarType.string,
     ),
     r'priority': PropertySchema(
-      id: 12,
+      id: 13,
       name: r'priority',
       type: IsarType.byte,
       enumMap: _ToDopriorityEnumValueMap,
     ),
     r'realDuration': PropertySchema(
-      id: 13,
+      id: 14,
       name: r'realDuration',
       type: IsarType.long,
     ),
     r'repeatDays': PropertySchema(
-      id: 14,
+      id: 15,
       name: r'repeatDays',
       type: IsarType.boolList,
     ),
     r'repeatID': PropertySchema(
-      id: 15,
+      id: 16,
       name: r'repeatID',
       type: IsarType.long,
     ),
     r'repeatSkip': PropertySchema(
-      id: 16,
+      id: 17,
       name: r'repeatSkip',
       type: IsarType.long,
     ),
     r'repeatable': PropertySchema(
-      id: 17,
+      id: 18,
       name: r'repeatable',
       type: IsarType.bool,
     ),
     r'startDate': PropertySchema(
-      id: 18,
+      id: 19,
       name: r'startDate',
       type: IsarType.dateTime,
     ),
     r'subTasks': PropertySchema(
-      id: 19,
+      id: 20,
       name: r'subTasks',
       type: IsarType.objectList,
       target: r'SubTask',
     ),
     r'taskType': PropertySchema(
-      id: 20,
+      id: 21,
       name: r'taskType',
       type: IsarType.byte,
       enumMap: _ToDotaskTypeEnumValueMap,
     ),
     r'toDelete': PropertySchema(
-      id: 21,
+      id: 22,
       name: r'toDelete',
       type: IsarType.bool,
     ),
     r'weight': PropertySchema(
-      id: 22,
+      id: 23,
       name: r'weight',
       type: IsarType.long,
     )
@@ -299,6 +304,19 @@ const ToDoSchema = CollectionSchema(
           caseSensitive: false,
         )
       ],
+    ),
+    r'lastUpdated': IndexSchema(
+      id: 8989359681631629925,
+      name: r'lastUpdated',
+      unique: false,
+      replace: false,
+      properties: [
+        IndexPropertySchema(
+          name: r'lastUpdated',
+          type: IndexType.value,
+          caseSensitive: false,
+        )
+      ],
     )
   },
   links: {},
@@ -345,24 +363,25 @@ void _toDoSerialize(
   writer.writeLong(offsets[7], object.groupID);
   writer.writeLong(offsets[8], object.groupIndex);
   writer.writeBool(offsets[9], object.isSynced);
-  writer.writeBool(offsets[10], object.myDay);
-  writer.writeString(offsets[11], object.name);
-  writer.writeByte(offsets[12], object.priority.index);
-  writer.writeLong(offsets[13], object.realDuration);
-  writer.writeBoolList(offsets[14], object.repeatDays);
-  writer.writeLong(offsets[15], object.repeatID);
-  writer.writeLong(offsets[16], object.repeatSkip);
-  writer.writeBool(offsets[17], object.repeatable);
-  writer.writeDateTime(offsets[18], object.startDate);
+  writer.writeDateTime(offsets[10], object.lastUpdated);
+  writer.writeBool(offsets[11], object.myDay);
+  writer.writeString(offsets[12], object.name);
+  writer.writeByte(offsets[13], object.priority.index);
+  writer.writeLong(offsets[14], object.realDuration);
+  writer.writeBoolList(offsets[15], object.repeatDays);
+  writer.writeLong(offsets[16], object.repeatID);
+  writer.writeLong(offsets[17], object.repeatSkip);
+  writer.writeBool(offsets[18], object.repeatable);
+  writer.writeDateTime(offsets[19], object.startDate);
   writer.writeObjectList<SubTask>(
-    offsets[19],
+    offsets[20],
     allOffsets,
     SubTaskSchema.serialize,
     object.subTasks,
   );
-  writer.writeByte(offsets[20], object.taskType.index);
-  writer.writeBool(offsets[21], object.toDelete);
-  writer.writeLong(offsets[22], object.weight);
+  writer.writeByte(offsets[21], object.taskType.index);
+  writer.writeBool(offsets[22], object.toDelete);
+  writer.writeLong(offsets[23], object.weight);
 }
 
 ToDo _toDoDeserialize(
@@ -382,32 +401,33 @@ ToDo _toDoDeserialize(
     frequency: _ToDofrequencyValueEnumMap[reader.readByteOrNull(offsets[6])] ??
         Frequency.once,
     groupID: reader.readLongOrNull(offsets[7]),
-    myDay: reader.readBoolOrNull(offsets[10]) ?? false,
-    name: reader.readString(offsets[11]),
-    priority: _ToDopriorityValueEnumMap[reader.readByteOrNull(offsets[12])] ??
+    lastUpdated: reader.readDateTime(offsets[10]),
+    myDay: reader.readBoolOrNull(offsets[11]) ?? false,
+    name: reader.readString(offsets[12]),
+    priority: _ToDopriorityValueEnumMap[reader.readByteOrNull(offsets[13])] ??
         Priority.low,
-    realDuration: reader.readLong(offsets[13]),
-    repeatDays: reader.readBoolList(offsets[14]) ?? [],
-    repeatID: reader.readLongOrNull(offsets[15]),
-    repeatSkip: reader.readLongOrNull(offsets[16]) ?? 1,
-    repeatable: reader.readBoolOrNull(offsets[17]) ?? false,
-    startDate: reader.readDateTime(offsets[18]),
+    realDuration: reader.readLong(offsets[14]),
+    repeatDays: reader.readBoolList(offsets[15]) ?? [],
+    repeatID: reader.readLongOrNull(offsets[16]),
+    repeatSkip: reader.readLongOrNull(offsets[17]) ?? 1,
+    repeatable: reader.readBoolOrNull(offsets[18]) ?? false,
+    startDate: reader.readDateTime(offsets[19]),
     subTasks: reader.readObjectList<SubTask>(
-          offsets[19],
+          offsets[20],
           SubTaskSchema.deserialize,
           allOffsets,
           SubTask(),
         ) ??
         [],
-    taskType: _ToDotaskTypeValueEnumMap[reader.readByteOrNull(offsets[20])] ??
+    taskType: _ToDotaskTypeValueEnumMap[reader.readByteOrNull(offsets[21])] ??
         TaskType.small,
-    weight: reader.readLongOrNull(offsets[22]) ?? 0,
+    weight: reader.readLongOrNull(offsets[23]) ?? 0,
   );
   object.customViewIndex = reader.readLong(offsets[2]);
   object.groupIndex = reader.readLong(offsets[8]);
   object.id = id;
   object.isSynced = reader.readBool(offsets[9]);
-  object.toDelete = reader.readBool(offsets[21]);
+  object.toDelete = reader.readBool(offsets[22]);
   return object;
 }
 
@@ -441,25 +461,27 @@ P _toDoDeserializeProp<P>(
     case 9:
       return (reader.readBool(offset)) as P;
     case 10:
-      return (reader.readBoolOrNull(offset) ?? false) as P;
+      return (reader.readDateTime(offset)) as P;
     case 11:
-      return (reader.readString(offset)) as P;
+      return (reader.readBoolOrNull(offset) ?? false) as P;
     case 12:
+      return (reader.readString(offset)) as P;
+    case 13:
       return (_ToDopriorityValueEnumMap[reader.readByteOrNull(offset)] ??
           Priority.low) as P;
-    case 13:
-      return (reader.readLong(offset)) as P;
     case 14:
-      return (reader.readBoolList(offset) ?? []) as P;
+      return (reader.readLong(offset)) as P;
     case 15:
-      return (reader.readLongOrNull(offset)) as P;
+      return (reader.readBoolList(offset) ?? []) as P;
     case 16:
-      return (reader.readLongOrNull(offset) ?? 1) as P;
+      return (reader.readLongOrNull(offset)) as P;
     case 17:
-      return (reader.readBoolOrNull(offset) ?? false) as P;
+      return (reader.readLongOrNull(offset) ?? 1) as P;
     case 18:
-      return (reader.readDateTime(offset)) as P;
+      return (reader.readBoolOrNull(offset) ?? false) as P;
     case 19:
+      return (reader.readDateTime(offset)) as P;
+    case 20:
       return (reader.readObjectList<SubTask>(
             offset,
             SubTaskSchema.deserialize,
@@ -467,12 +489,12 @@ P _toDoDeserializeProp<P>(
             SubTask(),
           ) ??
           []) as P;
-    case 20:
+    case 21:
       return (_ToDotaskTypeValueEnumMap[reader.readByteOrNull(offset)] ??
           TaskType.small) as P;
-    case 21:
-      return (reader.readBool(offset)) as P;
     case 22:
+      return (reader.readBool(offset)) as P;
+    case 23:
       return (reader.readLongOrNull(offset) ?? 0) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -629,6 +651,14 @@ extension ToDoQueryWhereSort on QueryBuilder<ToDo, ToDo, QWhere> {
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(
         const IndexWhereClause.any(indexName: r'toDelete'),
+      );
+    });
+  }
+
+  QueryBuilder<ToDo, ToDo, QAfterWhere> anyLastUpdated() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(
+        const IndexWhereClause.any(indexName: r'lastUpdated'),
       );
     });
   }
@@ -1537,6 +1567,96 @@ extension ToDoQueryWhere on QueryBuilder<ToDo, ToDo, QWhereClause> {
       }
     });
   }
+
+  QueryBuilder<ToDo, ToDo, QAfterWhereClause> lastUpdatedEqualTo(
+      DateTime lastUpdated) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'lastUpdated',
+        value: [lastUpdated],
+      ));
+    });
+  }
+
+  QueryBuilder<ToDo, ToDo, QAfterWhereClause> lastUpdatedNotEqualTo(
+      DateTime lastUpdated) {
+    return QueryBuilder.apply(this, (query) {
+      if (query.whereSort == Sort.asc) {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'lastUpdated',
+              lower: [],
+              upper: [lastUpdated],
+              includeUpper: false,
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'lastUpdated',
+              lower: [lastUpdated],
+              includeLower: false,
+              upper: [],
+            ));
+      } else {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'lastUpdated',
+              lower: [lastUpdated],
+              includeLower: false,
+              upper: [],
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'lastUpdated',
+              lower: [],
+              upper: [lastUpdated],
+              includeUpper: false,
+            ));
+      }
+    });
+  }
+
+  QueryBuilder<ToDo, ToDo, QAfterWhereClause> lastUpdatedGreaterThan(
+    DateTime lastUpdated, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'lastUpdated',
+        lower: [lastUpdated],
+        includeLower: include,
+        upper: [],
+      ));
+    });
+  }
+
+  QueryBuilder<ToDo, ToDo, QAfterWhereClause> lastUpdatedLessThan(
+    DateTime lastUpdated, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'lastUpdated',
+        lower: [],
+        upper: [lastUpdated],
+        includeUpper: include,
+      ));
+    });
+  }
+
+  QueryBuilder<ToDo, ToDo, QAfterWhereClause> lastUpdatedBetween(
+    DateTime lowerLastUpdated,
+    DateTime upperLastUpdated, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'lastUpdated',
+        lower: [lowerLastUpdated],
+        includeLower: includeLower,
+        upper: [upperLastUpdated],
+        includeUpper: includeUpper,
+      ));
+    });
+  }
 }
 
 extension ToDoQueryFilter on QueryBuilder<ToDo, ToDo, QFilterCondition> {
@@ -2121,6 +2241,59 @@ extension ToDoQueryFilter on QueryBuilder<ToDo, ToDo, QFilterCondition> {
       return query.addFilterCondition(FilterCondition.equalTo(
         property: r'isSynced',
         value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<ToDo, ToDo, QAfterFilterCondition> lastUpdatedEqualTo(
+      DateTime value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'lastUpdated',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<ToDo, ToDo, QAfterFilterCondition> lastUpdatedGreaterThan(
+    DateTime value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'lastUpdated',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<ToDo, ToDo, QAfterFilterCondition> lastUpdatedLessThan(
+    DateTime value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'lastUpdated',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<ToDo, ToDo, QAfterFilterCondition> lastUpdatedBetween(
+    DateTime lower,
+    DateTime upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'lastUpdated',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
       ));
     });
   }
@@ -2976,6 +3149,18 @@ extension ToDoQuerySortBy on QueryBuilder<ToDo, ToDo, QSortBy> {
     });
   }
 
+  QueryBuilder<ToDo, ToDo, QAfterSortBy> sortByLastUpdated() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastUpdated', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ToDo, ToDo, QAfterSortBy> sortByLastUpdatedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastUpdated', Sort.desc);
+    });
+  }
+
   QueryBuilder<ToDo, ToDo, QAfterSortBy> sortByMyDay() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'myDay', Sort.asc);
@@ -3242,6 +3427,18 @@ extension ToDoQuerySortThenBy on QueryBuilder<ToDo, ToDo, QSortThenBy> {
     });
   }
 
+  QueryBuilder<ToDo, ToDo, QAfterSortBy> thenByLastUpdated() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastUpdated', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ToDo, ToDo, QAfterSortBy> thenByLastUpdatedDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastUpdated', Sort.desc);
+    });
+  }
+
   QueryBuilder<ToDo, ToDo, QAfterSortBy> thenByMyDay() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'myDay', Sort.asc);
@@ -3437,6 +3634,12 @@ extension ToDoQueryWhereDistinct on QueryBuilder<ToDo, ToDo, QDistinct> {
     });
   }
 
+  QueryBuilder<ToDo, ToDo, QDistinct> distinctByLastUpdated() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'lastUpdated');
+    });
+  }
+
   QueryBuilder<ToDo, ToDo, QDistinct> distinctByMyDay() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'myDay');
@@ -3575,6 +3778,12 @@ extension ToDoQueryProperty on QueryBuilder<ToDo, ToDo, QQueryProperty> {
   QueryBuilder<ToDo, bool, QQueryOperations> isSyncedProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'isSynced');
+    });
+  }
+
+  QueryBuilder<ToDo, DateTime, QQueryOperations> lastUpdatedProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'lastUpdated');
     });
   }
 

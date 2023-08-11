@@ -5,24 +5,15 @@ class SupabaseService {
   static final SupabaseService _instance = SupabaseService._internal();
   static SupabaseService get instance => _instance;
 
-  // These cannot be static for testing
-  // May also not need to be static at all.
-  // static late final SupabaseClient _supabaseClient;
-  // static SupabaseClient get supabaseClient => _supabaseClient;
-
   late SupabaseClient _supabaseClient;
   SupabaseClient get supabaseClient => _supabaseClient;
-  init(
-      {required String supabaseUrl,
-      required String anonKey,
-      bool mock = false}) async {
-    if (mock) {
-      _supabaseClient = FakeSupabase();
+  init({required String supabaseUrl, required String anonKey, SupabaseClient? client}) async {
+    if (null != client) {
+      _supabaseClient = client;
       return;
     }
 
-    await Supabase.initialize(
-        url: supabaseUrl, anonKey: anonKey, authCallbackUrlHostname: "login");
+    await Supabase.initialize(url: supabaseUrl, anonKey: anonKey, authCallbackUrlHostname: "login");
     _supabaseClient = Supabase.instance.client;
   }
 
@@ -45,10 +36,7 @@ class FakeGoTrue extends Fake implements GoTrueClient {
   );
   @override
   Future<AuthResponse> signInWithPassword(
-      {String? email,
-      String? phone,
-      required String password,
-      String? captchaToken}) async {
+      {String? email, String? phone, required String password, String? captchaToken}) async {
     return AuthResponse(session: null, user: _user);
   }
 

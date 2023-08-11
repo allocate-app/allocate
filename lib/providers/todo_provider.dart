@@ -153,7 +153,8 @@ class ToDoProvider extends ChangeNotifier {
         customFreq: customFreq ?? CustomFrequency.weekly,
         repeatDays: repeatDays ?? List.filled(7, false, growable: false),
         repeatSkip: repeatSkip ?? 1,
-        subTasks: subTasks);
+        subTasks: subTasks,
+        lastUpdated: DateTime.now());
 
     curToDo!.repeatID = curToDo.hashCode;
 
@@ -171,6 +172,7 @@ class ToDoProvider extends ChangeNotifier {
   }
 
   Future<void> updateToDo() async {
+    curToDo!.lastUpdated = DateTime.now();
     if (curToDo!.taskType != TaskType.small) {
       _toDoService.recalculateWeight(toDo: curToDo!);
     }
@@ -222,8 +224,17 @@ class ToDoProvider extends ChangeNotifier {
   Future<void> populateCalendar({DateTime? limit}) async =>
       _toDoService.populateCalendar(limit: limit ?? DateTime.now());
 
-  // TODO: Refactor this to throw an error - Catch & Create.
-  Future<void> getToDoByID({required int id}) async =>
+  Future<List<ToDo>> getOverdues({int limit = 50, int offset = 0}) =>
+      _toDoService.getOverdues(limit: limit, offset: offset);
+
+  Future<List<ToDo>> searchToDos({required String searchString}) async =>
+      _toDoService.searchToDos(searchString: searchString);
+
+  Future<List<ToDo>> mostRecent({int limit = 5}) async => await _toDoService.mostRecent(limit: 5);
+
+  Future<ToDo?> getToDoByID({required int id}) async => await _toDoService.getToDoByID(id: id);
+
+  Future<void> setToDoByID({required int id}) async =>
       curToDo = await _toDoService.getToDoByID(id: id) ??
           ToDo(
               taskType: TaskType.small,
@@ -233,21 +244,34 @@ class ToDoProvider extends ChangeNotifier {
               startDate: DateTime.now(),
               dueDate: DateTime.now(),
               repeatDays: List.filled(7, false),
-              subTasks: List.filled(Constants.numTasks[TaskType.small]!, SubTask()));
+              subTasks: List.filled(Constants.numTasks[TaskType.small]!, SubTask()),
+              lastUpdated: DateTime.now());
 
-  Future<void> getToDos() async {
-    toDos = await _toDoService.getToDos();
+  Future<List<ToDo>> getToDos({int limit = 50, int offset = 0}) async =>
+      await _toDoService.getToDos(limit: limit, offset: offset);
+
+  Future<void> setToDos({int limit = 50, int offset = 0}) async {
+    toDos = await _toDoService.getToDos(limit: limit, offset: offset);
   }
 
-  Future<void> getToDosBy() async {
-    toDos = await _toDoService.getToDosBy(toDoSorter: sorter);
+  Future<List<ToDo>> getToDosBy({int limit = 50, int offset = 0}) async =>
+      _toDoService.getToDosBy(toDoSorter: sorter, limit: limit, offset: offset);
+
+  Future<void> setToDosBy({int limit = 50, int offset = 0}) async {
+    toDos = await _toDoService.getToDosBy(toDoSorter: sorter, limit: limit, offset: offset);
   }
 
-  Future<void> getMyDay() async {
-    toDos = await _toDoService.getMyDay();
+  Future<List<ToDo>> getMyDay({int limit = 50, int offset = 0}) async =>
+      await _toDoService.getMyDay(limit: limit, offset: offset);
+
+  Future<void> setMyDay({int limit = 50, int offset = 0}) async {
+    toDos = await _toDoService.getMyDay(limit: limit, offset: offset);
   }
 
-  Future<void> getCompleted() async {
-    toDos = await _toDoService.getCompleted();
+  Future<List<ToDo>> getToDosCompleted({int limit = 50, int offset = 0}) async =>
+      await _toDoService.getCompleted(limit: limit, offset: offset);
+
+  Future<void> setToDosCompleted({int limit = 50, int offset = 0}) async {
+    toDos = await _toDoService.getCompleted(limit: limit, offset: offset);
   }
 }
