@@ -426,6 +426,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                     ),
                     // Subtasks
                     (taskType != TaskType.small)
+                    // TODO: Fix Steps density & padding for small screens.
                         ? Padding(
                             padding: const EdgeInsets.symmetric(horizontal: Constants.innerPadding),
                             child: Card(
@@ -605,21 +606,28 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
     return ListTile(
         leading: const Icon(Icons.event_repeat_outlined),
         title: (frequency == Frequency.once)
-            ? const Text(
+            ? const AutoSizeText(
                 "Set Recurring?",
-                overflow: TextOverflow.ellipsis,
+                overflow: TextOverflow.visible,
+          minFontSize: Constants.small,
+          maxLines: 2,
+          softWrap: true
               )
-            : Text(
+            : AutoSizeText(
                 toBeginningOfSentenceCase(frequency.name)!,
-                overflow: TextOverflow.ellipsis,
+                overflow: TextOverflow.visible,
+                minFontSize: Constants.small,
+                maxLines: 1,
+          softWrap: false
               ),
+        // TODO: Fix this, it's completely broken - Work with live view.
         onTap: () {
+          // This also needs stateful builder.
           // Caching bc of conditional rendering.
           Frequency cacheFreq = frequency;
           CustomFrequency cacheCustom = customFreq;
           Set<int> cacheWeekdays = Set.from(weekDaySet);
           int cacheSkip = repeatSkip;
-
           showDialog(
               context: context,
               builder: (BuildContext context) {
@@ -639,14 +647,23 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
       Set<int> cacheWeekdays, BuildContext context) {
     return Dialog(
         child: Padding(
-      padding: const EdgeInsets.all(Constants.padding),
+      padding: const EdgeInsets.all(Constants.innerPadding),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Row(mainAxisAlignment: MainAxisAlignment.start, children: [
-            Text(
-              "Set Recurring",
-              overflow: TextOverflow.ellipsis,
+          const Row(
+            mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.start, children: [
+            Expanded(
+              child: AutoSizeText(
+                "Set Recurring",
+                softWrap: false,
+                maxLines: 1,
+                minFontSize: Constants.medium,
+                overflow: TextOverflow.visible,
+                style: Constants.headerStyle,
+              ),
             )
           ]),
           // Segmented button
@@ -654,9 +671,9 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
             segments: Frequency.values
                 .map((Frequency frequency) => ButtonSegment<Frequency>(
                       value: frequency,
-                      label: Text(
+                      label: AutoSizeText(
                         "${toBeginningOfSentenceCase(frequency.name)}",
-                        overflow: TextOverflow.ellipsis,
+                        overflow: TextOverflow.visible,
                       ),
                     ))
                 .toList(growable: false),
@@ -761,6 +778,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
     return ListTile(
         leading: const Icon(Icons.schedule_outlined),
         title: (null == startTime && null == dueTime)
+        // TODO: Fix UI:  Needs to be Start @ ___ Icon Due @ ___, currently unclear.
             ? const AutoSizeText(
                 "Add Times",
                 overflow: TextOverflow.visible,
@@ -831,13 +849,13 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                         ),
                       ),
               ]),
-        onTap: () => showDialog<void>(
+        onTap: () {
+          showDialog<void>(
             context: context,
             builder: (BuildContext context) {
-              TimeOfDay? tmpStart;
-              TimeOfDay? tmpDue;
+              TimeOfDay? tmpStart = startTime;
+              TimeOfDay? tmpDue = dueTime;
               return StatefulBuilder(
-                  // TODO: Finish working here.
                   builder: (context, setState) => Dialog(
                           child: Padding(
                         padding: const EdgeInsets.all(Constants.innerPadding),
@@ -883,6 +901,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                                   ],
                                 ),
                               ),
+                              // TODO: Text Row: Start @, Due @.
                               Padding(
                                 padding:
                                     const EdgeInsets.symmetric(vertical: Constants.innerPadding),
@@ -892,10 +911,16 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                                     children: [
                                       Expanded(
                                         child: OutlinedButton(
-                                            onPressed: () {},
+                                            onPressed: () async {
+                                              final TimeOfDay? picked = await showTimePicker(context: context, initialTime: tmpStart ?? const TimeOfDay(hour: 0, minute: 0));
+                                              if(null != picked)
+                                                {
+                                                  setState(() => tmpStart = picked);
+                                                }
+                                            },
                                             child: (null != tmpStart)
                                                 ? AutoSizeText(
-                                                    tmpStart.format(context).toString(),
+                                                    tmpStart!.format(context).toString(),
                                                     softWrap: false,
                                                     overflow: TextOverflow.visible,
                                                     maxLines: 1,
@@ -909,10 +934,20 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                                       ),
                                       Expanded(
                                         child: OutlinedButton(
-                                          onPressed: () {},
+                                          onPressed: () async {
+                                            final TimeOfDay? picked = await showTimePicker(context: context, initialTime: tmpDue ?? const TimeOfDay(hour: 23, minute: 59),
+                                            );
+                                            if(null != picked) {
+
+                                              setState(() {
+
+                                                tmpDue = picked;
+                                              });
+                                            }
+                                          },
                                           child: (null != tmpDue)
                                               ? AutoSizeText(
-                                                  tmpDue.format(context).toString(),
+                                                  tmpDue!.format(context).toString(),
                                                 )
                                               : const AutoSizeText("Due Time",
                                                   softWrap: true,
@@ -946,6 +981,10 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                                         child: FilledButton.icon(
                                           icon: const Icon(Icons.done_outlined),
                                           onPressed: () {
+                                            setState((){
+                                              startTime = tmpStart;
+                                              dueTime = tmpDue;
+                                            });
                                             Navigator.pop(context);
                                           },
                                           label: const AutoSizeText("Done",
@@ -959,7 +998,9 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                                   ]),
                             ]),
                       )));
-            }),
+              // This is to update the main context after updating.
+            }).then((_) => setState((){}));
+        },
         trailing: IconButton(
           icon: const Icon(Icons.close),
           onPressed: () => setState(() {
@@ -969,7 +1010,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
         ));
   }
 
-  // TODO: Migrate calendar to Calendar v2.
+  // TODO: Migrate calendar to Calendar v2?
   ListTile buildDateTile(BuildContext context) {
     return ListTile(
       leading: const Icon(Icons.today_outlined),
@@ -1413,18 +1454,8 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
 
 // TODO: This needs rebuilding -> Size is bonkers.
   Dialog buildDurationDialog(BuildContext context, void Function(void Function()) setState) {
-    // LOL.
-    // int seconds = expectedDuration;
-    // int hours = seconds ~/ 3600;
-    // seconds %= 3600;
-    // int minutes = seconds ~/ 60;
-    // seconds %= 60;
 
     return Dialog(
-        // Not keen on using this.
-        // insetPadding: const EdgeInsets.all(Constants.innerDialogPadding),
-        // shape: const RoundedRectangleBorder(
-        //     borderRadius: BorderRadius.all(Radius.circular(Constants.roundedCorners))),
         child: Padding(
             padding: const EdgeInsets.all(Constants.innerPadding),
             child: Column(
