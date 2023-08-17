@@ -627,11 +627,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                 minFontSize: Constants.small,
                 maxLines: 1,
                 softWrap: false),
-        // TODO: Fix this, it's completely broken - Work with live view.
         onTap: () {
-          // This also needs stateful builder.
-          // Caching bc of conditional rendering.
-
           showDialog(
               context: context,
               builder: (BuildContext context) {
@@ -772,10 +768,12 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                                               ),
                                             ),
                                           ),
-                                          // Repeat skip
+                                          // Days of the week.
                                         ],
                                       )
                                     : const SizedBox.shrink(),
+
+                                // Repeat Skip
 
                                 Row(
                                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -863,18 +861,6 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                         maxLines: 2,
                         minFontSize: Constants.small,
                       )),
-                // const Flexible(
-                //   child: Padding(
-                //     padding: EdgeInsets.symmetric(horizontal: Constants.padding),
-                //     child: AutoSizeText(
-                //       "-",
-                //       softWrap: false,
-                //       overflow: TextOverflow.visible,
-                //       maxLines: 1,
-                //       minFontSize: Constants.small,
-                //     ),
-                //   ),
-                // ),
                 (null == dueTime)
                     ? const Flexible(
                         child: Padding(
