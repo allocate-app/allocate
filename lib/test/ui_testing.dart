@@ -1,10 +1,12 @@
 // This will need to be a basic scaffold with floating action button
 // Return here once DI refactor, and test pages/functions accoringly.
 
+import 'dart:io';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:window_manager/window_manager.dart';
 
 import '../providers/deadline_provider.dart';
 import '../providers/group_provider.dart';
@@ -17,11 +19,28 @@ import '../services/supabase_service.dart';
 import '../ui/views/sub_views/create_todo.dart';
 import '../util/constants.dart';
 
-/// Flutter code sample for [FloatingActionButton].
-
-void main() {
+// Async for windowmanager & desktop apps.
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   DartPluginRegistrant.ensureInitialized();
+
+  // THIS needs to be added to main in the app.
+  if (!Platform.isIOS && !Platform.isAndroid) {
+    // This is for default sizing.
+    await windowManager.ensureInitialized();
+
+    WindowManager.instance.setMinimumSize(Constants.minDesktopSize);
+
+    WindowOptions windowOptions = const WindowOptions(
+      minimumSize: Constants.minDesktopSize,
+      title: "TESTING",
+    );
+
+    windowManager.waitUntilReadyToShow(windowOptions, () async {
+      await windowManager.show();
+      await windowManager.focus();
+    });
+  }
 
   runApp(MultiProvider(providers: [
     ChangeNotifierProvider<UserProvider>(create: (_) => UserProvider()),
@@ -63,6 +82,13 @@ void main() {
           return gp ?? GroupProvider(user: up.curUser, groupService: null, toDoService: null);
         })
   ], child: const UITester()));
+
+  // REMEMBER: Add this to main - might have to be a desktop-only.
+  // doWhenWindowReady(() {
+  //   final win = appWindow;
+  //   win.minSize = Constants.minDesktopSize;
+  //   win.show();
+  // });
 }
 
 class UITester extends StatelessWidget {

@@ -22,15 +22,8 @@ import "../../../util/numbers.dart";
 import "../../widgets/paddedDivider.dart";
 
 /// Basic UI list order (Mobile):
-/// Title
-/// Type
-/// Begin dividers
-/// Group - Dropdown search + stream.
-/// Status (Complete + Myday)
-/// Description
-/// Duration (Expected + Real)
-/// Dates (Start + End + Times)
-/// Repeatable
+/// DONE
+/// UI Refactor for desktop: -> Bisect the listview into two columns.
 
 class CreateToDoScreen extends StatefulWidget {
   const CreateToDoScreen({Key? key}) : super(key: key);
@@ -69,15 +62,11 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
   late final TextEditingController descriptionEditingController;
 
   // Weight
-  // Slider vs Non editable integer.
-  // Use a list, accessed by TaskType.index;
   late int weight;
   // Only update this on subtask weight change
   late int sumWeight;
 
   // ExpectedDuration & Real Duration
-  // May have to refactor Duration Constant out.
-
   late int expectedDuration;
   late int realDuration;
   late int hours;
@@ -105,29 +94,18 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
   late TextEditingController repeatSkipEditingController;
   late int repeatSkip;
 
-  // Days of the week -> Need an enum, names map to indices.
-  // ON creation -> Loop and map values
-  late Set<int> weekDaySet;
+  late Set<int> weekDayList;
   late List<bool> weekDays;
 
   late final List<TextEditingController> subTaskEditingController;
   late final List<SubTask> subTasks;
   late int shownTasks;
 
-  // NOTE: On submit: run validation logic ->
-  // Check fields, ensure valid:
-  // If anything fails, set a boolean.
-  // Check the boolean, if it's all passed, create & pop.
-  // If not, run setState.
-  // MORE: Validation: Check the group search bar -> if it doesn't have a name,
-  // then set the groupID to null;
-
   @override
   void initState() {
     super.initState();
     initializeProviders();
 
-    // Refactor this into the user provider class.
     initializeParameters();
 
     initializeControllers();
@@ -160,7 +138,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
 
     subTasks = List.generate(Constants.maxNumTasks, (_) => SubTask());
     shownTasks = 0;
-    weekDaySet = <int>{};
+    weekDayList = {};
     weekDays = List.generate(7, (_) => false);
   }
 
@@ -260,8 +238,8 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
       nameErrorText = "Enter Task Name";
     }
     if (frequency == Frequency.custom) {
-      if (weekDaySet.isEmpty) {
-        weekDaySet.add((startDate?.day ?? DateTime.now().day) - 1);
+      if (weekDayList.isEmpty) {
+        weekDayList.add(min(((startDate?.weekday ?? DateTime.now().weekday) - 1), 0));
       }
     } else {
       customFreq = CustomFrequency.weekly;
@@ -290,7 +268,6 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
 
   @override
   Widget build(BuildContext context) {
-    print(MediaQuery.of(context).size);
     final Color errorColor = Theme.of(context).colorScheme.error;
 
     bool largeScreen = (MediaQuery.of(context).size.width >= Constants.largeScreen);
@@ -434,8 +411,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                             child: Card(
                               clipBehavior: Clip.antiAlias,
                               elevation: 0,
-                              //TODO: Abstract this reference
-                              color: Theme.of(context).colorScheme.surfaceVariant,
+                              color: Colors.transparent,
                               shape: RoundedRectangleBorder(
                                   side: BorderSide(
                                       color: Theme.of(context).colorScheme.outline,
@@ -527,7 +503,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                     // Expected Duration / RealDuration -> Show status, on click, open a dialog.
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
-                      child: buildDurationTile(context),
+                      child: buildDurationTile(context, smallScreen: smallScreen),
                     ),
 
                     const PaddedDivider(padding: Constants.innerPadding),
@@ -564,14 +540,19 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                     onPressed: () async {
                       bool validData = validateData();
                       if (validData) {
-                        weekDaySet.map((wd) => weekDays[wd] = true);
+                        mergeDateTimes();
+
+                        for (int index in weekDayList) {
+                          weekDays[index] = true;
+                        }
+
                         await toDoProvider
                             .createToDo(
                               groupID: groupID,
                               taskType: taskType,
                               name: name,
                               description: description,
-                              weight: weight,
+                              weight: (taskType == TaskType.small) ? weight : sumWeight,
                               expectedDuration: expectedDuration,
                               realDuration: realDuration,
                               priority: priority,
@@ -595,8 +576,9 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                             action: SnackBarAction(label: "Dismiss", onPressed: () {}),
                             duration: const Duration(milliseconds: 1500),
                             behavior: SnackBarBehavior.floating,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(Constants.circular),
+                            shape: const RoundedRectangleBorder(
+                              borderRadius:
+                                  BorderRadius.all(Radius.circular(Constants.roundedCorners)),
                             ),
                             width: (MediaQuery.sizeOf(context).width) / 2,
                             padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
@@ -611,6 +593,17 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
             ]),
       ),
     );
+  }
+
+  void mergeDateTimes() {
+    if (null != startDate && null != startTime) {
+      startDate = DateTime(
+          startDate!.year, startDate!.month, startDate!.day, startTime!.hour, startTime!.minute);
+    }
+    if (null != dueDate && null != dueTime) {
+      dueDate =
+          DateTime(dueDate!.year, dueDate!.month, dueDate!.day, dueTime!.hour, dueTime!.minute);
+    }
   }
 
   ListTile buildRepeatableTile(BuildContext context, {bool smallScreen = false}) {
@@ -633,7 +626,14 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
               builder: (BuildContext context) {
                 Frequency cacheFreq = frequency;
                 CustomFrequency cacheCustom = customFreq;
-                Set<int> cacheWeekdays = Set.from(weekDaySet);
+                Set<int> cacheWeekdays = Set.from(weekDayList);
+                if (cacheWeekdays.isEmpty) {
+                  int day = (null != startDate)
+                      ? max(startDate!.weekday - 1, 0)
+                      : max(DateTime.now().weekday - 1, 0);
+                  cacheWeekdays.add(day);
+                }
+
                 int cacheSkip = repeatSkip;
                 return StatefulBuilder(builder: (context, setState) {
                   return Dialog(
@@ -682,7 +682,14 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                                 ),
                                 // This is a hacky override until m3 Has width-scaling for DropdownMenu
                                 Padding(
-                                  padding: const EdgeInsets.all(Constants.innerPadding),
+                                  padding:
+                                      (cacheFreq != Frequency.once && cacheFreq != Frequency.daily)
+                                          ? const EdgeInsets.fromLTRB(
+                                              Constants.innerPadding,
+                                              Constants.innerPadding,
+                                              Constants.innerPadding,
+                                              Constants.halfPadding)
+                                          : const EdgeInsets.all(Constants.innerPadding),
                                   child: InputDecorator(
                                     decoration: const InputDecoration(
                                       border: OutlineInputBorder(
@@ -744,7 +751,6 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                                                       horizontal: Constants.padding),
                                                   isDense: true,
                                                   isExpanded: true,
-                                                  // TODO: Abstract this reference.
                                                   dropdownColor:
                                                       Theme.of(context).colorScheme.surfaceVariant,
                                                   borderRadius: const BorderRadius.all(
@@ -768,12 +774,116 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                                               ),
                                             ),
                                           ),
-                                          // Days of the week.
+                                          // Days of the week - Wrap in padding and a container
+
+                                          Padding(
+                                            padding: const EdgeInsets.fromLTRB(
+                                                Constants.innerPadding,
+                                                Constants.innerPadding,
+                                                Constants.innerPadding,
+                                                0),
+                                            child: Wrap(
+                                                spacing: 5,
+                                                runSpacing: 5,
+                                                alignment: WrapAlignment.center,
+                                                runAlignment: WrapAlignment.center,
+                                                children: Constants.weekDays
+                                                    .map((weekDay) => InputChip(
+                                                        backgroundColor: Theme.of(context)
+                                                            .colorScheme
+                                                            .surfaceVariant,
+                                                        shape: const RoundedRectangleBorder(
+                                                          borderRadius: BorderRadius.all(
+                                                              Radius.circular(Constants.circular)),
+                                                          side: BorderSide(
+                                                            strokeAlign:
+                                                                BorderSide.strokeAlignOutside,
+                                                          ),
+                                                        ),
+                                                        label: AutoSizeText(weekDay.key,
+                                                            minFontSize: Constants.small,
+                                                            maxLines: 1,
+                                                            softWrap: false,
+                                                            overflow: TextOverflow.visible),
+                                                        selected:
+                                                            cacheWeekdays.contains(weekDay.value),
+                                                        onSelected: (bool selected) => setState(() {
+                                                              if (selected) {
+                                                                cacheWeekdays.add(weekDay.value);
+                                                              } else {
+                                                                cacheWeekdays.remove(weekDay.value);
+                                                                if (cacheWeekdays.isEmpty) {
+                                                                  int day = (null != startDate)
+                                                                      ? max(
+                                                                          startDate!.weekday - 1, 0)
+                                                                      : max(
+                                                                          DateTime.now().weekday -
+                                                                              1,
+                                                                          0);
+                                                                  cacheWeekdays.add(day);
+                                                                }
+                                                              }
+                                                            })))
+                                                    .toList()),
+                                          ),
                                         ],
                                       )
                                     : const SizedBox.shrink(),
 
                                 // Repeat Skip
+                                (cacheFreq != Frequency.once && cacheFreq != Frequency.daily)
+                                    ? Padding(
+                                        padding: const EdgeInsets.all(Constants.innerPadding),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            const Flexible(
+                                                child: AutoSizeText(
+                                              "Every",
+                                              minFontSize: Constants.small,
+                                              style: Constants.headerStyle,
+                                              overflow: TextOverflow.visible,
+                                              softWrap: false,
+                                              maxLines: 1,
+                                            )),
+                                            Expanded(
+                                                child: NumberPicker(
+                                                    itemCount: 1,
+                                                    textStyle: Constants.numberPickerSecondary(
+                                                        context: context),
+                                                    selectedTextStyle:
+                                                        Constants.numberPickerPrimary(
+                                                            context: context),
+                                                    minValue: 1,
+                                                    maxValue: 100,
+                                                    value: cacheSkip,
+                                                    haptics: true,
+                                                    onChanged: (value) {
+                                                      SemanticsService.announce(
+                                                          "Skip value: $value",
+                                                          Directionality.of(context));
+                                                      setState(() => cacheSkip = value);
+                                                    })),
+                                            Flexible(
+                                              child: AutoSizeText(
+                                                (cacheFreq == Frequency.custom)
+                                                    ? cacheCustom.name.replaceAll(
+                                                        "ly", (cacheSkip > 1) ? "s." : ".")
+                                                    : cacheFreq.name.replaceAll(
+                                                        "ly", (cacheSkip > 1) ? "s." : "."),
+                                                minFontSize: Constants.small,
+                                                style: Constants.headerStyle,
+                                                overflow: TextOverflow.visible,
+                                                softWrap: false,
+                                                maxLines: 1,
+                                                textAlign: TextAlign.end,
+                                              ),
+                                            )
+                                          ],
+                                        ),
+                                      )
+                                    : const SizedBox.shrink(),
 
                                 Row(
                                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -801,6 +911,8 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                                               setState(() {
                                                 frequency = cacheFreq;
                                                 customFreq = cacheCustom;
+                                                weekDayList = cacheWeekdays;
+                                                repeatSkip = cacheSkip;
                                               });
                                               Navigator.pop(context);
                                             },
@@ -822,6 +934,8 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
             onPressed: () => setState(() {
                   frequency = Frequency.once;
                   customFreq = CustomFrequency.weekly;
+                  weekDayList.clear();
+                  repeatSkip = 1;
                 })));
   }
 
@@ -984,19 +1098,6 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                                               horizontal: Constants.halfPadding),
                                           child: Text("|", style: Constants.timeColon),
                                         ),
-                                        // const Flexible(
-                                        //   flex: 1,
-                                        //   child: Padding(
-                                        //     padding: EdgeInsets.symmetric(
-                                        //         horizontal: Constants.halfPadding),
-                                        //     child: AutoSizeText("|",
-                                        //         style: Constants.largeHeaderStyle,
-                                        //         softWrap: false,
-                                        //         overflow: TextOverflow.visible,
-                                        //         maxLines: 1,
-                                        //         minFontSize: Constants.small),
-                                        //   ),
-                                        // ),
                                         Expanded(
                                           flex: 10,
                                           child: OutlinedButton(
@@ -1065,7 +1166,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                                     ]),
                               ]),
                         )));
-              });
+              }).then((_) => setState(() {}));
         },
         trailing: IconButton(
           icon: const Icon(Icons.close),
@@ -1157,10 +1258,6 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
       trailing: IconButton(
           icon: const Icon(Icons.close),
           onPressed: () => setState(() {
-                if (null != startDate) {
-                  weekDaySet.remove(startDate!.day);
-                }
-
                 startDate = null;
                 dueDate = null;
               })),
@@ -1662,7 +1759,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                 value: type,
                 label: Text("${toBeginningOfSentenceCase(type.name)}",
                     softWrap: false,
-                    overflow: TextOverflow.visible,
+                    overflow: TextOverflow.fade,
                     style: (smallScreen) ? Constants.minBodyText : null)))
             .toList(growable: false),
         selected: <Priority>{priority},
@@ -1691,7 +1788,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
         ));
   }
 
-  ListTile buildDurationTile(BuildContext context) {
+  ListTile buildDurationTile(BuildContext context, {bool smallScreen = false}) {
     return ListTile(
       leading: const Icon(Icons.timer_outlined),
       title: (expectedDuration > 0)
@@ -1699,7 +1796,9 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
               children: [
                 Flexible(
                   child: AutoSizeText(
-                      "Expected: ${Duration(seconds: expectedDuration).toString().split(".").first}",
+                      (smallScreen)
+                          ? Duration(seconds: expectedDuration).toString().split(".").first
+                          : "Expected: ${Duration(seconds: expectedDuration).toString().split(".").first}",
                       overflow: TextOverflow.visible,
                       minFontSize: Constants.small,
                       maxLines: 2,
@@ -1713,7 +1812,9 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                 ),
                 Flexible(
                   child: AutoSizeText(
-                      "Actual: ${Duration(seconds: realDuration).toString().split(".").first}",
+                      (smallScreen)
+                          ? Duration(seconds: realDuration).toString().split(".").first
+                          : "Actual: ${Duration(seconds: realDuration).toString().split(".").first}",
                       overflow: TextOverflow.visible,
                       minFontSize: Constants.small,
                       maxLines: 2,
@@ -1803,6 +1904,8 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                     children: [
                       Expanded(
                         child: NumberPicker(
+                          textStyle: Constants.numberPickerSecondary(context: context),
+                          selectedTextStyle: Constants.numberPickerPrimary(context: context),
                           minValue: 0,
                           maxValue: 100,
                           value: hours,
@@ -1818,6 +1921,8 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                           child: Text(":", style: Constants.timeColon)),
                       Expanded(
                         child: NumberPicker(
+                          textStyle: Constants.numberPickerSecondary(context: context),
+                          selectedTextStyle: Constants.numberPickerPrimary(context: context),
                           minValue: 0,
                           maxValue: 59,
                           value: minutes,
@@ -1834,6 +1939,8 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                           child: Text(":", style: Constants.timeColon)),
                       Expanded(
                         child: NumberPicker(
+                          textStyle: Constants.numberPickerSecondary(context: context),
+                          selectedTextStyle: Constants.numberPickerPrimary(context: context),
                           minValue: 0,
                           maxValue: 59,
                           value: seconds,
@@ -1968,7 +2075,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                 value: type,
                 label: Text("${toBeginningOfSentenceCase(type.name)}",
                     softWrap: false,
-                    overflow: TextOverflow.visible,
+                    overflow: TextOverflow.fade,
                     style: (smallScreen) ? Constants.minBodyText : null)))
             .toList(growable: false),
         selected: <TaskType>{taskType},
@@ -1993,7 +2100,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                   itemCount: groups.length,
                   itemBuilder: (BuildContext context, int index) {
                     return ListTile(
-                        title: Text(groups[index].name),
+                        title: AutoSizeText(groups[index].name),
                         onTap: () =>
                             handleGroupSelection(group: groups[index], controller: controller));
                   });
@@ -2006,15 +2113,25 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
 
   SearchAnchor buildGroupBar() {
     return SearchAnchor.bar(
+        barSide: MaterialStatePropertyAll(BorderSide(
+            strokeAlign: BorderSide.strokeAlignOutside,
+            color: Theme.of(context).colorScheme.outline)),
+        barBackgroundColor: const MaterialStatePropertyAll(Colors.transparent),
+        barElevation: const MaterialStatePropertyAll(0),
         viewConstraints: const BoxConstraints(maxHeight: Constants.maxHeightBeforeScroll),
-        barHintText: (null == groupID) ? "Search Groups" : groupEditingController.text,
+        barHintText: "Search Groups",
         suggestionsBuilder: (context, SearchController controller) {
           if (controller.text.isEmpty) {
             if (searchHistory.isNotEmpty) {
               return searchHistory
                   .map((MapEntry<String, int> groupData) => ListTile(
                         leading: const Icon(Icons.history),
-                        title: Text(groupData.key),
+                        title: AutoSizeText(
+                          groupData.key,
+                          maxLines: 1,
+                          softWrap: false,
+                          overflow: TextOverflow.visible,
+                        ),
                         onTap: () =>
                             handleHistorySelection(groupData: groupData, controller: controller),
                       ))

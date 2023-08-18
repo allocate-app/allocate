@@ -59,6 +59,7 @@ dependencies:
   auto_size_text: ^3.0.0
   auto_size_text_field: ^2.2.1
   calendar_date_picker2: ^0.5.2
+  window_manager: ^0.3.5
 
 dev_dependencies:
   flutter_test:
