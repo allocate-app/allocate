@@ -1,4 +1,4 @@
-def localProperties = Properties()
+def localProperties = new Properties()
 def localPropertiesFile = rootProject.file('local.properties')
 if (localPropertiesFile.exists()) {
     localPropertiesFile.withReader('UTF-8') { reader ->
@@ -71,7 +71,10 @@ flutter {
 
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
-    coreLibraryDesugaring "com.android.tools:desugar_jdk_libs:2.0.3"
+    // This desugar library should work?
+    coreLibraryDesugaring "com.android.tools:desugar_jdk_libs:1.1.5"
+    // This is not working. I don't know why.
+//    coreLibraryDesugaring "com.android.tools:desugar_jdk_libs:2.0.3"
     // These are to prevent a bug with the desugaring lib.
     implementation "androidx.window:window:1.1.0"
     implementation "androidx.window:window-java:1.1.0"

@@ -1,6 +1,5 @@
 import "dart:math";
 
-import "package:allocate/util/constants.dart";
 import "package:auto_size_text/auto_size_text.dart";
 import "package:auto_size_text_field/auto_size_text_field.dart";
 import "package:calendar_date_picker2/calendar_date_picker2.dart";
@@ -16,14 +15,11 @@ import "../../../model/task/subtask.dart";
 import "../../../providers/group_provider.dart";
 import "../../../providers/todo_provider.dart";
 import "../../../providers/user_provider.dart";
+import "../../../util/constants.dart";
 import "../../../util/enums.dart";
 import "../../../util/exceptions.dart";
 import "../../../util/numbers.dart";
 import "../../widgets/paddedDivider.dart";
-
-/// Basic UI list order (Mobile):
-/// DONE
-/// UI Refactor for desktop: -> Bisect the listview into two columns.
 
 class CreateToDoScreen extends StatefulWidget {
   const CreateToDoScreen({Key? key}) : super(key: key);
@@ -42,7 +38,9 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
   late final GroupProvider groupProvider;
 
   // Scrolling
-  late final ScrollController scrollController;
+  late final ScrollController mainScrollController;
+  late final ScrollController subScrollControllerLeft;
+  late final ScrollController subScrollControllerRight;
   late final ScrollPhysics scrollPhysics;
 
   // Param fields.
@@ -143,8 +141,10 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
   }
 
   void initializeControllers() {
-    scrollController = ScrollController();
-    scrollPhysics = const BouncingScrollPhysics();
+    mainScrollController = ScrollController();
+    subScrollControllerLeft = ScrollController();
+    subScrollControllerRight = ScrollController();
+    scrollPhysics = const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics());
     nameEditingController = TextEditingController();
     nameEditingController.addListener(() {
       checkClose = true;
@@ -272,6 +272,312 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
 
     bool largeScreen = (MediaQuery.of(context).size.width >= Constants.largeScreen);
     bool smallScreen = (MediaQuery.of(context).size.width <= Constants.smallScreen);
+    return (largeScreen)
+        ? buildDesktopDialog(context, smallScreen, errorColor)
+        : buildMobileDialog(context, smallScreen, errorColor);
+  }
+
+  Dialog buildDesktopDialog(BuildContext context, bool smallScreen, Color errorColor) {
+    return Dialog(
+      insetPadding: const EdgeInsets.all(Constants.outerDialogPadding),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxHeight: Constants.maxLandscapeDialogHeight),
+        child: Padding(
+          padding: const EdgeInsets.all(Constants.padding),
+          child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Title && Close Button
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
+                  child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                    const Flexible(
+                      child: AutoSizeText(
+                        "New Task",
+                        overflow: TextOverflow.visible,
+                        style: Constants.headerStyle,
+                        minFontSize: Constants.medium,
+                        softWrap: true,
+                        maxLines: 1,
+                      ),
+                    ),
+                    (expectedDuration > 0)
+                        ? Flexible(
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Flexible(
+                                  child: Tooltip(
+                                    message: "Expected Task Duration",
+                                    child: Padding(
+                                      padding:
+                                          const EdgeInsets.symmetric(horizontal: Constants.padding),
+                                      child: Row(
+                                        children: [
+                                          const Flexible(
+                                            child: FittedBox(
+                                              fit: BoxFit.fill,
+                                              child: Icon(
+                                                Icons.timer_outlined,
+                                              ),
+                                            ),
+                                          ),
+                                          Flexible(
+                                            child: AutoSizeText(
+                                                Duration(seconds: expectedDuration)
+                                                    .toString()
+                                                    .split(".")
+                                                    .first,
+                                                minFontSize: Constants.medium,
+                                                overflow: TextOverflow.visible,
+                                                softWrap: false,
+                                                maxLines: 2),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                Flexible(
+                                  child: Tooltip(
+                                    message: "Actual Task Duration",
+                                    child: Padding(
+                                      padding:
+                                          const EdgeInsets.symmetric(horizontal: Constants.padding),
+                                      child: Row(
+                                        children: [
+                                          const Flexible(
+                                            child: FittedBox(
+                                              fit: BoxFit.fill,
+                                              child: Icon(
+                                                Icons.timer,
+                                              ),
+                                            ),
+                                          ),
+                                          Flexible(
+                                            child: AutoSizeText(
+                                                Duration(seconds: realDuration)
+                                                    .toString()
+                                                    .split(".")
+                                                    .first,
+                                                minFontSize: Constants.medium,
+                                                overflow: TextOverflow.visible,
+                                                softWrap: false,
+                                                maxLines: 2),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
+                        : const SizedBox.shrink(),
+                    buildCloseButton(context),
+                  ]),
+                ),
+                const PaddedDivider(padding: Constants.padding),
+                Expanded(
+                  child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: ListView(
+                              padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
+                              shrinkWrap: true,
+                              controller: subScrollControllerLeft,
+                              physics: scrollPhysics,
+                              children: [
+                                // Title + status
+                                Padding(
+                                  padding: EdgeInsets.symmetric(
+                                      horizontal: (smallScreen)
+                                          ? Constants.padding
+                                          : Constants.innerPadding),
+                                  child: buildNameTile(smallScreen: smallScreen),
+                                ),
+                                Padding(
+                                  padding:
+                                      const EdgeInsets.symmetric(horizontal: Constants.padding),
+                                  child: buildWeightTile(smallScreen: smallScreen),
+                                ),
+                                const PaddedDivider(padding: Constants.innerPadding),
+                                // TaskType
+                                const Row(children: [
+                                  Expanded(
+                                    child: AutoSizeText("Task Type",
+                                        maxLines: 1,
+                                        softWrap: true,
+                                        textAlign: TextAlign.center,
+                                        minFontSize: Constants.medium,
+                                        style: Constants.headerStyle),
+                                  )
+                                ]),
+                                Padding(
+                                  padding: const EdgeInsets.all(Constants.innerPadding),
+                                  child: buildTaskTypeButton(smallScreen: smallScreen),
+                                ),
+                                // Subtasks
+                                (taskType != TaskType.small)
+                                    ? Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: Constants.innerPadding),
+                                        child: Card(
+                                          clipBehavior: Clip.antiAlias,
+                                          elevation: 0,
+                                          color: Colors.transparent,
+                                          shape: RoundedRectangleBorder(
+                                              side: BorderSide(
+                                                  color: Theme.of(context).colorScheme.outline,
+                                                  strokeAlign: BorderSide.strokeAlignInside),
+                                              borderRadius: const BorderRadius.all(
+                                                  Radius.circular(Constants.roundedCorners))),
+                                          child: ExpansionTile(
+                                            title: const AutoSizeText("Steps",
+                                                maxLines: 1,
+                                                overflow: TextOverflow.visible,
+                                                softWrap: false,
+                                                minFontSize: Constants.small),
+                                            collapsedShape: const RoundedRectangleBorder(
+                                                side: BorderSide(
+                                                    strokeAlign: BorderSide.strokeAlignOutside),
+                                                borderRadius: BorderRadius.all(
+                                                    Radius.circular(Constants.roundedCorners))),
+                                            shape: const RoundedRectangleBorder(
+                                                side: BorderSide(
+                                                    strokeAlign: BorderSide.strokeAlignOutside),
+                                                borderRadius: BorderRadius.all(
+                                                    Radius.circular(Constants.roundedCorners))),
+                                            children: [
+                                              buildSubTasksList(
+                                                  smallScreen: smallScreen, physics: scrollPhysics),
+                                              (shownTasks < Constants.numTasks[taskType]!)
+                                                  ? ListTile(
+                                                      leading: const Icon(Icons.add_outlined),
+                                                      title: const AutoSizeText("Add a step",
+                                                          maxLines: 1,
+                                                          overflow: TextOverflow.visible,
+                                                          softWrap: false,
+                                                          minFontSize: Constants.small),
+                                                      onTap: () => setState(() {
+                                                            shownTasks++;
+                                                            shownTasks = min(
+                                                                shownTasks, Constants.maxNumTasks);
+                                                          }))
+                                                  : const SizedBox.shrink(),
+                                            ],
+                                          ),
+                                        ),
+                                      )
+                                    : const SizedBox.shrink(),
+
+                                const PaddedDivider(padding: Constants.padding),
+                                // My Day
+                                buildMyDayTile(),
+                                const PaddedDivider(padding: Constants.padding),
+                                // Priority
+                                const Padding(
+                                  padding: EdgeInsets.symmetric(horizontal: Constants.padding),
+                                  child: Row(children: [
+                                    Expanded(
+                                        child: AutoSizeText("Priority",
+                                            style: Constants.headerStyle,
+                                            maxLines: 1,
+                                            softWrap: true,
+                                            textAlign: TextAlign.center,
+                                            minFontSize: Constants.medium))
+                                  ]),
+                                ),
+                                Padding(
+                                  padding:
+                                      const EdgeInsets.symmetric(horizontal: Constants.padding),
+                                  child: buildPriorityTile(smallScreen: smallScreen),
+                                ),
+
+                                // const Padding(
+                                //   padding: EdgeInsets.symmetric(vertical: 8.0),
+                                //   child: PaddedDivider(padding: Constants.innerPadding),
+                                // )
+                              ]),
+                        ),
+                        Expanded(
+                          child: ListView(
+                              controller: subScrollControllerRight,
+                              physics: scrollPhysics,
+                              shrinkWrap: true,
+                              padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
+                              children: [
+                                Padding(
+                                  padding: const EdgeInsets.all(Constants.padding),
+                                  child: buildGroupBar(),
+                                ),
+
+                                const Padding(
+                                  padding: EdgeInsets.symmetric(horizontal: Constants.padding),
+                                  child: PaddedDivider(padding: Constants.innerPadding),
+                                ),
+
+                                // Description
+                                Padding(
+                                  padding:
+                                      const EdgeInsets.symmetric(horizontal: Constants.padding),
+                                  child: buildDescriptionTile(smallScreen: smallScreen),
+                                ),
+
+                                const PaddedDivider(padding: Constants.innerPadding),
+                                // Expected Duration / RealDuration -> Show status, on click, open a dialog.
+                                Padding(
+                                  padding:
+                                      const EdgeInsets.symmetric(horizontal: Constants.padding),
+                                  child: buildDurationTile(context, smallScreen: smallScreen),
+                                ),
+
+                                const PaddedDivider(padding: Constants.innerPadding),
+                                // DateTime -> Show status, on click, open a dialog.
+                                //startDate
+                                Padding(
+                                  padding:
+                                      const EdgeInsets.symmetric(horizontal: Constants.padding),
+                                  child: buildDateTile(context),
+                                ),
+
+                                const PaddedDivider(padding: Constants.innerPadding),
+                                // Time
+                                Padding(
+                                  padding:
+                                      const EdgeInsets.symmetric(horizontal: Constants.padding),
+                                  child: buildTimeTile(),
+                                ),
+
+                                const PaddedDivider(padding: Constants.innerPadding),
+                                // Repeatable Stuff -> Show status, on click, open a dialog.
+                                Padding(
+                                  padding:
+                                      const EdgeInsets.symmetric(horizontal: Constants.padding),
+                                  child: buildRepeatableTile(context, smallScreen: smallScreen),
+                                ),
+                              ]),
+                        )
+                      ]),
+                ),
+
+                const PaddedDivider(padding: Constants.padding),
+                // Create Button - could be a stack
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
+                  child: buildCreateButton(context, errorColor),
+                )
+              ]),
+        ),
+      ),
+    );
+  }
+
+  Dialog buildMobileDialog(BuildContext context, bool smallScreen, Color errorColor) {
     return Dialog(
       insetPadding: const EdgeInsets.all(Constants.outerDialogPadding),
       child: Padding(
@@ -374,7 +680,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
               Expanded(
                 child: ListView(
                   shrinkWrap: true,
-                  controller: scrollController,
+                  controller: mainScrollController,
                   physics: scrollPhysics,
                   children: [
                     // Title + status
@@ -433,7 +739,8 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                                     borderRadius: BorderRadius.all(
                                         Radius.circular(Constants.roundedCorners))),
                                 children: [
-                                  buildSubTasksList(smallScreen: smallScreen),
+                                  buildSubTasksList(
+                                      smallScreen: smallScreen, physics: scrollPhysics),
                                   (shownTasks < Constants.numTasks[taskType]!)
                                       ? ListTile(
                                           leading: const Icon(Icons.add_outlined),
@@ -533,66 +840,69 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
 
               const PaddedDivider(padding: Constants.padding),
               // Create Button - could be a stack
-              Row(mainAxisAlignment: MainAxisAlignment.end, children: [
-                FilledButton.icon(
-                    label: const Text("Create Task"),
-                    icon: const Icon(Icons.add),
-                    onPressed: () async {
-                      bool validData = validateData();
-                      if (validData) {
-                        mergeDateTimes();
-
-                        for (int index in weekDayList) {
-                          weekDays[index] = true;
-                        }
-
-                        await toDoProvider
-                            .createToDo(
-                              groupID: groupID,
-                              taskType: taskType,
-                              name: name,
-                              description: description,
-                              weight: (taskType == TaskType.small) ? weight : sumWeight,
-                              expectedDuration: expectedDuration,
-                              realDuration: realDuration,
-                              priority: priority,
-                              startDate: startDate,
-                              dueDate: dueDate,
-                              myDay: myDay,
-                              completed: completed,
-                              repeatable: frequency != Frequency.once,
-                              frequency: frequency,
-                              customFreq: customFreq,
-                              repeatDays: weekDays,
-                              repeatSkip: repeatSkip,
-                              subTasks: subTasks,
-                            )
-                            .then((value) => Navigator.pop(context))
-                            .catchError((e) {
-                          ScaffoldMessenger.maybeOf(context)?.showSnackBar(SnackBar(
-                            content: Text(e.cause,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(color: errorColor)),
-                            action: SnackBarAction(label: "Dismiss", onPressed: () {}),
-                            duration: const Duration(milliseconds: 1500),
-                            behavior: SnackBarBehavior.floating,
-                            shape: const RoundedRectangleBorder(
-                              borderRadius:
-                                  BorderRadius.all(Radius.circular(Constants.roundedCorners)),
-                            ),
-                            width: (MediaQuery.sizeOf(context).width) / 2,
-                            padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
-                          ));
-                        },
-                                test: (e) =>
-                                    e is FailureToCreateException || e is FailureToUploadException);
-                      }
-                      // Then save.
-                    })
-              ])
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
+                child: buildCreateButton(context, errorColor),
+              )
             ]),
       ),
     );
+  }
+
+  Row buildCreateButton(BuildContext context, Color errorColor) {
+    return Row(mainAxisAlignment: MainAxisAlignment.end, children: [
+      FilledButton.icon(
+          label: const Text("Create Task"),
+          icon: const Icon(Icons.add),
+          onPressed: () async {
+            bool validData = validateData();
+            if (validData) {
+              mergeDateTimes();
+
+              for (int index in weekDayList) {
+                weekDays[index] = true;
+              }
+
+              await toDoProvider
+                  .createToDo(
+                    groupID: groupID,
+                    taskType: taskType,
+                    name: name,
+                    description: description,
+                    weight: (taskType == TaskType.small) ? weight : sumWeight,
+                    expectedDuration: expectedDuration,
+                    realDuration: realDuration,
+                    priority: priority,
+                    startDate: startDate,
+                    dueDate: dueDate,
+                    myDay: myDay,
+                    completed: completed,
+                    repeatable: frequency != Frequency.once,
+                    frequency: frequency,
+                    customFreq: customFreq,
+                    repeatDays: weekDays,
+                    repeatSkip: repeatSkip,
+                    subTasks: subTasks,
+                  )
+                  .then((value) => Navigator.pop(context))
+                  .catchError((e) {
+                ScaffoldMessenger.maybeOf(context)?.showSnackBar(SnackBar(
+                  content: Text(e.cause,
+                      overflow: TextOverflow.ellipsis, style: TextStyle(color: errorColor)),
+                  action: SnackBarAction(label: "Dismiss", onPressed: () {}),
+                  duration: const Duration(milliseconds: 1500),
+                  behavior: SnackBarBehavior.floating,
+                  shape: const RoundedRectangleBorder(
+                    borderRadius: BorderRadius.all(Radius.circular(Constants.roundedCorners)),
+                  ),
+                  width: (MediaQuery.sizeOf(context).width) / 2,
+                  padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
+                ));
+              }, test: (e) => e is FailureToCreateException || e is FailureToUploadException);
+            }
+            // Then save.
+          })
+    ]);
   }
 
   void mergeDateTimes() {
@@ -1581,9 +1891,11 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
     ]);
   }
 
-  ListView buildSubTasksList({bool smallScreen = false}) {
+  ListView buildSubTasksList(
+      {bool smallScreen = false, ScrollPhysics physics = const BouncingScrollPhysics()}) {
     return ListView.separated(
       // Possibly need scroll controller.
+      physics: physics,
       shrinkWrap: true,
       itemCount: min(Constants.numTasks[taskType]!, shownTasks),
       separatorBuilder: (context, index) => const Divider(),
@@ -1708,7 +2020,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
         Expanded(
             child: Padding(
           padding: const EdgeInsets.all(Constants.padding),
-          child: buildToDoName(smallScreen: smallScreen),
+          child: buildTaskName(smallScreen: smallScreen),
         )),
       ],
     );
@@ -1989,7 +2301,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                 ])));
   }
 
-  AutoSizeTextField buildToDoName({bool smallScreen = false}) {
+  AutoSizeTextField buildTaskName({bool smallScreen = false, bool largeScreen = false}) {
     return AutoSizeTextField(
       maxLines: 1,
       minFontSize: Constants.medium,
@@ -2118,7 +2430,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
             color: Theme.of(context).colorScheme.outline)),
         barBackgroundColor: const MaterialStatePropertyAll(Colors.transparent),
         barElevation: const MaterialStatePropertyAll(0),
-        viewConstraints: const BoxConstraints(maxHeight: Constants.maxHeightBeforeScroll),
+        viewConstraints: const BoxConstraints(maxHeight: Constants.maxSearchHeightBeforeScroll),
         barHintText: "Search Groups",
         suggestionsBuilder: (context, SearchController controller) {
           if (controller.text.isEmpty) {
