@@ -2425,6 +2425,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
 
   SearchAnchor buildGroupBar() {
     return SearchAnchor.bar(
+        isFullScreen: false,
         barSide: MaterialStatePropertyAll(BorderSide(
             strokeAlign: BorderSide.strokeAlignOutside,
             color: Theme.of(context).colorScheme.outline)),
