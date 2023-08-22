@@ -12,11 +12,6 @@ if (localPropertiesFile.exists()) {
     }
 }
 
-def flutterRoot = localProperties.getProperty('flutter.sdk')
-if (flutterRoot == null) {
-    throw GradleException("Flutter SDK not found. Define location with flutter.sdk in the local.properties file.")
-}
-
 def flutterVersionCode = localProperties.getProperty('flutter.versionCode')
 if (flutterVersionCode == null) {
     flutterVersionCode = '1'
@@ -28,7 +23,7 @@ if (flutterVersionName == null) {
 }
 
 android {
-    namespace "com.jordan.allocate"
+    namespace "com.example.allocate"
     compileSdkVersion flutter.compileSdkVersion
     ndkVersion flutter.ndkVersion
 
@@ -48,7 +43,7 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId "com.jordan.allocate"
+        applicationId "com.example.allocate"
         // You can update the following values to match your application needs.
         // For more information, see: https://docs.flutter.dev/deployment/android#reviewing-the-gradle-build-configuration.
         minSdkVersion flutter.minSdkVersion
@@ -72,15 +67,7 @@ flutter {
 }
 
 dependencies {
-    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
-    // This desugar library should work?
-    coreLibraryDesugaring "com.android.tools:desugar_jdk_libs:1.1.5"
-    // This is not working. I don't know why.
-//    coreLibraryDesugaring "com.android.tools:desugar_jdk_libs:2.0.3"
-    // These are to prevent a bug with the desugaring lib.
-    implementation "androidx.window:window:1.1.0"
-    implementation "androidx.window:window-java:1.1.0"
-    implementation "androidx.window:window-rxjava2:1.1.0"
-    implementation "androidx.window:window-rxjava3:1.1.0"
-    implementation "androidx.window:window-testing:1.1.0"
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.0.3'
+    implementation 'androidx.window:window:1.1.0'
+    implementation 'androidx.window:window-java:1.1.0'
 }

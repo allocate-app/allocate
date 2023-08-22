@@ -1,4 +1,4 @@
-package com.jordan.allocate
+package com.example.allocate
 
 import io.flutter.embedding.android.FlutterActivity
 
