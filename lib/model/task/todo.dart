@@ -9,6 +9,9 @@ import "subtask.dart";
 
 part "todo.g.dart";
 
+// TODO: REFACTOR CONSTRUCTOR -> Default args to be handled within constructor.
+// constructor needs to take all args for copy & copyWith.
+
 @Collection(inheritance: false)
 class ToDo with EquatableMixin implements Copyable<ToDo> {
   Id id = Isar.autoIncrement;

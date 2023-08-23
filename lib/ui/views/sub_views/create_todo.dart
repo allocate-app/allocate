@@ -181,7 +181,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
     for (int i = 0; i < subTaskEditingController.length; i++) {
       subTaskEditingController[i].addListener(() {
         checkClose = true;
-        String newText = descriptionEditingController.text;
+        String newText = subTaskEditingController[i].text;
         SemanticsService.announce(newText, Directionality.of(context));
       });
     }
@@ -1249,12 +1249,6 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                 })));
   }
 
-  // Dialog buildRepeatableDialog(Frequency cacheFreq, CustomFrequency cacheCustom, int cacheSkip,
-  //     Set<int> cacheWeekdays, BuildContext context, void Function(void Function()) setState,
-  //     {bool smallScreen = false}) {
-  //   ;
-  // }
-
   ListTile buildTimeTile() {
     return ListTile(
         leading: const Icon(Icons.schedule_outlined),
@@ -1487,7 +1481,6 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
         ));
   }
 
-  // TODO: Migrate calendar to Calendar v2?
   ListTile buildDateTile(BuildContext context) {
     return ListTile(
       leading: const Icon(Icons.today_outlined),
@@ -1802,29 +1795,6 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                       )));
               // This is to update the main context after updating.
             }).then((_) => setState(() {}));
-
-        // DateTimeRange? initialRange = (null != startDate && null != dueDate)
-        //     ? DateTimeRange(start: startDate!, end: dueDate!)
-        //     : null;
-        // final DateTimeRange? picked = await showDateRangePicker(
-        //   context: context,
-        //   firstDate: DateTime(2015, 8),
-        //   lastDate: DateTime(2101),
-        //   initialDateRange: initialRange,
-        //   fieldStartLabelText: "Start Date",
-        //   fieldEndLabelText: "Due Date",
-        //   fieldStartHintText: "Start Date",
-        //   fieldEndHintText: "Due Date",
-        //   saveText: "OK",
-        // );
-
-        // if (null != picked) {
-        //   setState(() {
-        //     startDate = picked.start;
-        //     dueDate = picked.end;
-        //     weekDaySet.add(startDate!.day);
-        //   });
-        // }
       },
     );
   }
@@ -2301,7 +2271,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                 ])));
   }
 
-  AutoSizeTextField buildTaskName({bool smallScreen = false, bool largeScreen = false}) {
+  AutoSizeTextField buildTaskName({bool smallScreen = false}) {
     return AutoSizeTextField(
       maxLines: 1,
       minFontSize: Constants.medium,
