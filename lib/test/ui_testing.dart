@@ -17,6 +17,7 @@ import '../providers/user_provider.dart';
 import '../services/isar_service.dart';
 import '../services/supabase_service.dart';
 import '../ui/views/sub_views/create_todo.dart';
+import '../ui/views/sub_views/update_todo.dart';
 import '../util/constants.dart';
 
 // Async for windowmanager & desktop apps.
@@ -39,6 +40,7 @@ void main() async {
     windowManager.waitUntilReadyToShow(windowOptions, () async {
       await windowManager.show();
       await windowManager.focus();
+      await windowManager.setPreventClose(true);
     });
   }
 
@@ -111,7 +113,9 @@ class FormTester extends StatefulWidget {
   State<FormTester> createState() => _FormTester();
 }
 
-class _FormTester extends State<FormTester> {
+class _FormTester extends State<FormTester> with WindowListener {
+  WindowListener? listener;
+
   @override
   void initState() {
     IsarService.instance.init(debug: true);
@@ -119,13 +123,27 @@ class _FormTester extends State<FormTester> {
         supabaseUrl: Constants.supabaseURL,
         anonKey: Constants.supabaseAnnonKey,
         client: FakeSupabase());
+
+    if (!Platform.isAndroid && !Platform.isIOS) {
+      windowManager.addListener(this);
+    }
+
     super.initState();
   }
 
   @override
-  void dispose() {
-    IsarService.instance.dispose();
+  Future<void> dispose() async {
+    if (!Platform.isAndroid && !Platform.isIOS) {
+      windowManager.removeListener(this);
+    }
+    await IsarService.instance.dispose();
     super.dispose();
+  }
+
+  @override
+  void onWindowClose() async {
+    await dispose();
+    await windowManager.destroy();
   }
 
   @override
@@ -135,21 +153,42 @@ class _FormTester extends State<FormTester> {
         title: const Text('FormTester'),
       ),
       body: const Center(child: Text('Press the button below!')),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => showDialog(
-            context: context,
-            builder: (BuildContext context) {
-              return const CreateToDoScreen();
-              // return const UpdateToDoScreen();
-              // return const CreateRoutineScreen();
-              // return const UpdateRoutineScreen();
-              // return const CreateDeadlineScreen();
-              // return const UpdateDeadlineScreen();
-              // return const CreateReminderScreen();
-              // return const UpdateReminderScreen();
-            }),
-        backgroundColor: Colors.pink,
-        child: const Icon(Icons.navigation),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.all(Constants.padding),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            FloatingActionButton(
+              onPressed: () => showDialog(
+                  context: context,
+                  builder: (BuildContext context) {
+                    return const CreateToDoScreen();
+                    // return const CreateRoutineScreen();
+                    // return const CreateDeadlineScreen();
+                    // return const CreateReminderScreen();
+                  }),
+              backgroundColor: Colors.pink,
+              child: const Text("Create New"),
+            ),
+            FloatingActionButton(
+              onPressed: () => showDialog(
+                  context: context,
+                  builder: (BuildContext context) {
+                    if (null != Provider.of<ToDoProvider>(context, listen: false).curToDo) {
+                      return const UpdateToDoScreen();
+                    } else {
+                      return const CreateToDoScreen();
+                    }
+                    // return const UpdateRoutineScreen();
+                    // return const UpdateDeadlineScreen();
+                    // return const UpdateReminderScreen();
+                  }),
+              backgroundColor: Colors.green,
+              child: const Text("Update"),
+            ),
+          ],
+        ),
       ),
     );
   }

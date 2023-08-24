@@ -216,7 +216,9 @@ class ToDo with EquatableMixin implements Copyable<ToDo> {
   @ignore
   @override
   List<Object?> get props => [
-        id,
+        // Consider bringing this back once full app is built.
+        // Right now, there is a race-condition in testing due to db id.
+        // id,
         repeatID,
         customViewIndex,
         groupID,
@@ -238,7 +240,6 @@ class ToDo with EquatableMixin implements Copyable<ToDo> {
         isSynced,
         subTasks,
         toDelete,
-        lastUpdated
       ];
 
   @override

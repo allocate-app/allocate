@@ -39,6 +39,10 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
   // Cache for repeating events
   late final ToDo prevToDo;
 
+  // For showing times.
+  late bool showStartTime;
+  late bool showDueTime;
+
   // Scrolling
   late final ScrollController mainScrollController;
   late final ScrollController subScrollControllerLeft;
@@ -64,16 +68,18 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
 
   late final List<TextEditingController> subTaskEditingController;
   late int shownTasks;
+  late bool tileExpanded;
 
   // This is just a convenience method to avoid extra typing
   ToDo get toDo => toDoProvider.curToDo!;
 
   @override
-  Future<void> initState() async {
+  void initState() {
     super.initState();
     initializeProviders();
     initializeParams();
-    await initializeControllers();
+    initializeControllers().whenComplete(() {});
+    tileExpanded = false;
   }
 
   void initializeProviders() {
@@ -97,8 +103,19 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
   }
 
   void initializeParams() {
+    checkClose = false;
     prevToDo = toDo.copy();
-    shownTasks = toDo.subTasks.indexOf(SubTask()) + 1;
+    shownTasks = toDo.subTasks.indexOf(SubTask());
+    if (shownTasks < 0) {
+      shownTasks = toDo.subTasks.length;
+    }
+    ;
+
+    // Midnight as a start/due time is ambiguous.
+    // Assume no time set.
+    TimeOfDay midnight = const TimeOfDay(hour: 0, minute: 0);
+    showStartTime = midnight != TimeOfDay.fromDateTime(toDo.startDate);
+    showDueTime = midnight != TimeOfDay.fromDateTime(toDo.dueDate);
   }
 
   Future<void> initializeControllers() async {
@@ -185,7 +202,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
     }
     if (nameEditingController.text.isEmpty) {
       valid = false;
-      nameErrorText = "Enter Task Name";
+      setState(() => nameErrorText = "Enter Task Name");
     }
     if (toDo.frequency == Frequency.custom) {
       if (!toDo.repeatDays.contains(true)) {
@@ -360,16 +377,53 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                                 ),
                                 const PaddedDivider(padding: Constants.innerPadding),
                                 // TaskType
-                                const Row(children: [
+                                Row(children: [
                                   Expanded(
                                     child: AutoSizeText("Task Type",
                                         maxLines: 1,
                                         softWrap: true,
                                         textAlign: TextAlign.center,
                                         minFontSize: Constants.medium,
-                                        style: Constants.headerStyle),
-                                  )
+                                        style: (!tileExpanded || shownTasks < 3)
+                                            ? Constants.largeHeaderStyle
+                                            : Constants.headerStyle),
+                                  ),
                                 ]),
+                                Padding(
+                                  padding:
+                                      const EdgeInsets.symmetric(horizontal: Constants.padding),
+                                  child:
+                                      Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                                    Flexible(
+                                        child: AutoSizeText(
+                                      "${toBeginningOfSentenceCase(toDo.taskType.name)!}: ",
+                                      maxLines: 1,
+                                      softWrap: true,
+                                      minFontSize: Constants.medium,
+                                      style: (!tileExpanded || shownTasks < 1)
+                                          ? Constants.hugeHeaderStyle
+                                          : (shownTasks < 3)
+                                              ? Constants.largeHeaderStyle
+                                              : Constants.headerStyle,
+                                    )),
+                                    Flexible(
+                                        child: Padding(
+                                      padding:
+                                          const EdgeInsets.symmetric(horizontal: Constants.padding),
+                                      child: AutoSizeText(
+                                        "Maximum ${Constants.numTasks[toDo.taskType]!} subtasks",
+                                        maxLines: 1,
+                                        softWrap: true,
+                                        minFontSize: Constants.medium,
+                                        style: (!tileExpanded || shownTasks < 1)
+                                            ? Constants.hugeHeaderStyle
+                                            : (shownTasks < 3)
+                                                ? Constants.largeHeaderStyle
+                                                : Constants.headerStyle,
+                                      ),
+                                    )),
+                                  ]),
+                                ),
                                 // Subtasks
                                 (toDo.taskType != TaskType.small)
                                     ? Padding(
@@ -386,6 +440,9 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                                               borderRadius: const BorderRadius.all(
                                                   Radius.circular(Constants.roundedCorners))),
                                           child: ExpansionTile(
+                                            initiallyExpanded: tileExpanded,
+                                            onExpansionChanged: (value) =>
+                                                setState(() => tileExpanded = value),
                                             title: const AutoSizeText("Steps",
                                                 maxLines: 1,
                                                 overflow: TextOverflow.visible,
@@ -518,10 +575,300 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                 // Create Button - could be a stack
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
-                  child: buildCreateButton(context, errorColor),
+                  child: buildUpdateButton(context, errorColor),
                 )
               ]),
         ),
+      ),
+    );
+  }
+
+  Dialog buildMobileDialog(BuildContext context, bool smallScreen, Color errorColor) {
+    return Dialog(
+      insetPadding: const EdgeInsets.all(Constants.outerDialogPadding),
+      child: Padding(
+        padding: const EdgeInsets.all(Constants.padding),
+        child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Title && Close Button
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
+                child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                  const Flexible(
+                    child: AutoSizeText(
+                      "Update Task",
+                      overflow: TextOverflow.visible,
+                      style: Constants.headerStyle,
+                      minFontSize: Constants.medium,
+                      softWrap: true,
+                      maxLines: 1,
+                    ),
+                  ),
+                  (toDo.expectedDuration > 0)
+                      ? Flexible(
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Flexible(
+                                child: Tooltip(
+                                  message: "Expected Task Duration",
+                                  child: Padding(
+                                    padding:
+                                        const EdgeInsets.symmetric(horizontal: Constants.padding),
+                                    child: Row(
+                                      children: [
+                                        const Flexible(
+                                          child: FittedBox(
+                                            fit: BoxFit.fill,
+                                            child: Icon(
+                                              Icons.timer_outlined,
+                                            ),
+                                          ),
+                                        ),
+                                        Flexible(
+                                          child: AutoSizeText(
+                                              Duration(seconds: toDo.expectedDuration)
+                                                  .toString()
+                                                  .split(".")
+                                                  .first,
+                                              minFontSize: Constants.medium,
+                                              overflow: TextOverflow.visible,
+                                              softWrap: false,
+                                              maxLines: 2),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              Flexible(
+                                child: Tooltip(
+                                  message: "Actual Task Duration",
+                                  child: Padding(
+                                    padding:
+                                        const EdgeInsets.symmetric(horizontal: Constants.padding),
+                                    child: Row(
+                                      children: [
+                                        const Flexible(
+                                          child: FittedBox(
+                                            fit: BoxFit.fill,
+                                            child: Icon(
+                                              Icons.timer,
+                                            ),
+                                          ),
+                                        ),
+                                        Flexible(
+                                          child: AutoSizeText(
+                                              Duration(seconds: toDo.realDuration)
+                                                  .toString()
+                                                  .split(".")
+                                                  .first,
+                                              minFontSize: Constants.medium,
+                                              overflow: TextOverflow.visible,
+                                              softWrap: false,
+                                              maxLines: 2),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      : const SizedBox.shrink(),
+                  buildCloseButton(context),
+                ]),
+              ),
+              const PaddedDivider(padding: Constants.padding),
+              Expanded(
+                child: ListView(
+                  shrinkWrap: true,
+                  controller: mainScrollController,
+                  physics: scrollPhysics,
+                  children: [
+                    // Title + status
+                    Padding(
+                      padding: EdgeInsets.symmetric(
+                          horizontal: (smallScreen) ? Constants.padding : Constants.innerPadding),
+                      child: buildNameTile(smallScreen: smallScreen),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
+                      child: buildWeightTile(smallScreen: smallScreen),
+                    ),
+                    const PaddedDivider(padding: Constants.innerPadding),
+                    // TaskType
+                    const Row(children: [
+                      Expanded(
+                        child: AutoSizeText("Task Type",
+                            maxLines: 1,
+                            softWrap: true,
+                            textAlign: TextAlign.center,
+                            minFontSize: Constants.medium,
+                            style: Constants.headerStyle),
+                      ),
+                    ]),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
+                      child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                        Flexible(
+                            child: AutoSizeText(
+                          "${toBeginningOfSentenceCase(toDo.taskType.name)!}: ",
+                          maxLines: 1,
+                          softWrap: true,
+                          minFontSize: Constants.medium,
+                          style: Constants.largeHeaderStyle,
+                        )),
+                        Flexible(
+                            child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
+                          child: AutoSizeText(
+                            "Maximum ${Constants.numTasks[toDo.taskType]!} subtasks",
+                            maxLines: 1,
+                            softWrap: true,
+                            minFontSize: Constants.medium,
+                            style: Constants.largeHeaderStyle,
+                          ),
+                        )),
+                      ]),
+                    ),
+                    // Subtasks
+                    (toDo.taskType != TaskType.small)
+                        ? Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: Constants.innerPadding),
+                            child: Card(
+                              clipBehavior: Clip.antiAlias,
+                              elevation: 0,
+                              color: Colors.transparent,
+                              shape: RoundedRectangleBorder(
+                                  side: BorderSide(
+                                      color: Theme.of(context).colorScheme.outline,
+                                      strokeAlign: BorderSide.strokeAlignInside),
+                                  borderRadius: const BorderRadius.all(
+                                      Radius.circular(Constants.roundedCorners))),
+                              child: ExpansionTile(
+                                onExpansionChanged: (value) => setState(() => tileExpanded = value),
+                                initiallyExpanded: tileExpanded,
+                                title: const AutoSizeText("Steps",
+                                    maxLines: 1,
+                                    overflow: TextOverflow.visible,
+                                    softWrap: false,
+                                    minFontSize: Constants.small),
+                                collapsedShape: const RoundedRectangleBorder(
+                                    side: BorderSide(strokeAlign: BorderSide.strokeAlignOutside),
+                                    borderRadius: BorderRadius.all(
+                                        Radius.circular(Constants.roundedCorners))),
+                                shape: const RoundedRectangleBorder(
+                                    side: BorderSide(strokeAlign: BorderSide.strokeAlignOutside),
+                                    borderRadius: BorderRadius.all(
+                                        Radius.circular(Constants.roundedCorners))),
+                                children: [
+                                  buildSubTasksList(
+                                      smallScreen: smallScreen, physics: scrollPhysics),
+                                  (shownTasks < Constants.numTasks[toDo.taskType]!)
+                                      ? ListTile(
+                                          leading: const Icon(Icons.add_outlined),
+                                          title: const AutoSizeText("Add a step",
+                                              maxLines: 1,
+                                              overflow: TextOverflow.visible,
+                                              softWrap: false,
+                                              minFontSize: Constants.small),
+                                          onTap: () => setState(() {
+                                                shownTasks++;
+                                                shownTasks = min(shownTasks, Constants.maxNumTasks);
+                                              }))
+                                      : const SizedBox.shrink(),
+                                ],
+                              ),
+                            ),
+                          )
+                        : const SizedBox.shrink(),
+
+                    const PaddedDivider(padding: Constants.padding),
+                    // My Day
+                    buildMyDayTile(),
+                    const PaddedDivider(padding: Constants.padding),
+                    // Priority
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: Constants.padding),
+                      child: Row(children: [
+                        Expanded(
+                            child: AutoSizeText("Priority",
+                                style: Constants.headerStyle,
+                                maxLines: 1,
+                                softWrap: true,
+                                textAlign: TextAlign.center,
+                                minFontSize: Constants.medium))
+                      ]),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
+                      child: buildPriorityTile(smallScreen: smallScreen),
+                    ),
+
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 8.0),
+                      child: PaddedDivider(padding: Constants.innerPadding),
+                    ),
+
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
+                      child: buildGroupBar(),
+                    ),
+
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: Constants.padding),
+                      child: PaddedDivider(padding: Constants.innerPadding),
+                    ),
+
+                    // Description
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
+                      child: buildDescriptionTile(smallScreen: smallScreen),
+                    ),
+
+                    const PaddedDivider(padding: Constants.innerPadding),
+                    // Expected Duration / RealDuration -> Show status, on click, open a dialog.
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
+                      child: buildDurationTile(context, smallScreen: smallScreen),
+                    ),
+
+                    const PaddedDivider(padding: Constants.innerPadding),
+                    // DateTime -> Show status, on click, open a dialog.
+                    //startDate
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
+                      child: buildDateTile(context),
+                    ),
+
+                    const PaddedDivider(padding: Constants.innerPadding),
+                    // Time
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
+                      child: buildTimeTile(),
+                    ),
+
+                    const PaddedDivider(padding: Constants.innerPadding),
+                    // Repeatable Stuff -> Show status, on click, open a dialog.
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
+                      child: buildRepeatableTile(context, smallScreen: smallScreen),
+                    ),
+                  ],
+                ),
+              ),
+
+              const PaddedDivider(padding: Constants.padding),
+              // Create Button - could be a stack
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
+                child: buildUpdateButton(context, errorColor),
+              )
+            ]),
       ),
     );
   }
@@ -610,7 +957,10 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
             icon: const Icon(Icons.clear),
             onPressed: () {
               nameEditingController.clear();
-              setState(() => toDo.name = "");
+              setState(() {
+                checkClose = true;
+                toDo.name = "";
+              });
             }),
         contentPadding: const EdgeInsets.all(Constants.innerPadding),
         border: const OutlineInputBorder(
@@ -744,8 +1094,8 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                                     ])),
                           );
                         }).whenComplete(() => setState(() {
-                          // TODO: refactor, there's no "Calculate Weight yet".
-                          toDo.weight = toDo.subTasks.fold(0, (p, c) => p + c.weight);
+                          checkClose = true;
+                          toDo.weight = toDoProvider.calculateWeight(subTasks: toDo.subTasks);
                           toDo.realDuration = toDoProvider.calculateRealDuration(
                               weight: toDo.weight, duration: toDo.expectedDuration);
                         }));
@@ -781,6 +1131,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
             secondary: IconButton(
                 icon: const Icon(Icons.delete),
                 onPressed: () => setState(() {
+                      checkClose = true;
                       // TEST: potential bug
                       toDo.subTasks.setRange(index, toDo.subTasks.length - 1,
                           toDo.subTasks.getRange(index + 1, toDo.subTasks.length));
@@ -793,8 +1144,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
 
                       shownTasks--;
                       shownTasks = max(shownTasks, 0);
-                      // TODO: refactor, provider method.
-                      toDo.weight = toDo.subTasks.fold(0, (p, c) => p + c.weight);
+                      toDo.weight = toDoProvider.calculateWeight(subTasks: toDo.subTasks);
                     })));
       },
     );
@@ -977,6 +1327,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
       trailing: IconButton(
           icon: const Icon(Icons.close),
           onPressed: () => setState(() {
+                checkClose = true;
                 toDo.expectedDuration = 0;
                 toDo.realDuration = 0;
               })),
@@ -1147,7 +1498,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
     return ListTile(
       leading: const Icon(Icons.today_outlined),
       // TODO: finish start and end + time.
-      title: (null == toDo.startDate && null == toDo.dueDate)
+      title: (Constants.nullDate == toDo.startDate && Constants.nullDate == toDo.dueDate)
           ? const AutoSizeText(
               "Add Dates",
               softWrap: true,
@@ -1157,7 +1508,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
             )
           : Row(
               children: [
-                (null == toDo.startDate)
+                (Constants.nullDate == toDo.startDate)
                     ? const Flexible(
                         child: AutoSizeText(
                           "Start Date",
@@ -1169,7 +1520,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                       )
                     : Flexible(
                         child: AutoSizeText(
-                            Jiffy.parseFromDateTime(toDo.startDate!).format(
+                            Jiffy.parseFromDateTime(toDo.startDate).format(
                               pattern: "MMM d",
                             ),
                             softWrap: true,
@@ -1188,7 +1539,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                     ),
                   ),
                 ),
-                (null == toDo.dueDate)
+                (Constants.nullDate == toDo.dueDate)
                     ? const Flexible(
                         child: Padding(
                           padding: EdgeInsets.only(right: Constants.padding),
@@ -1200,7 +1551,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                         padding: EdgeInsets.only(right: Constants.padding),
                         child: Icon(Icons.event_outlined),
                       )),
-                (null == toDo.dueDate)
+                (Constants.nullDate == toDo.dueDate)
                     ? const Flexible(
                         child: AutoSizeText(
                           "Due Date",
@@ -1223,19 +1574,20 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
       trailing: IconButton(
           icon: const Icon(Icons.close),
           onPressed: () => setState(() {
-                // TODO: Handle this, need a dummy date for "no date"
-                toDo.startDate = toDo.startDate;
-                toDo.dueDate = toDo.dueDate;
+                toDo.startDate = Constants.nullDate
+                    .copyWith(hour: toDo.startDate.hour, minute: toDo.startDate.minute);
+                toDo.dueDate = Constants.nullDate
+                    .copyWith(hour: toDo.dueDate.hour, minute: toDo.dueDate.minute);
               })),
       onTap: () {
         showDialog<void>(
             context: context,
             builder: (BuildContext context) {
-              DateTime? tmpStart = toDo.startDate;
-              DateTime? tmpDue = toDo.dueDate;
+              DateTime? tmpStart = (Constants.nullDate != toDo.startDate) ? toDo.startDate : null;
+              DateTime? tmpDue = (Constants.nullDate != toDo.dueDate) ? toDo.dueDate : null;
               DateTime initDate = tmpStart ?? tmpDue ?? DateTime.now();
               bool setStart = false;
-              final int numDays = (toDo.dueDate?.difference(initDate).inDays ?? 0) + 1;
+              final int numDays = (tmpDue?.difference(initDate).inDays ?? 0) + 1;
               List<DateTime?> showDates =
                   List.generate(numDays, (i) => initDate.add(Duration(days: i)));
 
@@ -1308,8 +1660,10 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                                               children: [
                                                 Expanded(
                                                   child: TextButton(
-                                                      onPressed: () =>
-                                                          setState(() => setStart = true),
+                                                      onPressed: () => setState(() {
+                                                            checkClose = true;
+                                                            setStart = true;
+                                                          }),
                                                       child: (null != tmpStart)
                                                           ? AutoSizeText(
                                                               Jiffy.parseFromDateTime(tmpStart!)
@@ -1328,7 +1682,10 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                                                 IconButton(
                                                   icon: const Icon(Icons.close_outlined),
                                                   selectedIcon: const Icon(Icons.close),
-                                                  onPressed: () => setState(() => tmpStart = null),
+                                                  onPressed: () => setState(() {
+                                                    checkClose = true;
+                                                    tmpStart = null;
+                                                  }),
                                                 )
                                               ]),
                                         ),
@@ -1361,8 +1718,10 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                                               children: [
                                                 Expanded(
                                                   child: TextButton(
-                                                      onPressed: () =>
-                                                          setState(() => setStart = false),
+                                                      onPressed: () => setState(() {
+                                                            checkClose = true;
+                                                            setStart = false;
+                                                          }),
                                                       child: (null != tmpDue)
                                                           ? AutoSizeText(
                                                               Jiffy.parseFromDateTime(tmpDue!)
@@ -1381,7 +1740,10 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                                                 IconButton(
                                                   icon: const Icon(Icons.close_outlined),
                                                   selectedIcon: const Icon(Icons.close),
-                                                  onPressed: () => setState(() => tmpDue = null),
+                                                  onPressed: () => setState(() {
+                                                    checkClose = true;
+                                                    tmpDue = null;
+                                                  }),
                                                 )
                                               ]),
                                         ),
@@ -1403,6 +1765,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                                         value: showDates,
                                         onValueChanged: (dates) {
                                           setState(() {
+                                            checkClose = true;
                                             if (dates.length > 1) {
                                               tmpStart = dates.first;
                                               tmpDue = dates.last;
@@ -1468,12 +1831,14 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
 
   ListTile buildTimeTile() {
     // TODO: possibly factor these out as nullable params.
-    TimeOfDay? startTime = TimeOfDay(hour: toDo.startDate.hour, minute: toDo.startDate.minute);
-    TimeOfDay? dueTime = TimeOfDay(hour: toDo.dueDate.hour, minute: toDo.dueDate.minute);
+    TimeOfDay? startTime = (showStartTime)
+        ? TimeOfDay(hour: toDo.startDate.hour, minute: toDo.startDate.minute)
+        : null;
+    TimeOfDay? dueTime =
+        (showDueTime) ? TimeOfDay(hour: toDo.dueDate.hour, minute: toDo.dueDate.minute) : null;
     return ListTile(
         leading: const Icon(Icons.schedule_outlined),
         title: (null == startTime && null == dueTime)
-            // TODO: Need a dummy value for hour/minute
             ? const AutoSizeText(
                 "Add Times",
                 overflow: TextOverflow.visible,
@@ -1596,9 +1961,11 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                                                 final TimeOfDay? picked = await showTimePicker(
                                                     context: context,
                                                     initialTime: startTime ??
-                                                        const TimeOfDay(hour: 0, minute: 0));
+                                                        TimeOfDay(
+                                                            hour: toDo.startDate.hour,
+                                                            minute: toDo.startDate.minute));
                                                 if (null != picked) {
-                                                  setState(() => dueTime = picked);
+                                                  setState(() => startTime = picked);
                                                 }
                                               },
                                               child: (null != startTime)
@@ -1700,8 +2067,12 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
         trailing: IconButton(
           icon: const Icon(Icons.close),
           onPressed: () => setState(() {
-            startTime = null;
-            dueTime = null;
+            showStartTime = false;
+            showDueTime = false;
+            toDo.startDate = toDo.startDate
+                .copyWith(hour: Constants.midnight.hour, minute: Constants.midnight.minute);
+            toDo.dueDate = toDo.dueDate
+                .copyWith(hour: Constants.midnight.hour, minute: Constants.midnight.minute);
           }),
         ));
   }
@@ -1721,8 +2092,6 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                 maxLines: 1,
                 softWrap: false),
         onTap: () {
-          // TODO: figure out dummy values for gui.
-          // TODO: Consider caching the set of weekdays and validating on update.
           showDialog(
               context: context,
               builder: (BuildContext context) {
@@ -1736,8 +2105,8 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                 }
 
                 if (cacheWeekdays.isEmpty) {
-                  int day = (null != toDo.startDate)
-                      ? max(toDo.startDate!.weekday - 1, 0)
+                  int day = (Constants.nullDate != toDo.startDate)
+                      ? max(toDo.startDate.weekday - 1, 0)
                       : max(DateTime.now().weekday - 1, 0);
                   cacheWeekdays.add(day);
                 }
@@ -1814,13 +2183,14 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                                             horizontal: Constants.padding),
                                         isDense: true,
                                         isExpanded: true,
-                                        // TODO: Abstract this reference.
-                                        dropdownColor: Theme.of(context).colorScheme.surfaceVariant,
+                                        dropdownColor: Constants.dialogColor(context: context),
                                         borderRadius: const BorderRadius.all(
                                             Radius.circular(Constants.roundedCorners)),
                                         value: cacheFreq,
-                                        onChanged: (Frequency? value) =>
-                                            setState(() => cacheFreq = value ?? cacheFreq),
+                                        onChanged: (Frequency? value) => setState(() {
+                                          checkClose = true;
+                                          cacheFreq = value ?? cacheFreq;
+                                        }),
                                         items: Frequency.values
                                             .map((Frequency frequency) =>
                                                 DropdownMenuItem<Frequency>(
@@ -1861,12 +2231,15 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                                                   isDense: true,
                                                   isExpanded: true,
                                                   dropdownColor:
-                                                      Theme.of(context).colorScheme.surfaceVariant,
+                                                      Constants.dialogColor(context: context),
                                                   borderRadius: const BorderRadius.all(
                                                       Radius.circular(Constants.roundedCorners)),
                                                   value: cacheCustom,
-                                                  onChanged: (CustomFrequency? value) => setState(
-                                                      () => cacheCustom = value ?? cacheCustom),
+                                                  onChanged: (CustomFrequency? value) =>
+                                                      setState(() {
+                                                    checkClose = true;
+                                                    cacheCustom = value ?? cacheCustom;
+                                                  }),
                                                   items: CustomFrequency.values
                                                       .map((CustomFrequency customFreq) =>
                                                           DropdownMenuItem<CustomFrequency>(
@@ -1898,9 +2271,8 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                                                 runAlignment: WrapAlignment.center,
                                                 children: Constants.weekDays
                                                     .map((weekDay) => InputChip(
-                                                        backgroundColor: Theme.of(context)
-                                                            .colorScheme
-                                                            .surfaceVariant,
+                                                        backgroundColor:
+                                                            Constants.dialogColor(context: context),
                                                         shape: const RoundedRectangleBorder(
                                                           borderRadius: BorderRadius.all(
                                                               Radius.circular(Constants.circular)),
@@ -1917,14 +2289,16 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                                                         selected:
                                                             cacheWeekdays.contains(weekDay.value),
                                                         onSelected: (bool selected) => setState(() {
+                                                              checkClose = true;
                                                               if (selected) {
                                                                 cacheWeekdays.add(weekDay.value);
                                                               } else {
                                                                 cacheWeekdays.remove(weekDay.value);
                                                                 if (cacheWeekdays.isEmpty) {
-                                                                  int day = (null != toDo.startDate)
+                                                                  int day = (Constants.nullDate !=
+                                                                          toDo.startDate)
                                                                       ? max(
-                                                                          toDo.startDate!.weekday -
+                                                                          toDo.startDate.weekday -
                                                                               1,
                                                                           0)
                                                                       : max(
@@ -1974,7 +2348,10 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                                                       SemanticsService.announce(
                                                           "Skip value: $value",
                                                           Directionality.of(context));
-                                                      setState(() => cacheSkip = value);
+                                                      setState(() {
+                                                        checkClose = true;
+                                                        cacheSkip = value;
+                                                      });
                                                     })),
                                             Flexible(
                                               child: AutoSizeText(
@@ -2020,11 +2397,11 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                                             icon: const Icon(Icons.done_outlined),
                                             onPressed: () {
                                               setState(() {
+                                                checkClose = true;
                                                 toDo.frequency = cacheFreq;
                                                 toDo.customFreq = cacheCustom;
                                                 toDo.repeatSkip = cacheSkip;
-                                                // TODO: Consider validating this on update.
-                                                //weekDayList = cacheWeekdays;
+
                                                 if (cacheWeekdays.isEmpty) {
                                                   cacheWeekdays.add(toDo.startDate.weekday - 1);
                                                 }
@@ -2050,12 +2427,9 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
         trailing: IconButton(
             icon: const Icon(Icons.close),
             onPressed: () => setState(() {
+                  checkClose = true;
                   toDo.frequency = Frequency.once;
                   toDo.customFreq = CustomFrequency.weekly;
-                  // for(int i = 0; i < toDo.repeatDays.length; i++)
-                  //   {
-                  //     toDo.repeatDays[i] = false;
-                  //   }
 
                   toDo.repeatDays.fillRange(0, toDo.repeatDays.length, false);
 
@@ -2063,33 +2437,97 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                 })));
   }
 
-  Row buildCreateButton(BuildContext context, Color errorColor) {
+  Row buildUpdateButton(BuildContext context, Color errorColor) {
     return Row(mainAxisAlignment: MainAxisAlignment.end, children: [
       FilledButton.icon(
-          label: const Text("Create Task"),
+          label: const Text("Update Task"),
           icon: const Icon(Icons.add),
           onPressed: () async {
             bool validData = validateData();
             if (validData) {
-              // TODO: figure out whether to cache date/time.
-              //mergeDateTimes();
+              if (prevToDo.frequency != Frequency.once && checkClose) {
+                bool? updateSingle = await showModalBottomSheet<bool?>(
+                    showDragHandle: true,
+                    context: context,
+                    builder: (BuildContext context) {
+                      return StatefulBuilder(
+                          builder: (context, setState) => Center(
+                              heightFactor: 1,
+                              child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Padding(
+                                      padding: const EdgeInsets.all(Constants.padding),
+                                      child: FilledButton.icon(
+                                          onPressed: () => Navigator.pop(context, true),
+                                          label: const Text("This Event"),
+                                          icon: const Icon(Icons.arrow_upward_outlined)),
+                                    ),
+                                    Padding(
+                                        padding: const EdgeInsets.all(Constants.padding),
+                                        child: FilledButton.tonalIcon(
+                                          onPressed: () => Navigator.pop(context, false),
+                                          label: const Text("All Future Events"),
+                                          icon: const Icon(Icons.repeat_outlined),
+                                        ))
+                                  ])));
+                    });
+                // If the modal is discarded.
+                if (null == updateSingle) {
+                  return;
+                }
 
-              // TODO: figure out whether to cache weekday List.
-              // for (int index in weekDayList) {
-              //   weekDays[index] = true;
-              // }
+                // TODO: Refactor error handling to something easier to read -- Like firing an event to watch in the main gui.
+                // On updating a repeating event, clear all future events
+                await toDoProvider.deleteFutures(toDo: prevToDo).catchError((e) {
+                  ScaffoldMessenger.maybeOf(context)?.showSnackBar(SnackBar(
+                    content: Text(e.cause,
+                        overflow: TextOverflow.ellipsis, style: TextStyle(color: errorColor)),
+                    action: SnackBarAction(label: "Dismiss", onPressed: () {}),
+                    duration: const Duration(milliseconds: 1500),
+                    behavior: SnackBarBehavior.floating,
+                    shape: const RoundedRectangleBorder(
+                      borderRadius: BorderRadius.all(Radius.circular(Constants.roundedCorners)),
+                    ),
+                    width: (MediaQuery.sizeOf(context).width) / 2,
+                    padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
+                  ));
+                }, test: (e) => e is FailureToCreateException || e is FailureToUploadException);
 
-              // TODO: validation logic for repeatable.
-              /// If an object's repeatable status has changed to once && is still repeatable, mutate.
-              /// If an object is newly repeatable, do nothing.
-              /// If an object is repeatable: compare with the previously cached ToDo.
-              ///   If they are the same, just proceed.
-              ///   If they are different -> Show modal bottom drawer: for one, for all
-              ///   For one: Delete all future todos && generate the next from the cached ToDo.
-              ///   For all: Delete all future todos.
+                // Updating all future events relies on deleting all future events ->
+                // They are assumed to be re-generated on the next calendar view or day passing.
+                // If only updating the one event, generate the next one in the database.
 
-              await toDoProvider.updateToDo().then((value) => Navigator.pop(context)).catchError(
-                  (e) {
+                // TODO: Refactor the error handling to something easier to read.
+                if (updateSingle) {
+                  prevToDo.repeatable = true;
+                  await toDoProvider.nextRepeat(toDo: prevToDo).catchError((e) {
+                    ScaffoldMessenger.maybeOf(context)?.showSnackBar(SnackBar(
+                      content: Text(e.cause,
+                          overflow: TextOverflow.ellipsis, style: TextStyle(color: errorColor)),
+                      action: SnackBarAction(label: "Dismiss", onPressed: () {}),
+                      duration: const Duration(milliseconds: 1500),
+                      behavior: SnackBarBehavior.floating,
+                      shape: const RoundedRectangleBorder(
+                        borderRadius: BorderRadius.all(Radius.circular(Constants.roundedCorners)),
+                      ),
+                      width: (MediaQuery.sizeOf(context).width) / 2,
+                      padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
+                    ));
+                  }, test: (e) => e is FailureToCreateException || e is FailureToUploadException);
+                  toDo.repeatable = false;
+                } else {
+                  toDo.repeatable =
+                      (prevToDo.frequency != Frequency.once && toDo.frequency != Frequency.once);
+                }
+              } else {
+                toDo.repeatable =
+                    (prevToDo.frequency != Frequency.once && toDo.frequency != Frequency.once);
+              }
+              await toDoProvider.updateToDo().whenComplete(() {
+                Navigator.pop(context);
+              }).catchError((e) {
                 ScaffoldMessenger.maybeOf(context)?.showSnackBar(SnackBar(
                   content: Text(e.cause,
                       overflow: TextOverflow.ellipsis, style: TextStyle(color: errorColor)),

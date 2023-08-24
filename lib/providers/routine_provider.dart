@@ -108,6 +108,11 @@ class RoutineProvider extends ChangeNotifier {
     updateRoutine();
   }
 
+  int calculateRealDuration({int? weight, int? duration}) =>
+      _routineService.calculateRealDuration(weight: weight, duration: duration);
+  int calculateWeight({List<SubTask>? routineTasks}) =>
+      _routineService.calculateWeight(routineTasks: routineTasks);
+
   Future<void> _syncRepo() async {
     // Not quite sure how to handle this outside of gui warning.
     try {

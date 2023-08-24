@@ -152,8 +152,11 @@ class ToDoRepo implements ToDoRepository {
         .repeatableEqualTo(true)
         .findAll();
 
-    toDelete.map((ToDo toDo) => toDo.toDelete = true);
-    updateBatch(toDelete);
+    // This is to prevent a race condition.
+    toDelete.remove(deleteFrom);
+
+    toDelete.map((ToDo toDo) => toDo.toDelete = true).toList(growable: false);
+    updateBatch(toDelete).whenComplete(() {});
   }
 
   @override

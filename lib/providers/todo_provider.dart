@@ -67,6 +67,9 @@ class ToDoProvider extends ChangeNotifier {
   int calculateRealDuration({int? weight, int? duration}) =>
       _toDoService.calculateRealDuration(weight: weight, duration: duration);
 
+  int calculateWeight({List<SubTask>? subTasks}) =>
+      _toDoService.calculateWeight(subTasks: subTasks);
+
   List<SortMethod> get sortMethods => ToDoSorter.sortMethods;
 
   Future<int> getMyDayWeight() async => _toDoService.getMyDayWeight();
@@ -115,7 +118,7 @@ class ToDoProvider extends ChangeNotifier {
     int? repeatSkip,
     List<SubTask>? subTasks,
   }) async {
-    List<SubTask> buffer = List.filled(Constants.numTasks[taskType]!, SubTask());
+    List<SubTask> buffer = List.generate(Constants.numTasks[taskType]!, (index) => SubTask());
 
     if (null != subTasks && buffer.isNotEmpty) {
       List.copyRange(buffer, 0, subTasks, 0, Constants.numTasks[taskType]!);
@@ -156,7 +159,9 @@ class ToDoProvider extends ChangeNotifier {
         subTasks: subTasks,
         lastUpdated: DateTime.now());
 
-    curToDo!.repeatID = curToDo.hashCode;
+    if (repeatable ?? false) {
+      curToDo!.repeatID = curToDo.hashCode;
+    }
 
     try {
       _toDoService.createToDo(toDo: curToDo!);
@@ -173,10 +178,9 @@ class ToDoProvider extends ChangeNotifier {
 
   Future<void> updateToDo() async {
     curToDo!.lastUpdated = DateTime.now();
-    if (curToDo!.taskType != TaskType.small) {
-      _toDoService.recalculateWeight(toDo: curToDo!);
+    if (curToDo!.repeatable && null == curToDo!.repeatID) {
+      curToDo!.repeatID = curToDo!.hashCode;
     }
-    _toDoService.setRealDuration(toDo: curToDo!);
 
     try {
       _toDoService.updateToDo(toDo: curToDo!);
@@ -212,12 +216,41 @@ class ToDoProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> checkRepeating({DateTime? now}) async =>
+  Future<void> checkRepeating({DateTime? now}) async {
+    try {
       _toDoService.checkRepeating(now: now ?? DateTime.now());
+    } on FailureToUpdateException catch (e) {
+      log(e.cause);
+      rethrow;
+    } on FailureToUploadException catch (e) {
+      log(e.cause);
+      rethrow;
+    }
+  }
 
-  Future<void> nextRepeat() async => _toDoService.nextRepeatable(toDo: curToDo!);
+  Future<void> nextRepeat({ToDo? toDo}) async {
+    try {
+      _toDoService.nextRepeatable(toDo: toDo ?? curToDo!);
+    } on FailureToUpdateException catch (e) {
+      log(e.cause);
+      rethrow;
+    } on FailureToUploadException catch (e) {
+      log(e.cause);
+      rethrow;
+    }
+  }
 
-  Future<void> deleteFutures() async => _toDoService.deleteFutures(toDo: curToDo!);
+  Future<void> deleteFutures({ToDo? toDo}) async {
+    try {
+      _toDoService.deleteFutures(toDo: toDo ?? curToDo!);
+    } on FailureToUpdateException catch (e) {
+      log(e.cause);
+      rethrow;
+    } on FailureToUploadException catch (e) {
+      log(e.cause);
+      rethrow;
+    }
+  }
 
   // TODO: Finish testing - Hold off -> May not be needed.
   // Will be populated on calendar view.

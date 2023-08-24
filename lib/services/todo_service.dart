@@ -73,6 +73,8 @@ class ToDoService {
     ToDo newToDo = toDo.copyWith(
       startDate: nextRepeatDate,
       dueDate: Jiffy.parseFromDateTime(nextRepeatDate).add(microseconds: offset).dateTime,
+      completed: false,
+      myDay: false,
     );
 
     return updateToDo(toDo: newToDo);
@@ -111,6 +113,8 @@ class ToDoService {
           .diff(Jiffy.parseFromDateTime(toDo.startDate)) as int;
 
       ToDo newToDo = toDo.copyWith(
+          completed: false,
+          myDay: false,
           startDate: nextRepeatDate,
           dueDate: Jiffy.parseFromDateTime(nextRepeatDate).add(microseconds: offset).dateTime);
 
