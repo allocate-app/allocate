@@ -2,9 +2,9 @@ import "dart:io";
 
 import "package:flutter/material.dart";
 
-import "../../../util/interfaces/crossbuild.dart";
-import "calendar.dart";
-import "my_day_listview.dart";
+import '../../../util/interfaces/crossbuild.dart';
+import '../sub_views/calendar.dart';
+import 'my_day_listview.dart';
 
 // MYDAY:
 // Init -> Calculate weight (todoprovider/routineprovider).
@@ -65,8 +65,7 @@ class _MyDayScreen extends State<MyDayScreen> implements CrossBuild {
       children: [
         NavigationBar(
           selectedIndex: selectedPageIndex,
-          onDestinationSelected: (int index) =>
-              setState(() => selectedPageIndex = index),
+          onDestinationSelected: (int index) => setState(() => selectedPageIndex = index),
           destinations: destinations,
         ),
         [const MyDayListScreen(), const CalendarScreen()][selectedPageIndex]

@@ -13,6 +13,9 @@ class Routine with EquatableMixin implements Copyable<Routine> {
   Id id = Isar.autoIncrement;
 
   @Index()
+  int? localID;
+
+  @Index()
   String name;
 
   @Index()
@@ -47,6 +50,7 @@ class Routine with EquatableMixin implements Copyable<Routine> {
 
   Routine.fromEntity({required Map<String, dynamic> entity})
       : id = entity["id"] as Id,
+        localID = entity["localID"] as int?,
         name = entity["name"] as String,
         weight = entity["weight"] as int,
         expectedDuration = entity["expectedDuration"],
@@ -61,6 +65,7 @@ class Routine with EquatableMixin implements Copyable<Routine> {
         lastUpdated = DateTime.parse(entity["lastUpdated"]);
 
   Map<String, dynamic> toEntity() => {
+        "localID": localID,
         "customViewIndex": customViewIndex,
         "name": name,
         "weight": weight,
@@ -97,8 +102,9 @@ class Routine with EquatableMixin implements Copyable<Routine> {
 
   @ignore
   @override
-  List<Object> get props => [
+  List<Object?> get props => [
         id,
+        localID,
         name,
         weight,
         expectedDuration,
@@ -110,7 +116,7 @@ class Routine with EquatableMixin implements Copyable<Routine> {
       ];
 
   @override
-  String toString() => "Routine(id: $id, customViewIndex: $customViewIndex, "
+  String toString() => "Routine(id: $id, localID: $localID customViewIndex: $customViewIndex, "
       "name: $name, weight: $weight, expectedDuration: $expectedDuration,"
       "routineTasks: $routineTasks, isSynced: $isSynced, toDelete: $toDelete, lastUpdated: $lastUpdated)";
 }

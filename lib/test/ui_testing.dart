@@ -16,6 +16,7 @@ import '../providers/todo_provider.dart';
 import '../providers/user_provider.dart';
 import '../services/isar_service.dart';
 import '../services/supabase_service.dart';
+import '../ui/views/sub_views/create_routine.dart';
 import '../ui/views/sub_views/create_todo.dart';
 import '../ui/views/sub_views/update_todo.dart';
 import '../util/constants.dart';
@@ -163,8 +164,8 @@ class _FormTester extends State<FormTester> with WindowListener {
               onPressed: () => showDialog(
                   context: context,
                   builder: (BuildContext context) {
-                    return const CreateToDoScreen();
-                    // return const CreateRoutineScreen();
+                    // return const CreateToDoScreen();
+                    return const CreateRoutineScreen();
                     // return const CreateDeadlineScreen();
                     // return const CreateReminderScreen();
                   }),

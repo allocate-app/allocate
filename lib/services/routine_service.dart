@@ -21,12 +21,13 @@ class RoutineService {
   }
 
   int calculateRealDuration({int? weight, int? duration}) => (remap(
-          x: weight ?? 0,
-          inMin: 0,
-          inMax: Constants.maxWeight,
-          outMin: Constants.lowerBound,
-          outMax: Constants.upperBound) *
-      (duration ?? 0)) as int;
+              x: weight ?? 0,
+              inMin: 0,
+              inMax: Constants.maxWeight,
+              outMin: Constants.lowerBound,
+              outMax: Constants.upperBound) *
+          (duration ?? 0))
+      .toInt();
 
   void setRealDuration({required Routine routine}) => routine.realDuration = (remap(
           x: routine.weight,

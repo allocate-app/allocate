@@ -12,12 +12,6 @@ import '../util/enums.dart';
 import "../util/exceptions.dart";
 import '../util/sorting/routine_sorter.dart';
 
-/// NOTE: For UI stuff:
-/// In the form-input page class, declare local variables to hold each of the fields required.
-/// Send those as arguments to the Provider method after validating.
-///
-/// also: FUTURE BUILDER will be required for UI stuff.
-
 class RoutineProvider extends ChangeNotifier {
   late Timer syncTimer;
 
@@ -139,6 +133,7 @@ class RoutineProvider extends ChangeNotifier {
         ? routineTasks
         : List.filled(Constants.maxNumTasks, SubTask());
 
+    // These are also calculated in the view. TODO: remove.
     weight = weight ?? _routineService.calculateWeight(routineTasks: routineTasks);
 
     expectedDuration = expectedDuration ?? (const Duration(hours: 1)).inSeconds;
@@ -152,6 +147,8 @@ class RoutineProvider extends ChangeNotifier {
         realDuration: realDuration,
         routineTasks: routineTasks,
         lastUpdated: DateTime.now());
+
+    curRoutine!.localID = curRoutine!.hashCode;
 
     try {
       _routineService.createRoutine(routine: curRoutine!);

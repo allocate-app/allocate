@@ -22,6 +22,8 @@ import "../../../util/exceptions.dart";
 import "../../../util/numbers.dart";
 import "../../widgets/paddedDivider.dart";
 
+//TODO: Delete button
+
 class UpdateToDoScreen extends StatefulWidget {
   const UpdateToDoScreen({Key? key}) : super(key: key);
 
@@ -60,6 +62,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
   // Description
   late final TextEditingController descriptionEditingController;
 
+  // TODO: Remove. Not sure if/where this is being used.
   final MaterialStateProperty<Icon?> completedIcon = MaterialStateProperty.resolveWith(
       (states) => (states.contains(MaterialState.selected) ? const Icon(Icons.task_alt) : null));
 
@@ -72,6 +75,9 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
 
   // This is just a convenience method to avoid extra typing
   ToDo get toDo => toDoProvider.curToDo!;
+
+  // Subtasks
+  late List<SubTask> cacheSubTasks;
 
   @override
   void initState() {
@@ -109,7 +115,8 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
     if (shownTasks < 0) {
       shownTasks = toDo.subTasks.length;
     }
-    ;
+
+    cacheSubTasks = List.from(toDo.subTasks);
 
     // Midnight as a start/due time is ambiguous.
     // Assume no time set.
@@ -126,10 +133,11 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
 
     nameEditingController = TextEditingController(text: toDo.name);
     nameEditingController.addListener(() {
+      nameErrorText = null;
       checkClose = true;
       String newText = nameEditingController.text;
       SemanticsService.announce(newText, Directionality.of(context));
-      toDo.name = newText;
+      setState(() => toDo.name = newText);
     });
 
     String? groupText;
@@ -221,13 +229,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
     // Icon is scaled for sum-weight.
     weight = (toDo.taskType == TaskType.small)
         ? weight
-        : remap(
-                x: weight,
-                inMin: 0,
-                inMax: (Constants.maxTaskWeight * Constants.numTasks[toDo.taskType]!),
-                outMin: 0,
-                outMax: 5)
-            .toInt();
+        : remap(x: weight, inMin: 0, inMax: Constants.maxWeight, outMin: 0, outMax: 5).toInt();
 
     if (selected) {
       return Constants.selectedBatteryIcons[weight]!;
@@ -376,54 +378,6 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                                   child: buildWeightTile(smallScreen: smallScreen),
                                 ),
                                 const PaddedDivider(padding: Constants.innerPadding),
-                                // TaskType
-                                Row(children: [
-                                  Expanded(
-                                    child: AutoSizeText("Task Type",
-                                        maxLines: 1,
-                                        softWrap: true,
-                                        textAlign: TextAlign.center,
-                                        minFontSize: Constants.medium,
-                                        style: (!tileExpanded || shownTasks < 3)
-                                            ? Constants.largeHeaderStyle
-                                            : Constants.headerStyle),
-                                  ),
-                                ]),
-                                Padding(
-                                  padding:
-                                      const EdgeInsets.symmetric(horizontal: Constants.padding),
-                                  child:
-                                      Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                                    Flexible(
-                                        child: AutoSizeText(
-                                      "${toBeginningOfSentenceCase(toDo.taskType.name)!}: ",
-                                      maxLines: 1,
-                                      softWrap: true,
-                                      minFontSize: Constants.medium,
-                                      style: (!tileExpanded || shownTasks < 1)
-                                          ? Constants.hugeHeaderStyle
-                                          : (shownTasks < 3)
-                                              ? Constants.largeHeaderStyle
-                                              : Constants.headerStyle,
-                                    )),
-                                    Flexible(
-                                        child: Padding(
-                                      padding:
-                                          const EdgeInsets.symmetric(horizontal: Constants.padding),
-                                      child: AutoSizeText(
-                                        "Maximum ${Constants.numTasks[toDo.taskType]!} subtasks",
-                                        maxLines: 1,
-                                        softWrap: true,
-                                        minFontSize: Constants.medium,
-                                        style: (!tileExpanded || shownTasks < 1)
-                                            ? Constants.hugeHeaderStyle
-                                            : (shownTasks < 3)
-                                                ? Constants.largeHeaderStyle
-                                                : Constants.headerStyle,
-                                      ),
-                                    )),
-                                  ]),
-                                ),
                                 // Subtasks
                                 (toDo.taskType != TaskType.small)
                                     ? Padding(
@@ -448,6 +402,12 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                                                 overflow: TextOverflow.visible,
                                                 softWrap: false,
                                                 minFontSize: Constants.small),
+                                            subtitle: AutoSizeText(
+                                                "${min(shownTasks, Constants.numTasks[toDo.taskType]!)}/${Constants.numTasks[toDo.taskType]!} Steps",
+                                                maxLines: 1,
+                                                overflow: TextOverflow.visible,
+                                                softWrap: false,
+                                                minFontSize: Constants.small),
                                             collapsedShape: const RoundedRectangleBorder(
                                                 side: BorderSide(
                                                     strokeAlign: BorderSide.strokeAlignOutside),
@@ -459,7 +419,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                                                 borderRadius: BorderRadius.all(
                                                     Radius.circular(Constants.roundedCorners))),
                                             children: [
-                                              buildSubTasksList(
+                                              buildReorderableSubTasks(
                                                   smallScreen: smallScreen, physics: scrollPhysics),
                                               (shownTasks < Constants.numTasks[toDo.taskType]!)
                                                   ? ListTile(
@@ -700,41 +660,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                       child: buildWeightTile(smallScreen: smallScreen),
                     ),
                     const PaddedDivider(padding: Constants.innerPadding),
-                    // TaskType
-                    const Row(children: [
-                      Expanded(
-                        child: AutoSizeText("Task Type",
-                            maxLines: 1,
-                            softWrap: true,
-                            textAlign: TextAlign.center,
-                            minFontSize: Constants.medium,
-                            style: Constants.headerStyle),
-                      ),
-                    ]),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
-                      child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                        Flexible(
-                            child: AutoSizeText(
-                          "${toBeginningOfSentenceCase(toDo.taskType.name)!}: ",
-                          maxLines: 1,
-                          softWrap: true,
-                          minFontSize: Constants.medium,
-                          style: Constants.largeHeaderStyle,
-                        )),
-                        Flexible(
-                            child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
-                          child: AutoSizeText(
-                            "Maximum ${Constants.numTasks[toDo.taskType]!} subtasks",
-                            maxLines: 1,
-                            softWrap: true,
-                            minFontSize: Constants.medium,
-                            style: Constants.largeHeaderStyle,
-                          ),
-                        )),
-                      ]),
-                    ),
+
                     // Subtasks
                     (toDo.taskType != TaskType.small)
                         ? Padding(
@@ -757,6 +683,12 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                                     overflow: TextOverflow.visible,
                                     softWrap: false,
                                     minFontSize: Constants.small),
+                                subtitle: AutoSizeText(
+                                    "${min(shownTasks, Constants.numTasks[toDo.taskType]!)}/${Constants.numTasks[toDo.taskType]!} Steps",
+                                    maxLines: 1,
+                                    overflow: TextOverflow.visible,
+                                    softWrap: false,
+                                    minFontSize: Constants.small),
                                 collapsedShape: const RoundedRectangleBorder(
                                     side: BorderSide(strokeAlign: BorderSide.strokeAlignOutside),
                                     borderRadius: BorderRadius.all(
@@ -766,7 +698,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                                     borderRadius: BorderRadius.all(
                                         Radius.circular(Constants.roundedCorners))),
                                 children: [
-                                  buildSubTasksList(
+                                  buildReorderableSubTasks(
                                       smallScreen: smallScreen, physics: scrollPhysics),
                                   (shownTasks < Constants.numTasks[toDo.taskType]!)
                                       ? ListTile(
@@ -1051,6 +983,8 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
             title: Row(
               children: [
                 IconButton(
+                  // Not ideal, but the getBatteryIcon function is only for the large battery atm.
+                  // This is due to the remapping function.
                   icon: Constants.batteryIcons[toDo.subTasks[index].weight]!,
                   selectedIcon: Constants.selectedBatteryIcons[toDo.subTasks[index].weight]!,
                   onPressed: () {
@@ -1132,7 +1066,6 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                 icon: const Icon(Icons.delete),
                 onPressed: () => setState(() {
                       checkClose = true;
-                      // TEST: potential bug
                       toDo.subTasks.setRange(index, toDo.subTasks.length - 1,
                           toDo.subTasks.getRange(index + 1, toDo.subTasks.length));
                       toDo.subTasks.last = SubTask();
@@ -1146,6 +1079,139 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                       shownTasks = max(shownTasks, 0);
                       toDo.weight = toDoProvider.calculateWeight(subTasks: toDo.subTasks);
                     })));
+      },
+    );
+  }
+
+  ReorderableListView buildReorderableSubTasks(
+      {bool smallScreen = false, ScrollPhysics physics = const BouncingScrollPhysics()}) {
+    return ReorderableListView.builder(
+      physics: physics,
+      shrinkWrap: true,
+      itemCount: min(cacheSubTasks.length, shownTasks),
+      onReorder: (int oldIndex, int newIndex) {
+        setState(() {
+          checkClose = true;
+          if (oldIndex < newIndex) {
+            newIndex--;
+          }
+
+          if (newIndex > cacheSubTasks.length) {
+            print("Cache Len: ${cacheSubTasks.length}");
+            print("newIndex: $newIndex");
+          }
+
+          SubTask st = cacheSubTasks.removeAt(oldIndex);
+          cacheSubTasks.insert(newIndex, st);
+          TextEditingController ct = subTaskEditingController.removeAt(oldIndex);
+          //ct.value = ct.value.copyWith(text: st.name);
+          subTaskEditingController.insert(newIndex, ct);
+        });
+      },
+      itemBuilder: (BuildContext context, int index) {
+        return CheckboxListTile(
+            key: ValueKey(index),
+            checkboxShape: const CircleBorder(),
+            controlAffinity: ListTileControlAffinity.leading,
+            shape: const CircleBorder(),
+            title: Row(
+              children: [
+                IconButton(
+                  icon: Constants.batteryIcons[cacheSubTasks[index].weight]!,
+                  selectedIcon: Constants.selectedBatteryIcons[cacheSubTasks[index].weight]!,
+                  onPressed: () {
+                    showModalBottomSheet<void>(
+                        showDragHandle: true,
+                        context: context,
+                        builder: (BuildContext context) {
+                          return StatefulBuilder(
+                            builder: (context, setState) => Center(
+                                heightFactor: 1,
+                                child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      // const Icon(Icons.drag_handle_rounded),
+                                      const Text("Task Strain", style: Constants.headerStyle),
+                                      Padding(
+                                          padding: const EdgeInsets.all(Constants.padding),
+                                          child: Row(
+                                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                            children: [
+                                              const Icon(Icons.battery_full),
+                                              Expanded(
+                                                child: Slider(
+                                                  value: cacheSubTasks[index].weight.toDouble(),
+                                                  max: Constants.maxTaskWeight.toDouble(),
+                                                  label: (cacheSubTasks[index].weight >
+                                                          (Constants.maxTaskWeight / 2).floor())
+                                                      ? " ${cacheSubTasks[index].weight} ${Constants.lowBattery}"
+                                                      : " ${cacheSubTasks[index].weight} ${Constants.fullBattery}",
+                                                  divisions: Constants.maxTaskWeight,
+                                                  onChanged: (value) => setState(() {
+                                                    checkClose = true;
+                                                    cacheSubTasks[index].weight = value.toInt();
+                                                  }),
+                                                ),
+                                              ),
+                                              const Icon(Icons.battery_1_bar),
+                                            ],
+                                          )),
+                                    ])),
+                          );
+                        }).whenComplete(() => setState(() {
+                          checkClose = true;
+                          toDo.weight = toDoProvider.calculateWeight(subTasks: cacheSubTasks);
+                          toDo.realDuration = toDoProvider.calculateRealDuration(
+                              weight: toDo.weight, duration: toDo.expectedDuration);
+                        }));
+                  },
+                ),
+                Expanded(
+                  child: AutoSizeTextField(
+                      controller: subTaskEditingController[index],
+                      maxLines: 1,
+                      minFontSize: Constants.small,
+                      decoration: InputDecoration(
+                        isDense: smallScreen,
+                        hintText: "Step name",
+                      ),
+                      onChanged: (value) {
+                        cacheSubTasks[index].name = value;
+                        subTaskEditingController[index].value =
+                            subTaskEditingController[index].value.copyWith(
+                                  text: value,
+                                  selection: TextSelection.collapsed(offset: value.length),
+                                );
+                      }),
+                ),
+              ],
+            ),
+            value: cacheSubTasks[index].completed,
+            onChanged: (bool? value) => setState(() {
+                  checkClose = true;
+                  cacheSubTasks[index].completed = value!;
+                }),
+
+            // Delete Subtask
+            secondary: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: Constants.innerPadding),
+              child: IconButton(
+                  icon: const Icon(Icons.delete),
+                  onPressed: () => setState(() {
+                        checkClose = true;
+                        SubTask st = cacheSubTasks.removeAt(index);
+                        st = SubTask();
+                        cacheSubTasks.add(st);
+                        TextEditingController ct = subTaskEditingController.removeAt(index);
+                        ct.value = ct.value.copyWith(text: st.name);
+                        subTaskEditingController.add(ct);
+
+                        shownTasks--;
+                        shownTasks = max(shownTasks, 0);
+                        toDo.weight = toDoProvider.calculateWeight(subTasks: cacheSubTasks);
+                      })),
+            ));
       },
     );
   }
@@ -2525,6 +2591,17 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                 toDo.repeatable =
                     (prevToDo.frequency != Frequency.once && toDo.frequency != Frequency.once);
               }
+
+              // Copy the list of cached subtasks over to preserve the order on save.
+              if (cacheSubTasks.length > toDo.subTasks.length) {
+                // This should never ever happen.
+                print(cacheSubTasks);
+                print(toDo.subTasks);
+                cacheSubTasks.length = toDo.subTasks.length;
+              }
+
+              toDo.subTasks.setAll(0, cacheSubTasks);
+
               await toDoProvider.updateToDo().whenComplete(() {
                 Navigator.pop(context);
               }).catchError((e) {
