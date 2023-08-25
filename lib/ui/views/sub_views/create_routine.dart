@@ -160,7 +160,7 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
 
   Dialog buildDesktopDialog(BuildContext context, bool smallScreen, Color errorColor) {
     return Dialog(
-      insetPadding: const EdgeInsets.all(Constants.smallOuterDialogPadding),
+      insetPadding: const EdgeInsets.all(Constants.outerDialogPadding),
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxHeight: Constants.maxLandscapeDialogHeight),
         child: Padding(
@@ -168,134 +168,143 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
           child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 // Title && Close Button
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
-                  child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                    const Flexible(
-                      child: AutoSizeText(
-                        "New Routine",
-                        overflow: TextOverflow.visible,
-                        style: Constants.headerStyle,
-                        minFontSize: Constants.medium,
-                        softWrap: true,
-                        maxLines: 1,
+                Flexible(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
+                    child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                      const Flexible(
+                        child: AutoSizeText(
+                          "New Routine",
+                          overflow: TextOverflow.visible,
+                          style: Constants.headerStyle,
+                          minFontSize: Constants.medium,
+                          softWrap: true,
+                          maxLines: 1,
+                        ),
                       ),
-                    ),
-                    (expectedDuration > 0)
-                        ? Flexible(
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Flexible(
-                                  child: Tooltip(
-                                    message: "Expected Routine Duration",
-                                    child: Padding(
-                                      padding:
-                                          const EdgeInsets.symmetric(horizontal: Constants.padding),
-                                      child: Row(
-                                        children: [
-                                          const Flexible(
-                                            child: FittedBox(
-                                              fit: BoxFit.fill,
-                                              child: Icon(
-                                                Icons.timer_outlined,
+                      (expectedDuration > 0)
+                          ? Flexible(
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Flexible(
+                                    child: Tooltip(
+                                      message: "Expected Routine Duration",
+                                      child: Padding(
+                                        padding:
+                                            const EdgeInsets.symmetric(horizontal: Constants.padding),
+                                        child: Row(
+                                          children: [
+                                            const Flexible(
+                                              child: FittedBox(
+                                                fit: BoxFit.fill,
+                                                child: Icon(
+                                                  Icons.timer_outlined,
+                                                ),
                                               ),
                                             ),
-                                          ),
-                                          Flexible(
-                                            child: AutoSizeText(
-                                                Duration(seconds: expectedDuration)
-                                                    .toString()
-                                                    .split(".")
-                                                    .first,
-                                                minFontSize: Constants.medium,
-                                                overflow: TextOverflow.visible,
-                                                softWrap: false,
-                                                maxLines: 2),
-                                          ),
-                                        ],
+                                            Flexible(
+                                              child: AutoSizeText(
+                                                  Duration(seconds: expectedDuration)
+                                                      .toString()
+                                                      .split(".")
+                                                      .first,
+                                                  minFontSize: Constants.medium,
+                                                  overflow: TextOverflow.visible,
+                                                  softWrap: false,
+                                                  maxLines: 2),
+                                            ),
+                                          ],
+                                        ),
                                       ),
                                     ),
                                   ),
-                                ),
-                                Flexible(
-                                  child: Tooltip(
-                                    message: "Actual Routine Duration",
-                                    child: Padding(
-                                      padding:
-                                          const EdgeInsets.symmetric(horizontal: Constants.padding),
-                                      child: Row(
-                                        children: [
-                                          const Flexible(
-                                            child: FittedBox(
-                                              fit: BoxFit.fill,
-                                              child: Icon(
-                                                Icons.timer,
+                                  Flexible(
+                                    child: Tooltip(
+                                      message: "Actual Routine Duration",
+                                      child: Padding(
+                                        padding:
+                                            const EdgeInsets.symmetric(horizontal: Constants.padding),
+                                        child: Row(
+                                          children: [
+                                            const Flexible(
+                                              child: FittedBox(
+                                                fit: BoxFit.fill,
+                                                child: Icon(
+                                                  Icons.timer,
+                                                ),
                                               ),
                                             ),
-                                          ),
-                                          Flexible(
-                                            child: AutoSizeText(
-                                                Duration(seconds: realDuration)
-                                                    .toString()
-                                                    .split(".")
-                                                    .first,
-                                                minFontSize: Constants.medium,
-                                                overflow: TextOverflow.visible,
-                                                softWrap: false,
-                                                maxLines: 2),
-                                          ),
-                                        ],
+                                            Flexible(
+                                              child: AutoSizeText(
+                                                  Duration(seconds: realDuration)
+                                                      .toString()
+                                                      .split(".")
+                                                      .first,
+                                                  minFontSize: Constants.medium,
+                                                  overflow: TextOverflow.visible,
+                                                  softWrap: false,
+                                                  maxLines: 2),
+                                            ),
+                                          ],
+                                        ),
                                       ),
                                     ),
                                   ),
-                                ),
-                              ],
-                            ),
-                          )
-                        : const SizedBox.shrink(),
-                    buildCloseButton(context),
-                  ]),
+                                ],
+                              ),
+                            )
+                          : const SizedBox.shrink(),
+                      buildCloseButton(context),
+                    ]),
+                  ),
                 ),
                 const PaddedDivider(padding: Constants.padding),
                 Expanded(
+                  // This is 100% a hacky workaround for trying to expand a listview.
+                  flex: (shownTasks/2).floor() + 1,
                   child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         Expanded(
-                          child: ListView(
-                              padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
-                              shrinkWrap: true,
-                              // controller: subScrollControllerLeft,
-                              physics: const NeverScrollableScrollPhysics(),
-                              children: [
-                                // Title + status
-                                Padding(
-                                  padding:
-                                      const EdgeInsets.symmetric(horizontal: Constants.padding),
-                                  child: buildNameTile(smallScreen: smallScreen),
-                                ),
-                                Padding(
-                                  padding:
-                                      const EdgeInsets.symmetric(horizontal: Constants.padding),
-                                  child: buildWeightTile(smallScreen: smallScreen),
-                                ),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                mainAxisSize: MainAxisSize.max,
+                                // controller: subScrollControllerLeft,
+                                children: [
+                                  // Title
+                                  Padding(
+                                    padding:
+                                    const EdgeInsets.symmetric(horizontal: Constants.padding),
+                                    child: buildNameTile(smallScreen: smallScreen),
+                                  ),
+                                  const PaddedDivider(padding: Constants.innerPadding),
+                                  Expanded(
+                                    child: Padding(
+                                      padding:
+                                          const EdgeInsets.symmetric(horizontal: Constants.innerPadding),
+                                      child: buildWeightTileDesktop(),
+                                    ),
+                                  ),
 
-                                // Check this at some point.
-                                const PaddedDivider(padding: Constants.innerPadding),
-                                Padding(
-                                  padding:
-                                      const EdgeInsets.symmetric(horizontal: Constants.padding),
-                                  child: buildDurationTile(context, smallScreen: smallScreen),
-                                ),
-                                const PaddedDivider(padding: Constants.innerPadding),
-                              ]),
+                                  const PaddedDivider(padding: Constants.innerPadding),
+                                  Padding(
+                                    padding:
+                                    const EdgeInsets.symmetric(horizontal: Constants.padding),
+                                    child: buildDurationTile(context, smallScreen: smallScreen),
+                                  ),
+                                ]),
+                          ),
                         ),
                         Expanded(
+                          flex: 2,
                           child: Scrollbar(
                             thumbVisibility: true,
                             controller: subScrollControllerRight,
@@ -329,7 +338,7 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
                                             softWrap: false,
                                             minFontSize: Constants.small),
                                         subtitle: AutoSizeText(
-                                            "${min(shownTasks, Constants.maxNumTasks!)}/${Constants.maxNumTasks} Steps",
+                                            "${min(shownTasks, Constants.maxNumTasks)}/${Constants.maxNumTasks} Steps",
                                             maxLines: 1,
                                             overflow: TextOverflow.visible,
                                             softWrap: false,
@@ -345,16 +354,9 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
                                             borderRadius: BorderRadius.all(
                                                 Radius.circular(Constants.roundedCorners))),
                                         children: [
-                                          ConstrainedBox(
-                                              constraints: const BoxConstraints(
-                                                  maxHeight: Constants.maxRoutineStepsHeight),
-                                              child: ScrollConfiguration(
-                                                behavior: ScrollConfiguration.of(context)
-                                                    .copyWith(scrollbars: false),
-                                                child: buildReorderableSubTasks(
-                                                    smallScreen: smallScreen,
-                                                    physics: scrollPhysics),
-                                              )),
+                                          buildReorderableSubTasks(
+                                              smallScreen: smallScreen,
+                                              physics: scrollPhysics),
                                           const PaddedDivider(padding: Constants.padding),
                                           (shownTasks < Constants.maxNumTasks)
                                               ? ListTile(
@@ -505,8 +507,8 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
                       child: buildNameTile(smallScreen: smallScreen),
                     ),
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
-                      child: buildWeightTile(smallScreen: smallScreen),
+                      padding: const EdgeInsets.symmetric(horizontal: Constants.innerPadding),
+                      child: buildWeightTileMobile(smallScreen: smallScreen),
                     ),
 
                     const PaddedDivider(padding: Constants.innerPadding),
@@ -539,7 +541,7 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
                               softWrap: false,
                               minFontSize: Constants.small),
                           subtitle: AutoSizeText(
-                              "${min(shownTasks, Constants.maxNumTasks!)}/${Constants.maxNumTasks} Steps",
+                              "${min(shownTasks, Constants.maxNumTasks)}/${Constants.maxNumTasks} Steps",
                               maxLines: 1,
                               overflow: TextOverflow.visible,
                               softWrap: false,
@@ -625,39 +627,63 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
           })
     ]);
   }
-
-  Column buildWeightTile({bool smallScreen = false}) {
-    return Column(children: [
-      Padding(
-        padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Expanded(
-              child: AutoSizeText("Routine Strain",
-                  minFontSize: Constants.medium,
-                  maxLines: 1,
-                  softWrap: true,
-                  style: Constants.headerStyle),
-            ),
-            Expanded(
-              child: Tooltip(
-                  message: "How draining is this task?",
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxHeight: 100),
-                    child: FittedBox(
-                      fit: BoxFit.fitHeight,
-                      child: Transform.rotate(
-                          angle: -pi / 2, child: getBatteryIcon(weight: weight, selected: false)),
-                    ),
-                  )),
-            ),
-            (smallScreen) ? const SizedBox.shrink() : const Spacer(),
-          ],
+  Column buildWeightTileDesktop(){
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        const Flexible(
+          child: AutoSizeText("Routine Strain",
+              minFontSize: Constants.medium,
+              maxLines: 1,
+              softWrap: true,
+              style: Constants.hugeHeaderStyle),
         ),
-      ),
-    ]);
+        Expanded(
+          flex: 2,
+          child: Tooltip(
+              message: "How draining is this routine?",
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxHeight: 200),
+                child: FittedBox(
+                  fit: BoxFit.fitHeight,
+                  child: Transform.rotate(
+                      angle: -pi / 2, child: getBatteryIcon(weight: weight, selected: false)),
+                ),
+              )),
+        ),
+      ],
+    );
+  }
+
+  Row buildWeightTileMobile({bool smallScreen = false}) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const Flexible(
+          child: AutoSizeText("Routine Strain",
+              minFontSize: Constants.large,
+              maxLines: 1,
+              softWrap: true,
+              style: Constants.hugeHeaderStyle),
+        ),
+        Expanded(
+          child: Tooltip(
+              message: "How draining is this routine?",
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxHeight: 100),
+                child: FittedBox(
+                  fit: BoxFit.contain,
+                  child: Transform.rotate(
+                      angle: -pi / 2, child: getBatteryIcon(weight: weight, selected: false)),
+                ),
+              )),
+        ),
+       (smallScreen) ? const SizedBox.shrink() : const Spacer(),
+      ],
+    );
   }
 
   ReorderableListView buildReorderableSubTasks(

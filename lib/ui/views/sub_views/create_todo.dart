@@ -1818,12 +1818,12 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Expanded(
+            const Flexible(
               child: AutoSizeText("Task Strain",
                   minFontSize: Constants.medium,
                   maxLines: 1,
                   softWrap: true,
-                  style: Constants.headerStyle),
+                  style: Constants.hugeHeaderStyle),
             ),
             Expanded(
               child: Tooltip(
@@ -1831,7 +1831,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(maxHeight: 100),
                     child: FittedBox(
-                      fit: BoxFit.fitHeight,
+                      fit: BoxFit.contain,
                       child: Transform.rotate(
                           angle: -pi / 2,
                           child: getBatteryIcon(
