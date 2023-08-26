@@ -45,6 +45,9 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
   String? nameErrorText;
 
 
+  // Status -- TODO: remove. not sure if/where being used
+  final MaterialStateProperty<Icon?> completedIcon = MaterialStateProperty.resolveWith(
+      (states) => (states.contains(MaterialState.selected) ? const Icon(Icons.task_alt) : null));
 
   late final List<TextEditingController> routineTaskEditingController;
 
@@ -402,7 +405,7 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
                 child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
                   const Flexible(
                     child: AutoSizeText(
-                      "Edit Routine",
+                      "New Routine",
                       overflow: TextOverflow.visible,
                       style: Constants.headerStyle,
                       minFontSize: Constants.medium,
@@ -585,31 +588,6 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
 
   Row buildUpdateButton(BuildContext context, Color errorColor) {
     return Row(mainAxisAlignment: MainAxisAlignment.end, children: [
-      Padding(
-        padding: const EdgeInsets.symmetric(horizontal: Constants.innerPadding),
-        child: FilledButton.tonalIcon(
-          label: const Text("Delete Routine"),
-          icon: const Icon(Icons.delete_forever),
-          onPressed: () async => await routineProvider
-                .deleteRoutine()
-                .then((value) => Navigator.pop(context))
-                .catchError((e) {
-              ScaffoldMessenger.maybeOf(context)?.showSnackBar(SnackBar(
-                content: Text(e.cause,
-                    overflow: TextOverflow.ellipsis, style: TextStyle(color: errorColor)),
-                action: SnackBarAction(label: "Dismiss", onPressed: () {}),
-                duration: const Duration(milliseconds: 1500),
-                behavior: SnackBarBehavior.floating,
-                shape: const RoundedRectangleBorder(
-                  borderRadius: BorderRadius.all(Radius.circular(Constants.roundedCorners)),
-                ),
-                width: (MediaQuery.sizeOf(context).width) / 2,
-                padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
-              ));
-            }, test: (e) => e is FailureToCreateException || e is FailureToUploadException)
-        ),
-      ),
-
       FilledButton.icon(
           label: const Text("Update Routine"),
           icon: const Icon(Icons.add),
@@ -617,42 +595,38 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
             bool validData = validateData();
             if (validData) {
 
-              await handleUpdate(context, errorColor);
+              if(cacheRoutineTasks.length > routine.routineTasks.length)
+                {
+                  // This should never happen, TODO: remove
+                  print("BUG! Diff: Cache | Orig");
+                  print(cacheRoutineTasks);
+                  print(routine.routineTasks);
+                  cacheRoutineTasks.length = routine.routineTasks.length;
+                }
+
+              routine.routineTasks.setAll(0, cacheRoutineTasks);
+
+              await routineProvider
+                  .updateRoutine()
+                  .then((value) => Navigator.pop(context))
+                  .catchError((e) {
+                ScaffoldMessenger.maybeOf(context)?.showSnackBar(SnackBar(
+                  content: Text(e.cause,
+                      overflow: TextOverflow.ellipsis, style: TextStyle(color: errorColor)),
+                  action: SnackBarAction(label: "Dismiss", onPressed: () {}),
+                  duration: const Duration(milliseconds: 1500),
+                  behavior: SnackBarBehavior.floating,
+                  shape: const RoundedRectangleBorder(
+                    borderRadius: BorderRadius.all(Radius.circular(Constants.roundedCorners)),
+                  ),
+                  width: (MediaQuery.sizeOf(context).width) / 2,
+                  padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
+                ));
+              }, test: (e) => e is FailureToCreateException || e is FailureToUploadException);
             }
             // Then save.
           })
     ]);
-  }
-
-  Future<void> handleUpdate(BuildContext context, Color errorColor) async {
-    if(cacheRoutineTasks.length > routine.routineTasks.length)
-      {
-        // This should never happen, TODO: remove
-        print("BUG! Diff: Cache | Orig");
-        print(cacheRoutineTasks);
-        print(routine.routineTasks);
-        cacheRoutineTasks.length = routine.routineTasks.length;
-      }
-    
-    routine.routineTasks.setAll(0, cacheRoutineTasks);
-    
-    await routineProvider
-        .updateRoutine()
-        .then((value) => Navigator.pop(context))
-        .catchError((e) {
-      ScaffoldMessenger.maybeOf(context)?.showSnackBar(SnackBar(
-        content: Text(e.cause,
-            overflow: TextOverflow.ellipsis, style: TextStyle(color: errorColor)),
-        action: SnackBarAction(label: "Dismiss", onPressed: () {}),
-        duration: const Duration(milliseconds: 1500),
-        behavior: SnackBarBehavior.floating,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(Constants.roundedCorners)),
-        ),
-        width: (MediaQuery.sizeOf(context).width) / 2,
-        padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
-      ));
-    }, test: (e) => e is FailureToCreateException || e is FailureToUploadException);
   }
   Column buildWeightTileDesktop(){
     return Column(

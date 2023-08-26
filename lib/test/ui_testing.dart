@@ -164,86 +164,46 @@ class _FormTester extends State<FormTester> with WindowListener {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-            Expanded(
-              child: Column(
-                children: [FloatingActionButton(
-                  onPressed: () => inputDialog(context, dialog: const CreateToDoScreen()),
-                  backgroundColor: Colors.pink,
-                  child: const Text("Create Task")
-                ), FloatingActionButton(
-                  onPressed: () => inputDialog(context, dialog: (null != Provider.of<ToDoProvider>(context, listen: false).curToDo) ? const UpdateToDoScreen(): const CreateToDoScreen()),
-                  backgroundColor: Colors.green,
-                  child: const Text("Update Task"),
-                )]
-              ),
+            FloatingActionButton(
+              onPressed: () => showDialog(
+                barrierDismissible: false,
+                  context: context,
+                  builder: (BuildContext context) {
+                    return const CreateToDoScreen();
+                    // return const CreateRoutineScreen();
+                    // return const CreateDeadlineScreen();
+                    // return const CreateReminderScreen();
+                  }),
+              backgroundColor: Colors.pink,
+              child: const Text("Create New"),
             ),
-
-            Expanded(
-              child: Column(
-                  children: [FloatingActionButton(
-                      onPressed: () => inputDialog(context, dialog: const CreateRoutineScreen()),
-                      backgroundColor: Colors.pink,
-                      child: const Text("Create Routine")
-                  ), FloatingActionButton(
-                    onPressed: () => inputDialog(context, dialog: (null != Provider.of<RoutineProvider>(context, listen: false).curRoutine) ? const UpdateRoutineScreen() : const CreateRoutineScreen()),
-                    backgroundColor: Colors.green,
-                    child: const Text("Update Routine"),
-                  )]
-              ),
+            FloatingActionButton(
+              onPressed: () => showDialog(
+                barrierDismissible: false,
+                  context: context,
+                  builder: (BuildContext context) {
+                    // if (null != Provider.of<ToDoProvider>(context, listen: false).curToDo) {
+                    //   return const UpdateToDoScreen();
+                    // } else {
+                    //   return const CreateToDoScreen();
+                    // }
+                    if(null != Provider.of<RoutineProvider>(context, listen: false).curRoutine)
+                      {
+                        return const UpdateRoutineScreen();
+                      }
+                    else
+                      {
+                        return const CreateRoutineScreen();
+                      }
+                    // return const UpdateDeadlineScreen();
+                    // return const UpdateReminderScreen();
+                  }),
+              backgroundColor: Colors.green,
+              child: const Text("Update"),
             ),
-
-            // TODO: finish these
-
-            // Expanded(
-            //   child: Column(
-            //       children: [FloatingActionButton(
-            //           onPressed: () => inputDialog(context, dialog: const CreateDeadlineScreen()),
-            //           backgroundColor: Colors.pink,
-            //           child: const Text("Create Deadline")
-            //       ), FloatingActionButton(
-            //         onPressed: () => inputDialog(context, dialog: const UpdateDeadlineScreen()),
-            //         backgroundColor: Colors.green,
-            //         child: const Text("Update Deadline"),
-            //       )]
-            //   ),
-            // ),
-            // Expanded(
-            //   child: Column(
-            //       children: [FloatingActionButton(
-            //           onPressed: () => inputDialog(context, dialog: const CreateReminderScreen()),
-            //           backgroundColor: Colors.pink,
-            //           child: const Text("Create Reminder")
-            //       ), FloatingActionButton(
-            //         onPressed: () => inputDialog(context, dialog: const CreateReminderScreen()),
-            //         backgroundColor: Colors.green,
-            //         child: const Text("Update Reminder"),
-            //       )]
-            //   ),
-            // ),
-            //
-            // Expanded(
-            //   child: Column(
-            //       children: [FloatingActionButton(
-            //           onPressed: () => inputDialog(context, dialog: const CreateGroupScreen()),
-            //           backgroundColor: Colors.pink,
-            //           child: const Text("Create Group")
-            //       ), FloatingActionButton(
-            //         onPressed: () => inputDialog(context, dialog: const UpdateGroupScreen()),
-            //         backgroundColor: Colors.green,
-            //         child: const Text("Update Group"),
-            //       )]
-            //   ),
-            // ),
-
-
           ],
         ),
       ),
     );
   }
-
-  Future<void> inputDialog(BuildContext context, {required Widget dialog}) async  => await showDialog(
-      barrierDismissible: false,
-    context: context, builder: (BuildContext context) => dialog);
-
 }
