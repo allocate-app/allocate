@@ -45,7 +45,7 @@ class RoutineProvider extends ChangeNotifier {
 
   void startTimer() {
     print("syncTimer is being initialized");
-    syncTimer = Timer.periodic(const Duration(seconds: 20), (timer) {
+    syncTimer = Timer.periodic(const Duration(seconds: 10), (timer) {
       if (user?.syncOnline ?? false) {
         print("Routine Timer is calling");
         _syncRepo();
