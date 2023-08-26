@@ -35,7 +35,7 @@ class RoutineService {
           inMax: Constants.maxWeight,
           outMin: Constants.lowerBound,
           outMax: Constants.upperBound) *
-      routine.expectedDuration) as int;
+      routine.expectedDuration).toInt();
 
   Future<void> createRoutine({required Routine routine}) async => _repository.create(routine);
 

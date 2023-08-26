@@ -2505,10 +2505,18 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                     style: (smallScreen) ? Constants.minBodyText : null)))
             .toList(growable: false),
         selected: <TaskType>{taskType},
-        onSelectionChanged: (Set<TaskType> newSelection) => setState(() {
-              checkClose = true;
-              taskType = newSelection.first;
-            }));
+        onSelectionChanged: (Set<TaskType> newSelection) {
+          TaskType newType = newSelection.first;
+          if(taskType != newType)
+            {
+              setState(() {
+                checkClose = true;
+                taskType = newSelection.first;
+                realDuration = toDoProvider.calculateRealDuration(weight: (taskType == TaskType.small)? weight : sumWeight, duration: expectedDuration);
+              });
+            }
+
+        });
   }
 
   FutureBuilder<List<Group>> buildGroupList(

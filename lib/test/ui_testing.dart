@@ -18,6 +18,7 @@ import '../services/isar_service.dart';
 import '../services/supabase_service.dart';
 import '../ui/views/sub_views/create_routine.dart';
 import '../ui/views/sub_views/create_todo.dart';
+import '../ui/views/sub_views/update_routine.dart';
 import '../ui/views/sub_views/update_todo.dart';
 import '../util/constants.dart';
 
@@ -147,6 +148,9 @@ class _FormTester extends State<FormTester> with WindowListener {
     await windowManager.destroy();
   }
 
+  //TODO: refactor floating action buttons.
+  // Make rows of them for each part of the model.
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -162,10 +166,11 @@ class _FormTester extends State<FormTester> with WindowListener {
           children: [
             FloatingActionButton(
               onPressed: () => showDialog(
+                barrierDismissible: false,
                   context: context,
                   builder: (BuildContext context) {
-                    // return const CreateToDoScreen();
-                    return const CreateRoutineScreen();
+                    return const CreateToDoScreen();
+                    // return const CreateRoutineScreen();
                     // return const CreateDeadlineScreen();
                     // return const CreateReminderScreen();
                   }),
@@ -174,14 +179,22 @@ class _FormTester extends State<FormTester> with WindowListener {
             ),
             FloatingActionButton(
               onPressed: () => showDialog(
+                barrierDismissible: false,
                   context: context,
                   builder: (BuildContext context) {
-                    if (null != Provider.of<ToDoProvider>(context, listen: false).curToDo) {
-                      return const UpdateToDoScreen();
-                    } else {
-                      return const CreateToDoScreen();
-                    }
-                    // return const UpdateRoutineScreen();
+                    // if (null != Provider.of<ToDoProvider>(context, listen: false).curToDo) {
+                    //   return const UpdateToDoScreen();
+                    // } else {
+                    //   return const CreateToDoScreen();
+                    // }
+                    if(null != Provider.of<RoutineProvider>(context, listen: false).curRoutine)
+                      {
+                        return const UpdateRoutineScreen();
+                      }
+                    else
+                      {
+                        return const CreateRoutineScreen();
+                      }
                     // return const UpdateDeadlineScreen();
                     // return const UpdateReminderScreen();
                   }),

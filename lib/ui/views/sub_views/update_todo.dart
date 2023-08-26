@@ -34,11 +34,13 @@ class UpdateToDoScreen extends StatefulWidget {
 class _UpdateToDoScreen extends State<UpdateToDoScreen> {
   late bool checkClose;
   late bool checkDelete;
+  late bool expanded;
+
   late final UserProvider userProvider;
   late final ToDoProvider toDoProvider;
   late final GroupProvider groupProvider;
 
-  // Cache for repeating events
+  // Cache for repeating events & discard
   late final ToDo prevToDo;
 
   // For showing times.
@@ -71,7 +73,6 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
 
   late final List<TextEditingController> subTaskEditingController;
   late int shownTasks;
-  late bool tileExpanded;
 
   // This is just a convenience method to avoid extra typing
   ToDo get toDo => toDoProvider.curToDo!;
@@ -85,7 +86,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
     initializeProviders();
     initializeParams();
     initializeControllers().whenComplete(() {});
-    tileExpanded = false;
+    expanded = false;
   }
 
   void initializeProviders() {
@@ -394,9 +395,9 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                                               borderRadius: const BorderRadius.all(
                                                   Radius.circular(Constants.roundedCorners))),
                                           child: ExpansionTile(
-                                            initiallyExpanded: tileExpanded,
+                                            initiallyExpanded: expanded,
                                             onExpansionChanged: (value) =>
-                                                setState(() => tileExpanded = value),
+                                                setState(() => expanded = value),
                                             title: const AutoSizeText("Steps",
                                                 maxLines: 1,
                                                 overflow: TextOverflow.visible,
@@ -676,8 +677,8 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                                   borderRadius: const BorderRadius.all(
                                       Radius.circular(Constants.roundedCorners))),
                               child: ExpansionTile(
-                                onExpansionChanged: (value) => setState(() => tileExpanded = value),
-                                initiallyExpanded: tileExpanded,
+                                onExpansionChanged: (value) => setState(() => expanded = value),
+                                initiallyExpanded: expanded,
                                 title: const AutoSizeText("Steps",
                                     maxLines: 1,
                                     overflow: TextOverflow.visible,
@@ -843,6 +844,8 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                 }).then((willDiscard) {
               if (willDiscard ?? false) {
                 // If discarding changes, reset back to the cached ToDo.
+                // This likely unnecessary, as changes will not be reflected in the db on discard.
+                // TODO: Remove as necessary
                 toDoProvider.curToDo = prevToDo;
                 Navigator.pop(context);
               }
@@ -1400,6 +1403,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
       onTap: () => showDialog<int>(
           context: context,
           builder: (BuildContext context) {
+            // TODO: Refactor this logic over to create_todo
             int time = toDo.expectedDuration;
             int hours = time ~/ 3600;
             time %= 3600;
@@ -1549,12 +1553,6 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
           toDo.expectedDuration = value ?? toDo.expectedDuration;
           toDo.realDuration = toDoProvider.calculateRealDuration(
               weight: toDo.weight, duration: toDo.expectedDuration);
-          // int tmp = toDo.expectedDuration;
-          // hours = tmp ~/ 3600;
-          // tmp %= 3600;
-          // minutes = tmp ~/ 60;
-          // tmp %= 60;
-          // seconds = tmp;
         });
       }),
     );
@@ -2595,6 +2593,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
               // Copy the list of cached subtasks over to preserve the order on save.
               if (cacheSubTasks.length > toDo.subTasks.length) {
                 // This should never ever happen.
+                print("BUG! Diff: Cache | Orig");
                 print(cacheSubTasks);
                 print(toDo.subTasks);
                 cacheSubTasks.length = toDo.subTasks.length;

@@ -128,12 +128,11 @@ class RoutineProvider extends ChangeNotifier {
       int? realDuration,
       int? weight,
       List<SubTask>? routineTasks}) async {
-    // This should never happen, TODO: remove later.
+
     routineTasks = (null != routineTasks && routineTasks.length == Constants.maxNumTasks)
         ? routineTasks
         : List.filled(Constants.maxNumTasks, SubTask());
 
-    // These are also calculated in the view. TODO: remove.
     weight = weight ?? _routineService.calculateWeight(routineTasks: routineTasks);
 
     expectedDuration = expectedDuration ?? (const Duration(hours: 1)).inSeconds;
@@ -164,9 +163,6 @@ class RoutineProvider extends ChangeNotifier {
   }
 
   Future<void> updateRoutine() async {
-    // TODO: Remove these two lines, it's redundant.
-    _routineService.recalculateWeight(routine: curRoutine!);
-    _routineService.setRealDuration(routine: curRoutine!);
 
     curRoutine!.lastUpdated = DateTime.now();
 
