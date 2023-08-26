@@ -36,7 +36,7 @@ class ToDoProvider extends ChangeNotifier {
   }
 
   void startTimer() {
-    syncTimer = Timer.periodic(const Duration(seconds: 30), (timer) async {
+    syncTimer = Timer.periodic(const Duration(seconds: 10), (timer) async {
       if (user?.syncOnline ?? false) {
         _syncRepo();
       } else {

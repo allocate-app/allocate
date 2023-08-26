@@ -144,9 +144,12 @@ class RoutineRepo implements RoutineRepository {
   @override
   Future<void> deleteLocal() async {
     List<int> toDeletes = await getDeleteIds();
+    print("To Deletes Length ${toDeletes.length}");
     await _isarClient.writeTxn(() async {
       await _isarClient.routines.deleteAll(toDeletes);
     });
+
+    print("Routine Delete is calling");
   }
 
   @override

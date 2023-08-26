@@ -34,11 +34,13 @@ class UpdateToDoScreen extends StatefulWidget {
 class _UpdateToDoScreen extends State<UpdateToDoScreen> {
   late bool checkClose;
   late bool checkDelete;
+  late bool expanded;
+
   late final UserProvider userProvider;
   late final ToDoProvider toDoProvider;
   late final GroupProvider groupProvider;
 
-  // Cache for repeating events
+  // Cache for repeating events & discard
   late final ToDo prevToDo;
 
   // For showing times.
@@ -62,16 +64,12 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
   // Description
   late final TextEditingController descriptionEditingController;
 
-  // TODO: Remove. Not sure if/where this is being used.
-  final MaterialStateProperty<Icon?> completedIcon = MaterialStateProperty.resolveWith(
-      (states) => (states.contains(MaterialState.selected) ? const Icon(Icons.task_alt) : null));
 
   // Repeat
   late TextEditingController repeatSkipEditingController;
 
   late final List<TextEditingController> subTaskEditingController;
   late int shownTasks;
-  late bool tileExpanded;
 
   // This is just a convenience method to avoid extra typing
   ToDo get toDo => toDoProvider.curToDo!;
@@ -85,7 +83,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
     initializeProviders();
     initializeParams();
     initializeControllers().whenComplete(() {});
-    tileExpanded = false;
+    expanded = false;
   }
 
   void initializeProviders() {
@@ -358,175 +356,184 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Expanded(
-                          child: ListView(
-                              padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
-                              shrinkWrap: true,
-                              controller: subScrollControllerLeft,
-                              physics: scrollPhysics,
-                              children: [
-                                // Title + status
-                                Padding(
-                                  padding: EdgeInsets.symmetric(
-                                      horizontal: (smallScreen)
-                                          ? Constants.padding
-                                          : Constants.innerPadding),
-                                  child: buildNameTile(smallScreen: smallScreen),
-                                ),
-                                Padding(
-                                  padding:
-                                      const EdgeInsets.symmetric(horizontal: Constants.padding),
-                                  child: buildWeightTile(smallScreen: smallScreen),
-                                ),
-                                const PaddedDivider(padding: Constants.innerPadding),
-                                // Subtasks
-                                (toDo.taskType != TaskType.small)
-                                    ? Padding(
-                                        padding: const EdgeInsets.symmetric(
-                                            horizontal: Constants.innerPadding),
-                                        child: Card(
-                                          clipBehavior: Clip.antiAlias,
-                                          elevation: 0,
-                                          color: Colors.transparent,
-                                          shape: RoundedRectangleBorder(
-                                              side: BorderSide(
-                                                  color: Theme.of(context).colorScheme.outline,
-                                                  strokeAlign: BorderSide.strokeAlignInside),
-                                              borderRadius: const BorderRadius.all(
-                                                  Radius.circular(Constants.roundedCorners))),
-                                          child: ExpansionTile(
-                                            initiallyExpanded: tileExpanded,
-                                            onExpansionChanged: (value) =>
-                                                setState(() => tileExpanded = value),
-                                            title: const AutoSizeText("Steps",
-                                                maxLines: 1,
-                                                overflow: TextOverflow.visible,
-                                                softWrap: false,
-                                                minFontSize: Constants.small),
-                                            subtitle: AutoSizeText(
-                                                "${min(shownTasks, Constants.numTasks[toDo.taskType]!)}/${Constants.numTasks[toDo.taskType]!} Steps",
-                                                maxLines: 1,
-                                                overflow: TextOverflow.visible,
-                                                softWrap: false,
-                                                minFontSize: Constants.small),
-                                            collapsedShape: const RoundedRectangleBorder(
+                          child: Scrollbar(
+                            thumbVisibility: true,
+
+                            controller: subScrollControllerLeft,
+                            child: ListView(
+                                padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
+                                shrinkWrap: true,
+                                controller: subScrollControllerLeft,
+                                physics: scrollPhysics,
+                                children: [
+                                  // Title + status
+                                  Padding(
+                                    padding: EdgeInsets.symmetric(
+                                        horizontal: (smallScreen)
+                                            ? Constants.padding
+                                            : Constants.innerPadding),
+                                    child: buildNameTile(smallScreen: smallScreen),
+                                  ),
+                                  Padding(
+                                    padding:
+                                        const EdgeInsets.symmetric(horizontal: Constants.padding),
+                                    child: buildWeightTile(smallScreen: smallScreen),
+                                  ),
+                                  const PaddedDivider(padding: Constants.innerPadding),
+                                  // Subtasks
+                                  (toDo.taskType != TaskType.small)
+                                      ? Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: Constants.innerPadding),
+                                          child: Card(
+                                            clipBehavior: Clip.antiAlias,
+                                            elevation: 0,
+                                            color: Colors.transparent,
+                                            shape: RoundedRectangleBorder(
                                                 side: BorderSide(
-                                                    strokeAlign: BorderSide.strokeAlignOutside),
-                                                borderRadius: BorderRadius.all(
+                                                    color: Theme.of(context).colorScheme.outline,
+                                                    strokeAlign: BorderSide.strokeAlignInside),
+                                                borderRadius: const BorderRadius.all(
                                                     Radius.circular(Constants.roundedCorners))),
-                                            shape: const RoundedRectangleBorder(
-                                                side: BorderSide(
-                                                    strokeAlign: BorderSide.strokeAlignOutside),
-                                                borderRadius: BorderRadius.all(
-                                                    Radius.circular(Constants.roundedCorners))),
-                                            children: [
-                                              buildReorderableSubTasks(
-                                                  smallScreen: smallScreen, physics: scrollPhysics),
-                                              (shownTasks < Constants.numTasks[toDo.taskType]!)
-                                                  ? ListTile(
-                                                      leading: const Icon(Icons.add_outlined),
-                                                      title: const AutoSizeText("Add a step",
-                                                          maxLines: 1,
-                                                          overflow: TextOverflow.visible,
-                                                          softWrap: false,
-                                                          minFontSize: Constants.small),
-                                                      onTap: () => setState(() {
-                                                            shownTasks++;
-                                                            shownTasks = min(
-                                                                shownTasks, Constants.maxNumTasks);
-                                                          }))
-                                                  : const SizedBox.shrink(),
-                                            ],
+                                            child: ExpansionTile(
+                                              initiallyExpanded: expanded,
+                                              onExpansionChanged: (value) =>
+                                                  setState(() => expanded = value),
+                                              title: const AutoSizeText("Steps",
+                                                  maxLines: 1,
+                                                  overflow: TextOverflow.visible,
+                                                  softWrap: false,
+                                                  minFontSize: Constants.small),
+                                              subtitle: AutoSizeText(
+                                                  "${min(shownTasks, Constants.numTasks[toDo.taskType]!)}/${Constants.numTasks[toDo.taskType]!} Steps",
+                                                  maxLines: 1,
+                                                  overflow: TextOverflow.visible,
+                                                  softWrap: false,
+                                                  minFontSize: Constants.small),
+                                              collapsedShape: const RoundedRectangleBorder(
+                                                  side: BorderSide(
+                                                      strokeAlign: BorderSide.strokeAlignOutside),
+                                                  borderRadius: BorderRadius.all(
+                                                      Radius.circular(Constants.roundedCorners))),
+                                              shape: const RoundedRectangleBorder(
+                                                  side: BorderSide(
+                                                      strokeAlign: BorderSide.strokeAlignOutside),
+                                                  borderRadius: BorderRadius.all(
+                                                      Radius.circular(Constants.roundedCorners))),
+                                              children: [
+                                                buildReorderableSubTasks(
+                                                    smallScreen: smallScreen, physics: scrollPhysics),
+                                                (shownTasks < Constants.numTasks[toDo.taskType]!)
+                                                    ? ListTile(
+                                                        leading: const Icon(Icons.add_outlined),
+                                                        title: const AutoSizeText("Add a step",
+                                                            maxLines: 1,
+                                                            overflow: TextOverflow.visible,
+                                                            softWrap: false,
+                                                            minFontSize: Constants.small),
+                                                        onTap: () => setState(() {
+                                                              shownTasks++;
+                                                              shownTasks = min(
+                                                                  shownTasks, Constants.maxNumTasks);
+                                                            }))
+                                                    : const SizedBox.shrink(),
+                                              ],
+                                            ),
                                           ),
-                                        ),
-                                      )
-                                    : const SizedBox.shrink(),
+                                        )
+                                      : const SizedBox.shrink(),
 
-                                const PaddedDivider(padding: Constants.padding),
-                                // My Day
-                                buildMyDayTile(),
-                                const PaddedDivider(padding: Constants.padding),
-                                // Priority
-                                const Padding(
-                                  padding: EdgeInsets.symmetric(horizontal: Constants.padding),
-                                  child: Row(children: [
-                                    Expanded(
-                                        child: AutoSizeText("Priority",
-                                            style: Constants.headerStyle,
-                                            maxLines: 1,
-                                            softWrap: true,
-                                            textAlign: TextAlign.center,
-                                            minFontSize: Constants.medium))
-                                  ]),
-                                ),
-                                Padding(
-                                  padding:
-                                      const EdgeInsets.symmetric(horizontal: Constants.padding),
-                                  child: buildPriorityTile(smallScreen: smallScreen),
-                                ),
+                                  const PaddedDivider(padding: Constants.padding),
+                                  // My Day
+                                  buildMyDayTile(),
+                                  const PaddedDivider(padding: Constants.padding),
+                                  // Priority
+                                  const Padding(
+                                    padding: EdgeInsets.symmetric(horizontal: Constants.padding),
+                                    child: Row(children: [
+                                      Expanded(
+                                          child: AutoSizeText("Priority",
+                                              style: Constants.headerStyle,
+                                              maxLines: 1,
+                                              softWrap: true,
+                                              textAlign: TextAlign.center,
+                                              minFontSize: Constants.medium))
+                                    ]),
+                                  ),
+                                  Padding(
+                                    padding:
+                                        const EdgeInsets.symmetric(horizontal: Constants.padding),
+                                    child: buildPriorityTile(smallScreen: smallScreen),
+                                  ),
 
-                                // const Padding(
-                                //   padding: EdgeInsets.symmetric(vertical: 8.0),
-                                //   child: PaddedDivider(padding: Constants.innerPadding),
-                                // )
-                              ]),
+                                  // const Padding(
+                                  //   padding: EdgeInsets.symmetric(vertical: 8.0),
+                                  //   child: PaddedDivider(padding: Constants.innerPadding),
+                                  // )
+                                ]),
+                          ),
                         ),
                         Expanded(
-                          child: ListView(
-                              controller: subScrollControllerRight,
-                              physics: scrollPhysics,
-                              shrinkWrap: true,
-                              padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
-                              children: [
-                                Padding(
-                                  padding: const EdgeInsets.all(Constants.padding),
-                                  child: buildGroupBar(),
-                                ),
+                          child: Scrollbar(
+                            thumbVisibility: true,
+                            controller: subScrollControllerRight,
+                            child: ListView(
+                                controller: subScrollControllerRight,
+                                physics: scrollPhysics,
+                                shrinkWrap: true,
+                                padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
+                                children: [
+                                  Padding(
+                                    padding: const EdgeInsets.all(Constants.padding),
+                                    child: buildGroupBar(),
+                                  ),
 
-                                const Padding(
-                                  padding: EdgeInsets.symmetric(horizontal: Constants.padding),
-                                  child: PaddedDivider(padding: Constants.innerPadding),
-                                ),
+                                  const Padding(
+                                    padding: EdgeInsets.symmetric(horizontal: Constants.padding),
+                                    child: PaddedDivider(padding: Constants.innerPadding),
+                                  ),
 
-                                // Description
-                                Padding(
-                                  padding:
-                                      const EdgeInsets.symmetric(horizontal: Constants.padding),
-                                  child: buildDescriptionTile(smallScreen: smallScreen),
-                                ),
+                                  // Description
+                                  Padding(
+                                    padding:
+                                        const EdgeInsets.symmetric(horizontal: Constants.padding),
+                                    child: buildDescriptionTile(smallScreen: smallScreen),
+                                  ),
 
-                                const PaddedDivider(padding: Constants.innerPadding),
-                                // Expected Duration / RealDuration -> Show status, on click, open a dialog.
-                                Padding(
-                                  padding:
-                                      const EdgeInsets.symmetric(horizontal: Constants.padding),
-                                  child: buildDurationTile(context, smallScreen: smallScreen),
-                                ),
+                                  const PaddedDivider(padding: Constants.innerPadding),
+                                  // Expected Duration / RealDuration -> Show status, on click, open a dialog.
+                                  Padding(
+                                    padding:
+                                        const EdgeInsets.symmetric(horizontal: Constants.padding),
+                                    child: buildDurationTile(context, smallScreen: smallScreen),
+                                  ),
 
-                                const PaddedDivider(padding: Constants.innerPadding),
-                                // DateTime -> Show status, on click, open a dialog.
-                                //startDate
-                                Padding(
-                                  padding:
-                                      const EdgeInsets.symmetric(horizontal: Constants.padding),
-                                  child: buildDateTile(context),
-                                ),
+                                  const PaddedDivider(padding: Constants.innerPadding),
+                                  // DateTime -> Show status, on click, open a dialog.
+                                  //startDate
+                                  Padding(
+                                    padding:
+                                        const EdgeInsets.symmetric(horizontal: Constants.padding),
+                                    child: buildDateTile(context),
+                                  ),
 
-                                const PaddedDivider(padding: Constants.innerPadding),
-                                // Time
-                                Padding(
-                                  padding:
-                                      const EdgeInsets.symmetric(horizontal: Constants.padding),
-                                  child: buildTimeTile(),
-                                ),
+                                  const PaddedDivider(padding: Constants.innerPadding),
+                                  // Time
+                                  Padding(
+                                    padding:
+                                        const EdgeInsets.symmetric(horizontal: Constants.padding),
+                                    child: buildTimeTile(),
+                                  ),
 
-                                const PaddedDivider(padding: Constants.innerPadding),
-                                // Repeatable Stuff -> Show status, on click, open a dialog.
-                                Padding(
-                                  padding:
-                                      const EdgeInsets.symmetric(horizontal: Constants.padding),
-                                  child: buildRepeatableTile(context, smallScreen: smallScreen),
-                                ),
-                              ]),
+                                  const PaddedDivider(padding: Constants.innerPadding),
+                                  // Repeatable Stuff -> Show status, on click, open a dialog.
+                                  Padding(
+                                    padding:
+                                        const EdgeInsets.symmetric(horizontal: Constants.padding),
+                                    child: buildRepeatableTile(context, smallScreen: smallScreen),
+                                  ),
+                                ]),
+                          ),
                         )
                       ]),
                 ),
@@ -676,8 +683,8 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                                   borderRadius: const BorderRadius.all(
                                       Radius.circular(Constants.roundedCorners))),
                               child: ExpansionTile(
-                                onExpansionChanged: (value) => setState(() => tileExpanded = value),
-                                initiallyExpanded: tileExpanded,
+                                onExpansionChanged: (value) => setState(() => expanded = value),
+                                initiallyExpanded: expanded,
                                 title: const AutoSizeText("Steps",
                                     maxLines: 1,
                                     overflow: TextOverflow.visible,
@@ -843,6 +850,8 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                 }).then((willDiscard) {
               if (willDiscard ?? false) {
                 // If discarding changes, reset back to the cached ToDo.
+                // This likely unnecessary, as changes will not be reflected in the db on discard.
+                // TODO: Remove as necessary
                 toDoProvider.curToDo = prevToDo;
                 Navigator.pop(context);
               }
@@ -1549,12 +1558,6 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
           toDo.expectedDuration = value ?? toDo.expectedDuration;
           toDo.realDuration = toDoProvider.calculateRealDuration(
               weight: toDo.weight, duration: toDo.expectedDuration);
-          // int tmp = toDo.expectedDuration;
-          // hours = tmp ~/ 3600;
-          // tmp %= 3600;
-          // minutes = tmp ~/ 60;
-          // tmp %= 60;
-          // seconds = tmp;
         });
       }),
     );
@@ -1563,7 +1566,6 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
   ListTile buildDateTile(BuildContext context) {
     return ListTile(
       leading: const Icon(Icons.today_outlined),
-      // TODO: finish start and end + time.
       title: (Constants.nullDate == toDo.startDate && Constants.nullDate == toDo.dueDate)
           ? const AutoSizeText(
               "Add Dates",
@@ -2505,122 +2507,250 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
 
   Row buildUpdateButton(BuildContext context, Color errorColor) {
     return Row(mainAxisAlignment: MainAxisAlignment.end, children: [
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: Constants.innerPadding),
+        child: FilledButton.tonalIcon(
+          label: const Text("Delete"),
+          icon: const Icon(Icons.delete_forever),
+          onPressed: () async => await handleDelete(context, errorColor)
+
+        ),
+      ),
       FilledButton.icon(
           label: const Text("Update Task"),
           icon: const Icon(Icons.add),
           onPressed: () async {
             bool validData = validateData();
             if (validData) {
-              if (prevToDo.frequency != Frequency.once && checkClose) {
-                bool? updateSingle = await showModalBottomSheet<bool?>(
-                    showDragHandle: true,
-                    context: context,
-                    builder: (BuildContext context) {
-                      return StatefulBuilder(
-                          builder: (context, setState) => Center(
-                              heightFactor: 1,
-                              child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Padding(
-                                      padding: const EdgeInsets.all(Constants.padding),
-                                      child: FilledButton.icon(
-                                          onPressed: () => Navigator.pop(context, true),
-                                          label: const Text("This Event"),
-                                          icon: const Icon(Icons.arrow_upward_outlined)),
-                                    ),
-                                    Padding(
-                                        padding: const EdgeInsets.all(Constants.padding),
-                                        child: FilledButton.tonalIcon(
-                                          onPressed: () => Navigator.pop(context, false),
-                                          label: const Text("All Future Events"),
-                                          icon: const Icon(Icons.repeat_outlined),
-                                        ))
-                                  ])));
-                    });
-                // If the modal is discarded.
-                if (null == updateSingle) {
-                  return;
-                }
-
-                // TODO: Refactor error handling to something easier to read -- Like firing an event to watch in the main gui.
-                // On updating a repeating event, clear all future events
-                await toDoProvider.deleteFutures(toDo: prevToDo).catchError((e) {
-                  ScaffoldMessenger.maybeOf(context)?.showSnackBar(SnackBar(
-                    content: Text(e.cause,
-                        overflow: TextOverflow.ellipsis, style: TextStyle(color: errorColor)),
-                    action: SnackBarAction(label: "Dismiss", onPressed: () {}),
-                    duration: const Duration(milliseconds: 1500),
-                    behavior: SnackBarBehavior.floating,
-                    shape: const RoundedRectangleBorder(
-                      borderRadius: BorderRadius.all(Radius.circular(Constants.roundedCorners)),
-                    ),
-                    width: (MediaQuery.sizeOf(context).width) / 2,
-                    padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
-                  ));
-                }, test: (e) => e is FailureToCreateException || e is FailureToUploadException);
-
-                // Updating all future events relies on deleting all future events ->
-                // They are assumed to be re-generated on the next calendar view or day passing.
-                // If only updating the one event, generate the next one in the database.
-
-                // TODO: Refactor the error handling to something easier to read.
-                if (updateSingle) {
-                  prevToDo.repeatable = true;
-                  await toDoProvider.nextRepeat(toDo: prevToDo).catchError((e) {
-                    ScaffoldMessenger.maybeOf(context)?.showSnackBar(SnackBar(
-                      content: Text(e.cause,
-                          overflow: TextOverflow.ellipsis, style: TextStyle(color: errorColor)),
-                      action: SnackBarAction(label: "Dismiss", onPressed: () {}),
-                      duration: const Duration(milliseconds: 1500),
-                      behavior: SnackBarBehavior.floating,
-                      shape: const RoundedRectangleBorder(
-                        borderRadius: BorderRadius.all(Radius.circular(Constants.roundedCorners)),
-                      ),
-                      width: (MediaQuery.sizeOf(context).width) / 2,
-                      padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
-                    ));
-                  }, test: (e) => e is FailureToCreateException || e is FailureToUploadException);
-                  toDo.repeatable = false;
-                } else {
-                  toDo.repeatable =
-                      (prevToDo.frequency != Frequency.once && toDo.frequency != Frequency.once);
-                }
-              } else {
-                toDo.repeatable =
-                    (prevToDo.frequency != Frequency.once && toDo.frequency != Frequency.once);
-              }
-
-              // Copy the list of cached subtasks over to preserve the order on save.
-              if (cacheSubTasks.length > toDo.subTasks.length) {
-                // This should never ever happen.
-                print(cacheSubTasks);
-                print(toDo.subTasks);
-                cacheSubTasks.length = toDo.subTasks.length;
-              }
-
-              toDo.subTasks.setAll(0, cacheSubTasks);
-
-              await toDoProvider.updateToDo().whenComplete(() {
-                Navigator.pop(context);
-              }).catchError((e) {
-                ScaffoldMessenger.maybeOf(context)?.showSnackBar(SnackBar(
-                  content: Text(e.cause,
-                      overflow: TextOverflow.ellipsis, style: TextStyle(color: errorColor)),
-                  action: SnackBarAction(label: "Dismiss", onPressed: () {}),
-                  duration: const Duration(milliseconds: 1500),
-                  behavior: SnackBarBehavior.floating,
-                  shape: const RoundedRectangleBorder(
-                    borderRadius: BorderRadius.all(Radius.circular(Constants.roundedCorners)),
-                  ),
-                  width: (MediaQuery.sizeOf(context).width) / 2,
-                  padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
-                ));
-              }, test: (e) => e is FailureToCreateException || e is FailureToUploadException);
+              return await handleUpdate(context, errorColor);
             }
             // Then save.
           })
     ]);
+  }
+
+  handleDelete(BuildContext context, Color errorColor) async {
+    if (prevToDo.frequency != Frequency.once) {
+      bool? updateSingle = await showModalBottomSheet<bool?>(
+          showDragHandle: true,
+          context: context,
+          builder: (BuildContext context) {
+            return StatefulBuilder(
+                builder: (context, setState) =>
+                    Center(
+                        heightFactor: 1,
+                        child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.all(
+                                    Constants.padding),
+                                child: FilledButton.icon(
+                                    onPressed: () =>
+                                        Navigator.pop(context, true),
+                                    label: const Text("Delete This Event"),
+                                    icon: const Icon(
+                                        Icons.arrow_upward_outlined)),
+                              ),
+                              Padding(
+                                  padding: const EdgeInsets.all(
+                                      Constants.padding),
+                                  child: FilledButton.tonalIcon(
+                                    onPressed: () =>
+                                        Navigator.pop(context, false),
+                                    label: const Text("Delete All"),
+                                    icon: const Icon(Icons.repeat_outlined),
+                                  ))
+                            ])));
+          });
+      // If the modal is discarded.
+      if (null == updateSingle) {
+        return;
+      }
+
+      // TODO: Refactor error handling to something easier to read -- Like firing an event to watch in the main gui.
+      // On updating a repeating event, clear all future events
+      await toDoProvider.deleteFutures(toDo: prevToDo).catchError((e) {
+        ScaffoldMessenger.maybeOf(context)?.showSnackBar(SnackBar(
+          content: Text(e.cause,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(color: errorColor)),
+          action: SnackBarAction(label: "Dismiss", onPressed: () {}),
+          duration: const Duration(milliseconds: 1500),
+          behavior: SnackBarBehavior.floating,
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(
+                Radius.circular(Constants.roundedCorners)),
+          ),
+          width: (MediaQuery
+              .sizeOf(context)
+              .width) / 2,
+          padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
+        ));
+      }, test: (e) => e is FailureToCreateException ||
+          e is FailureToUploadException);
+
+      // Updating all future events relies on deleting all future events ->
+      // They are assumed to be re-generated on the next calendar view or day passing.
+      // If only updating the one event, generate the next one in the database.
+
+      // TODO: Refactor the error handling to something easier to read.
+      if (updateSingle) {
+        prevToDo.repeatable = true;
+        // Need to sever the connection to future repeating events.
+        toDo.repeatID = toDo.hashCode;
+
+        await toDoProvider.nextRepeat(toDo: prevToDo).catchError((e) {
+          ScaffoldMessenger.maybeOf(context)?.showSnackBar(SnackBar(
+            content: Text(e.cause,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(color: errorColor)),
+            action: SnackBarAction(label: "Dismiss", onPressed: () {}),
+            duration: const Duration(milliseconds: 1500),
+            behavior: SnackBarBehavior.floating,
+            shape: const RoundedRectangleBorder(
+              borderRadius: BorderRadius.all(
+                  Radius.circular(Constants.roundedCorners)),
+            ),
+            width: (MediaQuery
+                .sizeOf(context)
+                .width) / 2,
+            padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
+          ));
+        }, test: (e) => e is FailureToCreateException ||
+            e is FailureToUploadException);
+      }
+
+
+    }
+
+    return await toDoProvider.deleteToDo().whenComplete(() {
+      Navigator.pop(context);
+    }).catchError((e) {
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(SnackBar(
+        content: Text(e.cause,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(color: errorColor)),
+        action: SnackBarAction(label: "Dismiss", onPressed: () {}),
+        duration: const Duration(milliseconds: 1500),
+        behavior: SnackBarBehavior.floating,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(
+              Radius.circular(Constants.roundedCorners)),
+        ),
+        width: (MediaQuery
+            .sizeOf(context)
+            .width) / 2,
+        padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
+      ));
+    }, test: (e) => e is FailureToCreateException ||
+        e is FailureToUploadException);
+  }
+
+  handleUpdate(BuildContext context, Color errorColor) async {
+    if (prevToDo.frequency != Frequency.once && checkClose) {
+      bool? updateSingle = await showModalBottomSheet<bool?>(
+          showDragHandle: true,
+          context: context,
+          builder: (BuildContext context) {
+            return StatefulBuilder(
+                builder: (context, setState) => Center(
+                    heightFactor: 1,
+                    child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.all(Constants.padding),
+                            child: FilledButton.icon(
+                                onPressed: () => Navigator.pop(context, true),
+                                label: const Text("This Event"),
+                                icon: const Icon(Icons.arrow_upward_outlined)),
+                          ),
+                          Padding(
+                              padding: const EdgeInsets.all(Constants.padding),
+                              child: FilledButton.tonalIcon(
+                                onPressed: () => Navigator.pop(context, false),
+                                label: const Text("All Future Events"),
+                                icon: const Icon(Icons.repeat_outlined),
+                              ))
+                        ])));
+          });
+      // If the modal is discarded.
+      if (null == updateSingle) {
+        return;
+      }
+
+      // TODO: Refactor error handling to something easier to read -- Like firing an event to watch in the main gui.
+      // On updating a repeating event, clear all future events
+      await toDoProvider.deleteFutures(toDo: prevToDo).catchError((e) {
+        ScaffoldMessenger.maybeOf(context)?.showSnackBar(SnackBar(
+          content: Text(e.cause,
+              overflow: TextOverflow.ellipsis, style: TextStyle(color: errorColor)),
+          action: SnackBarAction(label: "Dismiss", onPressed: () {}),
+          duration: const Duration(milliseconds: 1500),
+          behavior: SnackBarBehavior.floating,
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(Radius.circular(Constants.roundedCorners)),
+          ),
+          width: (MediaQuery.sizeOf(context).width) / 2,
+          padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
+        ));
+      }, test: (e) => e is FailureToCreateException || e is FailureToUploadException);
+
+      // Updating all future events relies on deleting all future events ->
+      // They are assumed to be re-generated on the next calendar view or day passing.
+      // If only updating the one event, generate the next one in the database.
+
+      // TODO: Refactor the error handling to something easier to read.
+      if (updateSingle) {
+        prevToDo.repeatable = true;
+        // Need to sever the connection to future repeating events.
+        toDo.repeatID = toDo.hashCode;
+
+        await toDoProvider.nextRepeat(toDo: prevToDo).catchError((e) {
+          ScaffoldMessenger.maybeOf(context)?.showSnackBar(SnackBar(
+            content: Text(e.cause,
+                overflow: TextOverflow.ellipsis, style: TextStyle(color: errorColor)),
+            action: SnackBarAction(label: "Dismiss", onPressed: () {}),
+            duration: const Duration(milliseconds: 1500),
+            behavior: SnackBarBehavior.floating,
+            shape: const RoundedRectangleBorder(
+              borderRadius: BorderRadius.all(Radius.circular(Constants.roundedCorners)),
+            ),
+            width: (MediaQuery.sizeOf(context).width) / 2,
+            padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
+          ));
+        }, test: (e) => e is FailureToCreateException || e is FailureToUploadException);
+        toDo.repeatable = false;
+      } else {
+        toDo.repeatable =
+            (toDo.frequency != Frequency.once);
+      }
+    } else {
+      toDo.repeatable =
+          (toDo.frequency != Frequency.once);
+    }
+
+    toDo.subTasks.setAll(0, cacheSubTasks);
+
+    return await toDoProvider.updateToDo().whenComplete(() {
+      Navigator.pop(context);
+    }).catchError((e) {
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(SnackBar(
+        content: Text(e.cause,
+            overflow: TextOverflow.ellipsis, style: TextStyle(color: errorColor)),
+        action: SnackBarAction(label: "Dismiss", onPressed: () {}),
+        duration: const Duration(milliseconds: 1500),
+        behavior: SnackBarBehavior.floating,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(Constants.roundedCorners)),
+        ),
+        width: (MediaQuery.sizeOf(context).width) / 2,
+        padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
+      ));
+    }, test: (e) => e is FailureToCreateException || e is FailureToUploadException);
+
   }
 }

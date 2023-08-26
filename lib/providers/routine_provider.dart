@@ -32,6 +32,7 @@ class RoutineProvider extends ChangeNotifier {
   RoutineProvider({this.user, RoutineService? service})
       : _routineService = service ?? RoutineService() {
     sorter = user?.routineSorter ?? RoutineSorter();
+    init();
   }
 
   Future<void> init() async {
@@ -43,10 +44,13 @@ class RoutineProvider extends ChangeNotifier {
       (curMorning?.weight ?? 0) + (curAfternoon?.weight ?? 0) + (curEvening?.weight ?? 0);
 
   void startTimer() {
-    syncTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
+    print("syncTimer is being initialized");
+    syncTimer = Timer.periodic(const Duration(seconds: 20), (timer) {
       if (user?.syncOnline ?? false) {
+        print("Routine Timer is calling");
         _syncRepo();
       } else {
+        print("Routine Timer Is Going");
         _routineService.clearDeletesLocalRepo();
       }
     });
@@ -128,12 +132,11 @@ class RoutineProvider extends ChangeNotifier {
       int? realDuration,
       int? weight,
       List<SubTask>? routineTasks}) async {
-    // This should never happen, TODO: remove later.
+
     routineTasks = (null != routineTasks && routineTasks.length == Constants.maxNumTasks)
         ? routineTasks
         : List.filled(Constants.maxNumTasks, SubTask());
 
-    // These are also calculated in the view. TODO: remove.
     weight = weight ?? _routineService.calculateWeight(routineTasks: routineTasks);
 
     expectedDuration = expectedDuration ?? (const Duration(hours: 1)).inSeconds;
@@ -164,9 +167,6 @@ class RoutineProvider extends ChangeNotifier {
   }
 
   Future<void> updateRoutine() async {
-    // TODO: Remove these two lines, it's redundant.
-    _routineService.recalculateWeight(routine: curRoutine!);
-    _routineService.setRealDuration(routine: curRoutine!);
 
     curRoutine!.lastUpdated = DateTime.now();
 

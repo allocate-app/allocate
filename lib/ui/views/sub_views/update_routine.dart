@@ -7,6 +7,7 @@ import "package:flutter/semantics.dart";
 import "package:numberpicker/numberpicker.dart";
 import "package:provider/provider.dart";
 
+import "../../../model/task/routine.dart";
 import "../../../model/task/subtask.dart";
 import "../../../providers/routine_provider.dart";
 import "../../../providers/user_provider.dart";
@@ -15,14 +16,14 @@ import "../../../util/exceptions.dart";
 import "../../../util/numbers.dart";
 import "../../widgets/paddedDivider.dart";
 
-class CreateRoutineScreen extends StatefulWidget {
-  const CreateRoutineScreen({Key? key}) : super(key: key);
+class UpdateRoutineScreen extends StatefulWidget {
+  const UpdateRoutineScreen({Key? key}) : super(key: key);
 
   @override
-  State<CreateRoutineScreen> createState() => _CreateRoutineScreen();
+  State<UpdateRoutineScreen> createState() => _UpdateRoutineScreen();
 }
 
-class _CreateRoutineScreen extends State<CreateRoutineScreen> {
+class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
   late bool checkClose;
   late bool checkDelete;
   late bool expanded;
@@ -31,30 +32,28 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
   late final UserProvider userProvider;
   late final RoutineProvider routineProvider;
 
+  // Cache - for discard
+  late final Routine prevRoutine;
+
   // Scrolling
   late final ScrollController mainScrollController;
   late final ScrollController subScrollControllerLeft;
   late final ScrollController subScrollControllerRight;
   late final ScrollPhysics scrollPhysics;
 
-  // Name: Build name tile widget -> Refactor out from todo class and import here.
-  late String name;
   late final TextEditingController nameEditingController;
   String? nameErrorText;
 
-  // weight -> Use weight modal drawer. TODO: Refactor into modular widget after mvp.
-  late int weight;
-
-  // ExpectedDuration & Real Duration. TODO: Refactor hour/min/sec into local variables after mvp.
-  // TODO: refactor into a completely separate widget after mvp.
-  late int expectedDuration;
-  late int realDuration;
 
 
-  // TODO: refactor into a reusable widget.
   late final List<TextEditingController> routineTaskEditingController;
-  late final List<SubTask> routineTasks;
+
+  // RoutineTasks
+  late final List<SubTask> cacheRoutineTasks;
   late int shownTasks;
+
+  // Convenience method to avoid typing
+  Routine get routine => routineProvider.curRoutine!;
 
   @override
   void initState() {
@@ -69,13 +68,15 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
   void initializeParameters() {
     checkClose = false;
     expanded = true;
-    name = "";
-    weight = 0;
-    expectedDuration = 0;
-    realDuration = 0;
 
-    routineTasks = List.generate(Constants.maxNumTasks, (_) => SubTask());
-    shownTasks = 0;
+    prevRoutine = routine.copy();
+
+    cacheRoutineTasks = List.from(routine.routineTasks);
+    shownTasks = routine.routineTasks.indexOf(SubTask());
+    if(shownTasks < 0)
+      {
+        shownTasks = routine.routineTasks.length;
+      }
   }
 
   void initializeControllers() {
@@ -83,17 +84,17 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
     subScrollControllerLeft = ScrollController();
     subScrollControllerRight = ScrollController();
     scrollPhysics = const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics());
-    nameEditingController = TextEditingController();
+    nameEditingController = TextEditingController(text: routine.name);
     nameEditingController.addListener(() {
       nameErrorText = null;
       checkClose = true;
       String newText = nameEditingController.text;
       SemanticsService.announce(newText, Directionality.of(context));
-      setState(() => name = newText);
+      setState(() => routine.name = newText);
     });
 
     routineTaskEditingController =
-        List.generate(routineTasks.length, (_) => TextEditingController());
+        List.generate(cacheRoutineTasks.length, (i) => TextEditingController(text: routine.routineTasks[i].name));
     for (int i = 0; i < routineTaskEditingController.length; i++) {
       routineTaskEditingController[i].addListener(() {
         checkClose = true;
@@ -168,7 +169,7 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
                     child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
                       const Flexible(
                         child: AutoSizeText(
-                          "New Routine",
+                          "Edit Routine",
                           overflow: TextOverflow.visible,
                           style: Constants.headerStyle,
                           minFontSize: Constants.medium,
@@ -176,7 +177,7 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
                           maxLines: 1,
                         ),
                       ),
-                      (expectedDuration > 0)
+                      (routine.expectedDuration > 0)
                           ? Flexible(
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
@@ -199,7 +200,7 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
                                             ),
                                             Flexible(
                                               child: AutoSizeText(
-                                                  Duration(seconds: expectedDuration)
+                                                  Duration(seconds: routine.expectedDuration)
                                                       .toString()
                                                       .split(".")
                                                       .first,
@@ -231,7 +232,7 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
                                             ),
                                             Flexible(
                                               child: AutoSizeText(
-                                                  Duration(seconds: realDuration)
+                                                  Duration(seconds: routine.realDuration)
                                                       .toString()
                                                       .split(".")
                                                       .first,
@@ -377,7 +378,7 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
                 // Create Button - could be a stack
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
-                  child: buildCreateButton(context, errorColor),
+                  child: buildUpdateButton(context, errorColor),
                 )
               ]),
         ),
@@ -401,7 +402,7 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
                 child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
                   const Flexible(
                     child: AutoSizeText(
-                      "New Routine",
+                      "Edit Routine",
                       overflow: TextOverflow.visible,
                       style: Constants.headerStyle,
                       minFontSize: Constants.medium,
@@ -409,7 +410,7 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
                       maxLines: 1,
                     ),
                   ),
-                  (expectedDuration > 0)
+                  (routine.expectedDuration > 0)
                       ? Flexible(
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
@@ -432,7 +433,7 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
                                         ),
                                         Flexible(
                                           child: AutoSizeText(
-                                              Duration(seconds: expectedDuration)
+                                              Duration(seconds: routine.expectedDuration)
                                                   .toString()
                                                   .split(".")
                                                   .first,
@@ -464,7 +465,7 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
                                         ),
                                         Flexible(
                                           child: AutoSizeText(
-                                              Duration(seconds: realDuration)
+                                              Duration(seconds: routine.realDuration)
                                                   .toString()
                                                   .split(".")
                                                   .first,
@@ -575,48 +576,83 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
               // Create Button - could be a stack
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
-                child: buildCreateButton(context, errorColor),
+                child: buildUpdateButton(context, errorColor),
               )
             ]),
       ),
     );
   }
 
-  Row buildCreateButton(BuildContext context, Color errorColor) {
+  Row buildUpdateButton(BuildContext context, Color errorColor) {
     return Row(mainAxisAlignment: MainAxisAlignment.end, children: [
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: Constants.innerPadding),
+        child: FilledButton.tonalIcon(
+          label: const Text("Delete Routine"),
+          icon: const Icon(Icons.delete_forever),
+          onPressed: () async => await routineProvider
+                .deleteRoutine()
+                .then((value) => Navigator.pop(context))
+                .catchError((e) {
+              ScaffoldMessenger.maybeOf(context)?.showSnackBar(SnackBar(
+                content: Text(e.cause,
+                    overflow: TextOverflow.ellipsis, style: TextStyle(color: errorColor)),
+                action: SnackBarAction(label: "Dismiss", onPressed: () {}),
+                duration: const Duration(milliseconds: 1500),
+                behavior: SnackBarBehavior.floating,
+                shape: const RoundedRectangleBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(Constants.roundedCorners)),
+                ),
+                width: (MediaQuery.sizeOf(context).width) / 2,
+                padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
+              ));
+            }, test: (e) => e is FailureToCreateException || e is FailureToUploadException)
+        ),
+      ),
+
       FilledButton.icon(
-          label: const Text("Create Routine"),
+          label: const Text("Update Routine"),
           icon: const Icon(Icons.add),
           onPressed: () async {
             bool validData = validateData();
             if (validData) {
-              await routineProvider
-                  .createRoutine(
-                    name: name,
-                    weight: weight,
-                    expectedDuration: expectedDuration,
-                    realDuration: realDuration,
-                    routineTasks: routineTasks,
-                  )
-                  .then((value) => Navigator.pop(context))
-                  .catchError((e) {
-                ScaffoldMessenger.maybeOf(context)?.showSnackBar(SnackBar(
-                  content: Text(e.cause,
-                      overflow: TextOverflow.ellipsis, style: TextStyle(color: errorColor)),
-                  action: SnackBarAction(label: "Dismiss", onPressed: () {}),
-                  duration: const Duration(milliseconds: 1500),
-                  behavior: SnackBarBehavior.floating,
-                  shape: const RoundedRectangleBorder(
-                    borderRadius: BorderRadius.all(Radius.circular(Constants.roundedCorners)),
-                  ),
-                  width: (MediaQuery.sizeOf(context).width) / 2,
-                  padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
-                ));
-              }, test: (e) => e is FailureToCreateException || e is FailureToUploadException);
+
+              await handleUpdate(context, errorColor);
             }
             // Then save.
           })
     ]);
+  }
+
+  Future<void> handleUpdate(BuildContext context, Color errorColor) async {
+    if(cacheRoutineTasks.length > routine.routineTasks.length)
+      {
+        // This should never happen, TODO: remove
+        print("BUG! Diff: Cache | Orig");
+        print(cacheRoutineTasks);
+        print(routine.routineTasks);
+        cacheRoutineTasks.length = routine.routineTasks.length;
+      }
+    
+    routine.routineTasks.setAll(0, cacheRoutineTasks);
+    
+    await routineProvider
+        .updateRoutine()
+        .then((value) => Navigator.pop(context))
+        .catchError((e) {
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(SnackBar(
+        content: Text(e.cause,
+            overflow: TextOverflow.ellipsis, style: TextStyle(color: errorColor)),
+        action: SnackBarAction(label: "Dismiss", onPressed: () {}),
+        duration: const Duration(milliseconds: 1500),
+        behavior: SnackBarBehavior.floating,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(Constants.roundedCorners)),
+        ),
+        width: (MediaQuery.sizeOf(context).width) / 2,
+        padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
+      ));
+    }, test: (e) => e is FailureToCreateException || e is FailureToUploadException);
   }
   Column buildWeightTileDesktop(){
     return Column(
@@ -640,7 +676,7 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
                 child: FittedBox(
                   fit: BoxFit.fitHeight,
                   child: Transform.rotate(
-                      angle: -pi / 2, child: getBatteryIcon(weight: weight, selected: false)),
+                      angle: -pi / 2, child: getBatteryIcon(weight: routine.weight, selected: false)),
                 ),
               )),
         ),
@@ -668,7 +704,7 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
                 child: FittedBox(
                   fit: BoxFit.contain,
                   child: Transform.rotate(
-                      angle: -pi / 2, child: getBatteryIcon(weight: weight, selected: false)),
+                      angle: -pi / 2, child: getBatteryIcon(weight: routine.weight, selected: false)),
                 ),
               )),
         ),
@@ -690,8 +726,8 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
             newIndex--;
           }
 
-          SubTask st = routineTasks.removeAt(oldIndex);
-          routineTasks.insert(newIndex, st);
+          SubTask st = cacheRoutineTasks.removeAt(oldIndex);
+          cacheRoutineTasks.insert(newIndex, st);
           TextEditingController ct = routineTaskEditingController.removeAt(oldIndex);
           //ct.value = ct.value.copyWith(text: st.name);
           routineTaskEditingController.insert(newIndex, ct);
@@ -706,8 +742,8 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
             title: Row(
               children: [
                 IconButton(
-                  icon: Constants.batteryIcons[routineTasks[index].weight]!,
-                  selectedIcon: Constants.selectedBatteryIcons[routineTasks[index].weight]!,
+                  icon: Constants.batteryIcons[cacheRoutineTasks[index].weight]!,
+                  selectedIcon: Constants.selectedBatteryIcons[cacheRoutineTasks[index].weight]!,
                   onPressed: () {
                     showModalBottomSheet<void>(
                         showDragHandle: true,
@@ -729,16 +765,16 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
                                               const Icon(Icons.battery_full),
                                               Expanded(
                                                 child: Slider(
-                                                  value: routineTasks[index].weight.toDouble(),
+                                                  value: cacheRoutineTasks[index].weight.toDouble(),
                                                   max: Constants.maxTaskWeight.toDouble(),
-                                                  label: (routineTasks[index].weight >
+                                                  label: (cacheRoutineTasks[index].weight >
                                                           (Constants.maxTaskWeight / 2).floor())
-                                                      ? " ${routineTasks[index].weight} ${Constants.lowBattery}"
-                                                      : " ${routineTasks[index].weight} ${Constants.fullBattery}",
+                                                      ? " ${cacheRoutineTasks[index].weight} ${Constants.lowBattery}"
+                                                      : " ${cacheRoutineTasks[index].weight} ${Constants.fullBattery}",
                                                   divisions: Constants.maxTaskWeight,
                                                   onChanged: (value) => setState(() {
                                                     checkClose = true;
-                                                    routineTasks[index].weight = value.toInt();
+                                                    cacheRoutineTasks[index].weight = value.toInt();
                                                   }),
                                                 ),
                                               ),
@@ -748,9 +784,9 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
                                     ])),
                           );
                         }).whenComplete(() => setState(() {
-                          weight = routineProvider.calculateWeight(routineTasks: routineTasks);
-                          realDuration = routineProvider.calculateRealDuration(
-                              weight: weight, duration: expectedDuration);
+                          routine.weight = routineProvider.calculateWeight(routineTasks: cacheRoutineTasks);
+                          routine.realDuration = routineProvider.calculateRealDuration(
+                              weight: routine.weight, duration: routine.expectedDuration);
                         }));
                   },
                 ),
@@ -764,7 +800,7 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
                         hintText: "Step name",
                       ),
                       onChanged: (value) {
-                        routineTasks[index].name = value;
+                        cacheRoutineTasks[index].name = value;
                         routineTaskEditingController[index].value =
                             routineTaskEditingController[index].value.copyWith(
                                   text: value,
@@ -774,26 +810,26 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
                 ),
               ],
             ),
-            value: routineTasks[index].completed,
+            value: cacheRoutineTasks[index].completed,
             onChanged: (bool? value) => setState(() {
                   checkClose = true;
-                  routineTasks[index].completed = value!;
+                  cacheRoutineTasks[index].completed = value!;
                 }),
 
             // Delete Subtask
             secondary: IconButton(
                 icon: const Icon(Icons.delete),
                 onPressed: () => setState(() {
-                      SubTask st = routineTasks.removeAt(index);
+                      SubTask st = cacheRoutineTasks.removeAt(index);
                       st = SubTask();
-                      routineTasks.add(st);
+                      cacheRoutineTasks.add(st);
                       TextEditingController ct = routineTaskEditingController.removeAt(index);
                       ct.value = ct.value.copyWith(text: st.name);
                       routineTaskEditingController.add(ct);
 
                       shownTasks--;
                       shownTasks = max(shownTasks, 0);
-                      weight = routineProvider.calculateWeight(routineTasks: routineTasks);
+                      routine.weight = routineProvider.calculateWeight(routineTasks: cacheRoutineTasks);
                     })));
       },
     );
@@ -815,8 +851,8 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
             title: Row(
               children: [
                 IconButton(
-                  icon: Constants.batteryIcons[routineTasks[index].weight]!,
-                  selectedIcon: Constants.selectedBatteryIcons[routineTasks[index].weight]!,
+                  icon: Constants.batteryIcons[cacheRoutineTasks[index].weight]!,
+                  selectedIcon: Constants.selectedBatteryIcons[cacheRoutineTasks[index].weight]!,
                   onPressed: () {
                     showModalBottomSheet<void>(
                         showDragHandle: true,
@@ -838,16 +874,16 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
                                               const Icon(Icons.battery_full),
                                               Expanded(
                                                 child: Slider(
-                                                  value: routineTasks[index].weight.toDouble(),
+                                                  value: cacheRoutineTasks[index].weight.toDouble(),
                                                   max: Constants.maxTaskWeight.toDouble(),
-                                                  label: (routineTasks[index].weight >
+                                                  label: (cacheRoutineTasks[index].weight >
                                                           (Constants.maxTaskWeight / 2).floor())
-                                                      ? " ${routineTasks[index].weight} ${Constants.lowBattery}"
-                                                      : " ${routineTasks[index].weight} ${Constants.fullBattery}",
+                                                      ? " ${cacheRoutineTasks[index].weight} ${Constants.lowBattery}"
+                                                      : " ${cacheRoutineTasks[index].weight} ${Constants.fullBattery}",
                                                   divisions: Constants.maxTaskWeight,
                                                   onChanged: (value) => setState(() {
                                                     checkClose = true;
-                                                    routineTasks[index].weight = value.toInt();
+                                                    cacheRoutineTasks[index].weight = value.toInt();
                                                   }),
                                                 ),
                                               ),
@@ -857,9 +893,9 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
                                     ])),
                           );
                         }).whenComplete(() => setState(() {
-                          weight = routineProvider.calculateWeight(routineTasks: routineTasks);
-                          realDuration = routineProvider.calculateRealDuration(
-                              weight: weight, duration: expectedDuration);
+                      routine.weight = routineProvider.calculateWeight(routineTasks: cacheRoutineTasks);
+                      routine.realDuration = routineProvider.calculateRealDuration(
+                              weight: routine.weight, duration: routine.expectedDuration);
                         }));
                   },
                 ),
@@ -873,7 +909,7 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
                         hintText: "Step name",
                       ),
                       onChanged: (value) {
-                        routineTasks[index].name = value;
+                        cacheRoutineTasks[index].name = value;
                         routineTaskEditingController[index].value =
                             routineTaskEditingController[index].value.copyWith(
                                   text: value,
@@ -883,26 +919,26 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
                 ),
               ],
             ),
-            value: routineTasks[index].completed,
+            value: cacheRoutineTasks[index].completed,
             onChanged: (bool? value) => setState(() {
                   checkClose = true;
-                  routineTasks[index].completed = value!;
+                  cacheRoutineTasks[index].completed = value!;
                 }),
 
             // Delete Subtask
             secondary: IconButton(
                 icon: const Icon(Icons.delete),
                 onPressed: () => setState(() {
-                      SubTask st = routineTasks.removeAt(index);
+                      SubTask st = cacheRoutineTasks.removeAt(index);
                       st = SubTask();
-                      routineTasks.add(st);
+                      cacheRoutineTasks.add(st);
                       TextEditingController ct = routineTaskEditingController.removeAt(index);
                       ct.value = ct.value.copyWith(text: st.name);
                       routineTaskEditingController.add(ct);
 
                       shownTasks--;
                       shownTasks = max(shownTasks, 0);
-                      weight = routineProvider.calculateWeight(routineTasks: routineTasks);
+                      routine.weight = routineProvider.calculateWeight(routineTasks: cacheRoutineTasks);
                     })));
       },
     );
@@ -923,14 +959,14 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
   ListTile buildDurationTile(BuildContext context, {bool smallScreen = false}) {
     return ListTile(
       leading: const Icon(Icons.timer_outlined),
-      title: (expectedDuration > 0)
+      title: (routine.expectedDuration > 0)
           ? Row(
               children: [
                 Flexible(
                   child: AutoSizeText(
                       (smallScreen)
-                          ? Duration(seconds: expectedDuration).toString().split(".").first
-                          : "Expected: ${Duration(seconds: expectedDuration).toString().split(".").first}",
+                          ? Duration(seconds: routine.expectedDuration).toString().split(".").first
+                          : "Expected: ${Duration(seconds: routine.expectedDuration).toString().split(".").first}",
                       overflow: TextOverflow.visible,
                       minFontSize: Constants.small,
                       maxLines: 2,
@@ -945,8 +981,8 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
                 Flexible(
                   child: AutoSizeText(
                       (smallScreen)
-                          ? Duration(seconds: realDuration).toString().split(".").first
-                          : "Actual: ${Duration(seconds: realDuration).toString().split(".").first}",
+                          ? Duration(seconds: routine.realDuration).toString().split(".").first
+                          : "Actual: ${Duration(seconds: routine.realDuration).toString().split(".").first}",
                       overflow: TextOverflow.visible,
                       minFontSize: Constants.small,
                       maxLines: 2,
@@ -962,19 +998,18 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
       trailing: IconButton(
           icon: const Icon(Icons.close),
           onPressed: () => setState(() {
-                expectedDuration = 0;
-                realDuration = 0;
+            routine.expectedDuration = 0;
+            routine.realDuration = 0;
               })),
       onTap: () => showDialog<int>(
           context: context,
           builder: (BuildContext context) {
-            int time = expectedDuration;
+            int time = routine.expectedDuration;
             int hours = time ~/ 3600;
             time %= 3600;
-            int minutes = time ~/ 60;
+            int minutes=  time ~/ 60;
             time %= 60;
             int seconds = time;
-
 
             return StatefulBuilder(
               builder: (context, setState) => Dialog(
@@ -1114,9 +1149,9 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
           }).then((value) {
         setState(() {
           checkClose = true;
-          expectedDuration = value ?? expectedDuration;
-          realDuration =
-              routineProvider.calculateRealDuration(weight: weight, duration: expectedDuration);
+          routine.expectedDuration = value ?? routine.expectedDuration;
+          routine.realDuration =
+              routineProvider.calculateRealDuration(weight: routine.weight, duration: routine.expectedDuration);
         });
       }),
     );
@@ -1132,7 +1167,7 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
             icon: const Icon(Icons.clear),
             onPressed: () {
               nameEditingController.clear();
-              setState(() => name = "");
+              setState(() => routine.name = "");
             }),
         contentPadding: const EdgeInsets.all(Constants.innerPadding),
         border: const OutlineInputBorder(
@@ -1184,7 +1219,10 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
                           ]));
                 }).then((willDiscard) {
               if (willDiscard ?? false) {
-                // this should hopefully pop twice.
+                // If discarding changes, reset back to the cached ToDo.
+                // This likely unnecessary, as changes will not be reflected in the db on discard.
+                // TODO: Remove as necessary
+                routineProvider.curRoutine = prevRoutine;
                 Navigator.pop(context);
               }
             });

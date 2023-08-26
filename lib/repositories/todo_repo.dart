@@ -165,6 +165,8 @@ class ToDoRepo implements ToDoRepository {
     await _isarClient.writeTxn(() async {
       await _isarClient.toDos.deleteAll(toDeletes);
     });
+
+    print("Task Delete is Calling");
   }
 
   @override
