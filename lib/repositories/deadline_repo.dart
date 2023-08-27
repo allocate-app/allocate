@@ -148,6 +148,10 @@ class DeadlineRepo implements DeadlineRepository {
         .filter()
         .repeatableEqualTo(true)
         .findAll();
+
+    // This is to prevent a race condition & accidentally deleting a notification.
+    toDelete.remove(deleteFrom);
+
     toDelete.map((Deadline deadline) => deadline.toDelete = true);
     List<int> cancelIDs =
         toDelete.map((Deadline deadline) => deadline.notificationID!).toList(growable: false);

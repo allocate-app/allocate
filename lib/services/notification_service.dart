@@ -1,6 +1,5 @@
 import 'dart:convert';
 
-//import 'package:flutter_app_badger/flutter_app_badger.dart';
 import "package:flutter_local_notifications/flutter_local_notifications.dart";
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
@@ -47,7 +46,7 @@ class NotificationService {
 
   Future<void> init() async {
     const AndroidInitializationSettings initializationSettingsAndroid =
-        AndroidInitializationSettings("app_icon");
+        AndroidInitializationSettings("@mipmap/ic_launcher");
 
     const DarwinInitializationSettings initializationSettingsDarwin =
         DarwinInitializationSettings();
@@ -75,12 +74,12 @@ class NotificationService {
     required String message,
     required String payload,
   }) async {
-    final scheduleTime = tz.TZDateTime.from(warnDate, tz.local);
+    final scheduleDate = tz.TZDateTime.from(warnDate, tz.local);
     await flutterLocalNotificationsPlugin.zonedSchedule(
       id,
       Constants.applicationName,
       message,
-      scheduleTime,
+      scheduleDate,
       _notificationDetails,
       uiLocalNotificationDateInterpretation:
           UILocalNotificationDateInterpretation.absoluteTime,
@@ -134,6 +133,10 @@ class NotificationService {
         // Regular routing.
         break;
     }
+  }
+
+  bool validateWarnDate({required DateTime warnDate}) {
+    return tz.TZDateTime.from(warnDate, tz.local).isAfter(tz.TZDateTime.now(tz.local));
   }
 
   Future<void> handleAppLaunch() async {

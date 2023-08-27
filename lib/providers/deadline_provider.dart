@@ -77,7 +77,7 @@ class DeadlineProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> createDeadLine({
+  Future<void> createDeadline({
     required String name,
     String description = "",
     DateTime? startDate,
@@ -115,8 +115,13 @@ class DeadlineProvider extends ChangeNotifier {
         repeatSkip: repeatSkip ?? 1,
         lastUpdated: DateTime.now());
 
-    curDeadline!.repeatID = curDeadline.hashCode;
-    curDeadline!.notificationID = curDeadline.hashCode;
+    if(repeatable ?? false) {
+      curDeadline!.repeatID = curDeadline.hashCode;
+
+    }
+    if(warnMe) {
+      curDeadline!.notificationID = curDeadline.hashCode;
+    }
 
     try {
       _deadlineService.createDeadline(deadline: curDeadline!);
@@ -138,8 +143,10 @@ class DeadlineProvider extends ChangeNotifier {
 
   Future<void> updateDeadline() async {
     curDeadline!.lastUpdated = DateTime.now();
+
     cancelNotification();
     if (curDeadline!.warnMe) {
+      curDeadline!.notificationID = curDeadline!.notificationID ?? curDeadline!.hashCode;
       scheduleNotification();
     }
     try {
@@ -223,7 +230,7 @@ class DeadlineProvider extends ChangeNotifier {
               lastUpdated: DateTime.now());
 
   Future<void> scheduleNotification() async {
-    String newDue = Jiffy.parseFromDateTime(curDeadline!.dueDate).toLocal().toString();
+    String newDue = Jiffy.parseFromDateTime(curDeadline!.dueDate).toLocal().yMMMMEEEEdjm.toString();
     _notificationService.scheduleNotification(
         id: curDeadline!.notificationID!,
         warnDate: curDeadline!.warnDate,
@@ -232,6 +239,12 @@ class DeadlineProvider extends ChangeNotifier {
   }
 
   Future<void> cancelNotification() async {
-    _notificationService.cancelNotification(id: curDeadline!.notificationID!);
+    if(null !=curDeadline!.notificationID)
+      {
+        _notificationService.cancelNotification(id: curDeadline!.notificationID!);
+
+      }
   }
+
+  bool validateWarnDate({DateTime? warnDate}) => _notificationService.validateWarnDate(warnDate: warnDate ?? curDeadline!.warnDate);
 }

@@ -24,7 +24,6 @@ class CreateRoutineScreen extends StatefulWidget {
 
 class _CreateRoutineScreen extends State<CreateRoutineScreen> {
   late bool checkClose;
-  late bool checkDelete;
   late bool expanded;
 
   // Provider (Needs user values) -> Refactor to DI for testing. One day.
@@ -263,36 +262,33 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         Expanded(
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
-                            child: Column(
+                          child: Column(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                mainAxisSize: MainAxisSize.max,
-                                // controller: subScrollControllerLeft,
-                                children: [
-                                  // Title
-                                  Padding(
+                              mainAxisSize: MainAxisSize.min,
+                              // controller: subScrollControllerLeft,
+                              children: [
+                                // Title
+                                Padding(
+                                  padding:
+                                  const EdgeInsets.symmetric(horizontal: Constants.padding),
+                                  child: buildNameTile(smallScreen: smallScreen),
+                                ),
+                                const PaddedDivider(padding: Constants.innerPadding),
+                                Expanded(
+                                  child: Padding(
                                     padding:
-                                    const EdgeInsets.symmetric(horizontal: Constants.padding),
-                                    child: buildNameTile(smallScreen: smallScreen),
+                                    const EdgeInsets.symmetric(horizontal: Constants.innerPadding),
+                                    child: buildWeightTileDesktop(),
                                   ),
-                                  const PaddedDivider(padding: Constants.innerPadding),
-                                  Expanded(
-                                    child: Padding(
-                                      padding:
-                                          const EdgeInsets.symmetric(horizontal: Constants.innerPadding),
-                                      child: buildWeightTileDesktop(),
-                                    ),
-                                  ),
+                                ),
 
-                                  const PaddedDivider(padding: Constants.innerPadding),
-                                  Padding(
-                                    padding:
-                                    const EdgeInsets.symmetric(horizontal: Constants.padding),
-                                    child: buildDurationTile(context, smallScreen: smallScreen),
-                                  ),
-                                ]),
-                          ),
+                                const PaddedDivider(padding: Constants.innerPadding),
+                                Padding(
+                                  padding:
+                                  const EdgeInsets.symmetric(horizontal: Constants.padding),
+                                  child: buildDurationTile(context, smallScreen: smallScreen),
+                                ),
+                              ])
                         ),
                         Expanded(
                           flex: 2,

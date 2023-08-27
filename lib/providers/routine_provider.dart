@@ -44,13 +44,10 @@ class RoutineProvider extends ChangeNotifier {
       (curMorning?.weight ?? 0) + (curAfternoon?.weight ?? 0) + (curEvening?.weight ?? 0);
 
   void startTimer() {
-    print("syncTimer is being initialized");
     syncTimer = Timer.periodic(const Duration(seconds: 10), (timer) {
       if (user?.syncOnline ?? false) {
-        print("Routine Timer is calling");
         _syncRepo();
       } else {
-        print("Routine Timer Is Going");
         _routineService.clearDeletesLocalRepo();
       }
     });

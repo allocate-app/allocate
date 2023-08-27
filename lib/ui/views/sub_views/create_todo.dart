@@ -30,7 +30,6 @@ class CreateToDoScreen extends StatefulWidget {
 
 class _CreateToDoScreen extends State<CreateToDoScreen> {
   late bool checkClose;
-  late bool checkDelete;
   late bool expanded;
 
   // Provider (Needs user values) -> Refactor to DI for testing.
@@ -72,7 +71,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
   late int minutes;
   late int seconds;
 
-  Priority priority = Priority.low;
+  late Priority priority;
 
   // Status
   late bool completed;
@@ -122,6 +121,8 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
 
     weight = 0;
     sumWeight = 0;
+
+    priority = Priority.low;
 
     completed = false;
     myDay = false;
@@ -919,15 +920,18 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
     ]);
   }
 
+
   void mergeDateTimes() {
-    if (null != startDate && null != startTime) {
-      startDate = DateTime(
-          startDate!.year, startDate!.month, startDate!.day, startTime!.hour, startTime!.minute);
-    }
-    if (null != dueDate && null != dueTime) {
-      dueDate =
-          DateTime(dueDate!.year, dueDate!.month, dueDate!.day, dueTime!.hour, dueTime!.minute);
-    }
+    startDate = startDate ?? DateTime.now();
+    startTime = startTime ?? TimeOfDay.now();
+
+    startDate = startDate!.copyWith(hour: startTime!.hour, minute: startTime!.minute);
+
+    dueDate = dueDate ?? DateTime.now();
+    dueTime = dueTime ?? TimeOfDay.now();
+
+    dueDate = dueDate!.copyWith(hour: dueTime!.hour, minute: dueTime!.minute);
+
   }
 
   ListTile buildRepeatableTile(BuildContext context, {bool smallScreen = false}) {
@@ -1390,7 +1394,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                                                 final TimeOfDay? picked = await showTimePicker(
                                                     context: context,
                                                     initialTime: tmpStart ??
-                                                        const TimeOfDay(hour: 0, minute: 0));
+                                                        Constants.midnight);
                                                 if (null != picked) {
                                                   setState(() => tmpStart = picked);
                                                 }
@@ -1421,7 +1425,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                                                 final TimeOfDay? picked = await showTimePicker(
                                                     context: context,
                                                     initialTime: tmpDue ??
-                                                        const TimeOfDay(hour: 0, minute: 0));
+                                                        Constants.midnight);
                                                 if (null != picked) {
                                                   setState(() => tmpDue = picked);
                                                 }
