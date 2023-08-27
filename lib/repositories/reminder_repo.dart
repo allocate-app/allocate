@@ -146,6 +146,10 @@ class ReminderRepo implements ReminderRepository {
         .filter()
         .repeatableEqualTo(true)
         .findAll();
+
+    // This is to prevent a race condition.
+    toDelete.remove(deleteFrom);
+
     toDelete.map((Reminder r) => r.toDelete = true);
     List<int> cancelIDs =
         toDelete.map((Reminder reminder) => reminder.notificationID!).toList(growable: false);

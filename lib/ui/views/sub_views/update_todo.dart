@@ -33,7 +33,6 @@ class UpdateToDoScreen extends StatefulWidget {
 
 class _UpdateToDoScreen extends State<UpdateToDoScreen> {
   late bool checkClose;
-  late bool checkDelete;
   late bool expanded;
 
   late final UserProvider userProvider;
@@ -120,10 +119,8 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
     cacheSubTasks = List.from(toDo.subTasks);
 
     // Midnight as a start/due time is ambiguous.
-    // Assume no time set.
-    TimeOfDay midnight = const TimeOfDay(hour: 0, minute: 0);
-    showStartTime = midnight != TimeOfDay.fromDateTime(toDo.startDate);
-    showDueTime = midnight != TimeOfDay.fromDateTime(toDo.dueDate);
+    showStartTime = Constants.midnight != TimeOfDay.fromDateTime(toDo.startDate);
+    showDueTime = Constants.midnight != TimeOfDay.fromDateTime(toDo.dueDate);
   }
 
   Future<void> initializeControllers() async {
@@ -2058,7 +2055,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                                                 final TimeOfDay? picked = await showTimePicker(
                                                     context: context,
                                                     initialTime: dueTime ??
-                                                        const TimeOfDay(hour: 0, minute: 0));
+                                                        Constants.midnight);
                                                 if (null != picked) {
                                                   setState(() => dueTime = picked);
                                                 }
@@ -2104,9 +2101,9 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                                             onPressed: () {
                                               setState(() {
                                                 startTime = startTime ??
-                                                    const TimeOfDay(hour: 0, minute: 0);
+                                                    Constants.midnight;
                                                 dueTime =
-                                                    dueTime ?? const TimeOfDay(hour: 0, minute: 0);
+                                                    dueTime ?? Constants.midnight;
                                                 toDo.startDate = toDo.startDate.copyWith(
                                                     hour: startTime!.hour,
                                                     minute: startTime!.minute);

@@ -110,7 +110,12 @@ class ReminderProvider extends ChangeNotifier {
       lastUpdated: DateTime.now(),
     );
 
-    curReminder!.repeatID = curReminder.hashCode;
+    if(curReminder!.repeatable)
+      {
+        curReminder!.repeatID = curReminder.hashCode;
+
+      }
+    // TODO: if refactoring to include a flag for warn/don't warn, change this accordingly and handle null in the scheduler.
     curReminder!.notificationID = curReminder.hashCode;
 
     try {
