@@ -2691,13 +2691,13 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
     return Row(mainAxisAlignment: MainAxisAlignment.end, children: [
       Padding(
         padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
-        child: buildDeleteButton(context, errorColor)
+        child: buildDeleteButton(context: context, errorColor: errorColor)
       ),
       buildUpdateButton(context: context, errorColor: errorColor),
     ]);
   }
 
-  FilledButton buildDeleteButton(BuildContext context, Color errorColor) {
+  FilledButton buildDeleteButton({required BuildContext context, required Color errorColor}) {
     return FilledButton.tonalIcon(
         label: const Text("Delete"),
         icon: const Icon(Icons.delete_forever),

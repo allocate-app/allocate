@@ -143,6 +143,45 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
     return Constants.batteryIcons[weight]!;
   }
 
+  Future<void> handleUpdate({required BuildContext context}) async {
+    if(cacheRoutineTasks.length > routine.routineTasks.length)
+    {
+      // This should never happen, TODO: remove
+      print("BUG! Diff: Cache | Orig");
+      print(cacheRoutineTasks);
+      print(routine.routineTasks);
+      cacheRoutineTasks.length = routine.routineTasks.length;
+    }
+
+    routine.routineTasks.setAll(0, cacheRoutineTasks);
+
+    await routineProvider
+        .updateRoutine()
+        .then((value) => Navigator.pop(context))
+        .catchError((e) {
+      Flushbar? error;
+
+      error = Flushbars.createError(message: e.cause,
+        context: context,
+        dismissCallback: () => error?.dismiss(),
+      );
+
+      error.show(context);
+    }, test: (e) => e is FailureToCreateException || e is FailureToUploadException);
+  }
+
+  Future<void> handleDelete({required BuildContext context, required Color errorColor}) async {
+    await routineProvider.deleteRoutine().whenComplete(() => Navigator.pop(context)).catchError( (e) {
+      Flushbar? error;
+      error = Flushbars.createError(message: e.cause,
+      context: context,
+      dismissCallback: () => error?.dismiss());
+    }
+      , test: (e) => e is FailureToCreateException || e is FailureToUploadException
+    );
+  }
+
+
   @override
   Widget build(BuildContext context) {
     final Color errorColor = Theme.of(context).colorScheme.error;
@@ -379,7 +418,7 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
                 // Create Button - could be a stack
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
-                  child: buildUpdateButton(context, errorColor),
+                  child: buildUpdateDeleteRow(context: context, errorColor: errorColor),
                 )
               ]),
         ),
@@ -577,51 +616,47 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
               // Create Button - could be a stack
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
-                child: buildUpdateButton(context, errorColor),
+                child: buildUpdateDeleteRow(context: context, errorColor: errorColor),
               )
             ]),
       ),
     );
   }
 
-  Row buildUpdateButton(BuildContext context, Color errorColor) {
+  Row buildUpdateDeleteRow({required BuildContext context, required Color errorColor}) {
     return Row(mainAxisAlignment: MainAxisAlignment.end, children: [
-      FilledButton.icon(
-          label: const Text("Update Routine"),
-          icon: const Icon(Icons.add),
-          onPressed: () async {
-            bool validData = validateData();
-            if (validData) {
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
+        child: buildDeleteButton(context: context, errorColor: errorColor),
+      ),
 
-              if(cacheRoutineTasks.length > routine.routineTasks.length)
-                {
-                  // This should never happen, TODO: remove
-                  print("BUG! Diff: Cache | Orig");
-                  print(cacheRoutineTasks);
-                  print(routine.routineTasks);
-                  cacheRoutineTasks.length = routine.routineTasks.length;
-                }
-
-              routine.routineTasks.setAll(0, cacheRoutineTasks);
-
-              await routineProvider
-                  .updateRoutine()
-                  .then((value) => Navigator.pop(context))
-                  .catchError((e) {
-                Flushbar? error;
-
-                error = Flushbars.createError(message: e.cause,
-                  context: context,
-                  dismissCallback: () => error?.dismiss(),
-                );
-
-                error.show(context);
-              }, test: (e) => e is FailureToCreateException || e is FailureToUploadException);
-            }
-            // Then save.
-          })
+      buildUpdateButton(context)
     ]);
   }
+
+  FilledButton buildUpdateButton(BuildContext context) {
+    return FilledButton.icon(
+        label: const Text("Update Routine"),
+        icon: const Icon(Icons.add),
+        onPressed: () async {
+          bool validData = validateData();
+          if (validData) {
+
+            await handleUpdate(context: context);
+          }
+          // Then save.
+        });
+  }
+
+  FilledButton buildDeleteButton({required BuildContext context, required Color errorColor}) {
+    return FilledButton.tonalIcon(
+      label: const Text("Delete"),
+      icon: const Icon(Icons.delete_forever),
+      onPressed: () async => await handleDelete(context: context, errorColor: errorColor),
+
+    );
+  }
+
   Column buildWeightTileDesktop(){
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
