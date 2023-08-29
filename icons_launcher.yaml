@@ -1,0 +1,13 @@
+icons_launcher:
+  image_path: "assets/dummy.png"
+  platforms:
+    android:
+      enable: true
+    ios:
+      enable: true
+    macos:
+      enable: true
+    linux:
+      enable: true
+    windows:
+      enable: true

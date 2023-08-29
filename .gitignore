@@ -70,3 +70,5 @@ doc/api/
 /android/app/src/main/res/
 /windows/runner/resources/
 /macos/Runner/Assets.xcassets/
+/snap/gui/
+/ios/Runner/Assets.xcassets/
