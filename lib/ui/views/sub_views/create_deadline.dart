@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:another_flushbar/flushbar.dart';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:auto_size_text_field/auto_size_text_field.dart';
 import 'package:calendar_date_picker2/calendar_date_picker2.dart';
@@ -17,7 +18,8 @@ import '../../../providers/user_provider.dart';
 import '../../../util/constants.dart';
 import '../../../util/enums.dart';
 import '../../../util/exceptions.dart';
-import '../../widgets/paddedDivider.dart';
+import '../../widgets/flushbars.dart';
+import '../../widgets/padded_divider.dart';
 
 /// Basic UI flow Mobile
 /// Name - ** Done
@@ -172,24 +174,15 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
     if(!deadlineProvider.validateWarnDate(warnDate: warnDate))
       {
         valid = false;
-        print(warnDate);
-        print(DateTime.now());
-        print(warnDate!.isAfter(DateTime.now()));
-        // Constants.snackBarKey.currentState?.showSnackBar(SnackBar(
-        //   content: Text("Invalid Warn Date: Too close to present time.",
-        //       overflow: TextOverflow.ellipsis,
-        //       style: TextStyle(color: Constants.errorColor(context: context))),
-        //   action: SnackBarAction(label: "Dismiss", onPressed: () {}),
-        //   duration: const Duration(milliseconds: 1500),
-        //   behavior: SnackBarBehavior.floating,
-        //   shape: const RoundedRectangleBorder(
-        //     borderRadius: BorderRadius.all(
-        //         Radius.circular(Constants.roundedCorners)),
-        //   ),
-        //   width: (MediaQuery.sizeOf(context).width) / 2,
-        //   padding:
-        //   const EdgeInsets.symmetric(horizontal: Constants.padding),
-        // ));
+
+        Flushbar? error;
+
+        error = Flushbars.createError(message: "Warn date must be later than present time.",
+          context: context,
+          dismissCallback: () => error?.dismiss(),
+        );
+
+        error.show(context);
 
       }
 
@@ -776,21 +769,15 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
                   )
                   .then((value) => Navigator.pop(context))
                   .catchError((e) {
-                Constants.snackBarKey.currentState?.showSnackBar(SnackBar(
-                  content: Text(e.cause,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(color: Constants.errorColor(context: context))),
-                  action: SnackBarAction(label: "Dismiss", onPressed: () {}),
-                  duration: const Duration(milliseconds: 1500),
-                  behavior: SnackBarBehavior.floating,
-                  shape: const RoundedRectangleBorder(
-                    borderRadius: BorderRadius.all(
-                        Radius.circular(Constants.roundedCorners)),
-                  ),
-                  width: (MediaQuery.sizeOf(context).width) / 2,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: Constants.padding),
-                ));
+
+                Flushbar? error;
+
+                error = Flushbars.createError(message: e.cause,
+                  context: context,
+                  dismissCallback: () => error?.dismiss(),
+                );
+
+                error.show(context);
               },
                       test: (e) =>
                           e is FailureToCreateException ||

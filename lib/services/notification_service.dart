@@ -1,6 +1,8 @@
 import 'dart:convert';
+import 'dart:io';
 
 import "package:flutter_local_notifications/flutter_local_notifications.dart";
+import 'package:schedulers/schedulers.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 
@@ -8,6 +10,12 @@ import '../util/constants.dart';
 
 class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
+
+  // Linux/Windows only.
+  // REFACTOR: get rid of scheduler.
+  // Make a dictionary of streams? Needs implementation
+  //
+  late final TimeScheduler scheduler;
 
   static NotificationService get instance => _instance;
 
@@ -45,6 +53,7 @@ class NotificationService {
   );
 
   Future<void> init() async {
+
     const AndroidInitializationSettings initializationSettingsAndroid =
         AndroidInitializationSettings("@mipmap/ic_launcher");
 
@@ -60,7 +69,14 @@ class NotificationService {
         macOS: initializationSettingsDarwin,
         linux: initializationSettingsLinux);
 
+    if(Platform.isWindows || Platform.isLinux)
+      {
+        scheduler = TimeScheduler();
+      }
+
     tz.initializeTimeZones();
+
+    // TODO: NEEDS TO HAVE TIMEZONES ACTUALLY SET.
 
     // Include routing for when this is initialized.
     await flutterLocalNotificationsPlugin.initialize(initSettings,
@@ -75,6 +91,8 @@ class NotificationService {
     required String payload,
   }) async {
     final scheduleDate = tz.TZDateTime.from(warnDate, tz.local);
+
+    // Mobile/MacOS only.
     await flutterLocalNotificationsPlugin.zonedSchedule(
       id,
       Constants.applicationName,
@@ -120,6 +138,9 @@ class NotificationService {
       // Go through regular routing routine.
       return;
     }
+    // TODO: re-implement this. Go straight to the notifications screen.
+    // Remove payloads.
+
     // First string is the type, second is the id.
     switch (entities[0]) {
       case "DEADLINE":

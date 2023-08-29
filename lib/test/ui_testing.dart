@@ -160,95 +160,115 @@ class _FormTester extends State<FormTester> with WindowListener {
       appBar: AppBar(
         title: const Text('FormTester'),
       ),
-      body: const Center(child: Text('Press the button below!')),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      floatingActionButton: Padding(
-        padding: const EdgeInsets.all(Constants.padding),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            Expanded(
-              child: Column(
-                  children: [FloatingActionButton(
-                      onPressed: () => inputDialog(context, dialog: const CreateToDoScreen()),
-                      backgroundColor: Colors.pink,
-                      child: const Text("Create Task")
-                  ), FloatingActionButton(
-                    onPressed: () => inputDialog(context, dialog: (null != Provider.of<ToDoProvider>(context, listen: false).curToDo) ? const UpdateToDoScreen(): const CreateToDoScreen()),
-                    backgroundColor: Colors.green,
-                    child: const Text("Update Task"),
-                  )]
-              ),
-            ),
-
-            Expanded(
-              child: Column(
-                  children: [FloatingActionButton(
-                      onPressed: () => inputDialog(context, dialog: const CreateRoutineScreen()),
-                      backgroundColor: Colors.pink,
-                      child: const Text("Create Routine")
-                  ), FloatingActionButton(
-                    onPressed: () => inputDialog(context, dialog: (null != Provider.of<RoutineProvider>(context, listen: false).curRoutine) ? const UpdateRoutineScreen() : const CreateRoutineScreen()),
-                    backgroundColor: Colors.green,
-                    child: const Text("Update Routine"),
-                  )]
-              ),
-            ),
-
-            // TODO: finish these
-
-            Expanded(
-              child: Column(
-                  children: [FloatingActionButton(
-                      onPressed: () => inputDialog(context, dialog: const CreateDeadlineScreen()),
-                      backgroundColor: Colors.pink,
-                      child: const Text("Create Deadline")
+      body: Center(child: Column(
+        children: [
+          const Text('Press the buttons below!'),
+          Padding(
+            padding: const EdgeInsets.all(Constants.padding),
+            child: Wrap(
+              spacing: 8.0,
+              runSpacing: 8.0,
+              children: [
+                Expanded(
+                  child: Column(
+                      children: [Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: FloatingActionButton(
+                            onPressed: () => inputDialog(context, dialog: const CreateToDoScreen()),
+                            backgroundColor: Colors.pink,
+                            child: const Text("Create Task")
+                        ),
+                      ), Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: FloatingActionButton(
+                          onPressed: () => inputDialog(context, dialog: (null != Provider.of<ToDoProvider>(context, listen: false).curToDo) ? const UpdateToDoScreen(): const CreateToDoScreen()),
+                          backgroundColor: Colors.green,
+                          child: const Text("Update Task"),
+                        ),
+                      )]
                   ),
-                    //   FloatingActionButton(
-                    //   onPressed: () => inputDialog(context, dialog: const UpdateDeadlineScreen()),
-                    //   backgroundColor: Colors.green,
-                    //   child: const Text("Update Deadline"),
-                    // )
-                  ]
-              ),
+                ),
+
+                Expanded(
+                  child: Column(
+                      children: [Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: FloatingActionButton(
+                            onPressed: () => inputDialog(context, dialog: const CreateRoutineScreen()),
+                            backgroundColor: Colors.pink,
+                            child: const Text("Create Routine")
+                        ),
+                      ), Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: FloatingActionButton(
+                          onPressed: () => inputDialog(context, dialog: (null != Provider.of<RoutineProvider>(context, listen: false).curRoutine) ? const UpdateRoutineScreen() : const CreateRoutineScreen()),
+                          backgroundColor: Colors.green,
+                          child: const Text("Update Routine"),
+                        ),
+                      )]
+                  ),
+                ),
+
+                // TODO: finish these
+
+                Expanded(
+                  child: Column(
+                      children: [Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: FloatingActionButton(
+                            onPressed: () => inputDialog(context, dialog: const CreateDeadlineScreen()),
+                            backgroundColor: Colors.pink,
+                            child: const Text("Create Deadline")
+                        ),
+                      ),
+                        //   FloatingActionButton(
+                        //   onPressed: () => inputDialog(context, dialog: const UpdateDeadlineScreen()),
+                        //   backgroundColor: Colors.green,
+                        //   child: const Text("Update Deadline"),
+                        // )
+                      ]
+                  ),
+                ),
+                // Expanded(
+                //   child: Column(
+                //       children: [FloatingActionButton(
+                //           onPressed: () => inputDialog(context, dialog: const CreateReminderScreen()),
+                //           backgroundColor: Colors.pink,
+                //           child: const Text("Create Reminder")
+                //       ), FloatingActionButton(
+                //         onPressed: () => inputDialog(context, dialog: const CreateReminderScreen()),
+                //         backgroundColor: Colors.green,
+                //         child: const Text("Update Reminder"),
+                //       )]
+                //   ),
+                // ),
+                //
+                // Expanded(
+                //   child: Column(
+                //       children: [FloatingActionButton(
+                //           onPressed: () => inputDialog(context, dialog: const CreateGroupScreen()),
+                //           backgroundColor: Colors.pink,
+                //           child: const Text("Create Group")
+                //       ), FloatingActionButton(
+                //         onPressed: () => inputDialog(context, dialog: const UpdateGroupScreen()),
+                //         backgroundColor: Colors.green,
+                //         child: const Text("Update Group"),
+                //       )]
+                //   ),
+                // ),
+
+
+              ],
             ),
-            // Expanded(
-            //   child: Column(
-            //       children: [FloatingActionButton(
-            //           onPressed: () => inputDialog(context, dialog: const CreateReminderScreen()),
-            //           backgroundColor: Colors.pink,
-            //           child: const Text("Create Reminder")
-            //       ), FloatingActionButton(
-            //         onPressed: () => inputDialog(context, dialog: const CreateReminderScreen()),
-            //         backgroundColor: Colors.green,
-            //         child: const Text("Update Reminder"),
-            //       )]
-            //   ),
-            // ),
-            //
-            // Expanded(
-            //   child: Column(
-            //       children: [FloatingActionButton(
-            //           onPressed: () => inputDialog(context, dialog: const CreateGroupScreen()),
-            //           backgroundColor: Colors.pink,
-            //           child: const Text("Create Group")
-            //       ), FloatingActionButton(
-            //         onPressed: () => inputDialog(context, dialog: const UpdateGroupScreen()),
-            //         backgroundColor: Colors.green,
-            //         child: const Text("Update Group"),
-            //       )]
-            //   ),
-            // ),
-
-
-          ],
-        ),
-      ),
+          ),
+        ],
+      )),
     );
   }
 
   Future<void> inputDialog(BuildContext context, {required Widget dialog}) async  => await showDialog(
       barrierDismissible: false,
+    useRootNavigator: false,
     context: context, builder: (BuildContext context) => dialog);
 
 }

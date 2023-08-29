@@ -234,7 +234,7 @@ class DeadlineProvider extends ChangeNotifier {
     _notificationService.scheduleNotification(
         id: curDeadline!.notificationID!,
         warnDate: curDeadline!.warnDate,
-        message: "${curDeadline!.name} IS DUE: $newDue",
+        message: "${curDeadline!.name} is due: $newDue",
         payload: "DEADLINE\n${curDeadline!.notificationID}");
   }
 
