@@ -65,10 +65,6 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
   // Description
   late final TextEditingController descriptionEditingController;
 
-  // TODO: Remove. Not sure if/where this is being used.
-  final MaterialStateProperty<Icon?> completedIcon = MaterialStateProperty.resolveWith(
-      (states) => (states.contains(MaterialState.selected) ? const Icon(Icons.task_alt) : null));
-
   // Repeat
   late TextEditingController repeatSkipEditingController;
 
@@ -236,6 +232,197 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
     }
     return Constants.batteryIcons[weight]!;
   }
+
+  // TODO: this needs cleanup - errorCol can be null.
+  Future<void> handleUpdate({required BuildContext context, required Color errorColor}) async {
+    if (prevToDo.frequency != Frequency.once && checkClose) {
+      bool? updateSingle = await showModalBottomSheet<bool?>(
+          showDragHandle: true,
+          context: context,
+          builder: (BuildContext context) {
+            return StatefulBuilder(
+                builder: (context, setState) => Center(
+                    heightFactor: 1,
+                    child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.all(Constants.padding),
+                            child: FilledButton.icon(
+                                onPressed: () => Navigator.pop(context, true),
+                                label: const Text("This Event"),
+                                icon: const Icon(Icons.arrow_upward_outlined)),
+                          ),
+                          Padding(
+                              padding: const EdgeInsets.all(Constants.padding),
+                              child: FilledButton.tonalIcon(
+                                onPressed: () => Navigator.pop(context, false),
+                                label: const Text("All Future Events"),
+                                icon: const Icon(Icons.repeat_outlined),
+                              ))
+                        ])));
+          });
+      // If the modal is discarded.
+      if (null == updateSingle) {
+        return;
+      }
+
+      // TODO: Refactor error handling to something easier to read -- Like firing an event to watch in the main gui.
+      // On updating a repeating event, clear all future events
+      await toDoProvider.deleteFutures(toDo: prevToDo).catchError((e) {
+        Flushbar? error;
+
+        error = Flushbars.createError(message: e.cause,
+          context: context,
+          dismissCallback: () => error?.dismiss(),
+        );
+
+        error.show(context);
+      }, test: (e) => e is FailureToCreateException || e is FailureToUploadException);
+
+      // Updating all future events relies on deleting all future events ->
+      // They are assumed to be re-generated on the next calendar view or day passing.
+      // If only updating the one event, generate the next one in the database.
+
+      // TODO: Refactor the error handling to something easier to read.
+      if (updateSingle) {
+        prevToDo.repeatable = true;
+        // Need to sever the connection to future repeating events.
+        toDo.repeatID = toDo.hashCode;
+
+        await toDoProvider.nextRepeat(toDo: prevToDo).catchError((e) {
+          Flushbar? error;
+
+          error = Flushbars.createError(message: e.cause,
+            context: context,
+            dismissCallback: () => error?.dismiss(),
+          );
+
+          error.show(context);
+        }, test: (e) => e is FailureToCreateException || e is FailureToUploadException);
+        toDo.repeatable = false;
+      } else {
+        toDo.repeatable =
+        (toDo.frequency != Frequency.once);
+      }
+    } else {
+      toDo.repeatable =
+      (toDo.frequency != Frequency.once);
+    }
+
+    toDo.subTasks.setAll(0, cacheSubTasks);
+
+    return await toDoProvider.updateToDo().whenComplete(() {
+      Navigator.pop(context);
+    }).catchError((e) {
+      Flushbar? error;
+
+      error = Flushbars.createError(message: e.cause,
+        context: context,
+        dismissCallback: () => error?.dismiss(),
+      );
+
+      error.show(context);
+    }, test: (e) => e is FailureToCreateException || e is FailureToUploadException);
+
+  }
+
+  handleDelete({required BuildContext context, required Color errorColor}) async {
+    if (prevToDo.frequency != Frequency.once) {
+      bool? updateSingle = await showModalBottomSheet<bool?>(
+          showDragHandle: true,
+          context: context,
+          builder: (BuildContext context) {
+            return StatefulBuilder(
+                builder: (context, setState) =>
+                    Center(
+                        heightFactor: 1,
+                        child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.all(
+                                    Constants.padding),
+                                child: FilledButton.icon(
+                                    onPressed: () =>
+                                        Navigator.pop(context, true),
+                                    label: const Text("Delete This Event"),
+                                    icon: const Icon(
+                                        Icons.arrow_upward_outlined)),
+                              ),
+                              Padding(
+                                  padding: const EdgeInsets.all(
+                                      Constants.padding),
+                                  child: FilledButton.tonalIcon(
+                                    onPressed: () =>
+                                        Navigator.pop(context, false),
+                                    label: const Text("Delete All"),
+                                    icon: const Icon(Icons.repeat_outlined),
+                                  ))
+                            ])));
+          });
+      // If the modal is discarded.
+      if (null == updateSingle) {
+        return;
+      }
+
+      // TODO: Refactor error handling to something easier to read -- Like firing an event to watch in the main gui.
+      // On updating a repeating event, clear all future events
+      await toDoProvider.deleteFutures(toDo: prevToDo).catchError((e) {
+        Flushbar? error;
+
+        error = Flushbars.createError(message: e.cause,
+          context: context,
+          dismissCallback: () => error?.dismiss(),
+        );
+
+        error.show(context);
+      }, test: (e) => e is FailureToCreateException ||
+          e is FailureToUploadException);
+
+      // Updating all future events relies on deleting all future events ->
+      // They are assumed to be re-generated on the next calendar view or day passing.
+      // If only updating the one event, generate the next one in the database.
+
+      // TODO: Refactor the error handling to something easier to read.
+      if (updateSingle) {
+        prevToDo.repeatable = true;
+        // Need to sever the connection to future repeating events.
+        toDo.repeatID = toDo.hashCode;
+
+        await toDoProvider.nextRepeat(toDo: prevToDo).catchError((e) {
+          Flushbar? error;
+
+          error = Flushbars.createError(message: e.cause,
+            context: context,
+            dismissCallback: () => error?.dismiss(),
+          );
+
+          error.show(context);
+        }, test: (e) => e is FailureToCreateException ||
+            e is FailureToUploadException);
+      }
+
+
+    }
+
+    return await toDoProvider.deleteToDo().whenComplete(() {
+      Navigator.pop(context);
+    }).catchError((e) {
+      Flushbar? error;
+
+      error = Flushbars.createError(message: e.cause,
+        context: context,
+        dismissCallback: () => error?.dismiss(),
+      );
+
+      error.show(context);
+    }, test: (e) => e is FailureToCreateException ||
+        e is FailureToUploadException);
+  }
+
 
   // This should return a dialog widget.
   @override
@@ -535,7 +722,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                 // Create Button - could be a stack
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
-                  child: buildUpdateButton(context, errorColor),
+                  child: buildUpdateDeleteRow(context, errorColor),
                 )
               ]),
         ),
@@ -798,7 +985,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
               // Create Button - could be a stack
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
-                child: buildUpdateButton(context, errorColor),
+                child: buildUpdateDeleteRow(context, errorColor),
               )
             ]),
       ),
@@ -2500,113 +2687,34 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                 })));
   }
 
-  Row buildUpdateButton(BuildContext context, Color errorColor) {
+  Row buildUpdateDeleteRow(BuildContext context, Color errorColor) {
     return Row(mainAxisAlignment: MainAxisAlignment.end, children: [
-      FilledButton.icon(
-          label: const Text("Update Task"),
-          icon: const Icon(Icons.add),
-          onPressed: () async {
-            bool validData = validateData();
-            if (validData) {
-              if (prevToDo.frequency != Frequency.once && checkClose) {
-                bool? updateSingle = await showModalBottomSheet<bool?>(
-                    showDragHandle: true,
-                    context: context,
-                    builder: (BuildContext context) {
-                      return StatefulBuilder(
-                          builder: (context, setState) => Center(
-                              heightFactor: 1,
-                              child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Padding(
-                                      padding: const EdgeInsets.all(Constants.padding),
-                                      child: FilledButton.icon(
-                                          onPressed: () => Navigator.pop(context, true),
-                                          label: const Text("This Event"),
-                                          icon: const Icon(Icons.arrow_upward_outlined)),
-                                    ),
-                                    Padding(
-                                        padding: const EdgeInsets.all(Constants.padding),
-                                        child: FilledButton.tonalIcon(
-                                          onPressed: () => Navigator.pop(context, false),
-                                          label: const Text("All Future Events"),
-                                          icon: const Icon(Icons.repeat_outlined),
-                                        ))
-                                  ])));
-                    });
-                // If the modal is discarded.
-                if (null == updateSingle) {
-                  return;
-                }
-
-                // TODO: Refactor error handling to something easier to read -- Like firing an event to watch in the main gui.
-                // On updating a repeating event, clear all future events
-                await toDoProvider.deleteFutures(toDo: prevToDo).catchError((e) {
-                  Flushbar? error;
-
-                  error = Flushbars.createError(message: e.cause,
-                    context: context,
-                    dismissCallback: () => error?.dismiss(),
-                  );
-
-                  error.show(context);
-                }, test: (e) => e is FailureToCreateException || e is FailureToUploadException);
-
-                // Updating all future events relies on deleting all future events ->
-                // They are assumed to be re-generated on the next calendar view or day passing.
-                // If only updating the one event, generate the next one in the database.
-
-                // TODO: Refactor the error handling to something easier to read.
-                if (updateSingle) {
-                  prevToDo.repeatable = true;
-                  await toDoProvider.nextRepeat(toDo: prevToDo).catchError((e) {
-                    Flushbar? error;
-
-                    error = Flushbars.createError(message: e.cause,
-                      context: context,
-                      dismissCallback: () => error?.dismiss(),
-                    );
-
-                    error.show(context);
-                  }, test: (e) => e is FailureToCreateException || e is FailureToUploadException);
-                  toDo.repeatable = false;
-                } else {
-                  toDo.repeatable =
-                      (prevToDo.frequency != Frequency.once && toDo.frequency != Frequency.once);
-                }
-              } else {
-                toDo.repeatable =
-                    (prevToDo.frequency != Frequency.once && toDo.frequency != Frequency.once);
-              }
-
-              // Copy the list of cached subtasks over to preserve the order on save.
-              if (cacheSubTasks.length > toDo.subTasks.length) {
-                // This should never ever happen.
-                print("BUG! Diff: Cache | Orig");
-                print(cacheSubTasks);
-                print(toDo.subTasks);
-                cacheSubTasks.length = toDo.subTasks.length;
-              }
-
-              toDo.subTasks.setAll(0, cacheSubTasks);
-
-              await toDoProvider.updateToDo().whenComplete(() {
-                Navigator.pop(context);
-              }).catchError((e) {
-                Flushbar? error;
-
-                error = Flushbars.createError(message: e.cause,
-                  context: context,
-                  dismissCallback: () => error?.dismiss(),
-                );
-
-                error.show(context);
-              }, test: (e) => e is FailureToCreateException || e is FailureToUploadException);
-            }
-            // Then save.
-          })
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
+        child: buildDeleteButton(context, errorColor)
+      ),
+      buildUpdateButton(context: context, errorColor: errorColor),
     ]);
+  }
+
+  FilledButton buildDeleteButton(BuildContext context, Color errorColor) {
+    return FilledButton.tonalIcon(
+        label: const Text("Delete"),
+        icon: const Icon(Icons.delete_forever),
+        onPressed: () async => await handleDelete(context: context, errorColor: errorColor),
+
+      );
+  }
+
+  FilledButton buildUpdateButton({required BuildContext context, required Color errorColor}) {
+    return FilledButton.icon(
+        label: const Text("Update Task"),
+        icon: const Icon(Icons.add),
+        onPressed: () async {
+          bool validData = validateData();
+          if (validData) {
+            handleUpdate(context: context, errorColor: errorColor);}
+          // Then save.
+        });
   }
 }

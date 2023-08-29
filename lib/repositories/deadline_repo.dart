@@ -234,8 +234,33 @@ class DeadlineRepo implements DeadlineRepository {
         for (Deadline deadline in deadlines) {
           _isarClient.deadlines.put(deadline);
         }
+        // This is 100% not an ideal solution.
+        // On every sync, notifications are cancelled and then re-scheduled.
+        // FUTURE TODO: Reconsider using FCM instead. Local Linux and Windows
+        // will require a future solution.
+        resetNotifications();
+
       });
+
     });
+  }
+
+  // FUTURE TODO: Refactor this up to the provider class - > Or make implentation agnostic for the service.
+  // OR: Send a dynamic object to Notification service.
+  Future<void> resetNotifications() async{
+    await NotificationService.instance.cancelAllNotifications().whenComplete(
+        () async {
+          final List<Deadline> toSchedule = await getWarnMes();
+          for(Deadline deadline in toSchedule)
+            {
+              String newDue = Jiffy.parseFromDateTime(deadline.dueDate).toLocal().yMMMMEEEEdjm.toString();
+
+              NotificationService.instance.scheduleNotification(id: deadline.notificationID!, warnDate: deadline.warnDate, message: "${deadline.name} is due: $newDue",
+                  payload: "DEADLINE\n${deadline.notificationID}");
+            }
+
+        }
+    );
   }
 
   // Search + Most Recent
@@ -348,6 +373,17 @@ class DeadlineRepo implements DeadlineRepository {
         return getRepoList(limit: limit, offset: offset);
     }
   }
+
+
+  Future<List<Deadline>> getWarnMes({DateTime? now}) async => _isarClient.deadlines
+  .where()
+  .warnMeEqualTo(true)
+      .filter()
+  .dueDateGreaterThan(now ?? today)
+  // IOS has a hard limit of 64 notificiations.
+  .sortByDueDate().limit(64)
+      .findAll();
+
 
   @override
   Future<List<Deadline>> getRepeatables({DateTime? now}) async => _isarClient.deadlines

@@ -26,6 +26,7 @@ class Deadline with EquatableMixin implements Copyable<Deadline> {
   @Index()
   DateTime dueDate;
   DateTime warnDate;
+  @Index()
   bool warnMe;
 
   @Enumerated(EnumType.ordinal)

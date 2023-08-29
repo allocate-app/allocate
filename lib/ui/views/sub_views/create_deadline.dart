@@ -10,9 +10,6 @@ import 'package:intl/intl.dart';
 import 'package:jiffy/jiffy.dart';
 import 'package:numberpicker/numberpicker.dart';
 import 'package:provider/provider.dart';
-import 'package:timezone/data/latest_all.dart' as tz;
-import 'package:timezone/timezone.dart' as tz;
-
 import '../../../providers/deadline_provider.dart';
 import '../../../providers/user_provider.dart';
 import '../../../util/constants.dart';
@@ -21,25 +18,7 @@ import '../../../util/exceptions.dart';
 import '../../widgets/flushbars.dart';
 import '../../widgets/padded_divider.dart';
 
-/// Basic UI flow Mobile
-/// Name - ** Done
-/// WarnMe/WarnDate ** Done needs testing.
-/// Priority - ** Done.
-/// Description - ** Done.
-/// Start/Due Dates - ** Done
-/// repeatable - ** Done
-///
-/// Basic UI flow desktop
-///
-/// Left
-/// Name ** Done.
-/// Priority ** Done
-/// Warn Me / WarnDate ** Done
-///
-/// Right half (2x flex) ** Done
-/// Description ** Done
-/// Start/Due dates ** Done
-/// Repeatable ** Done
+
 
 class CreateDeadlineScreen extends StatefulWidget {
   const CreateDeadlineScreen({Key? key}) : super(key: key);

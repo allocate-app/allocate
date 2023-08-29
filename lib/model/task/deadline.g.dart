@@ -182,6 +182,19 @@ const DeadlineSchema = CollectionSchema(
         )
       ],
     ),
+    r'warnMe': IndexSchema(
+      id: -3547939783881256235,
+      name: r'warnMe',
+      unique: false,
+      replace: false,
+      properties: [
+        IndexPropertySchema(
+          name: r'warnMe',
+          type: IndexType.value,
+          caseSensitive: false,
+        )
+      ],
+    ),
     r'repeatable': IndexSchema(
       id: -187828716759116876,
       name: r'repeatable',
@@ -452,6 +465,14 @@ extension DeadlineQueryWhereSort on QueryBuilder<Deadline, Deadline, QWhere> {
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(
         const IndexWhereClause.any(indexName: r'dueDate'),
+      );
+    });
+  }
+
+  QueryBuilder<Deadline, Deadline, QAfterWhere> anyWarnMe() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(
+        const IndexWhereClause.any(indexName: r'warnMe'),
       );
     });
   }
@@ -998,6 +1019,51 @@ extension DeadlineQueryWhere on QueryBuilder<Deadline, Deadline, QWhereClause> {
         upper: [upperDueDate],
         includeUpper: includeUpper,
       ));
+    });
+  }
+
+  QueryBuilder<Deadline, Deadline, QAfterWhereClause> warnMeEqualTo(
+      bool warnMe) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'warnMe',
+        value: [warnMe],
+      ));
+    });
+  }
+
+  QueryBuilder<Deadline, Deadline, QAfterWhereClause> warnMeNotEqualTo(
+      bool warnMe) {
+    return QueryBuilder.apply(this, (query) {
+      if (query.whereSort == Sort.asc) {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'warnMe',
+              lower: [],
+              upper: [warnMe],
+              includeUpper: false,
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'warnMe',
+              lower: [warnMe],
+              includeLower: false,
+              upper: [],
+            ));
+      } else {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'warnMe',
+              lower: [warnMe],
+              includeLower: false,
+              upper: [],
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'warnMe',
+              lower: [],
+              upper: [warnMe],
+              includeUpper: false,
+            ));
+      }
     });
   }
 
