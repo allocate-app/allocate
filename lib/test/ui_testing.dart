@@ -20,6 +20,7 @@ import '../services/supabase_service.dart';
 import '../ui/views/sub_views/create_deadline.dart';
 import '../ui/views/sub_views/create_routine.dart';
 import '../ui/views/sub_views/create_todo.dart';
+import '../ui/views/sub_views/update_deadline.dart';
 import '../ui/views/sub_views/update_routine.dart';
 import '../ui/views/sub_views/update_todo.dart';
 import '../util/constants.dart';
@@ -169,65 +170,59 @@ class _FormTester extends State<FormTester> with WindowListener {
               spacing: 8.0,
               runSpacing: 8.0,
               children: [
-                Expanded(
-                  child: Column(
-                      children: [Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: FloatingActionButton(
-                            onPressed: () => inputDialog(context, dialog: const CreateToDoScreen()),
-                            backgroundColor: Colors.pink,
-                            child: const Text("Create Task")
-                        ),
-                      ), Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: FloatingActionButton(
-                          onPressed: () => inputDialog(context, dialog: (null != Provider.of<ToDoProvider>(context, listen: false).curToDo) ? const UpdateToDoScreen(): const CreateToDoScreen()),
-                          backgroundColor: Colors.green,
-                          child: const Text("Update Task"),
-                        ),
-                      )]
-                  ),
+                Column(
+                    children: [Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: FloatingActionButton(
+                          onPressed: () => inputDialog(context, dialog: const CreateToDoScreen()),
+                          backgroundColor: Colors.pink,
+                          child: const Text("Create Task")
+                      ),
+                    ), Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: FloatingActionButton(
+                        onPressed: () => inputDialog(context, dialog: (null != Provider.of<ToDoProvider>(context, listen: false).curToDo) ? const UpdateToDoScreen(): const CreateToDoScreen()),
+                        backgroundColor: Colors.green,
+                        child: const Text("Update Task"),
+                      ),
+                    )]
                 ),
 
-                Expanded(
-                  child: Column(
-                      children: [Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: FloatingActionButton(
-                            onPressed: () => inputDialog(context, dialog: const CreateRoutineScreen()),
-                            backgroundColor: Colors.pink,
-                            child: const Text("Create Routine")
-                        ),
-                      ), Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: FloatingActionButton(
-                          onPressed: () => inputDialog(context, dialog: (null != Provider.of<RoutineProvider>(context, listen: false).curRoutine) ? const UpdateRoutineScreen() : const CreateRoutineScreen()),
-                          backgroundColor: Colors.green,
-                          child: const Text("Update Routine"),
-                        ),
-                      )]
-                  ),
+                Column(
+                    children: [Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: FloatingActionButton(
+                          onPressed: () => inputDialog(context, dialog: const CreateRoutineScreen()),
+                          backgroundColor: Colors.pink,
+                          child: const Text("Create Routine")
+                      ),
+                    ), Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: FloatingActionButton(
+                        onPressed: () => inputDialog(context, dialog: (null != Provider.of<RoutineProvider>(context, listen: false).curRoutine) ? const UpdateRoutineScreen() : const CreateRoutineScreen()),
+                        backgroundColor: Colors.green,
+                        child: const Text("Update Routine"),
+                      ),
+                    )]
                 ),
 
                 // TODO: finish these
 
-                Expanded(
-                  child: Column(
-                      children: [Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: FloatingActionButton(
-                            onPressed: () => inputDialog(context, dialog: const CreateDeadlineScreen()),
-                            backgroundColor: Colors.pink,
-                            child: const Text("Create Deadline")
-                        ),
+                Column(
+                    children: [Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: FloatingActionButton(
+                          onPressed: () => inputDialog(context, dialog: const CreateDeadlineScreen()),
+                          backgroundColor: Colors.pink,
+                          child: const Text("Create Deadline")
                       ),
-                        //   FloatingActionButton(
-                        //   onPressed: () => inputDialog(context, dialog: const UpdateDeadlineScreen()),
-                        //   backgroundColor: Colors.green,
-                        //   child: const Text("Update Deadline"),
-                        // )
-                      ]
-                  ),
+                    ),
+                      FloatingActionButton(
+                        onPressed: () => inputDialog(context, dialog:(null != Provider.of<DeadlineProvider>(context, listen: false).curDeadline)?  const UpdateDeadlineScreen() : const CreateDeadlineScreen()),
+                        backgroundColor: Colors.green,
+                        child: const Text("Update Deadline"),
+                      )
+                    ]
                 ),
                 // Expanded(
                 //   child: Column(

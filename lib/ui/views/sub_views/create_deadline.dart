@@ -150,7 +150,7 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
       setState(() => nameErrorText = "Enter Task Name");
     }
 
-    if(!deadlineProvider.validateWarnDate(warnDate: warnDate))
+    if(warnMe && !deadlineProvider.validateWarnDate(warnDate: warnDate))
       {
         valid = false;
 
@@ -294,14 +294,17 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
                                                         Constants
                                                             .small)),
                                               ),
-                                              IconButton(
+                                              (null != tmpWarnDate) ? IconButton(
                                                 icon: const Icon(
-                                                    Icons.close_outlined),
+                                                    Icons.clear_outlined),
                                                 selectedIcon:
-                                                    const Icon(Icons.close),
+                                                    const Icon(Icons.clear),
                                                 onPressed: () => setState(
-                                                    () => tmpWarnDate = null),
-                                              )
+                                                    () {
+                                                      checkClose = true;
+                                                      tmpWarnDate = null;
+                                                    }),
+                                              ) : const SizedBox.shrink()
                                             ]),
                                       ),
                                     ),
@@ -371,14 +374,17 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
                                                         Constants
                                                             .small)),
                                               ),
-                                              IconButton(
+                                              (null != tmpWarnTime) ? IconButton(
                                                 icon: const Icon(
-                                                    Icons.close_outlined),
+                                                    Icons.clear_outlined),
                                                 selectedIcon:
-                                                const Icon(Icons.close),
+                                                const Icon(Icons.clear),
                                                 onPressed: () => setState(
-                                                        () => tmpWarnTime = null),
-                                              )
+                                                        () {
+                                                          checkClose = true;
+                                                          tmpWarnTime = null;
+                                                        }),
+                                              ) : const SizedBox.shrink(),
                                             ]),
                                       ),
                                     ),
@@ -459,18 +465,18 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
 
   void mergeDateTimes() {
     startDate = startDate ?? DateTime.now();
-    startTime = startTime ?? TimeOfDay.now();
+    startTime = startTime ?? Constants.midnight;
 
     startDate =
         startDate!.copyWith(hour: startTime!.hour, minute: startTime!.minute);
 
     dueDate = dueDate ?? DateTime.now();
-    dueTime = dueTime ?? TimeOfDay.now();
+    dueTime = dueTime ?? Constants.midnight;
 
     dueDate = dueDate!.copyWith(hour: dueTime!.hour, minute: dueTime!.minute);
 
     warnDate = warnDate ?? DateTime.now();
-    warnTime = warnTime ?? TimeOfDay.now();
+    warnTime = warnTime ?? Constants.eod;
     warnDate = warnDate!.copyWith(hour: warnTime!.hour, minute: warnTime!.minute);
   }
 
@@ -481,12 +487,12 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
     bool smallScreen =
         (MediaQuery.of(context).size.width <= Constants.smallScreen);
     return (largeScreen)
-        ? buildDesktopDialog(context, smallScreen)
-        : buildMobileDialog(context, smallScreen);
+        ? buildDesktopDialog(context, smallScreen, largeScreen)
+        : buildMobileDialog(context, smallScreen, largeScreen);
   }
 
   Dialog buildDesktopDialog(
-      BuildContext context, bool smallScreen) {
+      BuildContext context, bool smallScreen, bool largeScreen) {
     return Dialog(
       insetPadding: const EdgeInsets.all(Constants.outerDialogPadding),
       child: ConstrainedBox(
@@ -523,7 +529,7 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
                 ),
                 const PaddedDivider(padding: Constants.padding),
                 Expanded(
-                  flex: 2,
+                  flex: 3,
                   child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       mainAxisSize: MainAxisSize.min,
@@ -565,6 +571,12 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
                                     padding: const EdgeInsets.symmetric(
                                         horizontal: Constants.padding),
                                     child: buildDateTile(context)),
+                                const PaddedDivider(padding: Constants.innerPadding),
+
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
+                                  child: buildTimeTile(),
+                                ),
                                 const PaddedDivider(
                                     padding: Constants.innerPadding),
                                 Padding(
@@ -589,9 +601,10 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
                                   // RoutineTasks
                                   Padding(
                                     padding: const EdgeInsets.symmetric(
-                                        horizontal: Constants.innerPadding),
+                                        horizontal: Constants.innerPadding, vertical: Constants.padding),
                                     child: buildDescriptionTile(
-                                        smallScreen: smallScreen),
+                                        smallScreen: smallScreen,
+                                    largeScreen: largeScreen),
                                   ),
                                 ]),
                           ),
@@ -613,7 +626,7 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
   }
 
   Dialog buildMobileDialog(
-      BuildContext context, bool smallScreen) {
+      BuildContext context, bool smallScreen, bool largeScreen) {
     return Dialog(
       insetPadding: const EdgeInsets.symmetric(
           horizontal: Constants.outerDialogPadding,
@@ -676,7 +689,7 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
                     Padding(
                       padding: const EdgeInsets.symmetric(
                           horizontal: Constants.innerPadding),
-                      child: buildDescriptionTile(smallScreen: smallScreen),
+                      child: buildDescriptionTile(smallScreen: smallScreen, largeScreen: largeScreen),
                     ),
                     const PaddedDivider(padding: Constants.innerPadding),
 
@@ -741,6 +754,7 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
                     warnDate: warnDate,
                     warnMe: warnMe,
                     priority: priority,
+                    repeatable: frequency != Frequency.once,
                     frequency: frequency,
                     customFreq: customFreq,
                     repeatDays: weekDays,
@@ -785,12 +799,13 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
       minFontSize: Constants.medium,
       decoration: InputDecoration(
         isDense: smallScreen,
-        suffixIcon: IconButton(
+        suffixIcon: (name != "") ? IconButton(
             icon: const Icon(Icons.clear),
             onPressed: () {
+              checkClose = true;
               nameEditingController.clear();
               setState(() => name = "");
-            }),
+            }) : null,
         contentPadding: const EdgeInsets.all(Constants.innerPadding),
         border: const OutlineInputBorder(
             borderRadius:
@@ -908,13 +923,14 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
           : IconButton.outlined(
               icon: const Icon(Icons.notifications_outlined),
               onPressed: () => handleWarnDate()),
-      trailing: IconButton(
-          icon: const Icon(Icons.close),
+      trailing: (warnMe) ? IconButton(
+          icon: const Icon(Icons.clear),
           onPressed: () => setState(() {
+            checkClose = true;
                 warnDate = null;
                 warnTime = null;
                 warnMe = false;
-              })),
+              })) : null,
       onTap: () => handleWarnDate(),
     );
   }
@@ -942,13 +958,13 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
             }));
   }
 
-  AutoSizeTextField buildDescriptionTile({bool smallScreen = false}) {
+  AutoSizeTextField buildDescriptionTile({bool smallScreen = false, bool largeScreen = false}) {
     return AutoSizeTextField(
         controller: descriptionEditingController,
         maxLines: (smallScreen) ? Constants.descripMaxLinesBeforeScroll : null,
         minLines: (smallScreen)
             ? Constants.descripMinLinesMobile
-            : Constants.descripMaxLinesBeforeScroll,
+            : (largeScreen)? Constants.descripMaxLinesBeforeScroll: Constants.descripMinLinesDesktop,
         minFontSize: Constants.medium,
         decoration: InputDecoration(
           isDense: smallScreen,
@@ -1041,12 +1057,13 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
                       )
               ],
             ),
-      trailing: IconButton(
-          icon: const Icon(Icons.close),
+      trailing: (startDate != null || dueDate != null) ? IconButton(
+          icon: const Icon(Icons.clear),
           onPressed: () => setState(() {
+            checkClose = true;
                 startDate = null;
                 dueDate = null;
-              })),
+              })) : null ,
       onTap: () {
         showDialog<void>(
             context: context,
@@ -1166,11 +1183,14 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
                                                 ),
                                                 IconButton(
                                                   icon: const Icon(
-                                                      Icons.close_outlined),
+                                                      Icons.clear_outlined),
                                                   selectedIcon:
-                                                      const Icon(Icons.close),
+                                                      const Icon(Icons.clear),
                                                   onPressed: () => setState(
-                                                      () => tmpStart = null),
+                                                      () {
+                                                        checkClose = true;
+                                                        tmpStart = null;
+                                                      }),
                                                 )
                                               ]),
                                         ),
@@ -1237,14 +1257,17 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
                                                                   Constants
                                                                       .small)),
                                                 ),
-                                                IconButton(
+                                                (null != tmpDue) ? IconButton(
                                                   icon: const Icon(
-                                                      Icons.close_outlined),
+                                                      Icons.clear_outlined),
                                                   selectedIcon:
-                                                      const Icon(Icons.close),
+                                                      const Icon(Icons.clear),
                                                   onPressed: () => setState(
-                                                      () => tmpDue = null),
-                                                )
+                                                      () {
+                                                        checkClose = true;
+                                                        tmpDue = null;
+                                                      }),
+                                                ) : const SizedBox.shrink(),
                                               ]),
                                         ),
                                       ),
@@ -1588,13 +1611,14 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
                         )));
               }).then((_) => setState(() {}));
         },
-        trailing: IconButton(
-          icon: const Icon(Icons.close),
+        trailing: (null != startTime || null != dueTime) ? IconButton(
+          icon: const Icon(Icons.clear),
           onPressed: () => setState(() {
+            checkClose = true;
             startTime = null;
             dueTime = null;
           }),
-        ));
+        ): null) ;
   }
 
   ListTile buildRepeatableTile(BuildContext context,
@@ -1990,13 +2014,14 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
                 });
               }).then((_) => setState(() {}));
         },
-        trailing: IconButton(
-            icon: const Icon(Icons.close),
+        trailing: (frequency != Frequency.once) ?  IconButton(
+            icon: const Icon(Icons.clear),
             onPressed: () => setState(() {
+              checkClose = true;
                   frequency = Frequency.once;
                   customFreq = CustomFrequency.weekly;
                   weekDayList.clear();
                   repeatSkip = 1;
-                })));
+                })): null);
   }
 }

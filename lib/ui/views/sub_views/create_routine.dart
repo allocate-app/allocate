@@ -38,21 +38,18 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
   late final ScrollController subScrollControllerRight;
   late final ScrollPhysics scrollPhysics;
 
-  // Name: Build name tile widget -> Refactor out from todo class and import here.
   late String name;
   late final TextEditingController nameEditingController;
   String? nameErrorText;
 
-  // weight -> Use weight modal drawer. TODO: Refactor into modular widget after mvp.
+  // weight
   late int weight;
 
-  // ExpectedDuration & Real Duration. TODO: Refactor hour/min/sec into local variables after mvp.
-  // TODO: refactor into a completely separate widget after mvp.
+  // ExpectedDuration & Real Duration.
   late int expectedDuration;
   late int realDuration;
 
 
-  // TODO: refactor into a reusable widget.
   late final List<TextEditingController> routineTaskEditingController;
   late final List<SubTask> routineTasks;
   late int shownTasks;
@@ -778,6 +775,7 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
             secondary: IconButton(
                 icon: const Icon(Icons.delete),
                 onPressed: () => setState(() {
+                  checkClose = true;
                       SubTask st = routineTasks.removeAt(index);
                       st = SubTask();
                       routineTasks.add(st);
@@ -953,12 +951,13 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
               minFontSize: Constants.small,
               maxLines: 2,
               softWrap: true),
-      trailing: IconButton(
-          icon: const Icon(Icons.close),
+      trailing: (expectedDuration > 0) ? IconButton(
+          icon: const Icon(Icons.clear),
           onPressed: () => setState(() {
+            checkClose = true;
                 expectedDuration = 0;
                 realDuration = 0;
-              })),
+              })) : null,
       onTap: () => showDialog<int>(
           context: context,
           builder: (BuildContext context) {
@@ -1122,12 +1121,13 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
       minFontSize: Constants.medium,
       decoration: InputDecoration(
         isDense: smallScreen,
-        suffixIcon: IconButton(
+        suffixIcon: (name != "") ? IconButton(
             icon: const Icon(Icons.clear),
             onPressed: () {
+              checkClose = true;
               nameEditingController.clear();
               setState(() => name = "");
-            }),
+            }) : null,
         contentPadding: const EdgeInsets.all(Constants.innerPadding),
         border: const OutlineInputBorder(
             borderRadius: BorderRadius.all(Radius.circular(Constants.roundedCorners)),

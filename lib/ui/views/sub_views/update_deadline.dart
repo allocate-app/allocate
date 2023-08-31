@@ -47,18 +47,14 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
 
   late final TextEditingController descriptionEditingController;
 
-  // Repeatable
-  late Frequency frequency;
-  late CustomFrequency customFreq;
-
   late TextEditingController repeatSkipEditingController;
 
   Deadline get deadline => deadlineProvider.curDeadline!;
 
   late bool showStartTime;
   late bool showDueTime;
- late bool showWarnTime;
-  
+  late bool showWarnTime;
+
   @override
   void initState() {
     super.initState();
@@ -78,13 +74,12 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
   void initializeParameters() {
     checkClose = false;
     prevDeadline = deadline.copy();
-    frequency = Frequency.once;
-    customFreq = CustomFrequency.weekly;
 
-    showStartTime = Constants.midnight != TimeOfDay.fromDateTime(deadline.startDate);
-    showDueTime = Constants.midnight != TimeOfDay.fromDateTime(deadline.dueDate);
+    showStartTime =
+        Constants.midnight != TimeOfDay.fromDateTime(deadline.startDate);
+    showDueTime =
+        Constants.midnight != TimeOfDay.fromDateTime(deadline.dueDate);
     showWarnTime = true;
-
   }
 
   void initializeProviders() {
@@ -97,7 +92,7 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
     subScrollControllerLeft = ScrollController();
     subScrollControllerRight = ScrollController();
     scrollPhysics =
-    const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics());
+        const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics());
     nameEditingController = TextEditingController(text: deadline.name);
     nameEditingController.addListener(() {
       nameErrorText = null;
@@ -107,7 +102,8 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
       setState(() => deadline.name = newText);
     });
 
-    descriptionEditingController = TextEditingController(text: deadline.description);
+    descriptionEditingController =
+        TextEditingController(text: deadline.description);
     descriptionEditingController.addListener(() {
       checkClose = true;
       String newText = descriptionEditingController.text;
@@ -115,7 +111,8 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
       deadline.description = newText;
     });
 
-    repeatSkipEditingController = TextEditingController(text: deadline.repeatSkip.toString());
+    repeatSkipEditingController =
+        TextEditingController(text: deadline.repeatSkip.toString());
     repeatSkipEditingController.addListener(() {
       checkClose = true;
       String newText = descriptionEditingController.text;
@@ -125,45 +122,43 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
     });
   }
 
-  bool validateData()  {
+  bool validateData() {
     bool valid = true;
     if (nameEditingController.text.isEmpty) {
       valid = false;
       setState(() => nameErrorText = "Enter Task Name");
     }
 
-    if(!deadlineProvider.validateWarnDate(warnDate: deadline.warnDate))
-    {
+    if (deadline.warnMe && !deadlineProvider.validateWarnDate(warnDate: deadline.warnDate)) {
       valid = false;
 
       Flushbar? error;
 
-      error = Flushbars.createError(message: "Warn date must be later than present time.",
+      error = Flushbars.createError(
+        message: "Warn date must be later than present time.",
         context: context,
         dismissCallback: () => error?.dismiss(),
       );
 
       error.show(context);
-
     }
 
-
     if (deadline.frequency == Frequency.custom) {
-      if(!deadline.repeatDays.contains(true)) {
-        for(int i = 0; i < deadline.repeatDays.length; i++)
-          {
-            deadline.repeatDays[i] = prevDeadline.repeatDays[i];
-          }
+      if (!deadline.repeatDays.contains(true)) {
+        for (int i = 0; i < deadline.repeatDays.length; i++) {
+          deadline.repeatDays[i] = prevDeadline.repeatDays[i];
+        }
       }
     } else {
-      customFreq = CustomFrequency.weekly;
+      deadline.customFreq = CustomFrequency.weekly;
     }
 
     return valid;
   }
 
   void handleWarnDate() {
-    DateTime tmpWarnDate = (Constants.nullDate != deadline.warnDate)?  deadline.warnDate : null;
+    DateTime? tmpWarnDate =
+        (Constants.nullDate != deadline.warnDate) ? deadline.warnDate : null;
     TimeOfDay tmpWarnTime = TimeOfDay.fromDateTime(deadline.warnDate);
     showDialog<bool?>(
         context: context,
@@ -196,18 +191,18 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                             const Flexible(
                               child: Row(
                                 mainAxisAlignment:
-                                MainAxisAlignment.spaceBetween,
+                                    MainAxisAlignment.spaceBetween,
                                 mainAxisSize: MainAxisSize.max,
                                 children: [
                                   Flexible(
                                       child: AutoSizeText(
-                                        "Date | Time ",
-                                        style: Constants.largeHeaderStyle,
-                                        softWrap: true,
-                                        overflow: TextOverflow.visible,
-                                        maxLines: 1,
-                                        minFontSize: Constants.large,
-                                      )),
+                                    "Date | Time ",
+                                    style: Constants.largeHeaderStyle,
+                                    softWrap: true,
+                                    overflow: TextOverflow.visible,
+                                    maxLines: 1,
+                                    minFontSize: Constants.large,
+                                  )),
                                   Flexible(
                                     child: FittedBox(
                                         fit: BoxFit.fill,
@@ -223,7 +218,7 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                                   vertical: Constants.innerPadding),
                               child: Row(
                                   mainAxisAlignment:
-                                  MainAxisAlignment.spaceBetween,
+                                      MainAxisAlignment.spaceBetween,
                                   mainAxisSize: MainAxisSize.max,
                                   children: [
                                     Expanded(
@@ -238,7 +233,7 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                                         ),
                                         child: Row(
                                             mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
+                                                MainAxisAlignment.spaceBetween,
                                             mainAxisSize: MainAxisSize.max,
                                             children: [
                                               Expanded(
@@ -246,46 +241,52 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                                                     onPressed: () {
                                                       // Consider moving this to shifting focus to calendar
                                                       // using focusNode.
-                                                      if (Constants.nullDate == tmpWarnDate) {
+                                                      if (Constants.nullDate ==
+                                                          tmpWarnDate) {
                                                         setState(() =>
-                                                        tmpWarnDate =
-                                                            DateTime.now());
+                                                            tmpWarnDate =
+                                                                DateTime.now());
                                                       }
                                                     },
-                                                    child: (Constants.nullDate != tmpWarnDate)
+                                                    child: (Constants
+                                                                .nullDate !=
+                                                            tmpWarnDate)
                                                         ? AutoSizeText(
-                                                      Jiffy.parseFromDateTime(
-                                                          tmpWarnDate!)
-                                                          .format(
-                                                          pattern:
-                                                          "yMMMMd"),
-                                                      softWrap: false,
-                                                      overflow:
-                                                      TextOverflow
-                                                          .visible,
-                                                      maxLines: 1,
-                                                      minFontSize:
-                                                      Constants.small,
-                                                    )
+                                                            Jiffy.parseFromDateTime(
+                                                                    tmpWarnDate!)
+                                                                .format(
+                                                                    pattern:
+                                                                        "yMMMMd"),
+                                                            softWrap: false,
+                                                            overflow:
+                                                                TextOverflow
+                                                                    .visible,
+                                                            maxLines: 1,
+                                                            minFontSize:
+                                                                Constants.small,
+                                                          )
                                                         : const AutoSizeText(
-                                                        "Date",
-                                                        softWrap: true,
-                                                        overflow:
-                                                        TextOverflow
-                                                            .visible,
-                                                        maxLines: 1,
-                                                        minFontSize:
-                                                        Constants
-                                                            .small)),
+                                                            "Date",
+                                                            softWrap: true,
+                                                            overflow:
+                                                                TextOverflow
+                                                                    .visible,
+                                                            maxLines: 1,
+                                                            minFontSize:
+                                                                Constants
+                                                                    .small)),
                                               ),
-                                              IconButton(
+                                              (Constants.nullDate != tmpWarnDate) ? IconButton(
                                                 icon: const Icon(
-                                                    Icons.close_outlined),
+                                                    Icons.clear_outlined),
                                                 selectedIcon:
-                                                const Icon(Icons.close),
-                                                onPressed: () => setState(
-                                                        () => tmpWarnDate = Constants.nullDate),
-                                              )
+                                                    const Icon(Icons.clear),
+                                                onPressed: () => setState(() {
+                                                  checkClose = true;
+                                                  tmpWarnDate =
+                                                        Constants.nullDate;
+                                                }),
+                                              ) : const SizedBox.shrink()
                                             ]),
                                       ),
                                     ),
@@ -313,59 +314,61 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                                         ),
                                         child: Row(
                                             mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
+                                                MainAxisAlignment.spaceBetween,
                                             mainAxisSize: MainAxisSize.min,
                                             children: [
                                               Expanded(
                                                 child: TextButton(
                                                     onPressed: () async {
                                                       final TimeOfDay? picked =
-                                                      await showTimePicker(
+                                                          await showTimePicker(
                                                         context: context,
                                                         initialTime:
-                                                        tmpWarnTime,
+                                                            tmpWarnTime,
                                                       );
                                                       if (null != picked) {
                                                         setState(() {
-                                                          tmpWarnTime =
-                                                            picked;
+                                                          tmpWarnTime = picked;
                                                           showWarnTime = true;
                                                         });
                                                       }
                                                     },
                                                     child: (showWarnTime)
                                                         ? AutoSizeText(
-                                                      tmpWarnTime.format(context).toString(),
-                                                      softWrap: false,
-                                                      overflow:
-                                                      TextOverflow
-                                                          .visible,
-                                                      maxLines: 1,
-                                                      minFontSize:
-                                                      Constants.small,
-                                                    )
+                                                            tmpWarnTime
+                                                                .format(context)
+                                                                .toString(),
+                                                            softWrap: false,
+                                                            overflow:
+                                                                TextOverflow
+                                                                    .visible,
+                                                            maxLines: 1,
+                                                            minFontSize:
+                                                                Constants.small,
+                                                          )
                                                         : const AutoSizeText(
-                                                        "Time",
-                                                        softWrap: true,
-                                                        overflow:
-                                                        TextOverflow
-                                                            .visible,
-                                                        maxLines: 1,
-                                                        minFontSize:
-                                                        Constants
-                                                            .small)),
+                                                            "Time",
+                                                            softWrap: true,
+                                                            overflow:
+                                                                TextOverflow
+                                                                    .visible,
+                                                            maxLines: 1,
+                                                            minFontSize:
+                                                                Constants
+                                                                    .small)),
                                               ),
-                                              IconButton(
+                                              (showWarnTime) ? IconButton(
                                                 icon: const Icon(
-                                                    Icons.close_outlined),
+                                                    Icons.clear_outlined),
                                                 selectedIcon:
-                                                const Icon(Icons.close),
-                                                onPressed: () => setState(
-                                                        () {
-                                                          tmpWarnTime = Constants.midnight;
-                                                          showWarnTime = false;
-                                                        }),
-                                              )
+                                                    const Icon(Icons.clear),
+                                                onPressed: () => setState(() {
+                                                  checkClose = true;
+                                                  tmpWarnTime =
+                                                      Constants.midnight;
+                                                  showWarnTime = false;
+                                                }),
+                                              ) : const SizedBox.shrink()
                                             ]),
                                       ),
                                     ),
@@ -381,21 +384,22 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                                   CalendarDatePicker2(
                                       config: CalendarDatePicker2Config(
                                         calendarType:
-                                        CalendarDatePicker2Type.single,
+                                            CalendarDatePicker2Type.single,
                                         firstDate: DateTime(1970),
                                         lastDate: DateTime(3000),
                                       ),
                                       value: [tmpWarnDate],
                                       onValueChanged: (dates) {
                                         setState(() {
-                                          tmpWarnDate = dates.firstOrNull ?? Constants.nullDate;
+                                          tmpWarnDate = dates.firstOrNull ??
+                                              Constants.nullDate;
                                         });
                                       }),
                                 ]),
 
                             Row(
                                 mainAxisAlignment:
-                                MainAxisAlignment.spaceBetween,
+                                    MainAxisAlignment.spaceBetween,
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Expanded(
@@ -404,7 +408,7 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                                           right: Constants.padding),
                                       child: FilledButton.tonalIcon(
                                           icon:
-                                          const Icon(Icons.close_outlined),
+                                              const Icon(Icons.close_outlined),
                                           onPressed: () =>
                                               Navigator.pop(context, false),
                                           label: const AutoSizeText("Cancel",
@@ -436,48 +440,223 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
         }).then((setFields) {
       setState(() {
         if (setFields ?? false) {
-          deadline.warnDate = tmpWarnDate.copyWith(hour: tmpWarnTime.hour, minute: tmpWarnTime.minute);
+          deadline.warnDate = tmpWarnDate ?? Constants.nullDate;
           deadline.warnMe = (Constants.nullDate != deadline.warnDate);
+          deadline.warnDate = deadline.warnDate
+              .copyWith(hour: tmpWarnTime.hour, minute: tmpWarnTime.minute);
         }
       });
     });
   }
 
-  // void mergeDateTimes() {
-  //   startDate = startDate ?? DateTime.now();
-  //   startTime = startTime ?? TimeOfDay.now();
-  //
-  //   startDate =
-  //       startDate!.copyWith(hour: startTime!.hour, minute: startTime!.minute);
-  //
-  //   dueDate = dueDate ?? DateTime.now();
-  //   dueTime = dueTime ?? TimeOfDay.now();
-  //
-  //   dueDate = dueDate!.copyWith(hour: dueTime!.hour, minute: dueTime!.minute);
-  //
-  //   warnDate = warnDate ?? DateTime.now();
-  //   warnTime = warnTime ?? TimeOfDay.now();
-  //   warnDate = warnDate!.copyWith(hour: warnTime!.hour, minute: warnTime!.minute);
-  // }
+  Future<void> handleUpdate({required BuildContext context, required Color errorColor}) async {
+    if (prevDeadline.frequency != Frequency.once && checkClose) {
+      bool? updateSingle = await showModalBottomSheet<bool?>(
+          showDragHandle: true,
+          context: context,
+          builder: (BuildContext context) {
+            return StatefulBuilder(
+                builder: (context, setState) => Center(
+                    heightFactor: 1,
+                    child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.all(Constants.padding),
+                            child: FilledButton.icon(
+                                onPressed: () => Navigator.pop(context, true),
+                                label: const Text("This Event"),
+                                icon: const Icon(Icons.arrow_upward_outlined)),
+                          ),
+                          Padding(
+                              padding: const EdgeInsets.all(Constants.padding),
+                              child: FilledButton.tonalIcon(
+                                onPressed: () => Navigator.pop(context, false),
+                                label: const Text("All Future Events"),
+                                icon: const Icon(Icons.repeat_outlined),
+                              ))
+                        ])));
+          });
+      // If the modal is discarded.
+      if (null == updateSingle) {
+        return;
+      }
+
+      // TODO: Refactor error handling to something easier to read -- Like firing an event to watch in the main gui.
+      // On updating a repeating event, clear all future events
+      await deadlineProvider.deleteFutures(deadline: prevDeadline).catchError((e) {
+        Flushbar? error;
+
+        error = Flushbars.createError(message: e.cause,
+          context: context,
+          dismissCallback: () => error?.dismiss(),
+        );
+
+        error.show(context);
+      }, test: (e) => e is FailureToDeleteException);
+
+      // Updating all future events relies on deleting all future events ->
+      // They are assumed to be re-generated on the next calendar view or day passing.
+      // If only updating the one event, generate the next one in the database.
+
+      // TODO: Refactor the error handling to something easier to read.
+      if (updateSingle) {
+        prevDeadline.repeatable = true;
+        // Need to sever the connection to future repeating events.
+        deadline.repeatID = deadline.hashCode;
+
+        await deadlineProvider.nextRepeat(deadline: prevDeadline).catchError((e) {
+          Flushbar? error;
+
+          error = Flushbars.createError(message: e.cause,
+            context: context,
+            dismissCallback: () => error?.dismiss(),
+          );
+
+          error.show(context);
+        }, test: (e) => e is FailureToCreateException || e is FailureToUploadException);
+        deadline.repeatable = false;
+      } else {
+        deadline.repeatable =
+        (deadline.frequency != Frequency.once);
+      }
+    } else {
+      deadline.repeatable =
+      (deadline.frequency != Frequency.once);
+    }
+
+    return await deadlineProvider.updateDeadline().whenComplete(() {
+      Navigator.pop(context);
+    }).catchError((e) {
+      Flushbar? error;
+
+      error = Flushbars.createError(message: e.cause,
+        context: context,
+        dismissCallback: () => error?.dismiss(),
+      );
+
+      error.show(context);
+    }, test: (e) => e is FailureToCreateException || e is FailureToUploadException);
+
+  }
+
+  handleDelete({required BuildContext context, required Color errorColor}) async {
+    if (prevDeadline.frequency != Frequency.once) {
+      bool? updateSingle = await showModalBottomSheet<bool?>(
+          showDragHandle: true,
+          context: context,
+          builder: (BuildContext context) {
+            return StatefulBuilder(
+                builder: (context, setState) =>
+                    Center(
+                        heightFactor: 1,
+                        child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.all(
+                                    Constants.padding),
+                                child: FilledButton.icon(
+                                    onPressed: () =>
+                                        Navigator.pop(context, true),
+                                    label: const Text("Delete This Event"),
+                                    icon: const Icon(
+                                        Icons.arrow_upward_outlined)),
+                              ),
+                              Padding(
+                                  padding: const EdgeInsets.all(
+                                      Constants.padding),
+                                  child: FilledButton.tonalIcon(
+                                    onPressed: () =>
+                                        Navigator.pop(context, false),
+                                    label: const Text("Delete All"),
+                                    icon: const Icon(Icons.repeat_outlined),
+                                  ))
+                            ])));
+          });
+      // If the modal is discarded.
+      if (null == updateSingle) {
+        return;
+      }
+
+      // TODO: Refactor error handling to something easier to read -- Like firing an event to watch in the main gui.
+      // On updating a repeating event, clear all future events
+      await deadlineProvider.deleteFutures(deadline: prevDeadline).catchError((e) {
+        Flushbar? error;
+
+        error = Flushbars.createError(message: e.cause,
+          context: context,
+          dismissCallback: () => error?.dismiss(),
+        );
+
+        error.show(context);
+      }, test: (e) => e is FailureToDeleteException);
+
+      // Updating all future events relies on deleting all future events ->
+      // They are assumed to be re-generated on the next calendar view or day passing.
+      // If only updating the one event, generate the next one in the database.
+
+      // TODO: Refactor the error handling to something easier to read.
+      if (updateSingle) {
+        prevDeadline.repeatable = true;
+        // Need to sever the connection to future repeating events.
+        deadline.repeatID = deadline.hashCode;
+
+        await deadlineProvider.nextRepeat(deadline: prevDeadline).catchError((e) {
+          Flushbar? error;
+
+          error = Flushbars.createError(message: e.cause,
+            context: context,
+            dismissCallback: () => error?.dismiss(),
+          );
+
+          error.show(context);
+        }, test: (e) => e is FailureToCreateException ||
+            e is FailureToUploadException);
+      }
+
+
+    }
+
+    return await deadlineProvider.deleteDeadline().whenComplete(() {
+      Navigator.pop(context);
+    }).catchError((e) {
+      Flushbar? error;
+
+      error = Flushbars.createError(message: e.cause,
+        context: context,
+        dismissCallback: () => error?.dismiss(),
+      );
+
+      error.show(context);
+    }, test: (e) => e is FailureToCreateException ||
+        e is FailureToUploadException);
+  }
 
   @override
   Widget build(BuildContext context) {
     bool largeScreen =
-    (MediaQuery.of(context).size.width >= Constants.largeScreen);
+        (MediaQuery.of(context).size.width >= Constants.largeScreen);
     bool smallScreen =
-    (MediaQuery.of(context).size.width <= Constants.smallScreen);
+        (MediaQuery.of(context).size.width <= Constants.smallScreen);
+
+    // This is kind of dank.
+    final Color errorColor = Theme.of(context).colorScheme.error;
+
     return (largeScreen)
-        ? buildDesktopDialog(context, smallScreen)
-        : buildMobileDialog(context, smallScreen);
+        ? buildDesktopDialog(context, smallScreen, largeScreen, errorColor)
+        : buildMobileDialog(context, smallScreen, largeScreen, errorColor);
   }
 
   Dialog buildDesktopDialog(
-      BuildContext context, bool smallScreen) {
+      BuildContext context, bool smallScreen, bool largeScreen, Color errorColor) {
     return Dialog(
       insetPadding: const EdgeInsets.all(Constants.outerDialogPadding),
       child: ConstrainedBox(
         constraints:
-        const BoxConstraints(maxHeight: Constants.maxLandscapeDialogHeight),
+            const BoxConstraints(maxHeight: Constants.maxLandscapeDialogHeight),
         child: Padding(
           padding: const EdgeInsets.all(Constants.padding),
           child: Column(
@@ -495,7 +674,7 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                         children: [
                           const Flexible(
                             child: AutoSizeText(
-                              "New Deadline",
+                              "Update Deadline",
                               overflow: TextOverflow.visible,
                               style: Constants.headerStyle,
                               minFontSize: Constants.medium,
@@ -509,7 +688,7 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                 ),
                 const PaddedDivider(padding: Constants.padding),
                 Expanded(
-                  flex: 2,
+                  flex: 3,
                   child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       mainAxisSize: MainAxisSize.min,
@@ -527,7 +706,7 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                                   padding: const EdgeInsets.symmetric(
                                       horizontal: Constants.padding),
                                   child:
-                                  buildNameTile(smallScreen: smallScreen),
+                                      buildNameTile(smallScreen: smallScreen),
                                 ),
                                 const PaddedDivider(
                                     padding: Constants.innerPadding),
@@ -543,7 +722,8 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                                 Padding(
                                   padding: const EdgeInsets.symmetric(
                                       horizontal: Constants.padding),
-                                  child: buildWarnMeTile(smallScreen: smallScreen),
+                                  child:
+                                      buildWarnMeTile(smallScreen: smallScreen),
                                 ),
                                 const PaddedDivider(
                                     padding: Constants.innerPadding),
@@ -551,6 +731,14 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                                     padding: const EdgeInsets.symmetric(
                                         horizontal: Constants.padding),
                                     child: buildDateTile(context)),
+                                const PaddedDivider(
+                                    padding: Constants.innerPadding),
+
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: Constants.padding),
+                                  child: buildTimeTile(),
+                                ),
                                 const PaddedDivider(
                                     padding: Constants.innerPadding),
                                 Padding(
@@ -575,9 +763,11 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                                   // RoutineTasks
                                   Padding(
                                     padding: const EdgeInsets.symmetric(
-                                        horizontal: Constants.innerPadding),
+                                        horizontal: Constants.innerPadding,
+                                        vertical: Constants.padding),
                                     child: buildDescriptionTile(
-                                        smallScreen: smallScreen),
+                                        smallScreen: smallScreen,
+                                    largeScreen: largeScreen),
                                   ),
                                 ]),
                           ),
@@ -589,8 +779,9 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                 // Create Button - could be a stack
                 Padding(
                   padding:
-                  const EdgeInsets.symmetric(horizontal: Constants.padding),
-                  child: buildUpdateButton(context),
+                      const EdgeInsets.symmetric(horizontal: Constants.padding),
+                  child: buildUpdateDeleteRow(
+                      context: context, errorColor: errorColor),
                 )
               ]),
         ),
@@ -599,7 +790,7 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
   }
 
   Dialog buildMobileDialog(
-      BuildContext context, bool smallScreen) {
+      BuildContext context, bool smallScreen, bool largeScreen, Color errorColor) {
     return Dialog(
       insetPadding: const EdgeInsets.symmetric(
           horizontal: Constants.outerDialogPadding,
@@ -613,13 +804,13 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
               // Title && Close Button
               Padding(
                 padding:
-                const EdgeInsets.symmetric(horizontal: Constants.padding),
+                    const EdgeInsets.symmetric(horizontal: Constants.padding),
                 child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       const Flexible(
                         child: AutoSizeText(
-                          "New Deadline",
+                          "Update Deadline",
                           overflow: TextOverflow.visible,
                           style: Constants.headerStyle,
                           minFontSize: Constants.medium,
@@ -662,7 +853,7 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                     Padding(
                       padding: const EdgeInsets.symmetric(
                           horizontal: Constants.innerPadding),
-                      child: buildDescriptionTile(smallScreen: smallScreen),
+                      child: buildDescriptionTile(smallScreen: smallScreen, largeScreen: largeScreen),
                     ),
                     const PaddedDivider(padding: Constants.innerPadding),
 
@@ -696,61 +887,47 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
               // Create Button - could be a stack
               Padding(
                 padding:
-                const EdgeInsets.symmetric(horizontal: Constants.padding),
-                child: buildUpdateButton(context),
+                    const EdgeInsets.symmetric(horizontal: Constants.padding),
+                child: buildUpdateDeleteRow(
+                    context: context, errorColor: errorColor),
               )
             ]),
       ),
     );
   }
 
-  Row buildUpdateButton(BuildContext context) {
+  Row buildUpdateDeleteRow(
+      {required BuildContext context, required Color errorColor}) {
     return Row(mainAxisAlignment: MainAxisAlignment.end, children: [
-      FilledButton.icon(
-          label: const Text("Update Deadline"),
-          icon: const Icon(Icons.add),
-          onPressed: () async {
-            // WarnMe needs to be merged before validation.
-            mergeDateTimes();
-            bool validData = validateData();
-            if (validData) {
-              for (int index in weekDayList) {
-                weekDays[index] = true;
-              }
-
-              await deadlineProvider
-                  .createDeadline(
-                name: name,
-                description: description,
-                startDate: startDate,
-                dueDate: dueDate,
-                warnDate: warnDate,
-                warnMe: warnMe,
-                priority: priority,
-                frequency: frequency,
-                customFreq: customFreq,
-                repeatDays: weekDays,
-                repeatSkip: repeatSkip,
-              )
-                  .then((value) => Navigator.pop(context))
-                  .catchError((e) {
-
-                Flushbar? error;
-
-                error = Flushbars.createError(message: e.cause,
-                  context: context,
-                  dismissCallback: () => error?.dismiss(),
-                );
-
-                error.show(context);
-              },
-                  test: (e) =>
-                  e is FailureToCreateException ||
-                      e is FailureToUploadException);
-            }
-            // Then save.
-          })
+      Padding(
+          padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
+          child: buildDeleteButton(context: context, errorColor: errorColor)),
+      buildUpdateButton(context: context, errorColor: errorColor),
     ]);
+  }
+
+  FilledButton buildDeleteButton(
+      {required BuildContext context, required Color errorColor}) {
+    return FilledButton.tonalIcon(
+      label: const Text("Delete"),
+      icon: const Icon(Icons.delete_forever),
+      onPressed: () async =>
+          await handleDelete(context: context, errorColor: errorColor),
+    );
+  }
+
+  FilledButton buildUpdateButton(
+      {required BuildContext context, required Color errorColor}) {
+    return FilledButton.icon(
+        label: const Text("Update Deadline"),
+        icon: const Icon(Icons.add),
+        onPressed: () async {
+          bool validData = validateData();
+          if (validData) {
+            handleUpdate(context: context, errorColor: errorColor);
+          }
+          // Then save.
+        });
   }
 
   Row buildNameTile({bool smallScreen = false}) {
@@ -758,9 +935,9 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
       children: [
         Expanded(
             child: Padding(
-              padding: const EdgeInsets.all(Constants.padding),
-              child: buildDeadlineName(smallScreen: smallScreen),
-            )),
+          padding: const EdgeInsets.all(Constants.padding),
+          child: buildDeadlineName(smallScreen: smallScreen),
+        )),
       ],
     );
   }
@@ -771,16 +948,16 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
       minFontSize: Constants.medium,
       decoration: InputDecoration(
         isDense: smallScreen,
-        suffixIcon: IconButton(
+        suffixIcon: (deadline.name != "") ? IconButton(
             icon: const Icon(Icons.clear),
             onPressed: () {
               nameEditingController.clear();
-              setState(() => name = "");
-            }),
+              setState(() => deadline.name = "");
+            }) : null,
         contentPadding: const EdgeInsets.all(Constants.innerPadding),
         border: const OutlineInputBorder(
             borderRadius:
-            BorderRadius.all(Radius.circular(Constants.roundedCorners)),
+                BorderRadius.all(Radius.circular(Constants.roundedCorners)),
             borderSide: BorderSide(
               strokeAlign: BorderSide.strokeAlignOutside,
             )),
@@ -818,7 +995,7 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                             ),
                             Padding(
                                 padding:
-                                const EdgeInsets.all(Constants.padding),
+                                    const EdgeInsets.all(Constants.padding),
                                 child: FilledButton.tonalIcon(
                                   onPressed: () =>
                                       Navigator.pop(context, false),
@@ -844,63 +1021,66 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
   }
 
   ListTile buildWarnMeTile({bool smallScreen = false}) {
+    TimeOfDay warnTime = TimeOfDay.fromDateTime(deadline.warnDate);
     return ListTile(
-      title: (warnMe && null != warnDate)
+      title: (deadline.warnMe && Constants.nullDate != deadline.warnDate)
           ? Row(children: [
-        const Flexible(
-          child: Icon(Icons.event_outlined),
-        ),
-        Flexible(
-          child: Padding(
-            padding:
-            const EdgeInsets.symmetric(horizontal: Constants.padding),
-            child: AutoSizeText(
-                Jiffy.parseFromDateTime(warnDate!)
-                    .format(pattern: "MMM d"),
-                softWrap: true,
-                overflow: TextOverflow.visible,
-                maxLines: 1,
-                minFontSize: Constants.small),
-          ),
-        ),
-        (null != warnTime && !smallScreen)
-            ? Flexible(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(
-                horizontal: Constants.padding),
-            child: AutoSizeText(
-              "@ ${warnTime!.format(context).toString()}",
+              const Flexible(
+                child: Icon(Icons.event_outlined),
+              ),
+              Flexible(
+                child: Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: Constants.padding),
+                  child: AutoSizeText(
+                      Jiffy.parseFromDateTime(deadline.warnDate)
+                          .format(pattern: "MMM d"),
+                      softWrap: true,
+                      overflow: TextOverflow.visible,
+                      maxLines: 1,
+                      minFontSize: Constants.small),
+                ),
+              ),
+              (showWarnTime && !smallScreen)
+                  ? Flexible(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: Constants.padding),
+                        child: AutoSizeText(
+                          "@ ${warnTime.format(context).toString()}",
+                          overflow: TextOverflow.visible,
+                          softWrap: true,
+                          minFontSize: Constants.medium,
+                          maxLines: 2,
+                        ),
+                      ),
+                    )
+                  : const SizedBox.shrink(),
+            ])
+          : const AutoSizeText(
+              "Warn me?",
               overflow: TextOverflow.visible,
               softWrap: true,
               minFontSize: Constants.medium,
               maxLines: 2,
             ),
-          ),
-        )
-            : const SizedBox.shrink(),
-      ])
-          : const AutoSizeText(
-        "Warn me?",
-        overflow: TextOverflow.visible,
-        softWrap: true,
-        minFontSize: Constants.medium,
-        maxLines: 2,
-      ),
-      leading: (warnMe)
+      leading: (deadline.warnMe)
           ? IconButton.filledTonal(
-        icon: const Icon(Icons.notifications),
-        onPressed: () => handleWarnDate(),
-      )
+              icon: const Icon(Icons.notifications),
+              onPressed: () => handleWarnDate(),
+            )
           : IconButton.outlined(
-          icon: const Icon(Icons.notifications_outlined),
-          onPressed: () => handleWarnDate()),
-      trailing: IconButton(
-          icon: const Icon(Icons.close),
+              icon: const Icon(Icons.notifications_outlined),
+              onPressed: () => handleWarnDate()),
+      trailing: (deadline.warnMe)?IconButton(
+          icon: const Icon(Icons.clear),
           onPressed: () => setState(() {
-            warnDate = null;
-            warnTime = null;
-            warnMe = false;
-          })),
+            checkClose = false;
+                deadline.warnDate = Constants.nullDate.copyWith(
+                    hour: Constants.midnight.hour,
+                    minute: Constants.midnight.minute);
+                deadline.warnMe = false;
+              })) : null,
       onTap: () => handleWarnDate(),
     );
   }
@@ -914,27 +1094,27 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
         ),
         segments: Priority.values
             .map((Priority type) => ButtonSegment<Priority>(
-            icon: Constants.priorityIcon[type],
-            value: type,
-            label: Text("${toBeginningOfSentenceCase(type.name)}",
-                softWrap: false,
-                overflow: TextOverflow.fade,
-                style: (smallScreen) ? Constants.minBodyText : null)))
+                icon: Constants.priorityIcon[type],
+                value: type,
+                label: Text("${toBeginningOfSentenceCase(type.name)}",
+                    softWrap: false,
+                    overflow: TextOverflow.fade,
+                    style: (smallScreen) ? Constants.minBodyText : null)))
             .toList(growable: false),
-        selected: <Priority>{priority},
+        selected: <Priority>{deadline.priority},
         onSelectionChanged: (Set<Priority> newSelection) => setState(() {
-          checkClose = true;
-          priority = newSelection.first;
-        }));
+              checkClose = true;
+              deadline.priority = newSelection.first;
+            }));
   }
 
-  AutoSizeTextField buildDescriptionTile({bool smallScreen = false}) {
+  AutoSizeTextField buildDescriptionTile({bool smallScreen = false, bool largeScreen = false}) {
     return AutoSizeTextField(
         controller: descriptionEditingController,
         maxLines: (smallScreen) ? Constants.descripMaxLinesBeforeScroll : null,
         minLines: (smallScreen)
             ? Constants.descripMinLinesMobile
-            : Constants.descripMaxLinesBeforeScroll,
+            : (largeScreen)? Constants.descripMaxLinesBeforeScroll : Constants.descripMinLinesDesktop,
         minFontSize: Constants.medium,
         decoration: InputDecoration(
           isDense: smallScreen,
@@ -942,7 +1122,7 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
           hintText: "Description",
           border: const OutlineInputBorder(
               borderRadius:
-              BorderRadius.all(Radius.circular(Constants.roundedCorners)),
+                  BorderRadius.all(Radius.circular(Constants.roundedCorners)),
               borderSide: BorderSide(
                 strokeAlign: BorderSide.strokeAlignOutside,
               )),
@@ -952,93 +1132,103 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
   ListTile buildDateTile(BuildContext context) {
     return ListTile(
       leading: const Icon(Icons.today_outlined),
-      title: (null == startDate && null == dueDate)
+      title: (Constants.nullDate == deadline.startDate &&
+              Constants.nullDate == deadline.dueDate)
           ? const AutoSizeText(
-        "Add Dates",
-        softWrap: true,
-        overflow: TextOverflow.visible,
-        maxLines: 2,
-        minFontSize: Constants.small,
-      )
+              "Add Dates",
+              softWrap: true,
+              overflow: TextOverflow.visible,
+              maxLines: 2,
+              minFontSize: Constants.small,
+            )
           : Row(
-        children: [
-          (null == startDate)
-              ? const Flexible(
-            child: AutoSizeText(
-              "Start Date",
-              softWrap: true,
-              overflow: TextOverflow.visible,
-              maxLines: 2,
-              minFontSize: Constants.small,
-            ),
-          )
-              : Flexible(
-              child: AutoSizeText(
-                  Jiffy.parseFromDateTime(startDate!).format(
-                    pattern: "MMM d",
+              children: [
+                (Constants.nullDate == deadline.startDate)
+                    ? const Flexible(
+                        child: AutoSizeText(
+                          "Start Date",
+                          softWrap: true,
+                          overflow: TextOverflow.visible,
+                          maxLines: 2,
+                          minFontSize: Constants.small,
+                        ),
+                      )
+                    : Flexible(
+                        child: AutoSizeText(
+                            Jiffy.parseFromDateTime(deadline.startDate).format(
+                              pattern: "MMM d",
+                            ),
+                            softWrap: true,
+                            overflow: TextOverflow.visible,
+                            maxLines: 2,
+                            minFontSize: Constants.small)),
+                const Flexible(
+                  child: Padding(
+                    padding:
+                        EdgeInsets.symmetric(horizontal: Constants.padding),
+                    child: AutoSizeText(
+                      "-",
+                      softWrap: false,
+                      overflow: TextOverflow.visible,
+                      maxLines: 1,
+                      minFontSize: Constants.small,
+                    ),
                   ),
-                  softWrap: true,
-                  overflow: TextOverflow.visible,
-                  maxLines: 2,
-                  minFontSize: Constants.small)),
-          const Flexible(
-            child: Padding(
-              padding:
-              EdgeInsets.symmetric(horizontal: Constants.padding),
-              child: AutoSizeText(
-                "-",
-                softWrap: false,
-                overflow: TextOverflow.visible,
-                maxLines: 1,
-                minFontSize: Constants.small,
-              ),
+                ),
+                (Constants.nullDate == deadline.dueDate)
+                    ? const Flexible(
+                        child: Padding(
+                          padding: EdgeInsets.only(right: Constants.padding),
+                          child: Flexible(child: Icon(Icons.today_outlined)),
+                        ),
+                      )
+                    : const Flexible(
+                        child: Padding(
+                        padding: EdgeInsets.only(right: Constants.padding),
+                        child: Icon(Icons.event_outlined),
+                      )),
+                (Constants.nullDate == deadline.dueDate)
+                    ? const Flexible(
+                        child: AutoSizeText(
+                          "Due Date",
+                          softWrap: true,
+                          overflow: TextOverflow.visible,
+                          maxLines: 2,
+                          minFontSize: Constants.small,
+                        ),
+                      )
+                    : Flexible(
+                        child: AutoSizeText(
+                            Jiffy.parseFromDateTime(deadline.dueDate)
+                                .format(pattern: "MMM d"),
+                            softWrap: true,
+                            overflow: TextOverflow.visible,
+                            maxLines: 2,
+                            minFontSize: Constants.small),
+                      )
+              ],
             ),
-          ),
-          (null == dueDate)
-              ? const Flexible(
-            child: Padding(
-              padding: EdgeInsets.only(right: Constants.padding),
-              child: Flexible(child: Icon(Icons.today_outlined)),
-            ),
-          )
-              : const Flexible(
-              child: Padding(
-                padding: EdgeInsets.only(right: Constants.padding),
-                child: Icon(Icons.event_outlined),
-              )),
-          (null == dueDate)
-              ? const Flexible(
-            child: AutoSizeText(
-              "Due Date",
-              softWrap: true,
-              overflow: TextOverflow.visible,
-              maxLines: 2,
-              minFontSize: Constants.small,
-            ),
-          )
-              : Flexible(
-            child: AutoSizeText(
-                Jiffy.parseFromDateTime(dueDate!)
-                    .format(pattern: "MMM d"),
-                softWrap: true,
-                overflow: TextOverflow.visible,
-                maxLines: 2,
-                minFontSize: Constants.small),
-          )
-        ],
-      ),
-      trailing: IconButton(
-          icon: const Icon(Icons.close),
+      trailing: (Constants.nullDate != deadline.startDate.copyWith(hour: Constants.midnight.hour, minute: Constants.midnight.minute) || Constants.nullDate != deadline.dueDate.copyWith(hour: Constants.midnight.hour, minute: Constants.midnight.minute)) ? IconButton(
+          icon: const Icon(Icons.clear),
           onPressed: () => setState(() {
-            startDate = null;
-            dueDate = null;
-          })),
+            checkClose = true;
+                deadline.startDate = Constants.nullDate.copyWith(
+                    hour: deadline.dueDate.hour,
+                    minute: deadline.dueDate.minute);
+                deadline.dueDate = Constants.nullDate.copyWith(
+                    hour: deadline.dueDate.hour,
+                    minute: deadline.dueDate.minute);
+              })): null,
       onTap: () {
         showDialog<void>(
             context: context,
             builder: (BuildContext context) {
-              DateTime? tmpStart = startDate;
-              DateTime? tmpDue = dueDate;
+              DateTime? tmpStart = (Constants.nullDate != deadline.startDate)
+                  ? deadline.startDate
+                  : null;
+              DateTime? tmpDue = (Constants.nullDate != deadline.dueDate)
+                  ? deadline.dueDate
+                  : null;
               DateTime initDate = tmpStart ?? tmpDue ?? DateTime.now();
               bool setStart = false;
               final int numDays =
@@ -1049,7 +1239,7 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
               // List ->
               return StatefulBuilder(
                   builder: (context, setState) => Dialog(
-                      child: Padding(
+                          child: Padding(
                         padding: const EdgeInsets.all(Constants.innerPadding),
                         child: Column(
                             mainAxisSize: MainAxisSize.min,
@@ -1073,18 +1263,18 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                               const Flexible(
                                 child: Row(
                                   mainAxisAlignment:
-                                  MainAxisAlignment.spaceBetween,
+                                      MainAxisAlignment.spaceBetween,
                                   mainAxisSize: MainAxisSize.max,
                                   children: [
                                     Flexible(
                                         child: AutoSizeText(
-                                          "Start | Due ",
-                                          style: Constants.largeHeaderStyle,
-                                          softWrap: true,
-                                          overflow: TextOverflow.visible,
-                                          maxLines: 1,
-                                          minFontSize: Constants.large,
-                                        )),
+                                      "Start | Due ",
+                                      style: Constants.largeHeaderStyle,
+                                      softWrap: true,
+                                      overflow: TextOverflow.visible,
+                                      maxLines: 1,
+                                      minFontSize: Constants.large,
+                                    )),
                                     Flexible(
                                       child: FittedBox(
                                           fit: BoxFit.fill,
@@ -1099,7 +1289,7 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                                     vertical: Constants.innerPadding),
                                 child: Row(
                                     mainAxisAlignment:
-                                    MainAxisAlignment.spaceEvenly,
+                                        MainAxisAlignment.spaceEvenly,
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       Expanded(
@@ -1114,50 +1304,53 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                                           ),
                                           child: Row(
                                               mainAxisAlignment:
-                                              MainAxisAlignment
-                                                  .spaceBetween,
+                                                  MainAxisAlignment
+                                                      .spaceBetween,
                                               mainAxisSize: MainAxisSize.min,
                                               children: [
                                                 Expanded(
                                                   child: TextButton(
                                                       onPressed: () => setState(
-                                                              () =>
-                                                          setStart = true),
+                                                          () =>
+                                                              setStart = true),
                                                       child: (null != tmpStart)
                                                           ? AutoSizeText(
-                                                        Jiffy.parseFromDateTime(
-                                                            tmpStart!)
-                                                            .format(
-                                                            pattern:
-                                                            "yMMMMd"),
-                                                        softWrap: false,
-                                                        overflow:
-                                                        TextOverflow
-                                                            .visible,
-                                                        maxLines: 1,
-                                                        minFontSize:
-                                                        Constants
-                                                            .small,
-                                                      )
+                                                              Jiffy.parseFromDateTime(
+                                                                      tmpStart!)
+                                                                  .format(
+                                                                      pattern:
+                                                                          "yMMMMd"),
+                                                              softWrap: false,
+                                                              overflow:
+                                                                  TextOverflow
+                                                                      .visible,
+                                                              maxLines: 1,
+                                                              minFontSize:
+                                                                  Constants
+                                                                      .small,
+                                                            )
                                                           : const AutoSizeText(
-                                                          "Start Date",
-                                                          softWrap: true,
-                                                          overflow:
-                                                          TextOverflow
-                                                              .visible,
-                                                          maxLines: 1,
-                                                          minFontSize:
-                                                          Constants
-                                                              .small)),
+                                                              "Start Date",
+                                                              softWrap: true,
+                                                              overflow:
+                                                                  TextOverflow
+                                                                      .visible,
+                                                              maxLines: 1,
+                                                              minFontSize:
+                                                                  Constants
+                                                                      .small)),
                                                 ),
-                                                IconButton(
+                                                (null != tmpStart) ? IconButton(
                                                   icon: const Icon(
-                                                      Icons.close_outlined),
+                                                      Icons.clear_outlined),
                                                   selectedIcon:
-                                                  const Icon(Icons.close),
-                                                  onPressed: () => setState(
-                                                          () => tmpStart = null),
-                                                )
+                                                      const Icon(Icons.clear),
+                                                  onPressed: () => setState(() {
+                                                    checkClose = true;
+                                                    showDates.remove(tmpStart);
+                                                    tmpStart = null;
+                                                  }),
+                                                ) : const SizedBox.shrink(),
                                               ]),
                                         ),
                                       ),
@@ -1166,7 +1359,7 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                                         child: Padding(
                                           padding: EdgeInsets.symmetric(
                                               horizontal:
-                                              Constants.halfPadding),
+                                                  Constants.halfPadding),
                                           child: AutoSizeText("|",
                                               style: Constants.largeHeaderStyle,
                                               softWrap: false,
@@ -1187,50 +1380,53 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                                           ),
                                           child: Row(
                                               mainAxisAlignment:
-                                              MainAxisAlignment
-                                                  .spaceBetween,
+                                                  MainAxisAlignment
+                                                      .spaceBetween,
                                               mainAxisSize: MainAxisSize.min,
                                               children: [
                                                 Expanded(
                                                   child: TextButton(
                                                       onPressed: () => setState(
-                                                              () =>
-                                                          setStart = false),
+                                                          () =>
+                                                              setStart = false),
                                                       child: (null != tmpDue)
                                                           ? AutoSizeText(
-                                                        Jiffy.parseFromDateTime(
-                                                            tmpDue!)
-                                                            .format(
-                                                            pattern:
-                                                            "yMMMMd"),
-                                                        softWrap: false,
-                                                        overflow:
-                                                        TextOverflow
-                                                            .visible,
-                                                        maxLines: 1,
-                                                        minFontSize:
-                                                        Constants
-                                                            .small,
-                                                      )
+                                                              Jiffy.parseFromDateTime(
+                                                                      tmpDue!)
+                                                                  .format(
+                                                                      pattern:
+                                                                          "yMMMMd"),
+                                                              softWrap: false,
+                                                              overflow:
+                                                                  TextOverflow
+                                                                      .visible,
+                                                              maxLines: 1,
+                                                              minFontSize:
+                                                                  Constants
+                                                                      .small,
+                                                            )
                                                           : const AutoSizeText(
-                                                          "Due Date",
-                                                          softWrap: true,
-                                                          overflow:
-                                                          TextOverflow
-                                                              .visible,
-                                                          maxLines: 1,
-                                                          minFontSize:
-                                                          Constants
-                                                              .small)),
+                                                              "Due Date",
+                                                              softWrap: true,
+                                                              overflow:
+                                                                  TextOverflow
+                                                                      .visible,
+                                                              maxLines: 1,
+                                                              minFontSize:
+                                                                  Constants
+                                                                      .small)),
                                                 ),
-                                                IconButton(
+                                                (null != tmpDue) ? IconButton(
                                                   icon: const Icon(
-                                                      Icons.close_outlined),
+                                                      Icons.clear_outlined),
                                                   selectedIcon:
-                                                  const Icon(Icons.close),
-                                                  onPressed: () => setState(
-                                                          () => tmpDue = null),
-                                                )
+                                                      const Icon(Icons.clear),
+                                                  onPressed: () => setState(() {
+                                                    checkClose = false;
+                                                    showDates.remove(tmpDue);
+                                                    tmpDue = null;
+                                                  }),
+                                                ) : const SizedBox.shrink()
                                               ]),
                                         ),
                                       ),
@@ -1245,7 +1441,7 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                                     CalendarDatePicker2(
                                         config: CalendarDatePicker2Config(
                                           calendarType:
-                                          CalendarDatePicker2Type.range,
+                                              CalendarDatePicker2Type.range,
                                           firstDate: DateTime(1970),
                                           lastDate: DateTime(3000),
                                         ),
@@ -1267,7 +1463,7 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
 
                               Row(
                                   mainAxisAlignment:
-                                  MainAxisAlignment.spaceBetween,
+                                      MainAxisAlignment.spaceBetween,
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     Expanded(
@@ -1294,8 +1490,23 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                                           icon: const Icon(Icons.done_outlined),
                                           onPressed: () {
                                             setState(() {
-                                              startDate = tmpStart;
-                                              dueDate = tmpDue;
+                                              checkClose = true;
+                                              tmpStart = tmpStart ??
+                                                  Constants.nullDate;
+                                              tmpDue =
+                                                  tmpDue ?? Constants.nullDate;
+                                              deadline.startDate = tmpStart!
+                                                  .copyWith(
+                                                      hour: deadline
+                                                          .startDate.hour,
+                                                      minute: deadline
+                                                          .startDate.minute);
+                                              deadline.dueDate = tmpDue!
+                                                  .copyWith(
+                                                      hour:
+                                                          deadline.dueDate.hour,
+                                                      minute: deadline
+                                                          .dueDate.minute);
                                             });
                                             Navigator.pop(context);
                                           },
@@ -1317,81 +1528,83 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
   }
 
   ListTile buildTimeTile() {
+    TimeOfDay? startTime =
+        (showStartTime) ? TimeOfDay.fromDateTime(deadline.startDate) : null;
+    TimeOfDay? dueTime =
+        (showDueTime) ? TimeOfDay.fromDateTime(deadline.dueDate) : null;
     return ListTile(
         leading: const Icon(Icons.schedule_outlined),
         title: (null == startTime && null == dueTime)
             ? const AutoSizeText(
-          "Add Times",
-          overflow: TextOverflow.visible,
-          minFontSize: Constants.small,
-          maxLines: 2,
-          softWrap: true,
-        )
+                "Add Times",
+                overflow: TextOverflow.visible,
+                minFontSize: Constants.small,
+                maxLines: 2,
+                softWrap: true,
+              )
             : Row(children: [
-          (null == startTime)
-              ? const Flexible(
-              child: AutoSizeText(
-                "Start Time",
-                softWrap: true,
-                overflow: TextOverflow.visible,
-                maxLines: 2,
-                minFontSize: Constants.small,
-              ))
-              : Flexible(
-              child: AutoSizeText(
-                "Start @: ${startTime!.format(context).toString()}",
-                softWrap: true,
-                overflow: TextOverflow.visible,
-                maxLines: 2,
-                minFontSize: Constants.small,
-              )),
-          (null == dueTime)
-              ? const Flexible(
-            child: Padding(
-              padding: EdgeInsets.symmetric(
-                  horizontal: Constants.padding),
-              child: FittedBox(
-                  fit: BoxFit.fill,
-                  child: Icon(Icons.history_toggle_off_outlined)),
-            ),
-          )
-              : const Flexible(
-              child: Padding(
-                padding:
-                EdgeInsets.symmetric(horizontal: Constants.padding),
-                child: FittedBox(
-                    fit: BoxFit.fill,
-                    child: Icon(Icons.schedule_outlined)),
-              )),
-          (null == dueTime)
-              ? const Flexible(
-            child: AutoSizeText(
-              "Due Time",
-              softWrap: true,
-              overflow: TextOverflow.visible,
-              maxLines: 2,
-              minFontSize: Constants.small,
-            ),
-          )
-              : Flexible(
-            child: AutoSizeText(
-              "Due @: ${dueTime!.format(context).toString()}",
-              softWrap: true,
-              overflow: TextOverflow.visible,
-              maxLines: 2,
-              minFontSize: Constants.small,
-            ),
-          ),
-        ]),
+                (null == startTime)
+                    ? const Flexible(
+                        child: AutoSizeText(
+                        "Start Time",
+                        softWrap: true,
+                        overflow: TextOverflow.visible,
+                        maxLines: 2,
+                        minFontSize: Constants.small,
+                      ))
+                    : Flexible(
+                        child: AutoSizeText(
+                        "Start @: ${startTime.format(context).toString()}",
+                        softWrap: true,
+                        overflow: TextOverflow.visible,
+                        maxLines: 2,
+                        minFontSize: Constants.small,
+                      )),
+                (null == dueTime)
+                    ? const Flexible(
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(
+                              horizontal: Constants.padding),
+                          child: FittedBox(
+                              fit: BoxFit.fill,
+                              child: Icon(Icons.history_toggle_off_outlined)),
+                        ),
+                      )
+                    : const Flexible(
+                        child: Padding(
+                        padding:
+                            EdgeInsets.symmetric(horizontal: Constants.padding),
+                        child: FittedBox(
+                            fit: BoxFit.fill,
+                            child: Icon(Icons.schedule_outlined)),
+                      )),
+                (null == dueTime)
+                    ? const Flexible(
+                        child: AutoSizeText(
+                          "Due Time",
+                          softWrap: true,
+                          overflow: TextOverflow.visible,
+                          maxLines: 2,
+                          minFontSize: Constants.small,
+                        ),
+                      )
+                    : Flexible(
+                        child: AutoSizeText(
+                          "Due @: ${dueTime.format(context).toString()}",
+                          softWrap: true,
+                          overflow: TextOverflow.visible,
+                          maxLines: 2,
+                          minFontSize: Constants.small,
+                        ),
+                      ),
+              ]),
         onTap: () {
           showDialog<void>(
               context: context,
               builder: (BuildContext context) {
-                TimeOfDay? tmpStart = startTime;
-                TimeOfDay? tmpDue = dueTime;
                 return StatefulBuilder(
                     builder: (context, setState) => Dialog(
-                        child: Padding(
+                            child: Padding(
                           padding: const EdgeInsets.all(Constants.innerPadding),
                           child: Column(
                               mainAxisSize: MainAxisSize.min,
@@ -1415,18 +1628,18 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                                 const Flexible(
                                   child: Row(
                                     mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
+                                        MainAxisAlignment.spaceBetween,
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       Flexible(
                                           child: AutoSizeText(
-                                            "Start | Due ",
-                                            style: Constants.largeHeaderStyle,
-                                            softWrap: true,
-                                            overflow: TextOverflow.visible,
-                                            maxLines: 1,
-                                            minFontSize: Constants.large,
-                                          )),
+                                        "Start | Due ",
+                                        style: Constants.largeHeaderStyle,
+                                        softWrap: true,
+                                        overflow: TextOverflow.visible,
+                                        maxLines: 1,
+                                        minFontSize: Constants.large,
+                                      )),
                                       Flexible(
                                         child: FittedBox(
                                             fit: BoxFit.fill,
@@ -1441,7 +1654,7 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                                       vertical: Constants.innerPadding),
                                   child: Row(
                                       mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
+                                          MainAxisAlignment.spaceBetween,
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
                                         Expanded(
@@ -1449,40 +1662,45 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                                           child: OutlinedButton(
                                               onPressed: () async {
                                                 final TimeOfDay? picked =
-                                                await showTimePicker(
-                                                    context: context,
-                                                    initialTime: tmpStart ??
-                                                        Constants.midnight);
+                                                    await showTimePicker(
+                                                        context: context,
+                                                        initialTime:
+                                                            startTime ??
+                                                                Constants
+                                                                    .midnight);
                                                 if (null != picked) {
                                                   setState(
-                                                          () => tmpStart = picked);
+                                                      () {
+                                                        showStartTime = true;
+                                                        startTime = picked;
+                                                      });
                                                 }
                                               },
-                                              child: (null != tmpStart)
+                                              child: (null != startTime)
                                                   ? AutoSizeText(
-                                                tmpStart!
-                                                    .format(context)
-                                                    .toString(),
-                                                softWrap: false,
-                                                overflow:
-                                                TextOverflow.visible,
-                                                maxLines: 1,
-                                                minFontSize:
-                                                Constants.small,
-                                              )
+                                                      startTime!
+                                                          .format(context)
+                                                          .toString(),
+                                                      softWrap: false,
+                                                      overflow:
+                                                          TextOverflow.visible,
+                                                      maxLines: 1,
+                                                      minFontSize:
+                                                          Constants.small,
+                                                    )
                                                   : const AutoSizeText(
-                                                  "Start Time",
-                                                  softWrap: true,
-                                                  overflow:
-                                                  TextOverflow.visible,
-                                                  maxLines: 1,
-                                                  minFontSize:
-                                                  Constants.small)),
+                                                      "Start Time",
+                                                      softWrap: true,
+                                                      overflow:
+                                                          TextOverflow.visible,
+                                                      maxLines: 1,
+                                                      minFontSize:
+                                                          Constants.small)),
                                         ),
                                         const Padding(
                                           padding: EdgeInsets.symmetric(
                                               horizontal:
-                                              Constants.halfPadding),
+                                                  Constants.halfPadding),
                                           child: Text("|",
                                               style: Constants.timeColon),
                                         ),
@@ -1491,41 +1709,44 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                                           child: OutlinedButton(
                                               onPressed: () async {
                                                 final TimeOfDay? picked =
-                                                await showTimePicker(
-                                                    context: context,
-                                                    initialTime: tmpDue ??
-                                                        Constants.midnight);
+                                                    await showTimePicker(
+                                                        context: context,
+                                                        initialTime: dueTime ??
+                                                            Constants.midnight);
                                                 if (null != picked) {
                                                   setState(
-                                                          () => tmpDue = picked);
+                                                      () {
+                                                        showDueTime = true;
+                                                        dueTime = picked;
+                                                      });
                                                 }
                                               },
-                                              child: (null != tmpDue)
+                                              child: (null != dueTime)
                                                   ? AutoSizeText(
-                                                tmpDue!
-                                                    .format(context)
-                                                    .toString(),
-                                                softWrap: false,
-                                                overflow:
-                                                TextOverflow.visible,
-                                                maxLines: 1,
-                                                minFontSize:
-                                                Constants.small,
-                                              )
+                                                      dueTime!
+                                                          .format(context)
+                                                          .toString(),
+                                                      softWrap: false,
+                                                      overflow:
+                                                          TextOverflow.visible,
+                                                      maxLines: 1,
+                                                      minFontSize:
+                                                          Constants.small,
+                                                    )
                                                   : const AutoSizeText(
-                                                  "Due Time",
-                                                  softWrap: true,
-                                                  overflow:
-                                                  TextOverflow.visible,
-                                                  maxLines: 1,
-                                                  minFontSize:
-                                                  Constants.small)),
+                                                      "Due Time",
+                                                      softWrap: true,
+                                                      overflow:
+                                                          TextOverflow.visible,
+                                                      maxLines: 1,
+                                                      minFontSize:
+                                                          Constants.small)),
                                         ),
                                       ]),
                                 ),
                                 Row(
                                     mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
+                                        MainAxisAlignment.spaceBetween,
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       Expanded(
@@ -1541,10 +1762,10 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                                                   "Cancel",
                                                   softWrap: false,
                                                   overflow:
-                                                  TextOverflow.visible,
+                                                      TextOverflow.visible,
                                                   maxLines: 1,
                                                   minFontSize:
-                                                  Constants.small)),
+                                                      Constants.small)),
                                         ),
                                       ),
                                       Expanded(
@@ -1553,11 +1774,24 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                                               left: Constants.padding),
                                           child: FilledButton.icon(
                                             icon:
-                                            const Icon(Icons.done_outlined),
+                                                const Icon(Icons.done_outlined),
                                             onPressed: () {
                                               setState(() {
-                                                startTime = tmpStart;
-                                                dueTime = tmpDue;
+                                                checkClose = true;
+                                                startTime = startTime ??
+                                                    Constants.midnight;
+                                                dueTime = dueTime ??
+                                                    Constants.midnight;
+                                                deadline.startDate =
+                                                    deadline.startDate.copyWith(
+                                                        hour: startTime!.hour,
+                                                        minute:
+                                                            startTime!.minute);
+                                                deadline.dueDate =
+                                                    deadline.dueDate.copyWith(
+                                                        hour: dueTime!.hour,
+                                                        minute:
+                                                            dueTime!.minute);
                                               });
                                               Navigator.pop(context);
                                             },
@@ -1574,45 +1808,54 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                         )));
               }).then((_) => setState(() {}));
         },
-        trailing: IconButton(
-          icon: const Icon(Icons.close),
+        trailing: (null != startTime || null != dueTime) ? IconButton(
+          icon: const Icon(Icons.clear),
           onPressed: () => setState(() {
+            checkClose = true;
             startTime = null;
             dueTime = null;
           }),
-        ));
+        ) : null);
   }
 
   ListTile buildRepeatableTile(BuildContext context,
       {bool smallScreen = false}) {
     return ListTile(
         leading: const Icon(Icons.event_repeat_outlined),
-        title: (frequency == Frequency.once)
+        title: (deadline.frequency == Frequency.once)
             ? const AutoSizeText("Set Recurring?",
-            overflow: TextOverflow.visible,
-            minFontSize: Constants.small,
-            maxLines: 2,
-            softWrap: true)
-            : AutoSizeText(toBeginningOfSentenceCase(frequency.name)!,
-            overflow: TextOverflow.visible,
-            minFontSize: Constants.small,
-            maxLines: 1,
-            softWrap: false),
+                overflow: TextOverflow.visible,
+                minFontSize: Constants.small,
+                maxLines: 2,
+                softWrap: true)
+            : AutoSizeText(toBeginningOfSentenceCase(deadline.frequency.name)!,
+                overflow: TextOverflow.visible,
+                minFontSize: Constants.small,
+                maxLines: 1,
+                softWrap: false),
         onTap: () {
           showDialog(
               context: context,
               builder: (BuildContext context) {
-                Frequency cacheFreq = frequency;
-                CustomFrequency cacheCustom = customFreq;
-                Set<int> cacheWeekdays = Set.from(weekDayList);
+                Frequency cacheFreq = deadline.frequency;
+                CustomFrequency cacheCustom = deadline.customFreq;
+                Set<int> cacheWeekdays = {};
+
+                for (int i = 0; i < deadline.repeatDays.length; i++) {
+                  if (deadline.repeatDays[i]) {
+                    cacheWeekdays.add(i);
+                  }
+                }
+
                 if (cacheWeekdays.isEmpty) {
-                  int day = (null != startDate)
-                      ? max(startDate!.weekday - 1, 0)
+                  int day = (Constants.nullDate != deadline.startDate)
+                      ? max(deadline.startDate.weekday - 1, 0)
                       : max(DateTime.now().weekday - 1, 0);
                   cacheWeekdays.add(day);
                 }
 
-                int cacheSkip = repeatSkip;
+                int cacheSkip = deadline.repeatSkip;
+
                 return StatefulBuilder(builder: (context, setState) {
                   return Dialog(
                       child: Padding(
@@ -1639,7 +1882,7 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                                 const Row(
                                   mainAxisSize: MainAxisSize.max,
                                   mainAxisAlignment:
-                                  MainAxisAlignment.spaceBetween,
+                                      MainAxisAlignment.spaceBetween,
                                   children: [
                                     Flexible(
                                       child: AutoSizeText(
@@ -1662,14 +1905,14 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                                 // This is a hacky override until m3 Has width-scaling for DropdownMenu
                                 Padding(
                                   padding: (cacheFreq != Frequency.once &&
-                                      cacheFreq != Frequency.daily)
+                                          cacheFreq != Frequency.daily)
                                       ? const EdgeInsets.fromLTRB(
-                                      Constants.innerPadding,
-                                      Constants.innerPadding,
-                                      Constants.innerPadding,
-                                      Constants.halfPadding)
+                                          Constants.innerPadding,
+                                          Constants.innerPadding,
+                                          Constants.innerPadding,
+                                          Constants.halfPadding)
                                       : const EdgeInsets.all(
-                                      Constants.innerPadding),
+                                          Constants.innerPadding),
                                   child: InputDecorator(
                                     decoration: const InputDecoration(
                                       border: OutlineInputBorder(
@@ -1695,19 +1938,19 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                                         value: cacheFreq,
                                         onChanged: (Frequency? value) =>
                                             setState(() =>
-                                            cacheFreq = value ?? cacheFreq),
+                                                cacheFreq = value ?? cacheFreq),
                                         items: Frequency.values
                                             .map((Frequency frequency) =>
-                                            DropdownMenuItem<Frequency>(
-                                              value: frequency,
-                                              child: AutoSizeText(
-                                                "${toBeginningOfSentenceCase(frequency.name)}",
-                                                softWrap: false,
-                                                maxLines: 1,
-                                                minFontSize:
-                                                Constants.small,
-                                              ),
-                                            ))
+                                                DropdownMenuItem<Frequency>(
+                                                  value: frequency,
+                                                  child: AutoSizeText(
+                                                    "${toBeginningOfSentenceCase(frequency.name)}",
+                                                    softWrap: false,
+                                                    maxLines: 1,
+                                                    minFontSize:
+                                                        Constants.small,
+                                                  ),
+                                                ))
                                             .toList(),
                                       ),
                                     ),
@@ -1716,216 +1959,217 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
 
                                 (cacheFreq == Frequency.custom)
                                     ? Column(
-                                  children: [
-                                    Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal:
-                                          Constants.innerPadding),
-                                      child: InputDecorator(
-                                        decoration: const InputDecoration(
-                                          border: OutlineInputBorder(
-                                              gapPadding: 0,
-                                              borderRadius:
-                                              BorderRadius.all(
-                                                  Radius.circular(
-                                                      Constants
-                                                          .circular)),
-                                              borderSide: BorderSide(
-                                                  strokeAlign: BorderSide
-                                                      .strokeAlignOutside)),
-                                        ),
-                                        child:
-                                        DropdownButtonHideUnderline(
-                                          child: DropdownButton<
-                                              CustomFrequency>(
-                                            padding: const EdgeInsets
-                                                .symmetric(
+                                        children: [
+                                          Padding(
+                                            padding: const EdgeInsets.symmetric(
                                                 horizontal:
-                                                Constants.padding),
-                                            isDense: true,
-                                            isExpanded: true,
-                                            dropdownColor:
-                                            Constants.dialogColor(
-                                                context: context),
-                                            borderRadius: const BorderRadius
-                                                .all(Radius.circular(
-                                                Constants
-                                                    .roundedCorners)),
-                                            value: cacheCustom,
-                                            onChanged: (CustomFrequency?
-                                            value) =>
-                                                setState(() =>
-                                                cacheCustom = value ??
-                                                    cacheCustom),
-                                            items: CustomFrequency.values
-                                                .map((CustomFrequency
-                                            customFreq) =>
-                                                DropdownMenuItem<
+                                                    Constants.innerPadding),
+                                            child: InputDecorator(
+                                              decoration: const InputDecoration(
+                                                border: OutlineInputBorder(
+                                                    gapPadding: 0,
+                                                    borderRadius:
+                                                        BorderRadius.all(
+                                                            Radius.circular(
+                                                                Constants
+                                                                    .circular)),
+                                                    borderSide: BorderSide(
+                                                        strokeAlign: BorderSide
+                                                            .strokeAlignOutside)),
+                                              ),
+                                              child:
+                                                  DropdownButtonHideUnderline(
+                                                child: DropdownButton<
                                                     CustomFrequency>(
-                                                  value: customFreq,
-                                                  child: AutoSizeText(
-                                                    "${toBeginningOfSentenceCase(customFreq.name)}",
-                                                    softWrap: false,
-                                                    maxLines: 1,
-                                                    minFontSize:
-                                                    Constants
-                                                        .small,
-                                                  ),
-                                                ))
-                                                .toList(),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    // Days of the week - Wrap in padding and a container
-
-                                    Padding(
-                                      padding: const EdgeInsets.fromLTRB(
-                                          Constants.innerPadding,
-                                          Constants.innerPadding,
-                                          Constants.innerPadding,
-                                          0),
-                                      child: Wrap(
-                                          spacing: 5,
-                                          runSpacing: 5,
-                                          alignment: WrapAlignment.center,
-                                          runAlignment:
-                                          WrapAlignment.center,
-                                          children: Constants.weekDays
-                                              .map((weekDay) => InputChip(
-                                              backgroundColor:
-                                              Theme.of(context)
-                                                  .colorScheme
-                                                  .surfaceVariant,
-                                              shape:
-                                              const RoundedRectangleBorder(
-                                                borderRadius:
-                                                BorderRadius.all(
-                                                    Radius.circular(
-                                                        Constants
-                                                            .circular)),
-                                                side: BorderSide(
-                                                  strokeAlign: BorderSide
-                                                      .strokeAlignOutside,
+                                                  padding: const EdgeInsets
+                                                      .symmetric(
+                                                      horizontal:
+                                                          Constants.padding),
+                                                  isDense: true,
+                                                  isExpanded: true,
+                                                  dropdownColor:
+                                                      Constants.dialogColor(
+                                                          context: context),
+                                                  borderRadius: const BorderRadius
+                                                      .all(Radius.circular(
+                                                          Constants
+                                                              .roundedCorners)),
+                                                  value: cacheCustom,
+                                                  onChanged: (CustomFrequency?
+                                                          value) =>
+                                                      setState(() =>
+                                                          cacheCustom = value ??
+                                                              cacheCustom),
+                                                  items: CustomFrequency.values
+                                                      .map((CustomFrequency
+                                                              customFreq) =>
+                                                          DropdownMenuItem<
+                                                              CustomFrequency>(
+                                                            value: customFreq,
+                                                            child: AutoSizeText(
+                                                              "${toBeginningOfSentenceCase(customFreq.name)}",
+                                                              softWrap: false,
+                                                              maxLines: 1,
+                                                              minFontSize:
+                                                                  Constants
+                                                                      .small,
+                                                            ),
+                                                          ))
+                                                      .toList(),
                                                 ),
                                               ),
-                                              label: AutoSizeText(
-                                                  weekDay.key,
-                                                  minFontSize:
-                                                  Constants.small,
-                                                  maxLines: 1,
-                                                  softWrap: false,
-                                                  overflow:
-                                                  TextOverflow
-                                                      .visible),
-                                              selected: cacheWeekdays
-                                                  .contains(
-                                                  weekDay.value),
-                                              onSelected:
-                                                  (bool selected) =>
-                                                  setState(() {
-                                                    if (selected) {
-                                                      cacheWeekdays
-                                                          .add(weekDay
-                                                          .value);
-                                                    } else {
-                                                      cacheWeekdays
-                                                          .remove(
-                                                          weekDay.value);
-                                                      if (cacheWeekdays
-                                                          .isEmpty) {
-                                                        int day = (null !=
-                                                            startDate)
-                                                            ? max(
-                                                            startDate!.weekday -
-                                                                1,
-                                                            0)
-                                                            : max(
-                                                            DateTime.now().weekday - 1,
-                                                            0);
-                                                        cacheWeekdays
-                                                            .add(
-                                                            day);
-                                                      }
-                                                    }
-                                                  })))
-                                              .toList()),
-                                    ),
-                                  ],
-                                )
+                                            ),
+                                          ),
+                                          // Days of the week - Wrap in padding and a container
+
+                                          Padding(
+                                            padding: const EdgeInsets.fromLTRB(
+                                                Constants.innerPadding,
+                                                Constants.innerPadding,
+                                                Constants.innerPadding,
+                                                0),
+                                            child: Wrap(
+                                                spacing: 5,
+                                                runSpacing: 5,
+                                                alignment: WrapAlignment.center,
+                                                runAlignment:
+                                                    WrapAlignment.center,
+                                                children: Constants.weekDays
+                                                    .map((weekDay) => InputChip(
+                                                        backgroundColor:
+                                                            Theme.of(context)
+                                                                .colorScheme
+                                                                .surfaceVariant,
+                                                        shape:
+                                                            const RoundedRectangleBorder(
+                                                          borderRadius:
+                                                              BorderRadius.all(
+                                                                  Radius.circular(
+                                                                      Constants
+                                                                          .circular)),
+                                                          side: BorderSide(
+                                                            strokeAlign: BorderSide
+                                                                .strokeAlignOutside,
+                                                          ),
+                                                        ),
+                                                        label: AutoSizeText(
+                                                            weekDay.key,
+                                                            minFontSize:
+                                                                Constants.small,
+                                                            maxLines: 1,
+                                                            softWrap: false,
+                                                            overflow:
+                                                                TextOverflow
+                                                                    .visible),
+                                                        selected: cacheWeekdays
+                                                            .contains(
+                                                                weekDay.value),
+                                                        onSelected:
+                                                            (bool selected) =>
+                                                                setState(() {
+                                                                  if (selected) {
+                                                                    cacheWeekdays
+                                                                        .add(weekDay
+                                                                            .value);
+                                                                  } else {
+                                                                    cacheWeekdays
+                                                                        .remove(
+                                                                            weekDay.value);
+                                                                    if (cacheWeekdays
+                                                                        .isEmpty) {
+                                                                      int day = (Constants.nullDate !=
+                                                                              deadline
+                                                                                  .startDate)
+                                                                          ? max(
+                                                                              deadline.startDate.weekday -
+                                                                                  1,
+                                                                              0)
+                                                                          : max(
+                                                                              DateTime.now().weekday - 1,
+                                                                              0);
+                                                                      cacheWeekdays
+                                                                          .add(
+                                                                              day);
+                                                                    }
+                                                                  }
+                                                                })))
+                                                    .toList()),
+                                          ),
+                                        ],
+                                      )
                                     : const SizedBox.shrink(),
 
                                 // Repeat Skip
                                 (cacheFreq != Frequency.once &&
-                                    cacheFreq != Frequency.daily)
+                                        cacheFreq != Frequency.daily)
                                     ? Padding(
-                                  padding: const EdgeInsets.all(
-                                      Constants.innerPadding),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    mainAxisAlignment:
-                                    MainAxisAlignment.center,
-                                    children: [
-                                      const Flexible(
-                                          child: AutoSizeText(
-                                            "Every",
-                                            minFontSize: Constants.small,
-                                            style: Constants.headerStyle,
-                                            overflow: TextOverflow.visible,
-                                            softWrap: false,
-                                            maxLines: 1,
-                                          )),
-                                      Expanded(
-                                          child: NumberPicker(
-                                              itemCount: 1,
-                                              textStyle: Constants
-                                                  .numberPickerSecondary(
-                                                  context: context),
-                                              selectedTextStyle: Constants
-                                                  .numberPickerPrimary(
-                                                  context: context),
-                                              minValue: 1,
-                                              maxValue: 100,
-                                              value: cacheSkip,
-                                              haptics: true,
-                                              onChanged: (value) {
-                                                SemanticsService.announce(
-                                                    "Skip value: $value",
-                                                    Directionality.of(
-                                                        context));
-                                                setState(() =>
-                                                cacheSkip = value);
-                                              })),
-                                      Flexible(
-                                        child: AutoSizeText(
-                                          (cacheFreq == Frequency.custom)
-                                              ? cacheCustom.name
-                                              .replaceAll(
-                                              "ly",
-                                              (cacheSkip > 1)
-                                                  ? "s."
-                                                  : ".")
-                                              : cacheFreq.name.replaceAll(
-                                              "ly",
-                                              (cacheSkip > 1)
-                                                  ? "s."
-                                                  : "."),
-                                          minFontSize: Constants.small,
-                                          style: Constants.headerStyle,
-                                          overflow: TextOverflow.visible,
-                                          softWrap: false,
-                                          maxLines: 1,
-                                          textAlign: TextAlign.end,
+                                        padding: const EdgeInsets.all(
+                                            Constants.innerPadding),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: [
+                                            const Flexible(
+                                                child: AutoSizeText(
+                                              "Every",
+                                              minFontSize: Constants.small,
+                                              style: Constants.headerStyle,
+                                              overflow: TextOverflow.visible,
+                                              softWrap: false,
+                                              maxLines: 1,
+                                            )),
+                                            Expanded(
+                                                child: NumberPicker(
+                                                    itemCount: 1,
+                                                    textStyle: Constants
+                                                        .numberPickerSecondary(
+                                                            context: context),
+                                                    selectedTextStyle: Constants
+                                                        .numberPickerPrimary(
+                                                            context: context),
+                                                    minValue: 1,
+                                                    maxValue: 100,
+                                                    value: cacheSkip,
+                                                    haptics: true,
+                                                    onChanged: (value) {
+                                                      SemanticsService.announce(
+                                                          "Skip value: $value",
+                                                          Directionality.of(
+                                                              context));
+                                                      setState(() =>
+                                                          cacheSkip = value);
+                                                    })),
+                                            Flexible(
+                                              child: AutoSizeText(
+                                                (cacheFreq == Frequency.custom)
+                                                    ? cacheCustom.name
+                                                        .replaceAll(
+                                                            "ly",
+                                                            (cacheSkip > 1)
+                                                                ? "s."
+                                                                : ".")
+                                                    : cacheFreq.name.replaceAll(
+                                                        "ly",
+                                                        (cacheSkip > 1)
+                                                            ? "s."
+                                                            : "."),
+                                                minFontSize: Constants.small,
+                                                style: Constants.headerStyle,
+                                                overflow: TextOverflow.visible,
+                                                softWrap: false,
+                                                maxLines: 1,
+                                                textAlign: TextAlign.end,
+                                              ),
+                                            )
+                                          ],
                                         ),
                                       )
-                                    ],
-                                  ),
-                                )
                                     : const SizedBox.shrink(),
 
                                 Row(
                                     mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
+                                        MainAxisAlignment.spaceBetween,
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       Expanded(
@@ -1941,10 +2185,10 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                                                   "Cancel",
                                                   softWrap: false,
                                                   overflow:
-                                                  TextOverflow.visible,
+                                                      TextOverflow.visible,
                                                   maxLines: 1,
                                                   minFontSize:
-                                                  Constants.small)),
+                                                      Constants.small)),
                                         ),
                                       ),
                                       Expanded(
@@ -1953,13 +2197,21 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                                               left: Constants.padding),
                                           child: FilledButton.icon(
                                             icon:
-                                            const Icon(Icons.done_outlined),
+                                                const Icon(Icons.done_outlined),
                                             onPressed: () {
                                               setState(() {
-                                                frequency = cacheFreq;
-                                                customFreq = cacheCustom;
-                                                weekDayList = cacheWeekdays;
-                                                repeatSkip = cacheSkip;
+                                                checkClose = true;
+                                                deadline.frequency = cacheFreq;
+                                                deadline.customFreq =
+                                                    cacheCustom;
+                                                deadline.repeatSkip = cacheSkip;
+                                                deadline.repeatSkip = cacheSkip;
+                                                if (cacheWeekdays.isEmpty) {
+                                                  cacheWeekdays.add(deadline.startDate.weekday - 1);
+                                                }
+                                                for (int i = 0; i < deadline.repeatDays.length; i++) {
+                                                  deadline.repeatDays[i] = cacheWeekdays.contains(i);
+                                                }
                                               });
                                               Navigator.pop(context);
                                             },
@@ -1976,13 +2228,14 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                 });
               }).then((_) => setState(() {}));
         },
-        trailing: IconButton(
-            icon: const Icon(Icons.close),
+        trailing: (deadline.frequency != Frequency.once) ? IconButton(
+            icon: const Icon(Icons.clear),
             onPressed: () => setState(() {
-              frequency = Frequency.once;
-              customFreq = CustomFrequency.weekly;
-              weekDayList.clear();
-              repeatSkip = 1;
-            })));
+              checkClose = true;
+                  deadline.frequency = Frequency.once;
+                  deadline.customFreq = CustomFrequency.weekly;
+                  deadline.repeatDays.fillRange(0, deadline.repeatDays.length, false);
+                  deadline.repeatSkip = 1;
+                })) : null);
   }
 }

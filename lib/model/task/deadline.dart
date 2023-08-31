@@ -109,6 +109,7 @@ class Deadline with EquatableMixin implements Copyable<Deadline> {
   @override
   Deadline copy() => Deadline(
         notificationID: notificationID,
+        repeatID: repeatID,
         name: name,
         description: description,
         startDate: startDate,
@@ -126,7 +127,8 @@ class Deadline with EquatableMixin implements Copyable<Deadline> {
 
   @override
   Deadline copyWith(
-          {int? notificationID,
+          {int? repeatID,
+            int? notificationID,
           String? name,
           String? description,
           DateTime? startDate,
@@ -141,6 +143,7 @@ class Deadline with EquatableMixin implements Copyable<Deadline> {
           int? repeatSkip,
           DateTime? lastUpdated}) =>
       Deadline(
+        repeatID: repeatID ?? this.repeatID,
           notificationID: notificationID ?? this.notificationID,
           name: name ?? this.name,
           description: description ?? this.description,
@@ -159,7 +162,9 @@ class Deadline with EquatableMixin implements Copyable<Deadline> {
   @ignore
   @override
   List<Object?> get props => [
-        id,
+    // TODO: This is a current race condition in testing.
+    // ID should be able to be returned once built.
+        //id,
         notificationID,
         name,
         description,

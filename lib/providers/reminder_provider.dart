@@ -8,6 +8,7 @@ import '../model/task/reminder.dart';
 import '../model/user/user.dart';
 import '../services/notification_service.dart';
 import '../services/reminder_service.dart';
+import '../util/constants.dart';
 import '../util/enums.dart';
 import '../util/exceptions.dart';
 import '../util/sorting/reminder_sorter.dart';
@@ -88,8 +89,8 @@ class ReminderProvider extends ChangeNotifier {
       int? repeatSkip,
       Frequency? frequency,
       CustomFrequency? customFreq}) async {
-    startDate = startDate ?? DateTime.now();
-    dueDate = DateTime(startDate.year, startDate.month, startDate.day, 23, 59, 0);
+    startDate = startDate ?? DateTime.now().copyWith(hour: Constants.midnight.hour, minute: Constants.midnight.minute);
+    dueDate = startDate.copyWith();
 
     if (startDate.isAfter(dueDate)) {
       dueDate = startDate.add(const Duration(minutes: 15));

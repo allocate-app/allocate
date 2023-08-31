@@ -8,6 +8,7 @@ import '../model/task/deadline.dart';
 import '../model/user/user.dart';
 import '../services/deadline_service.dart';
 import '../services/notification_service.dart';
+import '../util/constants.dart';
 import '../util/enums.dart';
 import '../util/exceptions.dart';
 import '../util/sorting/deadline_sorter.dart';
@@ -91,8 +92,8 @@ class DeadlineProvider extends ChangeNotifier {
     List<bool>? repeatDays,
     int? repeatSkip,
   }) async {
-    startDate = startDate ?? DateTime.now();
-    dueDate = dueDate ?? DateTime(startDate.year, startDate.month, startDate.day, 23, 59, 0);
+    startDate = startDate ?? DateTime.now().copyWith(hour: Constants.midnight.hour, minute: Constants.midnight.minute);
+    dueDate = dueDate ?? startDate.copyWith();
 
     if (startDate.isAfter(dueDate)) {
       dueDate = startDate.add(const Duration(days: 1));
@@ -189,9 +190,9 @@ class DeadlineProvider extends ChangeNotifier {
   // This also schedules notifications.
   Future<void> checkRepeating({DateTime? now}) async =>
       _deadlineService.checkRepeating(now: now ?? DateTime.now());
-  Future<void> nextRepeat() async => _deadlineService.nextRepeatable(deadline: curDeadline!);
+  Future<void> nextRepeat({Deadline? deadline}) async => _deadlineService.nextRepeatable(deadline: deadline ?? curDeadline!);
   // This also cancels upcoming notifications.
-  Future<void> deleteFutures() async => _deadlineService.deleteFutures(deadline: curDeadline!);
+  Future<void> deleteFutures({Deadline? deadline}) async => _deadlineService.deleteFutures(deadline: deadline ?? curDeadline!);
   Future<void> populateCalendar({DateTime? limit}) async =>
       _deadlineService.populateCalendar(limit: limit ?? DateTime.now());
 

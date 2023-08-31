@@ -131,8 +131,8 @@ class ToDoProvider extends ChangeNotifier {
     realDuration = realDuration ??
         _toDoService.calculateRealDuration(weight: weight, duration: expectedDuration);
 
-    startDate = startDate ?? DateTime.now();
-    dueDate = dueDate ?? DateTime(startDate.year, startDate.month, startDate.day, 23, 59, 0);
+    startDate = startDate ?? DateTime.now().copyWith(hour: Constants.midnight.hour, minute: Constants.midnight.minute);
+    dueDate = dueDate ?? startDate.copyWith();
 
     if (startDate.isAfter(dueDate)) {
       dueDate = startDate.add(const Duration(minutes: 15));
@@ -274,8 +274,8 @@ class ToDoProvider extends ChangeNotifier {
               name: '',
               expectedDuration: 0,
               realDuration: 0,
-              startDate: DateTime.now(),
-              dueDate: DateTime.now(),
+              startDate: DateTime.now().copyWith(hour: Constants.midnight.hour, minute: Constants.midnight.minute),
+              dueDate: DateTime.now().copyWith(hour: Constants.midnight.hour, minute: Constants.midnight.minute),
               repeatDays: List.filled(7, false),
               subTasks: List.filled(Constants.numTasks[TaskType.small]!, SubTask()),
               lastUpdated: DateTime.now());

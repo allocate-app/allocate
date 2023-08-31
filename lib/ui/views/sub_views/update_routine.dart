@@ -177,7 +177,7 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
       context: context,
       dismissCallback: () => error?.dismiss());
     }
-      , test: (e) => e is FailureToCreateException || e is FailureToUploadException
+      , test: (e) => e is FailureToDeleteException
     );
   }
 
@@ -998,12 +998,12 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
               minFontSize: Constants.small,
               maxLines: 2,
               softWrap: true),
-      trailing: IconButton(
-          icon: const Icon(Icons.close),
+      trailing:(routine.expectedDuration > 0)?  IconButton(
+          icon: const Icon(Icons.clear),
           onPressed: () => setState(() {
             routine.expectedDuration = 0;
             routine.realDuration = 0;
-              })),
+              })) : null,
       onTap: () => showDialog<int>(
           context: context,
           builder: (BuildContext context) {
@@ -1166,12 +1166,13 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
       minFontSize: Constants.medium,
       decoration: InputDecoration(
         isDense: smallScreen,
-        suffixIcon: IconButton(
+        suffixIcon: (routine.name != "" ) ?  IconButton(
             icon: const Icon(Icons.clear),
             onPressed: () {
+              checkClose = true;
               nameEditingController.clear();
               setState(() => routine.name = "");
-            }),
+            }) : null,
         contentPadding: const EdgeInsets.all(Constants.innerPadding),
         border: const OutlineInputBorder(
             borderRadius: BorderRadius.all(Radius.circular(Constants.roundedCorners)),

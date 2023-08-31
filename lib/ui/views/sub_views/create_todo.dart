@@ -69,17 +69,11 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
   // ExpectedDuration & Real Duration
   late int expectedDuration;
   late int realDuration;
-  late int hours;
-  late int minutes;
-  late int seconds;
 
   late Priority priority;
 
   // Status
   late bool completed;
-  // TODO: remove? Don't remember what this was for.
-  final MaterialStateProperty<Icon?> completedIcon = MaterialStateProperty.resolveWith(
-      (states) => (states.contains(MaterialState.selected) ? const Icon(Icons.task_alt) : null));
   late bool myDay;
 
   // DateTimes
@@ -130,9 +124,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
     myDay = false;
     expectedDuration = 0;
     realDuration = 0;
-    hours = 0;
-    minutes = 0;
-    seconds = 0;
+
     searchHistory = List.empty(growable: true);
 
     frequency = Frequency.once;
@@ -921,12 +913,12 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
 
   void mergeDateTimes() {
     startDate = startDate ?? DateTime.now();
-    startTime = startTime ?? TimeOfDay.now();
+    startTime = startTime ?? Constants.midnight;
 
     startDate = startDate!.copyWith(hour: startTime!.hour, minute: startTime!.minute);
 
     dueDate = dueDate ?? DateTime.now();
-    dueTime = dueTime ?? TimeOfDay.now();
+    dueTime = dueTime ?? Constants.midnight;
 
     dueDate = dueDate!.copyWith(hour: dueTime!.hour, minute: dueTime!.minute);
 
@@ -1254,14 +1246,15 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                 });
               }).then((_) => setState(() {}));
         },
-        trailing: IconButton(
-            icon: const Icon(Icons.close),
+        trailing: (frequency != Frequency.once) ? IconButton(
+            icon: const Icon(Icons.clear),
             onPressed: () => setState(() {
+              checkClose = true;
                   frequency = Frequency.once;
                   customFreq = CustomFrequency.weekly;
                   weekDayList.clear();
                   repeatSkip = 1;
-                })));
+                })) : null);
   }
 
   ListTile buildTimeTile() {
@@ -1486,13 +1479,14 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                         )));
               }).then((_) => setState(() {}));
         },
-        trailing: IconButton(
-          icon: const Icon(Icons.close),
+        trailing: (startTime != null || dueTime != null) ? IconButton(
+          icon: const Icon(Icons.clear),
           onPressed: () => setState(() {
+            checkClose = true;
             startTime = null;
             dueTime = null;
           }),
-        ));
+        ): null);
   }
 
   ListTile buildDateTile(BuildContext context) {
@@ -1571,12 +1565,13 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                       )
               ],
             ),
-      trailing: IconButton(
-          icon: const Icon(Icons.close),
+      trailing: (startDate != null || dueDate != null) ? IconButton(
+          icon: const Icon(Icons.clear),
           onPressed: () => setState(() {
+            checkClose = true;
                 startDate = null;
                 dueDate = null;
-              })),
+              })): null,
       onTap: () {
         showDialog<void>(
             context: context,
@@ -1675,11 +1670,14 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                                                               maxLines: 1,
                                                               minFontSize: Constants.small)),
                                                 ),
-                                                IconButton(
-                                                  icon: const Icon(Icons.close_outlined),
-                                                  selectedIcon: const Icon(Icons.close),
-                                                  onPressed: () => setState(() => tmpStart = null),
-                                                )
+                                                (tmpStart != null) ? IconButton(
+                                                  icon: const Icon(Icons.clear_outlined),
+                                                  selectedIcon: const Icon(Icons.clear),
+                                                  onPressed: () => setState(() {
+                                                    checkClose=  true;
+                                                    tmpStart = null;
+                                                  }),
+                                                ) : const SizedBox.shrink(),
                                               ]),
                                         ),
                                       ),
@@ -1728,11 +1726,14 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                                                               maxLines: 1,
                                                               minFontSize: Constants.small)),
                                                 ),
-                                                IconButton(
-                                                  icon: const Icon(Icons.close_outlined),
-                                                  selectedIcon: const Icon(Icons.close),
-                                                  onPressed: () => setState(() => tmpDue = null),
-                                                )
+                                                (tmpDue != null) ? IconButton(
+                                                  icon: const Icon(Icons.clear_outlined),
+                                                  selectedIcon: const Icon(Icons.clear),
+                                                  onPressed: () => setState(() {
+                                                    checkClose = true;
+                                                    tmpDue = null;
+                                                  }),
+                                                ) : const SizedBox.shrink(),
                                               ]),
                                         ),
                                       ),
@@ -2255,15 +2256,23 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
               minFontSize: Constants.small,
               maxLines: 2,
               softWrap: true),
-      trailing: IconButton(
-          icon: const Icon(Icons.close),
+      trailing: (expectedDuration > 0) ? IconButton(
+          icon: const Icon(Icons.clear),
           onPressed: () => setState(() {
+            checkClose = true;
                 expectedDuration = 0;
                 realDuration = 0;
-              })),
+              })) : const SizedBox.shrink(),
       onTap: () => showDialog<int>(
           context: context,
           builder: (BuildContext context) {
+            int time = expectedDuration;
+            int hours = time ~/ 3600;
+            time %= 3600;
+            int minutes = time ~/ 60;
+            time %= 60;
+            int seconds = time;
+
             return StatefulBuilder(
               builder: (context, setState) => Dialog(
                   child: Padding(
@@ -2406,12 +2415,6 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
           realDuration = toDoProvider.calculateRealDuration(
               weight: (taskType == TaskType.small) ? weight : sumWeight,
               duration: expectedDuration);
-          int tmp = expectedDuration;
-          hours = tmp ~/ 3600;
-          tmp %= 3600;
-          minutes = tmp ~/ 60;
-          tmp %= 60;
-          seconds = tmp;
         });
       }),
     );
@@ -2423,12 +2426,13 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
       minFontSize: Constants.medium,
       decoration: InputDecoration(
         isDense: smallScreen,
-        suffixIcon: IconButton(
+        suffixIcon: (name != "") ? IconButton(
             icon: const Icon(Icons.clear),
             onPressed: () {
+              checkClose = true;
               nameEditingController.clear();
               setState(() => name = "");
-            }),
+            }): null,
         contentPadding: const EdgeInsets.all(Constants.innerPadding),
         border: const OutlineInputBorder(
             borderRadius: BorderRadius.all(Radius.circular(Constants.roundedCorners)),

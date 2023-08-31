@@ -153,6 +153,7 @@ class DeadlineRepo implements DeadlineRepository {
     toDelete.remove(deleteFrom);
 
     toDelete.map((Deadline deadline) => deadline.toDelete = true);
+
     List<int> cancelIDs =
         toDelete.map((Deadline deadline) => deadline.notificationID!).toList(growable: false);
 

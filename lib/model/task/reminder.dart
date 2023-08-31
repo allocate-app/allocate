@@ -68,6 +68,7 @@ class Reminder with EquatableMixin implements Copyable<Reminder> {
   @override
   Reminder copyWith(
           {int? repeatID,
+            int? notificationID,
           String? name,
           DateTime? startDate,
           DateTime? dueDate,
@@ -80,6 +81,7 @@ class Reminder with EquatableMixin implements Copyable<Reminder> {
           DateTime? lastUpdated}) =>
       Reminder(
           repeatID: repeatID ?? this.repeatID,
+          notificationID: notificationID ?? this.notificationID,
           name: name ?? this.name,
           startDate: startDate ?? this.startDate,
           dueDate: dueDate ?? this.dueDate,
@@ -128,7 +130,8 @@ class Reminder with EquatableMixin implements Copyable<Reminder> {
   @ignore
   @override
   List<Object?> get props => [
-        id,
+    // TODO: re-test once app built. Currently a race condition && nullptr due to testing widget.
+        // id,
         notificationID,
         repeatID,
         customViewIndex,

@@ -424,7 +424,6 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
   }
 
 
-  // This should return a dialog widget.
   @override
   Widget build(BuildContext context) {
     final Color errorColor = Theme.of(context).colorScheme.error;
@@ -1074,7 +1073,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
       minFontSize: Constants.medium,
       decoration: InputDecoration(
         isDense: smallScreen,
-        suffixIcon: IconButton(
+        suffixIcon: (toDo.name != "") ? IconButton(
             icon: const Icon(Icons.clear),
             onPressed: () {
               nameEditingController.clear();
@@ -1082,7 +1081,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                 checkClose = true;
                 toDo.name = "";
               });
-            }),
+            }) : null,
         contentPadding: const EdgeInsets.all(Constants.innerPadding),
         border: const OutlineInputBorder(
             borderRadius: BorderRadius.all(Radius.circular(Constants.roundedCorners)),
@@ -1579,13 +1578,13 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
               minFontSize: Constants.small,
               maxLines: 2,
               softWrap: true),
-      trailing: IconButton(
-          icon: const Icon(Icons.close),
+      trailing: (toDo.expectedDuration > 0) ? IconButton(
+          icon: const Icon(Icons.clear),
           onPressed: () => setState(() {
                 checkClose = true;
                 toDo.expectedDuration = 0;
                 toDo.realDuration = 0;
-              })),
+              })) : null,
       onTap: () => showDialog<int>(
           context: context,
           builder: (BuildContext context) {
@@ -1747,8 +1746,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
   ListTile buildDateTile(BuildContext context) {
     return ListTile(
       leading: const Icon(Icons.today_outlined),
-      // TODO: finish start and end + time.
-      title: (Constants.nullDate == toDo.startDate && Constants.nullDate == toDo.dueDate)
+      title: (Constants.nullDate == toDo.startDate.copyWith(hour: Constants.midnight.hour, minute: Constants.midnight.minute) && Constants.nullDate == toDo.dueDate.copyWith(hour: Constants.midnight.hour, minute: Constants.midnight.minute))
           ? const AutoSizeText(
               "Add Dates",
               softWrap: true,
@@ -1758,7 +1756,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
             )
           : Row(
               children: [
-                (Constants.nullDate == toDo.startDate)
+                (Constants.nullDate == toDo.startDate.copyWith(hour: Constants.midnight.hour, minute: Constants.midnight.minute))
                     ? const Flexible(
                         child: AutoSizeText(
                           "Start Date",
@@ -1789,7 +1787,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                     ),
                   ),
                 ),
-                (Constants.nullDate == toDo.dueDate)
+                (Constants.nullDate == toDo.dueDate.copyWith(hour: Constants.midnight.hour, minute: Constants.midnight.minute))
                     ? const Flexible(
                         child: Padding(
                           padding: EdgeInsets.only(right: Constants.padding),
@@ -1821,20 +1819,21 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                       )
               ],
             ),
-      trailing: IconButton(
-          icon: const Icon(Icons.close),
+      trailing: (Constants.nullDate != toDo.startDate.copyWith(hour: Constants.midnight.hour, minute: Constants.midnight.minute) || Constants.nullDate != toDo.dueDate.copyWith(hour: Constants.midnight.hour, minute: Constants.midnight.minute)) ? IconButton(
+          icon: const Icon(Icons.clear),
           onPressed: () => setState(() {
+            checkClose = true;
                 toDo.startDate = Constants.nullDate
                     .copyWith(hour: toDo.startDate.hour, minute: toDo.startDate.minute);
                 toDo.dueDate = Constants.nullDate
                     .copyWith(hour: toDo.dueDate.hour, minute: toDo.dueDate.minute);
-              })),
+              })) : null,
       onTap: () {
         showDialog<void>(
             context: context,
             builder: (BuildContext context) {
-              DateTime? tmpStart = (Constants.nullDate != toDo.startDate) ? toDo.startDate : null;
-              DateTime? tmpDue = (Constants.nullDate != toDo.dueDate) ? toDo.dueDate : null;
+              DateTime? tmpStart = (Constants.nullDate != toDo.startDate.copyWith(hour: Constants.midnight.hour, minute: Constants.midnight.minute)) ? toDo.startDate : null;
+              DateTime? tmpDue = (Constants.nullDate != toDo.dueDate.copyWith(hour: Constants.midnight.hour, minute: Constants.midnight.minute)) ? toDo.dueDate : null;
               DateTime initDate = tmpStart ?? tmpDue ?? DateTime.now();
               bool setStart = false;
               final int numDays = (tmpDue?.difference(initDate).inDays ?? 0) + 1;
@@ -1929,14 +1928,15 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                                                               maxLines: 1,
                                                               minFontSize: Constants.small)),
                                                 ),
-                                                IconButton(
-                                                  icon: const Icon(Icons.close_outlined),
-                                                  selectedIcon: const Icon(Icons.close),
+                                                (tmpStart != null) ? IconButton(
+                                                  icon: const Icon(Icons.clear_outlined),
+                                                  selectedIcon: const Icon(Icons.clear),
                                                   onPressed: () => setState(() {
                                                     checkClose = true;
+                                                    showDates.remove(tmpStart);
                                                     tmpStart = null;
                                                   }),
-                                                )
+                                                ) : const SizedBox.shrink(),
                                               ]),
                                         ),
                                       ),
@@ -1987,14 +1987,15 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                                                               maxLines: 1,
                                                               minFontSize: Constants.small)),
                                                 ),
-                                                IconButton(
-                                                  icon: const Icon(Icons.close_outlined),
-                                                  selectedIcon: const Icon(Icons.close),
+                                                (null != tmpDue) ? IconButton(
+                                                  icon: const Icon(Icons.clear_outlined),
+                                                  selectedIcon: const Icon(Icons.clear),
                                                   onPressed: () => setState(() {
                                                     checkClose = true;
+                                                    showDates.remove(tmpDue);
                                                     tmpDue = null;
                                                   }),
-                                                )
+                                                ) : const SizedBox.shrink()
                                               ]),
                                         ),
                                       ),
@@ -2053,6 +2054,9 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                                           icon: const Icon(Icons.done_outlined),
                                           onPressed: () {
                                             setState(() {
+                                              checkClose = true;
+                                              tmpStart = tmpStart ?? Constants.nullDate;
+                                              tmpDue = tmpDue ?? Constants.nullDate;
                                               toDo.startDate = tmpStart!.copyWith(
                                                   hour: toDo.startDate.hour,
                                                   minute: toDo.startDate.minute);
@@ -2082,10 +2086,10 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
   ListTile buildTimeTile() {
     // TODO: possibly factor these out as nullable params.
     TimeOfDay? startTime = (showStartTime)
-        ? TimeOfDay(hour: toDo.startDate.hour, minute: toDo.startDate.minute)
+        ? TimeOfDay.fromDateTime(toDo.startDate)
         : null;
     TimeOfDay? dueTime =
-        (showDueTime) ? TimeOfDay(hour: toDo.dueDate.hour, minute: toDo.dueDate.minute) : null;
+        (showDueTime) ? TimeOfDay.fromDateTime(toDo.dueDate) : null;
     return ListTile(
         leading: const Icon(Icons.schedule_outlined),
         title: (null == startTime && null == dueTime)
@@ -2211,9 +2215,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                                                 final TimeOfDay? picked = await showTimePicker(
                                                     context: context,
                                                     initialTime: startTime ??
-                                                        TimeOfDay(
-                                                            hour: toDo.startDate.hour,
-                                                            minute: toDo.startDate.minute));
+                                                        Constants.midnight);
                                                 if (null != picked) {
                                                   setState(() => startTime = picked);
                                                 }
@@ -2314,9 +2316,10 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                         )));
               }).then((_) => setState(() {}));
         },
-        trailing: IconButton(
-          icon: const Icon(Icons.close),
+        trailing: (showStartTime || showDueTime) ? IconButton(
+          icon: const Icon(Icons.clear),
           onPressed: () => setState(() {
+            checkClose = true;
             showStartTime = false;
             showDueTime = false;
             toDo.startDate = toDo.startDate
@@ -2324,7 +2327,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
             toDo.dueDate = toDo.dueDate
                 .copyWith(hour: Constants.midnight.hour, minute: Constants.midnight.minute);
           }),
-        ));
+        ) : null );
   }
 
   ListTile buildRepeatableTile(BuildContext context, {bool smallScreen = false}) {
@@ -2674,8 +2677,8 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                 });
               }).then((_) => setState(() {}));
         },
-        trailing: IconButton(
-            icon: const Icon(Icons.close),
+        trailing: (toDo.frequency != Frequency.once) ?  IconButton(
+            icon: const Icon(Icons.clear),
             onPressed: () => setState(() {
                   checkClose = true;
                   toDo.frequency = Frequency.once;
@@ -2684,7 +2687,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                   toDo.repeatDays.fillRange(0, toDo.repeatDays.length, false);
 
                   toDo.repeatSkip = 1;
-                })));
+                })): null);
   }
 
   Row buildUpdateDeleteRow(BuildContext context, Color errorColor) {
