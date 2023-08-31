@@ -32,7 +32,6 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
   late Deadline prevDeadline;
 
   // Provider (Needs user values) -> Refactor to DI for testing. One day.
-  late final UserProvider userProvider;
   late final DeadlineProvider deadlineProvider;
 
   // Scrolling
@@ -83,7 +82,6 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
   }
 
   void initializeProviders() {
-    userProvider = Provider.of<UserProvider>(context, listen: false);
     deadlineProvider = Provider.of<DeadlineProvider>(context, listen: false);
   }
 
@@ -129,7 +127,10 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
       setState(() => nameErrorText = "Enter Task Name");
     }
 
-    if (deadline.warnMe && !deadlineProvider.validateWarnDate(warnDate: deadline.warnDate)) {
+    // Newly set warnMe = validate
+    // Editing previous warnMe = Ignore - is not relevant.
+    // I am unsure as to how this should be handled.
+    if (!prevDeadline.warnMe && deadline.warnMe && !deadlineProvider.validateWarnDate(warnDate: deadline.warnDate)) {
       valid = false;
 
       Flushbar? error;
@@ -241,15 +242,14 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                                                     onPressed: () {
                                                       // Consider moving this to shifting focus to calendar
                                                       // using focusNode.
-                                                      if (Constants.nullDate ==
+                                                      if (null ==
                                                           tmpWarnDate) {
                                                         setState(() =>
                                                             tmpWarnDate =
                                                                 DateTime.now());
                                                       }
                                                     },
-                                                    child: (Constants
-                                                                .nullDate !=
+                                                    child: (null !=
                                                             tmpWarnDate)
                                                         ? AutoSizeText(
                                                             Jiffy.parseFromDateTime(
@@ -276,7 +276,7 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                                                                 Constants
                                                                     .small)),
                                               ),
-                                              (Constants.nullDate != tmpWarnDate) ? IconButton(
+                                              (null != tmpWarnDate) ? IconButton(
                                                 icon: const Icon(
                                                     Icons.clear_outlined),
                                                 selectedIcon:

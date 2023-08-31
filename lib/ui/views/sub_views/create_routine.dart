@@ -29,7 +29,6 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
   late bool expanded;
 
   // Provider (Needs user values) -> Refactor to DI for testing. One day.
-  late final UserProvider userProvider;
   late final RoutineProvider routineProvider;
 
   // Scrolling
@@ -102,7 +101,6 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
   }
 
   void initializeProviders() {
-    userProvider = Provider.of<UserProvider>(context, listen: false);
     routineProvider = Provider.of<RoutineProvider>(context, listen: false);
   }
 

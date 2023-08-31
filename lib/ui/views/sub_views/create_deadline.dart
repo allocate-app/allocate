@@ -31,7 +31,6 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
   late bool checkClose;
 
   // Provider (Needs user values) -> Refactor to DI for testing. One day.
-  late final UserProvider userProvider;
   late final DeadlineProvider deadlineProvider;
 
   // Scrolling
@@ -106,7 +105,6 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
   }
 
   void initializeProviders() {
-    userProvider = Provider.of<UserProvider>(context, listen: false);
     deadlineProvider = Provider.of<DeadlineProvider>(context, listen: false);
   }
 

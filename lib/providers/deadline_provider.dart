@@ -101,6 +101,11 @@ class DeadlineProvider extends ChangeNotifier {
 
     warnDate = warnDate ?? dueDate;
 
+    if(warnDate.isAfter(warnDate))
+      {
+        warnDate = warnDate.add(const Duration(minutes: 5));
+      }
+
     curDeadline = Deadline(
         name: name,
         description: description,
@@ -146,7 +151,7 @@ class DeadlineProvider extends ChangeNotifier {
     curDeadline!.lastUpdated = DateTime.now();
 
     cancelNotification();
-    if (curDeadline!.warnMe) {
+    if (curDeadline!.warnMe && validateWarnDate()) {
       curDeadline!.notificationID = curDeadline!.notificationID ?? curDeadline!.hashCode;
       scheduleNotification();
     }

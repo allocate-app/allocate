@@ -18,6 +18,7 @@ import '../services/isar_service.dart';
 import '../services/notification_service.dart';
 import '../services/supabase_service.dart';
 import '../ui/views/sub_views/create_deadline.dart';
+import '../ui/views/sub_views/create_reminder.dart';
 import '../ui/views/sub_views/create_routine.dart';
 import '../ui/views/sub_views/create_todo.dart';
 import '../ui/views/sub_views/update_deadline.dart';
@@ -217,26 +218,32 @@ class _FormTester extends State<FormTester> with WindowListener {
                           child: const Text("Create Deadline")
                       ),
                     ),
-                      FloatingActionButton(
-                        onPressed: () => inputDialog(context, dialog:(null != Provider.of<DeadlineProvider>(context, listen: false).curDeadline)?  const UpdateDeadlineScreen() : const CreateDeadlineScreen()),
-                        backgroundColor: Colors.green,
-                        child: const Text("Update Deadline"),
+                      Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: FloatingActionButton(
+                          onPressed: () => inputDialog(context, dialog:(null != Provider.of<DeadlineProvider>(context, listen: false).curDeadline)?  const UpdateDeadlineScreen() : const CreateDeadlineScreen()),
+                          backgroundColor: Colors.green,
+                          child: const Text("Update Deadline"),
+                        ),
                       )
                     ]
                 ),
-                // Expanded(
-                //   child: Column(
-                //       children: [FloatingActionButton(
-                //           onPressed: () => inputDialog(context, dialog: const CreateReminderScreen()),
-                //           backgroundColor: Colors.pink,
-                //           child: const Text("Create Reminder")
-                //       ), FloatingActionButton(
-                //         onPressed: () => inputDialog(context, dialog: const CreateReminderScreen()),
-                //         backgroundColor: Colors.green,
-                //         child: const Text("Update Reminder"),
-                //       )]
-                //   ),
-                // ),
+        Column(
+            children: [Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: FloatingActionButton(
+                  onPressed: () => inputDialog(context, dialog: const CreateReminderScreen()),
+                  backgroundColor: Colors.pink,
+                  child: const Text("Create Reminder")
+              ),
+            ),
+            //   FloatingActionButton(
+            //   onPressed: () => inputDialog(context, dialog: (null != Provider.of<ReminderProvider>(context, listen: false).curReminder)?  const UpdateReminderScreen() : const CreateReminderScreen()),
+            //   backgroundColor: Colors.green,
+            //   child: const Text("Update Reminder"),
+            // )
+            ]
+        ),
                 //
                 // Expanded(
                 //   child: Column(

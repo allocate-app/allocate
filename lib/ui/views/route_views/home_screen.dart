@@ -89,7 +89,7 @@ class _HomeScreen extends State<HomeScreen> implements CrossBuild {
 
         routineProvider.resetRoutines();
 
-        Provider.of<ReminderProvider>(context, listen: false).checkRepeating(now: now);
+        //Provider.of<ReminderProvider>(context, listen: false).checkRepeating(now: now);
 
         Provider.of<DeadlineProvider>(context, listen: false).checkRepeating(now: now);
       }

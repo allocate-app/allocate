@@ -48,7 +48,7 @@ class DeadlineService {
 
     // Scheduling logic.
     newDeadline.notificationID = newDeadline.hashCode;
-    if (newDeadline.warnMe) {
+    if (newDeadline.warnMe && NotificationService.instance.validateWarnDate(warnDate: newDeadline.warnDate)) {
       String newDue = Jiffy.parseFromDateTime(newDeadline.dueDate).toLocal().toString();
       NotificationService.instance.scheduleNotification(
           id: newDeadline.notificationID!,
@@ -103,7 +103,7 @@ class DeadlineService {
       newDeadline.notificationID = newDeadline.hashCode;
 
       // Scheduling logic.
-      if (newDeadline.warnMe) {
+      if (newDeadline.warnMe && NotificationService.instance.validateWarnDate(warnDate: newDeadline.warnDate)) {
         String newDue = Jiffy.parseFromDateTime(newDeadline.dueDate).toLocal().toString();
         NotificationService.instance.scheduleNotification(
             id: newDeadline.notificationID!,

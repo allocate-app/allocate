@@ -138,27 +138,27 @@ class ReminderRepo implements ReminderRepository {
     }
   }
 
-  @override
-  Future<void> deleteFutures({required Reminder deleteFrom}) async {
-    List<Reminder> toDelete = await _isarClient.reminders
-        .where()
-        .repeatIDEqualTo(deleteFrom.repeatID)
-        .filter()
-        .repeatableEqualTo(true)
-        .findAll();
-
-    // This is to prevent a race condition.
-    toDelete.remove(deleteFrom);
-
-    toDelete.map((Reminder r) => r.toDelete = true);
-    List<int> cancelIDs =
-        toDelete.map((Reminder reminder) => reminder.notificationID!).toList(growable: false);
-
-    // This is a temporary implementation solution to handle bulk cancelling from repeating reminders
-    NotificationService.instance.cancelFutures(ids: cancelIDs);
-
-    updateBatch(toDelete);
-  }
+  // @override
+  // Future<void> deleteFutures({required Reminder deleteFrom}) async {
+  //   List<Reminder> toDelete = await _isarClient.reminders
+  //       .where()
+  //       .repeatIDEqualTo(deleteFrom.repeatID)
+  //       .filter()
+  //       .repeatableEqualTo(true)
+  //       .findAll();
+  //
+  //   // This is to prevent a race condition.
+  //   toDelete.remove(deleteFrom);
+  //
+  //   toDelete.map((Reminder r) => r.toDelete = true);
+  //   List<int> cancelIDs =
+  //       toDelete.map((Reminder reminder) => reminder.notificationID!).toList(growable: false);
+  //
+  //   // This is a temporary implementation solution to handle bulk cancelling from repeating reminders
+  //   NotificationService.instance.cancelFutures(ids: cancelIDs);
+  //
+  //   updateBatch(toDelete);
+  // }
 
   @override
   Future<void> deleteLocal() async {
@@ -235,7 +235,27 @@ class ReminderRepo implements ReminderRepository {
           _isarClient.reminders.put(reminder);
         }
       });
+
+      resetNotifications();
     });
+  }
+
+  // FUTURE TODO: Refactor this up to the provider class - > Or make implentation agnostic for the service.
+  // OR: Send a dynamic object to Notification service.
+  Future<void> resetNotifications() async{
+    await NotificationService.instance.cancelAllNotifications().whenComplete(
+            () async {
+          final List<Reminder> toSchedule = await getWarnMes();
+          for(Reminder reminder in toSchedule)
+          {
+            String newDue = Jiffy.parseFromDateTime(reminder.dueDate).toLocal().yMMMMEEEEdjm.toString();
+
+            NotificationService.instance.scheduleNotification(id: reminder.notificationID!, warnDate: reminder.dueDate, message: "${reminder.name} is due: $newDue",
+                payload: "REMINDER\n${reminder.notificationID}");
+          }
+
+        }
+    );
   }
 
   @override
@@ -323,12 +343,20 @@ class ReminderRepo implements ReminderRepository {
     }
   }
 
-  @override
-  Future<List<Reminder>> getRepeatables({DateTime? now}) async => _isarClient.reminders
+  // @override
+  // Future<List<Reminder>> getRepeatables({DateTime? now}) async => _isarClient.reminders
+  //     .where()
+  //     .repeatableEqualTo(true)
+  //     .filter()
+  //     .dueDateLessThan(now ?? today)
+  //     .findAll();
+
+  // There is probably a better name - all reminders warn.
+  Future<List<Reminder>> getWarnMes({DateTime? now}) async => _isarClient.reminders
       .where()
-      .repeatableEqualTo(true)
-      .filter()
-      .dueDateLessThan(now ?? today)
+      .dueDateGreaterThan(now ?? today)
+  // IOS has a hard limit of 64 notificiations.
+      .sortByDueDate().limit(64)
       .findAll();
 
   Future<List<int>> getDeleteIds() async =>

@@ -81,42 +81,39 @@ class ReminderProvider extends ChangeNotifier {
 
   Future<void> createReminder(
       {required String name,
-      DateTime? startDate,
+      // DateTime? startDate,
       DateTime? dueDate,
-      DateTime? warnDate,
-      bool? repeatable,
-      List<bool>? repeatDays,
-      int? repeatSkip,
-      Frequency? frequency,
-      CustomFrequency? customFreq}) async {
-    startDate = startDate ?? DateTime.now().copyWith(hour: Constants.midnight.hour, minute: Constants.midnight.minute);
-    dueDate = startDate.copyWith();
+      // DateTime? warnDate,
+      // bool? repeatable,
+      // List<bool>? repeatDays,
+      // int? repeatSkip,
+      // Frequency? frequency,
+      // CustomFrequency? customFreq
+      }) async {
 
-    if (startDate.isAfter(dueDate)) {
-      dueDate = startDate.add(const Duration(minutes: 15));
-    }
-
-    warnDate = warnDate ?? dueDate;
+    dueDate = dueDate ?? DateTime.now().copyWith(hour: Constants.eod.hour, minute: Constants.eod.minute);
+    if(DateTime.now().isAfter(dueDate))
+      {
+        dueDate = dueDate.add(const Duration(minutes: 5));
+      }
 
     curReminder = Reminder(
       name: name,
-      startDate: startDate,
       dueDate: dueDate,
-      warnDate: warnDate,
-      repeatable: repeatable ?? false,
-      repeatDays: repeatDays ?? List.filled(7, false, growable: false),
-      repeatSkip: repeatSkip ?? 1,
-      frequency: frequency ?? Frequency.once,
-      customFreq: customFreq ?? CustomFrequency.weekly,
+      // repeatable: repeatable ?? false,
+      // repeatDays: repeatDays ?? List.filled(7, false, growable: false),
+      // repeatSkip: repeatSkip ?? 1,
+      // frequency: frequency ?? Frequency.once,
+      // customFreq: customFreq ?? CustomFrequency.weekly,
       lastUpdated: DateTime.now(),
     );
 
-    if(curReminder!.repeatable)
-      {
-        curReminder!.repeatID = curReminder.hashCode;
+    // if(curReminder!.repeatable)
+    //   {
+    //     curReminder!.repeatID = curReminder.hashCode;
+    //
+    //   }
 
-      }
-    // TODO: if refactoring to include a flag for warn/don't warn, change this accordingly and handle null in the scheduler.
     curReminder!.notificationID = curReminder.hashCode;
 
     try {
@@ -176,14 +173,14 @@ class ReminderProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // This also schedules notifications.
-  Future<void> checkRepeating({DateTime? now}) async =>
-      _reminderService.checkRepeating(now: now ?? DateTime.now());
-  Future<void> nextRepeat() async => _reminderService.nextRepeatable(reminder: curReminder!);
-  // This also cancels upcoming notifications.
-  Future<void> deleteFutures() async => _reminderService.deleteFutures(reminder: curReminder!);
-  Future<void> populateCalendar({DateTime? limit}) async =>
-      _reminderService.populateCalendar(limit: limit ?? DateTime.now());
+  // If adding repeating events.
+  // Future<void> checkRepeating({DateTime? now}) async =>
+  //     _reminderService.checkRepeating(now: now ?? DateTime.now());
+  // Future<void> nextRepeat() async => _reminderService.nextRepeatable(reminder: curReminder!);
+  // // This also cancels upcoming notifications.
+  // Future<void> deleteFutures() async => _reminderService.deleteFutures(reminder: curReminder!);
+  // Future<void> populateCalendar({DateTime? limit}) async =>
+  //     _reminderService.populateCalendar(limit: limit ?? DateTime.now());
 
   Future<List<Reminder>> getReminders({int limit = 50, int offset = 0}) async =>
       await _reminderService.getReminders(limit: limit, offset: offset);
@@ -213,22 +210,23 @@ class ReminderProvider extends ChangeNotifier {
       curReminder = await _reminderService.getReminderByID(id: id) ??
           Reminder(
               name: '',
-              startDate: DateTime.now(),
-              dueDate: DateTime.now(),
-              warnDate: DateTime.now(),
-              repeatDays: List.filled(7, false),
+              dueDate: DateTime.now().copyWith(hour: Constants.midnight.hour, minute: Constants.midnight.minute),
+            //  repeatDays: List.filled(7, false),
               lastUpdated: DateTime.now());
 
   Future<void> scheduleNotification() async {
     String newDue = Jiffy.parseFromDateTime(curReminder!.dueDate).toLocal().toString();
     _notificationService.scheduleNotification(
         id: curReminder!.notificationID!,
-        warnDate: curReminder!.warnDate,
+        warnDate: curReminder!.dueDate,
         message: "${curReminder!.name} IS DUE: $newDue",
-        payload: "DEADLINE\n${curReminder!.notificationID}");
+        payload: "REMINDER\n${curReminder!.notificationID}");
   }
 
   Future<void> cancelNotification() async {
     _notificationService.cancelNotification(id: curReminder!.notificationID!);
   }
+
+  bool validateWarnDate({DateTime? warnDate}) => _notificationService.validateWarnDate(warnDate: warnDate ?? curReminder!.dueDate);
+
 }

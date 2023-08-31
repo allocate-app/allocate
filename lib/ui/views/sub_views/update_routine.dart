@@ -30,7 +30,6 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
   late bool expanded;
 
   // Provider (Needs user values) -> Refactor to DI for testing. One day.
-  late final UserProvider userProvider;
   late final RoutineProvider routineProvider;
 
   // Cache - for discard
@@ -109,7 +108,6 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
   }
 
   void initializeProviders() {
-    userProvider = Provider.of<UserProvider>(context, listen: false);
     routineProvider = Provider.of<RoutineProvider>(context, listen: false);
   }
 
