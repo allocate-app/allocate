@@ -10,7 +10,6 @@ import "package:provider/provider.dart";
 
 import "../../../model/task/subtask.dart";
 import "../../../providers/routine_provider.dart";
-import "../../../providers/user_provider.dart";
 import "../../../util/constants.dart";
 import "../../../util/exceptions.dart";
 import "../../../util/numbers.dart";
@@ -136,16 +135,15 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final Color errorColor = Theme.of(context).colorScheme.error;
-
     bool largeScreen = (MediaQuery.of(context).size.width >= Constants.largeScreen);
     bool smallScreen = (MediaQuery.of(context).size.width <= Constants.smallScreen);
     return (largeScreen)
-        ? buildDesktopDialog(context, smallScreen, errorColor)
-        : buildMobileDialog(context, smallScreen, errorColor);
+        ? buildDesktopDialog(context: context, smallScreen: smallScreen)
+        : buildMobileDialog(context: context, smallScreen: smallScreen);
   }
 
-  Dialog buildDesktopDialog(BuildContext context, bool smallScreen, Color errorColor) {
+  Dialog buildDesktopDialog(
+      {required BuildContext context, bool smallScreen = false, Color? errorColor}) {
     return Dialog(
       insetPadding: const EdgeInsets.all(Constants.outerDialogPadding),
       child: ConstrainedBox(
@@ -245,7 +243,7 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
                               ),
                             )
                           : const SizedBox.shrink(),
-                      buildCloseButton(context),
+                      buildCloseButton(context: context),
                     ]),
                   ),
                 ),
@@ -283,7 +281,7 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
                                 Padding(
                                   padding:
                                   const EdgeInsets.symmetric(horizontal: Constants.padding),
-                                  child: buildDurationTile(context, smallScreen: smallScreen),
+                                  child: buildDurationTile(context: context, smallScreen: smallScreen),
                                 ),
                               ])
                         ),
@@ -370,7 +368,7 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
                 // Create Button - could be a stack
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
-                  child: buildCreateButton(context, errorColor),
+                  child: buildCreateButton(context: context),
                 )
               ]),
         ),
@@ -378,7 +376,8 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
     );
   }
 
-  Dialog buildMobileDialog(BuildContext context, bool smallScreen, Color errorColor) {
+  Dialog buildMobileDialog(
+      {required BuildContext context, bool smallScreen = false, Color? errorColor}) {
     return Dialog(
       insetPadding: const EdgeInsets.symmetric(
           horizontal: Constants.outerDialogPadding, vertical: Constants.smallOuterDialogPadding),
@@ -475,7 +474,7 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
                           ),
                         )
                       : const SizedBox.shrink(),
-                  buildCloseButton(context),
+                  buildCloseButton(context: context),
                 ]),
               ),
               const PaddedDivider(padding: Constants.padding),
@@ -499,7 +498,7 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
                     // Expected Duration / RealDuration -> Show status, on click, open a dialog.
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
-                      child: buildDurationTile(context, smallScreen: smallScreen),
+                      child: buildDurationTile(context: context, smallScreen: smallScreen),
                     ),
 
                     const PaddedDivider(padding: Constants.innerPadding),
@@ -568,14 +567,14 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
               // Create Button - could be a stack
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
-                child: buildCreateButton(context, errorColor),
+                child: buildCreateButton(context: context),
               )
             ]),
       ),
     );
   }
 
-  Row buildCreateButton(BuildContext context, Color errorColor) {
+  Row buildCreateButton({required BuildContext context, Color? errorColor}) {
     return Row(mainAxisAlignment: MainAxisAlignment.end, children: [
       FilledButton.icon(
           label: const Text("Create Routine"),
@@ -910,7 +909,7 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
     );
   }
 
-  ListTile buildDurationTile(BuildContext context, {bool smallScreen = false}) {
+  ListTile buildDurationTile({required BuildContext context,  bool smallScreen = false}) {
     return ListTile(
       leading: const Icon(Icons.timer_outlined),
       title: (expectedDuration > 0)
@@ -1139,7 +1138,7 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
     );
   }
 
-  IconButton buildCloseButton(BuildContext context) {
+  IconButton buildCloseButton({required BuildContext context}) {
     return IconButton(
         onPressed: () {
           if (checkClose) {

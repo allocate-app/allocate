@@ -259,18 +259,31 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
     return Constants.batteryIcons[weight]!;
   }
 
+  void mergeDateTimes() {
+    startDate = startDate ?? DateTime.now();
+    startTime = startTime ?? Constants.midnight;
+
+    startDate = startDate!.copyWith(hour: startTime!.hour, minute: startTime!.minute);
+
+    dueDate = dueDate ?? DateTime.now();
+    dueTime = dueTime ?? Constants.midnight;
+
+    dueDate = dueDate!.copyWith(hour: dueTime!.hour, minute: dueTime!.minute);
+
+  }
+
+
   @override
   Widget build(BuildContext context) {
-    final Color errorColor = Theme.of(context).colorScheme.error;
-
     bool largeScreen = (MediaQuery.of(context).size.width >= Constants.largeScreen);
     bool smallScreen = (MediaQuery.of(context).size.width <= Constants.smallScreen);
     return (largeScreen)
-        ? buildDesktopDialog(context, smallScreen, errorColor)
-        : buildMobileDialog(context, smallScreen, errorColor);
+        ? buildDesktopDialog(context: context, smallScreen: smallScreen)
+        : buildMobileDialog(context: context, smallScreen: smallScreen);
   }
 
-  Dialog buildDesktopDialog(BuildContext context, bool smallScreen, Color errorColor) {
+  Dialog buildDesktopDialog(
+      {required BuildContext context, bool smallScreen = false}) {
     return Dialog(
       insetPadding: const EdgeInsets.all(Constants.outerDialogPadding),
       child: ConstrainedBox(
@@ -368,7 +381,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                             ),
                           )
                         : const SizedBox.shrink(),
-                    buildCloseButton(context),
+                    buildCloseButton(context: context),
                   ]),
                 ),
                 const PaddedDivider(padding: Constants.padding),
@@ -535,7 +548,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                                 Padding(
                                   padding:
                                       const EdgeInsets.symmetric(horizontal: Constants.padding),
-                                  child: buildDurationTile(context, smallScreen: smallScreen),
+                                  child: buildDurationTile(context: context, smallScreen: smallScreen),
                                 ),
 
                                 const PaddedDivider(padding: Constants.innerPadding),
@@ -544,7 +557,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                                 Padding(
                                   padding:
                                       const EdgeInsets.symmetric(horizontal: Constants.padding),
-                                  child: buildDateTile(context),
+                                  child: buildDateTile(context: context),
                                 ),
 
                                 const PaddedDivider(padding: Constants.innerPadding),
@@ -560,7 +573,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                                 Padding(
                                   padding:
                                       const EdgeInsets.symmetric(horizontal: Constants.padding),
-                                  child: buildRepeatableTile(context, smallScreen: smallScreen),
+                                  child: buildRepeatableTile(context: context, smallScreen: smallScreen),
                                 ),
                               ]),
                         )
@@ -571,7 +584,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                 // Create Button - could be a stack
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
-                  child: buildCreateButton(context, errorColor),
+                  child: buildCreateButton(context: context),
                 )
               ]),
         ),
@@ -579,7 +592,8 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
     );
   }
 
-  Dialog buildMobileDialog(BuildContext context, bool smallScreen, Color errorColor) {
+  Dialog buildMobileDialog(
+      {required BuildContext context, bool smallScreen = false}) {
     return Dialog(
       insetPadding: const EdgeInsets.all(Constants.outerDialogPadding),
       child: Padding(
@@ -675,7 +689,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                           ),
                         )
                       : const SizedBox.shrink(),
-                  buildCloseButton(context),
+                  buildCloseButton(context: context),
                 ]),
               ),
               const PaddedDivider(padding: Constants.padding),
@@ -819,7 +833,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                     // Expected Duration / RealDuration -> Show status, on click, open a dialog.
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
-                      child: buildDurationTile(context, smallScreen: smallScreen),
+                      child: buildDurationTile(context: context, smallScreen: smallScreen),
                     ),
 
                     const PaddedDivider(padding: Constants.innerPadding),
@@ -827,7 +841,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                     //startDate
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
-                      child: buildDateTile(context),
+                      child: buildDateTile(context: context),
                     ),
 
                     const PaddedDivider(padding: Constants.innerPadding),
@@ -841,7 +855,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                     // Repeatable Stuff -> Show status, on click, open a dialog.
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
-                      child: buildRepeatableTile(context, smallScreen: smallScreen),
+                      child: buildRepeatableTile(context: context, smallScreen: smallScreen),
                     ),
                   ],
                 ),
@@ -851,14 +865,14 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
               // Create Button - could be a stack
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
-                child: buildCreateButton(context, errorColor),
+                child: buildCreateButton(context: context),
               )
             ]),
       ),
     );
   }
 
-  Row buildCreateButton(BuildContext context, Color errorColor) {
+  Row buildCreateButton({required BuildContext context}) {
     return Row(mainAxisAlignment: MainAxisAlignment.end, children: [
       FilledButton.icon(
           label: const Text("Create Task"),
@@ -911,20 +925,8 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
   }
 
 
-  void mergeDateTimes() {
-    startDate = startDate ?? DateTime.now();
-    startTime = startTime ?? Constants.midnight;
 
-    startDate = startDate!.copyWith(hour: startTime!.hour, minute: startTime!.minute);
-
-    dueDate = dueDate ?? DateTime.now();
-    dueTime = dueTime ?? Constants.midnight;
-
-    dueDate = dueDate!.copyWith(hour: dueTime!.hour, minute: dueTime!.minute);
-
-  }
-
-  ListTile buildRepeatableTile(BuildContext context, {bool smallScreen = false}) {
+  ListTile buildRepeatableTile({required BuildContext context, bool smallScreen = false}) {
     return ListTile(
         leading: const Icon(Icons.event_repeat_outlined),
         title: (frequency == Frequency.once)
@@ -1489,7 +1491,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
         ): null);
   }
 
-  ListTile buildDateTile(BuildContext context) {
+  ListTile buildDateTile({required BuildContext context}) {
     return ListTile(
       leading: const Icon(Icons.today_outlined),
       title: (null == startDate && null == dueDate)
@@ -2217,7 +2219,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
         ));
   }
 
-  ListTile buildDurationTile(BuildContext context, {bool smallScreen = false}) {
+  ListTile buildDurationTile({required BuildContext context, bool smallScreen = false}) {
     return ListTile(
       leading: const Icon(Icons.timer_outlined),
       title: (expectedDuration > 0)
@@ -2446,7 +2448,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
     );
   }
 
-  IconButton buildCloseButton(BuildContext context) {
+  IconButton buildCloseButton({required BuildContext context}) {
     return IconButton(
         onPressed: () {
           if (checkClose) {
@@ -2526,7 +2528,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
   }
 
   FutureBuilder<List<Group>> buildGroupList(
-      Future<List<Group>> searchFuture, SearchController controller) {
+      {required Future<List<Group>> searchFuture, required SearchController controller}) {
     return FutureBuilder(
         future: searchFuture,
         builder: (context, snapshot) {
@@ -2578,11 +2580,11 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                   .toList();
             }
             final searchFuture = groupProvider.mostRecent(limit: 5);
-            return [buildGroupList(searchFuture, controller)];
+            return [buildGroupList(searchFuture: searchFuture, controller: controller)];
           }
           // Search query iterable.
           final searchFuture = groupProvider.searchGroups(searchString: controller.text);
-          return [buildGroupList(searchFuture, controller)];
+          return [buildGroupList(searchFuture: searchFuture, controller: controller)];
         });
   }
 }

@@ -10,9 +10,9 @@ import 'package:intl/intl.dart';
 import 'package:jiffy/jiffy.dart';
 import 'package:numberpicker/numberpicker.dart';
 import 'package:provider/provider.dart';
+
 import '../../../model/task/deadline.dart';
 import '../../../providers/deadline_provider.dart';
-import '../../../providers/user_provider.dart';
 import '../../../util/constants.dart';
 import '../../../util/enums.dart';
 import '../../../util/exceptions.dart';
@@ -449,7 +449,7 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
     });
   }
 
-  Future<void> handleUpdate({required BuildContext context, required Color errorColor}) async {
+  Future<void> handleUpdate({required BuildContext context}) async {
     if (prevDeadline.frequency != Frequency.once && checkClose) {
       bool? updateSingle = await showModalBottomSheet<bool?>(
           showDragHandle: true,
@@ -541,7 +541,7 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
 
   }
 
-  handleDelete({required BuildContext context, required Color errorColor}) async {
+  handleDelete({required BuildContext context}) async {
     if (prevDeadline.frequency != Frequency.once) {
       bool? updateSingle = await showModalBottomSheet<bool?>(
           showDragHandle: true,
@@ -642,16 +642,13 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
     bool smallScreen =
         (MediaQuery.of(context).size.width <= Constants.smallScreen);
 
-    // This is kind of dank.
-    final Color errorColor = Theme.of(context).colorScheme.error;
-
     return (largeScreen)
-        ? buildDesktopDialog(context, smallScreen, largeScreen, errorColor)
-        : buildMobileDialog(context, smallScreen, largeScreen, errorColor);
+        ? buildDesktopDialog(context: context, smallScreen: smallScreen, largeScreen: largeScreen)
+        : buildMobileDialog(context: context, smallScreen: smallScreen, largeScreen: largeScreen);
   }
 
   Dialog buildDesktopDialog(
-      BuildContext context, bool smallScreen, bool largeScreen, Color errorColor) {
+      {required BuildContext context, bool smallScreen = false, bool largeScreen = false}) {
     return Dialog(
       insetPadding: const EdgeInsets.all(Constants.outerDialogPadding),
       child: ConstrainedBox(
@@ -682,7 +679,7 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                               maxLines: 1,
                             ),
                           ),
-                          buildCloseButton(context),
+                          buildCloseButton(context: context),
                         ]),
                   ),
                 ),
@@ -730,7 +727,7 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                                 Padding(
                                     padding: const EdgeInsets.symmetric(
                                         horizontal: Constants.padding),
-                                    child: buildDateTile(context)),
+                                    child: buildDateTile(context: context)),
                                 const PaddedDivider(
                                     padding: Constants.innerPadding),
 
@@ -744,7 +741,7 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                                 Padding(
                                   padding: const EdgeInsets.symmetric(
                                       horizontal: Constants.padding),
-                                  child: buildRepeatableTile(context,
+                                  child: buildRepeatableTile(context: context,
                                       smallScreen: smallScreen),
                                 )
                               ]),
@@ -781,7 +778,7 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                   padding:
                       const EdgeInsets.symmetric(horizontal: Constants.padding),
                   child: buildUpdateDeleteRow(
-                      context: context, errorColor: errorColor),
+                      context: context),
                 )
               ]),
         ),
@@ -790,7 +787,7 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
   }
 
   Dialog buildMobileDialog(
-      BuildContext context, bool smallScreen, bool largeScreen, Color errorColor) {
+      {required BuildContext context, bool smallScreen = false, bool largeScreen = false}) {
     return Dialog(
       insetPadding: const EdgeInsets.symmetric(
           horizontal: Constants.outerDialogPadding,
@@ -818,7 +815,7 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                           maxLines: 1,
                         ),
                       ),
-                      buildCloseButton(context),
+                      buildCloseButton(context: context),
                     ]),
               ),
               const PaddedDivider(padding: Constants.padding),
@@ -860,7 +857,7 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                     Padding(
                       padding: const EdgeInsets.symmetric(
                           horizontal: Constants.innerPadding),
-                      child: buildDateTile(context),
+                      child: buildDateTile(context: context),
                     ),
 
                     const PaddedDivider(padding: Constants.innerPadding),
@@ -876,7 +873,7 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                     Padding(
                       padding: const EdgeInsets.symmetric(
                           horizontal: Constants.innerPadding),
-                      child: buildRepeatableTile(context,
+                      child: buildRepeatableTile(context: context,
                           smallScreen: smallScreen),
                     ),
                   ],
@@ -889,7 +886,7 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                 padding:
                     const EdgeInsets.symmetric(horizontal: Constants.padding),
                 child: buildUpdateDeleteRow(
-                    context: context, errorColor: errorColor),
+                    context: context),
               )
             ]),
       ),
@@ -897,34 +894,34 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
   }
 
   Row buildUpdateDeleteRow(
-      {required BuildContext context, required Color errorColor}) {
+      {required BuildContext context}) {
     return Row(mainAxisAlignment: MainAxisAlignment.end, children: [
       Padding(
           padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
-          child: buildDeleteButton(context: context, errorColor: errorColor)),
-      buildUpdateButton(context: context, errorColor: errorColor),
+          child: buildDeleteButton(context: context)),
+      buildUpdateButton(context: context),
     ]);
   }
 
   FilledButton buildDeleteButton(
-      {required BuildContext context, required Color errorColor}) {
+      {required BuildContext context}) {
     return FilledButton.tonalIcon(
       label: const Text("Delete"),
       icon: const Icon(Icons.delete_forever),
       onPressed: () async =>
-          await handleDelete(context: context, errorColor: errorColor),
+          await handleDelete(context: context),
     );
   }
 
   FilledButton buildUpdateButton(
-      {required BuildContext context, required Color errorColor}) {
+      {required BuildContext context}) {
     return FilledButton.icon(
         label: const Text("Update Deadline"),
         icon: const Icon(Icons.add),
         onPressed: () async {
           bool validData = validateData();
           if (validData) {
-            handleUpdate(context: context, errorColor: errorColor);
+            handleUpdate(context: context);
           }
           // Then save.
         });
@@ -968,7 +965,7 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
     );
   }
 
-  IconButton buildCloseButton(BuildContext context) {
+  IconButton buildCloseButton({required BuildContext context}) {
     return IconButton(
         onPressed: () {
           if (checkClose) {
@@ -1129,7 +1126,7 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
         ));
   }
 
-  ListTile buildDateTile(BuildContext context) {
+  ListTile buildDateTile({required BuildContext context}) {
     return ListTile(
       leading: const Icon(Icons.today_outlined),
       title: (Constants.nullDate == deadline.startDate &&
@@ -1818,8 +1815,8 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
         ) : null);
   }
 
-  ListTile buildRepeatableTile(BuildContext context,
-      {bool smallScreen = false}) {
+  ListTile buildRepeatableTile({required BuildContext context,
+      bool smallScreen = false}) {
     return ListTile(
         leading: const Icon(Icons.event_repeat_outlined),
         title: (deadline.frequency == Frequency.once)

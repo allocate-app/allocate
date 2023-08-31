@@ -10,8 +10,8 @@ import 'package:intl/intl.dart';
 import 'package:jiffy/jiffy.dart';
 import 'package:numberpicker/numberpicker.dart';
 import 'package:provider/provider.dart';
+
 import '../../../providers/deadline_provider.dart';
-import '../../../providers/user_provider.dart';
 import '../../../util/constants.dart';
 import '../../../util/enums.dart';
 import '../../../util/exceptions.dart';
@@ -485,12 +485,12 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
     bool smallScreen =
         (MediaQuery.of(context).size.width <= Constants.smallScreen);
     return (largeScreen)
-        ? buildDesktopDialog(context, smallScreen, largeScreen)
-        : buildMobileDialog(context, smallScreen, largeScreen);
+        ? buildDesktopDialog(context: context, smallScreen: smallScreen, largeScreen: largeScreen)
+        : buildMobileDialog(context: context, smallScreen: smallScreen, largeScreen: largeScreen);
   }
 
   Dialog buildDesktopDialog(
-      BuildContext context, bool smallScreen, bool largeScreen) {
+      {required BuildContext context, bool smallScreen = false, bool largeScreen = false}) {
     return Dialog(
       insetPadding: const EdgeInsets.all(Constants.outerDialogPadding),
       child: ConstrainedBox(
@@ -521,7 +521,7 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
                               maxLines: 1,
                             ),
                           ),
-                          buildCloseButton(context),
+                          buildCloseButton(context: context),
                         ]),
                   ),
                 ),
@@ -568,7 +568,7 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
                                 Padding(
                                     padding: const EdgeInsets.symmetric(
                                         horizontal: Constants.padding),
-                                    child: buildDateTile(context)),
+                                    child: buildDateTile(context: context)),
                                 const PaddedDivider(padding: Constants.innerPadding),
 
                                 Padding(
@@ -580,7 +580,7 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
                                 Padding(
                                   padding: const EdgeInsets.symmetric(
                                       horizontal: Constants.padding),
-                                  child: buildRepeatableTile(context,
+                                  child: buildRepeatableTile(context: context,
                                       smallScreen: smallScreen),
                                 )
                               ]),
@@ -615,7 +615,7 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
                 Padding(
                   padding:
                       const EdgeInsets.symmetric(horizontal: Constants.padding),
-                  child: buildCreateButton(context),
+                  child: buildCreateButton(context: context),
                 )
               ]),
         ),
@@ -624,7 +624,7 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
   }
 
   Dialog buildMobileDialog(
-      BuildContext context, bool smallScreen, bool largeScreen) {
+      {required BuildContext context, bool smallScreen = false, bool largeScreen = false}) {
     return Dialog(
       insetPadding: const EdgeInsets.symmetric(
           horizontal: Constants.outerDialogPadding,
@@ -652,7 +652,7 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
                           maxLines: 1,
                         ),
                       ),
-                      buildCloseButton(context),
+                      buildCloseButton(context: context),
                     ]),
               ),
               const PaddedDivider(padding: Constants.padding),
@@ -694,7 +694,7 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
                     Padding(
                       padding: const EdgeInsets.symmetric(
                           horizontal: Constants.innerPadding),
-                      child: buildDateTile(context),
+                      child: buildDateTile(context: context),
                     ),
 
                     const PaddedDivider(padding: Constants.innerPadding),
@@ -710,7 +710,7 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
                     Padding(
                       padding: const EdgeInsets.symmetric(
                           horizontal: Constants.innerPadding),
-                      child: buildRepeatableTile(context,
+                      child: buildRepeatableTile(context: context,
                           smallScreen: smallScreen),
                     ),
                   ],
@@ -722,14 +722,14 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
               Padding(
                 padding:
                     const EdgeInsets.symmetric(horizontal: Constants.padding),
-                child: buildCreateButton(context),
+                child: buildCreateButton(context: context),
               )
             ]),
       ),
     );
   }
 
-  Row buildCreateButton(BuildContext context) {
+  Row buildCreateButton({required BuildContext context}) {
     return Row(mainAxisAlignment: MainAxisAlignment.end, children: [
       FilledButton.icon(
           label: const Text("Create Deadline"),
@@ -818,7 +818,7 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
     );
   }
 
-  IconButton buildCloseButton(BuildContext context) {
+  IconButton buildCloseButton({required BuildContext context}) {
     return IconButton(
         onPressed: () {
           if (checkClose) {
@@ -977,7 +977,7 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
         ));
   }
 
-  ListTile buildDateTile(BuildContext context) {
+  ListTile buildDateTile({required BuildContext context}) {
     return ListTile(
       leading: const Icon(Icons.today_outlined),
       title: (null == startDate && null == dueDate)
@@ -1619,8 +1619,8 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
         ): null) ;
   }
 
-  ListTile buildRepeatableTile(BuildContext context,
-      {bool smallScreen = false}) {
+  ListTile buildRepeatableTile({required BuildContext context,
+      bool smallScreen = false}) {
     return ListTile(
         leading: const Icon(Icons.event_repeat_outlined),
         title: (frequency == Frequency.once)
@@ -1830,9 +1830,7 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
                                                 children: Constants.weekDays
                                                     .map((weekDay) => InputChip(
                                                         backgroundColor:
-                                                            Theme.of(context)
-                                                                .colorScheme
-                                                                .surfaceVariant,
+                                                            Constants.dialogColor(context: context),
                                                         shape:
                                                             const RoundedRectangleBorder(
                                                           borderRadius:

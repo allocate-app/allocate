@@ -6,10 +6,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:jiffy/jiffy.dart';
 import 'package:provider/provider.dart';
-import 'package:test/expect.dart';
 
 import '../../../providers/reminder_provider.dart';
-import '../../../providers/user_provider.dart';
 import '../../../util/constants.dart';
 import '../../../util/exceptions.dart';
 import '../../widgets/flushbars.dart';
@@ -393,15 +391,6 @@ class _CreateReminderScreen extends State<CreateReminderScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final Color errorColor = Theme
-        .of(context)
-        .colorScheme
-        .error;
-
-    bool largeScreen = (MediaQuery
-        .of(context)
-        .size
-        .width >= Constants.largeScreen);
     bool smallScreen = (MediaQuery
         .of(context)
         .size
@@ -437,7 +426,7 @@ class _CreateReminderScreen extends State<CreateReminderScreen> {
                     maxLines: 1,
                   ),
                 ),
-                buildCloseButton(context),
+                buildCloseButton(context: context),
               ]),
         ),
       ),
@@ -460,7 +449,7 @@ class _CreateReminderScreen extends State<CreateReminderScreen> {
                 Padding(
                   padding:
                   const EdgeInsets.symmetric(horizontal: Constants.padding),
-                  child: buildCreateButton(context),
+                  child: buildCreateButton(context: context),
                 )
                 
           ]),
@@ -469,7 +458,7 @@ class _CreateReminderScreen extends State<CreateReminderScreen> {
     );
 
   }
-  IconButton buildCloseButton(BuildContext context) {
+  IconButton buildCloseButton({required BuildContext context}) {
     return IconButton(
         onPressed: () {
           if (checkClose) {
@@ -610,7 +599,7 @@ class _CreateReminderScreen extends State<CreateReminderScreen> {
       onTap: () => handleDueDate(),
     );
   }
-  Row buildCreateButton(BuildContext context) {
+  Row buildCreateButton({required BuildContext context}) {
     return Row(mainAxisAlignment: MainAxisAlignment.end, children: [
       FilledButton.icon(
           label: const Text("Create Reminder"),

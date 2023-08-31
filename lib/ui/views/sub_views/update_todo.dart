@@ -117,7 +117,8 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
     cacheSubTasks = List.from(toDo.subTasks);
 
     // Midnight as a start/due time is ambiguous.
-    showStartTime = Constants.midnight != TimeOfDay.fromDateTime(toDo.startDate);
+    showStartTime =
+        Constants.midnight != TimeOfDay.fromDateTime(toDo.startDate);
     showDueTime = Constants.midnight != TimeOfDay.fromDateTime(toDo.dueDate);
   }
 
@@ -125,7 +126,8 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
     mainScrollController = ScrollController();
     subScrollControllerLeft = ScrollController();
     subScrollControllerRight = ScrollController();
-    scrollPhysics = const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics());
+    scrollPhysics =
+        const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics());
 
     nameEditingController = TextEditingController(text: toDo.name);
     nameEditingController.addListener(() {
@@ -138,7 +140,9 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
 
     String? groupText;
     if (null != toDo.groupID) {
-      await groupProvider.getGroupByID(id: toDo.groupID!).then((group) => groupText = group?.name);
+      await groupProvider
+          .getGroupByID(id: toDo.groupID!)
+          .then((group) => groupText = group?.name);
     }
 
     groupEditingController = TextEditingController(text: groupText);
@@ -148,7 +152,8 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
       SemanticsService.announce(newText, Directionality.of(context));
     });
 
-    descriptionEditingController = TextEditingController(text: toDo.description);
+    descriptionEditingController =
+        TextEditingController(text: toDo.description);
     descriptionEditingController.addListener(() {
       checkClose = true;
       String newText = descriptionEditingController.text;
@@ -156,7 +161,8 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
       toDo.description = newText;
     });
 
-    repeatSkipEditingController = TextEditingController(text: toDo.repeatSkip.toString());
+    repeatSkipEditingController =
+        TextEditingController(text: toDo.repeatSkip.toString());
     repeatSkipEditingController.addListener(() {
       checkClose = true;
       String newText = descriptionEditingController.text;
@@ -165,8 +171,8 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
       toDo.repeatSkip = max(toDo.repeatSkip, 1);
     });
 
-    subTaskEditingController = List.generate(
-        toDo.subTasks.length, (i) => TextEditingController(text: toDo.subTasks[i].name));
+    subTaskEditingController = List.generate(toDo.subTasks.length,
+        (i) => TextEditingController(text: toDo.subTasks[i].name));
     for (int i = 0; i < subTaskEditingController.length; i++) {
       subTaskEditingController[i].addListener(() {
         checkClose = true;
@@ -176,7 +182,8 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
     }
   }
 
-  void handleGroupSelection({required Group group, required SearchController controller}) {
+  void handleGroupSelection(
+      {required Group group, required SearchController controller}) {
     // Controller logic
     controller.closeView(group.name);
     setState(() {
@@ -191,7 +198,8 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
   }
 
   void handleHistorySelection(
-      {required MapEntry<String, int> groupData, required SearchController controller}) {
+      {required MapEntry<String, int> groupData,
+      required SearchController controller}) {
     controller.closeView(groupData.key);
     setState(() {
       checkClose = true;
@@ -225,7 +233,13 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
     // Icon is scaled for sum-weight.
     weight = (toDo.taskType == TaskType.small)
         ? weight
-        : remap(x: weight, inMin: 0, inMax: Constants.maxWeight, outMin: 0, outMax: 5).toInt();
+        : remap(
+                x: weight,
+                inMin: 0,
+                inMax: Constants.maxWeight,
+                outMin: 0,
+                outMax: 5)
+            .toInt();
 
     if (selected) {
       return Constants.selectedBatteryIcons[weight]!;
@@ -233,8 +247,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
     return Constants.batteryIcons[weight]!;
   }
 
-  // TODO: this needs cleanup - errorCol can be null.
-  Future<void> handleUpdate({required BuildContext context, required Color errorColor}) async {
+  Future<void> handleUpdate({required BuildContext context}) async {
     if (prevToDo.frequency != Frequency.once && checkClose) {
       bool? updateSingle = await showModalBottomSheet<bool?>(
           showDragHandle: true,
@@ -273,13 +286,16 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
       await toDoProvider.deleteFutures(toDo: prevToDo).catchError((e) {
         Flushbar? error;
 
-        error = Flushbars.createError(message: e.cause,
+        error = Flushbars.createError(
+          message: e.cause,
           context: context,
           dismissCallback: () => error?.dismiss(),
         );
 
         error.show(context);
-      }, test: (e) => e is FailureToCreateException || e is FailureToUploadException);
+      },
+          test: (e) =>
+              e is FailureToCreateException || e is FailureToUploadException);
 
       // Updating all future events relies on deleting all future events ->
       // They are assumed to be re-generated on the next calendar view or day passing.
@@ -294,21 +310,22 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
         await toDoProvider.nextRepeat(toDo: prevToDo).catchError((e) {
           Flushbar? error;
 
-          error = Flushbars.createError(message: e.cause,
+          error = Flushbars.createError(
+            message: e.cause,
             context: context,
             dismissCallback: () => error?.dismiss(),
           );
 
           error.show(context);
-        }, test: (e) => e is FailureToCreateException || e is FailureToUploadException);
+        },
+            test: (e) =>
+                e is FailureToCreateException || e is FailureToUploadException);
         toDo.repeatable = false;
       } else {
-        toDo.repeatable =
-        (toDo.frequency != Frequency.once);
+        toDo.repeatable = (toDo.frequency != Frequency.once);
       }
     } else {
-      toDo.repeatable =
-      (toDo.frequency != Frequency.once);
+      toDo.repeatable = (toDo.frequency != Frequency.once);
     }
 
     toDo.subTasks.setAll(0, cacheSubTasks);
@@ -318,50 +335,46 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
     }).catchError((e) {
       Flushbar? error;
 
-      error = Flushbars.createError(message: e.cause,
+      error = Flushbars.createError(
+        message: e.cause,
         context: context,
         dismissCallback: () => error?.dismiss(),
       );
 
       error.show(context);
-    }, test: (e) => e is FailureToCreateException || e is FailureToUploadException);
-
+    },
+        test: (e) =>
+            e is FailureToCreateException || e is FailureToUploadException);
   }
 
-  handleDelete({required BuildContext context, required Color errorColor}) async {
+  handleDelete({required BuildContext context}) async {
     if (prevToDo.frequency != Frequency.once) {
       bool? updateSingle = await showModalBottomSheet<bool?>(
           showDragHandle: true,
           context: context,
           builder: (BuildContext context) {
             return StatefulBuilder(
-                builder: (context, setState) =>
-                    Center(
-                        heightFactor: 1,
-                        child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Padding(
-                                padding: const EdgeInsets.all(
-                                    Constants.padding),
-                                child: FilledButton.icon(
-                                    onPressed: () =>
-                                        Navigator.pop(context, true),
-                                    label: const Text("Delete This Event"),
-                                    icon: const Icon(
-                                        Icons.arrow_upward_outlined)),
-                              ),
-                              Padding(
-                                  padding: const EdgeInsets.all(
-                                      Constants.padding),
-                                  child: FilledButton.tonalIcon(
-                                    onPressed: () =>
-                                        Navigator.pop(context, false),
-                                    label: const Text("Delete All"),
-                                    icon: const Icon(Icons.repeat_outlined),
-                                  ))
-                            ])));
+                builder: (context, setState) => Center(
+                    heightFactor: 1,
+                    child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.all(Constants.padding),
+                            child: FilledButton.icon(
+                                onPressed: () => Navigator.pop(context, true),
+                                label: const Text("Delete This Event"),
+                                icon: const Icon(Icons.arrow_upward_outlined)),
+                          ),
+                          Padding(
+                              padding: const EdgeInsets.all(Constants.padding),
+                              child: FilledButton.tonalIcon(
+                                onPressed: () => Navigator.pop(context, false),
+                                label: const Text("Delete All"),
+                                icon: const Icon(Icons.repeat_outlined),
+                              ))
+                        ])));
           });
       // If the modal is discarded.
       if (null == updateSingle) {
@@ -373,14 +386,16 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
       await toDoProvider.deleteFutures(toDo: prevToDo).catchError((e) {
         Flushbar? error;
 
-        error = Flushbars.createError(message: e.cause,
+        error = Flushbars.createError(
+          message: e.cause,
           context: context,
           dismissCallback: () => error?.dismiss(),
         );
 
         error.show(context);
-      }, test: (e) => e is FailureToCreateException ||
-          e is FailureToUploadException);
+      },
+          test: (e) =>
+              e is FailureToCreateException || e is FailureToUploadException);
 
       // Updating all future events relies on deleting all future events ->
       // They are assumed to be re-generated on the next calendar view or day passing.
@@ -395,17 +410,17 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
         await toDoProvider.nextRepeat(toDo: prevToDo).catchError((e) {
           Flushbar? error;
 
-          error = Flushbars.createError(message: e.cause,
+          error = Flushbars.createError(
+            message: e.cause,
             context: context,
             dismissCallback: () => error?.dismiss(),
           );
 
           error.show(context);
-        }, test: (e) => e is FailureToCreateException ||
-            e is FailureToUploadException);
+        },
+            test: (e) =>
+                e is FailureToCreateException || e is FailureToUploadException);
       }
-
-
     }
 
     return await toDoProvider.deleteToDo().whenComplete(() {
@@ -413,33 +428,36 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
     }).catchError((e) {
       Flushbar? error;
 
-      error = Flushbars.createError(message: e.cause,
+      error = Flushbars.createError(
+        message: e.cause,
         context: context,
         dismissCallback: () => error?.dismiss(),
       );
 
       error.show(context);
-    }, test: (e) => e is FailureToCreateException ||
-        e is FailureToUploadException);
+    },
+        test: (e) =>
+            e is FailureToCreateException || e is FailureToUploadException);
   }
-
 
   @override
   Widget build(BuildContext context) {
-    final Color errorColor = Theme.of(context).colorScheme.error;
-
-    bool largeScreen = (MediaQuery.of(context).size.width >= Constants.largeScreen);
-    bool smallScreen = (MediaQuery.of(context).size.width <= Constants.smallScreen);
+    bool largeScreen =
+        (MediaQuery.of(context).size.width >= Constants.largeScreen);
+    bool smallScreen =
+        (MediaQuery.of(context).size.width <= Constants.smallScreen);
     return (largeScreen)
-        ? buildDesktopDialog(context, smallScreen, errorColor)
-        : buildMobileDialog(context, smallScreen, errorColor);
+        ? buildDesktopDialog(context: context, smallScreen: smallScreen)
+        : buildMobileDialog(context: context, smallScreen: smallScreen);
   }
 
-  Dialog buildDesktopDialog(BuildContext context, bool smallScreen, Color errorColor) {
+  Dialog buildDesktopDialog(
+      {required BuildContext context, bool smallScreen = false}) {
     return Dialog(
       insetPadding: const EdgeInsets.all(Constants.outerDialogPadding),
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxHeight: Constants.maxLandscapeDialogHeight),
+        constraints:
+            const BoxConstraints(maxHeight: Constants.maxLandscapeDialogHeight),
         child: Padding(
           padding: const EdgeInsets.all(Constants.padding),
           child: Column(
@@ -448,93 +466,104 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
               children: [
                 // Title && Close Button
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
-                  child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                    const Flexible(
-                      child: AutoSizeText(
-                        "Edit Task",
-                        overflow: TextOverflow.visible,
-                        style: Constants.headerStyle,
-                        minFontSize: Constants.medium,
-                        softWrap: true,
-                        maxLines: 1,
-                      ),
-                    ),
-                    (toDo.expectedDuration > 0)
-                        ? Flexible(
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Flexible(
-                                  child: Tooltip(
-                                    message: "Expected Task Duration",
-                                    child: Padding(
-                                      padding:
-                                          const EdgeInsets.symmetric(horizontal: Constants.padding),
-                                      child: Row(
-                                        children: [
-                                          const Flexible(
-                                            child: FittedBox(
-                                              fit: BoxFit.fill,
-                                              child: Icon(
-                                                Icons.timer_outlined,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: Constants.padding),
+                  child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Flexible(
+                          child: AutoSizeText(
+                            "Edit Task",
+                            overflow: TextOverflow.visible,
+                            style: Constants.headerStyle,
+                            minFontSize: Constants.medium,
+                            softWrap: true,
+                            maxLines: 1,
+                          ),
+                        ),
+                        (toDo.expectedDuration > 0)
+                            ? Flexible(
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Flexible(
+                                      child: Tooltip(
+                                        message: "Expected Task Duration",
+                                        child: Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: Constants.padding),
+                                          child: Row(
+                                            children: [
+                                              const Flexible(
+                                                child: FittedBox(
+                                                  fit: BoxFit.fill,
+                                                  child: Icon(
+                                                    Icons.timer_outlined,
+                                                  ),
+                                                ),
                                               ),
-                                            ),
+                                              Flexible(
+                                                child: AutoSizeText(
+                                                    Duration(
+                                                            seconds: toDo
+                                                                .expectedDuration)
+                                                        .toString()
+                                                        .split(".")
+                                                        .first,
+                                                    minFontSize:
+                                                        Constants.medium,
+                                                    overflow:
+                                                        TextOverflow.visible,
+                                                    softWrap: false,
+                                                    maxLines: 2),
+                                              ),
+                                            ],
                                           ),
-                                          Flexible(
-                                            child: AutoSizeText(
-                                                Duration(seconds: toDo.expectedDuration)
-                                                    .toString()
-                                                    .split(".")
-                                                    .first,
-                                                minFontSize: Constants.medium,
-                                                overflow: TextOverflow.visible,
-                                                softWrap: false,
-                                                maxLines: 2),
-                                          ),
-                                        ],
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                ),
-                                Flexible(
-                                  child: Tooltip(
-                                    message: "Actual Task Duration",
-                                    child: Padding(
-                                      padding:
-                                          const EdgeInsets.symmetric(horizontal: Constants.padding),
-                                      child: Row(
-                                        children: [
-                                          const Flexible(
-                                            child: FittedBox(
-                                              fit: BoxFit.fill,
-                                              child: Icon(
-                                                Icons.timer,
+                                    Flexible(
+                                      child: Tooltip(
+                                        message: "Actual Task Duration",
+                                        child: Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: Constants.padding),
+                                          child: Row(
+                                            children: [
+                                              const Flexible(
+                                                child: FittedBox(
+                                                  fit: BoxFit.fill,
+                                                  child: Icon(
+                                                    Icons.timer,
+                                                  ),
+                                                ),
                                               ),
-                                            ),
+                                              Flexible(
+                                                child: AutoSizeText(
+                                                    Duration(
+                                                            seconds: toDo
+                                                                .realDuration)
+                                                        .toString()
+                                                        .split(".")
+                                                        .first,
+                                                    minFontSize:
+                                                        Constants.medium,
+                                                    overflow:
+                                                        TextOverflow.visible,
+                                                    softWrap: false,
+                                                    maxLines: 2),
+                                              ),
+                                            ],
                                           ),
-                                          Flexible(
-                                            child: AutoSizeText(
-                                                Duration(seconds: toDo.realDuration)
-                                                    .toString()
-                                                    .split(".")
-                                                    .first,
-                                                minFontSize: Constants.medium,
-                                                overflow: TextOverflow.visible,
-                                                softWrap: false,
-                                                maxLines: 2),
-                                          ),
-                                        ],
+                                        ),
                                       ),
                                     ),
-                                  ),
+                                  ],
                                 ),
-                              ],
-                            ),
-                          )
-                        : const SizedBox.shrink(),
-                    buildCloseButton(context),
-                  ]),
+                              )
+                            : const SizedBox.shrink(),
+                        buildCloseButton(context: context),
+                      ]),
                 ),
                 const PaddedDivider(padding: Constants.padding),
                 Expanded(
@@ -545,7 +574,8 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                       children: [
                         Expanded(
                           child: ListView(
-                              padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: Constants.padding),
                               shrinkWrap: true,
                               controller: subScrollControllerLeft,
                               physics: scrollPhysics,
@@ -556,14 +586,17 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                                       horizontal: (smallScreen)
                                           ? Constants.padding
                                           : Constants.innerPadding),
-                                  child: buildNameTile(smallScreen: smallScreen),
+                                  child:
+                                      buildNameTile(smallScreen: smallScreen),
                                 ),
                                 Padding(
-                                  padding:
-                                      const EdgeInsets.symmetric(horizontal: Constants.padding),
-                                  child: buildWeightTile(smallScreen: smallScreen),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: Constants.padding),
+                                  child:
+                                      buildWeightTile(smallScreen: smallScreen),
                                 ),
-                                const PaddedDivider(padding: Constants.innerPadding),
+                                const PaddedDivider(
+                                    padding: Constants.innerPadding),
                                 // Subtasks
                                 (toDo.taskType != TaskType.small)
                                     ? Padding(
@@ -575,14 +608,20 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                                           color: Colors.transparent,
                                           shape: RoundedRectangleBorder(
                                               side: BorderSide(
-                                                  color: Theme.of(context).colorScheme.outline,
-                                                  strokeAlign: BorderSide.strokeAlignInside),
-                                              borderRadius: const BorderRadius.all(
-                                                  Radius.circular(Constants.roundedCorners))),
+                                                  color: Theme.of(context)
+                                                      .colorScheme
+                                                      .outline,
+                                                  strokeAlign: BorderSide
+                                                      .strokeAlignInside),
+                                              borderRadius:
+                                                  const BorderRadius.all(
+                                                      Radius.circular(Constants
+                                                          .roundedCorners))),
                                           child: ExpansionTile(
                                             initiallyExpanded: expanded,
                                             onExpansionChanged: (value) =>
-                                                setState(() => expanded = value),
+                                                setState(
+                                                    () => expanded = value),
                                             title: const AutoSizeText("Steps",
                                                 maxLines: 1,
                                                 overflow: TextOverflow.visible,
@@ -594,31 +633,46 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                                                 overflow: TextOverflow.visible,
                                                 softWrap: false,
                                                 minFontSize: Constants.small),
-                                            collapsedShape: const RoundedRectangleBorder(
-                                                side: BorderSide(
-                                                    strokeAlign: BorderSide.strokeAlignOutside),
-                                                borderRadius: BorderRadius.all(
-                                                    Radius.circular(Constants.roundedCorners))),
+                                            collapsedShape:
+                                                const RoundedRectangleBorder(
+                                                    side: BorderSide(
+                                                        strokeAlign: BorderSide
+                                                            .strokeAlignOutside),
+                                                    borderRadius: BorderRadius
+                                                        .all(Radius.circular(
+                                                            Constants
+                                                                .roundedCorners))),
                                             shape: const RoundedRectangleBorder(
                                                 side: BorderSide(
-                                                    strokeAlign: BorderSide.strokeAlignOutside),
+                                                    strokeAlign: BorderSide
+                                                        .strokeAlignOutside),
                                                 borderRadius: BorderRadius.all(
-                                                    Radius.circular(Constants.roundedCorners))),
+                                                    Radius.circular(Constants
+                                                        .roundedCorners))),
                                             children: [
                                               buildReorderableSubTasks(
-                                                  smallScreen: smallScreen, physics: scrollPhysics),
-                                              (shownTasks < Constants.numTasks[toDo.taskType]!)
+                                                  smallScreen: smallScreen,
+                                                  physics: scrollPhysics),
+                                              (shownTasks <
+                                                      Constants.numTasks[
+                                                          toDo.taskType]!)
                                                   ? ListTile(
-                                                      leading: const Icon(Icons.add_outlined),
-                                                      title: const AutoSizeText("Add a step",
+                                                      leading: const Icon(
+                                                          Icons.add_outlined),
+                                                      title: const AutoSizeText(
+                                                          "Add a step",
                                                           maxLines: 1,
-                                                          overflow: TextOverflow.visible,
+                                                          overflow: TextOverflow
+                                                              .visible,
                                                           softWrap: false,
-                                                          minFontSize: Constants.small),
+                                                          minFontSize:
+                                                              Constants.small),
                                                       onTap: () => setState(() {
                                                             shownTasks++;
                                                             shownTasks = min(
-                                                                shownTasks, Constants.maxNumTasks);
+                                                                shownTasks,
+                                                                Constants
+                                                                    .maxNumTasks);
                                                           }))
                                                   : const SizedBox.shrink(),
                                             ],
@@ -633,7 +687,8 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                                 const PaddedDivider(padding: Constants.padding),
                                 // Priority
                                 const Padding(
-                                  padding: EdgeInsets.symmetric(horizontal: Constants.padding),
+                                  padding: EdgeInsets.symmetric(
+                                      horizontal: Constants.padding),
                                   child: Row(children: [
                                     Expanded(
                                         child: AutoSizeText("Priority",
@@ -645,9 +700,10 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                                   ]),
                                 ),
                                 Padding(
-                                  padding:
-                                      const EdgeInsets.symmetric(horizontal: Constants.padding),
-                                  child: buildPriorityTile(smallScreen: smallScreen),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: Constants.padding),
+                                  child: buildPriorityTile(
+                                      smallScreen: smallScreen),
                                 ),
 
                                 // const Padding(
@@ -661,56 +717,69 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                               controller: subScrollControllerRight,
                               physics: scrollPhysics,
                               shrinkWrap: true,
-                              padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: Constants.padding),
                               children: [
                                 Padding(
-                                  padding: const EdgeInsets.all(Constants.padding),
+                                  padding:
+                                      const EdgeInsets.all(Constants.padding),
                                   child: buildGroupBar(),
                                 ),
 
                                 const Padding(
-                                  padding: EdgeInsets.symmetric(horizontal: Constants.padding),
-                                  child: PaddedDivider(padding: Constants.innerPadding),
+                                  padding: EdgeInsets.symmetric(
+                                      horizontal: Constants.padding),
+                                  child: PaddedDivider(
+                                      padding: Constants.innerPadding),
                                 ),
 
                                 // Description
                                 Padding(
-                                  padding:
-                                      const EdgeInsets.symmetric(horizontal: Constants.padding),
-                                  child: buildDescriptionTile(smallScreen: smallScreen),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: Constants.padding),
+                                  child: buildDescriptionTile(
+                                      smallScreen: smallScreen),
                                 ),
 
-                                const PaddedDivider(padding: Constants.innerPadding),
+                                const PaddedDivider(
+                                    padding: Constants.innerPadding),
                                 // Expected Duration / RealDuration -> Show status, on click, open a dialog.
                                 Padding(
-                                  padding:
-                                      const EdgeInsets.symmetric(horizontal: Constants.padding),
-                                  child: buildDurationTile(context, smallScreen: smallScreen),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: Constants.padding),
+                                  child: buildDurationTile(
+                                      context: context,
+                                      smallScreen: smallScreen),
                                 ),
 
-                                const PaddedDivider(padding: Constants.innerPadding),
+                                const PaddedDivider(
+                                    padding: Constants.innerPadding),
                                 // DateTime -> Show status, on click, open a dialog.
                                 //startDate
                                 Padding(
-                                  padding:
-                                      const EdgeInsets.symmetric(horizontal: Constants.padding),
-                                  child: buildDateTile(context),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: Constants.padding),
+                                  child: buildDateTile(context: context),
                                 ),
 
-                                const PaddedDivider(padding: Constants.innerPadding),
+                                const PaddedDivider(
+                                    padding: Constants.innerPadding),
                                 // Time
                                 Padding(
-                                  padding:
-                                      const EdgeInsets.symmetric(horizontal: Constants.padding),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: Constants.padding),
                                   child: buildTimeTile(),
                                 ),
 
-                                const PaddedDivider(padding: Constants.innerPadding),
+                                const PaddedDivider(
+                                    padding: Constants.innerPadding),
                                 // Repeatable Stuff -> Show status, on click, open a dialog.
                                 Padding(
-                                  padding:
-                                      const EdgeInsets.symmetric(horizontal: Constants.padding),
-                                  child: buildRepeatableTile(context, smallScreen: smallScreen),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: Constants.padding),
+                                  child: buildRepeatableTile(
+                                      context: context,
+                                      smallScreen: smallScreen),
                                 ),
                               ]),
                         )
@@ -720,8 +789,9 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                 const PaddedDivider(padding: Constants.padding),
                 // Create Button - could be a stack
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
-                  child: buildUpdateDeleteRow(context, errorColor),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: Constants.padding),
+                  child: buildUpdateDeleteRow(context: context),
                 )
               ]),
         ),
@@ -729,7 +799,8 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
     );
   }
 
-  Dialog buildMobileDialog(BuildContext context, bool smallScreen, Color errorColor) {
+  Dialog buildMobileDialog(
+      {required BuildContext context, bool smallScreen = false}) {
     return Dialog(
       insetPadding: const EdgeInsets.all(Constants.outerDialogPadding),
       child: Padding(
@@ -740,93 +811,102 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
             children: [
               // Title && Close Button
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
-                child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                  const Flexible(
-                    child: AutoSizeText(
-                      "Update Task",
-                      overflow: TextOverflow.visible,
-                      style: Constants.headerStyle,
-                      minFontSize: Constants.medium,
-                      softWrap: true,
-                      maxLines: 1,
-                    ),
-                  ),
-                  (toDo.expectedDuration > 0)
-                      ? Flexible(
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Flexible(
-                                child: Tooltip(
-                                  message: "Expected Task Duration",
-                                  child: Padding(
-                                    padding:
-                                        const EdgeInsets.symmetric(horizontal: Constants.padding),
-                                    child: Row(
-                                      children: [
-                                        const Flexible(
-                                          child: FittedBox(
-                                            fit: BoxFit.fill,
-                                            child: Icon(
-                                              Icons.timer_outlined,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: Constants.padding),
+                child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Flexible(
+                        child: AutoSizeText(
+                          "Update Task",
+                          overflow: TextOverflow.visible,
+                          style: Constants.headerStyle,
+                          minFontSize: Constants.medium,
+                          softWrap: true,
+                          maxLines: 1,
+                        ),
+                      ),
+                      (toDo.expectedDuration > 0)
+                          ? Flexible(
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Flexible(
+                                    child: Tooltip(
+                                      message: "Expected Task Duration",
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: Constants.padding),
+                                        child: Row(
+                                          children: [
+                                            const Flexible(
+                                              child: FittedBox(
+                                                fit: BoxFit.fill,
+                                                child: Icon(
+                                                  Icons.timer_outlined,
+                                                ),
+                                              ),
                                             ),
-                                          ),
+                                            Flexible(
+                                              child: AutoSizeText(
+                                                  Duration(
+                                                          seconds: toDo
+                                                              .expectedDuration)
+                                                      .toString()
+                                                      .split(".")
+                                                      .first,
+                                                  minFontSize: Constants.medium,
+                                                  overflow:
+                                                      TextOverflow.visible,
+                                                  softWrap: false,
+                                                  maxLines: 2),
+                                            ),
+                                          ],
                                         ),
-                                        Flexible(
-                                          child: AutoSizeText(
-                                              Duration(seconds: toDo.expectedDuration)
-                                                  .toString()
-                                                  .split(".")
-                                                  .first,
-                                              minFontSize: Constants.medium,
-                                              overflow: TextOverflow.visible,
-                                              softWrap: false,
-                                              maxLines: 2),
-                                        ),
-                                      ],
+                                      ),
                                     ),
                                   ),
-                                ),
-                              ),
-                              Flexible(
-                                child: Tooltip(
-                                  message: "Actual Task Duration",
-                                  child: Padding(
-                                    padding:
-                                        const EdgeInsets.symmetric(horizontal: Constants.padding),
-                                    child: Row(
-                                      children: [
-                                        const Flexible(
-                                          child: FittedBox(
-                                            fit: BoxFit.fill,
-                                            child: Icon(
-                                              Icons.timer,
+                                  Flexible(
+                                    child: Tooltip(
+                                      message: "Actual Task Duration",
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: Constants.padding),
+                                        child: Row(
+                                          children: [
+                                            const Flexible(
+                                              child: FittedBox(
+                                                fit: BoxFit.fill,
+                                                child: Icon(
+                                                  Icons.timer,
+                                                ),
+                                              ),
                                             ),
-                                          ),
+                                            Flexible(
+                                              child: AutoSizeText(
+                                                  Duration(
+                                                          seconds:
+                                                              toDo.realDuration)
+                                                      .toString()
+                                                      .split(".")
+                                                      .first,
+                                                  minFontSize: Constants.medium,
+                                                  overflow:
+                                                      TextOverflow.visible,
+                                                  softWrap: false,
+                                                  maxLines: 2),
+                                            ),
+                                          ],
                                         ),
-                                        Flexible(
-                                          child: AutoSizeText(
-                                              Duration(seconds: toDo.realDuration)
-                                                  .toString()
-                                                  .split(".")
-                                                  .first,
-                                              minFontSize: Constants.medium,
-                                              overflow: TextOverflow.visible,
-                                              softWrap: false,
-                                              maxLines: 2),
-                                        ),
-                                      ],
+                                      ),
                                     ),
                                   ),
-                                ),
+                                ],
                               ),
-                            ],
-                          ),
-                        )
-                      : const SizedBox.shrink(),
-                  buildCloseButton(context),
-                ]),
+                            )
+                          : const SizedBox.shrink(),
+                      buildCloseButton(context: context),
+                    ]),
               ),
               const PaddedDivider(padding: Constants.padding),
               Expanded(
@@ -838,11 +918,14 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                     // Title + status
                     Padding(
                       padding: EdgeInsets.symmetric(
-                          horizontal: (smallScreen) ? Constants.padding : Constants.innerPadding),
+                          horizontal: (smallScreen)
+                              ? Constants.padding
+                              : Constants.innerPadding),
                       child: buildNameTile(smallScreen: smallScreen),
                     ),
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: Constants.padding),
                       child: buildWeightTile(smallScreen: smallScreen),
                     ),
                     const PaddedDivider(padding: Constants.innerPadding),
@@ -850,19 +933,24 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                     // Subtasks
                     (toDo.taskType != TaskType.small)
                         ? Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: Constants.innerPadding),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: Constants.innerPadding),
                             child: Card(
                               clipBehavior: Clip.antiAlias,
                               elevation: 0,
                               color: Colors.transparent,
                               shape: RoundedRectangleBorder(
                                   side: BorderSide(
-                                      color: Theme.of(context).colorScheme.outline,
-                                      strokeAlign: BorderSide.strokeAlignInside),
+                                      color:
+                                          Theme.of(context).colorScheme.outline,
+                                      strokeAlign:
+                                          BorderSide.strokeAlignInside),
                                   borderRadius: const BorderRadius.all(
-                                      Radius.circular(Constants.roundedCorners))),
+                                      Radius.circular(
+                                          Constants.roundedCorners))),
                               child: ExpansionTile(
-                                onExpansionChanged: (value) => setState(() => expanded = value),
+                                onExpansionChanged: (value) =>
+                                    setState(() => expanded = value),
                                 initiallyExpanded: expanded,
                                 title: const AutoSizeText("Steps",
                                     maxLines: 1,
@@ -876,27 +964,38 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                                     softWrap: false,
                                     minFontSize: Constants.small),
                                 collapsedShape: const RoundedRectangleBorder(
-                                    side: BorderSide(strokeAlign: BorderSide.strokeAlignOutside),
+                                    side: BorderSide(
+                                        strokeAlign:
+                                            BorderSide.strokeAlignOutside),
                                     borderRadius: BorderRadius.all(
-                                        Radius.circular(Constants.roundedCorners))),
+                                        Radius.circular(
+                                            Constants.roundedCorners))),
                                 shape: const RoundedRectangleBorder(
-                                    side: BorderSide(strokeAlign: BorderSide.strokeAlignOutside),
+                                    side: BorderSide(
+                                        strokeAlign:
+                                            BorderSide.strokeAlignOutside),
                                     borderRadius: BorderRadius.all(
-                                        Radius.circular(Constants.roundedCorners))),
+                                        Radius.circular(
+                                            Constants.roundedCorners))),
                                 children: [
                                   buildReorderableSubTasks(
-                                      smallScreen: smallScreen, physics: scrollPhysics),
-                                  (shownTasks < Constants.numTasks[toDo.taskType]!)
+                                      smallScreen: smallScreen,
+                                      physics: scrollPhysics),
+                                  (shownTasks <
+                                          Constants.numTasks[toDo.taskType]!)
                                       ? ListTile(
-                                          leading: const Icon(Icons.add_outlined),
-                                          title: const AutoSizeText("Add a step",
+                                          leading:
+                                              const Icon(Icons.add_outlined),
+                                          title: const AutoSizeText(
+                                              "Add a step",
                                               maxLines: 1,
                                               overflow: TextOverflow.visible,
                                               softWrap: false,
                                               minFontSize: Constants.small),
                                           onTap: () => setState(() {
                                                 shownTasks++;
-                                                shownTasks = min(shownTasks, Constants.maxNumTasks);
+                                                shownTasks = min(shownTasks,
+                                                    Constants.maxNumTasks);
                                               }))
                                       : const SizedBox.shrink(),
                                 ],
@@ -911,7 +1010,8 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                     const PaddedDivider(padding: Constants.padding),
                     // Priority
                     const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: Constants.padding),
+                      padding:
+                          EdgeInsets.symmetric(horizontal: Constants.padding),
                       child: Row(children: [
                         Expanded(
                             child: AutoSizeText("Priority",
@@ -923,7 +1023,8 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                       ]),
                     ),
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: Constants.padding),
                       child: buildPriorityTile(smallScreen: smallScreen),
                     ),
 
@@ -933,48 +1034,57 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                     ),
 
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: Constants.padding),
                       child: buildGroupBar(),
                     ),
 
                     const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: Constants.padding),
+                      padding:
+                          EdgeInsets.symmetric(horizontal: Constants.padding),
                       child: PaddedDivider(padding: Constants.innerPadding),
                     ),
 
                     // Description
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: Constants.padding),
                       child: buildDescriptionTile(smallScreen: smallScreen),
                     ),
 
                     const PaddedDivider(padding: Constants.innerPadding),
                     // Expected Duration / RealDuration -> Show status, on click, open a dialog.
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
-                      child: buildDurationTile(context, smallScreen: smallScreen),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: Constants.padding),
+                      child: buildDurationTile(
+                          context: context, smallScreen: smallScreen),
                     ),
 
                     const PaddedDivider(padding: Constants.innerPadding),
                     // DateTime -> Show status, on click, open a dialog.
                     //startDate
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
-                      child: buildDateTile(context),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: Constants.padding),
+                      child: buildDateTile(context: context),
                     ),
 
                     const PaddedDivider(padding: Constants.innerPadding),
                     // Time
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: Constants.padding),
                       child: buildTimeTile(),
                     ),
 
                     const PaddedDivider(padding: Constants.innerPadding),
                     // Repeatable Stuff -> Show status, on click, open a dialog.
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
-                      child: buildRepeatableTile(context, smallScreen: smallScreen),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: Constants.padding),
+                      child: buildRepeatableTile(
+                          context: context, smallScreen: smallScreen),
                     ),
                   ],
                 ),
@@ -983,15 +1093,16 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
               const PaddedDivider(padding: Constants.padding),
               // Create Button - could be a stack
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
-                child: buildUpdateDeleteRow(context, errorColor),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: Constants.padding),
+                child: buildUpdateDeleteRow(context: context),
               )
             ]),
       ),
     );
   }
 
-  IconButton buildCloseButton(BuildContext context) {
+  IconButton buildCloseButton({required BuildContext context}) {
     return IconButton(
         onPressed: () {
           if (checkClose) {
@@ -1017,9 +1128,11 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                               ),
                             ),
                             Padding(
-                                padding: const EdgeInsets.all(Constants.padding),
+                                padding:
+                                    const EdgeInsets.all(Constants.padding),
                                 child: FilledButton.tonalIcon(
-                                  onPressed: () => Navigator.pop(context, false),
+                                  onPressed: () =>
+                                      Navigator.pop(context, false),
                                   label: const Text("Continue Editing"),
                                   icon: const Icon(
                                     Icons.edit_note_outlined,
@@ -1048,7 +1161,9 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
     return Row(
       children: [
         Transform.scale(
-          scale: (smallScreen) ? Constants.largeCheckboxMinScale : Constants.largeCheckboxScale,
+          scale: (smallScreen)
+              ? Constants.largeCheckboxMinScale
+              : Constants.largeCheckboxScale,
           child: Checkbox(
               splashRadius: 15,
               value: toDo.completed,
@@ -1067,24 +1182,28 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
     );
   }
 
-  AutoSizeTextField buildTaskName({bool smallScreen = false, bool largeScreen = false}) {
+  AutoSizeTextField buildTaskName(
+      {bool smallScreen = false, bool largeScreen = false}) {
     return AutoSizeTextField(
       maxLines: 1,
       minFontSize: Constants.medium,
       decoration: InputDecoration(
         isDense: smallScreen,
-        suffixIcon: (toDo.name != "") ? IconButton(
-            icon: const Icon(Icons.clear),
-            onPressed: () {
-              nameEditingController.clear();
-              setState(() {
-                checkClose = true;
-                toDo.name = "";
-              });
-            }) : null,
+        suffixIcon: (toDo.name != "")
+            ? IconButton(
+                icon: const Icon(Icons.clear),
+                onPressed: () {
+                  nameEditingController.clear();
+                  setState(() {
+                    checkClose = true;
+                    toDo.name = "";
+                  });
+                })
+            : null,
         contentPadding: const EdgeInsets.all(Constants.innerPadding),
         border: const OutlineInputBorder(
-            borderRadius: BorderRadius.all(Radius.circular(Constants.roundedCorners)),
+            borderRadius:
+                BorderRadius.all(Radius.circular(Constants.roundedCorners)),
             borderSide: BorderSide(
               strokeAlign: BorderSide.strokeAlignOutside,
             )),
@@ -1119,7 +1238,8 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                       fit: BoxFit.contain,
                       child: Transform.rotate(
                           angle: -pi / 2,
-                          child: getBatteryIcon(weight: toDo.weight, selected: false)),
+                          child: getBatteryIcon(
+                              weight: toDo.weight, selected: false)),
                     ),
                   )),
             ),
@@ -1156,7 +1276,8 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
   }
 
   ListView buildSubTasksList(
-      {bool smallScreen = false, ScrollPhysics physics = const BouncingScrollPhysics()}) {
+      {bool smallScreen = false,
+      ScrollPhysics physics = const BouncingScrollPhysics()}) {
     return ListView.separated(
       // Possibly need scroll controller.
       physics: physics,
@@ -1174,7 +1295,8 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                   // Not ideal, but the getBatteryIcon function is only for the large battery atm.
                   // This is due to the remapping function.
                   icon: Constants.batteryIcons[toDo.subTasks[index].weight]!,
-                  selectedIcon: Constants.selectedBatteryIcons[toDo.subTasks[index].weight]!,
+                  selectedIcon: Constants
+                      .selectedBatteryIcons[toDo.subTasks[index].weight]!,
                   onPressed: () {
                     showModalBottomSheet<void>(
                         showDragHandle: true,
@@ -1188,25 +1310,37 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       // const Icon(Icons.drag_handle_rounded),
-                                      const Text("Task Strain", style: Constants.headerStyle),
+                                      const Text("Task Strain",
+                                          style: Constants.headerStyle),
                                       Padding(
-                                          padding: const EdgeInsets.all(Constants.padding),
+                                          padding: const EdgeInsets.all(
+                                              Constants.padding),
                                           child: Row(
-                                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.spaceEvenly,
                                             children: [
                                               const Icon(Icons.battery_full),
                                               Expanded(
                                                 child: Slider(
-                                                  value: toDo.subTasks[index].weight.toDouble(),
-                                                  max: Constants.maxTaskWeight.toDouble(),
-                                                  label: (toDo.subTasks[index].weight >
-                                                          (Constants.maxTaskWeight / 2).floor())
+                                                  value: toDo
+                                                      .subTasks[index].weight
+                                                      .toDouble(),
+                                                  max: Constants.maxTaskWeight
+                                                      .toDouble(),
+                                                  label: (toDo.subTasks[index]
+                                                              .weight >
+                                                          (Constants.maxTaskWeight /
+                                                                  2)
+                                                              .floor())
                                                       ? " ${toDo.subTasks[index].weight} ${Constants.lowBattery}"
                                                       : " ${toDo.subTasks[index].weight} ${Constants.fullBattery}",
-                                                  divisions: Constants.maxTaskWeight,
-                                                  onChanged: (value) => setState(() {
+                                                  divisions:
+                                                      Constants.maxTaskWeight,
+                                                  onChanged: (value) =>
+                                                      setState(() {
                                                     checkClose = true;
-                                                    toDo.subTasks[index].weight = value.toInt();
+                                                    toDo.subTasks[index]
+                                                        .weight = value.toInt();
                                                   }),
                                                 ),
                                               ),
@@ -1217,9 +1351,12 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                           );
                         }).whenComplete(() => setState(() {
                           checkClose = true;
-                          toDo.weight = toDoProvider.calculateWeight(subTasks: toDo.subTasks);
-                          toDo.realDuration = toDoProvider.calculateRealDuration(
-                              weight: toDo.weight, duration: toDo.expectedDuration);
+                          toDo.weight = toDoProvider.calculateWeight(
+                              subTasks: toDo.subTasks);
+                          toDo.realDuration =
+                              toDoProvider.calculateRealDuration(
+                                  weight: toDo.weight,
+                                  duration: toDo.expectedDuration);
                         }));
                   },
                 ),
@@ -1237,7 +1374,8 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                         subTaskEditingController[index].value =
                             subTaskEditingController[index].value.copyWith(
                                   text: value,
-                                  selection: TextSelection.collapsed(offset: value.length),
+                                  selection: TextSelection.collapsed(
+                                      offset: value.length),
                                 );
                       }),
                 ),
@@ -1254,25 +1392,32 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                 icon: const Icon(Icons.delete),
                 onPressed: () => setState(() {
                       checkClose = true;
-                      toDo.subTasks.setRange(index, toDo.subTasks.length - 1,
-                          toDo.subTasks.getRange(index + 1, toDo.subTasks.length));
+                      toDo.subTasks.setRange(
+                          index,
+                          toDo.subTasks.length - 1,
+                          toDo.subTasks
+                              .getRange(index + 1, toDo.subTasks.length));
                       toDo.subTasks.last = SubTask();
 
                       for (int i = 0; i < toDo.subTasks.length; i++) {
                         subTaskEditingController[i].value =
-                            subTaskEditingController[i].value.copyWith(text: toDo.subTasks[i].name);
+                            subTaskEditingController[i]
+                                .value
+                                .copyWith(text: toDo.subTasks[i].name);
                       }
 
                       shownTasks--;
                       shownTasks = max(shownTasks, 0);
-                      toDo.weight = toDoProvider.calculateWeight(subTasks: toDo.subTasks);
+                      toDo.weight =
+                          toDoProvider.calculateWeight(subTasks: toDo.subTasks);
                     })));
       },
     );
   }
 
   ReorderableListView buildReorderableSubTasks(
-      {bool smallScreen = false, ScrollPhysics physics = const BouncingScrollPhysics()}) {
+      {bool smallScreen = false,
+      ScrollPhysics physics = const BouncingScrollPhysics()}) {
     return ReorderableListView.builder(
       physics: physics,
       shrinkWrap: true,
@@ -1283,16 +1428,10 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
           if (oldIndex < newIndex) {
             newIndex--;
           }
-
-          if (newIndex > cacheSubTasks.length) {
-            print("Cache Len: ${cacheSubTasks.length}");
-            print("newIndex: $newIndex");
-          }
-
           SubTask st = cacheSubTasks.removeAt(oldIndex);
           cacheSubTasks.insert(newIndex, st);
-          TextEditingController ct = subTaskEditingController.removeAt(oldIndex);
-          //ct.value = ct.value.copyWith(text: st.name);
+          TextEditingController ct =
+              subTaskEditingController.removeAt(oldIndex);
           subTaskEditingController.insert(newIndex, ct);
         });
       },
@@ -1306,7 +1445,8 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
               children: [
                 IconButton(
                   icon: Constants.batteryIcons[cacheSubTasks[index].weight]!,
-                  selectedIcon: Constants.selectedBatteryIcons[cacheSubTasks[index].weight]!,
+                  selectedIcon: Constants
+                      .selectedBatteryIcons[cacheSubTasks[index].weight]!,
                   onPressed: () {
                     showModalBottomSheet<void>(
                         showDragHandle: true,
@@ -1320,25 +1460,37 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       // const Icon(Icons.drag_handle_rounded),
-                                      const Text("Task Strain", style: Constants.headerStyle),
+                                      const Text("Task Strain",
+                                          style: Constants.headerStyle),
                                       Padding(
-                                          padding: const EdgeInsets.all(Constants.padding),
+                                          padding: const EdgeInsets.all(
+                                              Constants.padding),
                                           child: Row(
-                                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.spaceEvenly,
                                             children: [
                                               const Icon(Icons.battery_full),
                                               Expanded(
                                                 child: Slider(
-                                                  value: cacheSubTasks[index].weight.toDouble(),
-                                                  max: Constants.maxTaskWeight.toDouble(),
-                                                  label: (cacheSubTasks[index].weight >
-                                                          (Constants.maxTaskWeight / 2).floor())
+                                                  value: cacheSubTasks[index]
+                                                      .weight
+                                                      .toDouble(),
+                                                  max: Constants.maxTaskWeight
+                                                      .toDouble(),
+                                                  label: (cacheSubTasks[index]
+                                                              .weight >
+                                                          (Constants.maxTaskWeight /
+                                                                  2)
+                                                              .floor())
                                                       ? " ${cacheSubTasks[index].weight} ${Constants.lowBattery}"
                                                       : " ${cacheSubTasks[index].weight} ${Constants.fullBattery}",
-                                                  divisions: Constants.maxTaskWeight,
-                                                  onChanged: (value) => setState(() {
+                                                  divisions:
+                                                      Constants.maxTaskWeight,
+                                                  onChanged: (value) =>
+                                                      setState(() {
                                                     checkClose = true;
-                                                    cacheSubTasks[index].weight = value.toInt();
+                                                    cacheSubTasks[index]
+                                                        .weight = value.toInt();
                                                   }),
                                                 ),
                                               ),
@@ -1349,9 +1501,12 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                           );
                         }).whenComplete(() => setState(() {
                           checkClose = true;
-                          toDo.weight = toDoProvider.calculateWeight(subTasks: cacheSubTasks);
-                          toDo.realDuration = toDoProvider.calculateRealDuration(
-                              weight: toDo.weight, duration: toDo.expectedDuration);
+                          toDo.weight = toDoProvider.calculateWeight(
+                              subTasks: cacheSubTasks);
+                          toDo.realDuration =
+                              toDoProvider.calculateRealDuration(
+                                  weight: toDo.weight,
+                                  duration: toDo.expectedDuration);
                         }));
                   },
                 ),
@@ -1369,7 +1524,8 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                         subTaskEditingController[index].value =
                             subTaskEditingController[index].value.copyWith(
                                   text: value,
-                                  selection: TextSelection.collapsed(offset: value.length),
+                                  selection: TextSelection.collapsed(
+                                      offset: value.length),
                                 );
                       }),
                 ),
@@ -1383,7 +1539,8 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
 
             // Delete Subtask
             secondary: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: Constants.innerPadding),
+              padding: const EdgeInsets.symmetric(
+                  horizontal: Constants.innerPadding),
               child: IconButton(
                   icon: const Icon(Icons.delete),
                   onPressed: () => setState(() {
@@ -1391,13 +1548,15 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                         SubTask st = cacheSubTasks.removeAt(index);
                         st = SubTask();
                         cacheSubTasks.add(st);
-                        TextEditingController ct = subTaskEditingController.removeAt(index);
+                        TextEditingController ct =
+                            subTaskEditingController.removeAt(index);
                         ct.value = ct.value.copyWith(text: st.name);
                         subTaskEditingController.add(ct);
 
                         shownTasks--;
                         shownTasks = max(shownTasks, 0);
-                        toDo.weight = toDoProvider.calculateWeight(subTasks: cacheSubTasks);
+                        toDo.weight = toDoProvider.calculateWeight(
+                            subTasks: cacheSubTasks);
                       })),
             ));
       },
@@ -1410,7 +1569,8 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
           (toDo.myDay)
               ? "Added to my Day"
               : (userProvider.myDayTotal + toDo.weight <=
-                      (userProvider.curUser?.bandwidth ?? Constants.maxBandwidth))
+                      (userProvider.curUser?.bandwidth ??
+                          Constants.maxBandwidth))
                   ? "Add to My Day?"
                   : "Don't overload yourself, you deserve a rest",
           overflow: TextOverflow.visible,
@@ -1467,7 +1627,8 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
             color: Theme.of(context).colorScheme.outline)),
         barBackgroundColor: const MaterialStatePropertyAll(Colors.transparent),
         barElevation: const MaterialStatePropertyAll(0),
-        viewConstraints: const BoxConstraints(maxHeight: Constants.maxSearchHeightBeforeScroll),
+        viewConstraints: const BoxConstraints(
+            maxHeight: Constants.maxSearchHeightBeforeScroll),
         barHintText: "Search Groups",
         suggestionsBuilder: (context, SearchController controller) {
           if (controller.text.isEmpty) {
@@ -1481,22 +1642,28 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                           softWrap: false,
                           overflow: TextOverflow.visible,
                         ),
-                        onTap: () =>
-                            handleHistorySelection(groupData: groupData, controller: controller),
+                        onTap: () => handleHistorySelection(
+                            groupData: groupData, controller: controller),
                       ))
                   .toList();
             }
             final searchFuture = groupProvider.mostRecent(limit: 5);
-            return [buildGroupList(searchFuture, controller)];
+            return [
+              buildGroupList(searchFuture: searchFuture, controller: controller)
+            ];
           }
           // Search query iterable.
-          final searchFuture = groupProvider.searchGroups(searchString: controller.text);
-          return [buildGroupList(searchFuture, controller)];
+          final searchFuture =
+              groupProvider.searchGroups(searchString: controller.text);
+          return [
+            buildGroupList(searchFuture: searchFuture, controller: controller)
+          ];
         });
   }
 
   FutureBuilder<List<Group>> buildGroupList(
-      Future<List<Group>> searchFuture, SearchController controller) {
+      {required Future<List<Group>> searchFuture,
+      required SearchController controller}) {
     return FutureBuilder(
         future: searchFuture,
         builder: (context, snapshot) {
@@ -1510,8 +1677,8 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                   itemBuilder: (BuildContext context, int index) {
                     return ListTile(
                         title: AutoSizeText(groups[index].name),
-                        onTap: () =>
-                            handleGroupSelection(group: groups[index], controller: controller));
+                        onTap: () => handleGroupSelection(
+                            group: groups[index], controller: controller));
                   });
             }
             // This is what to render if no data.
@@ -1524,22 +1691,25 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
     return AutoSizeTextField(
         controller: descriptionEditingController,
         maxLines: Constants.descripMaxLinesBeforeScroll,
-        minLines:
-            (smallScreen) ? Constants.descripMinLinesMobile : Constants.descripMinLinesDesktop,
+        minLines: (smallScreen)
+            ? Constants.descripMinLinesMobile
+            : Constants.descripMinLinesDesktop,
         minFontSize: Constants.medium,
         decoration: InputDecoration(
           isDense: smallScreen,
           contentPadding: const EdgeInsets.all(Constants.innerPadding),
           hintText: "Description",
           border: const OutlineInputBorder(
-              borderRadius: BorderRadius.all(Radius.circular(Constants.roundedCorners)),
+              borderRadius:
+                  BorderRadius.all(Radius.circular(Constants.roundedCorners)),
               borderSide: BorderSide(
                 strokeAlign: BorderSide.strokeAlignOutside,
               )),
         ));
   }
 
-  ListTile buildDurationTile(BuildContext context, {bool smallScreen = false}) {
+  ListTile buildDurationTile(
+      {required BuildContext context, bool smallScreen = false}) {
     return ListTile(
       leading: const Icon(Icons.timer_outlined),
       title: (toDo.expectedDuration > 0)
@@ -1548,7 +1718,10 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                 Flexible(
                   child: AutoSizeText(
                       (smallScreen)
-                          ? Duration(seconds: toDo.expectedDuration).toString().split(".").first
+                          ? Duration(seconds: toDo.expectedDuration)
+                              .toString()
+                              .split(".")
+                              .first
                           : "Expected: ${Duration(seconds: toDo.expectedDuration).toString().split(".").first}",
                       overflow: TextOverflow.visible,
                       minFontSize: Constants.small,
@@ -1556,7 +1729,8 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                       softWrap: true),
                 ),
                 const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: Constants.innerPadding),
+                  padding:
+                      EdgeInsets.symmetric(horizontal: Constants.innerPadding),
                   child: Icon(
                     Icons.timer,
                   ),
@@ -1564,7 +1738,10 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                 Flexible(
                   child: AutoSizeText(
                       (smallScreen)
-                          ? Duration(seconds: toDo.realDuration).toString().split(".").first
+                          ? Duration(seconds: toDo.realDuration)
+                              .toString()
+                              .split(".")
+                              .first
                           : "Actual: ${Duration(seconds: toDo.realDuration).toString().split(".").first}",
                       overflow: TextOverflow.visible,
                       minFontSize: Constants.small,
@@ -1578,13 +1755,15 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
               minFontSize: Constants.small,
               maxLines: 2,
               softWrap: true),
-      trailing: (toDo.expectedDuration > 0) ? IconButton(
-          icon: const Icon(Icons.clear),
-          onPressed: () => setState(() {
-                checkClose = true;
-                toDo.expectedDuration = 0;
-                toDo.realDuration = 0;
-              })) : null,
+      trailing: (toDo.expectedDuration > 0)
+          ? IconButton(
+              icon: const Icon(Icons.clear),
+              onPressed: () => setState(() {
+                    checkClose = true;
+                    toDo.expectedDuration = 0;
+                    toDo.realDuration = 0;
+                  }))
+          : null,
       onTap: () => showDialog<int>(
           context: context,
           builder: (BuildContext context) {
@@ -1606,7 +1785,8 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                             children: [
                               const Row(
                                   mainAxisSize: MainAxisSize.min,
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   children: [
                                     Expanded(
                                         child: AutoSizeText(
@@ -1638,58 +1818,75 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                                   ]),
                               Row(
                                 mainAxisSize: MainAxisSize.min,
-                                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceEvenly,
                                 children: [
                                   Expanded(
                                     child: NumberPicker(
-                                      textStyle: Constants.numberPickerSecondary(context: context),
+                                      textStyle:
+                                          Constants.numberPickerSecondary(
+                                              context: context),
                                       selectedTextStyle:
-                                          Constants.numberPickerPrimary(context: context),
+                                          Constants.numberPickerPrimary(
+                                              context: context),
                                       minValue: 0,
                                       maxValue: 100,
                                       value: hours,
                                       haptics: true,
                                       onChanged: (value) {
                                         SemanticsService.announce(
-                                            "$value, hours", Directionality.of(context));
+                                            "$value, hours",
+                                            Directionality.of(context));
                                         setState(() => hours = value);
                                       },
                                     ),
                                   ),
                                   const Padding(
-                                      padding: EdgeInsets.symmetric(horizontal: Constants.padding),
-                                      child: Text(":", style: Constants.timeColon)),
+                                      padding: EdgeInsets.symmetric(
+                                          horizontal: Constants.padding),
+                                      child: Text(":",
+                                          style: Constants.timeColon)),
                                   Expanded(
                                     child: NumberPicker(
-                                      textStyle: Constants.numberPickerSecondary(context: context),
+                                      textStyle:
+                                          Constants.numberPickerSecondary(
+                                              context: context),
                                       selectedTextStyle:
-                                          Constants.numberPickerPrimary(context: context),
+                                          Constants.numberPickerPrimary(
+                                              context: context),
                                       minValue: 0,
                                       maxValue: 59,
                                       value: minutes,
                                       haptics: true,
                                       onChanged: (value) {
                                         SemanticsService.announce(
-                                            "$value, minutes", Directionality.of(context));
+                                            "$value, minutes",
+                                            Directionality.of(context));
                                         setState(() => minutes = value);
                                       },
                                     ),
                                   ),
                                   const Padding(
-                                      padding: EdgeInsets.symmetric(horizontal: Constants.padding),
-                                      child: Text(":", style: Constants.timeColon)),
+                                      padding: EdgeInsets.symmetric(
+                                          horizontal: Constants.padding),
+                                      child: Text(":",
+                                          style: Constants.timeColon)),
                                   Expanded(
                                     child: NumberPicker(
-                                      textStyle: Constants.numberPickerSecondary(context: context),
+                                      textStyle:
+                                          Constants.numberPickerSecondary(
+                                              context: context),
                                       selectedTextStyle:
-                                          Constants.numberPickerPrimary(context: context),
+                                          Constants.numberPickerPrimary(
+                                              context: context),
                                       minValue: 0,
                                       maxValue: 59,
                                       value: seconds,
                                       haptics: true,
                                       onChanged: (value) {
                                         SemanticsService.announce(
-                                            "$value, seconds", Directionality.of(context));
+                                            "$value, seconds",
+                                            Directionality.of(context));
                                         setState(() => seconds = value);
                                       },
                                     ),
@@ -1697,38 +1894,48 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                                 ],
                               ),
                               const SizedBox(height: 20),
-                              Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
-                                Expanded(
-                                  child: Padding(
-                                    padding: const EdgeInsets.only(right: Constants.padding),
-                                    child: FilledButton.tonalIcon(
-                                        icon: const Icon(Icons.close_outlined),
-                                        onPressed: () => Navigator.pop(context, 0),
-                                        label: const AutoSizeText("Cancel",
-                                            softWrap: false,
-                                            overflow: TextOverflow.visible,
-                                            maxLines: 1,
-                                            minFontSize: Constants.small)),
-                                  ),
-                                ),
-                                Expanded(
-                                  child: Padding(
-                                    padding: const EdgeInsets.only(left: Constants.padding),
-                                    child: FilledButton.icon(
-                                      icon: const Icon(Icons.done_outlined),
-                                      onPressed: () {
-                                        Navigator.pop(
-                                            context, (hours * 3600) + (minutes * 60) + seconds);
-                                      },
-                                      label: const AutoSizeText("Done",
-                                          softWrap: false,
-                                          overflow: TextOverflow.visible,
-                                          maxLines: 1,
-                                          minFontSize: Constants.small),
+                              Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceEvenly,
+                                  children: [
+                                    Expanded(
+                                      child: Padding(
+                                        padding: const EdgeInsets.only(
+                                            right: Constants.padding),
+                                        child: FilledButton.tonalIcon(
+                                            icon: const Icon(
+                                                Icons.close_outlined),
+                                            onPressed: () =>
+                                                Navigator.pop(context, 0),
+                                            label: const AutoSizeText("Cancel",
+                                                softWrap: false,
+                                                overflow: TextOverflow.visible,
+                                                maxLines: 1,
+                                                minFontSize: Constants.small)),
+                                      ),
                                     ),
-                                  ),
-                                )
-                              ])
+                                    Expanded(
+                                      child: Padding(
+                                        padding: const EdgeInsets.only(
+                                            left: Constants.padding),
+                                        child: FilledButton.icon(
+                                          icon: const Icon(Icons.done_outlined),
+                                          onPressed: () {
+                                            Navigator.pop(
+                                                context,
+                                                (hours * 3600) +
+                                                    (minutes * 60) +
+                                                    seconds);
+                                          },
+                                          label: const AutoSizeText("Done",
+                                              softWrap: false,
+                                              overflow: TextOverflow.visible,
+                                              maxLines: 1,
+                                              minFontSize: Constants.small),
+                                        ),
+                                      ),
+                                    )
+                                  ])
                             ])));
               },
             );
@@ -1743,10 +1950,17 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
     );
   }
 
-  ListTile buildDateTile(BuildContext context) {
+  ListTile buildDateTile({required BuildContext context}) {
     return ListTile(
       leading: const Icon(Icons.today_outlined),
-      title: (Constants.nullDate == toDo.startDate.copyWith(hour: Constants.midnight.hour, minute: Constants.midnight.minute) && Constants.nullDate == toDo.dueDate.copyWith(hour: Constants.midnight.hour, minute: Constants.midnight.minute))
+      title: (Constants.nullDate ==
+                  toDo.startDate.copyWith(
+                      hour: Constants.midnight.hour,
+                      minute: Constants.midnight.minute) &&
+              Constants.nullDate ==
+                  toDo.dueDate.copyWith(
+                      hour: Constants.midnight.hour,
+                      minute: Constants.midnight.minute))
           ? const AutoSizeText(
               "Add Dates",
               softWrap: true,
@@ -1756,7 +1970,10 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
             )
           : Row(
               children: [
-                (Constants.nullDate == toDo.startDate.copyWith(hour: Constants.midnight.hour, minute: Constants.midnight.minute))
+                (Constants.nullDate ==
+                        toDo.startDate.copyWith(
+                            hour: Constants.midnight.hour,
+                            minute: Constants.midnight.minute))
                     ? const Flexible(
                         child: AutoSizeText(
                           "Start Date",
@@ -1777,7 +1994,8 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                             minFontSize: Constants.small)),
                 const Flexible(
                   child: Padding(
-                    padding: EdgeInsets.symmetric(horizontal: Constants.padding),
+                    padding:
+                        EdgeInsets.symmetric(horizontal: Constants.padding),
                     child: AutoSizeText(
                       "-",
                       softWrap: false,
@@ -1787,7 +2005,10 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                     ),
                   ),
                 ),
-                (Constants.nullDate == toDo.dueDate.copyWith(hour: Constants.midnight.hour, minute: Constants.midnight.minute))
+                (Constants.nullDate ==
+                        toDo.dueDate.copyWith(
+                            hour: Constants.midnight.hour,
+                            minute: Constants.midnight.minute))
                     ? const Flexible(
                         child: Padding(
                           padding: EdgeInsets.only(right: Constants.padding),
@@ -1811,7 +2032,8 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                       )
                     : Flexible(
                         child: AutoSizeText(
-                            Jiffy.parseFromDateTime(toDo.dueDate).format(pattern: "MMM d"),
+                            Jiffy.parseFromDateTime(toDo.dueDate)
+                                .format(pattern: "MMM d"),
                             softWrap: true,
                             overflow: TextOverflow.visible,
                             maxLines: 2,
@@ -1819,26 +2041,47 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                       )
               ],
             ),
-      trailing: (Constants.nullDate != toDo.startDate.copyWith(hour: Constants.midnight.hour, minute: Constants.midnight.minute) || Constants.nullDate != toDo.dueDate.copyWith(hour: Constants.midnight.hour, minute: Constants.midnight.minute)) ? IconButton(
-          icon: const Icon(Icons.clear),
-          onPressed: () => setState(() {
-            checkClose = true;
-                toDo.startDate = Constants.nullDate
-                    .copyWith(hour: toDo.startDate.hour, minute: toDo.startDate.minute);
-                toDo.dueDate = Constants.nullDate
-                    .copyWith(hour: toDo.dueDate.hour, minute: toDo.dueDate.minute);
-              })) : null,
+      trailing: (Constants.nullDate !=
+                  toDo.startDate.copyWith(
+                      hour: Constants.midnight.hour,
+                      minute: Constants.midnight.minute) ||
+              Constants.nullDate !=
+                  toDo.dueDate.copyWith(
+                      hour: Constants.midnight.hour,
+                      minute: Constants.midnight.minute))
+          ? IconButton(
+              icon: const Icon(Icons.clear),
+              onPressed: () => setState(() {
+                    checkClose = true;
+                    toDo.startDate = Constants.nullDate.copyWith(
+                        hour: toDo.startDate.hour,
+                        minute: toDo.startDate.minute);
+                    toDo.dueDate = Constants.nullDate.copyWith(
+                        hour: toDo.dueDate.hour, minute: toDo.dueDate.minute);
+                  }))
+          : null,
       onTap: () {
         showDialog<void>(
             context: context,
             builder: (BuildContext context) {
-              DateTime? tmpStart = (Constants.nullDate != toDo.startDate.copyWith(hour: Constants.midnight.hour, minute: Constants.midnight.minute)) ? toDo.startDate : null;
-              DateTime? tmpDue = (Constants.nullDate != toDo.dueDate.copyWith(hour: Constants.midnight.hour, minute: Constants.midnight.minute)) ? toDo.dueDate : null;
+              DateTime? tmpStart = (Constants.nullDate !=
+                      toDo.startDate.copyWith(
+                          hour: Constants.midnight.hour,
+                          minute: Constants.midnight.minute))
+                  ? toDo.startDate
+                  : null;
+              DateTime? tmpDue = (Constants.nullDate !=
+                      toDo.dueDate.copyWith(
+                          hour: Constants.midnight.hour,
+                          minute: Constants.midnight.minute))
+                  ? toDo.dueDate
+                  : null;
               DateTime initDate = tmpStart ?? tmpDue ?? DateTime.now();
               bool setStart = false;
-              final int numDays = (tmpDue?.difference(initDate).inDays ?? 0) + 1;
-              List<DateTime?> showDates =
-                  List.generate(numDays, (i) => initDate.add(Duration(days: i)));
+              final int numDays =
+                  (tmpDue?.difference(initDate).inDays ?? 0) + 1;
+              List<DateTime?> showDates = List.generate(
+                  numDays, (i) => initDate.add(Duration(days: i)));
 
               // List ->
               return StatefulBuilder(
@@ -1866,7 +2109,8 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                                   ]),
                               const Flexible(
                                 child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   mainAxisSize: MainAxisSize.max,
                                   children: [
                                     Flexible(
@@ -1888,55 +2132,79 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                                 ),
                               ),
                               Padding(
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: Constants.innerPadding),
+                                padding: const EdgeInsets.symmetric(
+                                    vertical: Constants.innerPadding),
                                 child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceEvenly,
                                     mainAxisSize: MainAxisSize.max,
                                     children: [
                                       Expanded(
                                         flex: 10,
                                         child: Container(
                                           decoration: BoxDecoration(
-                                            borderRadius:
-                                                BorderRadius.circular(Constants.roundedCorners),
+                                            borderRadius: BorderRadius.circular(
+                                                Constants.roundedCorners),
                                             border: Border.all(
-                                                strokeAlign: BorderSide.strokeAlignOutside),
+                                                strokeAlign: BorderSide
+                                                    .strokeAlignOutside),
                                           ),
                                           child: Row(
-                                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment
+                                                      .spaceBetween,
                                               mainAxisSize: MainAxisSize.max,
                                               children: [
                                                 Expanded(
                                                   child: TextButton(
-                                                      onPressed: () => setState(() {
+                                                      onPressed: () =>
+                                                          setState(() {
                                                             checkClose = true;
                                                             setStart = true;
                                                           }),
                                                       child: (null != tmpStart)
                                                           ? AutoSizeText(
-                                                              Jiffy.parseFromDateTime(tmpStart!)
-                                                                  .format(pattern: "yMMMMd"),
+                                                              Jiffy.parseFromDateTime(
+                                                                      tmpStart!)
+                                                                  .format(
+                                                                      pattern:
+                                                                          "yMMMMd"),
                                                               softWrap: false,
-                                                              overflow: TextOverflow.visible,
+                                                              overflow:
+                                                                  TextOverflow
+                                                                      .visible,
                                                               maxLines: 1,
-                                                              minFontSize: Constants.small,
+                                                              minFontSize:
+                                                                  Constants
+                                                                      .small,
                                                             )
-                                                          : const AutoSizeText("Start Date",
+                                                          : const AutoSizeText(
+                                                              "Start Date",
                                                               softWrap: true,
-                                                              overflow: TextOverflow.visible,
+                                                              overflow:
+                                                                  TextOverflow
+                                                                      .visible,
                                                               maxLines: 1,
-                                                              minFontSize: Constants.small)),
+                                                              minFontSize:
+                                                                  Constants
+                                                                      .small)),
                                                 ),
-                                                (tmpStart != null) ? IconButton(
-                                                  icon: const Icon(Icons.clear_outlined),
-                                                  selectedIcon: const Icon(Icons.clear),
-                                                  onPressed: () => setState(() {
-                                                    checkClose = true;
-                                                    showDates.remove(tmpStart);
-                                                    tmpStart = null;
-                                                  }),
-                                                ) : const SizedBox.shrink(),
+                                                (tmpStart != null)
+                                                    ? IconButton(
+                                                        icon: const Icon(Icons
+                                                            .clear_outlined),
+                                                        selectedIcon:
+                                                            const Icon(
+                                                                Icons.clear),
+                                                        onPressed: () =>
+                                                            setState(() {
+                                                          checkClose = true;
+                                                          showDates
+                                                              .remove(tmpStart);
+                                                          tmpStart = null;
+                                                        }),
+                                                      )
+                                                    : const SizedBox.shrink(),
                                               ]),
                                         ),
                                       ),
@@ -1944,7 +2212,8 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                                         flex: 1,
                                         child: Padding(
                                           padding: EdgeInsets.symmetric(
-                                              horizontal: Constants.halfPadding),
+                                              horizontal:
+                                                  Constants.halfPadding),
                                           child: AutoSizeText("|",
                                               style: Constants.largeHeaderStyle,
                                               softWrap: false,
@@ -1957,45 +2226,68 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                                         flex: 10,
                                         child: Container(
                                           decoration: BoxDecoration(
-                                            borderRadius:
-                                                BorderRadius.circular(Constants.roundedCorners),
+                                            borderRadius: BorderRadius.circular(
+                                                Constants.roundedCorners),
                                             border: Border.all(
-                                                strokeAlign: BorderSide.strokeAlignOutside),
+                                                strokeAlign: BorderSide
+                                                    .strokeAlignOutside),
                                           ),
                                           child: Row(
-                                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment
+                                                      .spaceBetween,
                                               mainAxisSize: MainAxisSize.max,
                                               children: [
                                                 Expanded(
                                                   child: TextButton(
-                                                      onPressed: () => setState(() {
+                                                      onPressed: () =>
+                                                          setState(() {
                                                             checkClose = true;
                                                             setStart = false;
                                                           }),
                                                       child: (null != tmpDue)
                                                           ? AutoSizeText(
-                                                              Jiffy.parseFromDateTime(tmpDue!)
-                                                                  .format(pattern: "yMMMMd"),
+                                                              Jiffy.parseFromDateTime(
+                                                                      tmpDue!)
+                                                                  .format(
+                                                                      pattern:
+                                                                          "yMMMMd"),
                                                               softWrap: false,
-                                                              overflow: TextOverflow.visible,
+                                                              overflow:
+                                                                  TextOverflow
+                                                                      .visible,
                                                               maxLines: 1,
-                                                              minFontSize: Constants.small,
+                                                              minFontSize:
+                                                                  Constants
+                                                                      .small,
                                                             )
-                                                          : const AutoSizeText("Due Date",
+                                                          : const AutoSizeText(
+                                                              "Due Date",
                                                               softWrap: true,
-                                                              overflow: TextOverflow.visible,
+                                                              overflow:
+                                                                  TextOverflow
+                                                                      .visible,
                                                               maxLines: 1,
-                                                              minFontSize: Constants.small)),
+                                                              minFontSize:
+                                                                  Constants
+                                                                      .small)),
                                                 ),
-                                                (null != tmpDue) ? IconButton(
-                                                  icon: const Icon(Icons.clear_outlined),
-                                                  selectedIcon: const Icon(Icons.clear),
-                                                  onPressed: () => setState(() {
-                                                    checkClose = true;
-                                                    showDates.remove(tmpDue);
-                                                    tmpDue = null;
-                                                  }),
-                                                ) : const SizedBox.shrink()
+                                                (null != tmpDue)
+                                                    ? IconButton(
+                                                        icon: const Icon(Icons
+                                                            .clear_outlined),
+                                                        selectedIcon:
+                                                            const Icon(
+                                                                Icons.clear),
+                                                        onPressed: () =>
+                                                            setState(() {
+                                                          checkClose = true;
+                                                          showDates
+                                                              .remove(tmpDue);
+                                                          tmpDue = null;
+                                                        }),
+                                                      )
+                                                    : const SizedBox.shrink()
                                               ]),
                                         ),
                                       ),
@@ -2009,7 +2301,8 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                                   children: [
                                     CalendarDatePicker2(
                                         config: CalendarDatePicker2Config(
-                                          calendarType: CalendarDatePicker2Type.range,
+                                          calendarType:
+                                              CalendarDatePicker2Type.range,
                                           firstDate: DateTime(1970),
                                           lastDate: DateTime(3000),
                                         ),
@@ -2031,15 +2324,19 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                                   ]),
 
                               Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     Expanded(
                                       child: Padding(
-                                        padding: const EdgeInsets.only(right: Constants.padding),
+                                        padding: const EdgeInsets.only(
+                                            right: Constants.padding),
                                         child: FilledButton.tonalIcon(
-                                            icon: const Icon(Icons.close_outlined),
-                                            onPressed: () => Navigator.pop(context),
+                                            icon: const Icon(
+                                                Icons.close_outlined),
+                                            onPressed: () =>
+                                                Navigator.pop(context),
                                             label: const AutoSizeText("Cancel",
                                                 softWrap: false,
                                                 overflow: TextOverflow.visible,
@@ -2049,17 +2346,22 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                                     ),
                                     Expanded(
                                       child: Padding(
-                                        padding: const EdgeInsets.only(left: Constants.padding),
+                                        padding: const EdgeInsets.only(
+                                            left: Constants.padding),
                                         child: FilledButton.icon(
                                           icon: const Icon(Icons.done_outlined),
                                           onPressed: () {
                                             setState(() {
                                               checkClose = true;
-                                              tmpStart = tmpStart ?? Constants.nullDate;
-                                              tmpDue = tmpDue ?? Constants.nullDate;
-                                              toDo.startDate = tmpStart!.copyWith(
-                                                  hour: toDo.startDate.hour,
-                                                  minute: toDo.startDate.minute);
+                                              tmpStart = tmpStart ??
+                                                  Constants.nullDate;
+                                              tmpDue =
+                                                  tmpDue ?? Constants.nullDate;
+                                              toDo.startDate = tmpStart!
+                                                  .copyWith(
+                                                      hour: toDo.startDate.hour,
+                                                      minute: toDo
+                                                          .startDate.minute);
                                               toDo.dueDate = tmpDue!.copyWith(
                                                   hour: toDo.dueDate.hour,
                                                   minute: toDo.dueDate.minute);
@@ -2084,10 +2386,8 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
   }
 
   ListTile buildTimeTile() {
-    // TODO: possibly factor these out as nullable params.
-    TimeOfDay? startTime = (showStartTime)
-        ? TimeOfDay.fromDateTime(toDo.startDate)
-        : null;
+    TimeOfDay? startTime =
+        (showStartTime) ? TimeOfDay.fromDateTime(toDo.startDate) : null;
     TimeOfDay? dueTime =
         (showDueTime) ? TimeOfDay.fromDateTime(toDo.dueDate) : null;
     return ListTile(
@@ -2121,15 +2421,20 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                 (null == dueTime)
                     ? const Flexible(
                         child: Padding(
-                          padding: EdgeInsets.symmetric(horizontal: Constants.padding),
+                          padding: EdgeInsets.symmetric(
+                              horizontal: Constants.padding),
                           child: FittedBox(
-                              fit: BoxFit.fill, child: Icon(Icons.history_toggle_off_outlined)),
+                              fit: BoxFit.fill,
+                              child: Icon(Icons.history_toggle_off_outlined)),
                         ),
                       )
                     : const Flexible(
                         child: Padding(
-                        padding: EdgeInsets.symmetric(horizontal: Constants.padding),
-                        child: FittedBox(fit: BoxFit.fill, child: Icon(Icons.schedule_outlined)),
+                        padding:
+                            EdgeInsets.symmetric(horizontal: Constants.padding),
+                        child: FittedBox(
+                            fit: BoxFit.fill,
+                            child: Icon(Icons.schedule_outlined)),
                       )),
                 (null == dueTime)
                     ? const Flexible(
@@ -2180,7 +2485,8 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                                     ]),
                                 const Flexible(
                                   child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
                                     mainAxisSize: MainAxisSize.max,
                                     children: [
                                       Flexible(
@@ -2202,104 +2508,141 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                                   ),
                                 ),
                                 Padding(
-                                  padding:
-                                      const EdgeInsets.symmetric(vertical: Constants.innerPadding),
+                                  padding: const EdgeInsets.symmetric(
+                                      vertical: Constants.innerPadding),
                                   child: Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
                                       mainAxisSize: MainAxisSize.max,
                                       children: [
                                         Expanded(
                                           flex: 10,
                                           child: OutlinedButton(
                                               onPressed: () async {
-                                                final TimeOfDay? picked = await showTimePicker(
-                                                    context: context,
-                                                    initialTime: startTime ??
-                                                        Constants.midnight);
+                                                final TimeOfDay? picked =
+                                                    await showTimePicker(
+                                                        context: context,
+                                                        initialTime:
+                                                            startTime ??
+                                                                Constants
+                                                                    .midnight);
                                                 if (null != picked) {
-                                                  setState(() => startTime = picked);
+                                                  setState(
+                                                      () => startTime = picked);
                                                 }
                                               },
                                               child: (null != startTime)
                                                   ? AutoSizeText(
-                                                      startTime!.format(context).toString(),
+                                                      startTime!
+                                                          .format(context)
+                                                          .toString(),
                                                       softWrap: false,
-                                                      overflow: TextOverflow.visible,
+                                                      overflow:
+                                                          TextOverflow.visible,
                                                       maxLines: 1,
-                                                      minFontSize: Constants.small,
+                                                      minFontSize:
+                                                          Constants.small,
                                                     )
-                                                  : const AutoSizeText("Start Time",
+                                                  : const AutoSizeText(
+                                                      "Start Time",
                                                       softWrap: true,
-                                                      overflow: TextOverflow.visible,
+                                                      overflow:
+                                                          TextOverflow.visible,
                                                       maxLines: 1,
-                                                      minFontSize: Constants.small)),
+                                                      minFontSize:
+                                                          Constants.small)),
                                         ),
                                         const Padding(
                                           padding: EdgeInsets.symmetric(
-                                              horizontal: Constants.halfPadding),
-                                          child: Text("|", style: Constants.timeColon),
+                                              horizontal:
+                                                  Constants.halfPadding),
+                                          child: Text("|",
+                                              style: Constants.timeColon),
                                         ),
                                         Expanded(
                                           flex: 10,
                                           child: OutlinedButton(
                                               onPressed: () async {
-                                                final TimeOfDay? picked = await showTimePicker(
-                                                    context: context,
-                                                    initialTime: dueTime ??
-                                                        Constants.midnight);
+                                                final TimeOfDay? picked =
+                                                    await showTimePicker(
+                                                        context: context,
+                                                        initialTime: dueTime ??
+                                                            Constants.midnight);
                                                 if (null != picked) {
-                                                  setState(() => dueTime = picked);
+                                                  setState(
+                                                      () => dueTime = picked);
                                                 }
                                               },
                                               child: (null != dueTime)
                                                   ? AutoSizeText(
-                                                      dueTime!.format(context).toString(),
+                                                      dueTime!
+                                                          .format(context)
+                                                          .toString(),
                                                       softWrap: false,
-                                                      overflow: TextOverflow.visible,
+                                                      overflow:
+                                                          TextOverflow.visible,
                                                       maxLines: 1,
-                                                      minFontSize: Constants.small,
+                                                      minFontSize:
+                                                          Constants.small,
                                                     )
-                                                  : const AutoSizeText("Due Time",
+                                                  : const AutoSizeText(
+                                                      "Due Time",
                                                       softWrap: true,
-                                                      overflow: TextOverflow.visible,
+                                                      overflow:
+                                                          TextOverflow.visible,
                                                       maxLines: 1,
-                                                      minFontSize: Constants.small)),
+                                                      minFontSize:
+                                                          Constants.small)),
                                         ),
                                       ]),
                                 ),
                                 Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       Expanded(
                                         child: Padding(
-                                          padding: const EdgeInsets.only(right: Constants.padding),
+                                          padding: const EdgeInsets.only(
+                                              right: Constants.padding),
                                           child: FilledButton.tonalIcon(
-                                              icon: const Icon(Icons.close_outlined),
-                                              onPressed: () => Navigator.pop(context),
-                                              label: const AutoSizeText("Cancel",
+                                              icon: const Icon(
+                                                  Icons.close_outlined),
+                                              onPressed: () =>
+                                                  Navigator.pop(context),
+                                              label: const AutoSizeText(
+                                                  "Cancel",
                                                   softWrap: false,
-                                                  overflow: TextOverflow.visible,
+                                                  overflow:
+                                                      TextOverflow.visible,
                                                   maxLines: 1,
-                                                  minFontSize: Constants.small)),
+                                                  minFontSize:
+                                                      Constants.small)),
                                         ),
                                       ),
                                       Expanded(
                                         child: Padding(
-                                          padding: const EdgeInsets.only(left: Constants.padding),
+                                          padding: const EdgeInsets.only(
+                                              left: Constants.padding),
                                           child: FilledButton.icon(
-                                            icon: const Icon(Icons.done_outlined),
+                                            icon:
+                                                const Icon(Icons.done_outlined),
                                             onPressed: () {
                                               setState(() {
                                                 startTime = startTime ??
                                                     Constants.midnight;
-                                                dueTime =
-                                                    dueTime ?? Constants.midnight;
-                                                toDo.startDate = toDo.startDate.copyWith(
-                                                    hour: startTime!.hour,
-                                                    minute: startTime!.minute);
-                                                toDo.dueDate = toDo.dueDate.copyWith(
-                                                    hour: dueTime!.hour, minute: dueTime!.minute);
+                                                dueTime = dueTime ??
+                                                    Constants.midnight;
+                                                toDo.startDate = toDo.startDate
+                                                    .copyWith(
+                                                        hour: startTime!.hour,
+                                                        minute:
+                                                            startTime!.minute);
+                                                toDo.dueDate = toDo.dueDate
+                                                    .copyWith(
+                                                        hour: dueTime!.hour,
+                                                        minute:
+                                                            dueTime!.minute);
                                               });
                                               Navigator.pop(context);
                                             },
@@ -2316,21 +2659,26 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                         )));
               }).then((_) => setState(() {}));
         },
-        trailing: (showStartTime || showDueTime) ? IconButton(
-          icon: const Icon(Icons.clear),
-          onPressed: () => setState(() {
-            checkClose = true;
-            showStartTime = false;
-            showDueTime = false;
-            toDo.startDate = toDo.startDate
-                .copyWith(hour: Constants.midnight.hour, minute: Constants.midnight.minute);
-            toDo.dueDate = toDo.dueDate
-                .copyWith(hour: Constants.midnight.hour, minute: Constants.midnight.minute);
-          }),
-        ) : null );
+        trailing: (showStartTime || showDueTime)
+            ? IconButton(
+                icon: const Icon(Icons.clear),
+                onPressed: () => setState(() {
+                  checkClose = true;
+                  showStartTime = false;
+                  showDueTime = false;
+                  toDo.startDate = toDo.startDate.copyWith(
+                      hour: Constants.midnight.hour,
+                      minute: Constants.midnight.minute);
+                  toDo.dueDate = toDo.dueDate.copyWith(
+                      hour: Constants.midnight.hour,
+                      minute: Constants.midnight.minute);
+                }),
+              )
+            : null);
   }
 
-  ListTile buildRepeatableTile(BuildContext context, {bool smallScreen = false}) {
+  ListTile buildRepeatableTile(
+      {required BuildContext context, bool smallScreen = false}) {
     return ListTile(
         leading: const Icon(Icons.event_repeat_outlined),
         title: (toDo.frequency == Frequency.once)
@@ -2391,7 +2739,8 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                                     ]),
                                 const Row(
                                   mainAxisSize: MainAxisSize.max,
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   children: [
                                     Flexible(
                                       child: AutoSizeText(
@@ -2413,22 +2762,25 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                                 ),
                                 // This is a hacky override until m3 Has width-scaling for DropdownMenu
                                 Padding(
-                                  padding:
-                                      (cacheFreq != Frequency.once && cacheFreq != Frequency.daily)
-                                          ? const EdgeInsets.fromLTRB(
-                                              Constants.innerPadding,
-                                              Constants.innerPadding,
-                                              Constants.innerPadding,
-                                              Constants.halfPadding)
-                                          : const EdgeInsets.all(Constants.innerPadding),
+                                  padding: (cacheFreq != Frequency.once &&
+                                          cacheFreq != Frequency.daily)
+                                      ? const EdgeInsets.fromLTRB(
+                                          Constants.innerPadding,
+                                          Constants.innerPadding,
+                                          Constants.innerPadding,
+                                          Constants.halfPadding)
+                                      : const EdgeInsets.all(
+                                          Constants.innerPadding),
                                   child: InputDecorator(
                                     decoration: const InputDecoration(
                                       border: OutlineInputBorder(
                                           gapPadding: 1,
-                                          borderRadius:
-                                              BorderRadius.all(Radius.circular(Constants.circular)),
+                                          borderRadius: BorderRadius.all(
+                                              Radius.circular(
+                                                  Constants.circular)),
                                           borderSide: BorderSide(
-                                              strokeAlign: BorderSide.strokeAlignOutside)),
+                                              strokeAlign: BorderSide
+                                                  .strokeAlignOutside)),
                                     ),
                                     child: DropdownButtonHideUnderline(
                                       child: DropdownButton<Frequency>(
@@ -2436,11 +2788,14 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                                             horizontal: Constants.padding),
                                         isDense: true,
                                         isExpanded: true,
-                                        dropdownColor: Constants.dialogColor(context: context),
+                                        dropdownColor: Constants.dialogColor(
+                                            context: context),
                                         borderRadius: const BorderRadius.all(
-                                            Radius.circular(Constants.roundedCorners)),
+                                            Radius.circular(
+                                                Constants.roundedCorners)),
                                         value: cacheFreq,
-                                        onChanged: (Frequency? value) => setState(() {
+                                        onChanged: (Frequency? value) =>
+                                            setState(() {
                                           checkClose = true;
                                           cacheFreq = value ?? cacheFreq;
                                         }),
@@ -2452,7 +2807,8 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                                                     "${toBeginningOfSentenceCase(frequency.name)}",
                                                     softWrap: false,
                                                     maxLines: 1,
-                                                    minFontSize: Constants.small,
+                                                    minFontSize:
+                                                        Constants.small,
                                                   ),
                                                 ))
                                             .toList(),
@@ -2466,42 +2822,59 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                                         children: [
                                           Padding(
                                             padding: const EdgeInsets.symmetric(
-                                                horizontal: Constants.innerPadding),
+                                                horizontal:
+                                                    Constants.innerPadding),
                                             child: InputDecorator(
                                               decoration: const InputDecoration(
                                                 border: OutlineInputBorder(
                                                     gapPadding: 0,
-                                                    borderRadius: BorderRadius.all(
-                                                        Radius.circular(Constants.circular)),
+                                                    borderRadius:
+                                                        BorderRadius.all(
+                                                            Radius.circular(
+                                                                Constants
+                                                                    .circular)),
                                                     borderSide: BorderSide(
-                                                        strokeAlign:
-                                                            BorderSide.strokeAlignOutside)),
+                                                        strokeAlign: BorderSide
+                                                            .strokeAlignOutside)),
                                               ),
-                                              child: DropdownButtonHideUnderline(
-                                                child: DropdownButton<CustomFrequency>(
-                                                  padding: const EdgeInsets.symmetric(
-                                                      horizontal: Constants.padding),
+                                              child:
+                                                  DropdownButtonHideUnderline(
+                                                child: DropdownButton<
+                                                    CustomFrequency>(
+                                                  padding: const EdgeInsets
+                                                      .symmetric(
+                                                      horizontal:
+                                                          Constants.padding),
                                                   isDense: true,
                                                   isExpanded: true,
                                                   dropdownColor:
-                                                      Constants.dialogColor(context: context),
-                                                  borderRadius: const BorderRadius.all(
-                                                      Radius.circular(Constants.roundedCorners)),
+                                                      Constants.dialogColor(
+                                                          context: context),
+                                                  borderRadius: const BorderRadius
+                                                      .all(Radius.circular(
+                                                          Constants
+                                                              .roundedCorners)),
                                                   value: cacheCustom,
-                                                  onChanged: (CustomFrequency? value) =>
+                                                  onChanged: (CustomFrequency?
+                                                          value) =>
                                                       setState(() {
                                                     checkClose = true;
-                                                    cacheCustom = value ?? cacheCustom;
+                                                    cacheCustom =
+                                                        value ?? cacheCustom;
                                                   }),
                                                   items: CustomFrequency.values
-                                                      .map((CustomFrequency customFreq) =>
-                                                          DropdownMenuItem<CustomFrequency>(
+                                                      .map((CustomFrequency
+                                                              customFreq) =>
+                                                          DropdownMenuItem<
+                                                              CustomFrequency>(
                                                             value: customFreq,
                                                             child: AutoSizeText(
                                                               "${toBeginningOfSentenceCase(customFreq.name)}",
                                                               softWrap: false,
                                                               maxLines: 1,
-                                                              minFontSize: Constants.small,
+                                                              minFontSize:
+                                                                  Constants
+                                                                      .small,
                                                             ),
                                                           ))
                                                       .toList(),
@@ -2521,47 +2894,69 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                                                 spacing: 5,
                                                 runSpacing: 5,
                                                 alignment: WrapAlignment.center,
-                                                runAlignment: WrapAlignment.center,
+                                                runAlignment:
+                                                    WrapAlignment.center,
                                                 children: Constants.weekDays
                                                     .map((weekDay) => InputChip(
                                                         backgroundColor:
-                                                            Constants.dialogColor(context: context),
-                                                        shape: const RoundedRectangleBorder(
-                                                          borderRadius: BorderRadius.all(
-                                                              Radius.circular(Constants.circular)),
+                                                            Constants.dialogColor(
+                                                                context:
+                                                                    context),
+                                                        shape:
+                                                            const RoundedRectangleBorder(
+                                                          borderRadius:
+                                                              BorderRadius.all(
+                                                                  Radius.circular(
+                                                                      Constants
+                                                                          .circular)),
                                                           side: BorderSide(
-                                                            strokeAlign:
-                                                                BorderSide.strokeAlignOutside,
+                                                            strokeAlign: BorderSide
+                                                                .strokeAlignOutside,
                                                           ),
                                                         ),
-                                                        label: AutoSizeText(weekDay.key,
-                                                            minFontSize: Constants.small,
+                                                        label: AutoSizeText(
+                                                            weekDay.key,
+                                                            minFontSize:
+                                                                Constants.small,
                                                             maxLines: 1,
                                                             softWrap: false,
-                                                            overflow: TextOverflow.visible),
-                                                        selected:
-                                                            cacheWeekdays.contains(weekDay.value),
-                                                        onSelected: (bool selected) => setState(() {
-                                                              checkClose = true;
-                                                              if (selected) {
-                                                                cacheWeekdays.add(weekDay.value);
-                                                              } else {
-                                                                cacheWeekdays.remove(weekDay.value);
-                                                                if (cacheWeekdays.isEmpty) {
-                                                                  int day = (Constants.nullDate !=
-                                                                          toDo.startDate)
-                                                                      ? max(
-                                                                          toDo.startDate.weekday -
-                                                                              1,
-                                                                          0)
-                                                                      : max(
-                                                                          DateTime.now().weekday -
-                                                                              1,
-                                                                          0);
-                                                                  cacheWeekdays.add(day);
-                                                                }
-                                                              }
-                                                            })))
+                                                            overflow:
+                                                                TextOverflow
+                                                                    .visible),
+                                                        selected: cacheWeekdays
+                                                            .contains(
+                                                                weekDay.value),
+                                                        onSelected:
+                                                            (bool selected) =>
+                                                                setState(() {
+                                                                  checkClose =
+                                                                      true;
+                                                                  if (selected) {
+                                                                    cacheWeekdays
+                                                                        .add(weekDay
+                                                                            .value);
+                                                                  } else {
+                                                                    cacheWeekdays
+                                                                        .remove(
+                                                                            weekDay.value);
+                                                                    if (cacheWeekdays
+                                                                        .isEmpty) {
+                                                                      int day = (Constants.nullDate !=
+                                                                              toDo
+                                                                                  .startDate)
+                                                                          ? max(
+                                                                              toDo.startDate.weekday -
+                                                                                  1,
+                                                                              0)
+                                                                          : max(
+                                                                              DateTime.now().weekday - 1,
+                                                                              0);
+                                                                      cacheWeekdays
+                                                                          .add(
+                                                                              day);
+                                                                    }
+                                                                  }
+                                                                })))
                                                     .toList()),
                                           ),
                                         ],
@@ -2569,12 +2964,15 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                                     : const SizedBox.shrink(),
 
                                 // Repeat Skip
-                                (cacheFreq != Frequency.once && cacheFreq != Frequency.daily)
+                                (cacheFreq != Frequency.once &&
+                                        cacheFreq != Frequency.daily)
                                     ? Padding(
-                                        padding: const EdgeInsets.all(Constants.innerPadding),
+                                        padding: const EdgeInsets.all(
+                                            Constants.innerPadding),
                                         child: Row(
                                           mainAxisSize: MainAxisSize.min,
-                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
                                           children: [
                                             const Flexible(
                                                 child: AutoSizeText(
@@ -2588,10 +2986,11 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                                             Expanded(
                                                 child: NumberPicker(
                                                     itemCount: 1,
-                                                    textStyle: Constants.numberPickerSecondary(
-                                                        context: context),
-                                                    selectedTextStyle:
-                                                        Constants.numberPickerPrimary(
+                                                    textStyle: Constants
+                                                        .numberPickerSecondary(
+                                                            context: context),
+                                                    selectedTextStyle: Constants
+                                                        .numberPickerPrimary(
                                                             context: context),
                                                     minValue: 1,
                                                     maxValue: 100,
@@ -2600,7 +2999,8 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                                                     onChanged: (value) {
                                                       SemanticsService.announce(
                                                           "Skip value: $value",
-                                                          Directionality.of(context));
+                                                          Directionality.of(
+                                                              context));
                                                       setState(() {
                                                         checkClose = true;
                                                         cacheSkip = value;
@@ -2609,10 +3009,17 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                                             Flexible(
                                               child: AutoSizeText(
                                                 (cacheFreq == Frequency.custom)
-                                                    ? cacheCustom.name.replaceAll(
-                                                        "ly", (cacheSkip > 1) ? "s." : ".")
+                                                    ? cacheCustom.name
+                                                        .replaceAll(
+                                                            "ly",
+                                                            (cacheSkip > 1)
+                                                                ? "s."
+                                                                : ".")
                                                     : cacheFreq.name.replaceAll(
-                                                        "ly", (cacheSkip > 1) ? "s." : "."),
+                                                        "ly",
+                                                        (cacheSkip > 1)
+                                                            ? "s."
+                                                            : "."),
                                                 minFontSize: Constants.small,
                                                 style: Constants.headerStyle,
                                                 overflow: TextOverflow.visible,
@@ -2627,27 +3034,36 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                                     : const SizedBox.shrink(),
 
                                 Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       Expanded(
                                         child: Padding(
-                                          padding: const EdgeInsets.only(right: Constants.padding),
+                                          padding: const EdgeInsets.only(
+                                              right: Constants.padding),
                                           child: FilledButton.tonalIcon(
-                                              icon: const Icon(Icons.close_outlined),
-                                              onPressed: () => Navigator.pop(context),
-                                              label: const AutoSizeText("Cancel",
+                                              icon: const Icon(
+                                                  Icons.close_outlined),
+                                              onPressed: () =>
+                                                  Navigator.pop(context),
+                                              label: const AutoSizeText(
+                                                  "Cancel",
                                                   softWrap: false,
-                                                  overflow: TextOverflow.visible,
+                                                  overflow:
+                                                      TextOverflow.visible,
                                                   maxLines: 1,
-                                                  minFontSize: Constants.small)),
+                                                  minFontSize:
+                                                      Constants.small)),
                                         ),
                                       ),
                                       Expanded(
                                         child: Padding(
-                                          padding: const EdgeInsets.only(left: Constants.padding),
+                                          padding: const EdgeInsets.only(
+                                              left: Constants.padding),
                                           child: FilledButton.icon(
-                                            icon: const Icon(Icons.done_outlined),
+                                            icon:
+                                                const Icon(Icons.done_outlined),
                                             onPressed: () {
                                               setState(() {
                                                 checkClose = true;
@@ -2656,10 +3072,15 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                                                 toDo.repeatSkip = cacheSkip;
 
                                                 if (cacheWeekdays.isEmpty) {
-                                                  cacheWeekdays.add(toDo.startDate.weekday - 1);
+                                                  cacheWeekdays.add(
+                                                      toDo.startDate.weekday -
+                                                          1);
                                                 }
-                                                for (int i = 0; i < toDo.repeatDays.length; i++) {
-                                                  toDo.repeatDays[i] = cacheWeekdays.contains(i);
+                                                for (int i = 0;
+                                                    i < toDo.repeatDays.length;
+                                                    i++) {
+                                                  toDo.repeatDays[i] =
+                                                      cacheWeekdays.contains(i);
                                                 }
                                               });
                                               Navigator.pop(context);
@@ -2677,46 +3098,48 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                 });
               }).then((_) => setState(() {}));
         },
-        trailing: (toDo.frequency != Frequency.once) ?  IconButton(
-            icon: const Icon(Icons.clear),
-            onPressed: () => setState(() {
-                  checkClose = true;
-                  toDo.frequency = Frequency.once;
-                  toDo.customFreq = CustomFrequency.weekly;
+        trailing: (toDo.frequency != Frequency.once)
+            ? IconButton(
+                icon: const Icon(Icons.clear),
+                onPressed: () => setState(() {
+                      checkClose = true;
+                      toDo.frequency = Frequency.once;
+                      toDo.customFreq = CustomFrequency.weekly;
 
-                  toDo.repeatDays.fillRange(0, toDo.repeatDays.length, false);
+                      toDo.repeatDays
+                          .fillRange(0, toDo.repeatDays.length, false);
 
-                  toDo.repeatSkip = 1;
-                })): null);
+                      toDo.repeatSkip = 1;
+                    }))
+            : null);
   }
 
-  Row buildUpdateDeleteRow(BuildContext context, Color errorColor) {
+  Row buildUpdateDeleteRow({required BuildContext context}) {
     return Row(mainAxisAlignment: MainAxisAlignment.end, children: [
       Padding(
-        padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
-        child: buildDeleteButton(context: context, errorColor: errorColor)
-      ),
-      buildUpdateButton(context: context, errorColor: errorColor),
+          padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
+          child: buildDeleteButton(context: context)),
+      buildUpdateButton(context: context),
     ]);
   }
 
-  FilledButton buildDeleteButton({required BuildContext context, required Color errorColor}) {
+  FilledButton buildDeleteButton({required BuildContext context}) {
     return FilledButton.tonalIcon(
-        label: const Text("Delete"),
-        icon: const Icon(Icons.delete_forever),
-        onPressed: () async => await handleDelete(context: context, errorColor: errorColor),
-
-      );
+      label: const Text("Delete"),
+      icon: const Icon(Icons.delete_forever),
+      onPressed: () async => await handleDelete(context: context),
+    );
   }
 
-  FilledButton buildUpdateButton({required BuildContext context, required Color errorColor}) {
+  FilledButton buildUpdateButton({required BuildContext context}) {
     return FilledButton.icon(
         label: const Text("Update Task"),
         icon: const Icon(Icons.add),
         onPressed: () async {
           bool validData = validateData();
           if (validData) {
-            handleUpdate(context: context, errorColor: errorColor);}
+            handleUpdate(context: context);
+          }
           // Then save.
         });
   }

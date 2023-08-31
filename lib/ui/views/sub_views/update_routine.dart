@@ -11,7 +11,6 @@ import "package:provider/provider.dart";
 import "../../../model/task/routine.dart";
 import "../../../model/task/subtask.dart";
 import "../../../providers/routine_provider.dart";
-import "../../../providers/user_provider.dart";
 import "../../../util/constants.dart";
 import "../../../util/exceptions.dart";
 import "../../../util/numbers.dart";
@@ -144,11 +143,7 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
   Future<void> handleUpdate({required BuildContext context}) async {
     if(cacheRoutineTasks.length > routine.routineTasks.length)
     {
-      // This should never happen, TODO: remove
-      print("BUG! Diff: Cache | Orig");
-      print(cacheRoutineTasks);
-      print(routine.routineTasks);
-      cacheRoutineTasks.length = routine.routineTasks.length;
+      throw ListLimitExceededException("Invalid subtask list length \n Cache:  ${cacheRoutineTasks.length} Routine: ${routine.routineTasks.length}");
     }
 
     routine.routineTasks.setAll(0, cacheRoutineTasks);
