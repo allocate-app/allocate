@@ -122,7 +122,7 @@ class ReminderRepo implements ReminderRepository {
 
   @override
   Future<void> delete(Reminder reminder) async {
-    if (null != _supabaseClient.auth.currentSession) {
+    if (null == _supabaseClient.auth.currentSession) {
       reminder.toDelete = true;
       update(reminder);
       return;
@@ -137,28 +137,6 @@ class ReminderRepo implements ReminderRepository {
           "Supabase Open: ${null != _supabaseClient.auth.currentSession}");
     }
   }
-
-  // @override
-  // Future<void> deleteFutures({required Reminder deleteFrom}) async {
-  //   List<Reminder> toDelete = await _isarClient.reminders
-  //       .where()
-  //       .repeatIDEqualTo(deleteFrom.repeatID)
-  //       .filter()
-  //       .repeatableEqualTo(true)
-  //       .findAll();
-  //
-  //   // This is to prevent a race condition.
-  //   toDelete.remove(deleteFrom);
-  //
-  //   toDelete.map((Reminder r) => r.toDelete = true);
-  //   List<int> cancelIDs =
-  //       toDelete.map((Reminder reminder) => reminder.notificationID!).toList(growable: false);
-  //
-  //   // This is a temporary implementation solution to handle bulk cancelling from repeating reminders
-  //   NotificationService.instance.cancelFutures(ids: cancelIDs);
-  //
-  //   updateBatch(toDelete);
-  // }
 
   @override
   Future<void> deleteLocal() async {

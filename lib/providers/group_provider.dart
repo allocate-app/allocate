@@ -23,7 +23,8 @@ class GroupProvider extends ChangeNotifier {
   late GroupSorter sorter;
 
   User? user;
-  GroupProvider({this.user, GroupService? groupService, ToDoService? toDoService})
+  GroupProvider(
+      {this.user, GroupService? groupService, ToDoService? toDoService})
       : _groupService = groupService ?? GroupService(),
         _toDoService = toDoService ?? ToDoService() {
     sorter = user?.groupSorter ?? GroupSorter();
@@ -68,21 +69,24 @@ class GroupProvider extends ChangeNotifier {
       _groupService.syncRepo();
     } on FailureToDeleteException catch (e) {
       log(e.cause);
-      rethrow;
+      return Future.error(e);
     } on FailureToUploadException catch (e) {
       log(e.cause);
-      rethrow;
+      return Future.error(e);
     }
     notifyListeners();
   }
 
   Future<void> createGroup({required String name, String? description}) async {
-    curGroup = Group(name: name, description: description ?? "", lastUpdated: DateTime.now());
+    curGroup = Group(
+        name: name,
+        description: description ?? "",
+        lastUpdated: DateTime.now());
     try {
       _groupService.createGroup(group: curGroup!);
     } on FailureToCreateException catch (e) {
       log(e.cause);
-      rethrow;
+      return Future.error(e);
     } on FailureToUploadException catch (e) {
       log(e.cause);
       curGroup!.isSynced = false;
@@ -97,10 +101,10 @@ class GroupProvider extends ChangeNotifier {
       _groupService.updateGroup(group: curGroup!);
     } on FailureToUploadException catch (e) {
       log(e.cause);
-      rethrow;
+      return Future.error(e);
     } on FailureToUpdateException catch (e) {
       log(e.cause);
-      rethrow;
+      return Future.error(e);
     }
     notifyListeners();
   }
@@ -110,40 +114,45 @@ class GroupProvider extends ChangeNotifier {
       _groupService.deleteGroup(group: curGroup!);
     } on FailureToDeleteException catch (e) {
       log(e.cause);
-      rethrow;
+      return Future.error(e);
     }
     notifyListeners();
   }
 
   Future<void> reorderGroups(
-      {required List<Group> groups, required int oldIndex, required int newIndex}) async {
+      {required List<Group> groups,
+      required int oldIndex,
+      required int newIndex}) async {
     try {
-      _groupService.reorderGroups(groups: groups, oldIndex: oldIndex, newIndex: newIndex);
+      _groupService.reorderGroups(
+          groups: groups, oldIndex: oldIndex, newIndex: newIndex);
     } on FailureToUpdateException catch (e) {
       log(e.cause);
-      rethrow;
+      return Future.error(e);
     } on FailureToUploadException catch (e) {
       log(e.cause);
-      rethrow;
+      return Future.error(e);
     }
     notifyListeners();
   }
 
-  Future<void> reorderGroupToDos({required int oldIndex, required int newIndex}) async {
+  Future<void> reorderGroupToDos(
+      {required int oldIndex, required int newIndex}) async {
     try {
       _toDoService.reorderGroupTasks(
           toDos: curGroup!.toDos, oldIndex: oldIndex, newIndex: newIndex);
     } on FailureToUpdateException catch (e) {
       log(e.cause);
-      rethrow;
+      return Future.error(e);
     } on FailureToUploadException catch (e) {
       log(e.cause);
-      rethrow;
+      return Future.error(e);
     }
     notifyListeners();
   }
 
-  Future<List<Group>> getGroups({required int limit, required int offset}) async =>
+  Future<List<Group>> getGroups(
+          {required int limit, required int offset}) async =>
       await _groupService.getGroups(limit: limit);
 
   Future<void> setGroups() async {
@@ -154,11 +163,14 @@ class GroupProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<List<Group>> getGroupsBy({required int limit, required int offset}) async =>
-      await _groupService.getGroupsBy(sorter: sorter, limit: limit, offset: offset);
+  Future<List<Group>> getGroupsBy(
+          {required int limit, required int offset}) async =>
+      await _groupService.getGroupsBy(
+          sorter: sorter, limit: limit, offset: offset);
 
   Future<void> setGroupsBy() async {
-    groups = await _groupService.getGroupsBy(sorter: sorter, limit: 50, offset: 0);
+    groups =
+        await _groupService.getGroupsBy(sorter: sorter, limit: 50, offset: 0);
     for (Group g in groups) {
       g.toDos = await _toDoService.getByGroup(groupID: g.id);
     }
@@ -168,10 +180,13 @@ class GroupProvider extends ChangeNotifier {
   Future<List<Group>> searchGroups({required String searchString}) async =>
       _groupService.searchGroups(searchString: searchString);
 
-  Future<List<Group>> mostRecent({int limit = 5}) async => await _groupService.mostRecent(limit: 5);
+  Future<List<Group>> mostRecent({int limit = 5}) async =>
+      await _groupService.mostRecent(limit: 5);
 
-  Future<Group?> getGroupByID({required int id}) async => await _groupService.getGroupByID(id: id);
+  Future<Group?> getGroupByID({required int id}) async =>
+      await _groupService.getGroupByID(id: id);
 
   Future<void> setGroupByID({required int id}) async =>
-      await _groupService.getGroupByID(id: id) ?? Group(name: '', lastUpdated: DateTime.now());
+      await _groupService.getGroupByID(id: id) ??
+      Group(name: '', lastUpdated: DateTime.now());
 }

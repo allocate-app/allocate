@@ -1,13 +1,7 @@
-import 'dart:developer';
-
-import 'package:jiffy/jiffy.dart';
-
 import '../model/task/reminder.dart';
 import '../repositories/reminder_repo.dart';
-import '../util/enums.dart';
 import '../util/interfaces/repository/model/reminder_repository.dart';
 import '../util/interfaces/sortable.dart';
-import 'notification_service.dart';
 
 class ReminderService {
   //Default repo for now, switch as needed for testing.
@@ -156,38 +150,51 @@ class ReminderService {
   //   }
   // }
 
-  Future<void> createReminder({required Reminder reminder}) async => _repository.create(reminder);
+  Future<void> createReminder({required Reminder reminder}) async =>
+      _repository.create(reminder);
 
-  Future<List<Reminder>> searchReminders({required String searchString}) async =>
+  Future<List<Reminder>> searchReminders(
+          {required String searchString}) async =>
       _repository.search(searchString: searchString);
 
   Future<List<Reminder>> getReminders({int limit = 50, int offset = 0}) async =>
       _repository.getRepoList(limit: limit, offset: offset);
+
   Future<List<Reminder>> getRemindersBy(
-          {required SortableView<Reminder> sorter, int limit = 50, int offset = 0}) async =>
+          {required SortableView<Reminder> sorter,
+          int limit = 50,
+          int offset = 0}) async =>
       _repository.getRepoListBy(sorter: sorter, limit: limit, offset: offset);
 
-  Future<Reminder?> getReminderByID({required int id}) async => _repository.getByID(id: id);
+  Future<Reminder?> getReminderByID({required int id}) async =>
+      _repository.getByID(id: id);
 
-  Future<List<Reminder>> mostRecent({int limit = 5}) async => _repository.mostRecent(limit: limit);
+  Future<List<Reminder>> mostRecent({int limit = 5}) async =>
+      _repository.mostRecent(limit: limit);
 
   Future<List<Reminder>> getOverdues({int limit = 50, int offset = 0}) async =>
       _repository.getOverdues(limit: limit, offset: offset);
 
-  Future<void> updateReminder({required Reminder reminder}) async => _repository.update(reminder);
+  Future<void> updateReminder({required Reminder reminder}) async =>
+      _repository.update(reminder);
+
   Future<void> updateBatch({required List<Reminder> reminders}) async =>
       _repository.updateBatch(reminders);
 
-  Future<void> deleteReminder({required Reminder reminder}) async => _repository.delete(reminder);
+  Future<void> deleteReminder({required Reminder reminder}) async =>
+      _repository.delete(reminder);
 
   Future<void> clearDeletesLocalRepo() async => _repository.deleteLocal();
+
   // Future<void> deleteFutures({required Reminder reminder}) async =>
   //     _repository.deleteFutures(deleteFrom: reminder);
 
   Future<void> syncRepo() async => _repository.syncRepo();
 
   Future<void> reorderReminders(
-      {required List<Reminder> reminders, required int oldIndex, required int newIndex}) async {
+      {required List<Reminder> reminders,
+      required int oldIndex,
+      required int newIndex}) async {
     if (oldIndex < newIndex) {
       newIndex--;
     }

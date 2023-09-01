@@ -24,8 +24,6 @@ import "../../../util/numbers.dart";
 import "../../widgets/flushbars.dart";
 import "../../widgets/padded_divider.dart";
 
-//TODO: Delete button
-
 class UpdateToDoScreen extends StatefulWidget {
   const UpdateToDoScreen({Key? key}) : super(key: key);
 
@@ -393,9 +391,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
         );
 
         error.show(context);
-      },
-          test: (e) =>
-              e is FailureToCreateException || e is FailureToUploadException);
+      }, test: (e) => e is FailureToDeleteException);
 
       // Updating all future events relies on deleting all future events ->
       // They are assumed to be re-generated on the next calendar view or day passing.
@@ -446,13 +442,25 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
         (MediaQuery.of(context).size.width >= Constants.largeScreen);
     bool smallScreen =
         (MediaQuery.of(context).size.width <= Constants.smallScreen);
+
+    bool showTimeTile = (Constants.nullDate != toDo.startDate ||
+        Constants.nullDate != toDo.dueDate);
+
     return (largeScreen)
-        ? buildDesktopDialog(context: context, smallScreen: smallScreen)
-        : buildMobileDialog(context: context, smallScreen: smallScreen);
+        ? buildDesktopDialog(
+            context: context,
+            showTimeTile: showTimeTile,
+            smallScreen: smallScreen)
+        : buildMobileDialog(
+            context: context,
+            showTimeTile: showTimeTile,
+            smallScreen: smallScreen);
   }
 
   Dialog buildDesktopDialog(
-      {required BuildContext context, bool smallScreen = false}) {
+      {required BuildContext context,
+      bool smallScreen = false,
+      showTimeTile = false}) {
     return Dialog(
       insetPadding: const EdgeInsets.all(Constants.outerDialogPadding),
       child: ConstrainedBox(
@@ -765,14 +773,18 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                                 const PaddedDivider(
                                     padding: Constants.innerPadding),
                                 // Time
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: Constants.padding),
-                                  child: buildTimeTile(),
-                                ),
+                                (showTimeTile)
+                                    ? Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: Constants.padding),
+                                        child: buildTimeTile(),
+                                      )
+                                    : const SizedBox.shrink(),
 
-                                const PaddedDivider(
-                                    padding: Constants.innerPadding),
+                                (showTimeTile)
+                                    ? const PaddedDivider(
+                                        padding: Constants.innerPadding)
+                                    : const SizedBox.shrink(),
                                 // Repeatable Stuff -> Show status, on click, open a dialog.
                                 Padding(
                                   padding: const EdgeInsets.symmetric(
@@ -787,7 +799,6 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                 ),
 
                 const PaddedDivider(padding: Constants.padding),
-                // Create Button - could be a stack
                 Padding(
                   padding:
                       const EdgeInsets.symmetric(horizontal: Constants.padding),
@@ -800,7 +811,9 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
   }
 
   Dialog buildMobileDialog(
-      {required BuildContext context, bool smallScreen = false}) {
+      {required BuildContext context,
+      bool smallScreen = false,
+      showTimeTile = false}) {
     return Dialog(
       insetPadding: const EdgeInsets.all(Constants.outerDialogPadding),
       child: Padding(
@@ -909,7 +922,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                     ]),
               ),
               const PaddedDivider(padding: Constants.padding),
-              Expanded(
+              Flexible(
                 child: ListView(
                   shrinkWrap: true,
                   controller: mainScrollController,
@@ -1072,13 +1085,17 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
 
                     const PaddedDivider(padding: Constants.innerPadding),
                     // Time
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: Constants.padding),
-                      child: buildTimeTile(),
-                    ),
+                    (showTimeTile)
+                        ? Padding(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: Constants.padding),
+                            child: buildTimeTile(),
+                          )
+                        : const SizedBox.shrink(),
 
-                    const PaddedDivider(padding: Constants.innerPadding),
+                    (showTimeTile)
+                        ? const PaddedDivider(padding: Constants.innerPadding)
+                        : const SizedBox.shrink(),
                     // Repeatable Stuff -> Show status, on click, open a dialog.
                     Padding(
                       padding: const EdgeInsets.symmetric(
@@ -1091,7 +1108,6 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
               ),
 
               const PaddedDivider(padding: Constants.padding),
-              // Create Button - could be a stack
               Padding(
                 padding:
                     const EdgeInsets.symmetric(horizontal: Constants.padding),
@@ -1141,10 +1157,6 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                           ]));
                 }).then((willDiscard) {
               if (willDiscard ?? false) {
-                // If discarding changes, reset back to the cached ToDo.
-                // This likely unnecessary, as changes will not be reflected in the db on discard.
-                // TODO: Remove as necessary
-                toDoProvider.curToDo = prevToDo;
                 Navigator.pop(context);
               }
             });
@@ -1750,7 +1762,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                 ),
               ],
             )
-          : const AutoSizeText("Expected Duration Until Completion: ",
+          : const AutoSizeText("Expected Task Duration: ",
               overflow: TextOverflow.visible,
               minFontSize: Constants.small,
               maxLines: 2,
@@ -1767,7 +1779,6 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
       onTap: () => showDialog<int>(
           context: context,
           builder: (BuildContext context) {
-            // TODO: Refactor this logic over to create_todo
             int time = toDo.expectedDuration;
             int hours = time ~/ 3600;
             time %= 3600;
@@ -1953,14 +1964,8 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
   ListTile buildDateTile({required BuildContext context}) {
     return ListTile(
       leading: const Icon(Icons.today_outlined),
-      title: (Constants.nullDate ==
-                  toDo.startDate.copyWith(
-                      hour: Constants.midnight.hour,
-                      minute: Constants.midnight.minute) &&
-              Constants.nullDate ==
-                  toDo.dueDate.copyWith(
-                      hour: Constants.midnight.hour,
-                      minute: Constants.midnight.minute))
+      title: (Constants.nullDate == toDo.startDate &&
+              Constants.nullDate == toDo.dueDate)
           ? const AutoSizeText(
               "Add Dates",
               softWrap: true,
@@ -1970,10 +1975,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
             )
           : Row(
               children: [
-                (Constants.nullDate ==
-                        toDo.startDate.copyWith(
-                            hour: Constants.midnight.hour,
-                            minute: Constants.midnight.minute))
+                (Constants.nullDate == toDo.startDate)
                     ? const Flexible(
                         child: AutoSizeText(
                           "Start Date",
@@ -2005,14 +2007,11 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                     ),
                   ),
                 ),
-                (Constants.nullDate ==
-                        toDo.dueDate.copyWith(
-                            hour: Constants.midnight.hour,
-                            minute: Constants.midnight.minute))
+                (Constants.nullDate == toDo.dueDate)
                     ? const Flexible(
                         child: Padding(
                           padding: EdgeInsets.only(right: Constants.padding),
-                          child: Flexible(child: Icon(Icons.today_outlined)),
+                          child: Icon(Icons.today_outlined),
                         ),
                       )
                     : const Flexible(
@@ -2041,41 +2040,25 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                       )
               ],
             ),
-      trailing: (Constants.nullDate !=
-                  toDo.startDate.copyWith(
-                      hour: Constants.midnight.hour,
-                      minute: Constants.midnight.minute) ||
-              Constants.nullDate !=
-                  toDo.dueDate.copyWith(
-                      hour: Constants.midnight.hour,
-                      minute: Constants.midnight.minute))
+      trailing: (Constants.nullDate != toDo.startDate ||
+              Constants.nullDate != toDo.dueDate)
           ? IconButton(
               icon: const Icon(Icons.clear),
               onPressed: () => setState(() {
                     checkClose = true;
-                    toDo.startDate = Constants.nullDate.copyWith(
-                        hour: toDo.startDate.hour,
-                        minute: toDo.startDate.minute);
-                    toDo.dueDate = Constants.nullDate.copyWith(
-                        hour: toDo.dueDate.hour, minute: toDo.dueDate.minute);
+                    toDo.startDate = Constants.nullDate;
+                    toDo.dueDate = Constants.nullDate;
                   }))
           : null,
       onTap: () {
         showDialog<void>(
             context: context,
             builder: (BuildContext context) {
-              DateTime? tmpStart = (Constants.nullDate !=
-                      toDo.startDate.copyWith(
-                          hour: Constants.midnight.hour,
-                          minute: Constants.midnight.minute))
+              DateTime? tmpStart = (Constants.nullDate != toDo.startDate)
                   ? toDo.startDate
                   : null;
-              DateTime? tmpDue = (Constants.nullDate !=
-                      toDo.dueDate.copyWith(
-                          hour: Constants.midnight.hour,
-                          minute: Constants.midnight.minute))
-                  ? toDo.dueDate
-                  : null;
+              DateTime? tmpDue =
+                  (Constants.nullDate != toDo.dueDate) ? toDo.dueDate : null;
               DateTime initDate = tmpStart ?? tmpDue ?? DateTime.now();
               bool setStart = false;
               final int numDays =
@@ -2161,6 +2144,10 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                                                           setState(() {
                                                             checkClose = true;
                                                             setStart = true;
+                                                            tmpStart =
+                                                                tmpStart ??
+                                                                    DateTime
+                                                                        .now();
                                                           }),
                                                       child: (null != tmpStart)
                                                           ? AutoSizeText(
@@ -2244,6 +2231,8 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                                                           setState(() {
                                                             checkClose = true;
                                                             setStart = false;
+                                                            tmpDue = tmpDue ??
+                                                                DateTime.now();
                                                           }),
                                                       child: (null != tmpDue)
                                                           ? AutoSizeText(
@@ -2353,18 +2342,19 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                                           onPressed: () {
                                             setState(() {
                                               checkClose = true;
-                                              tmpStart = tmpStart ??
+                                              toDo.startDate = tmpStart ??
                                                   Constants.nullDate;
-                                              tmpDue =
+                                              toDo.dueDate =
                                                   tmpDue ?? Constants.nullDate;
-                                              toDo.startDate = tmpStart!
-                                                  .copyWith(
-                                                      hour: toDo.startDate.hour,
-                                                      minute: toDo
-                                                          .startDate.minute);
-                                              toDo.dueDate = tmpDue!.copyWith(
-                                                  hour: toDo.dueDate.hour,
-                                                  minute: toDo.dueDate.minute);
+
+                                              if (Constants.nullDate !=
+                                                      toDo.startDate &&
+                                                  Constants.nullDate !=
+                                                      toDo.dueDate &&
+                                                  toDo.startDate
+                                                      .isAfter(toDo.dueDate)) {
+                                                toDo.startDate = toDo.dueDate;
+                                              }
                                             });
                                             Navigator.pop(context);
                                           },
@@ -2386,13 +2376,12 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
   }
 
   ListTile buildTimeTile() {
-    TimeOfDay? startTime =
-        (showStartTime) ? TimeOfDay.fromDateTime(toDo.startDate) : null;
-    TimeOfDay? dueTime =
-        (showDueTime) ? TimeOfDay.fromDateTime(toDo.dueDate) : null;
+    TimeOfDay? startTime = TimeOfDay.fromDateTime(toDo.startDate);
+    TimeOfDay? dueTime = TimeOfDay.fromDateTime(toDo.dueDate);
     return ListTile(
         leading: const Icon(Icons.schedule_outlined),
-        title: (null == startTime && null == dueTime)
+        title: (Constants.midnight == startTime &&
+                Constants.midnight == dueTime)
             ? const AutoSizeText(
                 "Add Times",
                 overflow: TextOverflow.visible,
@@ -2401,7 +2390,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                 softWrap: true,
               )
             : Row(children: [
-                (null == startTime)
+                (Constants.midnight == startTime)
                     ? const Flexible(
                         child: AutoSizeText(
                         "Start Time",
@@ -2418,7 +2407,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                         maxLines: 2,
                         minFontSize: Constants.small,
                       )),
-                (null == dueTime)
+                (Constants.midnight == dueTime)
                     ? const Flexible(
                         child: Padding(
                           padding: EdgeInsets.symmetric(
@@ -2436,7 +2425,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                             fit: BoxFit.fill,
                             child: Icon(Icons.schedule_outlined)),
                       )),
-                (null == dueTime)
+                (Constants.midnight == dueTime)
                     ? const Flexible(
                         child: AutoSizeText(
                           "Due Time",
@@ -2531,7 +2520,8 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                                                       () => startTime = picked);
                                                 }
                                               },
-                                              child: (null != startTime)
+                                              child: (Constants.midnight !=
+                                                      startTime)
                                                   ? AutoSizeText(
                                                       startTime!
                                                           .format(context)
@@ -2573,7 +2563,8 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                                                       () => dueTime = picked);
                                                 }
                                               },
-                                              child: (null != dueTime)
+                                              child: (Constants.midnight !=
+                                                      dueTime)
                                                   ? AutoSizeText(
                                                       dueTime!
                                                           .format(context)
@@ -2659,22 +2650,22 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                         )));
               }).then((_) => setState(() {}));
         },
-        trailing: (showStartTime || showDueTime)
-            ? IconButton(
-                icon: const Icon(Icons.clear),
-                onPressed: () => setState(() {
-                  checkClose = true;
-                  showStartTime = false;
-                  showDueTime = false;
-                  toDo.startDate = toDo.startDate.copyWith(
-                      hour: Constants.midnight.hour,
-                      minute: Constants.midnight.minute);
-                  toDo.dueDate = toDo.dueDate.copyWith(
-                      hour: Constants.midnight.hour,
-                      minute: Constants.midnight.minute);
-                }),
-              )
-            : null);
+        trailing:
+            (Constants.midnight != startTime || Constants.midnight != dueTime)
+                ? IconButton(
+                    icon: const Icon(Icons.clear),
+                    onPressed: () => setState(() {
+                      checkClose = true;
+
+                      toDo.startDate = toDo.startDate.copyWith(
+                          hour: Constants.midnight.hour,
+                          minute: Constants.midnight.minute);
+                      toDo.dueDate = toDo.dueDate.copyWith(
+                          hour: Constants.midnight.hour,
+                          minute: Constants.midnight.minute);
+                    }),
+                  )
+                : null);
   }
 
   ListTile buildRepeatableTile(
@@ -3116,10 +3107,12 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
 
   Row buildUpdateDeleteRow({required BuildContext context}) {
     return Row(mainAxisAlignment: MainAxisAlignment.end, children: [
-      Padding(
-          padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
-          child: buildDeleteButton(context: context)),
-      buildUpdateButton(context: context),
+      Flexible(
+        child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
+            child: buildDeleteButton(context: context)),
+      ),
+      Flexible(child: buildUpdateButton(context: context)),
     ]);
   }
 
@@ -3133,7 +3126,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
 
   FilledButton buildUpdateButton({required BuildContext context}) {
     return FilledButton.icon(
-        label: const Text("Update Task"),
+        label: const Text("Update"),
         icon: const Icon(Icons.add),
         onPressed: () async {
           bool validData = validateData();

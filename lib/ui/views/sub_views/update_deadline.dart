@@ -31,7 +31,6 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
 
   late Deadline prevDeadline;
 
-  // Provider (Needs user values) -> Refactor to DI for testing. One day.
   late final DeadlineProvider deadlineProvider;
 
   // Scrolling
@@ -78,7 +77,6 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
         Constants.midnight != TimeOfDay.fromDateTime(deadline.startDate);
     showDueTime =
         Constants.midnight != TimeOfDay.fromDateTime(deadline.dueDate);
-    showWarnTime = true;
   }
 
   void initializeProviders() {
@@ -130,13 +128,15 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
     // Newly set warnMe = validate
     // Editing previous warnMe = Ignore - is not relevant.
     // I am unsure as to how this should be handled.
-    if (!prevDeadline.warnMe && deadline.warnMe && !deadlineProvider.validateWarnDate(warnDate: deadline.warnDate)) {
+    if (!prevDeadline.warnMe &&
+        deadline.warnMe &&
+        !deadlineProvider.validateWarnDate(warnDate: deadline.warnDate)) {
       valid = false;
 
       Flushbar? error;
 
       error = Flushbars.createError(
-        message: "Warn date must be later than present time.",
+        message: "Warn date must be later than now.",
         context: context,
         dismissCallback: () => error?.dismiss(),
       );
@@ -160,7 +160,9 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
   void handleWarnDate() {
     DateTime? tmpWarnDate =
         (Constants.nullDate != deadline.warnDate) ? deadline.warnDate : null;
-    TimeOfDay tmpWarnTime = TimeOfDay.fromDateTime(deadline.warnDate);
+    TimeOfDay tmpWarnTime = (Constants.nullDate != deadline.warnDate)
+        ? TimeOfDay.fromDateTime(deadline.warnDate)
+        : Constants.midnight;
     showDialog<bool?>(
         context: context,
         builder: (BuildContext context) {
@@ -242,15 +244,13 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                                                     onPressed: () {
                                                       // Consider moving this to shifting focus to calendar
                                                       // using focusNode.
-                                                      if (null ==
-                                                          tmpWarnDate) {
+                                                      if (null == tmpWarnDate) {
                                                         setState(() =>
                                                             tmpWarnDate =
                                                                 DateTime.now());
                                                       }
                                                     },
-                                                    child: (null !=
-                                                            tmpWarnDate)
+                                                    child: (null != tmpWarnDate)
                                                         ? AutoSizeText(
                                                             Jiffy.parseFromDateTime(
                                                                     tmpWarnDate!)
@@ -266,7 +266,7 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                                                                 Constants.small,
                                                           )
                                                         : const AutoSizeText(
-                                                            "Date",
+                                                            "Warn Date",
                                                             softWrap: true,
                                                             overflow:
                                                                 TextOverflow
@@ -276,17 +276,19 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                                                                 Constants
                                                                     .small)),
                                               ),
-                                              (null != tmpWarnDate) ? IconButton(
-                                                icon: const Icon(
-                                                    Icons.clear_outlined),
-                                                selectedIcon:
-                                                    const Icon(Icons.clear),
-                                                onPressed: () => setState(() {
-                                                  checkClose = true;
-                                                  tmpWarnDate =
-                                                        Constants.nullDate;
-                                                }),
-                                              ) : const SizedBox.shrink()
+                                              (null != tmpWarnDate)
+                                                  ? IconButton(
+                                                      icon: const Icon(
+                                                          Icons.clear_outlined),
+                                                      selectedIcon: const Icon(
+                                                          Icons.clear),
+                                                      onPressed: () =>
+                                                          setState(() {
+                                                        checkClose = true;
+                                                        tmpWarnDate = null;
+                                                      }),
+                                                    )
+                                                  : const SizedBox.shrink()
                                             ]),
                                       ),
                                     ),
@@ -329,11 +331,12 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                                                       if (null != picked) {
                                                         setState(() {
                                                           tmpWarnTime = picked;
-                                                          showWarnTime = true;
                                                         });
                                                       }
                                                     },
-                                                    child: (showWarnTime)
+                                                    child: (Constants
+                                                                .midnight !=
+                                                            tmpWarnTime)
                                                         ? AutoSizeText(
                                                             tmpWarnTime
                                                                 .format(context)
@@ -347,7 +350,7 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                                                                 Constants.small,
                                                           )
                                                         : const AutoSizeText(
-                                                            "Time",
+                                                            "Warn Time",
                                                             softWrap: true,
                                                             overflow:
                                                                 TextOverflow
@@ -357,18 +360,21 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                                                                 Constants
                                                                     .small)),
                                               ),
-                                              (showWarnTime) ? IconButton(
-                                                icon: const Icon(
-                                                    Icons.clear_outlined),
-                                                selectedIcon:
-                                                    const Icon(Icons.clear),
-                                                onPressed: () => setState(() {
-                                                  checkClose = true;
-                                                  tmpWarnTime =
-                                                      Constants.midnight;
-                                                  showWarnTime = false;
-                                                }),
-                                              ) : const SizedBox.shrink()
+                                              (Constants.midnight !=
+                                                      tmpWarnTime)
+                                                  ? IconButton(
+                                                      icon: const Icon(
+                                                          Icons.clear_outlined),
+                                                      selectedIcon: const Icon(
+                                                          Icons.clear),
+                                                      onPressed: () =>
+                                                          setState(() {
+                                                        checkClose = true;
+                                                        tmpWarnTime =
+                                                            Constants.midnight;
+                                                      }),
+                                                    )
+                                                  : const SizedBox.shrink()
                                             ]),
                                       ),
                                     ),
@@ -442,8 +448,10 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
         if (setFields ?? false) {
           deadline.warnDate = tmpWarnDate ?? Constants.nullDate;
           deadline.warnMe = (Constants.nullDate != deadline.warnDate);
-          deadline.warnDate = deadline.warnDate
-              .copyWith(hour: tmpWarnTime.hour, minute: tmpWarnTime.minute);
+          if (Constants.nullDate != deadline.warnDate) {
+            deadline.warnDate = deadline.warnDate
+                .copyWith(hour: tmpWarnTime.hour, minute: tmpWarnTime.minute);
+          }
         }
       });
     });
@@ -483,12 +491,12 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
         return;
       }
 
-      // TODO: Refactor error handling to something easier to read -- Like firing an event to watch in the main gui.
-      // On updating a repeating event, clear all future events
-      await deadlineProvider.deleteFutures(deadline: prevDeadline).catchError((e) {
+      await deadlineProvider.deleteFutures(deadline: prevDeadline).catchError(
+          (e) {
         Flushbar? error;
 
-        error = Flushbars.createError(message: e.cause,
+        error = Flushbars.createError(
+          message: e.cause,
           context: context,
           dismissCallback: () => error?.dismiss(),
         );
@@ -496,34 +504,31 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
         error.show(context);
       }, test: (e) => e is FailureToDeleteException);
 
-      // Updating all future events relies on deleting all future events ->
-      // They are assumed to be re-generated on the next calendar view or day passing.
-      // If only updating the one event, generate the next one in the database.
-
-      // TODO: Refactor the error handling to something easier to read.
       if (updateSingle) {
         prevDeadline.repeatable = true;
         // Need to sever the connection to future repeating events.
         deadline.repeatID = deadline.hashCode;
 
-        await deadlineProvider.nextRepeat(deadline: prevDeadline).catchError((e) {
+        await deadlineProvider.nextRepeat(deadline: prevDeadline).catchError(
+            (e) {
           Flushbar? error;
 
-          error = Flushbars.createError(message: e.cause,
+          error = Flushbars.createError(
+            message: e.cause,
             context: context,
             dismissCallback: () => error?.dismiss(),
           );
 
           error.show(context);
-        }, test: (e) => e is FailureToCreateException || e is FailureToUploadException);
+        },
+            test: (e) =>
+                e is FailureToCreateException || e is FailureToUploadException);
         deadline.repeatable = false;
       } else {
-        deadline.repeatable =
-        (deadline.frequency != Frequency.once);
+        deadline.repeatable = (deadline.frequency != Frequency.once);
       }
     } else {
-      deadline.repeatable =
-      (deadline.frequency != Frequency.once);
+      deadline.repeatable = (deadline.frequency != Frequency.once);
     }
 
     return await deadlineProvider.updateDeadline().whenComplete(() {
@@ -531,62 +536,58 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
     }).catchError((e) {
       Flushbar? error;
 
-      error = Flushbars.createError(message: e.cause,
+      error = Flushbars.createError(
+        message: e.cause,
         context: context,
         dismissCallback: () => error?.dismiss(),
       );
 
       error.show(context);
-    }, test: (e) => e is FailureToCreateException || e is FailureToUploadException);
-
+    },
+        test: (e) =>
+            e is FailureToCreateException || e is FailureToUploadException);
   }
 
-  handleDelete({required BuildContext context}) async {
+  Future<void> handleDelete({required BuildContext context}) async {
     if (prevDeadline.frequency != Frequency.once) {
       bool? updateSingle = await showModalBottomSheet<bool?>(
           showDragHandle: true,
           context: context,
           builder: (BuildContext context) {
             return StatefulBuilder(
-                builder: (context, setState) =>
-                    Center(
-                        heightFactor: 1,
-                        child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Padding(
-                                padding: const EdgeInsets.all(
-                                    Constants.padding),
-                                child: FilledButton.icon(
-                                    onPressed: () =>
-                                        Navigator.pop(context, true),
-                                    label: const Text("Delete This Event"),
-                                    icon: const Icon(
-                                        Icons.arrow_upward_outlined)),
-                              ),
-                              Padding(
-                                  padding: const EdgeInsets.all(
-                                      Constants.padding),
-                                  child: FilledButton.tonalIcon(
-                                    onPressed: () =>
-                                        Navigator.pop(context, false),
-                                    label: const Text("Delete All"),
-                                    icon: const Icon(Icons.repeat_outlined),
-                                  ))
-                            ])));
+                builder: (context, setState) => Center(
+                    heightFactor: 1,
+                    child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.all(Constants.padding),
+                            child: FilledButton.icon(
+                                onPressed: () => Navigator.pop(context, true),
+                                label: const Text("Delete This Event"),
+                                icon: const Icon(Icons.arrow_upward_outlined)),
+                          ),
+                          Padding(
+                              padding: const EdgeInsets.all(Constants.padding),
+                              child: FilledButton.tonalIcon(
+                                onPressed: () => Navigator.pop(context, false),
+                                label: const Text("Delete All"),
+                                icon: const Icon(Icons.repeat_outlined),
+                              ))
+                        ])));
           });
       // If the modal is discarded.
       if (null == updateSingle) {
         return;
       }
 
-      // TODO: Refactor error handling to something easier to read -- Like firing an event to watch in the main gui.
-      // On updating a repeating event, clear all future events
-      await deadlineProvider.deleteFutures(deadline: prevDeadline).catchError((e) {
+      await deadlineProvider.deleteFutures(deadline: prevDeadline).catchError(
+          (e) {
         Flushbar? error;
 
-        error = Flushbars.createError(message: e.cause,
+        error = Flushbars.createError(
+          message: e.cause,
           context: context,
           dismissCallback: () => error?.dismiss(),
         );
@@ -594,30 +595,26 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
         error.show(context);
       }, test: (e) => e is FailureToDeleteException);
 
-      // Updating all future events relies on deleting all future events ->
-      // They are assumed to be re-generated on the next calendar view or day passing.
-      // If only updating the one event, generate the next one in the database.
-
-      // TODO: Refactor the error handling to something easier to read.
       if (updateSingle) {
         prevDeadline.repeatable = true;
         // Need to sever the connection to future repeating events.
         deadline.repeatID = deadline.hashCode;
 
-        await deadlineProvider.nextRepeat(deadline: prevDeadline).catchError((e) {
+        await deadlineProvider.nextRepeat(deadline: prevDeadline).catchError(
+            (e) {
           Flushbar? error;
 
-          error = Flushbars.createError(message: e.cause,
+          error = Flushbars.createError(
+            message: e.cause,
             context: context,
             dismissCallback: () => error?.dismiss(),
           );
 
           error.show(context);
-        }, test: (e) => e is FailureToCreateException ||
-            e is FailureToUploadException);
+        },
+            test: (e) =>
+                e is FailureToCreateException || e is FailureToUploadException);
       }
-
-
     }
 
     return await deadlineProvider.deleteDeadline().whenComplete(() {
@@ -625,14 +622,14 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
     }).catchError((e) {
       Flushbar? error;
 
-      error = Flushbars.createError(message: e.cause,
+      error = Flushbars.createError(
+        message: e.cause,
         context: context,
         dismissCallback: () => error?.dismiss(),
       );
 
       error.show(context);
-    }, test: (e) => e is FailureToCreateException ||
-        e is FailureToUploadException);
+    }, test: (e) => e is FailureToDeleteException);
   }
 
   @override
@@ -642,13 +639,27 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
     bool smallScreen =
         (MediaQuery.of(context).size.width <= Constants.smallScreen);
 
+    bool showTimeTile = (Constants.nullDate != deadline.startDate ||
+        Constants.nullDate != deadline.dueDate);
+
     return (largeScreen)
-        ? buildDesktopDialog(context: context, smallScreen: smallScreen, largeScreen: largeScreen)
-        : buildMobileDialog(context: context, smallScreen: smallScreen, largeScreen: largeScreen);
+        ? buildDesktopDialog(
+            context: context,
+            showTimeTile: showTimeTile,
+            smallScreen: smallScreen,
+            largeScreen: largeScreen)
+        : buildMobileDialog(
+            context: context,
+            showTimeTile: showTimeTile,
+            smallScreen: smallScreen,
+            largeScreen: largeScreen);
   }
 
   Dialog buildDesktopDialog(
-      {required BuildContext context, bool smallScreen = false, bool largeScreen = false}) {
+      {required BuildContext context,
+      bool smallScreen = false,
+      bool largeScreen = false,
+      showTimeTile = false}) {
     return Dialog(
       insetPadding: const EdgeInsets.all(Constants.outerDialogPadding),
       child: ConstrainedBox(
@@ -731,17 +742,22 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                                 const PaddedDivider(
                                     padding: Constants.innerPadding),
 
+                                (showTimeTile)
+                                    ? Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: Constants.padding),
+                                        child: buildTimeTile(),
+                                      )
+                                    : const SizedBox.shrink(),
+                                (showTimeTile)
+                                    ? const PaddedDivider(
+                                        padding: Constants.innerPadding)
+                                    : const SizedBox.shrink(),
                                 Padding(
                                   padding: const EdgeInsets.symmetric(
                                       horizontal: Constants.padding),
-                                  child: buildTimeTile(),
-                                ),
-                                const PaddedDivider(
-                                    padding: Constants.innerPadding),
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: Constants.padding),
-                                  child: buildRepeatableTile(context: context,
+                                  child: buildRepeatableTile(
+                                      context: context,
                                       smallScreen: smallScreen),
                                 )
                               ]),
@@ -764,7 +780,7 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                                         vertical: Constants.padding),
                                     child: buildDescriptionTile(
                                         smallScreen: smallScreen,
-                                    largeScreen: largeScreen),
+                                        largeScreen: largeScreen),
                                   ),
                                 ]),
                           ),
@@ -773,12 +789,10 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                 ),
 
                 const PaddedDivider(padding: Constants.padding),
-                // Create Button - could be a stack
                 Padding(
                   padding:
                       const EdgeInsets.symmetric(horizontal: Constants.padding),
-                  child: buildUpdateDeleteRow(
-                      context: context),
+                  child: buildUpdateDeleteRow(context: context),
                 )
               ]),
         ),
@@ -787,7 +801,10 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
   }
 
   Dialog buildMobileDialog(
-      {required BuildContext context, bool smallScreen = false, bool largeScreen = false}) {
+      {required BuildContext context,
+      bool smallScreen = false,
+      bool largeScreen = false,
+      showTimeTile = false}) {
     return Dialog(
       insetPadding: const EdgeInsets.symmetric(
           horizontal: Constants.outerDialogPadding,
@@ -819,7 +836,7 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                     ]),
               ),
               const PaddedDivider(padding: Constants.padding),
-              Expanded(
+              Flexible(
                 child: ListView(
                   shrinkWrap: true,
                   controller: mainScrollController,
@@ -850,7 +867,8 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                     Padding(
                       padding: const EdgeInsets.symmetric(
                           horizontal: Constants.innerPadding),
-                      child: buildDescriptionTile(smallScreen: smallScreen, largeScreen: largeScreen),
+                      child: buildDescriptionTile(
+                          smallScreen: smallScreen, largeScreen: largeScreen),
                     ),
                     const PaddedDivider(padding: Constants.innerPadding),
 
@@ -862,61 +880,61 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
 
                     const PaddedDivider(padding: Constants.innerPadding),
                     // Time
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: Constants.innerPadding),
-                      child: buildTimeTile(),
-                    ),
+                    (showTimeTile)
+                        ? Padding(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: Constants.innerPadding),
+                            child: buildTimeTile(),
+                          )
+                        : const SizedBox.shrink(),
 
-                    const PaddedDivider(padding: Constants.innerPadding),
+                    (showTimeTile)
+                        ? const PaddedDivider(padding: Constants.innerPadding)
+                        : const SizedBox.shrink(),
                     // Repeatable Stuff -> Show status, on click, open a dialog.
                     Padding(
                       padding: const EdgeInsets.symmetric(
                           horizontal: Constants.innerPadding),
-                      child: buildRepeatableTile(context: context,
-                          smallScreen: smallScreen),
+                      child: buildRepeatableTile(
+                          context: context, smallScreen: smallScreen),
                     ),
                   ],
                 ),
               ),
 
               const PaddedDivider(padding: Constants.padding),
-              // Create Button - could be a stack
               Padding(
                 padding:
                     const EdgeInsets.symmetric(horizontal: Constants.padding),
-                child: buildUpdateDeleteRow(
-                    context: context),
+                child: buildUpdateDeleteRow(context: context),
               )
             ]),
       ),
     );
   }
 
-  Row buildUpdateDeleteRow(
-      {required BuildContext context}) {
+  Row buildUpdateDeleteRow({required BuildContext context}) {
     return Row(mainAxisAlignment: MainAxisAlignment.end, children: [
-      Padding(
-          padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
-          child: buildDeleteButton(context: context)),
-      buildUpdateButton(context: context),
+      Flexible(
+        child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
+            child: buildDeleteButton(context: context)),
+      ),
+      Flexible(child: buildUpdateButton(context: context)),
     ]);
   }
 
-  FilledButton buildDeleteButton(
-      {required BuildContext context}) {
+  FilledButton buildDeleteButton({required BuildContext context}) {
     return FilledButton.tonalIcon(
       label: const Text("Delete"),
       icon: const Icon(Icons.delete_forever),
-      onPressed: () async =>
-          await handleDelete(context: context),
+      onPressed: () async => await handleDelete(context: context),
     );
   }
 
-  FilledButton buildUpdateButton(
-      {required BuildContext context}) {
+  FilledButton buildUpdateButton({required BuildContext context}) {
     return FilledButton.icon(
-        label: const Text("Update Deadline"),
+        label: const Text("Update"),
         icon: const Icon(Icons.add),
         onPressed: () async {
           bool validData = validateData();
@@ -945,12 +963,14 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
       minFontSize: Constants.medium,
       decoration: InputDecoration(
         isDense: smallScreen,
-        suffixIcon: (deadline.name != "") ? IconButton(
-            icon: const Icon(Icons.clear),
-            onPressed: () {
-              nameEditingController.clear();
-              setState(() => deadline.name = "");
-            }) : null,
+        suffixIcon: (deadline.name != "")
+            ? IconButton(
+                icon: const Icon(Icons.clear),
+                onPressed: () {
+                  nameEditingController.clear();
+                  setState(() => deadline.name = "");
+                })
+            : null,
         contentPadding: const EdgeInsets.all(Constants.innerPadding),
         border: const OutlineInputBorder(
             borderRadius:
@@ -1004,7 +1024,6 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                           ]));
                 }).then((willDiscard) {
               if (willDiscard ?? false) {
-                // this should hopefully pop twice.
                 Navigator.pop(context);
               }
             });
@@ -1034,25 +1053,45 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                           .format(pattern: "MMM d"),
                       softWrap: true,
                       overflow: TextOverflow.visible,
-                      maxLines: 1,
+                      maxLines: 2,
                       minFontSize: Constants.small),
                 ),
               ),
-              (showWarnTime && !smallScreen)
+              (Constants.midnight != warnTime)
+                  ? const Flexible(
+                      child: Padding(
+                        padding: EdgeInsets.only(right: Constants.padding),
+                        child: Flexible(child: Icon(Icons.schedule_outlined)),
+                      ),
+                    )
+                  : const Flexible(
+                      child: Padding(
+                      padding: EdgeInsets.only(right: Constants.padding),
+                      child: Icon(Icons.history_toggle_off_outlined),
+                    )),
+              (Constants.midnight != warnTime)
                   ? Flexible(
                       child: Padding(
                         padding: const EdgeInsets.symmetric(
                             horizontal: Constants.padding),
                         child: AutoSizeText(
-                          "@ ${warnTime.format(context).toString()}",
+                          warnTime.format(context).toString(),
                           overflow: TextOverflow.visible,
-                          softWrap: true,
+                          softWrap: false,
                           minFontSize: Constants.medium,
-                          maxLines: 2,
+                          maxLines: 1,
                         ),
                       ),
                     )
-                  : const SizedBox.shrink(),
+                  : const Flexible(
+                      child: AutoSizeText(
+                        "Warn Time",
+                        overflow: TextOverflow.visible,
+                        softWrap: false,
+                        minFontSize: Constants.medium,
+                        maxLines: 1,
+                      ),
+                    ),
             ])
           : const AutoSizeText(
               "Warn me?",
@@ -1069,15 +1108,17 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
           : IconButton.outlined(
               icon: const Icon(Icons.notifications_outlined),
               onPressed: () => handleWarnDate()),
-      trailing: (deadline.warnMe)?IconButton(
-          icon: const Icon(Icons.clear),
-          onPressed: () => setState(() {
-            checkClose = false;
-                deadline.warnDate = Constants.nullDate.copyWith(
-                    hour: Constants.midnight.hour,
-                    minute: Constants.midnight.minute);
-                deadline.warnMe = false;
-              })) : null,
+      trailing: (deadline.warnMe)
+          ? IconButton(
+              icon: const Icon(Icons.clear),
+              onPressed: () => setState(() {
+                    checkClose = false;
+                    deadline.warnDate = Constants.nullDate.copyWith(
+                        hour: Constants.midnight.hour,
+                        minute: Constants.midnight.minute);
+                    deadline.warnMe = false;
+                  }))
+          : null,
       onTap: () => handleWarnDate(),
     );
   }
@@ -1105,13 +1146,16 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
             }));
   }
 
-  AutoSizeTextField buildDescriptionTile({bool smallScreen = false, bool largeScreen = false}) {
+  AutoSizeTextField buildDescriptionTile(
+      {bool smallScreen = false, bool largeScreen = false}) {
     return AutoSizeTextField(
         controller: descriptionEditingController,
         maxLines: (smallScreen) ? Constants.descripMaxLinesBeforeScroll : null,
         minLines: (smallScreen)
             ? Constants.descripMinLinesMobile
-            : (largeScreen)? Constants.descripMaxLinesBeforeScroll : Constants.descripMinLinesDesktop,
+            : (largeScreen)
+                ? Constants.descripMaxLinesBeforeScroll
+                : Constants.descripMinLinesDesktop,
         minFontSize: Constants.medium,
         decoration: InputDecoration(
           isDense: smallScreen,
@@ -1205,17 +1249,16 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                       )
               ],
             ),
-      trailing: (Constants.nullDate != deadline.startDate.copyWith(hour: Constants.midnight.hour, minute: Constants.midnight.minute) || Constants.nullDate != deadline.dueDate.copyWith(hour: Constants.midnight.hour, minute: Constants.midnight.minute)) ? IconButton(
-          icon: const Icon(Icons.clear),
-          onPressed: () => setState(() {
-            checkClose = true;
-                deadline.startDate = Constants.nullDate.copyWith(
-                    hour: deadline.dueDate.hour,
-                    minute: deadline.dueDate.minute);
-                deadline.dueDate = Constants.nullDate.copyWith(
-                    hour: deadline.dueDate.hour,
-                    minute: deadline.dueDate.minute);
-              })): null,
+      trailing: (Constants.nullDate != deadline.startDate ||
+              Constants.nullDate != deadline.dueDate)
+          ? IconButton(
+              icon: const Icon(Icons.clear),
+              onPressed: () => setState(() {
+                    checkClose = true;
+                    deadline.startDate = Constants.nullDate;
+                    deadline.dueDate = Constants.nullDate;
+                  }))
+          : null,
       onTap: () {
         showDialog<void>(
             context: context,
@@ -1307,9 +1350,14 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                                               children: [
                                                 Expanded(
                                                   child: TextButton(
-                                                      onPressed: () => setState(
-                                                          () =>
-                                                              setStart = true),
+                                                      onPressed: () =>
+                                                          setState(() {
+                                                            setStart = true;
+                                                            tmpStart =
+                                                                tmpStart ??
+                                                                    DateTime
+                                                                        .now();
+                                                          }),
                                                       child: (null != tmpStart)
                                                           ? AutoSizeText(
                                                               Jiffy.parseFromDateTime(
@@ -1337,17 +1385,22 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                                                                   Constants
                                                                       .small)),
                                                 ),
-                                                (null != tmpStart) ? IconButton(
-                                                  icon: const Icon(
-                                                      Icons.clear_outlined),
-                                                  selectedIcon:
-                                                      const Icon(Icons.clear),
-                                                  onPressed: () => setState(() {
-                                                    checkClose = true;
-                                                    showDates.remove(tmpStart);
-                                                    tmpStart = null;
-                                                  }),
-                                                ) : const SizedBox.shrink(),
+                                                (null != tmpStart)
+                                                    ? IconButton(
+                                                        icon: const Icon(Icons
+                                                            .clear_outlined),
+                                                        selectedIcon:
+                                                            const Icon(
+                                                                Icons.clear),
+                                                        onPressed: () =>
+                                                            setState(() {
+                                                          checkClose = true;
+                                                          showDates
+                                                              .remove(tmpStart);
+                                                          tmpStart = null;
+                                                        }),
+                                                      )
+                                                    : const SizedBox.shrink(),
                                               ]),
                                         ),
                                       ),
@@ -1383,9 +1436,12 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                                               children: [
                                                 Expanded(
                                                   child: TextButton(
-                                                      onPressed: () => setState(
-                                                          () =>
-                                                              setStart = false),
+                                                      onPressed: () =>
+                                                          setState(() {
+                                                            setStart = false;
+                                                            tmpDue = tmpDue ??
+                                                                DateTime.now();
+                                                          }),
                                                       child: (null != tmpDue)
                                                           ? AutoSizeText(
                                                               Jiffy.parseFromDateTime(
@@ -1413,17 +1469,22 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                                                                   Constants
                                                                       .small)),
                                                 ),
-                                                (null != tmpDue) ? IconButton(
-                                                  icon: const Icon(
-                                                      Icons.clear_outlined),
-                                                  selectedIcon:
-                                                      const Icon(Icons.clear),
-                                                  onPressed: () => setState(() {
-                                                    checkClose = false;
-                                                    showDates.remove(tmpDue);
-                                                    tmpDue = null;
-                                                  }),
-                                                ) : const SizedBox.shrink()
+                                                (null != tmpDue)
+                                                    ? IconButton(
+                                                        icon: const Icon(Icons
+                                                            .clear_outlined),
+                                                        selectedIcon:
+                                                            const Icon(
+                                                                Icons.clear),
+                                                        onPressed: () =>
+                                                            setState(() {
+                                                          checkClose = false;
+                                                          showDates
+                                                              .remove(tmpDue);
+                                                          tmpDue = null;
+                                                        }),
+                                                      )
+                                                    : const SizedBox.shrink()
                                               ]),
                                         ),
                                       ),
@@ -1488,22 +1549,20 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                                           onPressed: () {
                                             setState(() {
                                               checkClose = true;
-                                              tmpStart = tmpStart ??
+                                              deadline.startDate = tmpStart ??
                                                   Constants.nullDate;
-                                              tmpDue =
+                                              deadline.dueDate =
                                                   tmpDue ?? Constants.nullDate;
-                                              deadline.startDate = tmpStart!
-                                                  .copyWith(
-                                                      hour: deadline
-                                                          .startDate.hour,
-                                                      minute: deadline
-                                                          .startDate.minute);
-                                              deadline.dueDate = tmpDue!
-                                                  .copyWith(
-                                                      hour:
-                                                          deadline.dueDate.hour,
-                                                      minute: deadline
-                                                          .dueDate.minute);
+
+                                              if (Constants.nullDate !=
+                                                      deadline.startDate &&
+                                                  Constants.nullDate !=
+                                                      deadline.dueDate &&
+                                                  deadline.startDate.isAfter(
+                                                      deadline.dueDate)) {
+                                                deadline.startDate =
+                                                    deadline.dueDate;
+                                              }
                                             });
                                             Navigator.pop(context);
                                           },
@@ -1525,13 +1584,13 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
   }
 
   ListTile buildTimeTile() {
-    TimeOfDay? startTime =
-        (showStartTime) ? TimeOfDay.fromDateTime(deadline.startDate) : null;
-    TimeOfDay? dueTime =
-        (showDueTime) ? TimeOfDay.fromDateTime(deadline.dueDate) : null;
+    TimeOfDay? startTime = TimeOfDay.fromDateTime(deadline.startDate);
+    TimeOfDay? dueTime = TimeOfDay.fromDateTime(deadline.dueDate);
+
     return ListTile(
         leading: const Icon(Icons.schedule_outlined),
-        title: (null == startTime && null == dueTime)
+        title: (Constants.midnight == startTime &&
+                Constants.midnight == dueTime)
             ? const AutoSizeText(
                 "Add Times",
                 overflow: TextOverflow.visible,
@@ -1540,7 +1599,7 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                 softWrap: true,
               )
             : Row(children: [
-                (null == startTime)
+                (Constants.midnight == startTime)
                     ? const Flexible(
                         child: AutoSizeText(
                         "Start Time",
@@ -1557,7 +1616,7 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                         maxLines: 2,
                         minFontSize: Constants.small,
                       )),
-                (null == dueTime)
+                (Constants.midnight == dueTime)
                     ? const Flexible(
                         child: Padding(
                           padding: EdgeInsets.symmetric(
@@ -1575,7 +1634,7 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                             fit: BoxFit.fill,
                             child: Icon(Icons.schedule_outlined)),
                       )),
-                (null == dueTime)
+                (Constants.midnight == dueTime)
                     ? const Flexible(
                         child: AutoSizeText(
                           "Due Time",
@@ -1666,14 +1725,14 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                                                                 Constants
                                                                     .midnight);
                                                 if (null != picked) {
-                                                  setState(
-                                                      () {
-                                                        showStartTime = true;
-                                                        startTime = picked;
-                                                      });
+                                                  setState(() {
+                                                    showStartTime = true;
+                                                    startTime = picked;
+                                                  });
                                                 }
                                               },
-                                              child: (null != startTime)
+                                              child: (Constants.midnight !=
+                                                      startTime)
                                                   ? AutoSizeText(
                                                       startTime!
                                                           .format(context)
@@ -1711,14 +1770,14 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                                                         initialTime: dueTime ??
                                                             Constants.midnight);
                                                 if (null != picked) {
-                                                  setState(
-                                                      () {
-                                                        showDueTime = true;
-                                                        dueTime = picked;
-                                                      });
+                                                  setState(() {
+                                                    showDueTime = true;
+                                                    dueTime = picked;
+                                                  });
                                                 }
                                               },
-                                              child: (null != dueTime)
+                                              child: (Constants.midnight !=
+                                                      dueTime)
                                                   ? AutoSizeText(
                                                       dueTime!
                                                           .format(context)
@@ -1805,18 +1864,26 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                         )));
               }).then((_) => setState(() {}));
         },
-        trailing: (null != startTime || null != dueTime) ? IconButton(
-          icon: const Icon(Icons.clear),
-          onPressed: () => setState(() {
-            checkClose = true;
-            startTime = null;
-            dueTime = null;
-          }),
-        ) : null);
+        trailing:
+            (Constants.midnight != startTime || Constants.midnight != dueTime)
+                ? IconButton(
+                    icon: const Icon(Icons.clear),
+                    onPressed: () => setState(() {
+                      checkClose = true;
+
+                      deadline.startDate = deadline.startDate.copyWith(
+                          hour: Constants.midnight.hour,
+                          minute: Constants.midnight.minute);
+                      deadline.dueDate = deadline.dueDate.copyWith(
+                          hour: Constants.midnight.hour,
+                          minute: Constants.midnight.minute);
+                    }),
+                  )
+                : null);
   }
 
-  ListTile buildRepeatableTile({required BuildContext context,
-      bool smallScreen = false}) {
+  ListTile buildRepeatableTile(
+      {required BuildContext context, bool smallScreen = false}) {
     return ListTile(
         leading: const Icon(Icons.event_repeat_outlined),
         title: (deadline.frequency == Frequency.once)
@@ -2204,10 +2271,17 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                                                 deadline.repeatSkip = cacheSkip;
                                                 deadline.repeatSkip = cacheSkip;
                                                 if (cacheWeekdays.isEmpty) {
-                                                  cacheWeekdays.add(deadline.startDate.weekday - 1);
+                                                  cacheWeekdays.add(deadline
+                                                          .startDate.weekday -
+                                                      1);
                                                 }
-                                                for (int i = 0; i < deadline.repeatDays.length; i++) {
-                                                  deadline.repeatDays[i] = cacheWeekdays.contains(i);
+                                                for (int i = 0;
+                                                    i <
+                                                        deadline
+                                                            .repeatDays.length;
+                                                    i++) {
+                                                  deadline.repeatDays[i] =
+                                                      cacheWeekdays.contains(i);
                                                 }
                                               });
                                               Navigator.pop(context);
@@ -2225,14 +2299,17 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                 });
               }).then((_) => setState(() {}));
         },
-        trailing: (deadline.frequency != Frequency.once) ? IconButton(
-            icon: const Icon(Icons.clear),
-            onPressed: () => setState(() {
-              checkClose = true;
-                  deadline.frequency = Frequency.once;
-                  deadline.customFreq = CustomFrequency.weekly;
-                  deadline.repeatDays.fillRange(0, deadline.repeatDays.length, false);
-                  deadline.repeatSkip = 1;
-                })) : null);
+        trailing: (deadline.frequency != Frequency.once)
+            ? IconButton(
+                icon: const Icon(Icons.clear),
+                onPressed: () => setState(() {
+                      checkClose = true;
+                      deadline.frequency = Frequency.once;
+                      deadline.customFreq = CustomFrequency.weekly;
+                      deadline.repeatDays
+                          .fillRange(0, deadline.repeatDays.length, false);
+                      deadline.repeatSkip = 1;
+                    }))
+            : null);
   }
 }

@@ -26,7 +26,8 @@ class ToDoProvider extends ChangeNotifier {
   late ToDoSorter sorter;
 
   User? user;
-  ToDoProvider({this.user, ToDoService? service}) : _toDoService = service ?? ToDoService() {
+  ToDoProvider({this.user, ToDoService? service})
+      : _toDoService = service ?? ToDoService() {
     sorter = user?.toDoSorter ?? ToDoSorter();
     init();
   }
@@ -89,10 +90,10 @@ class ToDoProvider extends ChangeNotifier {
       _toDoService.syncRepo();
     } on FailureToDeleteException catch (e) {
       log(e.cause);
-      rethrow;
+      return Future.error(e);
     } on FailureToUploadException catch (e) {
       log(e.cause);
-      rethrow;
+      return Future.error(e);
     }
     notifyListeners();
   }
@@ -118,7 +119,8 @@ class ToDoProvider extends ChangeNotifier {
     int? repeatSkip,
     List<SubTask>? subTasks,
   }) async {
-    List<SubTask> buffer = List.generate(Constants.numTasks[taskType]!, (index) => SubTask());
+    List<SubTask> buffer =
+        List.generate(Constants.numTasks[taskType]!, (index) => SubTask());
 
     if (null != subTasks && buffer.isNotEmpty) {
       List.copyRange(buffer, 0, subTasks, 0, Constants.numTasks[taskType]!);
@@ -129,9 +131,12 @@ class ToDoProvider extends ChangeNotifier {
     weight = weight ?? _toDoService.calculateWeight(subTasks: subTasks);
     expectedDuration = expectedDuration ?? (const Duration(hours: 1)).inSeconds;
     realDuration = realDuration ??
-        _toDoService.calculateRealDuration(weight: weight, duration: expectedDuration);
+        _toDoService.calculateRealDuration(
+            weight: weight, duration: expectedDuration);
 
-    startDate = startDate ?? DateTime.now().copyWith(hour: Constants.midnight.hour, minute: Constants.midnight.minute);
+    startDate = startDate ??
+        DateTime.now().copyWith(
+            hour: Constants.midnight.hour, minute: Constants.midnight.minute);
     dueDate = dueDate ?? startDate.copyWith();
 
     if (startDate.isAfter(dueDate)) {
@@ -167,7 +172,7 @@ class ToDoProvider extends ChangeNotifier {
       _toDoService.createToDo(toDo: curToDo!);
     } on FailureToCreateException catch (e) {
       log(e.cause);
-      rethrow;
+      return Future.error(e);
     } on FailureToUploadException catch (e) {
       log(e.cause);
       curToDo!.isSynced = false;
@@ -186,10 +191,10 @@ class ToDoProvider extends ChangeNotifier {
       _toDoService.updateToDo(toDo: curToDo!);
     } on FailureToUploadException catch (e) {
       log(e.cause);
-      rethrow;
+      return Future.error(e);
     } on FailureToUpdateException catch (e) {
       log(e.cause);
-      rethrow;
+      return Future.error(e);
     }
     notifyListeners();
   }
@@ -199,20 +204,22 @@ class ToDoProvider extends ChangeNotifier {
       _toDoService.deleteToDo(toDo: curToDo!);
     } on FailureToDeleteException catch (e) {
       log(e.cause);
-      rethrow;
+      return Future.error(e);
     }
     notifyListeners();
   }
 
-  Future<void> reorderToDos({required int oldIndex, required int newIndex}) async {
+  Future<void> reorderToDos(
+      {required int oldIndex, required int newIndex}) async {
     try {
-      _toDoService.reorderTodos(toDos: toDos, oldIndex: oldIndex, newIndex: newIndex);
+      _toDoService.reorderTodos(
+          toDos: toDos, oldIndex: oldIndex, newIndex: newIndex);
     } on FailureToUpdateException catch (e) {
       log(e.cause);
-      rethrow;
+      return Future.error(e);
     } on FailureToUploadException catch (e) {
       log(e.cause);
-      rethrow;
+      return Future.error(e);
     }
   }
 
@@ -221,10 +228,10 @@ class ToDoProvider extends ChangeNotifier {
       _toDoService.checkRepeating(now: now ?? DateTime.now());
     } on FailureToUpdateException catch (e) {
       log(e.cause);
-      rethrow;
+      return Future.error(e);
     } on FailureToUploadException catch (e) {
       log(e.cause);
-      rethrow;
+      return Future.error(e);
     }
   }
 
@@ -233,10 +240,10 @@ class ToDoProvider extends ChangeNotifier {
       _toDoService.nextRepeatable(toDo: toDo ?? curToDo!);
     } on FailureToUpdateException catch (e) {
       log(e.cause);
-      rethrow;
+      return Future.error(e);
     } on FailureToUploadException catch (e) {
       log(e.cause);
-      rethrow;
+      return Future.error(e);
     }
   }
 
@@ -245,10 +252,10 @@ class ToDoProvider extends ChangeNotifier {
       _toDoService.deleteFutures(toDo: toDo ?? curToDo!);
     } on FailureToUpdateException catch (e) {
       log(e.cause);
-      rethrow;
+      return Future.error(e);
     } on FailureToUploadException catch (e) {
       log(e.cause);
-      rethrow;
+      return Future.error(e);
     }
   }
 
@@ -263,9 +270,11 @@ class ToDoProvider extends ChangeNotifier {
   Future<List<ToDo>> searchToDos({required String searchString}) async =>
       _toDoService.searchToDos(searchString: searchString);
 
-  Future<List<ToDo>> mostRecent({int limit = 5}) async => await _toDoService.mostRecent(limit: 5);
+  Future<List<ToDo>> mostRecent({int limit = 5}) async =>
+      await _toDoService.mostRecent(limit: 5);
 
-  Future<ToDo?> getToDoByID({required int id}) async => await _toDoService.getToDoByID(id: id);
+  Future<ToDo?> getToDoByID({required int id}) async =>
+      await _toDoService.getToDoByID(id: id);
 
   Future<void> setToDoByID({required int id}) async =>
       curToDo = await _toDoService.getToDoByID(id: id) ??
@@ -274,10 +283,15 @@ class ToDoProvider extends ChangeNotifier {
               name: '',
               expectedDuration: 0,
               realDuration: 0,
-              startDate: DateTime.now().copyWith(hour: Constants.midnight.hour, minute: Constants.midnight.minute),
-              dueDate: DateTime.now().copyWith(hour: Constants.midnight.hour, minute: Constants.midnight.minute),
+              startDate: DateTime.now().copyWith(
+                  hour: Constants.midnight.hour,
+                  minute: Constants.midnight.minute),
+              dueDate: DateTime.now().copyWith(
+                  hour: Constants.midnight.hour,
+                  minute: Constants.midnight.minute),
               repeatDays: List.filled(7, false),
-              subTasks: List.filled(Constants.numTasks[TaskType.small]!, SubTask()),
+              subTasks:
+                  List.filled(Constants.numTasks[TaskType.small]!, SubTask()),
               lastUpdated: DateTime.now());
 
   Future<List<ToDo>> getToDos({int limit = 50, int offset = 0}) async =>
@@ -291,7 +305,8 @@ class ToDoProvider extends ChangeNotifier {
       _toDoService.getToDosBy(toDoSorter: sorter, limit: limit, offset: offset);
 
   Future<void> setToDosBy({int limit = 50, int offset = 0}) async {
-    toDos = await _toDoService.getToDosBy(toDoSorter: sorter, limit: limit, offset: offset);
+    toDos = await _toDoService.getToDosBy(
+        toDoSorter: sorter, limit: limit, offset: offset);
   }
 
   Future<List<ToDo>> getMyDay({int limit = 50, int offset = 0}) async =>
@@ -301,7 +316,8 @@ class ToDoProvider extends ChangeNotifier {
     toDos = await _toDoService.getMyDay(limit: limit, offset: offset);
   }
 
-  Future<List<ToDo>> getToDosCompleted({int limit = 50, int offset = 0}) async =>
+  Future<List<ToDo>> getToDosCompleted(
+          {int limit = 50, int offset = 0}) async =>
       await _toDoService.getCompleted(limit: limit, offset: offset);
 
   Future<void> setToDosCompleted({int limit = 50, int offset = 0}) async {

@@ -29,7 +29,8 @@ class UserProvider extends ChangeNotifier {
     init();
   }
 
-  Future<User?> get loadedUser async => curUser ?? await _userStorageService.getUser();
+  Future<User?> get loadedUser async =>
+      curUser ?? await _userStorageService.getUser();
 
   Future<void> init() async {
     startTimer();
@@ -85,11 +86,11 @@ class UserProvider extends ChangeNotifier {
     } on FailureToCreateException catch (e) {
       log(e.cause);
       retry = true;
-      rethrow;
+      return Future.error(e);
     } on FailureToUploadException catch (e) {
       log(e.cause);
       retry = true;
-      rethrow;
+      return Future.error(e);
     }
     notifyListeners();
   }
@@ -100,33 +101,36 @@ class UserProvider extends ChangeNotifier {
     } on FailureToUpdateException catch (e) {
       log(e.cause);
       retry = true;
-      rethrow;
+      return Future.error(e);
     } on FailureToUploadException catch (e) {
       log(e.cause);
       retry = true;
-      rethrow;
+      return Future.error(e);
     }
     notifyListeners();
   }
 
   Future<void> signUp({required String email, required String password}) async {
     try {
-      _authenticationService.signUpEmailPassword(email: email, password: password);
+      _authenticationService.signUpEmailPassword(
+          email: email, password: password);
 
       //Not sure.
     } on SignUpFailedException catch (e) {
       log(e.cause);
-      rethrow;
+      return Future.error(e);
+
       // Uh, some sort of UI thing.
     } on UserExistsException catch (e) {
       log(e.cause);
-      rethrow;
+      return Future.error(e);
     }
   }
 
   Future<void> signIn({required String email, required String password}) async {
     try {
-      _authenticationService.signInEmailPassword(email: email, password: password);
+      _authenticationService.signInEmailPassword(
+          email: email, password: password);
 
       // For switching users.
       _userStorageService.fetchUser();
@@ -136,19 +140,20 @@ class UserProvider extends ChangeNotifier {
       curUser!.syncOnline = true;
     } on LoginFailedException catch (e) {
       log(e.cause);
-      rethrow;
+      return Future.error(e);
+
       // uh, some sort of UI thing? -> warning popup.
     } on UserSyncException catch (e) {
       // I do not know how to handle this yet - Possibly an edge function in supabase.
       log(e.cause);
-      rethrow;
+      return Future.error(e);
     } on UserException catch (e) {
       log(e.cause);
       // If, for some reason, there are two users in the db,
       // opting to keep the current user to serialize and deleting the others.
       // This should have happened during the online fetch.
       _userStorageService.clearUser();
-      rethrow;
+      return Future.error(e);
     }
     updateUser();
   }
@@ -165,11 +170,11 @@ class UserProvider extends ChangeNotifier {
     } on FailureToUploadException catch (e) {
       log(e.cause);
       retry = true;
-      rethrow;
+      return Future.error(e);
     } on UserSyncException catch (e) {
       log(e.cause);
       retry = true;
-      rethrow;
+      return Future.error(e);
     }
   }
 

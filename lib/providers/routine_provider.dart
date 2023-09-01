@@ -41,7 +41,9 @@ class RoutineProvider extends ChangeNotifier {
   }
 
   int get routineWeight =>
-      (curMorning?.weight ?? 0) + (curAfternoon?.weight ?? 0) + (curEvening?.weight ?? 0);
+      (curMorning?.weight ?? 0) +
+      (curAfternoon?.weight ?? 0) +
+      (curEvening?.weight ?? 0);
 
   void startTimer() {
     syncTimer = Timer.periodic(const Duration(seconds: 10), (timer) {
@@ -129,16 +131,18 @@ class RoutineProvider extends ChangeNotifier {
       int? realDuration,
       int? weight,
       List<SubTask>? routineTasks}) async {
+    routineTasks =
+        (null != routineTasks && routineTasks.length == Constants.maxNumTasks)
+            ? routineTasks
+            : List.filled(Constants.maxNumTasks, SubTask());
 
-    routineTasks = (null != routineTasks && routineTasks.length == Constants.maxNumTasks)
-        ? routineTasks
-        : List.filled(Constants.maxNumTasks, SubTask());
-
-    weight = weight ?? _routineService.calculateWeight(routineTasks: routineTasks);
+    weight =
+        weight ?? _routineService.calculateWeight(routineTasks: routineTasks);
 
     expectedDuration = expectedDuration ?? (const Duration(hours: 1)).inSeconds;
     realDuration = realDuration ??
-        _routineService.calculateRealDuration(weight: weight, duration: expectedDuration);
+        _routineService.calculateRealDuration(
+            weight: weight, duration: expectedDuration);
 
     curRoutine = Routine(
         name: name,
@@ -154,7 +158,7 @@ class RoutineProvider extends ChangeNotifier {
       _routineService.createRoutine(routine: curRoutine!);
     } on FailureToCreateException catch (e) {
       log(e.cause);
-      rethrow;
+      return Future.error(e);
     } on FailureToUploadException catch (e) {
       log(e.cause);
       curRoutine!.isSynced = false;
@@ -164,17 +168,16 @@ class RoutineProvider extends ChangeNotifier {
   }
 
   Future<void> updateRoutine() async {
-
     curRoutine!.lastUpdated = DateTime.now();
 
     try {
       _routineService.updateRoutine(routine: curRoutine!);
     } on FailureToUploadException catch (e) {
       log(e.cause);
-      rethrow;
+      return Future.error(e);
     } on FailureToUpdateException catch (e) {
       log(e.cause);
-      rethrow;
+      return Future.error(e);
     }
     notifyListeners();
   }
@@ -184,21 +187,24 @@ class RoutineProvider extends ChangeNotifier {
       _routineService.deleteRoutine(routine: curRoutine!);
     } on FailureToDeleteException catch (e) {
       log(e.cause);
-      rethrow;
+      return Future.error(e);
     }
     notifyListeners();
   }
 
   Future<void> reorderRoutines(
-      {required List<Routine> routines, required int oldIndex, required int newIndex}) async {
+      {required List<Routine> routines,
+      required int oldIndex,
+      required int newIndex}) async {
     try {
-      _routineService.reorderRoutines(routines: routines, oldIndex: oldIndex, newIndex: newIndex);
+      _routineService.reorderRoutines(
+          routines: routines, oldIndex: oldIndex, newIndex: newIndex);
     } on FailureToUpdateException catch (e) {
       log(e.cause);
-      rethrow;
+      return Future.error(e);
     } on FailureToUploadException catch (e) {
       log(e.cause);
-      rethrow;
+      return Future.error(e);
     }
     notifyListeners();
   }
@@ -209,10 +215,10 @@ class RoutineProvider extends ChangeNotifier {
       _routineService.resetRoutine(routine: curRoutine!);
     } on FailureToUpdateException catch (e) {
       log(e.cause);
-      rethrow;
+      return Future.error(e);
     } on FailureToUploadException catch (e) {
       log(e.cause);
-      rethrow;
+      return Future.error(e);
     }
   }
 
@@ -222,10 +228,11 @@ class RoutineProvider extends ChangeNotifier {
     curAfternoon?.lastUpdated = DateTime.now();
     curEvening?.lastUpdated = DateTime.now();
     try {
-      _routineService.resetRoutines(routines: [curMorning, curAfternoon, curEvening]);
+      _routineService
+          .resetRoutines(routines: [curMorning, curAfternoon, curEvening]);
     } on FailureToUpdateException catch (e) {
       log(e.cause);
-      rethrow;
+      return Future.error(e);
     }
     notifyListeners();
   }
@@ -237,10 +244,12 @@ class RoutineProvider extends ChangeNotifier {
       _routineService.getRoutines(limit: limit, offset: offset);
 
   Future<List<Routine>> getRoutinesBy({int limit = 50, int offset = 0}) async =>
-      _routineService.getRoutinesBy(routineSorter: sorter, limit: limit, offset: offset);
+      _routineService.getRoutinesBy(
+          routineSorter: sorter, limit: limit, offset: offset);
 
   Future<void> setRoutineListBy({int limit = 50, int offset = 0}) async =>
-      _routineService.getRoutinesBy(routineSorter: sorter, limit: limit, offset: offset);
+      _routineService.getRoutinesBy(
+          routineSorter: sorter, limit: limit, offset: offset);
 
   Future<List<Routine>> searchRoutines({required String searchString}) async =>
       _routineService.searchRoutines(searchString: searchString);

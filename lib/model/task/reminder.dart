@@ -1,7 +1,6 @@
 import "package:equatable/equatable.dart";
 import "package:isar/isar.dart";
 
-import "../../util/enums.dart";
 import "../../util/interfaces/copyable.dart";
 
 part "reminder.g.dart";

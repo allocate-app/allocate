@@ -22,6 +22,7 @@ import '../ui/views/sub_views/create_reminder.dart';
 import '../ui/views/sub_views/create_routine.dart';
 import '../ui/views/sub_views/create_todo.dart';
 import '../ui/views/sub_views/update_deadline.dart';
+import '../ui/views/sub_views/update_reminder.dart';
 import '../ui/views/sub_views/update_routine.dart';
 import '../ui/views/sub_views/update_todo.dart';
 import '../util/constants.dart';
@@ -237,11 +238,14 @@ class _FormTester extends State<FormTester> with WindowListener {
                   child: const Text("Create Reminder")
               ),
             ),
-            //   FloatingActionButton(
-            //   onPressed: () => inputDialog(context, dialog: (null != Provider.of<ReminderProvider>(context, listen: false).curReminder)?  const UpdateReminderScreen() : const CreateReminderScreen()),
-            //   backgroundColor: Colors.green,
-            //   child: const Text("Update Reminder"),
-            // )
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: FloatingActionButton(
+                onPressed: () => inputDialog(context, dialog: (null != Provider.of<ReminderProvider>(context, listen: false).curReminder)?  const UpdateReminderScreen() : const CreateReminderScreen()),
+                backgroundColor: Colors.green,
+                child: const Text("Update Reminder"),
+            ),
+              )
             ]
         ),
                 //

@@ -31,9 +31,6 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
   // Provider (Needs user values) -> Refactor to DI for testing. One day.
   late final RoutineProvider routineProvider;
 
-  // Cache - for discard
-  late final Routine prevRoutine;
-
   // Scrolling
   late final ScrollController mainScrollController;
   late final ScrollController subScrollControllerLeft;
@@ -42,11 +39,6 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
 
   late final TextEditingController nameEditingController;
   String? nameErrorText;
-
-
-  // Status -- TODO: remove. not sure if/where being used
-  final MaterialStateProperty<Icon?> completedIcon = MaterialStateProperty.resolveWith(
-      (states) => (states.contains(MaterialState.selected) ? const Icon(Icons.task_alt) : null));
 
   late final List<TextEditingController> routineTaskEditingController;
 
@@ -71,21 +63,19 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
     checkClose = false;
     expanded = true;
 
-    prevRoutine = routine.copy();
-
     cacheRoutineTasks = List.from(routine.routineTasks);
     shownTasks = routine.routineTasks.indexOf(SubTask());
-    if(shownTasks < 0)
-      {
-        shownTasks = routine.routineTasks.length;
-      }
+    if (shownTasks < 0) {
+      shownTasks = routine.routineTasks.length;
+    }
   }
 
   void initializeControllers() {
     mainScrollController = ScrollController();
     subScrollControllerLeft = ScrollController();
     subScrollControllerRight = ScrollController();
-    scrollPhysics = const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics());
+    scrollPhysics =
+    const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics());
     nameEditingController = TextEditingController(text: routine.name);
     nameEditingController.addListener(() {
       nameErrorText = null;
@@ -95,8 +85,8 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
       setState(() => routine.name = newText);
     });
 
-    routineTaskEditingController =
-        List.generate(cacheRoutineTasks.length, (i) => TextEditingController(text: routine.routineTasks[i].name));
+    routineTaskEditingController = List.generate(cacheRoutineTasks.length,
+            (i) => TextEditingController(text: routine.routineTasks[i].name));
     for (int i = 0; i < routineTaskEditingController.length; i++) {
       routineTaskEditingController[i].addListener(() {
         checkClose = true;
@@ -132,7 +122,13 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
 
   Icon getBatteryIcon({required int weight, required bool selected}) {
     // Icon is scaled for sum-weight.
-    weight = remap(x: weight, inMin: 0, inMax: Constants.maxWeight, outMin: 0, outMax: 5).toInt();
+    weight = remap(
+        x: weight,
+        inMin: 0,
+        inMax: Constants.maxWeight,
+        outMin: 0,
+        outMax: 5)
+        .toInt();
 
     if (selected) {
       return Constants.selectedBatteryIcons[weight]!;
@@ -141,9 +137,10 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
   }
 
   Future<void> handleUpdate({required BuildContext context}) async {
-    if(cacheRoutineTasks.length > routine.routineTasks.length)
-    {
-      throw ListLimitExceededException("Invalid subtask list length \n Cache:  ${cacheRoutineTasks.length} Routine: ${routine.routineTasks.length}");
+    if (cacheRoutineTasks.length > routine.routineTasks.length) {
+      throw ListLimitExceededException(
+          "Invalid subtask list length \n Cache:  ${cacheRoutineTasks
+              .length} Routine: ${routine.routineTasks.length}");
     }
 
     routine.routineTasks.setAll(0, cacheRoutineTasks);
@@ -154,43 +151,55 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
         .catchError((e) {
       Flushbar? error;
 
-      error = Flushbars.createError(message: e.cause,
+      error = Flushbars.createError(
+        message: e.cause,
         context: context,
         dismissCallback: () => error?.dismiss(),
       );
 
       error.show(context);
-    }, test: (e) => e is FailureToCreateException || e is FailureToUploadException);
+    },
+        test: (e) =>
+        e is FailureToCreateException || e is FailureToUploadException);
   }
 
-  Future<void> handleDelete({required BuildContext context, required Color errorColor}) async {
-    await routineProvider.deleteRoutine().whenComplete(() => Navigator.pop(context)).catchError( (e) {
+  Future<void> handleDelete({required BuildContext context}) async {
+    await routineProvider
+        .deleteRoutine()
+        .whenComplete(() => Navigator.pop(context))
+        .catchError((e) {
       Flushbar? error;
-      error = Flushbars.createError(message: e.cause,
-      context: context,
-      dismissCallback: () => error?.dismiss());
-    }
-      , test: (e) => e is FailureToDeleteException
-    );
+      error = Flushbars.createError(
+          message: e.cause,
+          context: context,
+          dismissCallback: () => error?.dismiss());
+    }, test: (e) => e is FailureToDeleteException);
   }
-
 
   @override
   Widget build(BuildContext context) {
-    final Color errorColor = Theme.of(context).colorScheme.error;
-
-    bool largeScreen = (MediaQuery.of(context).size.width >= Constants.largeScreen);
-    bool smallScreen = (MediaQuery.of(context).size.width <= Constants.smallScreen);
+    bool largeScreen =
+    (MediaQuery
+        .of(context)
+        .size
+        .width >= Constants.largeScreen);
+    bool smallScreen =
+    (MediaQuery
+        .of(context)
+        .size
+        .width <= Constants.smallScreen);
     return (largeScreen)
-        ? buildDesktopDialog(context, smallScreen, errorColor)
-        : buildMobileDialog(context, smallScreen, errorColor);
+        ? buildDesktopDialog(context: context, smallScreen: smallScreen)
+        : buildMobileDialog(context: context, smallScreen: smallScreen);
   }
 
-  Dialog buildDesktopDialog(BuildContext context, bool smallScreen, Color errorColor) {
+  Dialog buildDesktopDialog(
+      {required BuildContext context, bool smallScreen = false}) {
     return Dialog(
       insetPadding: const EdgeInsets.all(Constants.outerDialogPadding),
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxHeight: Constants.maxLandscapeDialogHeight),
+        constraints:
+        const BoxConstraints(maxHeight: Constants.maxLandscapeDialogHeight),
         child: Padding(
           padding: const EdgeInsets.all(Constants.padding),
           child: Column(
@@ -201,99 +210,110 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
                 // Title && Close Button
                 Flexible(
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
-                    child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                      const Flexible(
-                        child: AutoSizeText(
-                          "Edit Routine",
-                          overflow: TextOverflow.visible,
-                          style: Constants.headerStyle,
-                          minFontSize: Constants.medium,
-                          softWrap: true,
-                          maxLines: 1,
-                        ),
-                      ),
-                      (routine.expectedDuration > 0)
-                          ? Flexible(
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Flexible(
-                                    child: Tooltip(
-                                      message: "Expected Routine Duration",
-                                      child: Padding(
-                                        padding:
-                                            const EdgeInsets.symmetric(horizontal: Constants.padding),
-                                        child: Row(
-                                          children: [
-                                            const Flexible(
-                                              child: FittedBox(
-                                                fit: BoxFit.fill,
-                                                child: Icon(
-                                                  Icons.timer_outlined,
-                                                ),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: Constants.padding),
+                    child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Flexible(
+                            child: AutoSizeText(
+                              "Edit Routine",
+                              overflow: TextOverflow.visible,
+                              style: Constants.headerStyle,
+                              minFontSize: Constants.medium,
+                              softWrap: true,
+                              maxLines: 1,
+                            ),
+                          ),
+                          (routine.expectedDuration > 0)
+                              ? Flexible(
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Flexible(
+                                  child: Tooltip(
+                                    message: "Expected Routine Duration",
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: Constants.padding),
+                                      child: Row(
+                                        children: [
+                                          const Flexible(
+                                            child: FittedBox(
+                                              fit: BoxFit.fill,
+                                              child: Icon(
+                                                Icons.timer_outlined,
                                               ),
                                             ),
-                                            Flexible(
-                                              child: AutoSizeText(
-                                                  Duration(seconds: routine.expectedDuration)
-                                                      .toString()
-                                                      .split(".")
-                                                      .first,
-                                                  minFontSize: Constants.medium,
-                                                  overflow: TextOverflow.visible,
-                                                  softWrap: false,
-                                                  maxLines: 2),
-                                            ),
-                                          ],
-                                        ),
+                                          ),
+                                          Flexible(
+                                            child: AutoSizeText(
+                                                Duration(
+                                                    seconds: routine
+                                                        .expectedDuration)
+                                                    .toString()
+                                                    .split(".")
+                                                    .first,
+                                                minFontSize:
+                                                Constants.medium,
+                                                overflow:
+                                                TextOverflow.visible,
+                                                softWrap: false,
+                                                maxLines: 2),
+                                          ),
+                                        ],
                                       ),
                                     ),
                                   ),
-                                  Flexible(
-                                    child: Tooltip(
-                                      message: "Actual Routine Duration",
-                                      child: Padding(
-                                        padding:
-                                            const EdgeInsets.symmetric(horizontal: Constants.padding),
-                                        child: Row(
-                                          children: [
-                                            const Flexible(
-                                              child: FittedBox(
-                                                fit: BoxFit.fill,
-                                                child: Icon(
-                                                  Icons.timer,
-                                                ),
+                                ),
+                                Flexible(
+                                  child: Tooltip(
+                                    message: "Actual Routine Duration",
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: Constants.padding),
+                                      child: Row(
+                                        children: [
+                                          const Flexible(
+                                            child: FittedBox(
+                                              fit: BoxFit.fill,
+                                              child: Icon(
+                                                Icons.timer,
                                               ),
                                             ),
-                                            Flexible(
-                                              child: AutoSizeText(
-                                                  Duration(seconds: routine.realDuration)
-                                                      .toString()
-                                                      .split(".")
-                                                      .first,
-                                                  minFontSize: Constants.medium,
-                                                  overflow: TextOverflow.visible,
-                                                  softWrap: false,
-                                                  maxLines: 2),
-                                            ),
-                                          ],
-                                        ),
+                                          ),
+                                          Flexible(
+                                            child: AutoSizeText(
+                                                Duration(
+                                                    seconds: routine
+                                                        .realDuration)
+                                                    .toString()
+                                                    .split(".")
+                                                    .first,
+                                                minFontSize:
+                                                Constants.medium,
+                                                overflow:
+                                                TextOverflow.visible,
+                                                softWrap: false,
+                                                maxLines: 2),
+                                          ),
+                                        ],
                                       ),
                                     ),
                                   ),
-                                ],
-                              ),
-                            )
-                          : const SizedBox.shrink(),
-                      buildCloseButton(context),
-                    ]),
+                                ),
+                              ],
+                            ),
+                          )
+                              : const SizedBox.shrink(),
+                          buildCloseButton(context: context),
+                        ]),
                   ),
                 ),
                 const PaddedDivider(padding: Constants.padding),
                 Expanded(
                   // This is 100% a hacky workaround for trying to expand a listview.
-                  flex: (shownTasks/2).floor() + 1,
+                  flex: (shownTasks / 2).floor() + 1,
                   child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       mainAxisSize: MainAxisSize.min,
@@ -307,24 +327,29 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
                               children: [
                                 // Title
                                 Padding(
-                                  padding:
-                                  const EdgeInsets.symmetric(horizontal: Constants.padding),
-                                  child: buildNameTile(smallScreen: smallScreen),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: Constants.padding),
+                                  child:
+                                  buildNameTile(smallScreen: smallScreen),
                                 ),
-                                const PaddedDivider(padding: Constants.innerPadding),
+                                const PaddedDivider(
+                                    padding: Constants.innerPadding),
                                 Expanded(
                                   child: Padding(
-                                    padding:
-                                    const EdgeInsets.symmetric(horizontal: Constants.innerPadding),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: Constants.innerPadding),
                                     child: buildWeightTileDesktop(),
                                   ),
                                 ),
 
-                                const PaddedDivider(padding: Constants.innerPadding),
+                                const PaddedDivider(
+                                    padding: Constants.innerPadding),
                                 Padding(
-                                  padding:
-                                  const EdgeInsets.symmetric(horizontal: Constants.padding),
-                                  child: buildDurationTile(context, smallScreen: smallScreen),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: Constants.padding),
+                                  child: buildDurationTile(
+                                      context: context,
+                                      smallScreen: smallScreen),
                                 ),
                               ]),
                         ),
@@ -337,7 +362,8 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
                                 controller: subScrollControllerRight,
                                 physics: scrollPhysics,
                                 shrinkWrap: true,
-                                padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: Constants.padding),
                                 children: [
                                   // RoutineTasks
                                   Padding(
@@ -349,53 +375,74 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
                                       color: Colors.transparent,
                                       shape: RoundedRectangleBorder(
                                           side: BorderSide(
-                                              color: Theme.of(context).colorScheme.outline,
-                                              strokeAlign: BorderSide.strokeAlignInside),
+                                              color: Theme
+                                                  .of(context)
+                                                  .colorScheme
+                                                  .outline,
+                                              strokeAlign:
+                                              BorderSide.strokeAlignInside),
                                           borderRadius: const BorderRadius.all(
-                                              Radius.circular(Constants.roundedCorners))),
+                                              Radius.circular(
+                                                  Constants.roundedCorners))),
                                       child: ExpansionTile(
                                         initiallyExpanded: expanded,
                                         onExpansionChanged: (value) =>
                                             setState(() => expanded = value),
-                                        title: const AutoSizeText("Routine Steps",
+                                        title: const AutoSizeText(
+                                            "Routine Steps",
                                             maxLines: 1,
                                             overflow: TextOverflow.visible,
                                             softWrap: false,
                                             minFontSize: Constants.small),
                                         subtitle: AutoSizeText(
-                                            "${min(shownTasks, Constants.maxNumTasks)}/${Constants.maxNumTasks} Steps",
+                                            "${min(shownTasks, Constants
+                                                .maxNumTasks)}/${Constants
+                                                .maxNumTasks} Steps",
                                             maxLines: 1,
                                             overflow: TextOverflow.visible,
                                             softWrap: false,
                                             minFontSize: Constants.small),
-                                        collapsedShape: const RoundedRectangleBorder(
+                                        collapsedShape:
+                                        const RoundedRectangleBorder(
                                             side: BorderSide(
-                                                strokeAlign: BorderSide.strokeAlignOutside),
+                                                strokeAlign: BorderSide
+                                                    .strokeAlignOutside),
                                             borderRadius: BorderRadius.all(
-                                                Radius.circular(Constants.roundedCorners))),
+                                                Radius.circular(Constants
+                                                    .roundedCorners))),
                                         shape: const RoundedRectangleBorder(
                                             side: BorderSide(
-                                                strokeAlign: BorderSide.strokeAlignOutside),
+                                                strokeAlign: BorderSide
+                                                    .strokeAlignOutside),
                                             borderRadius: BorderRadius.all(
-                                                Radius.circular(Constants.roundedCorners))),
+                                                Radius.circular(
+                                                    Constants.roundedCorners))),
                                         children: [
                                           buildReorderableSubTasks(
                                               smallScreen: smallScreen,
                                               physics: scrollPhysics),
-                                          const PaddedDivider(padding: Constants.padding),
+                                          const PaddedDivider(
+                                              padding: Constants.padding),
                                           (shownTasks < Constants.maxNumTasks)
                                               ? ListTile(
-                                                  leading: const Icon(Icons.add_outlined),
-                                                  title: const AutoSizeText("Add a step",
-                                                      maxLines: 1,
-                                                      overflow: TextOverflow.visible,
-                                                      softWrap: false,
-                                                      minFontSize: Constants.small),
-                                                  onTap: () => setState(() {
-                                                        shownTasks++;
-                                                        shownTasks =
-                                                            min(shownTasks, Constants.maxNumTasks);
-                                                      }))
+                                              leading: const Icon(
+                                                  Icons.add_outlined),
+                                              title: const AutoSizeText(
+                                                  "Add a step",
+                                                  maxLines: 1,
+                                                  overflow:
+                                                  TextOverflow.visible,
+                                                  softWrap: false,
+                                                  minFontSize:
+                                                  Constants.small),
+                                              onTap: () =>
+                                                  setState(() {
+                                                    shownTasks++;
+                                                    shownTasks = min(
+                                                        shownTasks,
+                                                        Constants
+                                                            .maxNumTasks);
+                                                  }))
                                               : const SizedBox.shrink(),
                                         ],
                                       ),
@@ -408,10 +455,10 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
                 ),
 
                 const PaddedDivider(padding: Constants.padding),
-                // Create Button - could be a stack
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
-                  child: buildUpdateDeleteRow(context: context, errorColor: errorColor),
+                  padding:
+                  const EdgeInsets.symmetric(horizontal: Constants.padding),
+                  child: buildUpdateDeleteRow(context: context),
                 )
               ]),
         ),
@@ -419,10 +466,12 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
     );
   }
 
-  Dialog buildMobileDialog(BuildContext context, bool smallScreen, Color errorColor) {
+  Dialog buildMobileDialog(
+      {required BuildContext context, bool smallScreen = false}) {
     return Dialog(
       insetPadding: const EdgeInsets.symmetric(
-          horizontal: Constants.outerDialogPadding, vertical: Constants.smallOuterDialogPadding),
+          horizontal: Constants.outerDialogPadding,
+          vertical: Constants.smallOuterDialogPadding),
       child: Padding(
         padding: const EdgeInsets.all(Constants.padding),
         child: Column(
@@ -431,96 +480,105 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
             children: [
               // Title && Close Button
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
-                child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                  const Flexible(
-                    child: AutoSizeText(
-                      "New Routine",
-                      overflow: TextOverflow.visible,
-                      style: Constants.headerStyle,
-                      minFontSize: Constants.medium,
-                      softWrap: true,
-                      maxLines: 1,
-                    ),
-                  ),
-                  (routine.expectedDuration > 0)
-                      ? Flexible(
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Flexible(
-                                child: Tooltip(
-                                  message: "Expected Routine Duration",
-                                  child: Padding(
-                                    padding:
-                                        const EdgeInsets.symmetric(horizontal: Constants.padding),
-                                    child: Row(
-                                      children: [
-                                        const Flexible(
-                                          child: FittedBox(
-                                            fit: BoxFit.fill,
-                                            child: Icon(
-                                              Icons.timer_outlined,
-                                            ),
+                padding:
+                const EdgeInsets.symmetric(horizontal: Constants.padding),
+                child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Flexible(
+                        child: AutoSizeText(
+                          "Update Routine",
+                          overflow: TextOverflow.visible,
+                          style: Constants.headerStyle,
+                          minFontSize: Constants.medium,
+                          softWrap: true,
+                          maxLines: 1,
+                        ),
+                      ),
+                      (routine.expectedDuration > 0)
+                          ? Flexible(
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Flexible(
+                              child: Tooltip(
+                                message: "Expected Routine Duration",
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: Constants.padding),
+                                  child: Row(
+                                    children: [
+                                      const Flexible(
+                                        child: FittedBox(
+                                          fit: BoxFit.fill,
+                                          child: Icon(
+                                            Icons.timer_outlined,
                                           ),
                                         ),
-                                        Flexible(
-                                          child: AutoSizeText(
-                                              Duration(seconds: routine.expectedDuration)
-                                                  .toString()
-                                                  .split(".")
-                                                  .first,
-                                              minFontSize: Constants.medium,
-                                              overflow: TextOverflow.visible,
-                                              softWrap: false,
-                                              maxLines: 2),
-                                        ),
-                                      ],
-                                    ),
+                                      ),
+                                      Flexible(
+                                        child: AutoSizeText(
+                                            Duration(
+                                                seconds: routine
+                                                    .expectedDuration)
+                                                .toString()
+                                                .split(".")
+                                                .first,
+                                            minFontSize: Constants.medium,
+                                            overflow:
+                                            TextOverflow.visible,
+                                            softWrap: false,
+                                            maxLines: 2),
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ),
-                              Flexible(
-                                child: Tooltip(
-                                  message: "Actual Routine Duration",
-                                  child: Padding(
-                                    padding:
-                                        const EdgeInsets.symmetric(horizontal: Constants.padding),
-                                    child: Row(
-                                      children: [
-                                        const Flexible(
-                                          child: FittedBox(
-                                            fit: BoxFit.fill,
-                                            child: Icon(
-                                              Icons.timer,
-                                            ),
+                            ),
+                            Flexible(
+                              child: Tooltip(
+                                message: "Actual Routine Duration",
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: Constants.padding),
+                                  child: Row(
+                                    children: [
+                                      const Flexible(
+                                        child: FittedBox(
+                                          fit: BoxFit.fill,
+                                          child: Icon(
+                                            Icons.timer,
                                           ),
                                         ),
-                                        Flexible(
-                                          child: AutoSizeText(
-                                              Duration(seconds: routine.realDuration)
-                                                  .toString()
-                                                  .split(".")
-                                                  .first,
-                                              minFontSize: Constants.medium,
-                                              overflow: TextOverflow.visible,
-                                              softWrap: false,
-                                              maxLines: 2),
-                                        ),
-                                      ],
-                                    ),
+                                      ),
+                                      Flexible(
+                                        child: AutoSizeText(
+                                            Duration(
+                                                seconds: routine
+                                                    .realDuration)
+                                                .toString()
+                                                .split(".")
+                                                .first,
+                                            minFontSize: Constants.medium,
+                                            overflow:
+                                            TextOverflow.visible,
+                                            softWrap: false,
+                                            maxLines: 2),
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ),
-                            ],
-                          ),
-                        )
-                      : const SizedBox.shrink(),
-                  buildCloseButton(context),
-                ]),
+                            ),
+                          ],
+                        ),
+                      )
+                          : const SizedBox.shrink(),
+                      buildCloseButton(context: context),
+                    ]),
               ),
               const PaddedDivider(padding: Constants.padding),
-              Expanded(
+              Flexible(
                 child: ListView(
                   shrinkWrap: true,
                   controller: mainScrollController,
@@ -528,129 +586,142 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
                   children: [
                     // Title + status
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: Constants.padding),
                       child: buildNameTile(smallScreen: smallScreen),
                     ),
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: Constants.innerPadding),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: Constants.innerPadding),
                       child: buildWeightTileMobile(smallScreen: smallScreen),
                     ),
 
                     const PaddedDivider(padding: Constants.innerPadding),
                     // Expected Duration / RealDuration -> Show status, on click, open a dialog.
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
-                      child: buildDurationTile(context, smallScreen: smallScreen),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: Constants.padding),
+                      child: buildDurationTile(
+                          context: context, smallScreen: smallScreen),
                     ),
 
                     const PaddedDivider(padding: Constants.innerPadding),
 
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: Constants.innerPadding),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: Constants.innerPadding),
                       child: Card(
                         clipBehavior: Clip.antiAlias,
                         elevation: 0,
                         color: Colors.transparent,
                         shape: RoundedRectangleBorder(
                             side: BorderSide(
-                                color: Theme.of(context).colorScheme.outline,
+                                color: Theme
+                                    .of(context)
+                                    .colorScheme
+                                    .outline,
                                 strokeAlign: BorderSide.strokeAlignInside),
-                            borderRadius:
-                                const BorderRadius.all(Radius.circular(Constants.roundedCorners))),
+                            borderRadius: const BorderRadius.all(
+                                Radius.circular(Constants.roundedCorners))),
                         child: ExpansionTile(
                           initiallyExpanded: expanded,
-                          onExpansionChanged: (value) => setState(() => expanded = value),
+                          onExpansionChanged: (value) =>
+                              setState(() => expanded = value),
                           title: const AutoSizeText("Routine Steps",
                               maxLines: 1,
                               overflow: TextOverflow.visible,
                               softWrap: false,
                               minFontSize: Constants.small),
                           subtitle: AutoSizeText(
-                              "${min(shownTasks, Constants.maxNumTasks)}/${Constants.maxNumTasks} Steps",
+                              "${min(shownTasks,
+                                  Constants.maxNumTasks)}/${Constants
+                                  .maxNumTasks} Steps",
                               maxLines: 1,
                               overflow: TextOverflow.visible,
                               softWrap: false,
                               minFontSize: Constants.small),
                           collapsedShape: const RoundedRectangleBorder(
-                              side: BorderSide(strokeAlign: BorderSide.strokeAlignOutside),
-                              borderRadius:
-                                  BorderRadius.all(Radius.circular(Constants.roundedCorners))),
+                              side: BorderSide(
+                                  strokeAlign: BorderSide.strokeAlignOutside),
+                              borderRadius: BorderRadius.all(
+                                  Radius.circular(Constants.roundedCorners))),
                           shape: const RoundedRectangleBorder(
-                              side: BorderSide(strokeAlign: BorderSide.strokeAlignOutside),
-                              borderRadius:
-                                  BorderRadius.all(Radius.circular(Constants.roundedCorners))),
+                              side: BorderSide(
+                                  strokeAlign: BorderSide.strokeAlignOutside),
+                              borderRadius: BorderRadius.all(
+                                  Radius.circular(Constants.roundedCorners))),
                           children: [
                             buildReorderableSubTasks(
-                                smallScreen: smallScreen, physics: scrollPhysics),
+                                smallScreen: smallScreen,
+                                physics: scrollPhysics),
                             (shownTasks < Constants.maxNumTasks)
                                 ? ListTile(
-                                    leading: const Icon(Icons.add_outlined),
-                                    title: const AutoSizeText("Add a step",
-                                        maxLines: 1,
-                                        overflow: TextOverflow.visible,
-                                        softWrap: false,
-                                        minFontSize: Constants.small),
-                                    onTap: () => setState(() {
-                                          shownTasks++;
-                                          shownTasks = min(shownTasks, Constants.maxNumTasks);
-                                        }))
+                                leading: const Icon(Icons.add_outlined),
+                                title: const AutoSizeText("Add a step",
+                                    maxLines: 1,
+                                    overflow: TextOverflow.visible,
+                                    softWrap: false,
+                                    minFontSize: Constants.small),
+                                onTap: () =>
+                                    setState(() {
+                                      shownTasks++;
+                                      shownTasks = min(shownTasks,
+                                          Constants.maxNumTasks);
+                                    }))
                                 : const SizedBox.shrink(),
                           ],
                         ),
                       ),
                     ),
-
-                    const PaddedDivider(padding: Constants.innerPadding),
                   ],
                 ),
               ),
 
               const PaddedDivider(padding: Constants.padding),
-              // Create Button - could be a stack
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
-                child: buildUpdateDeleteRow(context: context, errorColor: errorColor),
+                padding:
+                const EdgeInsets.symmetric(horizontal: Constants.padding),
+                child: buildUpdateDeleteRow(context: context),
               )
             ]),
       ),
     );
   }
 
-  Row buildUpdateDeleteRow({required BuildContext context, required Color errorColor}) {
+  Row buildUpdateDeleteRow({required BuildContext context}) {
     return Row(mainAxisAlignment: MainAxisAlignment.end, children: [
-      Padding(
-        padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
-        child: buildDeleteButton(context: context, errorColor: errorColor),
+      Flexible(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
+          child: buildDeleteButton(context: context),
+        ),
       ),
-
-      buildUpdateButton(context)
+      Flexible(child: buildUpdateButton(context: context))
     ]);
   }
 
-  FilledButton buildUpdateButton(BuildContext context) {
+  FilledButton buildUpdateButton({required BuildContext context}) {
     return FilledButton.icon(
-        label: const Text("Update Routine"),
+        label: const Text("Update"),
         icon: const Icon(Icons.add),
         onPressed: () async {
           bool validData = validateData();
           if (validData) {
-
             await handleUpdate(context: context);
           }
           // Then save.
         });
   }
 
-  FilledButton buildDeleteButton({required BuildContext context, required Color errorColor}) {
+  FilledButton buildDeleteButton({required BuildContext context}) {
     return FilledButton.tonalIcon(
       label: const Text("Delete"),
       icon: const Icon(Icons.delete_forever),
-      onPressed: () async => await handleDelete(context: context, errorColor: errorColor),
-
+      onPressed: () async => await handleDelete(context: context),
     );
   }
 
-  Column buildWeightTileDesktop(){
+  Column buildWeightTileDesktop() {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       mainAxisSize: MainAxisSize.min,
@@ -672,7 +743,9 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
                 child: FittedBox(
                   fit: BoxFit.fitHeight,
                   child: Transform.rotate(
-                      angle: -pi / 2, child: getBatteryIcon(weight: routine.weight, selected: false)),
+                      angle: -pi / 2,
+                      child: getBatteryIcon(
+                          weight: routine.weight, selected: false)),
                 ),
               )),
         ),
@@ -700,17 +773,19 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
                 child: FittedBox(
                   fit: BoxFit.contain,
                   child: Transform.rotate(
-                      angle: -pi / 2, child: getBatteryIcon(weight: routine.weight, selected: false)),
+                      angle: -pi / 2,
+                      child: getBatteryIcon(
+                          weight: routine.weight, selected: false)),
                 ),
               )),
         ),
-       (smallScreen) ? const SizedBox.shrink() : const Spacer(),
+        (smallScreen) ? const SizedBox.shrink() : const Spacer(),
       ],
     );
   }
 
-  ReorderableListView buildReorderableSubTasks(
-      {bool smallScreen = false, ScrollPhysics physics = const BouncingScrollPhysics()}) {
+  ReorderableListView buildReorderableSubTasks({bool smallScreen = false,
+    ScrollPhysics physics = const BouncingScrollPhysics()}) {
     return ReorderableListView.builder(
       physics: const NeverScrollableScrollPhysics(),
       shrinkWrap: true,
@@ -724,7 +799,8 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
 
           SubTask st = cacheRoutineTasks.removeAt(oldIndex);
           cacheRoutineTasks.insert(newIndex, st);
-          TextEditingController ct = routineTaskEditingController.removeAt(oldIndex);
+          TextEditingController ct =
+          routineTaskEditingController.removeAt(oldIndex);
           //ct.value = ct.value.copyWith(text: st.name);
           routineTaskEditingController.insert(newIndex, ct);
         });
@@ -738,51 +814,82 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
             title: Row(
               children: [
                 IconButton(
-                  icon: Constants.batteryIcons[cacheRoutineTasks[index].weight]!,
-                  selectedIcon: Constants.selectedBatteryIcons[cacheRoutineTasks[index].weight]!,
+                  icon:
+                  Constants.batteryIcons[cacheRoutineTasks[index].weight]!,
+                  selectedIcon: Constants
+                      .selectedBatteryIcons[cacheRoutineTasks[index].weight]!,
                   onPressed: () {
                     showModalBottomSheet<void>(
                         showDragHandle: true,
                         context: context,
                         builder: (BuildContext context) {
                           return StatefulBuilder(
-                            builder: (context, setState) => Center(
-                                heightFactor: 1,
-                                child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      const Text("Step Strain", style: Constants.headerStyle),
-                                      Padding(
-                                          padding: const EdgeInsets.all(Constants.padding),
-                                          child: Row(
-                                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                                            children: [
-                                              const Icon(Icons.battery_full),
-                                              Expanded(
-                                                child: Slider(
-                                                  value: cacheRoutineTasks[index].weight.toDouble(),
-                                                  max: Constants.maxTaskWeight.toDouble(),
-                                                  label: (cacheRoutineTasks[index].weight >
-                                                          (Constants.maxTaskWeight / 2).floor())
-                                                      ? " ${cacheRoutineTasks[index].weight} ${Constants.lowBattery}"
-                                                      : " ${cacheRoutineTasks[index].weight} ${Constants.fullBattery}",
-                                                  divisions: Constants.maxTaskWeight,
-                                                  onChanged: (value) => setState(() {
-                                                    checkClose = true;
-                                                    cacheRoutineTasks[index].weight = value.toInt();
-                                                  }),
-                                                ),
-                                              ),
-                                              const Icon(Icons.battery_1_bar),
-                                            ],
-                                          )),
-                                    ])),
+                            builder: (context, setState) =>
+                                Center(
+                                    heightFactor: 1,
+                                    child: Column(
+                                        mainAxisAlignment: MainAxisAlignment
+                                            .center,
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          const Text("Step Strain",
+                                              style: Constants.headerStyle),
+                                          Padding(
+                                              padding: const EdgeInsets.all(
+                                                  Constants.padding),
+                                              child: Row(
+                                                mainAxisAlignment:
+                                                MainAxisAlignment.spaceEvenly,
+                                                children: [
+                                                  const Icon(
+                                                      Icons.battery_full),
+                                                  Expanded(
+                                                    child: Slider(
+                                                      value:
+                                                      cacheRoutineTasks[index]
+                                                          .weight
+                                                          .toDouble(),
+                                                      max: Constants
+                                                          .maxTaskWeight
+                                                          .toDouble(),
+                                                      label: (cacheRoutineTasks[
+                                                      index]
+                                                          .weight >
+                                                          (Constants
+                                                              .maxTaskWeight /
+                                                              2)
+                                                              .floor())
+                                                          ? " ${cacheRoutineTasks[index]
+                                                          .weight} ${Constants
+                                                          .lowBattery}"
+                                                          : " ${cacheRoutineTasks[index]
+                                                          .weight} ${Constants
+                                                          .fullBattery}",
+                                                      divisions:
+                                                      Constants.maxTaskWeight,
+                                                      onChanged: (value) =>
+                                                          setState(() {
+                                                            checkClose = true;
+                                                            cacheRoutineTasks[index]
+                                                                .weight =
+                                                                value.toInt();
+                                                          }),
+                                                    ),
+                                                  ),
+                                                  const Icon(
+                                                      Icons.battery_1_bar),
+                                                ],
+                                              )),
+                                        ])),
                           );
-                        }).whenComplete(() => setState(() {
-                          routine.weight = routineProvider.calculateWeight(routineTasks: cacheRoutineTasks);
-                          routine.realDuration = routineProvider.calculateRealDuration(
-                              weight: routine.weight, duration: routine.expectedDuration);
+                        }).whenComplete(() =>
+                        setState(() {
+                          routine.weight = routineProvider.calculateWeight(
+                              routineTasks: cacheRoutineTasks);
+                          routine.realDuration =
+                              routineProvider.calculateRealDuration(
+                                  weight: routine.weight,
+                                  duration: routine.expectedDuration);
                         }));
                   },
                 ),
@@ -799,15 +906,17 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
                         cacheRoutineTasks[index].name = value;
                         routineTaskEditingController[index].value =
                             routineTaskEditingController[index].value.copyWith(
-                                  text: value,
-                                  selection: TextSelection.collapsed(offset: value.length),
-                                );
+                              text: value,
+                              selection: TextSelection.collapsed(
+                                  offset: value.length),
+                            );
                       }),
                 ),
               ],
             ),
             value: cacheRoutineTasks[index].completed,
-            onChanged: (bool? value) => setState(() {
+            onChanged: (bool? value) =>
+                setState(() {
                   checkClose = true;
                   cacheRoutineTasks[index].completed = value!;
                 }),
@@ -815,24 +924,27 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
             // Delete Subtask
             secondary: IconButton(
                 icon: const Icon(Icons.delete),
-                onPressed: () => setState(() {
+                onPressed: () =>
+                    setState(() {
                       SubTask st = cacheRoutineTasks.removeAt(index);
                       st = SubTask();
                       cacheRoutineTasks.add(st);
-                      TextEditingController ct = routineTaskEditingController.removeAt(index);
+                      TextEditingController ct =
+                      routineTaskEditingController.removeAt(index);
                       ct.value = ct.value.copyWith(text: st.name);
                       routineTaskEditingController.add(ct);
 
                       shownTasks--;
                       shownTasks = max(shownTasks, 0);
-                      routine.weight = routineProvider.calculateWeight(routineTasks: cacheRoutineTasks);
+                      routine.weight = routineProvider.calculateWeight(
+                          routineTasks: cacheRoutineTasks);
                     })));
       },
     );
   }
 
-  ListView buildSubTasksList(
-      {bool smallScreen = false, ScrollPhysics physics = const BouncingScrollPhysics()}) {
+  ListView buildSubTasksList({bool smallScreen = false,
+    ScrollPhysics physics = const BouncingScrollPhysics()}) {
     return ListView.separated(
       // Possibly need scroll controller.
       physics: physics,
@@ -847,51 +959,82 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
             title: Row(
               children: [
                 IconButton(
-                  icon: Constants.batteryIcons[cacheRoutineTasks[index].weight]!,
-                  selectedIcon: Constants.selectedBatteryIcons[cacheRoutineTasks[index].weight]!,
+                  icon:
+                  Constants.batteryIcons[cacheRoutineTasks[index].weight]!,
+                  selectedIcon: Constants
+                      .selectedBatteryIcons[cacheRoutineTasks[index].weight]!,
                   onPressed: () {
                     showModalBottomSheet<void>(
                         showDragHandle: true,
                         context: context,
                         builder: (BuildContext context) {
                           return StatefulBuilder(
-                            builder: (context, setState) => Center(
-                                heightFactor: 1,
-                                child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      const Text("Step Strain", style: Constants.headerStyle),
-                                      Padding(
-                                          padding: const EdgeInsets.all(Constants.padding),
-                                          child: Row(
-                                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                                            children: [
-                                              const Icon(Icons.battery_full),
-                                              Expanded(
-                                                child: Slider(
-                                                  value: cacheRoutineTasks[index].weight.toDouble(),
-                                                  max: Constants.maxTaskWeight.toDouble(),
-                                                  label: (cacheRoutineTasks[index].weight >
-                                                          (Constants.maxTaskWeight / 2).floor())
-                                                      ? " ${cacheRoutineTasks[index].weight} ${Constants.lowBattery}"
-                                                      : " ${cacheRoutineTasks[index].weight} ${Constants.fullBattery}",
-                                                  divisions: Constants.maxTaskWeight,
-                                                  onChanged: (value) => setState(() {
-                                                    checkClose = true;
-                                                    cacheRoutineTasks[index].weight = value.toInt();
-                                                  }),
-                                                ),
-                                              ),
-                                              const Icon(Icons.battery_1_bar),
-                                            ],
-                                          )),
-                                    ])),
+                            builder: (context, setState) =>
+                                Center(
+                                    heightFactor: 1,
+                                    child: Column(
+                                        mainAxisAlignment: MainAxisAlignment
+                                            .center,
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          const Text("Step Strain",
+                                              style: Constants.headerStyle),
+                                          Padding(
+                                              padding: const EdgeInsets.all(
+                                                  Constants.padding),
+                                              child: Row(
+                                                mainAxisAlignment:
+                                                MainAxisAlignment.spaceEvenly,
+                                                children: [
+                                                  const Icon(
+                                                      Icons.battery_full),
+                                                  Expanded(
+                                                    child: Slider(
+                                                      value:
+                                                      cacheRoutineTasks[index]
+                                                          .weight
+                                                          .toDouble(),
+                                                      max: Constants
+                                                          .maxTaskWeight
+                                                          .toDouble(),
+                                                      label: (cacheRoutineTasks[
+                                                      index]
+                                                          .weight >
+                                                          (Constants
+                                                              .maxTaskWeight /
+                                                              2)
+                                                              .floor())
+                                                          ? " ${cacheRoutineTasks[index]
+                                                          .weight} ${Constants
+                                                          .lowBattery}"
+                                                          : " ${cacheRoutineTasks[index]
+                                                          .weight} ${Constants
+                                                          .fullBattery}",
+                                                      divisions:
+                                                      Constants.maxTaskWeight,
+                                                      onChanged: (value) =>
+                                                          setState(() {
+                                                            checkClose = true;
+                                                            cacheRoutineTasks[index]
+                                                                .weight =
+                                                                value.toInt();
+                                                          }),
+                                                    ),
+                                                  ),
+                                                  const Icon(
+                                                      Icons.battery_1_bar),
+                                                ],
+                                              )),
+                                        ])),
                           );
-                        }).whenComplete(() => setState(() {
-                      routine.weight = routineProvider.calculateWeight(routineTasks: cacheRoutineTasks);
-                      routine.realDuration = routineProvider.calculateRealDuration(
-                              weight: routine.weight, duration: routine.expectedDuration);
+                        }).whenComplete(() =>
+                        setState(() {
+                          routine.weight = routineProvider.calculateWeight(
+                              routineTasks: cacheRoutineTasks);
+                          routine.realDuration =
+                              routineProvider.calculateRealDuration(
+                                  weight: routine.weight,
+                                  duration: routine.expectedDuration);
                         }));
                   },
                 ),
@@ -908,15 +1051,17 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
                         cacheRoutineTasks[index].name = value;
                         routineTaskEditingController[index].value =
                             routineTaskEditingController[index].value.copyWith(
-                                  text: value,
-                                  selection: TextSelection.collapsed(offset: value.length),
-                                );
+                              text: value,
+                              selection: TextSelection.collapsed(
+                                  offset: value.length),
+                            );
                       }),
                 ),
               ],
             ),
             value: cacheRoutineTasks[index].completed,
-            onChanged: (bool? value) => setState(() {
+            onChanged: (bool? value) =>
+                setState(() {
                   checkClose = true;
                   cacheRoutineTasks[index].completed = value!;
                 }),
@@ -924,17 +1069,20 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
             // Delete Subtask
             secondary: IconButton(
                 icon: const Icon(Icons.delete),
-                onPressed: () => setState(() {
+                onPressed: () =>
+                    setState(() {
                       SubTask st = cacheRoutineTasks.removeAt(index);
                       st = SubTask();
                       cacheRoutineTasks.add(st);
-                      TextEditingController ct = routineTaskEditingController.removeAt(index);
+                      TextEditingController ct =
+                      routineTaskEditingController.removeAt(index);
                       ct.value = ct.value.copyWith(text: st.name);
                       routineTaskEditingController.add(ct);
 
                       shownTasks--;
                       shownTasks = max(shownTasks, 0);
-                      routine.weight = routineProvider.calculateWeight(routineTasks: cacheRoutineTasks);
+                      routine.weight = routineProvider.calculateWeight(
+                          routineTasks: cacheRoutineTasks);
                     })));
       },
     );
@@ -945,211 +1093,269 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
       children: [
         Expanded(
             child: Padding(
-          padding: const EdgeInsets.all(Constants.padding),
-          child: buildRoutineName(smallScreen: smallScreen),
-        )),
+              padding: const EdgeInsets.all(Constants.padding),
+              child: buildRoutineName(smallScreen: smallScreen),
+            )),
       ],
     );
   }
 
-  ListTile buildDurationTile(BuildContext context, {bool smallScreen = false}) {
+  ListTile buildDurationTile(
+      {required BuildContext context, bool smallScreen = false}) {
     return ListTile(
       leading: const Icon(Icons.timer_outlined),
       title: (routine.expectedDuration > 0)
           ? Row(
-              children: [
-                Flexible(
-                  child: AutoSizeText(
-                      (smallScreen)
-                          ? Duration(seconds: routine.expectedDuration).toString().split(".").first
-                          : "Expected: ${Duration(seconds: routine.expectedDuration).toString().split(".").first}",
-                      overflow: TextOverflow.visible,
-                      minFontSize: Constants.small,
-                      maxLines: 2,
-                      softWrap: true),
-                ),
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: Constants.innerPadding),
-                  child: Icon(
-                    Icons.timer,
-                  ),
-                ),
-                Flexible(
-                  child: AutoSizeText(
-                      (smallScreen)
-                          ? Duration(seconds: routine.realDuration).toString().split(".").first
-                          : "Actual: ${Duration(seconds: routine.realDuration).toString().split(".").first}",
-                      overflow: TextOverflow.visible,
-                      minFontSize: Constants.small,
-                      maxLines: 2,
-                      softWrap: true),
-                ),
-              ],
-            )
-          : const AutoSizeText("Expected Duration Until Completion: ",
-              overflow: TextOverflow.visible,
-              minFontSize: Constants.small,
-              maxLines: 2,
-              softWrap: true),
-      trailing:(routine.expectedDuration > 0)?  IconButton(
+        children: [
+          Flexible(
+            child: AutoSizeText(
+                (smallScreen)
+                    ? Duration(seconds: routine.expectedDuration)
+                    .toString()
+                    .split(".")
+                    .first
+                    : "Expected: ${Duration(seconds: routine.expectedDuration)
+                    .toString()
+                    .split(".")
+                    .first}",
+                overflow: TextOverflow.visible,
+                minFontSize: Constants.small,
+                maxLines: 2,
+                softWrap: true),
+          ),
+          const Padding(
+            padding:
+            EdgeInsets.symmetric(horizontal: Constants.innerPadding),
+            child: Icon(
+              Icons.timer,
+            ),
+          ),
+          Flexible(
+            child: AutoSizeText(
+                (smallScreen)
+                    ? Duration(seconds: routine.realDuration)
+                    .toString()
+                    .split(".")
+                    .first
+                    : "Actual: ${Duration(seconds: routine.realDuration)
+                    .toString()
+                    .split(".")
+                    .first}",
+                overflow: TextOverflow.visible,
+                minFontSize: Constants.small,
+                maxLines: 2,
+                softWrap: true),
+          ),
+        ],
+      )
+          : const AutoSizeText("Expected Routine Duration: ",
+          overflow: TextOverflow.visible,
+          minFontSize: Constants.small,
+          maxLines: 2,
+          softWrap: true),
+      trailing: (routine.expectedDuration > 0)
+          ? IconButton(
           icon: const Icon(Icons.clear),
-          onPressed: () => setState(() {
-            routine.expectedDuration = 0;
-            routine.realDuration = 0;
-              })) : null,
-      onTap: () => showDialog<int>(
-          context: context,
-          builder: (BuildContext context) {
-            int time = routine.expectedDuration;
-            int hours = time ~/ 3600;
-            time %= 3600;
-            int minutes=  time ~/ 60;
-            time %= 60;
-            int seconds = time;
+          onPressed: () =>
+              setState(() {
+                routine.expectedDuration = 0;
+                routine.realDuration = 0;
+              }))
+          : null,
+      onTap: () =>
+          showDialog<int>(
+              context: context,
+              builder: (BuildContext context) {
+                int time = routine.expectedDuration;
+                int hours = time ~/ 3600;
+                time %= 3600;
+                int minutes = time ~/ 60;
+                time %= 60;
+                int seconds = time;
 
-            return StatefulBuilder(
-              builder: (context, setState) => Dialog(
-                  child: Padding(
-                      padding: const EdgeInsets.all(Constants.innerPadding),
-                      child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Row(
-                                mainAxisSize: MainAxisSize.min,
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Expanded(
-                                      child: AutoSizeText(
-                                    "Hours",
-                                    maxLines: 1,
-                                    minFontSize: Constants.small,
-                                    softWrap: false,
-                                    overflow: TextOverflow.visible,
-                                    textAlign: TextAlign.center,
-                                  )),
-                                  Expanded(
-                                      child: AutoSizeText(
-                                    "Minutes",
-                                    maxLines: 1,
-                                    minFontSize: Constants.small,
-                                    softWrap: false,
-                                    overflow: TextOverflow.visible,
-                                    textAlign: TextAlign.center,
-                                  )),
-                                  Expanded(
-                                      child: AutoSizeText(
-                                    "Seconds",
-                                    maxLines: 1,
-                                    minFontSize: Constants.small,
-                                    softWrap: false,
-                                    overflow: TextOverflow.visible,
-                                    textAlign: TextAlign.center,
-                                  ))
-                                ]),
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                              children: [
-                                Expanded(
-                                  child: NumberPicker(
-                                    textStyle: Constants.numberPickerSecondary(context: context),
-                                    selectedTextStyle:
-                                        Constants.numberPickerPrimary(context: context),
-                                    minValue: 0,
-                                    maxValue: 100,
-                                    value: hours,
-                                    haptics: true,
-                                    onChanged: (value) {
-                                      SemanticsService.announce(
-                                          "$value, hours", Directionality.of(context));
-                                      setState(() => hours = value);
-                                    },
-                                  ),
-                                ),
-                                const Padding(
-                                    padding: EdgeInsets.symmetric(horizontal: Constants.padding),
-                                    child: Text(":", style: Constants.timeColon)),
-                                Expanded(
-                                  child: NumberPicker(
-                                    textStyle: Constants.numberPickerSecondary(context: context),
-                                    selectedTextStyle:
-                                        Constants.numberPickerPrimary(context: context),
-                                    minValue: 0,
-                                    maxValue: 59,
-                                    value: minutes,
-                                    haptics: true,
-                                    onChanged: (value) {
-                                      SemanticsService.announce(
-                                          "$value, minutes", Directionality.of(context));
-                                      setState(() => minutes = value);
-                                    },
-                                  ),
-                                ),
-                                const Padding(
-                                    padding: EdgeInsets.symmetric(horizontal: Constants.padding),
-                                    child: Text(":", style: Constants.timeColon)),
-                                Expanded(
-                                  child: NumberPicker(
-                                    textStyle: Constants.numberPickerSecondary(context: context),
-                                    selectedTextStyle:
-                                        Constants.numberPickerPrimary(context: context),
-                                    minValue: 0,
-                                    maxValue: 59,
-                                    value: seconds,
-                                    haptics: true,
-                                    onChanged: (value) {
-                                      SemanticsService.announce(
-                                          "$value, seconds", Directionality.of(context));
-                                      setState(() => seconds = value);
-                                    },
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 20),
-                            Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
-                              Expanded(
-                                child: Padding(
-                                  padding: const EdgeInsets.only(right: Constants.padding),
-                                  child: FilledButton.tonalIcon(
-                                      icon: const Icon(Icons.close_outlined),
-                                      onPressed: () => Navigator.pop(context, 0),
-                                      label: const AutoSizeText("Cancel",
-                                          softWrap: false,
-                                          overflow: TextOverflow.visible,
-                                          maxLines: 1,
-                                          minFontSize: Constants.small)),
-                                ),
-                              ),
-                              Expanded(
-                                child: Padding(
-                                  padding: const EdgeInsets.only(left: Constants.padding),
-                                  child: FilledButton.icon(
-                                    icon: const Icon(Icons.done_outlined),
-                                    onPressed: () {
-                                      Navigator.pop(
-                                          context, (hours * 3600) + (minutes * 60) + seconds);
-                                    },
-                                    label: const AutoSizeText("Done",
-                                        softWrap: false,
-                                        overflow: TextOverflow.visible,
-                                        maxLines: 1,
-                                        minFontSize: Constants.small),
-                                  ),
-                                ),
-                              )
-                            ])
-                          ]))),
-            );
-          }).then((value) {
-        setState(() {
-          checkClose = true;
-          routine.expectedDuration = value ?? routine.expectedDuration;
-          routine.realDuration =
-              routineProvider.calculateRealDuration(weight: routine.weight, duration: routine.expectedDuration);
-        });
-      }),
+                return StatefulBuilder(
+                  builder: (context, setState) =>
+                      Dialog(
+                          child: Padding(
+                              padding: const EdgeInsets.all(
+                                  Constants.innerPadding),
+                              child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Expanded(
+                                              child: AutoSizeText(
+                                                "Hours",
+                                                maxLines: 1,
+                                                minFontSize: Constants.small,
+                                                softWrap: false,
+                                                overflow: TextOverflow.visible,
+                                                textAlign: TextAlign.center,
+                                              )),
+                                          Expanded(
+                                              child: AutoSizeText(
+                                                "Minutes",
+                                                maxLines: 1,
+                                                minFontSize: Constants.small,
+                                                softWrap: false,
+                                                overflow: TextOverflow.visible,
+                                                textAlign: TextAlign.center,
+                                              )),
+                                          Expanded(
+                                              child: AutoSizeText(
+                                                "Seconds",
+                                                maxLines: 1,
+                                                minFontSize: Constants.small,
+                                                softWrap: false,
+                                                overflow: TextOverflow.visible,
+                                                textAlign: TextAlign.center,
+                                              ))
+                                        ]),
+                                    Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      mainAxisAlignment: MainAxisAlignment
+                                          .spaceEvenly,
+                                      children: [
+                                        Expanded(
+                                          child: NumberPicker(
+                                            textStyle: Constants
+                                                .numberPickerSecondary(
+                                                context: context),
+                                            selectedTextStyle:
+                                            Constants.numberPickerPrimary(
+                                                context: context),
+                                            minValue: 0,
+                                            maxValue: 100,
+                                            value: hours,
+                                            haptics: true,
+                                            onChanged: (value) {
+                                              SemanticsService.announce(
+                                                  "$value, hours",
+                                                  Directionality.of(context));
+                                              setState(() => hours = value);
+                                            },
+                                          ),
+                                        ),
+                                        const Padding(
+                                            padding: EdgeInsets.symmetric(
+                                                horizontal: Constants.padding),
+                                            child:
+                                            Text(":",
+                                                style: Constants.timeColon)),
+                                        Expanded(
+                                          child: NumberPicker(
+                                            textStyle: Constants
+                                                .numberPickerSecondary(
+                                                context: context),
+                                            selectedTextStyle:
+                                            Constants.numberPickerPrimary(
+                                                context: context),
+                                            minValue: 0,
+                                            maxValue: 59,
+                                            value: minutes,
+                                            haptics: true,
+                                            onChanged: (value) {
+                                              SemanticsService.announce(
+                                                  "$value, minutes",
+                                                  Directionality.of(context));
+                                              setState(() => minutes = value);
+                                            },
+                                          ),
+                                        ),
+                                        const Padding(
+                                            padding: EdgeInsets.symmetric(
+                                                horizontal: Constants.padding),
+                                            child:
+                                            Text(":",
+                                                style: Constants.timeColon)),
+                                        Expanded(
+                                          child: NumberPicker(
+                                            textStyle: Constants
+                                                .numberPickerSecondary(
+                                                context: context),
+                                            selectedTextStyle:
+                                            Constants.numberPickerPrimary(
+                                                context: context),
+                                            minValue: 0,
+                                            maxValue: 59,
+                                            value: seconds,
+                                            haptics: true,
+                                            onChanged: (value) {
+                                              SemanticsService.announce(
+                                                  "$value, seconds",
+                                                  Directionality.of(context));
+                                              setState(() => seconds = value);
+                                            },
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 20),
+                                    Row(
+                                        mainAxisAlignment:
+                                        MainAxisAlignment.spaceEvenly,
+                                        children: [
+                                          Expanded(
+                                            child: Padding(
+                                              padding: const EdgeInsets.only(
+                                                  right: Constants.padding),
+                                              child: FilledButton.tonalIcon(
+                                                  icon:
+                                                  const Icon(
+                                                      Icons.close_outlined),
+                                                  onPressed: () =>
+                                                      Navigator.pop(context, 0),
+                                                  label: const AutoSizeText(
+                                                      "Cancel",
+                                                      softWrap: false,
+                                                      overflow: TextOverflow
+                                                          .visible,
+                                                      maxLines: 1,
+                                                      minFontSize: Constants
+                                                          .small)),
+                                            ),
+                                          ),
+                                          Expanded(
+                                            child: Padding(
+                                              padding: const EdgeInsets.only(
+                                                  left: Constants.padding),
+                                              child: FilledButton.icon(
+                                                icon: const Icon(
+                                                    Icons.done_outlined),
+                                                onPressed: () {
+                                                  Navigator.pop(
+                                                      context,
+                                                      (hours * 3600) +
+                                                          (minutes * 60) +
+                                                          seconds);
+                                                },
+                                                label: const AutoSizeText(
+                                                    "Done",
+                                                    softWrap: false,
+                                                    overflow: TextOverflow
+                                                        .visible,
+                                                    maxLines: 1,
+                                                    minFontSize: Constants
+                                                        .small),
+                                              ),
+                                            ),
+                                          )
+                                        ])
+                                  ]))),
+                );
+              }).then((value) {
+            setState(() {
+              checkClose = true;
+              routine.expectedDuration = value ?? routine.expectedDuration;
+              routine.realDuration = routineProvider.calculateRealDuration(
+                  weight: routine.weight, duration: routine.expectedDuration);
+            });
+          }),
     );
   }
 
@@ -1159,16 +1365,19 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
       minFontSize: Constants.medium,
       decoration: InputDecoration(
         isDense: smallScreen,
-        suffixIcon: (routine.name != "" ) ?  IconButton(
+        suffixIcon: (routine.name != "")
+            ? IconButton(
             icon: const Icon(Icons.clear),
             onPressed: () {
               checkClose = true;
               nameEditingController.clear();
               setState(() => routine.name = "");
-            }) : null,
+            })
+            : null,
         contentPadding: const EdgeInsets.all(Constants.innerPadding),
         border: const OutlineInputBorder(
-            borderRadius: BorderRadius.all(Radius.circular(Constants.roundedCorners)),
+            borderRadius:
+            BorderRadius.all(Radius.circular(Constants.roundedCorners)),
             borderSide: BorderSide(
               strokeAlign: BorderSide.strokeAlignOutside,
             )),
@@ -1179,7 +1388,7 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
     );
   }
 
-  IconButton buildCloseButton(BuildContext context) {
+  IconButton buildCloseButton({required BuildContext context}) {
     return IconButton(
         onPressed: () {
           if (checkClose) {
@@ -1205,9 +1414,11 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
                               ),
                             ),
                             Padding(
-                                padding: const EdgeInsets.all(Constants.padding),
+                                padding:
+                                const EdgeInsets.all(Constants.padding),
                                 child: FilledButton.tonalIcon(
-                                  onPressed: () => Navigator.pop(context, false),
+                                  onPressed: () =>
+                                      Navigator.pop(context, false),
                                   label: const Text("Continue Editing"),
                                   icon: const Icon(
                                     Icons.edit_note_outlined,
@@ -1216,10 +1427,6 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
                           ]));
                 }).then((willDiscard) {
               if (willDiscard ?? false) {
-                // If discarding changes, reset back to the cached ToDo.
-                // This likely unnecessary, as changes will not be reflected in the db on discard.
-                // TODO: Remove as necessary
-                routineProvider.curRoutine = prevRoutine;
                 Navigator.pop(context);
               }
             });
