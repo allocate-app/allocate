@@ -445,7 +445,7 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
                             children: [
                               const Flexible(
                                 child: AutoSizeText(
-                                  "Update Reminder",
+                                  "Edit Reminder",
                                   overflow: TextOverflow.visible,
                                   style: Constants.headerStyle,
                                   minFontSize: Constants.medium,
@@ -587,7 +587,7 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
                       softWrap: true,
                       overflow: TextOverflow.visible,
                       maxLines: 2,
-                      minFontSize: Constants.small),
+                      minFontSize: Constants.medium),
                 ),
               ),
               (Constants.midnight != dueTime)
@@ -611,7 +611,7 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
                           dueTime.format(context).toString(),
                           overflow: TextOverflow.visible,
                           softWrap: false,
-                          minFontSize: Constants.medium,
+                          minFontSize: Constants.large,
                           maxLines: 1,
                         ),
                       ),

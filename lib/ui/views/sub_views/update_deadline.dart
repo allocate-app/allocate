@@ -682,7 +682,7 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                         children: [
                           const Flexible(
                             child: AutoSizeText(
-                              "Update Deadline",
+                              "Edit Deadline",
                               overflow: TextOverflow.visible,
                               style: Constants.headerStyle,
                               minFontSize: Constants.medium,
@@ -824,7 +824,7 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                     children: [
                       const Flexible(
                         child: AutoSizeText(
-                          "Update Deadline",
+                          "Edit Deadline",
                           overflow: TextOverflow.visible,
                           style: Constants.headerStyle,
                           minFontSize: Constants.medium,

@@ -25,7 +25,9 @@ import "../../widgets/flushbars.dart";
 import "../../widgets/padded_divider.dart";
 
 class UpdateToDoScreen extends StatefulWidget {
-  const UpdateToDoScreen({Key? key}) : super(key: key);
+  final int? groupID;
+
+  const UpdateToDoScreen({Key? key, this.groupID}) : super(key: key);
 
   @override
   State<UpdateToDoScreen> createState() => _UpdateToDoScreen();
@@ -57,7 +59,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
   String? nameErrorText;
 
   // Group
-  late final TextEditingController groupEditingController;
+  late final SearchController groupEditingController;
   late List<MapEntry<String, int>> searchHistory;
 
   // Description
@@ -118,6 +120,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
     showStartTime =
         Constants.midnight != TimeOfDay.fromDateTime(toDo.startDate);
     showDueTime = Constants.midnight != TimeOfDay.fromDateTime(toDo.dueDate);
+    searchHistory = List.empty(growable: true);
   }
 
   Future<void> initializeControllers() async {
@@ -136,14 +139,22 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
       setState(() => toDo.name = newText);
     });
 
-    String? groupText;
-    if (null != toDo.groupID) {
-      await groupProvider
-          .getGroupByID(id: toDo.groupID!)
-          .then((group) => groupText = group?.name);
-    }
+    groupEditingController = SearchController();
+    groupProvider
+        .getGroupByID(id: toDo.groupID)
+        .then((group) =>
+            setState(() => groupEditingController.text = group?.name ?? ""))
+        .catchError((_) {
+      Flushbar? error;
 
-    groupEditingController = TextEditingController(text: groupText);
+      error = Flushbars.createError(
+        message: "Error with Group Retrieval",
+        context: context,
+        dismissCallback: () => error?.dismiss(),
+      );
+
+      error.show(context);
+    });
     groupEditingController.addListener(() {
       checkClose = true;
       String newText = nameEditingController.text;
@@ -186,7 +197,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
     controller.closeView(group.name);
     setState(() {
       checkClose = true;
-      toDo.groupID = group.id;
+      toDo.groupID = group.localID;
       if (searchHistory.length >= Constants.historyLength) {
         searchHistory.removeLast();
       }
@@ -208,7 +219,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
   bool validateData() {
     bool valid = true;
     if (groupEditingController.text.isEmpty) {
-      toDo.groupID = null;
+      toDo.groupID = widget.groupID;
     }
     if (nameEditingController.text.isEmpty) {
       valid = false;
@@ -831,7 +842,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                     children: [
                       const Flexible(
                         child: AutoSizeText(
-                          "Update Task",
+                          "Edit Task",
                           overflow: TextOverflow.visible,
                           style: Constants.headerStyle,
                           minFontSize: Constants.medium,
@@ -1642,6 +1653,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
         viewConstraints: const BoxConstraints(
             maxHeight: Constants.maxSearchHeightBeforeScroll),
         barHintText: "Search Groups",
+        searchController: groupEditingController,
         suggestionsBuilder: (context, SearchController controller) {
           if (controller.text.isEmpty) {
             if (searchHistory.isNotEmpty) {

@@ -18,6 +18,7 @@ import '../services/isar_service.dart';
 import '../services/notification_service.dart';
 import '../services/supabase_service.dart';
 import '../ui/views/sub_views/create_deadline.dart';
+import '../ui/views/sub_views/create_group.dart';
 import '../ui/views/sub_views/create_reminder.dart';
 import '../ui/views/sub_views/create_routine.dart';
 import '../ui/views/sub_views/create_todo.dart';
@@ -55,28 +56,32 @@ void main() async {
     ChangeNotifierProvider<UserProvider>(create: (_) => UserProvider()),
     ChangeNotifierProxyProvider<UserProvider, ToDoProvider>(
         create: (BuildContext context) => ToDoProvider(
-            user: Provider.of<UserProvider>(context, listen: false).curUser, service: null),
+            user: Provider.of<UserProvider>(context, listen: false).curUser,
+            service: null),
         update: (BuildContext context, UserProvider up, ToDoProvider? tp) {
           tp?.setUser(user: up.curUser);
           return tp ?? ToDoProvider(user: up.curUser, service: null);
         }),
     ChangeNotifierProxyProvider<UserProvider, RoutineProvider>(
         create: (BuildContext context) => RoutineProvider(
-            user: Provider.of<UserProvider>(context, listen: false).curUser, service: null),
+            user: Provider.of<UserProvider>(context, listen: false).curUser,
+            service: null),
         update: (BuildContext context, UserProvider up, RoutineProvider? rp) {
           rp?.setUser(user: up.curUser);
           return rp ?? RoutineProvider(user: up.curUser, service: null);
         }),
     ChangeNotifierProxyProvider<UserProvider, ReminderProvider>(
         create: (BuildContext context) => ReminderProvider(
-            user: Provider.of<UserProvider>(context, listen: false).curUser, service: null),
+            user: Provider.of<UserProvider>(context, listen: false).curUser,
+            service: null),
         update: (BuildContext context, UserProvider up, ReminderProvider? rp) {
           rp?.setUser(user: up.curUser);
           return rp ?? ReminderProvider(user: up.curUser, service: null);
         }),
     ChangeNotifierProxyProvider<UserProvider, DeadlineProvider>(
         create: (BuildContext context) => DeadlineProvider(
-            user: Provider.of<UserProvider>(context, listen: false).curUser, service: null),
+            user: Provider.of<UserProvider>(context, listen: false).curUser,
+            service: null),
         update: (BuildContext context, UserProvider up, DeadlineProvider? dp) {
           dp?.setUser(user: up.curUser);
           return dp ?? DeadlineProvider(user: up.curUser, service: null);
@@ -88,17 +93,18 @@ void main() async {
             toDoService: null),
         update: (BuildContext context, UserProvider up, GroupProvider? gp) {
           gp?.setUser(user: up.curUser);
-          return gp ?? GroupProvider(user: up.curUser, groupService: null, toDoService: null);
+          return gp ??
+              GroupProvider(
+                  user: up.curUser, groupService: null, toDoService: null);
         })
   ], child: UITester()));
-
 }
 
 class UITester extends StatelessWidget {
-   UITester({super.key});
+  UITester({super.key});
 
-  final GlobalKey<ScaffoldMessengerState> rootScaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
-
+  final GlobalKey<ScaffoldMessengerState> rootScaffoldMessengerKey =
+      GlobalKey<ScaffoldMessengerState>();
 
   @override
   Widget build(BuildContext context) {
@@ -163,7 +169,8 @@ class _FormTester extends State<FormTester> with WindowListener {
       appBar: AppBar(
         title: const Text('FormTester'),
       ),
-      body: Center(child: Column(
+      body: Center(
+          child: Column(
         children: [
           const Text('Press the buttons below!'),
           Padding(
@@ -172,98 +179,122 @@ class _FormTester extends State<FormTester> with WindowListener {
               spacing: 8.0,
               runSpacing: 8.0,
               children: [
-                Column(
-                    children: [Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: FloatingActionButton(
-                          onPressed: () => inputDialog(context, dialog: const CreateToDoScreen()),
-                          backgroundColor: Colors.pink,
-                          child: const Text("Create Task")
-                      ),
-                    ), Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: FloatingActionButton(
-                        onPressed: () => inputDialog(context, dialog: (null != Provider.of<ToDoProvider>(context, listen: false).curToDo) ? const UpdateToDoScreen(): const CreateToDoScreen()),
-                        backgroundColor: Colors.green,
-                        child: const Text("Update Task"),
-                      ),
-                    )]
-                ),
+                Column(children: [
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: FloatingActionButton(
+                        onPressed: () => inputDialog(context,
+                            dialog: const CreateToDoScreen()),
+                        backgroundColor: Colors.pink,
+                        child: const Text("Create Task")),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: FloatingActionButton(
+                      onPressed: () => inputDialog(context,
+                          dialog: (null !=
+                                  Provider.of<ToDoProvider>(context,
+                                          listen: false)
+                                      .curToDo)
+                              ? const UpdateToDoScreen()
+                              : const CreateToDoScreen()),
+                      backgroundColor: Colors.green,
+                      child: const Text("Update Task"),
+                    ),
+                  )
+                ]),
 
-                Column(
-                    children: [Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: FloatingActionButton(
-                          onPressed: () => inputDialog(context, dialog: const CreateRoutineScreen()),
-                          backgroundColor: Colors.pink,
-                          child: const Text("Create Routine")
-                      ),
-                    ), Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: FloatingActionButton(
-                        onPressed: () => inputDialog(context, dialog: (null != Provider.of<RoutineProvider>(context, listen: false).curRoutine) ? const UpdateRoutineScreen() : const CreateRoutineScreen()),
-                        backgroundColor: Colors.green,
-                        child: const Text("Update Routine"),
-                      ),
-                    )]
-                ),
+                Column(children: [
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: FloatingActionButton(
+                        onPressed: () => inputDialog(context,
+                            dialog: const CreateRoutineScreen()),
+                        backgroundColor: Colors.pink,
+                        child: const Text("Create Routine")),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: FloatingActionButton(
+                      onPressed: () => inputDialog(context,
+                          dialog: (null !=
+                                  Provider.of<RoutineProvider>(context,
+                                          listen: false)
+                                      .curRoutine)
+                              ? const UpdateRoutineScreen()
+                              : const CreateRoutineScreen()),
+                      backgroundColor: Colors.green,
+                      child: const Text("Update Routine"),
+                    ),
+                  )
+                ]),
 
                 // TODO: finish these
 
-                Column(
-                    children: [Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: FloatingActionButton(
-                          onPressed: () => inputDialog(context, dialog: const CreateDeadlineScreen()),
-                          backgroundColor: Colors.pink,
-                          child: const Text("Create Deadline")
-                      ),
+                Column(children: [
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: FloatingActionButton(
+                        onPressed: () => inputDialog(context,
+                            dialog: const CreateDeadlineScreen()),
+                        backgroundColor: Colors.pink,
+                        child: const Text("Create Deadline")),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: FloatingActionButton(
+                      onPressed: () => inputDialog(context,
+                          dialog: (null !=
+                                  Provider.of<DeadlineProvider>(context,
+                                          listen: false)
+                                      .curDeadline)
+                              ? const UpdateDeadlineScreen()
+                              : const CreateDeadlineScreen()),
+                      backgroundColor: Colors.green,
+                      child: const Text("Update Deadline"),
                     ),
-                      Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: FloatingActionButton(
-                          onPressed: () => inputDialog(context, dialog:(null != Provider.of<DeadlineProvider>(context, listen: false).curDeadline)?  const UpdateDeadlineScreen() : const CreateDeadlineScreen()),
-                          backgroundColor: Colors.green,
-                          child: const Text("Update Deadline"),
-                        ),
-                      )
-                    ]
-                ),
-        Column(
-            children: [Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: FloatingActionButton(
-                  onPressed: () => inputDialog(context, dialog: const CreateReminderScreen()),
-                  backgroundColor: Colors.pink,
-                  child: const Text("Create Reminder")
-              ),
-            ),
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: FloatingActionButton(
-                onPressed: () => inputDialog(context, dialog: (null != Provider.of<ReminderProvider>(context, listen: false).curReminder)?  const UpdateReminderScreen() : const CreateReminderScreen()),
-                backgroundColor: Colors.green,
-                child: const Text("Update Reminder"),
-            ),
-              )
-            ]
-        ),
+                  )
+                ]),
+                Column(children: [
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: FloatingActionButton(
+                        onPressed: () => inputDialog(context,
+                            dialog: const CreateReminderScreen()),
+                        backgroundColor: Colors.pink,
+                        child: const Text("Create Reminder")),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: FloatingActionButton(
+                      onPressed: () => inputDialog(context,
+                          dialog: (null !=
+                                  Provider.of<ReminderProvider>(context,
+                                          listen: false)
+                                      .curReminder)
+                              ? const UpdateReminderScreen()
+                              : const CreateReminderScreen()),
+                      backgroundColor: Colors.green,
+                      child: const Text("Update Reminder"),
+                    ),
+                  )
+                ]),
                 //
-                // Expanded(
-                //   child: Column(
-                //       children: [FloatingActionButton(
-                //           onPressed: () => inputDialog(context, dialog: const CreateGroupScreen()),
-                //           backgroundColor: Colors.pink,
-                //           child: const Text("Create Group")
-                //       ), FloatingActionButton(
-                //         onPressed: () => inputDialog(context, dialog: const UpdateGroupScreen()),
-                //         backgroundColor: Colors.green,
-                //         child: const Text("Update Group"),
-                //       )]
-                //   ),
-                // ),
-
-
+                Column(children: [
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: FloatingActionButton(
+                        onPressed: () => inputDialog(context,
+                            dialog: const CreateGroupScreen()),
+                        backgroundColor: Colors.pink,
+                        child: const Text("Create Group")),
+                  ),
+                  // FloatingActionButton(
+                  // onPressed: () => inputDialog(context, dialog: const UpdateGroupScreen()),
+                  // backgroundColor: Colors.green,
+                  // child: const Text("Update Group"),
+                  // )
+                ]),
               ],
             ),
           ),
@@ -272,9 +303,11 @@ class _FormTester extends State<FormTester> with WindowListener {
     );
   }
 
-  Future<void> inputDialog(BuildContext context, {required Widget dialog}) async  => await showDialog(
-      barrierDismissible: false,
-    useRootNavigator: false,
-    context: context, builder: (BuildContext context) => dialog);
-
+  Future<void> inputDialog(BuildContext context,
+          {required Widget dialog}) async =>
+      await showDialog(
+          barrierDismissible: false,
+          useRootNavigator: false,
+          context: context,
+          builder: (BuildContext context) => dialog);
 }

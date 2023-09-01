@@ -9,6 +9,10 @@ part "group.g.dart";
 @Collection(inheritance: false)
 class Group with EquatableMixin implements Copyable<Group> {
   Id id = Isar.autoIncrement;
+
+  @Index()
+  int? localID;
+
   @Index()
   int customViewIndex = -1;
   @Index()
@@ -21,6 +25,7 @@ class Group with EquatableMixin implements Copyable<Group> {
   @Index()
   DateTime lastUpdated;
 
+  // This may actually be best removed. TODO.
   @ignore
   late List<ToDo> toDos;
 
@@ -28,12 +33,14 @@ class Group with EquatableMixin implements Copyable<Group> {
 
   Group.fromEntity({required Map<String, dynamic> entity})
       : id = entity["id"] as Id,
+        localID = entity["localID"] as int?,
         name = entity["name"] as String,
         description = entity["description"] as String,
         lastUpdated = DateTime.parse(entity["lastUpdated"]);
 
   Map<String, dynamic> toEntity() => {
         "name": name,
+        "localID": localID,
         "description": description,
         "lastUpdated": lastUpdated.toIso8601String()
       };
@@ -53,6 +60,7 @@ class Group with EquatableMixin implements Copyable<Group> {
   @override
   List<Object?> get props =>
       [id, customViewIndex, name, description, isSynced, toDelete, lastUpdated];
+
   @override
   String toString() =>
       "Group(id: $id, customViewIndex: $customViewIndex, name: $name,"

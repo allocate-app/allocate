@@ -148,7 +148,7 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
           realDuration: realDuration,
           routineTasks: routineTasks,
         )
-        .then((value) => Navigator.pop(context))
+        .whenComplete(() => Navigator.pop(context))
         .catchError((e) {
       Flushbar? error;
 

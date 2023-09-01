@@ -10,7 +10,8 @@ import '../util/interfaces/repository/model/group_repository.dart';
 import '../util/interfaces/sortable.dart';
 
 class GroupRepo implements GroupRepository {
-  final SupabaseClient _supabaseClient = SupabaseService.instance.supabaseClient;
+  final SupabaseClient _supabaseClient =
+      SupabaseService.instance.supabaseClient;
   final Isar _isarClient = IsarService.instance.isarClient;
 
   @override
@@ -95,10 +96,13 @@ class GroupRepo implements GroupRepository {
 
     if (null != _supabaseClient.auth.currentSession) {
       ids.clear();
-      List<Map<String, dynamic>> groupEntities = groups.map((group) => group.toEntity()).toList();
+      List<Map<String, dynamic>> groupEntities =
+          groups.map((group) => group.toEntity()).toList();
       for (Map<String, dynamic> groupEntity in groupEntities) {
-        final List<Map<String, dynamic>> response =
-            await _supabaseClient.from("groups").update(groupEntity).select("id");
+        final List<Map<String, dynamic>> response = await _supabaseClient
+            .from("groups")
+            .update(groupEntity)
+            .select("id");
         id = response.last["id"];
         ids.add(id);
       }
@@ -165,10 +169,13 @@ class GroupRepo implements GroupRepository {
         return group.toEntity();
       }).toList();
 
-      final List<Map<String, dynamic>> responses =
-          await _supabaseClient.from("groups").upsert(syncEntities).select("id");
+      final List<Map<String, dynamic>> responses = await _supabaseClient
+          .from("groups")
+          .upsert(syncEntities)
+          .select("id");
 
-      List<int?> ids = responses.map((response) => response["id"] as int?).toList();
+      List<int?> ids =
+          responses.map((response) => response["id"] as int?).toList();
 
       if (ids.any((id) => null == id)) {
         throw FailureToUploadException("Failed to sync groups\n"
@@ -195,7 +202,9 @@ class GroupRepo implements GroupRepository {
         return;
       }
 
-      List<Group> groups = groupEntities.map((group) => Group.fromEntity(entity: group)).toList();
+      List<Group> groups = groupEntities
+          .map((group) => Group.fromEntity(entity: group))
+          .toList();
       await _isarClient.writeTxn(() async {
         await _isarClient.groups.clear();
         for (Group group in groups) {
@@ -206,33 +215,41 @@ class GroupRepo implements GroupRepository {
   }
 
   @override
-  Future<List<Group>> search({required String searchString}) async => await _isarClient.groups
-      .filter()
-      .nameContains(searchString, caseSensitive: false)
-      .limit(5)
-      .findAll();
+  Future<List<Group>> search({required String searchString}) async =>
+      await _isarClient.groups
+          .filter()
+          .nameContains(searchString, caseSensitive: false)
+          .limit(5)
+          .findAll();
 
   @override
   Future<List<Group>> mostRecent({int limit = 50}) async =>
-      await _isarClient.groups.where().sortByLastUpdatedDesc().limit(limit).findAll();
+      await _isarClient.groups
+          .where()
+          .sortByLastUpdatedDesc()
+          .limit(limit)
+          .findAll();
 
   @override
   Future<Group?> getByID({required int id}) async =>
-      await _isarClient.groups.where().idEqualTo(id).findFirst();
+      await _isarClient.groups.where().localIDEqualTo(id).findFirst();
 
   // Basic query logic.
   @override
-  Future<List<Group>> getRepoList({int limit = 50, int offset = 0}) => _isarClient.groups
-      .where()
-      .toDeleteEqualTo(false)
-      .sortByCustomViewIndex()
-      .thenByLastUpdatedDesc()
-      .limit(limit)
-      .findAll();
+  Future<List<Group>> getRepoList({int limit = 50, int offset = 0}) =>
+      _isarClient.groups
+          .where()
+          .toDeleteEqualTo(false)
+          .sortByCustomViewIndex()
+          .thenByLastUpdatedDesc()
+          .limit(limit)
+          .findAll();
 
   @override
   Future<List<Group>> getRepoListBy(
-      {required SortableView<Group> sorter, int limit = 50, int offset = 0}) async {
+      {required SortableView<Group> sorter,
+      int limit = 50,
+      int offset = 0}) async {
     switch (sorter.sortMethod) {
       case SortMethod.name:
         if (sorter.descending) {
@@ -261,6 +278,7 @@ class GroupRepo implements GroupRepository {
 
   Future<List<int>> getDeleteIds() async =>
       _isarClient.groups.filter().toDeleteEqualTo(true).idProperty().findAll();
+
   Future<List<Group>> getUnsynced() async =>
       _isarClient.groups.filter().isSyncedEqualTo(false).findAll();
 }

@@ -4,6 +4,7 @@ import 'dart:developer';
 import 'package:flutter/foundation.dart';
 
 import '../model/task/group.dart';
+import '../model/task/todo.dart';
 import '../model/user/user.dart';
 import '../services/group_service.dart';
 import '../services/todo_service.dart';
@@ -23,6 +24,7 @@ class GroupProvider extends ChangeNotifier {
   late GroupSorter sorter;
 
   User? user;
+
   GroupProvider(
       {this.user, GroupService? groupService, ToDoService? toDoService})
       : _groupService = groupService ?? GroupService(),
@@ -82,6 +84,7 @@ class GroupProvider extends ChangeNotifier {
         name: name,
         description: description ?? "",
         lastUpdated: DateTime.now());
+    curGroup!.localID = curGroup.hashCode;
     try {
       _groupService.createGroup(group: curGroup!);
     } on FailureToCreateException catch (e) {
@@ -136,11 +139,13 @@ class GroupProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> reorderGroupToDos(
-      {required int oldIndex, required int newIndex}) async {
+  Future<List<ToDo>> reorderGroupToDos(
+      {required int oldIndex, required int newIndex, List<ToDo>? toDos}) async {
     try {
-      _toDoService.reorderGroupTasks(
-          toDos: curGroup!.toDos, oldIndex: oldIndex, newIndex: newIndex);
+      return await _toDoService.reorderGroupToDos(
+          toDos: toDos ?? curGroup!.toDos,
+          oldIndex: oldIndex,
+          newIndex: newIndex);
     } on FailureToUpdateException catch (e) {
       log(e.cause);
       return Future.error(e);
@@ -148,7 +153,6 @@ class GroupProvider extends ChangeNotifier {
       log(e.cause);
       return Future.error(e);
     }
-    notifyListeners();
   }
 
   Future<List<Group>> getGroups(
@@ -183,8 +187,8 @@ class GroupProvider extends ChangeNotifier {
   Future<List<Group>> mostRecent({int limit = 5}) async =>
       await _groupService.mostRecent(limit: 5);
 
-  Future<Group?> getGroupByID({required int id}) async =>
-      await _groupService.getGroupByID(id: id);
+  Future<Group?> getGroupByID({int? id}) async =>
+      await _groupService.getGroupByID(id: id ?? curGroup?.id);
 
   Future<void> setGroupByID({required int id}) async =>
       await _groupService.getGroupByID(id: id) ??

@@ -37,13 +37,18 @@ const GroupSchema = CollectionSchema(
       name: r'lastUpdated',
       type: IsarType.dateTime,
     ),
-    r'name': PropertySchema(
+    r'localID': PropertySchema(
       id: 4,
+      name: r'localID',
+      type: IsarType.long,
+    ),
+    r'name': PropertySchema(
+      id: 5,
       name: r'name',
       type: IsarType.string,
     ),
     r'toDelete': PropertySchema(
-      id: 5,
+      id: 6,
       name: r'toDelete',
       type: IsarType.bool,
     )
@@ -54,6 +59,19 @@ const GroupSchema = CollectionSchema(
   deserializeProp: _groupDeserializeProp,
   idName: r'id',
   indexes: {
+    r'localID': IndexSchema(
+      id: 9154622928032500643,
+      name: r'localID',
+      unique: false,
+      replace: false,
+      properties: [
+        IndexPropertySchema(
+          name: r'localID',
+          type: IndexType.value,
+          caseSensitive: false,
+        )
+      ],
+    ),
     r'customViewIndex': IndexSchema(
       id: -5365858424493440132,
       name: r'customViewIndex',
@@ -149,8 +167,9 @@ void _groupSerialize(
   writer.writeString(offsets[1], object.description);
   writer.writeBool(offsets[2], object.isSynced);
   writer.writeDateTime(offsets[3], object.lastUpdated);
-  writer.writeString(offsets[4], object.name);
-  writer.writeBool(offsets[5], object.toDelete);
+  writer.writeLong(offsets[4], object.localID);
+  writer.writeString(offsets[5], object.name);
+  writer.writeBool(offsets[6], object.toDelete);
 }
 
 Group _groupDeserialize(
@@ -162,12 +181,13 @@ Group _groupDeserialize(
   final object = Group(
     description: reader.readStringOrNull(offsets[1]) ?? "",
     lastUpdated: reader.readDateTime(offsets[3]),
-    name: reader.readString(offsets[4]),
+    name: reader.readString(offsets[5]),
   );
   object.customViewIndex = reader.readLong(offsets[0]);
   object.id = id;
   object.isSynced = reader.readBool(offsets[2]);
-  object.toDelete = reader.readBool(offsets[5]);
+  object.localID = reader.readLongOrNull(offsets[4]);
+  object.toDelete = reader.readBool(offsets[6]);
   return object;
 }
 
@@ -187,8 +207,10 @@ P _groupDeserializeProp<P>(
     case 3:
       return (reader.readDateTime(offset)) as P;
     case 4:
-      return (reader.readString(offset)) as P;
+      return (reader.readLongOrNull(offset)) as P;
     case 5:
+      return (reader.readString(offset)) as P;
+    case 6:
       return (reader.readBool(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -211,6 +233,14 @@ extension GroupQueryWhereSort on QueryBuilder<Group, Group, QWhere> {
   QueryBuilder<Group, Group, QAfterWhere> anyId() {
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(const IdWhereClause.any());
+    });
+  }
+
+  QueryBuilder<Group, Group, QAfterWhere> anyLocalID() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(
+        const IndexWhereClause.any(indexName: r'localID'),
+      );
     });
   }
 
@@ -308,6 +338,115 @@ extension GroupQueryWhere on QueryBuilder<Group, Group, QWhereClause> {
         lower: lowerId,
         includeLower: includeLower,
         upper: upperId,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<Group, Group, QAfterWhereClause> localIDIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'localID',
+        value: [null],
+      ));
+    });
+  }
+
+  QueryBuilder<Group, Group, QAfterWhereClause> localIDIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'localID',
+        lower: [null],
+        includeLower: false,
+        upper: [],
+      ));
+    });
+  }
+
+  QueryBuilder<Group, Group, QAfterWhereClause> localIDEqualTo(int? localID) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'localID',
+        value: [localID],
+      ));
+    });
+  }
+
+  QueryBuilder<Group, Group, QAfterWhereClause> localIDNotEqualTo(
+      int? localID) {
+    return QueryBuilder.apply(this, (query) {
+      if (query.whereSort == Sort.asc) {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'localID',
+              lower: [],
+              upper: [localID],
+              includeUpper: false,
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'localID',
+              lower: [localID],
+              includeLower: false,
+              upper: [],
+            ));
+      } else {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'localID',
+              lower: [localID],
+              includeLower: false,
+              upper: [],
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'localID',
+              lower: [],
+              upper: [localID],
+              includeUpper: false,
+            ));
+      }
+    });
+  }
+
+  QueryBuilder<Group, Group, QAfterWhereClause> localIDGreaterThan(
+    int? localID, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'localID',
+        lower: [localID],
+        includeLower: include,
+        upper: [],
+      ));
+    });
+  }
+
+  QueryBuilder<Group, Group, QAfterWhereClause> localIDLessThan(
+    int? localID, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'localID',
+        lower: [],
+        upper: [localID],
+        includeUpper: include,
+      ));
+    });
+  }
+
+  QueryBuilder<Group, Group, QAfterWhereClause> localIDBetween(
+    int? lowerLocalID,
+    int? upperLocalID, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'localID',
+        lower: [lowerLocalID],
+        includeLower: includeLower,
+        upper: [upperLocalID],
         includeUpper: includeUpper,
       ));
     });
@@ -924,6 +1063,74 @@ extension GroupQueryFilter on QueryBuilder<Group, Group, QFilterCondition> {
     });
   }
 
+  QueryBuilder<Group, Group, QAfterFilterCondition> localIDIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'localID',
+      ));
+    });
+  }
+
+  QueryBuilder<Group, Group, QAfterFilterCondition> localIDIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'localID',
+      ));
+    });
+  }
+
+  QueryBuilder<Group, Group, QAfterFilterCondition> localIDEqualTo(int? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'localID',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<Group, Group, QAfterFilterCondition> localIDGreaterThan(
+    int? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'localID',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<Group, Group, QAfterFilterCondition> localIDLessThan(
+    int? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'localID',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<Group, Group, QAfterFilterCondition> localIDBetween(
+    int? lower,
+    int? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'localID',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
   QueryBuilder<Group, Group, QAfterFilterCondition> nameEqualTo(
     String value, {
     bool caseSensitive = true,
@@ -1116,6 +1323,18 @@ extension GroupQuerySortBy on QueryBuilder<Group, Group, QSortBy> {
     });
   }
 
+  QueryBuilder<Group, Group, QAfterSortBy> sortByLocalID() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'localID', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Group, Group, QAfterSortBy> sortByLocalIDDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'localID', Sort.desc);
+    });
+  }
+
   QueryBuilder<Group, Group, QAfterSortBy> sortByName() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'name', Sort.asc);
@@ -1202,6 +1421,18 @@ extension GroupQuerySortThenBy on QueryBuilder<Group, Group, QSortThenBy> {
     });
   }
 
+  QueryBuilder<Group, Group, QAfterSortBy> thenByLocalID() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'localID', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Group, Group, QAfterSortBy> thenByLocalIDDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'localID', Sort.desc);
+    });
+  }
+
   QueryBuilder<Group, Group, QAfterSortBy> thenByName() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'name', Sort.asc);
@@ -1253,6 +1484,12 @@ extension GroupQueryWhereDistinct on QueryBuilder<Group, Group, QDistinct> {
     });
   }
 
+  QueryBuilder<Group, Group, QDistinct> distinctByLocalID() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'localID');
+    });
+  }
+
   QueryBuilder<Group, Group, QDistinct> distinctByName(
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
@@ -1295,6 +1532,12 @@ extension GroupQueryProperty on QueryBuilder<Group, Group, QQueryProperty> {
   QueryBuilder<Group, DateTime, QQueryOperations> lastUpdatedProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'lastUpdated');
+    });
+  }
+
+  QueryBuilder<Group, int?, QQueryOperations> localIDProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'localID');
     });
   }
 

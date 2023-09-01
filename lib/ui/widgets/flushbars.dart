@@ -16,12 +16,13 @@ class Flushbars {
     void Function()? dismissCallback,
   }) =>
       Flushbar(
-        // TODO: Abstract to constants class.
-        animationDuration: const Duration(milliseconds: 300),
+          // TODO: Abstract to constants class.
+          animationDuration: const Duration(milliseconds: 300),
           message: message,
           flushbarPosition: FlushbarPosition.TOP,
           // TODO: Add margins to constants class.
-          margin: const EdgeInsets.all(Constants.padding),
+          margin: const EdgeInsets.symmetric(
+              horizontal: Constants.padding, vertical: Constants.innerPadding),
           padding: const EdgeInsets.all(Constants.padding),
           borderRadius:
               const BorderRadius.all(Radius.circular(Constants.roundedCorners)),

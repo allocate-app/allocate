@@ -7,7 +7,6 @@ import "package:provider/provider.dart";
 
 import '../../../model/user/user.dart';
 import '../../../providers/deadline_provider.dart';
-import '../../../providers/reminder_provider.dart';
 import '../../../providers/routine_provider.dart';
 import '../../../providers/todo_provider.dart';
 import '../../../providers/user_provider.dart';
@@ -15,6 +14,7 @@ import '../../../util/exceptions.dart';
 import '../../../util/interfaces/crossbuild.dart';
 import '../../app_router.dart';
 import "../sub_views.dart";
+import 'my_day.dart';
 
 // This will need AutotabsRouter of some sort.
 // Also, Adaptive Layout.
@@ -36,7 +36,9 @@ class _HomeScreen extends State<HomeScreen> implements CrossBuild {
   static const List<NavigationDrawerDestination> destinations = [
     // HOME - My Day
     NavigationDrawerDestination(
-        icon: Icon(Icons.house_outlined), label: Text("Home"), selectedIcon: Icon(Icons.house)),
+        icon: Icon(Icons.house_outlined),
+        label: Text("Home"),
+        selectedIcon: Icon(Icons.house)),
 
     // Notifications (ie, overdue)
     NavigationDrawerDestination(
@@ -58,16 +60,20 @@ class _HomeScreen extends State<HomeScreen> implements CrossBuild {
 
     // Uh, More if needed.
   ];
+
   @override
   void initState() {
     super.initState();
 
     // TODO: Clean up aggregate logic. Factor into method.
     // User verification can go -> Is handled in splash scrn.
-    final UserProvider userProvider = Provider.of<UserProvider>(context, listen: false);
+    final UserProvider userProvider =
+        Provider.of<UserProvider>(context, listen: false);
 
-    final RoutineProvider routineProvider = Provider.of<RoutineProvider>(context, listen: false);
-    final ToDoProvider toDoProvider = Provider.of<ToDoProvider>(context, listen: false);
+    final RoutineProvider routineProvider =
+        Provider.of<RoutineProvider>(context, listen: false);
+    final ToDoProvider toDoProvider =
+        Provider.of<ToDoProvider>(context, listen: false);
     Future.wait([
       userProvider.loadedUser,
       toDoProvider.getMyDayWeight(),
@@ -91,7 +97,8 @@ class _HomeScreen extends State<HomeScreen> implements CrossBuild {
 
         //Provider.of<ReminderProvider>(context, listen: false).checkRepeating(now: now);
 
-        Provider.of<DeadlineProvider>(context, listen: false).checkRepeating(now: now);
+        Provider.of<DeadlineProvider>(context, listen: false)
+            .checkRepeating(now: now);
       }
 
       user!.lastOpened = now;
@@ -100,8 +107,9 @@ class _HomeScreen extends State<HomeScreen> implements CrossBuild {
     }).catchError((e) {
       UserException userException = e as UserException;
       log(userException.cause);
-      return context.router
-          .replace((null == userProvider.curUser) ? const InitUserRoute() : const HomeRoute());
+      return context.router.replace((null == userProvider.curUser)
+          ? const InitUserRoute()
+          : const HomeRoute());
     }, test: (e) => e is UserException);
   }
 
@@ -124,7 +132,8 @@ class _HomeScreen extends State<HomeScreen> implements CrossBuild {
           // Children are the other thingies
           NavigationDrawer(
             selectedIndex: selectedPageIndex,
-            onDestinationSelected: (int index) => setState(() => selectedPageIndex = index),
+            onDestinationSelected: (int index) =>
+                setState(() => selectedPageIndex = index),
             children: [
               // Header -- Search Bar? User settings
               Container(),
@@ -153,13 +162,15 @@ class _HomeScreen extends State<HomeScreen> implements CrossBuild {
         body: SafeArea(child: [MyDayScreen()][selectedPageIndex]),
         drawer: NavigationDrawer(
           selectedIndex: selectedPageIndex,
-          onDestinationSelected: (int index) => setState(() => selectedPageIndex = index),
+          onDestinationSelected: (int index) =>
+              setState(() => selectedPageIndex = index),
           children: [],
         ),
         floatingActionButton: FloatingActionButton(
           onPressed: () => (dayWeight < user!.bandwidth)
               ? showDialog(
-                  context: context, builder: (BuildContext context) => const CreateToDoScreen())
+                  context: context,
+                  builder: (BuildContext context) => const CreateToDoScreen())
               : null,
         ));
   }

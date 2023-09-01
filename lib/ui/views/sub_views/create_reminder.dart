@@ -36,10 +36,10 @@ class _CreateReminderScreen extends State<CreateReminderScreen> {
 
   @override
   void initState() {
+    super.initState();
     initializeProviders();
     initializeParameters();
     initializeControllers();
-    super.initState();
   }
 
   void initializeProviders() {
@@ -399,7 +399,7 @@ class _CreateReminderScreen extends State<CreateReminderScreen> {
     mergeDateTimes();
     await reminderProvider
         .createReminder(name: name, dueDate: dueDate)
-        .then((value) => Navigator.pop(context))
+        .whenComplete(() => Navigator.pop(context))
         .catchError((e) {
       Flushbar? error;
 

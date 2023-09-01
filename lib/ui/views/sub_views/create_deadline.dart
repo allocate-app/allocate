@@ -501,7 +501,7 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
           repeatDays: weekDays,
           repeatSkip: repeatSkip,
         )
-        .then((value) => Navigator.pop(context))
+        .whenComplete(() => Navigator.pop(context))
         .catchError((e) {
       Flushbar? error;
 

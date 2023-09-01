@@ -26,6 +26,7 @@ class ToDoProvider extends ChangeNotifier {
   late ToDoSorter sorter;
 
   User? user;
+
   ToDoProvider({this.user, ToDoService? service})
       : _toDoService = service ?? ToDoService() {
     sorter = user?.toDoSorter ?? ToDoSorter();
@@ -65,6 +66,7 @@ class ToDoProvider extends ChangeNotifier {
   }
 
   bool get descending => sorter.descending;
+
   int calculateRealDuration({int? weight, int? duration}) =>
       _toDoService.calculateRealDuration(weight: weight, duration: duration);
 
@@ -199,6 +201,22 @@ class ToDoProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> updateBatch() async {
+    for (ToDo toDo in toDos) {
+      toDo.lastUpdated = DateTime.now();
+    }
+    try {
+      _toDoService.updateBatch(toDos: toDos);
+    } on FailureToUploadException catch (e) {
+      log(e.cause);
+      return Future.error(e);
+    } on FailureToUpdateException catch (e) {
+      log(e.cause);
+      return Future.error(e);
+    }
+    notifyListeners();
+  }
+
   Future<void> deleteToDo() async {
     try {
       _toDoService.deleteToDo(toDo: curToDo!);
@@ -210,10 +228,10 @@ class ToDoProvider extends ChangeNotifier {
   }
 
   Future<void> reorderToDos(
-      {required int oldIndex, required int newIndex}) async {
+      {required int oldIndex, required int newIndex, List<ToDo>? toDos}) async {
     try {
       _toDoService.reorderTodos(
-          toDos: toDos, oldIndex: oldIndex, newIndex: newIndex);
+          toDos: toDos ?? this.toDos, oldIndex: oldIndex, newIndex: newIndex);
     } on FailureToUpdateException catch (e) {
       log(e.cause);
       return Future.error(e);
@@ -273,7 +291,7 @@ class ToDoProvider extends ChangeNotifier {
   Future<List<ToDo>> mostRecent({int limit = 5}) async =>
       await _toDoService.mostRecent(limit: 5);
 
-  Future<ToDo?> getToDoByID({required int id}) async =>
+  Future<ToDo?> getToDoByID({int? id}) async =>
       await _toDoService.getToDoByID(id: id);
 
   Future<void> setToDoByID({required int id}) async =>
@@ -307,6 +325,11 @@ class ToDoProvider extends ChangeNotifier {
   Future<void> setToDosBy({int limit = 50, int offset = 0}) async {
     toDos = await _toDoService.getToDosBy(
         toDoSorter: sorter, limit: limit, offset: offset);
+  }
+
+  Future<List<ToDo>> getByGroupID(
+      {int? id, int limit = 50, int offset = 0}) async {
+    return await _toDoService.getByGroup(groupID: id ?? curToDo?.groupID);
   }
 
   Future<List<ToDo>> getMyDay({int limit = 50, int offset = 0}) async =>
