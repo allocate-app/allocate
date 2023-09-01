@@ -27,6 +27,7 @@ class CreateGroupScreen extends StatefulWidget {
 class _CreateGroupScreen extends State<CreateGroupScreen> {
   late bool checkClose;
   late bool expanded;
+  late bool allData;
 
   late bool loading;
   late int offset;
@@ -73,6 +74,7 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
 
   void initializeParameters() {
     loading = false;
+    allData = false;
     checkClose = false;
     expanded = true;
     name = "";
@@ -86,21 +88,15 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
     mainScrollController = ScrollController();
     subScrollController = ScrollController();
 
-    subScrollController.addListener(() async {
+    mainScrollController.addListener(() async {
       // Bottom: Run the query.
-      if (subScrollController.offset >=
-              subScrollController.position.maxScrollExtent &&
-          !subScrollController.position.outOfRange) {
+      if (mainScrollController.offset >=
+              mainScrollController.position.maxScrollExtent &&
+          !allData) {
         if (!loading) {
           setState(() => loading = true);
           await fetchData();
         }
-      }
-      // Top: Reset everything.
-      if (subScrollController.offset <=
-              subScrollController.position.maxScrollExtent &&
-          !subScrollController.position.outOfRange) {
-        await resetPagination();
       }
     });
 
@@ -135,7 +131,10 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
                 .then((newToDos) {
               offset += newToDos.length;
               toDoProvider.toDos.addAll(newToDos);
-              setState(() => loading = false);
+              setState(() {
+                loading = false;
+                allData = newToDos.length < Constants.limitPerQuery;
+              });
             }).catchError(
               (e) {
                 Flushbar? error;
@@ -245,7 +244,10 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
       toDo.groupID = Constants.initialGroupID;
       toDoProvider.curToDo = toDo;
       await updateGroupToDo(provider: toDoProvider, context: context)
-          .whenComplete(() async => await resetPagination());
+          .whenComplete(() async {
+        allData = false;
+        await resetPagination();
+      });
     }).catchError((_) {
       Flushbar? error;
 
@@ -274,8 +276,10 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
     toDo.groupID = Constants.initialGroupID;
     toDoProvider.curToDo = toDo;
     await updateGroupToDo(provider: toDoProvider, context: context)
-        .whenComplete(() async => await resetPagination())
-        .catchError((e) {
+        .whenComplete(() async {
+      allData = false;
+      await resetPagination();
+    }).catchError((e) {
       Flushbar? error;
 
       error = Flushbars.createError(
@@ -598,8 +602,10 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
                   context: context,
                   builder: (BuildContext context) =>
                       const CreateToDoScreen(groupID: Constants.initialGroupID))
-              .whenComplete(() async => await resetPagination())
-              .catchError((e) {
+              .whenComplete(() async {
+            allData = false;
+            await resetPagination();
+          }).catchError((e) {
             Flushbar? error;
 
             error = Flushbars.createError(
@@ -826,10 +832,11 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
                               icon: const Icon(Icons.remove_circle_outline),
                               onPressed: () async {
                                 value.curToDo = value.toDos[index];
+                                value.toDos.remove(value.toDos[index]);
                                 value.curToDo!.groupID = null;
                                 await updateGroupToDo(
                                         provider: value, context: context)
-                                    .whenComplete(() => resetPagination());
+                                    .whenComplete(() => setState(() {}));
                               }),
                         ),
                         value: value.toDos[index].completed,

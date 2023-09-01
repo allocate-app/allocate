@@ -329,7 +329,8 @@ class ToDoProvider extends ChangeNotifier {
 
   Future<List<ToDo>> getByGroupID(
       {int? id, int limit = 50, int offset = 0}) async {
-    return await _toDoService.getByGroup(groupID: id ?? curToDo?.groupID);
+    return await _toDoService.getByGroup(
+        groupID: id ?? curToDo?.groupID, limit: limit, offset: offset);
   }
 
   Future<List<ToDo>> getMyDay({int limit = 50, int offset = 0}) async =>

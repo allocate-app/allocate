@@ -356,7 +356,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
             e is FailureToCreateException || e is FailureToUploadException);
   }
 
-  handleDelete({required BuildContext context}) async {
+  Future<void> handleDelete({required BuildContext context}) async {
     if (prevToDo.frequency != Frequency.once) {
       bool? updateSingle = await showModalBottomSheet<bool?>(
           showDragHandle: true,

@@ -401,7 +401,7 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
             e is FailureToCreateException || e is FailureToUploadException);
   }
 
-  handleDelete({required BuildContext context}) async {
+  Future<void> handleDelete({required BuildContext context}) async {
     return await reminderProvider.deleteReminder().whenComplete(() {
       Navigator.pop(context);
     }).catchError((e) {

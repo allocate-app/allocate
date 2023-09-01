@@ -17,15 +17,7 @@ import '../providers/user_provider.dart';
 import '../services/isar_service.dart';
 import '../services/notification_service.dart';
 import '../services/supabase_service.dart';
-import '../ui/views/sub_views/create_deadline.dart';
-import '../ui/views/sub_views/create_group.dart';
-import '../ui/views/sub_views/create_reminder.dart';
-import '../ui/views/sub_views/create_routine.dart';
-import '../ui/views/sub_views/create_todo.dart';
-import '../ui/views/sub_views/update_deadline.dart';
-import '../ui/views/sub_views/update_reminder.dart';
-import '../ui/views/sub_views/update_routine.dart';
-import '../ui/views/sub_views/update_todo.dart';
+import '../ui/views/sub_views.dart';
 import '../util/constants.dart';
 
 // Async for windowmanager & desktop apps.
@@ -289,11 +281,20 @@ class _FormTester extends State<FormTester> with WindowListener {
                         backgroundColor: Colors.pink,
                         child: const Text("Create Group")),
                   ),
-                  // FloatingActionButton(
-                  // onPressed: () => inputDialog(context, dialog: const UpdateGroupScreen()),
-                  // backgroundColor: Colors.green,
-                  // child: const Text("Update Group"),
-                  // )
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: FloatingActionButton(
+                      onPressed: () => inputDialog(context,
+                          dialog: (null !=
+                                  Provider.of<GroupProvider>(context,
+                                          listen: false)
+                                      .curGroup)
+                              ? const UpdateGroupScreen()
+                              : const CreateGroupScreen()),
+                      backgroundColor: Colors.green,
+                      child: const Text("Update Group"),
+                    ),
+                  )
                 ]),
               ],
             ),
