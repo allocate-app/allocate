@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 
-class MyDayScreen extends StatefulWidget {
-  MyDayScreen({Key? key}) : super(key: key);
+class GroupScreen extends StatefulWidget {
+  GroupScreen({Key? key}) : super(key: key);
 
   @override
-  State<MyDayScreen> createState() => _MyDayScreen();
+  State<GroupScreen> createState() => _GroupScreen();
 }
 
-class _MyDayScreen extends State<MyDayScreen> {
+class _GroupScreen extends State<GroupScreen> {
   @override
   void initState() {
     super.initState();

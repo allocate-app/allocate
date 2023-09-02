@@ -1,6 +1,6 @@
 import "package:auto_route/auto_route.dart";
 
-import "views/views.dart";
+import "views/routes.dart";
 
 /// Remaining views:
 /// Calendar: -> For Side view.

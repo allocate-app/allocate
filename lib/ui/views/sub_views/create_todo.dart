@@ -2974,8 +2974,12 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                   });
             }
             // This is what to render if no data.
+            return const SizedBox.shrink();
           }
-          return const CircularProgressIndicator();
+          return const Padding(
+            padding: EdgeInsets.all(Constants.padding),
+            child: CircularProgressIndicator(),
+          );
         });
   }
 
