@@ -14,6 +14,7 @@ import '../util/exceptions.dart';
 import '../util/sorting/reminder_sorter.dart';
 
 class ReminderProvider extends ChangeNotifier {
+  bool rebuild = false;
   late Timer syncTimer;
 
   final ReminderService _reminderService;
@@ -23,7 +24,7 @@ class ReminderProvider extends ChangeNotifier {
 
   Reminder? curReminder;
 
-  late List<Reminder> reminders;
+  List<Reminder> reminders = [];
 
   late ReminderSorter sorter;
 

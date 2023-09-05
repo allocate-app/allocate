@@ -61,24 +61,27 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
   void initState() {
     super.initState();
     initializeProviders();
+
     initializeParameters();
     initializeControllers();
-    fetchData();
+
+    if (toDoProvider.rebuild) {
+      toDoProvider.toDos = [];
+      fetchData();
+    }
   }
 
   void initializeProviders() {
     groupProvider = Provider.of<GroupProvider>(context, listen: false);
     toDoProvider = Provider.of<ToDoProvider>(context, listen: false);
-    // This is in prep for an initial query.
-    toDoProvider.toDos = [];
   }
 
   void initializeParameters() {
-    loading = true;
+    loading = toDoProvider.rebuild;
     allData = false;
     checkClose = false;
     expanded = true;
-    offset = 0;
+    offset = (toDoProvider.rebuild) ? 0 : toDoProvider.toDos.length;
     searchHistory = List.empty(growable: true);
   }
 

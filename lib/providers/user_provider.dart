@@ -29,9 +29,6 @@ class UserProvider extends ChangeNotifier {
     init();
   }
 
-  Future<User?> get loadedUser async =>
-      curUser ?? await _userStorageService.getUser();
-
   Future<void> init() async {
     startTimer();
     getUser();
@@ -49,6 +46,7 @@ class UserProvider extends ChangeNotifier {
     });
   }
 
+  // TODO: fix this. Can likely just be update.
   Future<void> createUser(
       {required String userName,
       bool syncOnline = false,

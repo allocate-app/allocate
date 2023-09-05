@@ -62,14 +62,11 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
     initializeProviders();
     initializeParameters();
     initializeControllers();
-    //fetchData();
   }
 
   void initializeProviders() {
     groupProvider = Provider.of<GroupProvider>(context, listen: false);
     toDoProvider = Provider.of<ToDoProvider>(context, listen: false);
-    // This is in prep for an initial query.
-    toDoProvider.toDos = [];
   }
 
   void initializeParameters() {

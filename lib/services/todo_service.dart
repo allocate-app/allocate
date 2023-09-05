@@ -239,7 +239,7 @@ class ToDoService {
   }
 
   // This is for my day.
-  Future<void> reorderTodos(
+  Future<List<ToDo>> reorderTodos(
       {required List<ToDo> toDos,
       required int oldIndex,
       required int newIndex}) async {
@@ -252,6 +252,7 @@ class ToDoService {
       toDos[i].customViewIndex = i;
     }
     _repository.updateBatch(toDos);
+    return toDos;
   }
 
   Future<List<ToDo>> reorderGroupToDos(

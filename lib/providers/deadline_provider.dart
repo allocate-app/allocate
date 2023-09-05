@@ -14,19 +14,22 @@ import '../util/exceptions.dart';
 import '../util/sorting/deadline_sorter.dart';
 
 class DeadlineProvider extends ChangeNotifier {
+  bool rebuild = false;
   late Timer syncTimer;
 
   final DeadlineService _deadlineService;
+
   // Singleton for now. DI later.
   final NotificationService _notificationService = NotificationService.instance;
 
   Deadline? curDeadline;
 
-  late List<Deadline> deadlines;
+  List<Deadline> deadlines = [];
 
   late DeadlineSorter sorter;
 
   User? user;
+
   DeadlineProvider({this.user, DeadlineService? service})
       : _deadlineService = service ?? DeadlineService() {
     sorter = user?.deadlineSorter ?? DeadlineSorter();
@@ -50,6 +53,7 @@ class DeadlineProvider extends ChangeNotifier {
   }
 
   SortMethod get sortMethod => sorter.sortMethod;
+
   set sortMethod(SortMethod method) {
     if (method == sorter.sortMethod) {
       sorter.descending = !sorter.descending;
@@ -198,11 +202,14 @@ class DeadlineProvider extends ChangeNotifier {
   // This also schedules notifications.
   Future<void> checkRepeating({DateTime? now}) async =>
       _deadlineService.checkRepeating(now: now ?? DateTime.now());
+
   Future<void> nextRepeat({Deadline? deadline}) async =>
       _deadlineService.nextRepeatable(deadline: deadline ?? curDeadline!);
+
   // This also cancels upcoming notifications.
   Future<void> deleteFutures({Deadline? deadline}) async =>
       _deadlineService.deleteFutures(deadline: deadline ?? curDeadline!);
+
   Future<void> populateCalendar({DateTime? limit}) async =>
       _deadlineService.populateCalendar(limit: limit ?? DateTime.now());
 

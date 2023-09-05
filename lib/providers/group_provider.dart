@@ -20,7 +20,7 @@ class GroupProvider extends ChangeNotifier {
 
   Group? curGroup;
 
-  late List<Group> groups;
+  List<Group> groups = [];
 
   late GroupSorter sorter;
 

@@ -1,15 +1,22 @@
+import 'package:allocate/ui/views/sub_views.dart';
 import 'package:another_flushbar/flushbar.dart';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
+import '../../../model/task/todo.dart';
 import '../../../providers/todo_provider.dart';
 import '../../../util/constants.dart';
 import '../../../util/enums.dart';
+import '../../../util/exceptions.dart';
 import '../../../util/sorting/todo_sorter.dart';
-import '../../widgets/debug_placeholder.dart';
 import '../../widgets/flushbars.dart';
+
+// TODO: Refactor checkbox listtile and build from scratch
+
+// TODO: Migrate checkbox listtile to updateGroup, createGroup && Completed.
+// Must needs be clean.
 
 class ToDosListScreen extends StatefulWidget {
   const ToDosListScreen({Key? key}) : super(key: key);
@@ -42,21 +49,22 @@ class _ToDosListScreen extends State<ToDosListScreen> {
     initializeControllers();
 
     if (toDoProvider.rebuild) {
-      toDoProvider.toDos = [];
-      fetchData();
+      resetPagination();
       toDoProvider.rebuild = false;
     }
   }
 
   void initializeProviders() {
     toDoProvider = Provider.of<ToDoProvider>(context, listen: false);
+
+    toDoProvider.addListener(resetPagination);
   }
 
   void initializeParameters() {
-    loading = toDoProvider.toDos.isEmpty && toDoProvider.rebuild;
+    loading = toDoProvider.rebuild;
     allData = false;
     checkDelete = true;
-    offset = toDoProvider.toDos.length;
+    offset = (toDoProvider.rebuild) ? 0 : toDoProvider.toDos.length;
     searchHistory = List.empty(growable: true);
   }
 
@@ -133,6 +141,7 @@ class _ToDosListScreen extends State<ToDosListScreen> {
 
   @override
   void dispose() {
+    toDoProvider.removeListener(resetPagination);
     super.dispose();
   }
 
@@ -158,6 +167,7 @@ class _ToDosListScreen extends State<ToDosListScreen> {
                     overflow: TextOverflow.visible,
                     minFontSize: Constants.large),
               ),
+              const Icon(Icons.swap_vert_rounded, size: Constants.smIconSize),
               DropdownButtonHideUnderline(
                 child: DropdownButton<SortMethod>(
                     padding: const EdgeInsets.symmetric(
@@ -177,7 +187,6 @@ class _ToDosListScreen extends State<ToDosListScreen> {
                         // SHOULD JUST BE AT START && SAVE ACCORDINGLY.
                         setState(() {
                           toDoProvider.sortMethod = method;
-                          resetPagination();
                         });
                       }
                     },
@@ -197,12 +206,266 @@ class _ToDosListScreen extends State<ToDosListScreen> {
                         .toList(growable: false)),
               ),
             ]),
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: Constants.padding),
+          child: ListTile(
+            shape: const RoundedRectangleBorder(
+              borderRadius:
+                  BorderRadius.all(Radius.circular(Constants.roundedCorners)),
+            ),
+            onTap: () async => await showDialog(
+              barrierDismissible: false,
+              context: context,
+              builder: (BuildContext context) => const CreateToDoScreen(),
+            ),
+            leading: CircleAvatar(
+              child: Icon(Icons.add_outlined,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant),
+            ),
+            title: const AutoSizeText(
+              "Create New",
+              overflow: TextOverflow.visible,
+              softWrap: false,
+              maxLines: 1,
+              minFontSize: Constants.medium,
+            ),
+          ),
+        ),
         Flexible(
           child: (loading)
               ? const CircularProgressIndicator()
-              : const DebugPlaceholder(debugName: "PAGINATION_TEST"),
+              : buildToDosList(
+                  smallScreen: smallScreen, physics: scrollPhysics),
         ),
       ]),
     );
+  }
+
+  ListView buildToDosList(
+      {bool smallScreen = false,
+      ScrollPhysics physics = const BouncingScrollPhysics()}) {
+    return ListView(
+        controller: mainScrollController,
+        physics: physics,
+        shrinkWrap: true,
+        children: [
+          Consumer<ToDoProvider>(
+            builder: (BuildContext context, ToDoProvider value, Widget? child) {
+              if (value.sortMethod == SortMethod.none) {
+                return buildReorderable(provider: value, context: context);
+              }
+              return buildImmutable(provider: value, context: context);
+            },
+          ),
+          (loading)
+              ? const Padding(
+                  padding: EdgeInsets.all(Constants.padding),
+                  child: Center(child: CircularProgressIndicator()),
+                )
+              : const SizedBox.shrink()
+        ]);
+  }
+
+  ReorderableListView buildReorderable(
+      {required ToDoProvider provider, required BuildContext context}) {
+    return ReorderableListView.builder(
+        physics: const NeverScrollableScrollPhysics(),
+        shrinkWrap: true,
+        itemCount: provider.toDos.length,
+        onReorder: (int oldIndex, int newIndex) async {
+          provider.toDos = await provider
+              .reorderToDos(
+            oldIndex: oldIndex,
+            newIndex: newIndex,
+          )
+              .catchError((e) {
+            Flushbar? error;
+
+            error = Flushbars.createError(
+              message: e.cause,
+              context: context,
+              dismissCallback: () => error?.dismiss(),
+            );
+
+            error.show(context);
+            return List<ToDo>.empty(growable: true);
+          },
+                  test: (e) =>
+                      e is FailureToCreateException ||
+                      e is FailureToUploadException);
+          if (provider.toDos.isEmpty) {
+            resetPagination();
+          }
+        },
+        itemBuilder: (BuildContext context, int index) {
+          return CheckboxListTile(
+              key: ValueKey(index),
+              checkboxShape: const CircleBorder(),
+              controlAffinity: ListTileControlAffinity.leading,
+              shape: const CircleBorder(),
+              title: TextButton(
+                  child: AutoSizeText(provider.toDos[index].name,
+                      overflow: TextOverflow.visible,
+                      style: Constants.headerStyle,
+                      minFontSize: Constants.medium,
+                      softWrap: true,
+                      maxLines: 1),
+                  onPressed: () async {
+                    toDoProvider.curToDo = provider.toDos[index];
+                    await showDialog(
+                        barrierDismissible: false,
+                        useRootNavigator: false,
+                        context: context,
+                        builder: (BuildContext context) =>
+                            const UpdateToDoScreen()).catchError((e) {
+                      Flushbar? error;
+
+                      error = Flushbars.createError(
+                        message: e.cause,
+                        context: context,
+                        dismissCallback: () => error?.dismiss(),
+                      );
+
+                      error.show(context);
+                    },
+                        test: (e) =>
+                            e is FailureToCreateException ||
+                            e is FailureToUploadException);
+                  }),
+              secondary: Padding(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: Constants.innerPadding),
+                child: IconButton(
+                    icon: const Icon(Icons.delete_forever),
+                    onPressed: () async {
+                      // TODO: Modal for delete with checkDelete;
+                      // Factor out into a method.
+                      provider.curToDo = provider.toDos[index];
+
+                      await provider.deleteToDo().catchError((e) {
+                        Flushbar? error;
+
+                        error = Flushbars.createError(
+                          message: e.cause,
+                          context: context,
+                          dismissCallback: () => error?.dismiss(),
+                        );
+
+                        error.show(context);
+                      },
+                          test: (e) =>
+                              e is FailureToDeleteException ||
+                              e is FailureToUploadException);
+                    }),
+              ),
+              value: provider.toDos[index].completed,
+              onChanged: (bool? completed) async {
+                provider.curToDo = provider.toDos[index];
+                provider.curToDo!.completed = completed!;
+                await provider.updateToDo().catchError((e) {
+                  Flushbar? error;
+
+                  error = Flushbars.createError(
+                    message: e.cause,
+                    context: context,
+                    dismissCallback: () => error?.dismiss(),
+                  );
+
+                  error.show(context);
+                },
+                    test: (e) =>
+                        e is FailureToCreateException ||
+                        e is FailureToUploadException);
+              });
+        });
+  }
+
+  ListView buildImmutable(
+      {required ToDoProvider provider, required BuildContext context}) {
+    return ListView.builder(
+        physics: const NeverScrollableScrollPhysics(),
+        shrinkWrap: true,
+        itemCount: provider.toDos.length,
+        itemBuilder: (BuildContext context, int index) {
+          return CheckboxListTile(
+              key: ValueKey(index),
+              checkboxShape: const CircleBorder(),
+              controlAffinity: ListTileControlAffinity.leading,
+              shape: const CircleBorder(),
+              title: TextButton(
+                  child: AutoSizeText(provider.toDos[index].name,
+                      overflow: TextOverflow.visible,
+                      style: Constants.headerStyle,
+                      minFontSize: Constants.medium,
+                      softWrap: true,
+                      maxLines: 1),
+                  onPressed: () async {
+                    toDoProvider.curToDo = provider.toDos[index];
+                    await showDialog(
+                        barrierDismissible: false,
+                        useRootNavigator: false,
+                        context: context,
+                        builder: (BuildContext context) =>
+                            const UpdateToDoScreen()).catchError((e) {
+                      Flushbar? error;
+
+                      error = Flushbars.createError(
+                        message: e.cause,
+                        context: context,
+                        dismissCallback: () => error?.dismiss(),
+                      );
+
+                      error.show(context);
+                    },
+                        test: (e) =>
+                            e is FailureToCreateException ||
+                            e is FailureToUploadException);
+                  }),
+              secondary: Padding(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: Constants.innerPadding),
+                child: IconButton(
+                    icon: const Icon(Icons.delete_forever),
+                    onPressed: () async {
+                      // TODO: Modal for delete with checkDelete;
+
+                      provider.curToDo = provider.toDos[index];
+
+                      await provider.deleteToDo().catchError((e) {
+                        Flushbar? error;
+
+                        error = Flushbars.createError(
+                          message: e.cause,
+                          context: context,
+                          dismissCallback: () => error?.dismiss(),
+                        );
+
+                        error.show(context);
+                      },
+                          test: (e) =>
+                              e is FailureToDeleteException ||
+                              e is FailureToUploadException);
+                    }),
+              ),
+              value: provider.toDos[index].completed,
+              onChanged: (bool? completed) async {
+                provider.curToDo = provider.toDos[index];
+                provider.curToDo!.completed = completed!;
+                await provider.updateToDo().catchError((e) {
+                  Flushbar? error;
+
+                  error = Flushbars.createError(
+                    message: e.cause,
+                    context: context,
+                    dismissCallback: () => error?.dismiss(),
+                  );
+
+                  error.show(context);
+                },
+                    test: (e) =>
+                        e is FailureToCreateException ||
+                        e is FailureToUploadException);
+              });
+        });
   }
 }

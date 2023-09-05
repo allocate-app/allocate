@@ -13,6 +13,7 @@ import "../util/exceptions.dart";
 import '../util/sorting/routine_sorter.dart';
 
 class RoutineProvider extends ChangeNotifier {
+  bool rebuild = false;
   late Timer syncTimer;
 
   final RoutineService _routineService;
@@ -24,7 +25,7 @@ class RoutineProvider extends ChangeNotifier {
   Routine? curAfternoon;
   Routine? curEvening;
 
-  late List<Routine> routines;
+  List<Routine> routines = [];
 
   late RoutineSorter sorter;
 
@@ -107,6 +108,7 @@ class RoutineProvider extends ChangeNotifier {
 
   int calculateRealDuration({int? weight, int? duration}) =>
       _routineService.calculateRealDuration(weight: weight, duration: duration);
+
   int calculateWeight({List<SubTask>? routineTasks}) =>
       _routineService.calculateWeight(routineTasks: routineTasks);
 

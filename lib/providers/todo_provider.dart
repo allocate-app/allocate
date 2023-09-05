@@ -228,10 +228,10 @@ class ToDoProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> reorderToDos(
+  Future<List<ToDo>> reorderToDos(
       {required int oldIndex, required int newIndex, List<ToDo>? toDos}) async {
     try {
-      _toDoService.reorderTodos(
+      return await _toDoService.reorderTodos(
           toDos: toDos ?? this.toDos, oldIndex: oldIndex, newIndex: newIndex);
     } on FailureToUpdateException catch (e) {
       log(e.cause);
