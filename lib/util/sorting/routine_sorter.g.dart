@@ -94,7 +94,7 @@ const _RoutineSortersortMethodEnumValueMap = {
 const _RoutineSortersortMethodValueEnumMap = {
   0: SortMethod.none,
   1: SortMethod.name,
-  2: SortMethod.dueDate,
+  2: SortMethod.due_date,
   3: SortMethod.weight,
   4: SortMethod.priority,
   5: SortMethod.duration,

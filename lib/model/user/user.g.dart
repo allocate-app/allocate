@@ -350,7 +350,7 @@ const _UsercurThemeEnumValueMap = {
 const _UsercurThemeValueEnumMap = {
   0: UserThemeData.light,
   1: UserThemeData.dark,
-  2: UserThemeData.hiContrast,
+  2: UserThemeData.hi_contrast,
 };
 
 Id _userGetId(User object) {

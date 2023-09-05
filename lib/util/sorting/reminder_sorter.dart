@@ -24,10 +24,9 @@ class ReminderSorter implements SortableView<Reminder> {
   Map<String, dynamic> toEntity() =>
       {"descending": descending, "sortMethod": sortMethod.index};
 
-  @override
   static final List<SortMethod> sortMethods = [
     SortMethod.none,
     SortMethod.name,
-    SortMethod.dueDate
+    SortMethod.due_date
   ];
 }

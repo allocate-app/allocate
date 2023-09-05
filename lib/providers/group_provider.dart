@@ -13,6 +13,7 @@ import '../util/exceptions.dart';
 import '../util/sorting/group_sorter.dart';
 
 class GroupProvider extends ChangeNotifier {
+  bool rebuild = false;
   late Timer syncTimer;
   final GroupService _groupService;
   final ToDoService _toDoService;
@@ -122,9 +123,10 @@ class GroupProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> reorderGroups({required List<Group> groups,
-    required int oldIndex,
-    required int newIndex}) async {
+  Future<void> reorderGroups(
+      {required List<Group> groups,
+      required int oldIndex,
+      required int newIndex}) async {
     try {
       _groupService.reorderGroups(
           groups: groups, oldIndex: oldIndex, newIndex: newIndex);
@@ -155,7 +157,7 @@ class GroupProvider extends ChangeNotifier {
   }
 
   Future<List<Group>> getGroups(
-      {required int limit, required int offset}) async =>
+          {required int limit, required int offset}) async =>
       await _groupService.getGroups(limit: limit);
 
   Future<void> setGroups() async {
@@ -167,13 +169,13 @@ class GroupProvider extends ChangeNotifier {
   }
 
   Future<List<Group>> getGroupsBy(
-      {required int limit, required int offset}) async =>
+          {required int limit, required int offset}) async =>
       await _groupService.getGroupsBy(
           sorter: sorter, limit: limit, offset: offset);
 
   Future<void> setGroupsBy() async {
     groups =
-    await _groupService.getGroupsBy(sorter: sorter, limit: 50, offset: 0);
+        await _groupService.getGroupsBy(sorter: sorter, limit: 50, offset: 0);
     for (Group g in groups) {
       g.toDos = await _toDoService.getByGroup(groupID: g.id);
     }
@@ -201,5 +203,5 @@ class GroupProvider extends ChangeNotifier {
 
   Future<void> setGroupByID({required int id}) async =>
       await _groupService.getGroupByID(id: id) ??
-          Group(name: '', lastUpdated: DateTime.now());
+      Group(name: '', lastUpdated: DateTime.now());
 }

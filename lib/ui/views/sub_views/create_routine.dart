@@ -350,7 +350,7 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
                                     padding: const EdgeInsets.symmetric(
                                         horizontal: Constants.innerPadding),
                                     child: Card(
-                                      clipBehavior: Clip.antiAlias,
+                                      clipBehavior: Clip.hardEdge,
                                       elevation: 0,
                                       color: Colors.transparent,
                                       shape: RoundedRectangleBorder(

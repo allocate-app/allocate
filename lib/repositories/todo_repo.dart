@@ -297,7 +297,7 @@ class ToDoRepo implements ToDoRepository {
             .offset(offset)
             .limit(limit)
             .findAll();
-      case SortMethod.dueDate:
+      case SortMethod.due_date:
         if (sorter.descending) {
           return _isarClient.toDos
               .where()

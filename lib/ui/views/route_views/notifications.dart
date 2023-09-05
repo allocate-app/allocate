@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../../widgets/debug_placeholder.dart';
+
 class NotificationsScreen extends StatefulWidget {
-  NotificationsScreen({Key? key}) : super(key: key);
+  const NotificationsScreen({Key? key}) : super(key: key);
 
   @override
   State<NotificationsScreen> createState() => _NotificationsScreen();
@@ -20,6 +22,6 @@ class _NotificationsScreen extends State<NotificationsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    throw UnimplementedError();
+    return const DebugPlaceholder(debugName: "NOTIFICATIONS_SCREEN");
   }
 }

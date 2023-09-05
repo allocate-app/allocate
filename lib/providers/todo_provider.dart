@@ -15,13 +15,14 @@ import '../util/sorting/todo_sorter.dart';
 // NOTE: Use futurebuilder for UI.
 
 class ToDoProvider extends ChangeNotifier {
+  bool rebuild = true;
   late Timer syncTimer;
 
   final ToDoService _toDoService;
 
   ToDo? curToDo;
 
-  late List<ToDo> toDos;
+  List<ToDo> toDos = [];
 
   late ToDoSorter sorter;
 

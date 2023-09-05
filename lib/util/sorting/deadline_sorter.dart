@@ -14,6 +14,7 @@ class DeadlineSorter implements SortableView<Deadline> {
   @override
   @Enumerated(EnumType.ordinal)
   SortMethod sortMethod = SortMethod.none;
+
   DeadlineSorter({this.descending = false, this.sortMethod = SortMethod.none});
 
   DeadlineSorter.fromEntity({required Map<String, dynamic> entity})
@@ -26,7 +27,7 @@ class DeadlineSorter implements SortableView<Deadline> {
   static final List<SortMethod> sortMethods = [
     SortMethod.none,
     SortMethod.name,
-    SortMethod.dueDate,
+    SortMethod.due_date,
     SortMethod.priority
   ];
 }

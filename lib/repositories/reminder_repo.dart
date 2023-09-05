@@ -313,7 +313,7 @@ class ReminderRepo implements ReminderRepository {
               .limit(limit)
               .findAll();
         }
-      case SortMethod.dueDate:
+      case SortMethod.due_date:
         if (sorter.descending) {
           return _isarClient.reminders
               .where()

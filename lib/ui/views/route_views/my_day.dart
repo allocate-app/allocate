@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../../widgets/debug_placeholder.dart';
+
 class MyDayScreen extends StatefulWidget {
-  MyDayScreen({Key? key}) : super(key: key);
+  const MyDayScreen({Key? key}) : super(key: key);
 
   @override
   State<MyDayScreen> createState() => _MyDayScreen();
@@ -20,6 +22,6 @@ class _MyDayScreen extends State<MyDayScreen> {
 
   @override
   Widget build(BuildContext context) {
-    throw UnimplementedError();
+    return const DebugPlaceholder(debugName: "MY DAY");
   }
 }

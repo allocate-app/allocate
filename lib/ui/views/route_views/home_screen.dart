@@ -1,3 +1,4 @@
+import 'package:allocate/ui/views/route_views/user_settings.dart';
 import 'package:another_flushbar/flushbar.dart';
 import "package:auto_route/auto_route.dart";
 import 'package:auto_size_text/auto_size_text.dart';
@@ -11,6 +12,7 @@ import '../../../providers/todo_provider.dart';
 import '../../../providers/user_provider.dart';
 import '../../../services/supabase_service.dart';
 import '../../../util/constants.dart';
+import '../../widgets/desktop_drawer_wrapper.dart';
 import '../../widgets/flushbars.dart';
 import '../../widgets/padded_divider.dart';
 import '../routes.dart';
@@ -28,6 +30,8 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreen extends State<HomeScreen> {
   late int selectedPageIndex;
+  late final PageStorageBucket bucket;
+
   late final ToDoProvider toDoProvider;
   late final RoutineProvider routineProvider;
   late final UserProvider userProvider;
@@ -41,46 +45,68 @@ class _HomeScreen extends State<HomeScreen> {
   //late final ScrollController mainScrollController;
   late final ScrollPhysics scrollPhysics;
 
-  // TODO: Factor this out to constants class once implementations built.
-  static List<MapEntry<NavigationDrawerDestination, Widget>> viewRoutes = [
-    MapEntry(
-        const NavigationDrawerDestination(
-          icon: Icon(Icons.home_outlined),
-          label: Text("Home", overflow: TextOverflow.ellipsis),
-          selectedIcon: Icon(Icons.home),
-        ),
-        MyDayScreen()),
-    MapEntry(
-      const NavigationDrawerDestination(
+  // TODO: Potentially move to constants class.
+  // Separate Screens.
+  static ViewRoute groupScreen =
+  const ViewRoute(view: GroupScreen(), name: "Groups");
+  static ViewRoute settingsScreen = const ViewRoute(
+    view: UserSettingsScreen(),
+    name: "Settings",
+  );
+
+  static List<ViewRoute> viewRoutes = [
+    const ViewRoute(
+      destination: NavigationDrawerDestination(
+        icon: Icon(Icons.home_outlined),
+        label: Text("Home", overflow: TextOverflow.ellipsis),
+        selectedIcon: Icon(Icons.home),
+      ),
+      view: MyDayScreen(),
+      name: "My Day",
+    ),
+
+    const ViewRoute(
+      destination: NavigationDrawerDestination(
         icon: Icon(Icons.notifications_outlined),
         label: Text("Notifications"),
         selectedIcon: Icon(Icons.notifications),
       ),
-      NotificationsScreen(),
+      view: NotificationsScreen(),
+      name: "Notifications",
     ),
 
-    MapEntry(
-        const NavigationDrawerDestination(
+    const ViewRoute(
+        destination: NavigationDrawerDestination(
           icon: Icon(Icons.task_outlined),
-          label: Text("ToDos"),
+          label: Text("Tasks"),
           selectedIcon: Icon(Icons.task),
         ),
-        ToDosScreen()),
+        view: ToDosListScreen(key: PageStorageKey<String>("ToDoListPage")),
+        name: "Tasks"),
 
     // Completed
-
-
-    // Routines
-
-    // This is for group view.
-    MapEntry(
-        const NavigationDrawerDestination(
-          icon: Icon(Icons.workspaces_outlined),
-          label: Text("Everything", overflow: TextOverflow.ellipsis),
-          selectedIcon: Icon(Icons.workspaces),
+    const ViewRoute(
+        destination: NavigationDrawerDestination(
+          icon: Icon(Icons.task_alt_outlined),
+          label: Text("Completed"),
+          selectedIcon: Icon(Icons.task_alt),
         ),
-        GroupScreen())
+        view: CompletedListScreen(),
+        name: "Completed"),
+    // Routines
+    const ViewRoute(
+        destination: NavigationDrawerDestination(
+          icon: Icon(Icons.repeat_outlined),
+          label: Text("Routines"),
+          selectedIcon: Icon(Icons.repeat),
+        ),
+        view: RoutinesListScreen(),
+        name: "Routines"),
+    groupScreen,
+    settingsScreen,
   ];
+
+  List<Widget> views = viewRoutes.map((view) => view.view).toList();
 
   void updateDayWeight() async {
     await toDoProvider.getMyDayWeight().then((weight) {
@@ -108,10 +134,18 @@ class _HomeScreen extends State<HomeScreen> {
     routineProvider.addListener(updateDayWeight);
   }
 
+  void resetProviders() {
+    toDoProvider.rebuild = true;
+    // routineProvider.rebuild = true;
+    // userProvider.rebuild = true
+    groupProvider.rebuild = true;
+  }
+
   void initializeParams() {
     selectedPageIndex = widget.index ?? 0;
     mainLoading = false;
     subLoading = false;
+    bucket = PageStorageBucket();
   }
 
   void initializeControllers() {
@@ -145,82 +179,156 @@ class _HomeScreen extends State<HomeScreen> {
         : buildMobile(context: context);
   }
 
-  Widget buildDesktop({required BuildContext context}) {
-    return Scaffold(
-        body: Row(children: [
-          // TODO: Build a wrapper for standard navdrawer.
-          buildNavigationDrawer(context: context),
+  Widget buildDesktop({required BuildContext context, Widget? view}) {
+    return Row(children: [
+      // This is a workaround for a standard navigation drawer
+      // until m3 spec is fully implemented in flutter.
+      DesktopDrawerWrapper(drawer: buildNavigationDrawer(context: context)),
 
-          Expanded(child: viewRoutes[selectedPageIndex].value)
-        ]));
+      Expanded(
+          child: Scaffold(
+              appBar: buildAppBar(),
+              body: SafeArea(
+                  child: PageStorage(
+                      bucket: bucket,
+                      child: viewRoutes[selectedPageIndex].view))))
+    ]);
   }
 
-  Widget buildMobile({required BuildContext context}) {
+  Widget buildMobile({required BuildContext context, Widget? view}) {
     return Scaffold(
-      drawer: buildNavigationDrawer(context: context),
+        appBar: buildAppBar(),
+        drawer: buildNavigationDrawer(context: context),
+        body: SafeArea(
+            child: PageStorage(
+                bucket: bucket, child: viewRoutes[selectedPageIndex].view)));
+  }
+
+  AppBar buildAppBar() {
+    return AppBar(
+      title: Text(viewRoutes
+          .elementAt(selectedPageIndex)
+          .name),
+      centerTitle: true,
     );
   }
 
   NavigationDrawer buildNavigationDrawer({required BuildContext context}) {
     return NavigationDrawer(
-        onDestinationSelected: (index) =>
-            setState(() => selectedPageIndex = index),
+        onDestinationSelected: (index) {
+          setState(() {
+            selectedPageIndex = index;
+            resetProviders();
+          });
+        },
         selectedIndex: selectedPageIndex,
         children: [
           // User name bar
           // Possible stretch Goal: add user images?
-          ListTile(
-            leading: CircleAvatar(
-                child:
-                Text("${userProvider.curUser?.userName[0].toUpperCase()}")),
-            // Possible TODO: Refactor this to take a first/last name?
-            title: Text("${userProvider.curUser?.userName}"),
-            // Possible TODO: Refactor this to use an enum.
-            subtitle: (null !=
-                SupabaseService.instance.supabaseClient.auth.currentSession)
-                ? const Text("Online: Sync resumed.")
-                : const Text("Offline: Sync paused."),
-            onTap: () {
-              // TODO: Hook up auto-router -> Push to user settings.
-              // TODO Twice: Consider making a blank user -> Only one screen, just update.
-            },
-            trailing: IconButton(
-              icon: const Icon(Icons.search_outlined),
-              selectedIcon: const Icon(Icons.search),
-              onPressed: () {
-                Flushbar? alert;
-                alert = Flushbars.createAlert(
-                  context: context,
-                  message: "Feature not implemented yet, coming soon!",
-                  dismissCallback: () => alert?.dismiss(),
-                );
-              },
+          SizedBox(
+            height: 100,
+            child: DrawerHeader(
+              child: ListTile(
+                shape: const RoundedRectangleBorder(
+                    side: BorderSide(
+                        style: BorderStyle.none,
+                        strokeAlign: BorderSide.strokeAlignCenter),
+                    borderRadius: BorderRadius.all(
+                        Radius.circular(Constants.roundedCorners))),
+                leading: CircleAvatar(
+                    child: Text(
+                        "${userProvider.curUser?.userName[0].toUpperCase()}")),
+                // Possible TODO: Refactor this to take a first/last name?
+                title: Text("${userProvider.curUser?.userName}"),
+                // Possible TODO: Refactor this to use an enum.
+                subtitle: (null !=
+                    SupabaseService
+                        .instance.supabaseClient.auth.currentSession)
+                    ? const Text("Online")
+                    : const Text("Offline"),
+                onTap: () =>
+                    setState(() =>
+                    selectedPageIndex = viewRoutes.indexOf(settingsScreen)),
+                trailing: IconButton(
+                  icon: const Icon(Icons.search_outlined),
+                  selectedIcon: const Icon(Icons.search),
+                  onPressed: () {
+                    Flushbar? alert;
+                    alert = Flushbars.createAlert(
+                      context: context,
+                      message: "Feature not implemented yet, coming soon!",
+                      dismissCallback: () => alert?.dismiss(),
+                    );
+                    alert.show(context);
+                  },
+                ),
+              ),
             ),
           ),
 
-          // ListView for remaining widgets
-          ListView(
-              controller: navScrollController,
-              physics: scrollPhysics,
+          ...viewRoutes
+              .map((view) => view.destination ?? const SizedBox.shrink()),
+          const PaddedDivider(padding: Constants.innerPadding),
+          // Drop down menu for Groups.
+          // TODO: Factor rounded rectangle shape to constants class.
+          // This Card is a workaround until The ExpansionTile inkwell bug is fixed.
+          Card(
+            clipBehavior: Clip.hardEdge,
+            elevation: 0,
+            color: Colors.transparent,
+            shape: const RoundedRectangleBorder(
+              side: BorderSide(
+                  style: BorderStyle.none,
+                  strokeAlign: BorderSide.strokeAlignCenter),
+              borderRadius:
+              BorderRadius.all(Radius.circular(Constants.roundedCorners)),
+            ),
+            child: ExpansionTile(
+              tilePadding: const EdgeInsets.symmetric(
+                  horizontal: Constants.innerPadding + Constants.padding),
+              shape: const RoundedRectangleBorder(
+                side: BorderSide(
+                    style: BorderStyle.none,
+                    strokeAlign: BorderSide.strokeAlignCenter),
+              ),
+              collapsedShape: const RoundedRectangleBorder(
+                  side: BorderSide(
+                      style: BorderStyle.none,
+                      strokeAlign: BorderSide.strokeAlignCenter),
+                  borderRadius:
+                  BorderRadius.all(Radius.circular(Constants.circular))),
+              leading: const Icon(Icons.table_view_outlined),
+              title: const Text(
+                "Groups",
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                softWrap: false,
+              ),
               children: [
-                ...viewRoutes
-                    .sublist(0, viewRoutes.length - 1)
-                    .map((view) => view.key),
-                const PaddedDivider(padding: Constants.innerPadding),
-                // Drop down menu for Groups.
-                ExpansionTile(
-                  title: const AutoSizeText("Groups",
+                // Tile for "See all groups"
+                ListTile(
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: Constants.padding + Constants.innerPadding),
+                    shape: const RoundedRectangleBorder(
+                        side: BorderSide(
+                            style: BorderStyle.none,
+                            strokeAlign: BorderSide.strokeAlignCenter),
+                        borderRadius: BorderRadius.all(
+                            Radius.circular(Constants.roundedCorners))),
+                    leading: const Icon(Icons.workspaces_outlined),
+                    title: const AutoSizeText(
+                      "Everything",
                       maxLines: 1,
-                      overflow: TextOverflow.visible,
+                      overflow: TextOverflow.ellipsis,
                       softWrap: false,
-                      minFontSize: Constants.small),
-                  children: [
-                    // Tile for "See all groups"
-                    viewRoutes.last.key,
-                    buildNavGroupTile(),
-                  ],
-                )
-              ])
+                    ),
+                    onTap: () =>
+                        setState(() =>
+                        selectedPageIndex = viewRoutes.indexOf(groupScreen))),
+                buildNavGroupTile(),
+              ],
+            ),
+          )
         ]);
   }
 
@@ -232,11 +340,21 @@ class _HomeScreen extends State<HomeScreen> {
           final List<Group>? groups = snapshot.data;
           if (null != groups) {
             return ListView.builder(
+                padding: EdgeInsets.zero,
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 itemCount: groups.length,
                 itemBuilder: (BuildContext context, int index) {
                   return ListTile(
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal:
+                          Constants.padding + Constants.innerPadding),
+                      shape: const RoundedRectangleBorder(
+                          side: BorderSide(
+                              style: BorderStyle.none,
+                              strokeAlign: BorderSide.strokeAlignCenter),
+                          borderRadius: BorderRadius.all(
+                              Radius.circular(Constants.roundedCorners))),
                       leading:
                       const Icon(Icons.playlist_add_check_circle_outlined),
                       title: AutoSizeText(groups[index].name,
@@ -271,4 +389,12 @@ class _HomeScreen extends State<HomeScreen> {
       },
     );
   }
+}
+
+class ViewRoute {
+  final String name;
+  final NavigationDrawerDestination? destination;
+  final Widget view;
+
+  const ViewRoute({required this.name, this.destination, required this.view});
 }

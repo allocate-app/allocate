@@ -86,7 +86,8 @@ void main() {
 
   group("IsarService tests", () {
     test("Initialization and closing", () async {
-      expect(null != isarClient, true, reason: "Isar client failed to initialize");
+      expect(null != isarClient, true,
+          reason: "Isar client failed to initialize");
       expect(null != provider, true, reason: "Provider failed to initialize");
 
       int? count = await isarClient?.toDos.count();
@@ -123,7 +124,9 @@ void main() {
       SubTask st1 = SubTask(name: "ST1", weight: 1);
       SubTask st2 = SubTask(name: "ST2", weight: 2);
       await provider!.createToDo(
-          taskType: TaskType.large, name: "TestLG", subTasks: List.filled(5, SubTask()));
+          taskType: TaskType.large,
+          name: "TestLG",
+          subTasks: List.filled(5, SubTask()));
       await Future.delayed(const Duration(seconds: 3));
       // TODO: refactor this once getByID implemented.
       await provider!.setToDos();
@@ -142,7 +145,8 @@ void main() {
       provider!.curToDo = provider!.toDos.firstOrNull ?? provider!.curToDo;
 
       expect(tmp != provider!.curToDo, true,
-          reason: "Data failed to update \n Current: ${provider!.curToDo}, Temp: $tmp");
+          reason:
+              "Data failed to update \n Current: ${provider!.curToDo}, Temp: $tmp");
 
       await Future.delayed(const Duration(seconds: 3));
       // TODO: refactor once getByID() implemented.
@@ -351,7 +355,7 @@ void main() {
       expect(provider!.toDos.length, 2, reason: "DB query failed");
       expect(provider!.toDos.toString(), td2First, reason: "Custom VI failed");
 
-      provider!.sorter.sortMethod = SortMethod.dueDate;
+      provider!.sorter.sortMethod = SortMethod.due_date;
       provider!.sorter.descending = false;
 
       await provider!.setToDosBy();
@@ -538,7 +542,8 @@ void main() {
 
       expect(provider!.toDos.length, 1, reason: "Delete Routine failed");
 
-      expect(provider!.toDos.firstOrNull?.name, "TD1", reason: "Wrong task deleted");
+      expect(provider!.toDos.firstOrNull?.name, "TD1",
+          reason: "Wrong task deleted");
 
       provider!.createToDo(taskType: TaskType.small, name: "TD2");
       await provider!.deleteToDo();
@@ -555,7 +560,8 @@ void main() {
 
       await provider!.setToDos();
 
-      expect(provider!.toDos.length, 1, reason: "Delete Routine failed for multiple delete");
+      expect(provider!.toDos.length, 1,
+          reason: "Delete Routine failed for multiple delete");
 
       provider!.curToDo = provider!.toDos.firstOrNull ?? provider!.curToDo;
 
@@ -587,7 +593,8 @@ void main() {
 
       await Future.delayed(const Duration(seconds: 3));
 
-      provider!.checkRepeating(now: DateTime.now().add(const Duration(days: 1)));
+      provider!
+          .checkRepeating(now: DateTime.now().add(const Duration(days: 1)));
 
       await Future.delayed(const Duration(seconds: 3));
 
@@ -600,14 +607,15 @@ void main() {
 
       provider!.curToDo = provider!.toDos.firstOrNull ?? provider!.curToDo;
 
-      expect(provider!.curToDo!.repeatable, false, reason: "ToDo repeatable not properly removed");
+      expect(provider!.curToDo!.repeatable, false,
+          reason: "ToDo repeatable not properly removed");
 
       // expect(provider!.failCache.isEmpty, true,
       //     reason: "Update/Upload thrown \n ${provider!.failCache.toString()}");
     });
 
     test("Daily Recurrence", () async {
-      provider!.sorter.sortMethod = SortMethod.dueDate;
+      provider!.sorter.sortMethod = SortMethod.due_date;
       provider!.sorter.descending = true;
 
       provider!.createToDo(
@@ -640,15 +648,20 @@ void main() {
       await provider!.setToDosBy();
 
       expect(provider!.toDos.length, 7,
-          reason: "Daily routine failed \n ToDos: ${provider!.toDos.toString()}");
-      expect(provider!.toDos.firstOrNull?.dueDate.isAfter(provider!.curToDo!.dueDate), true,
-          reason: "Repeat copy was unsuccessful \n todos: ${provider!.toDos.toString()}");
+          reason:
+              "Daily routine failed \n ToDos: ${provider!.toDos.toString()}");
+      expect(
+          provider!.toDos.firstOrNull?.dueDate
+              .isAfter(provider!.curToDo!.dueDate),
+          true,
+          reason:
+              "Repeat copy was unsuccessful \n todos: ${provider!.toDos.toString()}");
       // expect(provider!.failCache.isEmpty, true,
       //     reason: "Update/Upload thrown \n ${provider!.failCache.toString()}");
     });
 
     test("Weekly Recurrence", () async {
-      provider!.sorter.sortMethod = SortMethod.dueDate;
+      provider!.sorter.sortMethod = SortMethod.due_date;
       provider!.sorter.descending = true;
 
       provider!.createToDo(
@@ -666,7 +679,8 @@ void main() {
       DateTime testDate = DateTime.now().add(const Duration(days: 1));
 
       for (int i = 1; i < 4; i++) {
-        testDate = Jiffy.parseFromDateTime(testDate).add(weeks: 1, days: 1).dateTime;
+        testDate =
+            Jiffy.parseFromDateTime(testDate).add(weeks: 1, days: 1).dateTime;
 
         provider!.checkRepeating(now: testDate);
         await Future.delayed(const Duration(seconds: 5));
@@ -682,8 +696,12 @@ void main() {
       await provider!.setToDosBy();
 
       expect(provider!.toDos.length, 4,
-          reason: "Weekly routine failed \n ToDos: ${provider!.toDos.toString()}");
-      expect(provider!.toDos.firstOrNull?.dueDate.isAfter(provider!.curToDo!.dueDate), true,
+          reason:
+              "Weekly routine failed \n ToDos: ${provider!.toDos.toString()}");
+      expect(
+          provider!.toDos.firstOrNull?.dueDate
+              .isAfter(provider!.curToDo!.dueDate),
+          true,
           reason:
               "Repeat copy was unsuccessful\n CurToDo: ${provider!.curToDo!.dueDate}, Last: ${provider!.toDos.first.dueDate} \n todos: ${provider!.toDos.toString()}");
 
@@ -692,7 +710,7 @@ void main() {
     });
 
     test("Biweekly recurrence", () async {
-      provider!.sorter.sortMethod = SortMethod.dueDate;
+      provider!.sorter.sortMethod = SortMethod.due_date;
       provider!.sorter.descending = true;
       provider!.syncTimer.cancel();
       provider!.startTimer();
@@ -717,8 +735,12 @@ void main() {
       await Future.delayed(const Duration(seconds: 5));
       await provider!.setToDosBy();
       expect(provider!.toDos.length, 2,
-          reason: "Biweekly Repeat broken\n ToDos: ${provider!.toDos.toString()}");
-      expect(provider!.toDos.firstOrNull?.dueDate.isAfter(provider!.curToDo!.dueDate), true,
+          reason:
+              "Biweekly Repeat broken\n ToDos: ${provider!.toDos.toString()}");
+      expect(
+          provider!.toDos.firstOrNull?.dueDate
+              .isAfter(provider!.curToDo!.dueDate),
+          true,
           reason:
               "Copy Routine didn't work or sorting busted \n ToDos: ${provider!.toDos.toString()}");
       // expect(provider!.failCache.isEmpty, true,
@@ -726,7 +748,7 @@ void main() {
     });
 
     test("Monthly Recurrence", () async {
-      provider!.sorter.sortMethod = SortMethod.dueDate;
+      provider!.sorter.sortMethod = SortMethod.due_date;
       provider!.sorter.descending = true;
 
       provider!.createToDo(
@@ -758,15 +780,20 @@ void main() {
       await provider!.setToDosBy();
 
       expect(provider!.toDos.length, 4,
-          reason: "Monthly routine failed \n ToDos: ${provider!.toDos.toString()}");
-      expect(provider!.toDos.firstOrNull?.dueDate.isAfter(provider!.curToDo!.dueDate), true,
-          reason: "Repeat copy was unsuccessful \n todos: ${provider!.toDos.toString()}");
+          reason:
+              "Monthly routine failed \n ToDos: ${provider!.toDos.toString()}");
+      expect(
+          provider!.toDos.firstOrNull?.dueDate
+              .isAfter(provider!.curToDo!.dueDate),
+          true,
+          reason:
+              "Repeat copy was unsuccessful \n todos: ${provider!.toDos.toString()}");
       // expect(provider!.failCache.isEmpty, true,
       //     reason: "Update/Upload thrown \n ${provider!.failCache.toString()}");
     });
 
     test("Yearly Recurrence", () async {
-      provider!.sorter.sortMethod = SortMethod.dueDate;
+      provider!.sorter.sortMethod = SortMethod.due_date;
       provider!.sorter.descending = true;
 
       provider!.createToDo(
@@ -798,23 +825,30 @@ void main() {
       await provider!.setToDosBy();
 
       expect(provider!.toDos.length, 4,
-          reason: "Yearly routine failed \n ToDos: ${provider!.toDos.toString()}");
-      expect(provider!.toDos.firstOrNull?.dueDate.isAfter(provider!.curToDo!.dueDate), true,
-          reason: "Repeat copy was unsuccessful \n todos: ${provider!.toDos.toString()}");
+          reason:
+              "Yearly routine failed \n ToDos: ${provider!.toDos.toString()}");
+      expect(
+          provider!.toDos.firstOrNull?.dueDate
+              .isAfter(provider!.curToDo!.dueDate),
+          true,
+          reason:
+              "Repeat copy was unsuccessful \n todos: ${provider!.toDos.toString()}");
       // expect(provider!.failCache.isEmpty, true,
       //     reason: "Update/Upload thrown \n ${provider!.failCache.toString()}");
     });
 
     test("Custom recurrence: Monday-Tuesday, biweekly", () async {
-      provider!.sorter.sortMethod = SortMethod.dueDate;
+      provider!.sorter.sortMethod = SortMethod.due_date;
       provider!.sorter.descending = true;
 
       await provider!.createToDo(
           taskType: TaskType.small,
           name: "Mon-Tues Biweekly",
           // This is a Monday.
-          startDate: Jiffy.parse("2023 Jul 24th", pattern: "yyyy MMM do").dateTime,
-          dueDate: Jiffy.parse("2023 Jul 25th", pattern: "yyyy MMM do").dateTime,
+          startDate:
+              Jiffy.parse("2023 Jul 24th", pattern: "yyyy MMM do").dateTime,
+          dueDate:
+              Jiffy.parse("2023 Jul 25th", pattern: "yyyy MMM do").dateTime,
           repeatable: true,
           frequency: Frequency.custom,
           customFreq: CustomFrequency.weekly,
@@ -837,30 +871,36 @@ void main() {
       expect(provider!.toDos.length, 4,
           reason:
               "Mon-Tues biweekly (custom) routine failed \n todos: ${provider!.toDos.toString()}");
-      expect(provider!.toDos.firstOrNull?.dueDate.isAfter(provider!.curToDo!.dueDate), true,
+      expect(
+          provider!.toDos.firstOrNull?.dueDate
+              .isAfter(provider!.curToDo!.dueDate),
+          true,
           reason:
               "Copy Routine didn't work or sorting busted \n todos: ${provider!.toDos.toString()}");
       // expect(provider!.failCache.isEmpty, true,
       //     reason: "Update/Upload thrown \n ${provider!.failCache.toString()}");
     });
     test("Custom recurrence: Mon-Wed-Fri, monthly", () async {
-      provider!.sorter.sortMethod = SortMethod.dueDate;
+      provider!.sorter.sortMethod = SortMethod.due_date;
       provider!.sorter.descending = true;
 
       await provider!.createToDo(
           taskType: TaskType.small,
           name: "Mon-Tues Biweekly",
           // This is a Monday.
-          startDate: Jiffy.parse("2023 Jul 24th", pattern: "yyyy MMM do").dateTime,
-          dueDate: Jiffy.parse("2023 Jul 25th", pattern: "yyyy MMM do").dateTime,
+          startDate:
+              Jiffy.parse("2023 Jul 24th", pattern: "yyyy MMM do").dateTime,
+          dueDate:
+              Jiffy.parse("2023 Jul 25th", pattern: "yyyy MMM do").dateTime,
           repeatable: true,
           frequency: Frequency.custom,
           customFreq: CustomFrequency.monthly,
           repeatSkip: 1,
           repeatDays: [true, false, true, false, true, false, false]);
 
-      DateTime testDate =
-          Jiffy.parseFromDateTime(provider!.curToDo!.startDate).add(months: 1, days: 1).dateTime;
+      DateTime testDate = Jiffy.parseFromDateTime(provider!.curToDo!.startDate)
+          .add(months: 1, days: 1)
+          .dateTime;
 
       for (int i = 0; i < 4; i++) {
         provider!.checkRepeating(now: testDate);
@@ -873,7 +913,10 @@ void main() {
       expect(provider!.toDos.length, 4,
           reason:
               "Mon-Tues biweekly (custom) routine failed \n todos: ${provider!.toDos.toString()}");
-      expect(provider!.toDos.firstOrNull?.dueDate.isAfter(provider!.curToDo!.dueDate), true,
+      expect(
+          provider!.toDos.firstOrNull?.dueDate
+              .isAfter(provider!.curToDo!.dueDate),
+          true,
           reason:
               "Copy Routine didn't work or sorting busted \n todos: ${provider!.toDos.toString()}");
       // expect(provider!.failCache.isEmpty, true,
