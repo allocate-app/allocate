@@ -13,8 +13,6 @@ import '../../../util/sorting/todo_sorter.dart';
 import '../../widgets/flushbars.dart';
 import '../sub_views/update_todo.dart';
 
-// TODO: Refactor completed repo to add sorting.
-
 class CompletedListScreen extends StatefulWidget {
   const CompletedListScreen({Key? key}) : super(key: key);
 
@@ -74,7 +72,7 @@ class _CompletedListScreen extends State<CompletedListScreen> {
       if (mainScrollController.offset >=
               mainScrollController.position.maxScrollExtent &&
           !allData) {
-        if (!loading) {
+        if (!loading && mounted) {
           setState(() => loading = true);
           await fetchData();
         }
@@ -106,12 +104,14 @@ class _CompletedListScreen extends State<CompletedListScreen> {
                     limit: Constants.limitPerQuery, offset: offset)
                 .then((newToDos) {
               offset += newToDos.length;
-
               toDoProvider.toDos.addAll(newToDos);
-              setState(() {
-                loading = false;
-                allData = newToDos.length < Constants.limitPerQuery;
-              });
+              allData = newToDos.length < Constants.limitPerQuery;
+
+              if (mounted) {
+                setState(() {
+                  loading = false;
+                });
+              }
             }).catchError(
               (e) {
                 Flushbar? error;
@@ -204,31 +204,6 @@ class _CompletedListScreen extends State<CompletedListScreen> {
                         .toList(growable: false)),
               ),
             ]),
-        // Padding(
-        //   padding: const EdgeInsets.symmetric(vertical: Constants.padding),
-        //   child: ListTile(
-        //     shape: const RoundedRectangleBorder(
-        //       borderRadius:
-        //           BorderRadius.all(Radius.circular(Constants.roundedCorners)),
-        //     ),
-        //     onTap: () async => await showDialog(
-        //       barrierDismissible: false,
-        //       context: context,
-        //       builder: (BuildContext context) => const CreateToDoScreen(),
-        //     ),
-        //     leading: CircleAvatar(
-        //       child: Icon(Icons.add_outlined,
-        //           color: Theme.of(context).colorScheme.onSurfaceVariant),
-        //     ),
-        //     title: const AutoSizeText(
-        //       "Create New",
-        //       overflow: TextOverflow.visible,
-        //       softWrap: false,
-        //       maxLines: 1,
-        //       minFontSize: Constants.medium,
-        //     ),
-        //   ),
-        // ),
         Flexible(
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: Constants.padding),
@@ -303,7 +278,9 @@ class _CompletedListScreen extends State<CompletedListScreen> {
               key: ValueKey(index),
               checkboxShape: const CircleBorder(),
               controlAffinity: ListTileControlAffinity.leading,
-              shape: const CircleBorder(),
+              shape: const RoundedRectangleBorder(
+                  borderRadius: BorderRadius.all(
+                      Radius.circular(Constants.roundedCorners))),
               title: TextButton(
                   child: AutoSizeText(provider.toDos[index].name,
                       overflow: TextOverflow.visible,
@@ -392,7 +369,9 @@ class _CompletedListScreen extends State<CompletedListScreen> {
               key: ValueKey(index),
               checkboxShape: const CircleBorder(),
               controlAffinity: ListTileControlAffinity.leading,
-              shape: const CircleBorder(),
+              shape: const RoundedRectangleBorder(
+                  borderRadius: BorderRadius.all(
+                      Radius.circular(Constants.roundedCorners))),
               title: TextButton(
                   child: AutoSizeText(provider.toDos[index].name,
                       overflow: TextOverflow.visible,

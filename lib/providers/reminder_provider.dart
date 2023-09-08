@@ -61,6 +61,7 @@ class ReminderProvider extends ChangeNotifier {
       sorter.sortMethod = method;
       sorter.descending = false;
     }
+    user?.reminderSorter = sorter;
     notifyListeners();
   }
 

@@ -1089,38 +1089,44 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             const Row(
+                                mainAxisAlignment: MainAxisAlignment.start,
                                 mainAxisSize: MainAxisSize.min,
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
                                 children: [
                                   Expanded(
-                                      child: AutoSizeText(
-                                    "Hours",
-                                    maxLines: 1,
-                                    minFontSize: Constants.small,
-                                    softWrap: false,
-                                    overflow: TextOverflow.visible,
-                                    textAlign: TextAlign.center,
-                                  )),
-                                  Expanded(
-                                      child: AutoSizeText(
-                                    "Minutes",
-                                    maxLines: 1,
-                                    minFontSize: Constants.small,
-                                    softWrap: false,
-                                    overflow: TextOverflow.visible,
-                                    textAlign: TextAlign.center,
-                                  )),
-                                  Expanded(
-                                      child: AutoSizeText(
-                                    "Seconds",
-                                    maxLines: 1,
-                                    minFontSize: Constants.small,
-                                    softWrap: false,
-                                    overflow: TextOverflow.visible,
-                                    textAlign: TextAlign.center,
-                                  ))
+                                    child: AutoSizeText(
+                                      "Expected Duration",
+                                      style: Constants.headerStyle,
+                                      softWrap: true,
+                                      overflow: TextOverflow.visible,
+                                      maxLines: 2,
+                                      minFontSize: Constants.medium,
+                                    ),
+                                  )
                                 ]),
+                            const Flexible(
+                              child: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                mainAxisSize: MainAxisSize.max,
+                                children: [
+                                  Flexible(
+                                      child: AutoSizeText(
+                                    "Hours | Minutes | Seconds ",
+                                    style: Constants.largeHeaderStyle,
+                                    softWrap: true,
+                                    overflow: TextOverflow.visible,
+                                    maxLines: 1,
+                                    minFontSize: Constants.large,
+                                  )),
+                                  Flexible(
+                                    child: FittedBox(
+                                        fit: BoxFit.fill,
+                                        child: Icon(Icons.timer_outlined,
+                                            size: Constants.medIconSize)),
+                                  ),
+                                ],
+                              ),
+                            ),
                             Row(
                               mainAxisSize: MainAxisSize.min,
                               mainAxisAlignment: MainAxisAlignment.spaceEvenly,

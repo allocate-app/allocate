@@ -48,7 +48,7 @@ class _HomeScreen extends State<HomeScreen> {
   // TODO: Potentially move to constants class.
   // Separate Screens.
   static ViewRoute groupScreen =
-  const ViewRoute(view: GroupScreen(), name: "Groups");
+      const ViewRoute(view: GroupScreen(), name: "Groups");
   static ViewRoute settingsScreen = const ViewRoute(
     view: UserSettingsScreen(),
     name: "Settings",
@@ -136,7 +136,7 @@ class _HomeScreen extends State<HomeScreen> {
 
   void resetProviders() {
     toDoProvider.rebuild = true;
-    // routineProvider.rebuild = true;
+    routineProvider.rebuild = true;
     // userProvider.rebuild = true
     groupProvider.rebuild = true;
   }
@@ -151,7 +151,7 @@ class _HomeScreen extends State<HomeScreen> {
   void initializeControllers() {
     navScrollController = ScrollController();
     scrollPhysics =
-    const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics());
+        const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics());
   }
 
   @override
@@ -164,15 +164,9 @@ class _HomeScreen extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     bool largeScreen =
-    (MediaQuery
-        .of(context)
-        .size
-        .width >= Constants.largeScreen);
+        (MediaQuery.of(context).size.width >= Constants.largeScreen);
     bool smallScreen =
-    (MediaQuery
-        .of(context)
-        .size
-        .width <= Constants.smallScreen);
+        (MediaQuery.of(context).size.width <= Constants.smallScreen);
 
     return (largeScreen)
         ? buildDesktop(context: context)
@@ -206,9 +200,7 @@ class _HomeScreen extends State<HomeScreen> {
 
   AppBar buildAppBar() {
     return AppBar(
-      title: Text(viewRoutes
-          .elementAt(selectedPageIndex)
-          .name),
+      title: Text(viewRoutes.elementAt(selectedPageIndex).name),
       centerTitle: true,
     );
   }
@@ -242,12 +234,11 @@ class _HomeScreen extends State<HomeScreen> {
                 title: Text("${userProvider.curUser?.userName}"),
                 // Possible TODO: Refactor this to use an enum.
                 subtitle: (null !=
-                    SupabaseService
-                        .instance.supabaseClient.auth.currentSession)
+                        SupabaseService
+                            .instance.supabaseClient.auth.currentSession)
                     ? const Text("Online")
                     : const Text("Offline"),
-                onTap: () =>
-                    setState(() =>
+                onTap: () => setState(() =>
                     selectedPageIndex = viewRoutes.indexOf(settingsScreen)),
                 trailing: IconButton(
                   icon: const Icon(Icons.search_outlined),
@@ -281,7 +272,7 @@ class _HomeScreen extends State<HomeScreen> {
                   style: BorderStyle.none,
                   strokeAlign: BorderSide.strokeAlignCenter),
               borderRadius:
-              BorderRadius.all(Radius.circular(Constants.roundedCorners)),
+                  BorderRadius.all(Radius.circular(Constants.roundedCorners)),
             ),
             child: ExpansionTile(
               tilePadding: const EdgeInsets.symmetric(
@@ -296,7 +287,7 @@ class _HomeScreen extends State<HomeScreen> {
                       style: BorderStyle.none,
                       strokeAlign: BorderSide.strokeAlignCenter),
                   borderRadius:
-                  BorderRadius.all(Radius.circular(Constants.circular))),
+                      BorderRadius.all(Radius.circular(Constants.circular))),
               leading: const Icon(Icons.table_view_outlined),
               title: const Text(
                 "Groups",
@@ -322,8 +313,7 @@ class _HomeScreen extends State<HomeScreen> {
                       overflow: TextOverflow.ellipsis,
                       softWrap: false,
                     ),
-                    onTap: () =>
-                        setState(() =>
+                    onTap: () => setState(() =>
                         selectedPageIndex = viewRoutes.indexOf(groupScreen))),
                 buildNavGroupTile(),
               ],
@@ -348,7 +338,7 @@ class _HomeScreen extends State<HomeScreen> {
                   return ListTile(
                       contentPadding: const EdgeInsets.symmetric(
                           horizontal:
-                          Constants.padding + Constants.innerPadding),
+                              Constants.padding + Constants.innerPadding),
                       shape: const RoundedRectangleBorder(
                           side: BorderSide(
                               style: BorderStyle.none,
@@ -356,26 +346,25 @@ class _HomeScreen extends State<HomeScreen> {
                           borderRadius: BorderRadius.all(
                               Radius.circular(Constants.roundedCorners))),
                       leading:
-                      const Icon(Icons.playlist_add_check_circle_outlined),
+                          const Icon(Icons.playlist_add_check_circle_outlined),
                       title: AutoSizeText(groups[index].name,
                           maxLines: 1,
                           overflow: TextOverflow.visible,
                           softWrap: false,
                           minFontSize: Constants.small),
-                      onTap: () async =>
-                      await showDialog(
-                          barrierDismissible: false,
-                          useRootNavigator: false,
-                          context: context,
-                          builder: (BuildContext context) =>
-                          const UpdateGroupScreen())
+                      onTap: () async => await showDialog(
+                              barrierDismissible: false,
+                              useRootNavigator: false,
+                              context: context,
+                              builder: (BuildContext context) =>
+                                  const UpdateGroupScreen())
                           .whenComplete(() => setState(() {})),
                       trailing: (groups[index].toDos.length > 1)
                           ? AutoSizeText("${groups[index].toDos.length}",
-                          maxLines: 1,
-                          overflow: TextOverflow.visible,
-                          softWrap: false,
-                          minFontSize: Constants.small)
+                              maxLines: 1,
+                              overflow: TextOverflow.visible,
+                              softWrap: false,
+                              minFontSize: Constants.small)
                           : null);
                 });
           }

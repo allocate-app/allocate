@@ -46,21 +46,24 @@ class UserProvider extends ChangeNotifier {
     });
   }
 
+  void refreshRoutines() {
+  }
+
+
   // TODO: fix this. Can likely just be update.
-  Future<void> createUser(
-      {required String userName,
-      bool syncOnline = false,
-      bool? isSynced,
-      int? bandwidth,
-      UserThemeData? theme,
-      int? curMornID,
-      int? curAftID,
-      int? curEveID,
-      GroupSorter? groupSorter,
-      DeadlineSorter? deadlineSorter,
-      ReminderSorter? reminderSorter,
-      RoutineSorter? routineSorter,
-      ToDoSorter? toDoSorter}) async {
+  Future<void> createUser({required String userName,
+    bool syncOnline = false,
+    bool? isSynced,
+    int? bandwidth,
+    UserThemeData? theme,
+    int? curMornID,
+    int? curAftID,
+    int? curEveID,
+    GroupSorter? groupSorter,
+    DeadlineSorter? deadlineSorter,
+    ReminderSorter? reminderSorter,
+    RoutineSorter? routineSorter,
+    ToDoSorter? toDoSorter}) async {
     curUser = User(
         userName: userName,
         syncOnline: syncOnline,

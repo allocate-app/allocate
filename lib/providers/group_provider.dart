@@ -59,6 +59,7 @@ class GroupProvider extends ChangeNotifier {
       sorter.sortMethod = method;
       sorter.descending = false;
     }
+    user?.groupSorter = sorter;
     notifyListeners();
   }
 

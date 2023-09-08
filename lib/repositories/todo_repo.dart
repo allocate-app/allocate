@@ -247,6 +247,7 @@ class ToDoRepo implements ToDoRepository {
   Future<List<ToDo>> mostRecent({int limit = 50}) async =>
       await _isarClient.toDos
           .where()
+          .toDeleteEqualTo(false)
           .sortByLastUpdatedDesc()
           .limit(limit)
           .findAll();
@@ -256,10 +257,11 @@ class ToDoRepo implements ToDoRepository {
       await _isarClient.toDos.where().idEqualTo(id).findFirst();
 
   @override
-  Future<List<ToDo>> getRepoList({int limit = 50, int offset = 0}) async =>
+  Future<List<ToDo>> getRepoList(
+          {int limit = 50, int offset = 0, bool completed = false}) async =>
       _isarClient.toDos
           .where()
-          .completedEqualTo(false)
+          .completedEqualTo(completed)
           .filter()
           .toDeleteEqualTo(false)
           .sortByCustomViewIndex()
@@ -272,7 +274,142 @@ class ToDoRepo implements ToDoRepository {
   Future<List<ToDo>> getRepoListBy(
       {int limit = 50,
       int offset = 0,
+      bool completed = false,
       required SortableView<ToDo> sorter}) async {
+    switch (sorter.sortMethod) {
+      case SortMethod.name:
+        if (sorter.descending) {
+          return _isarClient.toDos
+              .where()
+              .completedEqualTo(completed)
+              .filter()
+              .toDeleteEqualTo(false)
+              .sortByNameDesc()
+              .thenByLastUpdated()
+              .offset(offset)
+              .limit(limit)
+              .findAll();
+        }
+        return _isarClient.toDos
+            .where()
+            .completedEqualTo(completed)
+            .filter()
+            .toDeleteEqualTo(false)
+            .sortByName()
+            .thenByLastUpdated()
+            .offset(offset)
+            .limit(limit)
+            .findAll();
+      case SortMethod.due_date:
+        if (sorter.descending) {
+          return _isarClient.toDos
+              .where()
+              .completedEqualTo(completed)
+              .filter()
+              .toDeleteEqualTo(false)
+              .sortByDueDateDesc()
+              .thenByLastUpdated()
+              .offset(offset)
+              .limit(limit)
+              .findAll();
+        }
+        return _isarClient.toDos
+            .where()
+            .completedEqualTo(completed)
+            .filter()
+            .toDeleteEqualTo(false)
+            .sortByDueDate()
+            .thenByLastUpdated()
+            .offset(offset)
+            .limit(limit)
+            .findAll();
+      case SortMethod.weight:
+        if (sorter.descending) {
+          return _isarClient.toDos
+              .where()
+              .completedEqualTo(completed)
+              .filter()
+              .toDeleteEqualTo(false)
+              .sortByWeightDesc()
+              .thenByLastUpdated()
+              .offset(offset)
+              .limit(limit)
+              .findAll();
+        }
+        return _isarClient.toDos
+            .where()
+            .completedEqualTo(completed)
+            .filter()
+            .toDeleteEqualTo(false)
+            .sortByWeight()
+            .thenByLastUpdated()
+            .offset(offset)
+            .limit(limit)
+            .findAll();
+      case SortMethod.priority:
+        if (sorter.descending) {
+          return _isarClient.toDos
+              .where()
+              .completedEqualTo(completed)
+              .filter()
+              .toDeleteEqualTo(false)
+              .sortByPriorityDesc()
+              .thenByLastUpdated()
+              .offset(offset)
+              .limit(limit)
+              .findAll();
+        }
+        return _isarClient.toDos
+            .where()
+            .completedEqualTo(completed)
+            .filter()
+            .toDeleteEqualTo(false)
+            .sortByPriority()
+            .thenByLastUpdated()
+            .offset(offset)
+            .limit(limit)
+            .findAll();
+      case SortMethod.duration:
+        if (sorter.descending) {
+          return _isarClient.toDos
+              .where()
+              .completedEqualTo(completed)
+              .filter()
+              .toDeleteEqualTo(false)
+              .sortByRealDurationDesc()
+              .thenByLastUpdated()
+              .offset(offset)
+              .limit(limit)
+              .findAll();
+        }
+        return _isarClient.toDos
+            .where()
+            .completedEqualTo(completed)
+            .filter()
+            .toDeleteEqualTo(false)
+            .sortByRealDuration()
+            .thenByLastUpdated()
+            .offset(offset)
+            .limit(limit)
+            .findAll();
+      default:
+        return getRepoList(limit: limit, offset: offset, completed: completed);
+    }
+  }
+
+  @override
+  Future<List<ToDo>> getCompleted(
+          {required SortableView<ToDo> sorter,
+          int limit = 50,
+          int offset = 0}) async =>
+      await getRepoListBy(
+          sorter: sorter, limit: limit, offset: offset, completed: true);
+
+  @override
+  Future<List<ToDo>> getMyDay(
+      {required SortableView<ToDo> sorter,
+      int limit = 50,
+      int offset = 0}) async {
     switch (sorter.sortMethod) {
       case SortMethod.name:
         if (sorter.descending) {
@@ -280,6 +417,7 @@ class ToDoRepo implements ToDoRepository {
               .where()
               .completedEqualTo(false)
               .filter()
+              .myDayEqualTo(true)
               .toDeleteEqualTo(false)
               .sortByNameDesc()
               .thenByLastUpdated()
@@ -291,6 +429,7 @@ class ToDoRepo implements ToDoRepository {
             .where()
             .completedEqualTo(false)
             .filter()
+            .myDayEqualTo(true)
             .toDeleteEqualTo(false)
             .sortByName()
             .thenByLastUpdated()
@@ -303,6 +442,7 @@ class ToDoRepo implements ToDoRepository {
               .where()
               .completedEqualTo(false)
               .filter()
+              .myDayEqualTo(true)
               .toDeleteEqualTo(false)
               .sortByDueDateDesc()
               .thenByLastUpdated()
@@ -314,6 +454,7 @@ class ToDoRepo implements ToDoRepository {
             .where()
             .completedEqualTo(false)
             .filter()
+            .myDayEqualTo(true)
             .toDeleteEqualTo(false)
             .sortByDueDate()
             .thenByLastUpdated()
@@ -326,6 +467,7 @@ class ToDoRepo implements ToDoRepository {
               .where()
               .completedEqualTo(false)
               .filter()
+              .myDayEqualTo(true)
               .toDeleteEqualTo(false)
               .sortByWeightDesc()
               .thenByLastUpdated()
@@ -337,6 +479,7 @@ class ToDoRepo implements ToDoRepository {
             .where()
             .completedEqualTo(false)
             .filter()
+            .myDayEqualTo(true)
             .toDeleteEqualTo(false)
             .sortByWeight()
             .thenByLastUpdated()
@@ -349,6 +492,7 @@ class ToDoRepo implements ToDoRepository {
               .where()
               .completedEqualTo(false)
               .filter()
+              .myDayEqualTo(true)
               .toDeleteEqualTo(false)
               .sortByPriorityDesc()
               .thenByLastUpdated()
@@ -360,6 +504,7 @@ class ToDoRepo implements ToDoRepository {
             .where()
             .completedEqualTo(false)
             .filter()
+            .myDayEqualTo(true)
             .toDeleteEqualTo(false)
             .sortByPriority()
             .thenByLastUpdated()
@@ -372,6 +517,7 @@ class ToDoRepo implements ToDoRepository {
               .where()
               .completedEqualTo(false)
               .filter()
+              .myDayEqualTo(true)
               .toDeleteEqualTo(false)
               .sortByRealDurationDesc()
               .thenByLastUpdated()
@@ -383,6 +529,7 @@ class ToDoRepo implements ToDoRepository {
             .where()
             .completedEqualTo(false)
             .filter()
+            .myDayEqualTo(true)
             .toDeleteEqualTo(false)
             .sortByRealDuration()
             .thenByLastUpdated()
@@ -390,48 +537,30 @@ class ToDoRepo implements ToDoRepository {
             .limit(limit)
             .findAll();
       default:
-        return getRepoList();
+        return _isarClient.toDos
+            .where()
+            .completedEqualTo(false)
+            .filter()
+            .myDayEqualTo(true)
+            .toDeleteEqualTo(false)
+            .sortByCustomViewIndex()
+            .thenByLastUpdated()
+            .offset(offset)
+            .limit(limit)
+            .findAll();
     }
   }
 
   @override
-  Future<List<ToDo>> getCompleted({int limit = 50, int offset = 0}) async =>
-      _isarClient.toDos
-          .where()
-          .completedEqualTo(true)
-          .filter()
-          .toDeleteEqualTo(false)
-          .sortByLastUpdated()
-          .offset(offset)
-          .limit(limit)
-          .findAll();
-
-  @override
-  Future<List<ToDo>> getMyDay({int limit = 50, int offset = 0}) async =>
-      _isarClient.toDos
-          .where()
-          .myDayEqualTo(true)
-          .filter()
-          .toDeleteEqualTo(false)
-          .completedEqualTo(false)
-          .sortByCustomViewIndex()
-          .thenByLastUpdated()
-          .offset(offset)
-          .limit(limit)
-          .findAll();
-
-  @override
-  Future<int> getMyDayWeight({int limit = 50, int offset = 0}) async =>
-      _isarClient.toDos
-          .where()
-          .myDayEqualTo(true)
-          .filter()
-          .toDeleteEqualTo(false)
-          .completedEqualTo(false)
-          .offset(offset)
-          .limit(limit)
-          .weightProperty()
-          .sum();
+  Future<int> getMyDayWeight({int limit = 50}) async => _isarClient.toDos
+      .where()
+      .myDayEqualTo(true)
+      .filter()
+      .toDeleteEqualTo(false)
+      .completedEqualTo(false)
+      .limit(limit)
+      .weightProperty()
+      .sum();
 
   @override
   Future<List<ToDo>> getRepoByGroupID(
@@ -441,7 +570,8 @@ class ToDoRepo implements ToDoRepository {
           .groupIDEqualTo(groupID)
           .filter()
           .toDeleteEqualTo(false)
-          .completedEqualTo(false)
+          // TODO: Factor this out to a user preference?
+          //.completedEqualTo(false)
           .sortByGroupIndex()
           .thenByLastUpdated()
           .offset(offset)

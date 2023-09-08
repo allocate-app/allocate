@@ -61,6 +61,7 @@ class DeadlineProvider extends ChangeNotifier {
       sorter.sortMethod = method;
       sorter.descending = false;
     }
+    user?.deadlineSorter = sorter;
     notifyListeners();
   }
 

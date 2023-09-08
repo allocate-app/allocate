@@ -63,6 +63,7 @@ class ToDoProvider extends ChangeNotifier {
       sorter.sortMethod = method;
       sorter.descending = false;
     }
+    user?.toDoSorter = sorter;
     notifyListeners();
   }
 
@@ -335,17 +336,21 @@ class ToDoProvider extends ChangeNotifier {
   }
 
   Future<List<ToDo>> getMyDay({int limit = 50, int offset = 0}) async =>
-      await _toDoService.getMyDay(limit: limit, offset: offset);
+      await _toDoService.getMyDay(
+          toDoSorter: sorter, limit: limit, offset: offset);
 
   Future<void> setMyDay({int limit = 50, int offset = 0}) async {
-    toDos = await _toDoService.getMyDay(limit: limit, offset: offset);
+    toDos = await _toDoService.getMyDay(
+        toDoSorter: sorter, limit: limit, offset: offset);
   }
 
   Future<List<ToDo>> getToDosCompleted(
           {int limit = 50, int offset = 0}) async =>
-      await _toDoService.getCompleted(limit: limit, offset: offset);
+      await _toDoService.getCompleted(
+          toDoSorter: sorter, limit: limit, offset: offset);
 
   Future<void> setToDosCompleted({int limit = 50, int offset = 0}) async {
-    toDos = await _toDoService.getCompleted(limit: limit, offset: offset);
+    toDos = await _toDoService.getCompleted(
+        toDoSorter: sorter, limit: limit, offset: offset);
   }
 }

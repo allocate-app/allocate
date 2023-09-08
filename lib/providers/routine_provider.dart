@@ -21,9 +21,30 @@ class RoutineProvider extends ChangeNotifier {
   User? user;
   Routine? curRoutine;
 
-  Routine? curMorning;
-  Routine? curAfternoon;
-  Routine? curEvening;
+  Routine? _curMorning;
+  Routine? _curAfternoon;
+  Routine? _curEvening;
+
+  Routine? get curMorning => _curMorning;
+
+  Routine? get curAfternoon => _curAfternoon;
+
+  Routine? get curEvening => _curEvening;
+
+  set curMorning(Routine? newRoutine) {
+    _curMorning = newRoutine;
+    user?.curMornID = newRoutine?.localID;
+  }
+
+  set curAfternoon(Routine? newRoutine) {
+    _curAfternoon = newRoutine;
+    user?.curAftID = newRoutine?.localID;
+  }
+
+  set curEvening(Routine? newRoutine) {
+    _curEvening = newRoutine;
+    user?.curEveID = newRoutine?.localID;
+  }
 
   List<Routine> routines = [];
 
@@ -56,13 +77,20 @@ class RoutineProvider extends ChangeNotifier {
     });
   }
 
+  void unsetRoutine({Routine? routine}) {
+    routine = routine ?? curRoutine;
+
+    _curMorning = (_curMorning != routine) ? curMorning : null;
+    _curAfternoon = (_curAfternoon != routine) ? curAfternoon : null;
+    _curEvening = (_curEvening != routine) ? curEvening : null;
+  }
+
   void setUser({User? user}) {
     user = user;
     sorter = user?.routineSorter ?? sorter;
     setRoutines();
   }
 
-  // Call this in a future builder for the routines screen.
   Future<void> setRoutines() async {
     curMorning = (null != user?.curMornID!)
         ? await _routineService.getRoutineById(id: user!.curMornID!)
@@ -89,6 +117,7 @@ class RoutineProvider extends ChangeNotifier {
       sorter.sortMethod = method;
       sorter.descending = false;
     }
+    user?.routineSorter = sorter;
     notifyListeners();
   }
 
@@ -194,13 +223,15 @@ class RoutineProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> reorderRoutines(
-      {required List<Routine> routines,
+  Future<List<Routine>> reorderRoutines(
+      {List<Routine>? routines,
       required int oldIndex,
       required int newIndex}) async {
     try {
-      _routineService.reorderRoutines(
-          routines: routines, oldIndex: oldIndex, newIndex: newIndex);
+      return await _routineService.reorderRoutines(
+          routines: routines ?? this.routines,
+          oldIndex: oldIndex,
+          newIndex: newIndex);
     } on FailureToUpdateException catch (e) {
       log(e.cause);
       return Future.error(e);
@@ -208,7 +239,6 @@ class RoutineProvider extends ChangeNotifier {
       log(e.cause);
       return Future.error(e);
     }
-    notifyListeners();
   }
 
   Future<void> resetRoutine() async {

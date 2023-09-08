@@ -77,7 +77,7 @@ class _ToDosListScreen extends State<ToDosListScreen> {
       if (mainScrollController.offset >=
               mainScrollController.position.maxScrollExtent &&
           !allData) {
-        if (!loading) {
+        if (!loading && mounted) {
           setState(() => loading = true);
           await fetchData();
         }
@@ -108,12 +108,13 @@ class _ToDosListScreen extends State<ToDosListScreen> {
                 .getToDosBy(limit: Constants.limitPerQuery, offset: offset)
                 .then((newToDos) {
               offset += newToDos.length;
-
               toDoProvider.toDos.addAll(newToDos);
-              setState(() {
-                loading = false;
-                allData = newToDos.length < Constants.limitPerQuery;
-              });
+              allData = newToDos.length < Constants.limitPerQuery;
+              if (mounted) {
+                setState(() {
+                  loading = false;
+                });
+              }
             }).catchError(
               (e) {
                 Flushbar? error;
@@ -302,7 +303,9 @@ class _ToDosListScreen extends State<ToDosListScreen> {
               key: ValueKey(index),
               checkboxShape: const CircleBorder(),
               controlAffinity: ListTileControlAffinity.leading,
-              shape: const CircleBorder(),
+              shape: const RoundedRectangleBorder(
+                  borderRadius: BorderRadius.all(
+                      Radius.circular(Constants.roundedCorners))),
               title: TextButton(
                   child: AutoSizeText(provider.toDos[index].name,
                       overflow: TextOverflow.visible,
@@ -391,7 +394,9 @@ class _ToDosListScreen extends State<ToDosListScreen> {
               key: ValueKey(index),
               checkboxShape: const CircleBorder(),
               controlAffinity: ListTileControlAffinity.leading,
-              shape: const CircleBorder(),
+              shape: const RoundedRectangleBorder(
+                  borderRadius: BorderRadius.all(
+                      Radius.circular(Constants.roundedCorners))),
               title: TextButton(
                   child: AutoSizeText(provider.toDos[index].name,
                       overflow: TextOverflow.visible,

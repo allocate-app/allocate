@@ -201,8 +201,11 @@ class ToDoService {
   Future<List<ToDo>> mostRecent({int limit = 5}) async =>
       _repository.mostRecent(limit: limit);
 
-  Future<List<ToDo>> getMyDay({int limit = 50, int offset = 0}) async =>
-      _repository.getMyDay(limit: limit, offset: offset);
+  Future<List<ToDo>> getMyDay(
+          {required SortableView<ToDo> toDoSorter,
+          int limit = 50,
+          int offset = 0}) async =>
+      _repository.getMyDay(sorter: toDoSorter, limit: limit, offset: offset);
 
   Future<List<ToDo>> getByGroup(
       {int? groupID, int limit = 50, int offset = 0}) async {
@@ -213,8 +216,12 @@ class ToDoService {
         groupID: groupID, limit: limit, offset: offset);
   }
 
-  Future<List<ToDo>> getCompleted({int limit = 50, int offset = 0}) async =>
-      _repository.getCompleted(limit: limit, offset: offset);
+  Future<List<ToDo>> getCompleted(
+          {required SortableView<ToDo> toDoSorter,
+          int limit = 50,
+          int offset = 0}) async =>
+      _repository.getCompleted(
+          sorter: toDoSorter, limit: limit, offset: offset);
 
   Future<void> updateToDo({required ToDo toDo}) async =>
       _repository.update(toDo);
