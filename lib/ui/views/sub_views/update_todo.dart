@@ -447,6 +447,51 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
             e is FailureToCreateException || e is FailureToUploadException);
   }
 
+  Widget buildDrainBar({required BuildContext context}) {
+    double max = (toDo.taskType == TaskType.small)
+        ? Constants.maxTaskWeight.toDouble()
+        : Constants.maxWeight.toDouble();
+    double offset = toDo.weight.toDouble() / max;
+    return Stack(alignment: Alignment.center, children: [
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
+        child: Container(
+          decoration: BoxDecoration(
+              border: Border.all(
+                  color: Theme.of(context).colorScheme.outline,
+                  width: 3,
+                  strokeAlign: BorderSide.strokeAlignCenter),
+              shape: BoxShape.rectangle,
+              borderRadius: const BorderRadius.all(Radius.circular(10))),
+          child: Padding(
+            padding: const EdgeInsets.all(Constants.halfPadding),
+            child: LinearProgressIndicator(
+                color: (offset < 0.8) ? null : Colors.redAccent,
+                minHeight: 50,
+                value: 1 - offset,
+                // Possibly remove
+                borderRadius: const BorderRadius.all(Radius.circular(10))),
+          ),
+        ),
+      ),
+      Align(
+          alignment: Alignment.centerRight,
+          child: Container(
+              height: 40,
+              width: 8,
+              decoration: BoxDecoration(
+                borderRadius: const BorderRadius.all(Radius.circular(2)),
+                color: Theme.of(context).colorScheme.outline,
+              ))),
+      AutoSizeText("${toDo.weight}",
+          minFontSize: Constants.large,
+          softWrap: false,
+          maxLines: 1,
+          overflow: TextOverflow.visible,
+          style: Constants.hugeHeaderStyle),
+    ]);
+  }
+
   @override
   Widget build(BuildContext context) {
     bool largeScreen =
@@ -1198,7 +1243,8 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
         ),
         Expanded(
             child: Padding(
-          padding: const EdgeInsets.all(Constants.padding),
+          padding: EdgeInsets.all(
+              (smallScreen) ? Constants.halfPadding : Constants.padding),
           child: buildTaskName(smallScreen: smallScreen),
         )),
       ],
@@ -1246,27 +1292,17 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             const Flexible(
-              child: AutoSizeText("Task Strain",
+              child: AutoSizeText("Energy Drain",
                   minFontSize: Constants.medium,
                   maxLines: 1,
                   softWrap: true,
                   style: Constants.hugeHeaderStyle),
             ),
             Expanded(
-              child: Tooltip(
-                  message: "How draining is this task?",
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxHeight: 100),
-                    child: FittedBox(
-                      fit: BoxFit.contain,
-                      child: Transform.rotate(
-                          angle: -pi / 2,
-                          child: getBatteryIcon(
-                              weight: toDo.weight, selected: false)),
-                    ),
-                  )),
-            ),
-            (smallScreen) ? const SizedBox.shrink() : const Spacer(),
+                child: Padding(
+              padding: const EdgeInsets.all(Constants.innerPadding),
+              child: buildDrainBar(context: context),
+            )),
           ],
         ),
       ),
@@ -1333,7 +1369,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       // const Icon(Icons.drag_handle_rounded),
-                                      const Text("Task Strain",
+                                      const Text("Energy Drain",
                                           style: Constants.headerStyle),
                                       Padding(
                                           padding: const EdgeInsets.all(
@@ -1388,8 +1424,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                       controller: subTaskEditingController[index],
                       maxLines: 1,
                       minFontSize: Constants.small,
-                      decoration: InputDecoration(
-                        isDense: smallScreen,
+                      decoration: const InputDecoration.collapsed(
                         hintText: "Step name",
                       ),
                       onChanged: (value) {
@@ -1483,7 +1518,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       // const Icon(Icons.drag_handle_rounded),
-                                      const Text("Task Strain",
+                                      const Text("Step Drain",
                                           style: Constants.headerStyle),
                                       Padding(
                                           padding: const EdgeInsets.all(
@@ -1538,8 +1573,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                       controller: subTaskEditingController[index],
                       maxLines: 1,
                       minFontSize: Constants.small,
-                      decoration: InputDecoration(
-                        isDense: smallScreen,
+                      decoration: const InputDecoration.collapsed(
                         hintText: "Step name",
                       ),
                       onChanged: (value) {

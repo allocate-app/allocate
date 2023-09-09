@@ -161,6 +161,52 @@ class _HomeScreen extends State<HomeScreen> {
     super.dispose();
   }
 
+  // TODO: Figure out some way to factor this into the app bar.
+  Widget buildDrainBar({required BuildContext context}) {
+    int maxBandwidth =
+        userProvider.curUser?.bandwidth ?? Constants.maxBandwidth;
+    double offset =
+        userProvider.myDayTotal.toDouble() / maxBandwidth.toDouble();
+    return Stack(alignment: Alignment.center, children: [
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
+        child: Container(
+          decoration: BoxDecoration(
+              border: Border.all(
+                  color: Theme.of(context).colorScheme.outline,
+                  width: 3,
+                  strokeAlign: BorderSide.strokeAlignCenter),
+              shape: BoxShape.rectangle,
+              borderRadius: const BorderRadius.all(Radius.circular(10))),
+          child: Padding(
+            padding: const EdgeInsets.all(Constants.halfPadding),
+            child: LinearProgressIndicator(
+                color: (offset < 0.8) ? null : Colors.redAccent,
+                minHeight: 50,
+                value: 1 - offset,
+                // Possibly remove
+                borderRadius: const BorderRadius.all(Radius.circular(10))),
+          ),
+        ),
+      ),
+      Align(
+          alignment: Alignment.centerRight,
+          child: Container(
+              height: 40,
+              width: 8,
+              decoration: BoxDecoration(
+                borderRadius: const BorderRadius.all(Radius.circular(2)),
+                color: Theme.of(context).colorScheme.outline,
+              ))),
+      AutoSizeText("${userProvider.myDayTotal}",
+          minFontSize: Constants.large,
+          softWrap: false,
+          maxLines: 1,
+          overflow: TextOverflow.visible,
+          style: Constants.hugeHeaderStyle),
+    ]);
+  }
+
   @override
   Widget build(BuildContext context) {
     bool largeScreen =

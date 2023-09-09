@@ -71,7 +71,8 @@ class Routine with EquatableMixin implements Copyable<Routine> {
         "weight": weight,
         "expectedDuration": expectedDuration,
         "realDuration": realDuration,
-        "routineTasks": jsonEncode(routineTasks.map((rt) => rt.toEntity()).toList(growable: false)),
+        "routineTasks": jsonEncode(
+            routineTasks.map((rt) => rt.toEntity()).toList(growable: false)),
         "lastUpdated": lastUpdated.toIso8601String(),
       };
 
@@ -103,7 +104,7 @@ class Routine with EquatableMixin implements Copyable<Routine> {
   @ignore
   @override
   List<Object?> get props => [
-        id,
+        //id,
         localID,
         name,
         weight,
@@ -116,7 +117,8 @@ class Routine with EquatableMixin implements Copyable<Routine> {
       ];
 
   @override
-  String toString() => "Routine(id: $id, localID: $localID customViewIndex: $customViewIndex, "
+  String toString() =>
+      "Routine(id: $id, localID: $localID customViewIndex: $customViewIndex, "
       "name: $name, weight: $weight, expectedDuration: $expectedDuration,"
       "routineTasks: $routineTasks, isSynced: $isSynced, toDelete: $toDelete, lastUpdated: $lastUpdated)";
 }

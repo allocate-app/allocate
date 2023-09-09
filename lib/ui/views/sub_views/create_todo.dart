@@ -271,6 +271,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
     return valid;
   }
 
+  // This is likely totally unnecessary.
   Icon getBatteryIcon({required int weight, required bool selected}) {
     // Icon is scaled for sum-weight.
     weight = (taskType == TaskType.small)
@@ -2169,30 +2170,21 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             const Flexible(
-              child: AutoSizeText("Task Strain",
+              child: AutoSizeText("Energy Drain: ",
                   minFontSize: Constants.medium,
                   maxLines: 1,
                   softWrap: true,
                   style: Constants.hugeHeaderStyle),
             ),
             Expanded(
-              child: Tooltip(
-                  message: "How draining is this task?",
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxHeight: 100),
-                    child: FittedBox(
-                      fit: BoxFit.contain,
-                      child: Transform.rotate(
-                          angle: -pi / 2,
-                          child: getBatteryIcon(
-                              weight: (taskType == TaskType.small)
-                                  ? weight
-                                  : sumWeight,
-                              selected: false)),
-                    ),
-                  )),
+              child: Padding(
+                padding: const EdgeInsets.all(Constants.innerPadding),
+                child: buildDrainBar(
+                    weight: (taskType == TaskType.small) ? weight : sumWeight,
+                    context: context),
+              ),
             ),
-            (smallScreen) ? const SizedBox.shrink() : const Spacer(),
+            //(smallScreen) ? const SizedBox.shrink() : const Spacer(),
           ],
         ),
       ),
@@ -2221,6 +2213,52 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
               ],
             )
           : const SizedBox.shrink(),
+    ]);
+  }
+
+  Widget buildDrainBar({required int weight, required BuildContext context}) {
+    double max = (taskType == TaskType.small)
+        ? Constants.maxTaskWeight.toDouble()
+        : Constants.maxWeight.toDouble();
+    double offset = weight.toDouble() / max;
+    return Stack(alignment: Alignment.center, children: [
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
+        child: Container(
+          decoration: BoxDecoration(
+              border: Border.all(
+                  color: Theme.of(context).colorScheme.outline,
+                  width: 3,
+                  strokeAlign: BorderSide.strokeAlignCenter),
+              shape: BoxShape.rectangle,
+              // TODO: This should probably move to constants class.
+              borderRadius: const BorderRadius.all(Radius.circular(10))),
+          child: Padding(
+            padding: const EdgeInsets.all(Constants.halfPadding),
+            child: LinearProgressIndicator(
+                color: (offset < 0.8) ? null : Colors.redAccent,
+                minHeight: 50,
+                value: 1 - offset,
+                // Possibly remove
+                borderRadius: const BorderRadius.all(Radius.circular(10))),
+          ),
+        ),
+      ),
+      Align(
+          alignment: Alignment.centerRight,
+          child: Container(
+              height: 40,
+              width: 8,
+              decoration: BoxDecoration(
+                borderRadius: const BorderRadius.all(Radius.circular(2)),
+                color: Theme.of(context).colorScheme.outline,
+              ))),
+      AutoSizeText("$weight",
+          minFontSize: Constants.large,
+          softWrap: false,
+          maxLines: 1,
+          overflow: TextOverflow.visible,
+          style: Constants.hugeHeaderStyle),
     ]);
   }
 
@@ -2270,7 +2308,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       // const Icon(Icons.drag_handle_rounded),
-                                      const Text("Task Strain",
+                                      const Text("Step Drain",
                                           style: Constants.headerStyle),
                                       Padding(
                                           padding: const EdgeInsets.all(
@@ -2325,8 +2363,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                       controller: subTaskEditingController[index],
                       maxLines: 1,
                       minFontSize: Constants.small,
-                      decoration: InputDecoration(
-                        isDense: smallScreen,
+                      decoration: const InputDecoration.collapsed(
                         hintText: "Step name",
                       ),
                       onChanged: (value) {
@@ -2374,6 +2411,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
     );
   }
 
+  // TODO: Remove once ready for prod.
   ListView buildSubTasksList(
       {bool smallScreen = false,
       ScrollPhysics physics = const BouncingScrollPhysics()}) {
@@ -2407,7 +2445,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       // const Icon(Icons.drag_handle_rounded),
-                                      const Text("Task Strain",
+                                      const Text("Energy Drain",
                                           style: Constants.headerStyle),
                                       Padding(
                                           padding: const EdgeInsets.all(
@@ -2462,8 +2500,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                       controller: subTaskEditingController[index],
                       maxLines: 1,
                       minFontSize: Constants.small,
-                      decoration: InputDecoration(
-                        isDense: smallScreen,
+                      decoration: const InputDecoration.collapsed(
                         hintText: "Step name",
                       ),
                       onChanged: (value) {
@@ -2524,7 +2561,8 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
         ),
         Expanded(
             child: Padding(
-          padding: const EdgeInsets.all(Constants.padding),
+          padding: EdgeInsets.all(
+              (smallScreen) ? Constants.halfPadding : Constants.padding),
           child: buildTaskName(smallScreen: smallScreen),
         )),
       ],

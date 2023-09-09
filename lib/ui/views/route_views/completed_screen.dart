@@ -9,6 +9,7 @@ import '../../../providers/todo_provider.dart';
 import '../../../util/constants.dart';
 import '../../../util/enums.dart';
 import '../../../util/exceptions.dart';
+import '../../../util/numbers.dart';
 import '../../../util/sorting/todo_sorter.dart';
 import '../../widgets/flushbars.dart';
 import '../sub_views/update_todo.dart';
@@ -143,6 +144,20 @@ class _CompletedListScreen extends State<CompletedListScreen> {
     super.dispose();
   }
 
+  Icon getBatteryIcon({required ToDo toDo}) {
+    int weight = (toDo.taskType == TaskType.small)
+        ? toDo.weight
+        : remap(
+                x: toDo.weight,
+                inMin: 0,
+                inMax: Constants.maxWeight,
+                outMin: 0,
+                outMax: 5)
+            .toInt();
+
+    return Constants.batteryIcons[weight]!;
+  }
+
   @override
   Widget build(BuildContext context) {
     bool largeScreen =
@@ -228,9 +243,13 @@ class _CompletedListScreen extends State<CompletedListScreen> {
           Consumer<ToDoProvider>(
             builder: (BuildContext context, ToDoProvider value, Widget? child) {
               if (value.sortMethod == SortMethod.none) {
-                return buildReorderable(provider: value, context: context);
+                return buildReorderable(
+                    provider: value,
+                    context: context,
+                    smallScreen: smallScreen);
               }
-              return buildImmutable(provider: value, context: context);
+              return buildImmutable(
+                  provider: value, context: context, smallScreen: smallScreen);
             },
           ),
           (loading)
@@ -243,7 +262,9 @@ class _CompletedListScreen extends State<CompletedListScreen> {
   }
 
   ReorderableListView buildReorderable(
-      {required ToDoProvider provider, required BuildContext context}) {
+      {required ToDoProvider provider,
+      required BuildContext context,
+      bool smallScreen = false}) {
     return ReorderableListView.builder(
         physics: const NeverScrollableScrollPhysics(),
         shrinkWrap: true,
@@ -274,119 +295,56 @@ class _CompletedListScreen extends State<CompletedListScreen> {
           }
         },
         itemBuilder: (BuildContext context, int index) {
-          return CheckboxListTile(
-              key: ValueKey(index),
-              checkboxShape: const CircleBorder(),
-              controlAffinity: ListTileControlAffinity.leading,
-              shape: const RoundedRectangleBorder(
-                  borderRadius: BorderRadius.all(
-                      Radius.circular(Constants.roundedCorners))),
-              title: TextButton(
-                  child: AutoSizeText(provider.toDos[index].name,
-                      overflow: TextOverflow.visible,
-                      style: Constants.headerStyle,
-                      minFontSize: Constants.medium,
-                      softWrap: true,
-                      maxLines: 1),
-                  onPressed: () async {
-                    toDoProvider.curToDo = provider.toDos[index];
-                    await showDialog(
-                        barrierDismissible: false,
-                        useRootNavigator: false,
-                        context: context,
-                        builder: (BuildContext context) =>
-                            const UpdateToDoScreen()).catchError((e) {
-                      Flushbar? error;
-
-                      error = Flushbars.createError(
-                        message: e.cause,
-                        context: context,
-                        dismissCallback: () => error?.dismiss(),
-                      );
-
-                      error.show(context);
-                    },
-                        test: (e) =>
-                            e is FailureToCreateException ||
-                            e is FailureToUploadException);
-                  }),
-              secondary: Padding(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: Constants.innerPadding),
-                child: IconButton(
-                    icon: const Icon(Icons.delete_forever),
-                    onPressed: () async {
-                      // TODO: Modal for delete with checkDelete;
-                      // Factor out into a method.
-                      provider.curToDo = provider.toDos[index];
-
-                      await provider.deleteToDo().catchError((e) {
-                        Flushbar? error;
-
-                        error = Flushbars.createError(
-                          message: e.cause,
-                          context: context,
-                          dismissCallback: () => error?.dismiss(),
-                        );
-
-                        error.show(context);
-                      },
-                          test: (e) =>
-                              e is FailureToDeleteException ||
-                              e is FailureToUploadException);
-                    }),
-              ),
-              value: provider.toDos[index].completed,
-              onChanged: (bool? completed) async {
-                provider.curToDo = provider.toDos[index];
-                provider.curToDo!.completed = completed!;
-                await provider.updateToDo().catchError((e) {
-                  Flushbar? error;
-
-                  error = Flushbars.createError(
-                    message: e.cause,
-                    context: context,
-                    dismissCallback: () => error?.dismiss(),
-                  );
-
-                  error.show(context);
-                },
-                    test: (e) =>
-                        e is FailureToCreateException ||
-                        e is FailureToUploadException);
-              });
+          return buildToDoListTile(
+              index: index,
+              context: context,
+              provider: provider,
+              smallScreen: smallScreen);
         });
   }
 
   ListView buildImmutable(
-      {required ToDoProvider provider, required BuildContext context}) {
+      {required ToDoProvider provider,
+      required BuildContext context,
+      bool smallScreen = false}) {
     return ListView.builder(
         physics: const NeverScrollableScrollPhysics(),
         shrinkWrap: true,
         itemCount: provider.toDos.length,
         itemBuilder: (BuildContext context, int index) {
-          return CheckboxListTile(
-              key: ValueKey(index),
-              checkboxShape: const CircleBorder(),
-              controlAffinity: ListTileControlAffinity.leading,
-              shape: const RoundedRectangleBorder(
-                  borderRadius: BorderRadius.all(
-                      Radius.circular(Constants.roundedCorners))),
-              title: TextButton(
-                  child: AutoSizeText(provider.toDos[index].name,
-                      overflow: TextOverflow.visible,
-                      style: Constants.headerStyle,
-                      minFontSize: Constants.medium,
-                      softWrap: true,
-                      maxLines: 1),
-                  onPressed: () async {
-                    toDoProvider.curToDo = provider.toDos[index];
-                    await showDialog(
-                        barrierDismissible: false,
-                        useRootNavigator: false,
-                        context: context,
-                        builder: (BuildContext context) =>
-                            const UpdateToDoScreen()).catchError((e) {
+          return buildToDoListTile(
+              index: index,
+              provider: provider,
+              context: context,
+              smallScreen: smallScreen);
+        });
+  }
+
+  ListTile buildToDoListTile(
+      {required int index,
+      bool smallScreen = false,
+      required ToDoProvider provider,
+      required BuildContext context}) {
+    return ListTile(
+        key: ValueKey(index),
+        shape: const RoundedRectangleBorder(
+            borderRadius:
+                BorderRadius.all(Radius.circular(Constants.roundedCorners))),
+        leading: Padding(
+          padding:
+              const EdgeInsets.symmetric(horizontal: Constants.innerPadding),
+          child: Transform.scale(
+              scale: (smallScreen)
+                  ? Constants.largeCheckboxMinScale
+                  : Constants.largeCheckboxScale,
+              child: Checkbox(
+                  shape: const CircleBorder(),
+                  splashRadius: 15,
+                  value: provider.toDos[index].completed,
+                  onChanged: (bool? completed) async {
+                    provider.curToDo = provider.toDos[index];
+                    provider.curToDo!.completed = completed!;
+                    await provider.updateToDo().catchError((e) {
                       Flushbar? error;
 
                       error = Flushbars.createError(
@@ -400,52 +358,82 @@ class _CompletedListScreen extends State<CompletedListScreen> {
                         test: (e) =>
                             e is FailureToCreateException ||
                             e is FailureToUploadException);
+                  })),
+        ),
+        title: AutoSizeText(provider.toDos[index].name,
+            overflow: TextOverflow.visible,
+            style: Constants.headerStyle,
+            minFontSize: Constants.medium,
+            softWrap: true,
+            maxLines: 1),
+        onTap: () async {
+          provider.curToDo = provider.toDos[index];
+          await showDialog(
+                  barrierDismissible: false,
+                  useRootNavigator: false,
+                  context: context,
+                  builder: (BuildContext context) => const UpdateToDoScreen())
+              .catchError((e) {
+            Flushbar? error;
+
+            error = Flushbars.createError(
+              message: e.cause,
+              context: context,
+              dismissCallback: () => error?.dismiss(),
+            );
+
+            error.show(context);
+          },
+                  test: (e) =>
+                      e is FailureToCreateException ||
+                      e is FailureToUploadException);
+        },
+        trailing: Padding(
+          padding:
+              const EdgeInsets.symmetric(horizontal: Constants.innerPadding),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: Constants.padding),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      getBatteryIcon(toDo: provider.toDos[index]),
+                      AutoSizeText(
+                        "${provider.toDos[index].weight}",
+                        overflow: TextOverflow.visible,
+                        minFontSize: Constants.large,
+                        softWrap: false,
+                        maxLines: 1,
+                      ),
+                    ],
+                  )),
+              IconButton(
+                  icon: const Icon(Icons.delete_forever),
+                  onPressed: () async {
+                    // TODO: Modal for delete with checkDelete;
+                    // Factor out into a method.
+                    provider.curToDo = provider.toDos[index];
+
+                    await provider.deleteToDo().catchError((e) {
+                      Flushbar? error;
+
+                      error = Flushbars.createError(
+                        message: e.cause,
+                        context: context,
+                        dismissCallback: () => error?.dismiss(),
+                      );
+
+                      error.show(context);
+                    },
+                        test: (e) =>
+                            e is FailureToDeleteException ||
+                            e is FailureToUploadException);
                   }),
-              secondary: Padding(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: Constants.innerPadding),
-                child: IconButton(
-                    icon: const Icon(Icons.delete_forever),
-                    onPressed: () async {
-                      // TODO: Modal for delete with checkDelete;
-
-                      provider.curToDo = provider.toDos[index];
-
-                      await provider.deleteToDo().catchError((e) {
-                        Flushbar? error;
-
-                        error = Flushbars.createError(
-                          message: e.cause,
-                          context: context,
-                          dismissCallback: () => error?.dismiss(),
-                        );
-
-                        error.show(context);
-                      },
-                          test: (e) =>
-                              e is FailureToDeleteException ||
-                              e is FailureToUploadException);
-                    }),
-              ),
-              value: provider.toDos[index].completed,
-              onChanged: (bool? completed) async {
-                provider.curToDo = provider.toDos[index];
-                provider.curToDo!.completed = completed!;
-                await provider.updateToDo().catchError((e) {
-                  Flushbar? error;
-
-                  error = Flushbars.createError(
-                    message: e.cause,
-                    context: context,
-                    dismissCallback: () => error?.dismiss(),
-                  );
-
-                  error.show(context);
-                },
-                    test: (e) =>
-                        e is FailureToCreateException ||
-                        e is FailureToUploadException);
-              });
-        });
+            ],
+          ),
+        ));
   }
 }

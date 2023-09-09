@@ -96,26 +96,23 @@ class _RoutinesListScreen extends State<RoutinesListScreen> {
     return const Icon(Icons.arrow_upward_rounded);
   }
 
-  // TODO: Migrate this widget to Create/Update Routine.
   Widget getTimeOfDayIcon(
       {required Routine routine,
       required BuildContext context,
-      required RoutineProvider provider,
-      bool largeScreen = false}) {
-    Icon? icon;
-    if (routineProvider.curMorning == routine) {
-      // Abstract these to constants class?
-      icon = const Icon(Icons.wb_twilight_rounded);
-    } else if (routineProvider.curAfternoon == routine) {
-      icon = const Icon(Icons.lunch_dining_rounded);
-    } else if (routineProvider.curEvening == routine) {
-      icon = const Icon(Icons.bed_rounded);
-    }
+      required RoutineProvider provider}) {
+    RoutineTime routineTime = provider.getRoutineTime(routine: routine);
+
+    Icon? icon = switch (routineTime) {
+      RoutineTime.morning => const Icon(Icons.wb_twilight_rounded),
+      RoutineTime.afternoon => const Icon(Icons.lunch_dining_rounded),
+      RoutineTime.evening => const Icon(Icons.bed_rounded),
+      _ => const Icon(null),
+    };
 
     return OutlinedButton(
-      style: const ButtonStyle(
-        shape: MaterialStatePropertyAll<OutlinedBorder>(CircleBorder(
-            side: BorderSide(strokeAlign: BorderSide.strokeAlignOutside))),
+      style: OutlinedButton.styleFrom(
+        padding: const EdgeInsets.all(Constants.padding),
+        shape: const CircleBorder(),
       ),
       onPressed: () async {
         await showDialog<RoutineTime>(
@@ -240,13 +237,15 @@ class _RoutinesListScreen extends State<RoutinesListScreen> {
                         child: Padding(
                             padding: const EdgeInsets.all(Constants.padding),
                             child: Tooltip(
-                              message: "Cancel.",
+                              message: "Remove.",
                               child: FittedBox(
                                 fit: BoxFit.fill,
                                 child: IconButton.outlined(
                                   iconSize: Constants.medIconSize,
-                                  icon: const Icon(Icons.cancel_outlined),
-                                  onPressed: () => Navigator.pop(context),
+                                  icon:
+                                      const Icon(Icons.remove_circle_outlined),
+                                  onPressed: () =>
+                                      Navigator.pop(context, RoutineTime.none),
                                 ),
                               ),
                             )),
@@ -259,23 +258,10 @@ class _RoutinesListScreen extends State<RoutinesListScreen> {
           if (time == null) {
             return;
           }
-          setState(() {
-            provider.unsetRoutine(routine: routine);
-
-            switch (time) {
-              case RoutineTime.morning:
-                provider.curMorning = routine;
-                break;
-              case RoutineTime.afternoon:
-                provider.curAfternoon = routine;
-                break;
-              case RoutineTime.evening:
-                provider.curEvening = routine;
-                break;
-              default:
-                break;
-            }
-          });
+          provider.handleRoutineTime(time: time, routine: routine);
+          if (mounted) {
+            setState(() {});
+          }
         });
       },
       child: icon,
@@ -331,6 +317,7 @@ class _RoutinesListScreen extends State<RoutinesListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // TODO: Remove this @ first build if still unused.
     bool largeScreen =
         (MediaQuery.of(context).size.width >= Constants.largeScreen);
     bool smallScreen =
@@ -490,71 +477,8 @@ class _RoutinesListScreen extends State<RoutinesListScreen> {
         },
         itemBuilder: (BuildContext context, int index) {
           // This needs to be a listtile
-          return ListTile(
-            key: ValueKey(index),
-            leading: getTimeOfDayIcon(
-                context: context,
-                provider: provider,
-                routine: provider.routines[index],
-                largeScreen: largeScreen),
-            shape: const RoundedRectangleBorder(
-                borderRadius: BorderRadius.all(
-                    Radius.circular(Constants.roundedCorners))),
-            title: AutoSizeText(provider.routines[index].name,
-                overflow: TextOverflow.visible,
-                style: Constants.headerStyle,
-                minFontSize: Constants.medium,
-                softWrap: true,
-                maxLines: 1),
-            onTap: () async {
-              routineProvider.curRoutine = provider.routines[index];
-              await showDialog(
-                  barrierDismissible: false,
-                  useRootNavigator: false,
-                  context: context,
-                  builder: (BuildContext context) =>
-                      const UpdateRoutineScreen()).catchError((e) {
-                Flushbar? error;
-
-                error = Flushbars.createError(
-                  message: e.cause,
-                  context: context,
-                  dismissCallback: () => error?.dismiss(),
-                );
-
-                error.show(context);
-              },
-                  test: (e) =>
-                      e is FailureToCreateException ||
-                      e is FailureToUploadException);
-            },
-            trailing: Padding(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: Constants.innerPadding),
-              child: IconButton(
-                  icon: const Icon(Icons.delete_forever),
-                  onPressed: () async {
-                    // TODO: Modal for delete with checkDelete;
-                    // Factor out into a method.
-                    provider.curRoutine = provider.routines[index];
-
-                    await provider.deleteRoutine().catchError((e) {
-                      Flushbar? error;
-
-                      error = Flushbars.createError(
-                        message: e.cause,
-                        context: context,
-                        dismissCallback: () => error?.dismiss(),
-                      );
-
-                      error.show(context);
-                    },
-                        test: (e) =>
-                            e is FailureToDeleteException ||
-                            e is FailureToUploadException);
-                  }),
-            ),
-          );
+          return buildRoutineListTile(
+              index: index, context: context, provider: provider);
         });
   }
 
@@ -567,30 +491,62 @@ class _RoutinesListScreen extends State<RoutinesListScreen> {
         shrinkWrap: true,
         itemCount: provider.routines.length,
         itemBuilder: (BuildContext context, int index) {
-          return ListTile(
-            key: ValueKey(index),
-            leading: getTimeOfDayIcon(
-                context: context,
-                provider: provider,
-                routine: provider.routines[index],
-                largeScreen: largeScreen),
-            shape: const RoundedRectangleBorder(
-                borderRadius: BorderRadius.all(
-                    Radius.circular(Constants.roundedCorners))),
-            title: AutoSizeText(provider.routines[index].name,
-                overflow: TextOverflow.visible,
-                style: Constants.headerStyle,
-                minFontSize: Constants.medium,
-                softWrap: true,
-                maxLines: 1),
-            onTap: () async {
-              routineProvider.curRoutine = provider.routines[index];
-              await showDialog(
-                  barrierDismissible: false,
-                  useRootNavigator: false,
-                  context: context,
-                  builder: (BuildContext context) =>
-                      const UpdateRoutineScreen()).catchError((e) {
+          return buildRoutineListTile(
+              index: index, context: context, provider: provider);
+        });
+  }
+
+  ListTile buildRoutineListTile(
+      {required int index,
+      required BuildContext context,
+      required RoutineProvider provider}) {
+    return ListTile(
+      key: ValueKey(index),
+      leading: getTimeOfDayIcon(
+        context: context,
+        provider: provider,
+        routine: provider.routines[index],
+      ),
+      shape: const RoundedRectangleBorder(
+          borderRadius:
+              BorderRadius.all(Radius.circular(Constants.roundedCorners))),
+      title: AutoSizeText(provider.routines[index].name,
+          overflow: TextOverflow.visible,
+          style: Constants.headerStyle,
+          minFontSize: Constants.medium,
+          softWrap: true,
+          maxLines: 1),
+      onTap: () async {
+        provider.curRoutine = provider.routines[index];
+        await showDialog(
+            barrierDismissible: false,
+            useRootNavigator: false,
+            context: context,
+            builder: (BuildContext context) =>
+                const UpdateRoutineScreen()).catchError((e) {
+          Flushbar? error;
+
+          error = Flushbars.createError(
+            message: e.cause,
+            context: context,
+            dismissCallback: () => error?.dismiss(),
+          );
+
+          error.show(context);
+        },
+            test: (e) =>
+                e is FailureToCreateException || e is FailureToUploadException);
+      },
+      trailing: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: Constants.innerPadding),
+        child: IconButton(
+            icon: const Icon(Icons.delete_forever),
+            onPressed: () async {
+              // TODO: Modal for delete with checkDelete;
+              // Factor out into a method.
+              provider.curRoutine = provider.routines[index];
+
+              await provider.deleteRoutine().catchError((e) {
                 Flushbar? error;
 
                 error = Flushbars.createError(
@@ -602,36 +558,10 @@ class _RoutinesListScreen extends State<RoutinesListScreen> {
                 error.show(context);
               },
                   test: (e) =>
-                      e is FailureToCreateException ||
+                      e is FailureToDeleteException ||
                       e is FailureToUploadException);
-            },
-            trailing: Padding(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: Constants.innerPadding),
-              child: IconButton(
-                  icon: const Icon(Icons.delete_forever),
-                  onPressed: () async {
-                    // TODO: Modal for delete with checkDelete;
-                    // Factor out into a method.
-                    provider.curRoutine = provider.routines[index];
-
-                    await provider.deleteRoutine().catchError((e) {
-                      Flushbar? error;
-
-                      error = Flushbars.createError(
-                        message: e.cause,
-                        context: context,
-                        dismissCallback: () => error?.dismiss(),
-                      );
-
-                      error.show(context);
-                    },
-                        test: (e) =>
-                            e is FailureToDeleteException ||
-                            e is FailureToUploadException);
-                  }),
-            ),
-          );
-        });
+            }),
+      ),
+    );
   }
 }

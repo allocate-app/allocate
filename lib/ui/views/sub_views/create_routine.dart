@@ -11,6 +11,7 @@ import "package:provider/provider.dart";
 import "../../../model/task/subtask.dart";
 import "../../../providers/routine_provider.dart";
 import "../../../util/constants.dart";
+import "../../../util/enums.dart";
 import "../../../util/exceptions.dart";
 import "../../../util/numbers.dart";
 import "../../widgets/flushbars.dart";
@@ -51,6 +52,9 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
   late final List<SubTask> routineTasks;
   late int shownTasks;
 
+  // If setting the routine for the home screen.
+  late RoutineTime routineTime;
+
   @override
   void initState() {
     super.initState();
@@ -71,6 +75,7 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
 
     routineTasks = List.generate(Constants.maxNumTasks, (_) => SubTask());
     shownTasks = 0;
+    routineTime = RoutineTime.none;
   }
 
   void initializeControllers() {
@@ -139,17 +144,191 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
     return Constants.batteryIcons[weight]!;
   }
 
+  Widget getTimeOfDayIcon({
+    required BuildContext context,
+  }) {
+    Icon? icon = switch (routineTime) {
+      RoutineTime.morning => const Icon(Icons.wb_twilight_rounded),
+      RoutineTime.afternoon => const Icon(Icons.lunch_dining_rounded),
+      RoutineTime.evening => const Icon(Icons.bed_rounded),
+      _ => const Icon(Icons.alarm_rounded),
+    };
+
+    return OutlinedButton(
+      style: OutlinedButton.styleFrom(
+        padding: const EdgeInsets.all(Constants.padding),
+        shape: const CircleBorder(),
+      ),
+      onPressed: () async {
+        await showDialog<RoutineTime>(
+          context: context,
+          builder: (BuildContext context) {
+            return Dialog(
+                child: ConstrainedBox(
+              constraints: const BoxConstraints(
+                  maxWidth: Constants.smallLandscapeDialogWidth),
+              child: Padding(
+                padding: const EdgeInsets.all(Constants.innerPadding),
+                child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Row(
+                          mainAxisAlignment: MainAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Expanded(
+                              child: AutoSizeText(
+                                "Set Routine Time",
+                                style: Constants.headerStyle,
+                                softWrap: true,
+                                overflow: TextOverflow.visible,
+                                maxLines: 2,
+                                minFontSize: Constants.medium,
+                              ),
+                            )
+                          ]),
+                      const Flexible(
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          mainAxisSize: MainAxisSize.max,
+                          children: [
+                            Flexible(
+                                child: AutoSizeText(
+                              "Morning | Afternoon | Evening ",
+                              style: Constants.largeHeaderStyle,
+                              softWrap: true,
+                              overflow: TextOverflow.visible,
+                              maxLines: 1,
+                              minFontSize: Constants.large,
+                            )),
+                            Flexible(
+                              child: FittedBox(
+                                  fit: BoxFit.fill,
+                                  child: Icon(Icons.schedule_outlined,
+                                      size: Constants.medIconSize)),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          mainAxisSize: MainAxisSize.max,
+                          children: [
+                            Flexible(
+                                child: Padding(
+                              padding: const EdgeInsets.all(Constants.padding),
+                              child: FittedBox(
+                                fit: BoxFit.fill,
+                                child: (routineTime == RoutineTime.morning)
+                                    ? IconButton.filledTonal(
+                                        iconSize: Constants.lgIconSize,
+                                        icon: const Icon(
+                                            Icons.wb_twilight_rounded),
+                                        onPressed: () => Navigator.pop(
+                                            context, RoutineTime.none))
+                                    : IconButton.outlined(
+                                        iconSize: Constants.lgIconSize,
+                                        icon: const Icon(
+                                            Icons.wb_twilight_rounded),
+                                        onPressed: () => Navigator.pop(
+                                            context, RoutineTime.morning)),
+                              ),
+                            )),
+                            Flexible(
+                              child: Padding(
+                                padding:
+                                    const EdgeInsets.all(Constants.padding),
+                                child: FittedBox(
+                                  fit: BoxFit.fill,
+                                  child: (routineTime == RoutineTime.afternoon)
+                                      ? IconButton.filledTonal(
+                                          iconSize: Constants.lgIconSize,
+                                          icon: const Icon(
+                                              Icons.lunch_dining_rounded),
+                                          onPressed: () => Navigator.pop(
+                                              context, RoutineTime.none))
+                                      : IconButton.outlined(
+                                          iconSize: Constants.lgIconSize,
+                                          icon: const Icon(
+                                              Icons.lunch_dining_rounded),
+                                          onPressed: () => Navigator.pop(
+                                              context, RoutineTime.afternoon)),
+                                ),
+                              ),
+                            ),
+                            Flexible(
+                              child: Padding(
+                                padding:
+                                    const EdgeInsets.all(Constants.padding),
+                                child: FittedBox(
+                                  fit: BoxFit.fill,
+                                  child: (routineTime == RoutineTime.evening)
+                                      ? IconButton.filledTonal(
+                                          iconSize: Constants.lgIconSize,
+                                          icon: const Icon(Icons.bed_rounded),
+                                          onPressed: () => Navigator.pop(
+                                              context, RoutineTime.none))
+                                      : IconButton.outlined(
+                                          iconSize: Constants.lgIconSize,
+                                          icon: const Icon(Icons.bed_rounded),
+                                          onPressed: () => Navigator.pop(
+                                              context, RoutineTime.evening)),
+                                ),
+                              ),
+                            )
+                          ]),
+                      Flexible(
+                        child: Padding(
+                            padding: const EdgeInsets.all(Constants.padding),
+                            child: Tooltip(
+                              message: "Remove.",
+                              child: FittedBox(
+                                fit: BoxFit.fill,
+                                child: IconButton.outlined(
+                                  iconSize: Constants.medIconSize,
+                                  icon: const Icon(
+                                      Icons.remove_circle_outline_rounded),
+                                  onPressed: () =>
+                                      Navigator.pop(context, RoutineTime.none),
+                                ),
+                              ),
+                            )),
+                      )
+                    ]),
+              ),
+            ));
+          },
+        ).then((RoutineTime? time) {
+          if (time == null) {
+            return;
+          }
+          setState(() {
+            routineTime = time;
+          });
+        });
+      },
+      child: icon,
+    );
+  }
+
   Future<void> handleCreate({required BuildContext context}) async {
     await routineProvider
         .createRoutine(
-          name: name,
-          weight: weight,
-          expectedDuration: expectedDuration,
-          realDuration: realDuration,
-          routineTasks: routineTasks,
-        )
-        .whenComplete(() => Navigator.pop(context))
-        .catchError((e) {
+      name: name,
+      weight: weight,
+      expectedDuration: expectedDuration,
+      realDuration: realDuration,
+      routineTasks: routineTasks,
+    )
+        .whenComplete(() async {
+      // Handle setting the routine.
+      await routineProvider
+          .handleRoutineTime(time: routineTime)
+          .whenComplete(() {
+        Navigator.pop(context);
+      });
+    }).catchError((e) {
       Flushbar? error;
 
       error = Flushbars.createError(
@@ -162,6 +341,48 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
     },
             test: (e) =>
                 e is FailureToCreateException || e is FailureToUploadException);
+  }
+
+  Widget buildDrainBar({required int weight, required BuildContext context}) {
+    double offset = weight.toDouble() / Constants.maxWeight.toDouble();
+    return Stack(alignment: Alignment.center, children: [
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
+        child: Container(
+          decoration: BoxDecoration(
+              border: Border.all(
+                  color: Theme.of(context).colorScheme.outline,
+                  width: 3,
+                  strokeAlign: BorderSide.strokeAlignCenter),
+              shape: BoxShape.rectangle,
+              borderRadius: const BorderRadius.all(Radius.circular(10))),
+          child: Padding(
+            padding: const EdgeInsets.all(Constants.halfPadding),
+            child: LinearProgressIndicator(
+                color: (offset < 0.8) ? null : Colors.redAccent,
+                minHeight: 50,
+                value: 1 - offset,
+                // Possibly remove
+                borderRadius: const BorderRadius.all(Radius.circular(10))),
+          ),
+        ),
+      ),
+      Align(
+          alignment: Alignment.centerRight,
+          child: Container(
+              height: 40,
+              width: 8,
+              decoration: BoxDecoration(
+                borderRadius: const BorderRadius.all(Radius.circular(2)),
+                color: Theme.of(context).colorScheme.outline,
+              ))),
+      AutoSizeText("$weight",
+          minFontSize: Constants.large,
+          softWrap: false,
+          maxLines: 1,
+          overflow: TextOverflow.visible,
+          style: Constants.hugeHeaderStyle),
+    ]);
   }
 
   @override
@@ -312,7 +533,8 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
                               Padding(
                                 padding: const EdgeInsets.symmetric(
                                     horizontal: Constants.padding),
-                                child: buildNameTile(smallScreen: smallScreen),
+                                child: buildNameTile(
+                                    context: context, smallScreen: smallScreen),
                               ),
                               const PaddedDivider(
                                   padding: Constants.innerPadding),
@@ -563,7 +785,8 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
                     Padding(
                       padding: const EdgeInsets.symmetric(
                           horizontal: Constants.padding),
-                      child: buildNameTile(smallScreen: smallScreen),
+                      child: buildNameTile(
+                          context: context, smallScreen: smallScreen),
                     ),
                     Padding(
                       padding: const EdgeInsets.symmetric(
@@ -679,26 +902,20 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         const Flexible(
-          child: AutoSizeText("Routine Strain",
+          child: AutoSizeText("Energy Drain",
               minFontSize: Constants.medium,
               maxLines: 1,
               softWrap: true,
               style: Constants.hugeHeaderStyle),
         ),
         Expanded(
-          flex: 2,
-          child: Tooltip(
-              message: "How draining is this routine?",
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxHeight: 200),
-                child: FittedBox(
-                  fit: BoxFit.fitHeight,
-                  child: Transform.rotate(
-                      angle: -pi / 2,
-                      child: getBatteryIcon(weight: weight, selected: false)),
-                ),
-              )),
-        ),
+            child: Padding(
+          padding:
+              const EdgeInsets.symmetric(horizontal: Constants.innerPadding),
+          child: ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: 200, maxWidth: 200),
+              child: buildDrainBar(weight: weight, context: context)),
+        ))
       ],
     );
   }
@@ -709,26 +926,20 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
       mainAxisSize: MainAxisSize.min,
       children: [
         const Flexible(
-          child: AutoSizeText("Routine Strain",
+          child: AutoSizeText("Energy Drain",
               minFontSize: Constants.large,
               maxLines: 1,
               softWrap: true,
               style: Constants.hugeHeaderStyle),
         ),
         Expanded(
-          child: Tooltip(
-              message: "How draining is this routine?",
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxHeight: 100),
-                child: FittedBox(
-                  fit: BoxFit.contain,
-                  child: Transform.rotate(
-                      angle: -pi / 2,
-                      child: getBatteryIcon(weight: weight, selected: false)),
-                ),
-              )),
-        ),
-        (smallScreen) ? const SizedBox.shrink() : const Spacer(),
+            child: Padding(
+          padding:
+              const EdgeInsets.symmetric(horizontal: Constants.innerPadding),
+          child: ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: 100, maxWidth: 200),
+              child: buildDrainBar(weight: weight, context: context)),
+        )),
       ],
     );
   }
@@ -779,7 +990,7 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      const Text("Step Strain",
+                                      const Text("Step Drain",
                                           style: Constants.headerStyle),
                                       Padding(
                                           padding: const EdgeInsets.all(
@@ -831,8 +1042,7 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
                       controller: routineTaskEditingController[index],
                       maxLines: 1,
                       minFontSize: Constants.small,
-                      decoration: InputDecoration(
-                        isDense: smallScreen,
+                      decoration: const InputDecoration.collapsed(
                         hintText: "Step name",
                       ),
                       onChanged: (value) {
@@ -907,7 +1117,7 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      const Text("Step Strain",
+                                      const Text("Step Drain",
                                           style: Constants.headerStyle),
                                       Padding(
                                           padding: const EdgeInsets.all(
@@ -1002,12 +1212,20 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
     );
   }
 
-  Row buildNameTile({bool smallScreen = false}) {
+  Row buildNameTile({required BuildContext context, bool smallScreen = false}) {
     return Row(
       children: [
+        Transform.scale(
+            scale: (smallScreen)
+                ? Constants.largeCheckboxMinScale
+                : Constants.largeCheckboxScale,
+            child: Tooltip(
+                message: "Time of Day?",
+                child: getTimeOfDayIcon(context: context))),
         Expanded(
             child: Padding(
-          padding: const EdgeInsets.all(Constants.padding),
+          padding: EdgeInsets.all(
+              (smallScreen) ? Constants.halfPadding : Constants.padding),
           child: buildRoutineName(smallScreen: smallScreen),
         )),
       ],

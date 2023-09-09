@@ -64,8 +64,8 @@ class RoutineProvider extends ChangeNotifier {
 
   int get routineWeight =>
       (curMorning?.weight ?? 0) +
-      (curAfternoon?.weight ?? 0) +
-      (curEvening?.weight ?? 0);
+          (curAfternoon?.weight ?? 0) +
+          (curEvening?.weight ?? 0);
 
   void startTimer() {
     syncTimer = Timer.periodic(const Duration(seconds: 10), (timer) {
@@ -77,7 +77,28 @@ class RoutineProvider extends ChangeNotifier {
     });
   }
 
-  void unsetRoutine({Routine? routine}) {
+  Future<void> handleRoutineTime(
+      {RoutineTime time = RoutineTime.none, Routine? routine}) async {
+    // Online id does not really matter -> Object will be set accordingly.
+    routine = routine ?? curRoutine;
+    _unsetRoutine(routine: routine);
+
+    switch (time) {
+      case RoutineTime.morning:
+        curMorning = routine;
+        break;
+      case RoutineTime.afternoon:
+        curAfternoon = routine;
+        break;
+      case RoutineTime.evening:
+        curEvening = routine;
+        break;
+      default:
+        break;
+    }
+  }
+
+  void _unsetRoutine({Routine? routine}) {
     routine = routine ?? curRoutine;
 
     _curMorning = (_curMorning != routine) ? curMorning : null;
@@ -89,6 +110,20 @@ class RoutineProvider extends ChangeNotifier {
     user = user;
     sorter = user?.routineSorter ?? sorter;
     setRoutines();
+  }
+
+  RoutineTime getRoutineTime({Routine? routine}) {
+    routine = routine ?? curRoutine;
+    if (_curMorning == routine) {
+      return RoutineTime.morning;
+    }
+    if (_curAfternoon == routine) {
+      return RoutineTime.afternoon;
+    }
+    if (_curEvening == routine) {
+      return RoutineTime.evening;
+    }
+    return RoutineTime.none;
   }
 
   Future<void> setRoutines() async {
@@ -156,16 +191,15 @@ class RoutineProvider extends ChangeNotifier {
   }
 
   // Subtasks are fixed-length.
-  Future<void> createRoutine(
-      {required String name,
-      int? expectedDuration,
-      int? realDuration,
-      int? weight,
-      List<SubTask>? routineTasks}) async {
+  Future<void> createRoutine({required String name,
+    int? expectedDuration,
+    int? realDuration,
+    int? weight,
+    List<SubTask>? routineTasks}) async {
     routineTasks =
-        (null != routineTasks && routineTasks.length == Constants.maxNumTasks)
-            ? routineTasks
-            : List.filled(Constants.maxNumTasks, SubTask());
+    (null != routineTasks && routineTasks.length == Constants.maxNumTasks)
+        ? routineTasks
+        : List.filled(Constants.maxNumTasks, SubTask());
 
     weight =
         weight ?? _routineService.calculateWeight(routineTasks: routineTasks);
@@ -223,10 +257,9 @@ class RoutineProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<List<Routine>> reorderRoutines(
-      {List<Routine>? routines,
-      required int oldIndex,
-      required int newIndex}) async {
+  Future<List<Routine>> reorderRoutines({List<Routine>? routines,
+    required int oldIndex,
+    required int newIndex}) async {
     try {
       return await _routineService.reorderRoutines(
           routines: routines ?? this.routines,
