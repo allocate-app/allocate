@@ -360,6 +360,8 @@ class ReminderRepo implements ReminderRepository {
           .limit(64)
           .findAll();
 
+  // TODO: This should also probably include reminders which have passed.
+  // Maybe? Possibly not.
   Future<List<int>> getDeleteIds() async => _isarClient.reminders
       .where()
       .toDeleteEqualTo(true)

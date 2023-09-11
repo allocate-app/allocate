@@ -2,32 +2,33 @@ import 'package:another_flushbar/flushbar.dart';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:jiffy/jiffy.dart';
 import 'package:provider/provider.dart';
 
-import '../../../model/task/deadline.dart';
-import '../../../providers/deadline_provider.dart';
+import '../../../model/task/reminder.dart';
+import '../../../providers/reminder_provider.dart';
 import '../../../util/constants.dart';
 import '../../../util/enums.dart';
 import '../../../util/exceptions.dart';
-import '../../../util/sorting/deadline_sorter.dart';
+import '../../../util/sorting/reminder_sorter.dart';
 import '../../widgets/flushbars.dart';
-import '../sub_views/create_deadline.dart';
-import '../sub_views/update_deadline.dart';
+import '../sub_views/create_reminder.dart';
+import '../sub_views/update_reminder.dart';
 
-class DeadlinesListScreen extends StatefulWidget {
-  const DeadlinesListScreen({Key? key}) : super(key: key);
+class RemindersListScreen extends StatefulWidget {
+  const RemindersListScreen({Key? key}) : super(key: key);
 
   @override
-  State<DeadlinesListScreen> createState() => _DeadlinesListScreen();
+  State<RemindersListScreen> createState() => _RemindersListScreen();
 }
 
-class _DeadlinesListScreen extends State<DeadlinesListScreen> {
+class _RemindersListScreen extends State<RemindersListScreen> {
   late bool checkDelete;
   late bool allData;
   late bool loading;
   late int offset;
 
-  late final DeadlineProvider deadlineProvider;
+  late final ReminderProvider reminderProvider;
 
   // For linked todos.
   late final ScrollController mainScrollController;
@@ -44,23 +45,23 @@ class _DeadlinesListScreen extends State<DeadlinesListScreen> {
     initializeParameters();
     initializeControllers();
 
-    if (deadlineProvider.rebuild) {
+    if (reminderProvider.rebuild) {
       resetPagination();
-      deadlineProvider.rebuild = false;
+      reminderProvider.rebuild = false;
     }
   }
 
   void initializeProviders() {
-    deadlineProvider = Provider.of<DeadlineProvider>(context, listen: false);
+    reminderProvider = Provider.of<ReminderProvider>(context, listen: false);
 
-    deadlineProvider.addListener(resetPagination);
+    reminderProvider.addListener(resetPagination);
   }
 
   void initializeParameters() {
-    loading = deadlineProvider.rebuild;
+    loading = reminderProvider.rebuild;
     allData = false;
     checkDelete = true;
-    offset = (deadlineProvider.rebuild) ? 0 : deadlineProvider.deadlines.length;
+    offset = (reminderProvider.rebuild) ? 0 : reminderProvider.reminders.length;
     searchHistory = List.empty(growable: true);
   }
 
@@ -85,11 +86,11 @@ class _DeadlinesListScreen extends State<DeadlinesListScreen> {
   }
 
   Widget getArrowDirection({required SortMethod method}) {
-    if (deadlineProvider.sortMethod == SortMethod.none) {
+    if (reminderProvider.sortMethod == SortMethod.none) {
       return const SizedBox.shrink();
     }
 
-    if (deadlineProvider.sortMethod == method && !deadlineProvider.descending) {
+    if (reminderProvider.sortMethod == method && !reminderProvider.descending) {
       return const Icon(Icons.arrow_downward_rounded);
     }
 
@@ -100,12 +101,12 @@ class _DeadlinesListScreen extends State<DeadlinesListScreen> {
     setState(() => loading = true);
     return Future.delayed(
         const Duration(seconds: 1),
-        () async => await deadlineProvider
-                .getDeadlinesBy(limit: Constants.limitPerQuery, offset: offset)
-                .then((newDeadlines) {
-              offset += newDeadlines.length;
-              deadlineProvider.deadlines.addAll(newDeadlines);
-              allData = newDeadlines.length < Constants.limitPerQuery;
+        () async => await reminderProvider
+                .getRemindersBy(limit: Constants.limitPerQuery, offset: offset)
+                .then((newReminders) {
+              offset += newReminders.length;
+              reminderProvider.reminders.addAll(newReminders);
+              allData = newReminders.length < Constants.limitPerQuery;
 
               if (mounted) {
                 setState(() {
@@ -130,15 +131,23 @@ class _DeadlinesListScreen extends State<DeadlinesListScreen> {
   Future<void> resetPagination() async {
     setState(() {
       offset = 0;
-      deadlineProvider.deadlines.clear();
+      reminderProvider.reminders.clear();
     });
     return await fetchData();
   }
 
   @override
   void dispose() {
-    deadlineProvider.removeListener(resetPagination);
+    reminderProvider.removeListener(resetPagination);
     super.dispose();
+  }
+
+  Widget getReminderIcon({required Reminder reminder}) {
+    // TODO: factor value to constants class.
+    if (Jiffy.parseFromDateTime(reminder.dueDate).diff(Jiffy.now()) < 3) {
+      return const Icon(Icons.upcoming_outlined);
+    }
+    return const Icon(null);
   }
 
   @override
@@ -157,7 +166,7 @@ class _DeadlinesListScreen extends State<DeadlinesListScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               const Expanded(
-                child: AutoSizeText("Deadlines",
+                child: AutoSizeText("Reminders",
                     style: Constants.largeHeaderStyle,
                     softWrap: false,
                     maxLines: 1,
@@ -169,9 +178,9 @@ class _DeadlinesListScreen extends State<DeadlinesListScreen> {
                 child: DropdownButton<SortMethod>(
                     padding: const EdgeInsets.symmetric(
                         horizontal: Constants.padding),
-                    value: deadlineProvider.sortMethod,
-                    icon: (deadlineProvider.sortMethod != SortMethod.none)
-                        ? (deadlineProvider.descending)
+                    value: reminderProvider.sortMethod,
+                    icon: (reminderProvider.sortMethod != SortMethod.none)
+                        ? (reminderProvider.descending)
                             ? const Icon(Icons.arrow_downward_rounded)
                             : const Icon(Icons.arrow_upward_rounded)
                         : null,
@@ -180,11 +189,11 @@ class _DeadlinesListScreen extends State<DeadlinesListScreen> {
                     onChanged: (method) {
                       if (null != method) {
                         setState(() {
-                          deadlineProvider.sortMethod = method;
+                          reminderProvider.sortMethod = method;
                         });
                       }
                     },
-                    items: DeadlineSorter.sortMethods
+                    items: ReminderSorter.sortMethods
                         .map<DropdownMenuItem<SortMethod>>(
                             (method) => DropdownMenuItem<SortMethod>(
                                   value: method,
@@ -210,7 +219,7 @@ class _DeadlinesListScreen extends State<DeadlinesListScreen> {
             onTap: () async => await showDialog(
               barrierDismissible: false,
               context: context,
-              builder: (BuildContext context) => const CreateDeadlineScreen(),
+              builder: (BuildContext context) => const CreateReminderScreen(),
             ),
             leading: CircleAvatar(
               child: Icon(Icons.add_outlined,
@@ -228,7 +237,7 @@ class _DeadlinesListScreen extends State<DeadlinesListScreen> {
         Flexible(
           child: (loading)
               ? const CircularProgressIndicator()
-              : buildDeadlinesList(
+              : buildRemindersList(
                   smallScreen: smallScreen,
                   physics: scrollPhysics,
                   largeScreen: largeScreen),
@@ -237,7 +246,7 @@ class _DeadlinesListScreen extends State<DeadlinesListScreen> {
     );
   }
 
-  ListView buildDeadlinesList(
+  ListView buildRemindersList(
       {bool smallScreen = false,
       ScrollPhysics physics = const BouncingScrollPhysics(),
       largeScreen = false}) {
@@ -246,9 +255,9 @@ class _DeadlinesListScreen extends State<DeadlinesListScreen> {
         physics: physics,
         shrinkWrap: true,
         children: [
-          Consumer<DeadlineProvider>(
+          Consumer<ReminderProvider>(
             builder:
-                (BuildContext context, DeadlineProvider value, Widget? child) {
+                (BuildContext context, ReminderProvider value, Widget? child) {
               if (value.sortMethod == SortMethod.none) {
                 return buildReorderable(
                     provider: value,
@@ -269,16 +278,16 @@ class _DeadlinesListScreen extends State<DeadlinesListScreen> {
   }
 
   ReorderableListView buildReorderable(
-      {required DeadlineProvider provider,
+      {required ReminderProvider provider,
       required BuildContext context,
       bool largeScreen = false}) {
     return ReorderableListView.builder(
         physics: const NeverScrollableScrollPhysics(),
         shrinkWrap: true,
-        itemCount: provider.deadlines.length,
+        itemCount: provider.reminders.length,
         onReorder: (int oldIndex, int newIndex) async {
-          provider.deadlines = await provider
-              .reorderDeadlines(
+          provider.reminders = await provider
+              .reorderReminders(
             oldIndex: oldIndex,
             newIndex: newIndex,
           )
@@ -292,62 +301,62 @@ class _DeadlinesListScreen extends State<DeadlinesListScreen> {
             );
 
             error.show(context);
-            return List<Deadline>.empty(growable: true);
+            return List<Reminder>.empty(growable: true);
           },
                   test: (e) =>
                       e is FailureToCreateException ||
                       e is FailureToUploadException);
-          if (provider.deadlines.isEmpty) {
+          if (provider.reminders.isEmpty) {
             resetPagination();
           }
         },
         itemBuilder: (BuildContext context, int index) {
           // This needs to be a listtile
-          return buildDeadlineListTile(
+          return buildReminderListTile(
               index: index, context: context, provider: provider);
         });
   }
 
   ListView buildImmutable(
-      {required DeadlineProvider provider,
+      {required ReminderProvider provider,
       required BuildContext context,
       bool largeScreen = false}) {
     return ListView.builder(
         physics: const NeverScrollableScrollPhysics(),
         shrinkWrap: true,
-        itemCount: provider.deadlines.length,
+        itemCount: provider.reminders.length,
         itemBuilder: (BuildContext context, int index) {
-          return buildDeadlineListTile(
+          return buildReminderListTile(
               index: index, context: context, provider: provider);
         });
   }
 
-  ListTile buildDeadlineListTile(
+  ListTile buildReminderListTile(
       {required int index,
       required BuildContext context,
-      required DeadlineProvider provider}) {
+      required ReminderProvider provider}) {
     return ListTile(
       key: ValueKey(index),
-      leading: (provider.deadlines[index].warnMe)
-          ? const Icon(Icons.notifications_rounded)
-          : const Icon(null),
+      // TODO: Come back to this after deciding whether to include
+      // repeating reminders
+      leading: getReminderIcon(reminder: provider.reminders[index]),
       shape: const RoundedRectangleBorder(
           borderRadius:
               BorderRadius.all(Radius.circular(Constants.roundedCorners))),
-      title: AutoSizeText(provider.deadlines[index].name,
+      title: AutoSizeText(provider.reminders[index].name,
           overflow: TextOverflow.visible,
           style: Constants.headerStyle,
           minFontSize: Constants.medium,
           softWrap: true,
           maxLines: 1),
       onTap: () async {
-        provider.curDeadline = provider.deadlines[index];
+        provider.curReminder = provider.reminders[index];
         await showDialog(
             barrierDismissible: false,
             useRootNavigator: false,
             context: context,
             builder: (BuildContext context) =>
-                const UpdateDeadlineScreen()).catchError((e) {
+                const UpdateReminderScreen()).catchError((e) {
           Flushbar? error;
 
           error = Flushbars.createError(
@@ -368,9 +377,9 @@ class _DeadlinesListScreen extends State<DeadlinesListScreen> {
             onPressed: () async {
               // TODO: Modal for delete with checkDelete;
               // Factor out into a method.
-              provider.curDeadline = provider.deadlines[index];
+              provider.curReminder = provider.reminders[index];
 
-              await provider.deleteDeadline().catchError((e) {
+              await provider.deleteReminder().catchError((e) {
                 Flushbar? error;
 
                 error = Flushbars.createError(

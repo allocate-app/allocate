@@ -191,7 +191,7 @@ class ReminderService {
 
   Future<void> syncRepo() async => _repository.syncRepo();
 
-  Future<void> reorderReminders(
+  Future<List<Reminder>> reorderReminders(
       {required List<Reminder> reminders,
       required int oldIndex,
       required int newIndex}) async {
@@ -204,5 +204,6 @@ class ReminderService {
       reminders[i].customViewIndex = i;
     }
     _repository.updateBatch(reminders);
+    return reminders;
   }
 }

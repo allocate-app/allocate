@@ -166,10 +166,10 @@ class ReminderProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> reorderReminders(
+  Future<List<Reminder>> reorderReminders(
       {required int oldIndex, required int newIndex}) async {
     try {
-      _reminderService.reorderReminders(
+      return await _reminderService.reorderReminders(
           reminders: reminders, oldIndex: oldIndex, newIndex: newIndex);
     } on FailureToUpdateException catch (e) {
       log(e.cause);
@@ -178,7 +178,6 @@ class ReminderProvider extends ChangeNotifier {
       log(e.cause);
       return Future.error(e);
     }
-    notifyListeners();
   }
 
   // If adding repeating events.

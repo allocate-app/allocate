@@ -18,6 +18,7 @@ import '../../widgets/padded_divider.dart';
 import '../routes.dart';
 import '../sub_views.dart';
 import 'deadlines_screen.dart';
+import 'reminders_screen.dart';
 
 @RoutePage()
 class HomeScreen extends StatefulWidget {
@@ -62,7 +63,7 @@ class _HomeScreen extends State<HomeScreen> {
       destination: NavigationDrawerDestination(
         icon: Icon(Icons.home_outlined),
         label: Text("Home", overflow: TextOverflow.ellipsis),
-        selectedIcon: Icon(Icons.home),
+        selectedIcon: Icon(Icons.home_rounded),
       ),
       view: MyDayScreen(),
       name: "My Day",
@@ -72,10 +73,19 @@ class _HomeScreen extends State<HomeScreen> {
       destination: NavigationDrawerDestination(
         icon: Icon(Icons.notifications_outlined),
         label: Text("Notifications"),
-        selectedIcon: Icon(Icons.notifications),
+        selectedIcon: Icon(Icons.notifications_rounded),
       ),
       view: NotificationsScreen(),
       name: "Notifications",
+    ),
+
+    const ViewRoute(
+      destination: NavigationDrawerDestination(
+          icon: Icon(Icons.push_pin_outlined),
+          selectedIcon: Icon(Icons.push_pin_rounded),
+          label: Text("Reminders")),
+      view: RemindersListScreen(),
+      name: "Reminders",
     ),
 
     const ViewRoute(
@@ -91,7 +101,7 @@ class _HomeScreen extends State<HomeScreen> {
         destination: NavigationDrawerDestination(
           icon: Icon(Icons.task_outlined),
           label: Text("Tasks"),
-          selectedIcon: Icon(Icons.task),
+          selectedIcon: Icon(Icons.task_rounded),
         ),
         view: ToDosListScreen(key: PageStorageKey<String>("ToDoListPage")),
         name: "Tasks"),
@@ -101,16 +111,16 @@ class _HomeScreen extends State<HomeScreen> {
         destination: NavigationDrawerDestination(
           icon: Icon(Icons.task_alt_outlined),
           label: Text("Completed"),
-          selectedIcon: Icon(Icons.task_alt),
+          selectedIcon: Icon(Icons.task_alt_rounded),
         ),
         view: CompletedListScreen(),
         name: "Completed"),
     // Routines
     const ViewRoute(
         destination: NavigationDrawerDestination(
-          icon: Icon(Icons.repeat_outlined),
+          icon: Icon(Icons.repeat_rounded),
           label: Text("Routines"),
-          selectedIcon: Icon(Icons.repeat),
+          selectedIcon: Icon(Icons.repeat_rounded),
         ),
         view: RoutinesListScreen(),
         name: "Routines"),
