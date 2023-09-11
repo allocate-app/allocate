@@ -185,11 +185,15 @@ class DeadlineProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> reorderDeadlines(
-      {required int oldIndex, required int newIndex}) async {
+  Future<List<Deadline>> reorderDeadlines(
+      {List<Deadline>? deadlines,
+      required int oldIndex,
+      required int newIndex}) async {
     try {
-      _deadlineService.reorderDeadlines(
-          deadlines: deadlines, oldIndex: oldIndex, newIndex: newIndex);
+      return await _deadlineService.reorderDeadlines(
+          deadlines: deadlines ?? this.deadlines,
+          oldIndex: oldIndex,
+          newIndex: newIndex);
     } on FailureToUpdateException catch (e) {
       log(e.cause);
       return Future.error(e);
@@ -197,7 +201,6 @@ class DeadlineProvider extends ChangeNotifier {
       log(e.cause);
       return Future.error(e);
     }
-    notifyListeners();
   }
 
   // This also schedules notifications.

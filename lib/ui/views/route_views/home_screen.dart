@@ -17,6 +17,7 @@ import '../../widgets/flushbars.dart';
 import '../../widgets/padded_divider.dart';
 import '../routes.dart';
 import '../sub_views.dart';
+import 'deadlines_screen.dart';
 
 @RoutePage()
 class HomeScreen extends StatefulWidget {
@@ -36,6 +37,8 @@ class _HomeScreen extends State<HomeScreen> {
   late final RoutineProvider routineProvider;
   late final UserProvider userProvider;
   late final GroupProvider groupProvider;
+
+  late Future<List<Group>> groupFuture;
 
   late bool mainLoading;
   late bool subLoading;
@@ -74,6 +77,15 @@ class _HomeScreen extends State<HomeScreen> {
       view: NotificationsScreen(),
       name: "Notifications",
     ),
+
+    const ViewRoute(
+        destination: NavigationDrawerDestination(
+          icon: Icon(Icons.announcement_outlined),
+          label: Text("Deadlines"),
+          selectedIcon: Icon(Icons.announcement_rounded),
+        ),
+        view: DeadlinesListScreen(),
+        name: "Deadlines"),
 
     const ViewRoute(
         destination: NavigationDrawerDestination(
@@ -146,12 +158,25 @@ class _HomeScreen extends State<HomeScreen> {
     mainLoading = false;
     subLoading = false;
     bucket = PageStorageBucket();
+    groupFuture = groupProvider.mostRecent(grabToDos: true);
   }
 
   void initializeControllers() {
     navScrollController = ScrollController();
     scrollPhysics =
         const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics());
+  }
+
+  Future<void> resetNavGroups() async {
+    setState(() {
+      subLoading = true;
+    });
+
+    return Future.delayed(
+        const Duration(seconds: 1),
+        () async => await groupProvider
+            .setMostRecent()
+            .whenComplete(() => setState(() => subLoading = false)));
   }
 
   @override
@@ -167,44 +192,50 @@ class _HomeScreen extends State<HomeScreen> {
         userProvider.curUser?.bandwidth ?? Constants.maxBandwidth;
     double offset =
         userProvider.myDayTotal.toDouble() / maxBandwidth.toDouble();
-    return Stack(alignment: Alignment.center, children: [
-      Padding(
-        padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
-        child: Container(
-          decoration: BoxDecoration(
-              border: Border.all(
-                  color: Theme.of(context).colorScheme.outline,
-                  width: 3,
-                  strokeAlign: BorderSide.strokeAlignCenter),
-              shape: BoxShape.rectangle,
-              borderRadius: const BorderRadius.all(Radius.circular(10))),
-          child: Padding(
-            padding: const EdgeInsets.all(Constants.halfPadding),
-            child: LinearProgressIndicator(
-                color: (offset < 0.8) ? null : Colors.redAccent,
-                minHeight: 50,
-                value: 1 - offset,
-                // Possibly remove
-                borderRadius: const BorderRadius.all(Radius.circular(10))),
-          ),
-        ),
-      ),
-      Align(
-          alignment: Alignment.centerRight,
-          child: Container(
-              height: 40,
-              width: 8,
+    return Transform.scale(
+      scale: 0.75,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 100, maxHeight: 50),
+        child: Stack(alignment: Alignment.center, children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
+            child: Container(
               decoration: BoxDecoration(
-                borderRadius: const BorderRadius.all(Radius.circular(2)),
-                color: Theme.of(context).colorScheme.outline,
-              ))),
-      AutoSizeText("${userProvider.myDayTotal}",
-          minFontSize: Constants.large,
-          softWrap: false,
-          maxLines: 1,
-          overflow: TextOverflow.visible,
-          style: Constants.hugeHeaderStyle),
-    ]);
+                  border: Border.all(
+                      color: Theme.of(context).colorScheme.outline,
+                      width: 3,
+                      strokeAlign: BorderSide.strokeAlignCenter),
+                  shape: BoxShape.rectangle,
+                  borderRadius: const BorderRadius.all(Radius.circular(10))),
+              child: Padding(
+                padding: const EdgeInsets.all(Constants.halfPadding),
+                child: LinearProgressIndicator(
+                    color: (offset < 0.8) ? null : Colors.redAccent,
+                    minHeight: 50,
+                    value: 1 - offset,
+                    // Possibly remove
+                    borderRadius: const BorderRadius.all(Radius.circular(10))),
+              ),
+            ),
+          ),
+          Align(
+              alignment: Alignment.centerRight,
+              child: Container(
+                  height: 40,
+                  width: 8,
+                  decoration: BoxDecoration(
+                    borderRadius: const BorderRadius.all(Radius.circular(2)),
+                    color: Theme.of(context).colorScheme.outline,
+                  ))),
+          AutoSizeText("${maxBandwidth - userProvider.myDayTotal}",
+              minFontSize: Constants.large,
+              softWrap: false,
+              maxLines: 1,
+              overflow: TextOverflow.visible,
+              style: Constants.hugeHeaderStyle),
+        ]),
+      ),
+    );
   }
 
   @override
@@ -215,19 +246,22 @@ class _HomeScreen extends State<HomeScreen> {
         (MediaQuery.of(context).size.width <= Constants.smallScreen);
 
     return (largeScreen)
-        ? buildDesktop(context: context)
-        : buildMobile(context: context);
+        ? buildDesktop(context: context, largeScreen: largeScreen)
+        : buildMobile(context: context, largeScreen: largeScreen);
   }
 
-  Widget buildDesktop({required BuildContext context, Widget? view}) {
+  Widget buildDesktop(
+      {required BuildContext context, bool largeScreen = true}) {
     return Row(children: [
       // This is a workaround for a standard navigation drawer
       // until m3 spec is fully implemented in flutter.
-      DesktopDrawerWrapper(drawer: buildNavigationDrawer(context: context)),
+      DesktopDrawerWrapper(
+          drawer: buildNavigationDrawer(
+              context: context, largeScreen: largeScreen)),
 
       Expanded(
           child: Scaffold(
-              appBar: buildAppBar(),
+              appBar: buildAppBar(context: context),
               body: SafeArea(
                   child: PageStorage(
                       bucket: bucket,
@@ -235,29 +269,35 @@ class _HomeScreen extends State<HomeScreen> {
     ]);
   }
 
-  Widget buildMobile({required BuildContext context, Widget? view}) {
+  Widget buildMobile(
+      {required BuildContext context, bool largeScreen = false}) {
     return Scaffold(
-        appBar: buildAppBar(),
-        drawer: buildNavigationDrawer(context: context),
+        appBar: buildAppBar(context: context),
+        drawer:
+            buildNavigationDrawer(context: context, largeScreen: largeScreen),
         body: SafeArea(
             child: PageStorage(
                 bucket: bucket, child: viewRoutes[selectedPageIndex].view)));
   }
 
-  AppBar buildAppBar() {
+  AppBar buildAppBar({required BuildContext context}) {
     return AppBar(
-      title: Text(viewRoutes.elementAt(selectedPageIndex).name),
+      title: buildDrainBar(context: context),
       centerTitle: true,
     );
   }
 
-  NavigationDrawer buildNavigationDrawer({required BuildContext context}) {
+  NavigationDrawer buildNavigationDrawer(
+      {required BuildContext context, bool largeScreen = false}) {
     return NavigationDrawer(
         onDestinationSelected: (index) {
           setState(() {
             selectedPageIndex = index;
             resetProviders();
           });
+          if (!largeScreen) {
+            Navigator.pop(context);
+          }
         },
         selectedIndex: selectedPageIndex,
         children: [
@@ -354,13 +394,41 @@ class _HomeScreen extends State<HomeScreen> {
                             Radius.circular(Constants.roundedCorners))),
                     leading: const Icon(Icons.workspaces_outlined),
                     title: const AutoSizeText(
-                      "Everything",
+                      "All Groups",
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       softWrap: false,
                     ),
                     onTap: () => setState(() =>
                         selectedPageIndex = viewRoutes.indexOf(groupScreen))),
+
+                ListTile(
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: Constants.padding + Constants.innerPadding),
+                    shape: const RoundedRectangleBorder(
+                        side: BorderSide(
+                            style: BorderStyle.none,
+                            strokeAlign: BorderSide.strokeAlignCenter),
+                        borderRadius: BorderRadius.all(
+                            Radius.circular(Constants.roundedCorners))),
+                    leading: const Icon(Icons.add_rounded),
+                    title: const AutoSizeText(
+                      "Add New",
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      softWrap: false,
+                    ),
+                    onTap: () async {
+                      return await showDialog(
+                          barrierDismissible: false,
+                          useRootNavigator: false,
+                          context: context,
+                          builder: (BuildContext context) =>
+                              const CreateGroupScreen()).whenComplete(() {
+                        resetNavGroups();
+                      });
+                    }),
+
                 buildNavGroupTile(),
               ],
             ),
@@ -368,18 +436,18 @@ class _HomeScreen extends State<HomeScreen> {
         ]);
   }
 
-  FutureBuilder<List<Group>> buildNavGroupTile() {
-    return FutureBuilder(
-      future: groupProvider.mostRecent(grabToDos: true),
-      builder: (BuildContext context, AsyncSnapshot<dynamic> snapshot) {
-        if (snapshot.connectionState == ConnectionState.done) {
-          final List<Group>? groups = snapshot.data;
-          if (null != groups) {
+  ListView buildNavGroupTile() {
+    return ListView(
+        physics: const NeverScrollableScrollPhysics(),
+        shrinkWrap: true,
+        children: [
+          Consumer<GroupProvider>(builder:
+              (BuildContext context, GroupProvider value, Widget? child) {
             return ListView.builder(
                 padding: EdgeInsets.zero,
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
-                itemCount: groups.length,
+                itemCount: value.recentGroups.length,
                 itemBuilder: (BuildContext context, int index) {
                   return ListTile(
                       contentPadding: const EdgeInsets.symmetric(
@@ -393,36 +461,39 @@ class _HomeScreen extends State<HomeScreen> {
                               Radius.circular(Constants.roundedCorners))),
                       leading:
                           const Icon(Icons.playlist_add_check_circle_outlined),
-                      title: AutoSizeText(groups[index].name,
+                      title: AutoSizeText(value.recentGroups[index].name,
                           maxLines: 1,
                           overflow: TextOverflow.visible,
                           softWrap: false,
                           minFontSize: Constants.small),
-                      onTap: () async => await showDialog(
-                              barrierDismissible: false,
-                              useRootNavigator: false,
-                              context: context,
-                              builder: (BuildContext context) =>
-                                  const UpdateGroupScreen())
-                          .whenComplete(() => setState(() {})),
-                      trailing: (groups[index].toDos.length > 1)
-                          ? AutoSizeText("${groups[index].toDos.length}",
+                      onTap: () async {
+                        value.curGroup = value.recentGroups[index];
+                        return await showDialog(
+                            barrierDismissible: false,
+                            useRootNavigator: false,
+                            context: context,
+                            builder: (BuildContext context) =>
+                                const UpdateGroupScreen()).whenComplete(() {
+                          resetNavGroups();
+                        });
+                      },
+                      trailing: (value.recentGroups[index].toDos.length > 1)
+                          ? AutoSizeText(
+                              "${value.recentGroups[index].toDos.length}",
                               maxLines: 1,
                               overflow: TextOverflow.visible,
                               softWrap: false,
                               minFontSize: Constants.small)
                           : null);
                 });
-          }
-          // This is what to render if no data.
-          return const SizedBox.shrink();
-        }
-        return const Padding(
-          padding: EdgeInsets.all(Constants.padding),
-          child: CircularProgressIndicator(),
-        );
-      },
-    );
+          }),
+          (subLoading)
+              ? const Padding(
+                  padding: EdgeInsets.all(Constants.padding),
+                  child: Center(child: CircularProgressIndicator()),
+                )
+              : const SizedBox.shrink()
+        ]);
   }
 }
 
