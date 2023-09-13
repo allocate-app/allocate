@@ -52,7 +52,7 @@ class _HomeScreen extends State<HomeScreen> {
   // TODO: Potentially move to constants class.
   // Separate Screens.
   static ViewRoute groupScreen =
-      const ViewRoute(view: GroupScreen(), name: "Groups");
+      const ViewRoute(view: GroupsListScreen(), name: "Groups");
   static ViewRoute settingsScreen = const ViewRoute(
     view: UserSettingsScreen(),
     name: "Settings",
@@ -61,9 +61,9 @@ class _HomeScreen extends State<HomeScreen> {
   static List<ViewRoute> viewRoutes = [
     const ViewRoute(
       destination: NavigationDrawerDestination(
-        icon: Icon(Icons.home_outlined),
-        label: Text("Home", overflow: TextOverflow.ellipsis),
-        selectedIcon: Icon(Icons.home_rounded),
+        icon: Icon(Icons.wb_sunny_outlined),
+        label: Text("My Day", overflow: TextOverflow.ellipsis),
+        selectedIcon: Icon(Icons.wb_sunny_rounded),
       ),
       view: MyDayScreen(),
       name: "My Day",

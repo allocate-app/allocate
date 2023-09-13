@@ -27,7 +27,7 @@ class Group with EquatableMixin implements Copyable<Group> {
 
   // This may actually be best removed. TODO.
   @ignore
-  late List<ToDo> toDos;
+  List<ToDo> toDos = [];
 
   Group({required this.name, this.description = "", required this.lastUpdated});
 

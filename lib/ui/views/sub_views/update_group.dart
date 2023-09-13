@@ -57,6 +57,9 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
   // Description
   late final TextEditingController descriptionEditingController;
 
+  // Discarded todos
+  late final List<ToDo> discards;
+
   Group get group => groupProvider.curGroup!;
 
   @override
@@ -67,9 +70,9 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
     initializeParameters();
     initializeControllers();
 
-    if (toDoProvider.rebuild) {
-      toDoProvider.rebuild = false;
-      toDoProvider.toDos = [];
+    if (groupProvider.rebuild) {
+      groupProvider.rebuild = false;
+      group.toDos = [];
       fetchData();
     }
   }
@@ -79,7 +82,7 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
     toDoProvider = Provider.of<ToDoProvider>(context, listen: false);
 
     // Provider should always rebuild on this screen's init.
-    toDoProvider.rebuild = true;
+    groupProvider.rebuild = true;
   }
 
   void initializeParameters() {
@@ -89,6 +92,7 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
     expanded = true;
     offset = (toDoProvider.rebuild) ? 0 : toDoProvider.toDos.length;
     searchHistory = List.empty(growable: true);
+    discards = [];
   }
 
   void initializeControllers() {
@@ -132,15 +136,15 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
     setState(() => loading = true);
     return Future.delayed(
         const Duration(seconds: 1),
-        () async => await toDoProvider
-                .getByGroupID(
+        () async => await groupProvider
+                .getToDosByGroupId(
                     id: group.localID,
                     limit: Constants.limitPerQuery,
                     offset: offset)
                 .then((newToDos) {
               offset += newToDos.length;
 
-              toDoProvider.toDos.addAll(newToDos);
+              group.toDos.addAll(newToDos);
               setState(() {
                 loading = false;
                 allData = newToDos.length < Constants.limitPerQuery;
@@ -170,7 +174,7 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
   Future<void> resetPagination() async {
     setState(() {
       offset = 0;
-      toDoProvider.toDos.clear();
+      group.toDos.clear();
     });
     return await fetchData();
   }
@@ -220,9 +224,8 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
             e is FailureToCreateException || e is FailureToUpdateException);
   }
 
-  Future<void> updateGroupToDo(
-      {required ToDoProvider provider, required BuildContext context}) async {
-    await provider.updateToDo().catchError((e) {
+  Future<void> updateGroupToDo({required BuildContext context}) async {
+    await toDoProvider.updateToDo().catchError((e) {
       Flushbar? error;
 
       error = Flushbars.createError(
@@ -251,8 +254,7 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
       }
       toDo.groupID = group.localID;
       toDoProvider.curToDo = toDo;
-      await updateGroupToDo(provider: toDoProvider, context: context)
-          .whenComplete(() async {
+      await updateGroupToDo(context: context).whenComplete(() async {
         allData = false;
         await resetPagination();
       });
@@ -283,8 +285,7 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
     });
     toDo.groupID = group.localID;
     toDoProvider.curToDo = toDo;
-    await updateGroupToDo(provider: toDoProvider, context: context)
-        .whenComplete(() async {
+    await updateGroupToDo(context: context).whenComplete(() async {
       allData = false;
       await resetPagination();
     }).catchError((e) {
@@ -298,8 +299,8 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
 
       error.show(context);
     },
-            test: (e) =>
-                e is FailureToCreateException || e is FailureToUploadException);
+        test: (e) =>
+            e is FailureToCreateException || e is FailureToUploadException);
 
     searchHistory.insert(0, MapEntry(toDo.name, toDo.id));
   }
@@ -679,7 +680,7 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
                             Padding(
                               padding: const EdgeInsets.all(Constants.padding),
                               child: FilledButton.icon(
-                                onPressed: () {
+                                onPressed: () async {
                                   Navigator.pop(context, true);
                                 },
                                 label: const Text("Discard"),
@@ -698,9 +699,12 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
                                   ),
                                 ))
                           ]));
-                }).then((willDiscard) {
+                }).then((willDiscard) async {
               if (willDiscard ?? false) {
-                Navigator.pop(context);
+                // TODO: Catch errors.
+                await toDoProvider
+                    .updateBatch(toDos: discards)
+                    .whenComplete(() => Navigator.pop(context));
               }
             });
             setState(() => checkClose = false);
@@ -816,18 +820,19 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
         physics: physics,
         shrinkWrap: true,
         children: [
-          Consumer<ToDoProvider>(
-            builder: (BuildContext context, ToDoProvider value, Widget? child) {
+          Consumer<GroupProvider>(
+            builder:
+                (BuildContext context, GroupProvider value, Widget? child) {
               return ReorderableListView.builder(
                   physics: const NeverScrollableScrollPhysics(),
                   shrinkWrap: true,
-                  itemCount: value.toDos.length,
+                  itemCount: group.toDos.length,
                   onReorder: (int oldIndex, int newIndex) async {
-                    value.toDos = await groupProvider
+                    group.toDos = await groupProvider
                         .reorderGroupToDos(
                             oldIndex: oldIndex,
                             newIndex: newIndex,
-                            toDos: value.toDos)
+                            toDos: group.toDos)
                         .catchError((e) {
                       Flushbar? error;
 
@@ -847,7 +852,6 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
                   itemBuilder: (BuildContext context, int index) {
                     return buildToDoListTile(
                         index: index,
-                        provider: value,
                         context: context,
                         smallScreen: smallScreen);
                   });
@@ -865,7 +869,6 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
   ListTile buildToDoListTile(
       {required int index,
       bool smallScreen = false,
-      required ToDoProvider provider,
       required BuildContext context}) {
     return ListTile(
         key: ValueKey(index),
@@ -878,34 +881,21 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
           child: Checkbox(
               shape: const CircleBorder(),
               splashRadius: 15,
-              value: provider.toDos[index].completed,
+              value: group.toDos[index].completed,
               onChanged: (bool? completed) async {
-                provider.curToDo = provider.toDos[index];
-                provider.curToDo!.completed = completed!;
-                await provider.updateToDo().catchError((e) {
-                  Flushbar? error;
-
-                  error = Flushbars.createError(
-                    message: e.cause,
-                    context: context,
-                    dismissCallback: () => error?.dismiss(),
-                  );
-
-                  error.show(context);
-                },
-                    test: (e) =>
-                        e is FailureToCreateException ||
-                        e is FailureToUploadException);
+                group.toDos[index].completed = completed!;
+                toDoProvider.curToDo = group.toDos[index];
+                await updateGroupToDo(context: context);
               }),
         ),
-        title: AutoSizeText(provider.toDos[index].name,
+        title: AutoSizeText(group.toDos[index].name,
             overflow: TextOverflow.visible,
             style: Constants.headerStyle,
             minFontSize: Constants.medium,
             softWrap: true,
             maxLines: 1),
         onTap: () async {
-          provider.curToDo = provider.toDos[index];
+          toDoProvider.curToDo = group.toDos[index];
           await showDialog(
                   barrierDismissible: false,
                   useRootNavigator: false,
@@ -924,7 +914,8 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
           },
                   test: (e) =>
                       e is FailureToCreateException ||
-                      e is FailureToUploadException);
+                      e is FailureToUploadException).whenComplete(
+                  () => setState(() {}));
         },
         trailing: Padding(
           padding:
@@ -938,9 +929,9 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      getBatteryIcon(toDo: provider.toDos[index]),
+                      getBatteryIcon(toDo: group.toDos[index]),
                       AutoSizeText(
-                        "${provider.toDos[index].weight}",
+                        "${group.toDos[index].weight}",
                         overflow: TextOverflow.visible,
                         minFontSize: Constants.large,
                         softWrap: false,
@@ -951,11 +942,18 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
               IconButton(
                   icon: const Icon(Icons.remove_circle_outline),
                   onPressed: () async {
-                    provider.curToDo = provider.toDos[index];
-                    provider.toDos.remove(provider.toDos[index]);
-                    provider.curToDo!.groupID = null;
-                    await updateGroupToDo(provider: provider, context: context)
-                        .whenComplete(() => setState(() {}));
+                    // These should very much be put into a temporary buffer.
+                    group.toDos[index].groupID = null;
+                    toDoProvider.curToDo = group.toDos[index];
+                    await updateGroupToDo(context: context)
+                        .whenComplete(() => setState(() {
+                              ToDo toDo = group.toDos[index];
+                              group.toDos.remove(toDo);
+
+                              // In case of discard, restore the ID and place in a buffer.
+                              toDo.groupID = group.localID;
+                              discards.add(toDo);
+                            }));
                   }),
             ],
           ),

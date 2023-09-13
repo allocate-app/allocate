@@ -124,8 +124,8 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
     setState(() => loading = true);
     return Future.delayed(
         const Duration(seconds: 1),
-        () async => await toDoProvider
-                .getByGroupID(
+        () async => await groupProvider
+                .getToDosByGroupId(
                     id: Constants.initialGroupID,
                     limit: Constants.limitPerQuery,
                     offset: offset)

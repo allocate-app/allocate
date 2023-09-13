@@ -203,7 +203,8 @@ class ToDoProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> updateBatch() async {
+  Future<void> updateBatch({List<ToDo>? toDos}) async {
+    toDos = toDos ?? this.toDos;
     for (ToDo toDo in toDos) {
       toDo.lastUpdated = DateTime.now();
     }
@@ -327,12 +328,6 @@ class ToDoProvider extends ChangeNotifier {
   Future<void> setToDosBy({int limit = 50, int offset = 0}) async {
     toDos = await _toDoService.getToDosBy(
         toDoSorter: sorter, limit: limit, offset: offset);
-  }
-
-  Future<List<ToDo>> getByGroupID(
-      {int? id, int limit = 50, int offset = 0}) async {
-    return await _toDoService.getByGroup(
-        groupID: id ?? curToDo?.groupID, limit: limit, offset: offset);
   }
 
   Future<List<ToDo>> getMyDay({int limit = 50, int offset = 0}) async =>
