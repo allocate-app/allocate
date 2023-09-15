@@ -240,6 +240,19 @@ const ToDoSchema = CollectionSchema(
         )
       ],
     ),
+    r'dueDate': IndexSchema(
+      id: -7871003637559820552,
+      name: r'dueDate',
+      unique: false,
+      replace: false,
+      properties: [
+        IndexPropertySchema(
+          name: r'dueDate',
+          type: IndexType.value,
+          caseSensitive: false,
+        )
+      ],
+    ),
     r'myDay': IndexSchema(
       id: -2232907535184232127,
       name: r'myDay',
@@ -611,6 +624,14 @@ extension ToDoQueryWhereSort on QueryBuilder<ToDo, ToDo, QWhere> {
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(
         const IndexWhereClause.any(indexName: r'completed'),
+      );
+    });
+  }
+
+  QueryBuilder<ToDo, ToDo, QAfterWhere> anyDueDate() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(
+        const IndexWhereClause.any(indexName: r'dueDate'),
       );
     });
   }
@@ -1280,6 +1301,95 @@ extension ToDoQueryWhere on QueryBuilder<ToDo, ToDo, QWhereClause> {
               includeUpper: false,
             ));
       }
+    });
+  }
+
+  QueryBuilder<ToDo, ToDo, QAfterWhereClause> dueDateEqualTo(DateTime dueDate) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'dueDate',
+        value: [dueDate],
+      ));
+    });
+  }
+
+  QueryBuilder<ToDo, ToDo, QAfterWhereClause> dueDateNotEqualTo(
+      DateTime dueDate) {
+    return QueryBuilder.apply(this, (query) {
+      if (query.whereSort == Sort.asc) {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'dueDate',
+              lower: [],
+              upper: [dueDate],
+              includeUpper: false,
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'dueDate',
+              lower: [dueDate],
+              includeLower: false,
+              upper: [],
+            ));
+      } else {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'dueDate',
+              lower: [dueDate],
+              includeLower: false,
+              upper: [],
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'dueDate',
+              lower: [],
+              upper: [dueDate],
+              includeUpper: false,
+            ));
+      }
+    });
+  }
+
+  QueryBuilder<ToDo, ToDo, QAfterWhereClause> dueDateGreaterThan(
+    DateTime dueDate, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'dueDate',
+        lower: [dueDate],
+        includeLower: include,
+        upper: [],
+      ));
+    });
+  }
+
+  QueryBuilder<ToDo, ToDo, QAfterWhereClause> dueDateLessThan(
+    DateTime dueDate, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'dueDate',
+        lower: [],
+        upper: [dueDate],
+        includeUpper: include,
+      ));
+    });
+  }
+
+  QueryBuilder<ToDo, ToDo, QAfterWhereClause> dueDateBetween(
+    DateTime lowerDueDate,
+    DateTime upperDueDate, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'dueDate',
+        lower: [lowerDueDate],
+        includeLower: includeLower,
+        upper: [upperDueDate],
+        includeUpper: includeUpper,
+      ));
     });
   }
 

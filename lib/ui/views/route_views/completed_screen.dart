@@ -33,10 +33,6 @@ class _CompletedListScreen extends State<CompletedListScreen> {
   late final ScrollController mainScrollController;
   late final ScrollPhysics scrollPhysics;
 
-  // For Task search.
-  late final SearchController searchController;
-  late List<MapEntry<String, int>> searchHistory;
-
   @override
   void initState() {
     super.initState();
@@ -61,11 +57,9 @@ class _CompletedListScreen extends State<CompletedListScreen> {
     allData = false;
     checkDelete = true;
     offset = (toDoProvider.rebuild) ? 0 : toDoProvider.toDos.length;
-    searchHistory = List.empty(growable: true);
   }
 
   void initializeControllers() {
-    searchController = SearchController();
     mainScrollController = ScrollController();
 
     mainScrollController.addListener(() async {
@@ -74,7 +68,6 @@ class _CompletedListScreen extends State<CompletedListScreen> {
               mainScrollController.position.maxScrollExtent &&
           !allData) {
         if (!loading && mounted) {
-          setState(() => loading = true);
           await fetchData();
         }
       }
@@ -136,10 +129,9 @@ class _CompletedListScreen extends State<CompletedListScreen> {
     return await fetchData();
   }
 
-  // Grab search from todos scrn.
-
   @override
   void dispose() {
+    mainScrollController.dispose();
     toDoProvider.removeListener(resetPagination);
     super.dispose();
   }
@@ -266,6 +258,7 @@ class _CompletedListScreen extends State<CompletedListScreen> {
       required BuildContext context,
       bool smallScreen = false}) {
     return ReorderableListView.builder(
+        buildDefaultDragHandles: false,
         physics: const NeverScrollableScrollPhysics(),
         shrinkWrap: true,
         itemCount: provider.toDos.length,
@@ -299,7 +292,8 @@ class _CompletedListScreen extends State<CompletedListScreen> {
               index: index,
               context: context,
               provider: provider,
-              smallScreen: smallScreen);
+              smallScreen: smallScreen,
+              reorderable: true);
         });
   }
 
@@ -316,7 +310,8 @@ class _CompletedListScreen extends State<CompletedListScreen> {
               index: index,
               provider: provider,
               context: context,
-              smallScreen: smallScreen);
+              smallScreen: smallScreen,
+              reorderable: false);
         });
   }
 
@@ -324,8 +319,11 @@ class _CompletedListScreen extends State<CompletedListScreen> {
       {required int index,
       bool smallScreen = false,
       required ToDoProvider provider,
-      required BuildContext context}) {
+      required BuildContext context,
+      bool reorderable = false}) {
     return ListTile(
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: Constants.innerPadding),
         key: ValueKey(index),
         shape: const RoundedRectangleBorder(
             borderRadius:
@@ -369,71 +367,221 @@ class _CompletedListScreen extends State<CompletedListScreen> {
         onTap: () async {
           provider.curToDo = provider.toDos[index];
           await showDialog(
-                  barrierDismissible: false,
-                  useRootNavigator: false,
-                  context: context,
-                  builder: (BuildContext context) => const UpdateToDoScreen())
-              .catchError((e) {
-            Flushbar? error;
-
-            error = Flushbars.createError(
-              message: e.cause,
+              barrierDismissible: false,
+              useRootNavigator: false,
               context: context,
-              dismissCallback: () => error?.dismiss(),
-            );
-
-            error.show(context);
-          },
-                  test: (e) =>
-                      e is FailureToCreateException ||
-                      e is FailureToUploadException);
+              builder: (BuildContext context) => const UpdateToDoScreen());
         },
-        trailing: Padding(
-          padding:
-              const EdgeInsets.symmetric(horizontal: Constants.innerPadding),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: Constants.padding),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      getBatteryIcon(toDo: provider.toDos[index]),
-                      AutoSizeText(
-                        "${provider.toDos[index].weight}",
-                        overflow: TextOverflow.visible,
-                        minFontSize: Constants.large,
-                        softWrap: false,
-                        maxLines: 1,
-                      ),
-                    ],
-                  )),
-              IconButton(
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                getBatteryIcon(toDo: provider.toDos[index]),
+                AutoSizeText(
+                  "${provider.toDos[index].weight}",
+                  overflow: TextOverflow.visible,
+                  minFontSize: Constants.large,
+                  softWrap: false,
+                  maxLines: 1,
+                ),
+              ],
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: Constants.innerPadding),
+              child: IconButton(
                   icon: const Icon(Icons.delete_forever),
                   onPressed: () async {
-                    // TODO: Modal for delete with checkDelete;
-                    // Factor out into a method.
-                    provider.curToDo = provider.toDos[index];
-
-                    await provider.deleteToDo().catchError((e) {
-                      Flushbar? error;
-
-                      error = Flushbars.createError(
-                        message: e.cause,
-                        context: context,
-                        dismissCallback: () => error?.dismiss(),
-                      );
-
-                      error.show(context);
-                    },
-                        test: (e) =>
-                            e is FailureToDeleteException ||
-                            e is FailureToUploadException);
+                    if (checkDelete) {
+                      return await showDialog<bool?>(
+                          barrierDismissible: true,
+                          context: context,
+                          builder: (BuildContext context) {
+                            bool dontAsk = !checkDelete;
+                            return StatefulBuilder(
+                              builder: (context, setState) => Dialog(
+                                  insetPadding: const EdgeInsets.all(
+                                      Constants.innerDialogPadding),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(
+                                        Constants.innerPadding),
+                                    child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          const Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.start,
+                                              children: [
+                                                Expanded(
+                                                  child: AutoSizeText(
+                                                    "Delete Task?",
+                                                    style:
+                                                        Constants.headerStyle,
+                                                    softWrap: true,
+                                                    overflow:
+                                                        TextOverflow.visible,
+                                                    maxLines: 2,
+                                                    minFontSize:
+                                                        Constants.medium,
+                                                  ),
+                                                )
+                                              ]),
+                                          const Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            children: [
+                                              Expanded(
+                                                child: AutoSizeText(
+                                                  "This cannot be undone.",
+                                                  style: Constants
+                                                      .largeHeaderStyle,
+                                                  softWrap: true,
+                                                  overflow:
+                                                      TextOverflow.visible,
+                                                  maxLines: 2,
+                                                  minFontSize: Constants.medium,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          Padding(
+                                            padding: const EdgeInsets.symmetric(
+                                                vertical:
+                                                    Constants.innerPadding),
+                                            child: Row(
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment
+                                                        .spaceBetween,
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  Expanded(
+                                                    child: Padding(
+                                                      padding:
+                                                          const EdgeInsets.only(
+                                                              right: Constants
+                                                                  .padding),
+                                                      child: FilledButton
+                                                          .tonalIcon(
+                                                              icon: const Icon(Icons
+                                                                  .close_outlined),
+                                                              onPressed: () {
+                                                                Navigator.pop(
+                                                                    context,
+                                                                    false);
+                                                              },
+                                                              label: const AutoSizeText(
+                                                                  "Cancel",
+                                                                  softWrap:
+                                                                      false,
+                                                                  overflow:
+                                                                      TextOverflow
+                                                                          .visible,
+                                                                  maxLines: 1,
+                                                                  minFontSize:
+                                                                      Constants
+                                                                          .small)),
+                                                    ),
+                                                  ),
+                                                  Expanded(
+                                                    child: Padding(
+                                                      padding:
+                                                          const EdgeInsets.only(
+                                                              left: Constants
+                                                                  .padding),
+                                                      child: FilledButton.icon(
+                                                        icon: const Icon(Icons
+                                                            .delete_forever_rounded),
+                                                        onPressed: () {
+                                                          Navigator.pop(
+                                                              context, true);
+                                                        },
+                                                        label:
+                                                            const AutoSizeText(
+                                                                "Delete",
+                                                                softWrap: false,
+                                                                overflow:
+                                                                    TextOverflow
+                                                                        .visible,
+                                                                maxLines: 1,
+                                                                minFontSize:
+                                                                    Constants
+                                                                        .small),
+                                                      ),
+                                                    ),
+                                                  )
+                                                ]),
+                                          ),
+                                          CheckboxListTile(
+                                              value: dontAsk,
+                                              shape: const RoundedRectangleBorder(
+                                                  borderRadius: BorderRadius.all(
+                                                      Radius.circular(Constants
+                                                          .roundedCorners))),
+                                              checkboxShape:
+                                                  const CircleBorder(),
+                                              title: const AutoSizeText(
+                                                "Don't ask me again",
+                                                overflow: TextOverflow.visible,
+                                                softWrap: false,
+                                                maxLines: 1,
+                                                minFontSize: Constants.medium,
+                                              ),
+                                              onChanged: (value) {
+                                                // TODO: Factor this into user class pls.
+                                                setState(() {
+                                                  dontAsk = value!;
+                                                  checkDelete = !value;
+                                                });
+                                              })
+                                        ]),
+                                  )),
+                            );
+                          }).then((delete) async {
+                        if (delete ?? false) {
+                          await handleDelete(
+                              provider: provider,
+                              index: index,
+                              context: context);
+                        }
+                      });
+                    } else {
+                      await handleDelete(
+                          provider: provider, index: index, context: context);
+                    }
                   }),
-            ],
-          ),
+            ),
+            (reorderable)
+                ? ReorderableDragStartListener(
+                    index: index, child: const Icon(Icons.drag_handle_rounded))
+                : const SizedBox.shrink()
+          ],
         ));
+  }
+
+  Future<void> handleDelete(
+      {required ToDoProvider provider,
+      required int index,
+      required BuildContext context}) async {
+    provider.curToDo = provider.toDos[index];
+
+    await provider.deleteToDo().catchError((e) {
+      Flushbar? error;
+
+      error = Flushbars.createError(
+        message: e.cause,
+        context: context,
+        dismissCallback: () => error?.dismiss(),
+      );
+
+      error.show(context);
+    },
+        test: (e) =>
+            e is FailureToDeleteException || e is FailureToUploadException);
   }
 }

@@ -1,4 +1,3 @@
-import 'package:allocate/ui/views/route_views/user_settings.dart';
 import 'package:another_flushbar/flushbar.dart';
 import "package:auto_route/auto_route.dart";
 import 'package:auto_size_text/auto_size_text.dart';
@@ -6,7 +5,9 @@ import "package:flutter/material.dart";
 import "package:provider/provider.dart";
 
 import '../../../model/task/group.dart';
+import '../../../providers/deadline_provider.dart';
 import '../../../providers/group_provider.dart';
+import '../../../providers/reminder_provider.dart';
 import '../../../providers/routine_provider.dart';
 import '../../../providers/todo_provider.dart';
 import '../../../providers/user_provider.dart';
@@ -15,10 +16,7 @@ import '../../../util/constants.dart';
 import '../../widgets/desktop_drawer_wrapper.dart';
 import '../../widgets/flushbars.dart';
 import '../../widgets/padded_divider.dart';
-import '../routes.dart';
 import '../sub_views.dart';
-import 'deadlines_screen.dart';
-import 'reminders_screen.dart';
 
 @RoutePage()
 class HomeScreen extends StatefulWidget {
@@ -32,103 +30,21 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreen extends State<HomeScreen> {
   late int selectedPageIndex;
-  late final PageStorageBucket bucket;
 
   late final ToDoProvider toDoProvider;
   late final RoutineProvider routineProvider;
+  late final ReminderProvider reminderProvider;
+  late final DeadlineProvider deadlineProvider;
   late final UserProvider userProvider;
   late final GroupProvider groupProvider;
 
   late Future<List<Group>> groupFuture;
 
-  late bool mainLoading;
-  late bool subLoading;
+  late bool navLoading;
 
   late final ScrollController navScrollController;
 
-  //late final ScrollController mainScrollController;
   late final ScrollPhysics scrollPhysics;
-
-  // TODO: Potentially move to constants class.
-  // Separate Screens.
-  static ViewRoute groupScreen =
-      const ViewRoute(view: GroupsListScreen(), name: "Groups");
-  static ViewRoute settingsScreen = const ViewRoute(
-    view: UserSettingsScreen(),
-    name: "Settings",
-  );
-
-  static List<ViewRoute> viewRoutes = [
-    const ViewRoute(
-      destination: NavigationDrawerDestination(
-        icon: Icon(Icons.wb_sunny_outlined),
-        label: Text("My Day", overflow: TextOverflow.ellipsis),
-        selectedIcon: Icon(Icons.wb_sunny_rounded),
-      ),
-      view: MyDayScreen(),
-      name: "My Day",
-    ),
-
-    const ViewRoute(
-      destination: NavigationDrawerDestination(
-        icon: Icon(Icons.notifications_outlined),
-        label: Text("Notifications"),
-        selectedIcon: Icon(Icons.notifications_rounded),
-      ),
-      view: NotificationsScreen(),
-      name: "Notifications",
-    ),
-
-    const ViewRoute(
-      destination: NavigationDrawerDestination(
-          icon: Icon(Icons.push_pin_outlined),
-          selectedIcon: Icon(Icons.push_pin_rounded),
-          label: Text("Reminders")),
-      view: RemindersListScreen(),
-      name: "Reminders",
-    ),
-
-    const ViewRoute(
-        destination: NavigationDrawerDestination(
-          icon: Icon(Icons.announcement_outlined),
-          label: Text("Deadlines"),
-          selectedIcon: Icon(Icons.announcement_rounded),
-        ),
-        view: DeadlinesListScreen(),
-        name: "Deadlines"),
-
-    const ViewRoute(
-        destination: NavigationDrawerDestination(
-          icon: Icon(Icons.task_outlined),
-          label: Text("Tasks"),
-          selectedIcon: Icon(Icons.task_rounded),
-        ),
-        view: ToDosListScreen(key: PageStorageKey<String>("ToDoListPage")),
-        name: "Tasks"),
-
-    // Completed
-    const ViewRoute(
-        destination: NavigationDrawerDestination(
-          icon: Icon(Icons.task_alt_outlined),
-          label: Text("Completed"),
-          selectedIcon: Icon(Icons.task_alt_rounded),
-        ),
-        view: CompletedListScreen(),
-        name: "Completed"),
-    // Routines
-    const ViewRoute(
-        destination: NavigationDrawerDestination(
-          icon: Icon(Icons.repeat_rounded),
-          label: Text("Routines"),
-          selectedIcon: Icon(Icons.repeat_rounded),
-        ),
-        view: RoutinesListScreen(),
-        name: "Routines"),
-    groupScreen,
-    settingsScreen,
-  ];
-
-  List<Widget> views = viewRoutes.map((view) => view.view).toList();
 
   void updateDayWeight() async {
     await toDoProvider.getMyDayWeight().then((weight) {
@@ -149,25 +65,28 @@ class _HomeScreen extends State<HomeScreen> {
   void initializeProviders() {
     toDoProvider = Provider.of<ToDoProvider>(context, listen: false);
     routineProvider = Provider.of<RoutineProvider>(context, listen: false);
+    reminderProvider = Provider.of<ReminderProvider>(context, listen: false);
+    deadlineProvider = Provider.of<DeadlineProvider>(context, listen: false);
     userProvider = Provider.of<UserProvider>(context, listen: false);
     groupProvider = Provider.of<GroupProvider>(context, listen: false);
 
     toDoProvider.addListener(updateDayWeight);
     routineProvider.addListener(updateDayWeight);
+    groupProvider.addListener(resetNavGroups);
   }
 
   void resetProviders() {
     toDoProvider.rebuild = true;
     routineProvider.rebuild = true;
+    deadlineProvider.rebuild = true;
+    reminderProvider.rebuild = true;
     // userProvider.rebuild = true
     groupProvider.rebuild = true;
   }
 
   void initializeParams() {
     selectedPageIndex = widget.index ?? 0;
-    mainLoading = false;
-    subLoading = false;
-    bucket = PageStorageBucket();
+    navLoading = false;
     groupFuture = groupProvider.mostRecent(grabToDos: true);
   }
 
@@ -179,24 +98,28 @@ class _HomeScreen extends State<HomeScreen> {
 
   Future<void> resetNavGroups() async {
     setState(() {
-      subLoading = true;
+      navLoading = true;
     });
 
     return Future.delayed(
         const Duration(seconds: 1),
         () async => await groupProvider
-            .setMostRecent()
-            .whenComplete(() => setState(() => subLoading = false)));
+            .mostRecent(grabToDos: true)
+            .then((groups) => setState(() {
+                  groupProvider.recentGroups = groups;
+                  navLoading = false;
+                })));
   }
 
   @override
   void dispose() {
+    navScrollController.dispose();
     toDoProvider.removeListener(updateDayWeight);
     routineProvider.removeListener(updateDayWeight);
+    groupProvider.removeListener(resetNavGroups);
     super.dispose();
   }
 
-  // TODO: Figure out some way to factor this into the app bar.
   Widget buildDrainBar({required BuildContext context}) {
     int maxBandwidth =
         userProvider.curUser?.bandwidth ?? Constants.maxBandwidth;
@@ -273,9 +196,7 @@ class _HomeScreen extends State<HomeScreen> {
           child: Scaffold(
               appBar: buildAppBar(context: context),
               body: SafeArea(
-                  child: PageStorage(
-                      bucket: bucket,
-                      child: viewRoutes[selectedPageIndex].view))))
+                  child: Constants.viewRoutes[selectedPageIndex].view)))
     ]);
   }
 
@@ -285,9 +206,7 @@ class _HomeScreen extends State<HomeScreen> {
         appBar: buildAppBar(context: context),
         drawer:
             buildNavigationDrawer(context: context, largeScreen: largeScreen),
-        body: SafeArea(
-            child: PageStorage(
-                bucket: bucket, child: viewRoutes[selectedPageIndex].view)));
+        body: SafeArea(child: Constants.viewRoutes[selectedPageIndex].view));
   }
 
   AppBar buildAppBar({required BuildContext context}) {
@@ -318,9 +237,6 @@ class _HomeScreen extends State<HomeScreen> {
             child: DrawerHeader(
               child: ListTile(
                 shape: const RoundedRectangleBorder(
-                    side: BorderSide(
-                        style: BorderStyle.none,
-                        strokeAlign: BorderSide.strokeAlignCenter),
                     borderRadius: BorderRadius.all(
                         Radius.circular(Constants.roundedCorners))),
                 leading: CircleAvatar(
@@ -334,8 +250,14 @@ class _HomeScreen extends State<HomeScreen> {
                             .instance.supabaseClient.auth.currentSession)
                     ? const Text("Online")
                     : const Text("Offline"),
-                onTap: () => setState(() =>
-                    selectedPageIndex = viewRoutes.indexOf(settingsScreen)),
+                onTap: () => setState(() {
+                  selectedPageIndex =
+                      Constants.viewRoutes.indexOf(Constants.settingsScreen);
+                  resetProviders();
+                  if (!largeScreen) {
+                    Navigator.pop(context);
+                  }
+                }),
                 trailing: IconButton(
                   icon: const Icon(Icons.search_outlined),
                   selectedIcon: const Icon(Icons.search),
@@ -353,35 +275,25 @@ class _HomeScreen extends State<HomeScreen> {
             ),
           ),
 
-          ...viewRoutes
+          ...Constants.viewRoutes
               .map((view) => view.destination ?? const SizedBox.shrink()),
           const PaddedDivider(padding: Constants.innerPadding),
           // Drop down menu for Groups.
-          // TODO: Factor rounded rectangle shape to constants class.
+          // Future TODO: Factor rounded rectangle shape to constants class.
           // This Card is a workaround until The ExpansionTile inkwell bug is fixed.
           Card(
             clipBehavior: Clip.hardEdge,
             elevation: 0,
             color: Colors.transparent,
             shape: const RoundedRectangleBorder(
-              side: BorderSide(
-                  style: BorderStyle.none,
-                  strokeAlign: BorderSide.strokeAlignCenter),
               borderRadius:
                   BorderRadius.all(Radius.circular(Constants.roundedCorners)),
             ),
             child: ExpansionTile(
               tilePadding: const EdgeInsets.symmetric(
                   horizontal: Constants.innerPadding + Constants.padding),
-              shape: const RoundedRectangleBorder(
-                side: BorderSide(
-                    style: BorderStyle.none,
-                    strokeAlign: BorderSide.strokeAlignCenter),
-              ),
+              shape: const RoundedRectangleBorder(),
               collapsedShape: const RoundedRectangleBorder(
-                  side: BorderSide(
-                      style: BorderStyle.none,
-                      strokeAlign: BorderSide.strokeAlignCenter),
                   borderRadius:
                       BorderRadius.all(Radius.circular(Constants.circular))),
               leading: const Icon(Icons.table_view_outlined),
@@ -397,9 +309,6 @@ class _HomeScreen extends State<HomeScreen> {
                     contentPadding: const EdgeInsets.symmetric(
                         horizontal: Constants.padding + Constants.innerPadding),
                     shape: const RoundedRectangleBorder(
-                        side: BorderSide(
-                            style: BorderStyle.none,
-                            strokeAlign: BorderSide.strokeAlignCenter),
                         borderRadius: BorderRadius.all(
                             Radius.circular(Constants.roundedCorners))),
                     leading: const Icon(Icons.workspaces_outlined),
@@ -409,16 +318,19 @@ class _HomeScreen extends State<HomeScreen> {
                       overflow: TextOverflow.ellipsis,
                       softWrap: false,
                     ),
-                    onTap: () => setState(() =>
-                        selectedPageIndex = viewRoutes.indexOf(groupScreen))),
+                    onTap: () => setState(() {
+                          resetProviders();
+                          selectedPageIndex = Constants.viewRoutes
+                              .indexOf(Constants.groupScreen);
+                          if (!largeScreen) {
+                            Navigator.pop(context);
+                          }
+                        })),
 
                 ListTile(
                     contentPadding: const EdgeInsets.symmetric(
                         horizontal: Constants.padding + Constants.innerPadding),
                     shape: const RoundedRectangleBorder(
-                        side: BorderSide(
-                            style: BorderStyle.none,
-                            strokeAlign: BorderSide.strokeAlignCenter),
                         borderRadius: BorderRadius.all(
                             Radius.circular(Constants.roundedCorners))),
                     leading: const Icon(Icons.add_rounded),
@@ -464,9 +376,6 @@ class _HomeScreen extends State<HomeScreen> {
                           horizontal:
                               Constants.padding + Constants.innerPadding),
                       shape: const RoundedRectangleBorder(
-                          side: BorderSide(
-                              style: BorderStyle.none,
-                              strokeAlign: BorderSide.strokeAlignCenter),
                           borderRadius: BorderRadius.all(
                               Radius.circular(Constants.roundedCorners))),
                       leading:
@@ -484,7 +393,8 @@ class _HomeScreen extends State<HomeScreen> {
                             context: context,
                             builder: (BuildContext context) =>
                                 const UpdateGroupScreen()).whenComplete(() {
-                          resetNavGroups();
+                          setState(() =>
+                              value.recentGroups[index] = value.curGroup!);
                         });
                       },
                       trailing: (value.recentGroups[index].toDos.length > 1)
@@ -497,7 +407,7 @@ class _HomeScreen extends State<HomeScreen> {
                           : null);
                 });
           }),
-          (subLoading)
+          (navLoading)
               ? const Padding(
                   padding: EdgeInsets.all(Constants.padding),
                   child: Center(child: CircularProgressIndicator()),
@@ -505,12 +415,4 @@ class _HomeScreen extends State<HomeScreen> {
               : const SizedBox.shrink()
         ]);
   }
-}
-
-class ViewRoute {
-  final String name;
-  final NavigationDrawerDestination? destination;
-  final Widget view;
-
-  const ViewRoute({required this.name, this.destination, required this.view});
 }

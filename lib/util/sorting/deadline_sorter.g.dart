@@ -86,7 +86,7 @@ P _deadlineSorterDeserializeProp<P>(
 const _DeadlineSortersortMethodEnumValueMap = {
   'none': 0,
   'name': 1,
-  'dueDate': 2,
+  'due_date': 2,
   'weight': 3,
   'priority': 4,
   'duration': 5,

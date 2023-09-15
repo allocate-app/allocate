@@ -1188,7 +1188,6 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                           mainAxisAlignment: MainAxisAlignment.center,
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            // const Icon(Icons.drag_handle_rounded),
                             Padding(
                               padding: const EdgeInsets.all(Constants.padding),
                               child: FilledButton.icon(
@@ -1334,149 +1333,11 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
     ]);
   }
 
-  ListView buildSubTasksList(
-      {bool smallScreen = false,
-      ScrollPhysics physics = const BouncingScrollPhysics()}) {
-    return ListView.separated(
-      // Possibly need scroll controller.
-      physics: physics,
-      shrinkWrap: true,
-      itemCount: min(Constants.numTasks[toDo.taskType]!, shownTasks),
-      separatorBuilder: (context, index) => const Divider(),
-      itemBuilder: (BuildContext context, int index) {
-        return CheckboxListTile(
-            checkboxShape: const CircleBorder(),
-            controlAffinity: ListTileControlAffinity.leading,
-            shape: const CircleBorder(),
-            title: Row(
-              children: [
-                IconButton(
-                  // Not ideal, but the getBatteryIcon function is only for the large battery atm.
-                  // This is due to the remapping function.
-                  icon: Constants.batteryIcons[toDo.subTasks[index].weight]!,
-                  selectedIcon: Constants
-                      .selectedBatteryIcons[toDo.subTasks[index].weight]!,
-                  onPressed: () {
-                    showModalBottomSheet<void>(
-                        showDragHandle: true,
-                        context: context,
-                        builder: (BuildContext context) {
-                          return StatefulBuilder(
-                            builder: (context, setState) => Center(
-                                heightFactor: 1,
-                                child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      // const Icon(Icons.drag_handle_rounded),
-                                      const Text("Energy Drain",
-                                          style: Constants.headerStyle),
-                                      Padding(
-                                          padding: const EdgeInsets.all(
-                                              Constants.padding),
-                                          child: Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.spaceEvenly,
-                                            children: [
-                                              const Icon(Icons.battery_full),
-                                              Expanded(
-                                                child: Slider(
-                                                  value: toDo
-                                                      .subTasks[index].weight
-                                                      .toDouble(),
-                                                  max: Constants.maxTaskWeight
-                                                      .toDouble(),
-                                                  label: (toDo.subTasks[index]
-                                                              .weight >
-                                                          (Constants.maxTaskWeight /
-                                                                  2)
-                                                              .floor())
-                                                      ? " ${toDo.subTasks[index].weight} ${Constants.lowBattery}"
-                                                      : " ${toDo.subTasks[index].weight} ${Constants.fullBattery}",
-                                                  divisions:
-                                                      Constants.maxTaskWeight,
-                                                  onChanged: (value) =>
-                                                      setState(() {
-                                                    checkClose = true;
-                                                    toDo.subTasks[index]
-                                                        .weight = value.toInt();
-                                                  }),
-                                                ),
-                                              ),
-                                              const Icon(Icons.battery_1_bar),
-                                            ],
-                                          )),
-                                    ])),
-                          );
-                        }).whenComplete(() => setState(() {
-                          checkClose = true;
-                          toDo.weight = toDoProvider.calculateWeight(
-                              subTasks: toDo.subTasks);
-                          toDo.realDuration =
-                              toDoProvider.calculateRealDuration(
-                                  weight: toDo.weight,
-                                  duration: toDo.expectedDuration);
-                        }));
-                  },
-                ),
-                Expanded(
-                  child: AutoSizeTextField(
-                      controller: subTaskEditingController[index],
-                      maxLines: 1,
-                      minFontSize: Constants.small,
-                      decoration: const InputDecoration.collapsed(
-                        hintText: "Step name",
-                      ),
-                      onChanged: (value) {
-                        toDo.subTasks[index].name = value;
-                        subTaskEditingController[index].value =
-                            subTaskEditingController[index].value.copyWith(
-                                  text: value,
-                                  selection: TextSelection.collapsed(
-                                      offset: value.length),
-                                );
-                      }),
-                ),
-              ],
-            ),
-            value: toDo.subTasks[index].completed,
-            onChanged: (bool? value) => setState(() {
-                  checkClose = true;
-                  toDo.subTasks[index].completed = value!;
-                }),
-
-            // Delete Subtask
-            secondary: IconButton(
-                icon: const Icon(Icons.delete),
-                onPressed: () => setState(() {
-                      checkClose = true;
-                      toDo.subTasks.setRange(
-                          index,
-                          toDo.subTasks.length - 1,
-                          toDo.subTasks
-                              .getRange(index + 1, toDo.subTasks.length));
-                      toDo.subTasks.last = SubTask();
-
-                      for (int i = 0; i < toDo.subTasks.length; i++) {
-                        subTaskEditingController[i].value =
-                            subTaskEditingController[i]
-                                .value
-                                .copyWith(text: toDo.subTasks[i].name);
-                      }
-
-                      shownTasks--;
-                      shownTasks = max(shownTasks, 0);
-                      toDo.weight =
-                          toDoProvider.calculateWeight(subTasks: toDo.subTasks);
-                    })));
-      },
-    );
-  }
-
   ReorderableListView buildReorderableSubTasks(
       {bool smallScreen = false,
       ScrollPhysics physics = const BouncingScrollPhysics()}) {
     return ReorderableListView.builder(
+      buildDefaultDragHandles: false,
       physics: physics,
       shrinkWrap: true,
       itemCount: min(cacheSubTasks.length, shownTasks),
@@ -1495,6 +1356,8 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
       },
       itemBuilder: (BuildContext context, int index) {
         return CheckboxListTile(
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: Constants.innerPadding),
             key: ValueKey(index),
             checkboxShape: const CircleBorder(),
             controlAffinity: ListTileControlAffinity.leading,
@@ -1517,7 +1380,6 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      // const Icon(Icons.drag_handle_rounded),
                                       const Text("Step Drain",
                                           style: Constants.headerStyle),
                                       Padding(
@@ -1595,26 +1457,33 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                 }),
 
             // Delete Subtask
-            secondary: Padding(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: Constants.innerPadding),
-              child: IconButton(
-                  icon: const Icon(Icons.delete),
-                  onPressed: () => setState(() {
-                        checkClose = true;
-                        SubTask st = cacheSubTasks.removeAt(index);
-                        st = SubTask();
-                        cacheSubTasks.add(st);
-                        TextEditingController ct =
-                            subTaskEditingController.removeAt(index);
-                        ct.value = ct.value.copyWith(text: st.name);
-                        subTaskEditingController.add(ct);
+            secondary: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: Constants.innerPadding),
+                  child: IconButton(
+                      icon: const Icon(Icons.delete),
+                      onPressed: () => setState(() {
+                            checkClose = true;
+                            SubTask st = cacheSubTasks.removeAt(index);
+                            st = SubTask();
+                            cacheSubTasks.add(st);
+                            TextEditingController ct =
+                                subTaskEditingController.removeAt(index);
+                            ct.value = ct.value.copyWith(text: st.name);
+                            subTaskEditingController.add(ct);
 
-                        shownTasks--;
-                        shownTasks = max(shownTasks, 0);
-                        toDo.weight = toDoProvider.calculateWeight(
-                            subTasks: cacheSubTasks);
-                      })),
+                            shownTasks--;
+                            shownTasks = max(shownTasks, 0);
+                            toDo.weight = toDoProvider.calculateWeight(
+                                subTasks: cacheSubTasks);
+                          })),
+                ),
+                ReorderableDragStartListener(
+                    index: index, child: const Icon(Icons.drag_handle_rounded))
+              ],
             ));
       },
     );

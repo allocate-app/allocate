@@ -226,6 +226,7 @@ class GroupRepo implements GroupRepository {
   Future<List<Group>> mostRecent({int limit = 50}) async =>
       await _isarClient.groups
           .where()
+          .toDeleteEqualTo(false)
           .sortByLastUpdatedDesc()
           .limit(limit)
           .findAll();
@@ -242,6 +243,7 @@ class GroupRepo implements GroupRepository {
           .toDeleteEqualTo(false)
           .sortByCustomViewIndex()
           .thenByLastUpdatedDesc()
+          .offset(offset)
           .limit(limit)
           .findAll();
 

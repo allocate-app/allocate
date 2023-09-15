@@ -32,6 +32,7 @@ class ToDo with EquatableMixin implements Copyable<ToDo> {
   String description;
   @Index()
   int weight;
+
   // Stored in seconds.
   int expectedDuration;
   @Index()
@@ -42,6 +43,7 @@ class ToDo with EquatableMixin implements Copyable<ToDo> {
   @Index()
   bool completed;
   DateTime startDate;
+  @Index()
   DateTime dueDate;
 
   @Index()
@@ -112,7 +114,8 @@ class ToDo with EquatableMixin implements Copyable<ToDo> {
         repeatDays = entity["repeatDays"] as List<bool>,
         repeatSkip = entity["repeatSkip"] as int,
         subTasks = List.from(
-            (jsonDecode(entity["subTasks"]) as List).map((st) => SubTask.fromEntity(entity: st)),
+            (jsonDecode(entity["subTasks"]) as List)
+                .map((st) => SubTask.fromEntity(entity: st)),
             growable: false),
         isSynced = true,
         toDelete = false,
@@ -140,7 +143,8 @@ class ToDo with EquatableMixin implements Copyable<ToDo> {
         "customFreq": customFreq.index,
         "repeatDays": repeatDays,
         "repeatSkip": repeatSkip,
-        "subTasks": jsonEncode(subTasks.map((st) => st.toEntity()).toList(growable: false)),
+        "subTasks": jsonEncode(
+            subTasks.map((st) => st.toEntity()).toList(growable: false)),
         "lastUpdated": lastUpdated.toIso8601String()
       };
 
@@ -212,6 +216,7 @@ class ToDo with EquatableMixin implements Copyable<ToDo> {
             subTasks ?? this.subTasks,
           ),
           lastUpdated: lastUpdated ?? this.lastUpdated);
+
   @ignore
   @override
   List<Object?> get props => [

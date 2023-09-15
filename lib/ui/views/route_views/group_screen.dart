@@ -5,14 +5,20 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../../../model/task/group.dart';
+import '../../../model/task/todo.dart';
 import '../../../providers/group_provider.dart';
+import '../../../providers/todo_provider.dart';
 import '../../../util/constants.dart';
 import '../../../util/enums.dart';
 import '../../../util/exceptions.dart';
+import '../../../util/numbers.dart';
 import '../../../util/sorting/group_sorter.dart';
 import '../../widgets/flushbars.dart';
+import '../../widgets/padded_divider.dart';
 import '../sub_views/create_group.dart';
+import '../sub_views/create_todo.dart';
 import '../sub_views/update_group.dart';
+import '../sub_views/update_todo.dart';
 
 class GroupsListScreen extends StatefulWidget {
   const GroupsListScreen({Key? key}) : super(key: key);
@@ -28,14 +34,11 @@ class _GroupsListScreen extends State<GroupsListScreen> {
   late int offset;
 
   late final GroupProvider groupProvider;
+  late final ToDoProvider toDoProvider;
 
   // For linked todos.
   late final ScrollController mainScrollController;
   late final ScrollPhysics scrollPhysics;
-
-  // For Task search.
-  late final SearchController searchController;
-  late List<MapEntry<String, int>> searchHistory;
 
   @override
   void initState() {
@@ -52,6 +55,7 @@ class _GroupsListScreen extends State<GroupsListScreen> {
 
   void initializeProviders() {
     groupProvider = Provider.of<GroupProvider>(context, listen: false);
+    toDoProvider = Provider.of<ToDoProvider>(context, listen: false);
 
     groupProvider.addListener(resetPagination);
   }
@@ -61,11 +65,9 @@ class _GroupsListScreen extends State<GroupsListScreen> {
     allData = false;
     checkDelete = true;
     offset = (groupProvider.rebuild) ? 0 : groupProvider.groups.length;
-    searchHistory = List.empty(growable: true);
   }
 
   void initializeControllers() {
-    searchController = SearchController();
     mainScrollController = ScrollController();
 
     mainScrollController.addListener(() async {
@@ -74,7 +76,6 @@ class _GroupsListScreen extends State<GroupsListScreen> {
               mainScrollController.position.maxScrollExtent &&
           !allData) {
         if (!loading && mounted) {
-          setState(() => loading = true);
           await fetchData();
         }
       }
@@ -101,7 +102,10 @@ class _GroupsListScreen extends State<GroupsListScreen> {
     return Future.delayed(
         const Duration(seconds: 1),
         () async => await groupProvider
-                .getGroupsBy(limit: Constants.limitPerQuery, offset: offset)
+                .getGroupsBy(
+                    limit: Constants.limitPerQuery,
+                    offset: offset,
+                    grabToDos: true)
                 .then((newGroups) {
               offset += newGroups.length;
               groupProvider.groups.addAll(newGroups);
@@ -135,12 +139,41 @@ class _GroupsListScreen extends State<GroupsListScreen> {
     return await fetchData();
   }
 
-  // Grab search from todos scrn.
-
   @override
   void dispose() {
+    mainScrollController.dispose();
     groupProvider.removeListener(resetPagination);
     super.dispose();
+  }
+
+  Icon getBatteryIcon({required ToDo toDo}) {
+    int weight = (toDo.taskType == TaskType.small)
+        ? toDo.weight
+        : remap(
+                x: toDo.weight,
+                inMin: 0,
+                inMax: Constants.maxWeight,
+                outMin: 0,
+                outMax: 5)
+            .toInt();
+
+    return Constants.batteryIcons[weight]!;
+  }
+
+  Future<void> updateGroupToDo({required BuildContext context}) async {
+    await toDoProvider.updateToDo().catchError((e) {
+      Flushbar? error;
+
+      error = Flushbars.createError(
+        message: e.cause,
+        context: context,
+        dismissCallback: () => error?.dismiss(),
+      );
+
+      error.show(context);
+    },
+        test: (e) =>
+            e is FailureToCreateException || e is FailureToUploadException);
   }
 
   @override
@@ -202,29 +235,28 @@ class _GroupsListScreen extends State<GroupsListScreen> {
                         .toList(growable: false)),
               ),
             ]),
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: Constants.padding),
-          child: ListTile(
-            shape: const RoundedRectangleBorder(
-              borderRadius:
-                  BorderRadius.all(Radius.circular(Constants.roundedCorners)),
-            ),
-            onTap: () async => await showDialog(
-              barrierDismissible: false,
-              context: context,
-              builder: (BuildContext context) => const CreateGroupScreen(),
-            ),
-            leading: CircleAvatar(
-              child: Icon(Icons.add_outlined,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant),
-            ),
-            title: const AutoSizeText(
-              "Create New",
-              overflow: TextOverflow.visible,
-              softWrap: false,
-              maxLines: 1,
-              minFontSize: Constants.medium,
-            ),
+        ListTile(
+          contentPadding: const EdgeInsets.symmetric(
+              horizontal: Constants.innerPadding, vertical: Constants.padding),
+          shape: const RoundedRectangleBorder(
+            borderRadius:
+                BorderRadius.all(Radius.circular(Constants.roundedCorners)),
+          ),
+          onTap: () async => await showDialog(
+            barrierDismissible: false,
+            context: context,
+            builder: (BuildContext context) => const CreateGroupScreen(),
+          ),
+          leading: CircleAvatar(
+            child: Icon(Icons.add_outlined,
+                color: Theme.of(context).colorScheme.onSurfaceVariant),
+          ),
+          title: const AutoSizeText(
+            "Create New",
+            overflow: TextOverflow.visible,
+            softWrap: false,
+            maxLines: 1,
+            minFontSize: Constants.medium,
           ),
         ),
         Flexible(
@@ -275,6 +307,7 @@ class _GroupsListScreen extends State<GroupsListScreen> {
       required BuildContext context,
       bool largeScreen = false}) {
     return ReorderableListView.builder(
+        buildDefaultDragHandles: false,
         physics: const NeverScrollableScrollPhysics(),
         shrinkWrap: true,
         itemCount: provider.groups.length,
@@ -304,9 +337,11 @@ class _GroupsListScreen extends State<GroupsListScreen> {
           }
         },
         itemBuilder: (BuildContext context, int index) {
-          // This needs to be a listtile
           return buildGroupExpansionTile(
-              index: index, context: context, provider: provider);
+              index: index,
+              context: context,
+              provider: provider,
+              reorderable: true);
         });
   }
 
@@ -320,14 +355,18 @@ class _GroupsListScreen extends State<GroupsListScreen> {
         itemCount: provider.groups.length,
         itemBuilder: (BuildContext context, int index) {
           return buildGroupExpansionTile(
-              index: index, context: context, provider: provider);
+              index: index,
+              context: context,
+              provider: provider,
+              reorderable: false);
         });
   }
 
   Widget buildGroupExpansionTile(
       {required int index,
       required BuildContext context,
-      required GroupProvider provider}) {
+      required GroupProvider provider,
+      bool reorderable = false}) {
     // This needs rebuilding.
 
     // Refactor into an expansion tile card.
@@ -340,40 +379,27 @@ class _GroupsListScreen extends State<GroupsListScreen> {
       shape: RoundedRectangleBorder(
           side: BorderSide(
               color: Theme.of(context).colorScheme.outline,
-              strokeAlign: BorderSide.strokeAlignOutside),
+              strokeAlign: BorderSide.strokeAlignInside),
           borderRadius: const BorderRadius.all(
               Radius.circular(Constants.roundedCorners))),
       child: ExpansionTile(
-        onExpansionChanged: (value) {
-          if (value) {
-            // TODO: Change this to query.
-            groupProvider.groups[index].toDos = [];
-          }
-        },
-        leading: IconButton.filledTonal(
-            icon: const Icon(Icons.edit_rounded),
-            onPressed: () async {
-              provider.curGroup = provider.groups[index];
-              await showDialog(
-                  barrierDismissible: false,
-                  useRootNavigator: false,
-                  context: context,
-                  builder: (BuildContext context) =>
-                      const UpdateGroupScreen()).catchError((e) {
-                Flushbar? error;
-
-                error = Flushbars.createError(
-                  message: e.cause,
-                  context: context,
-                  dismissCallback: () => error?.dismiss(),
-                );
-
-                error.show(context);
-              },
-                  test: (e) =>
-                      e is FailureToCreateException ||
-                      e is FailureToUploadException);
-            }),
+        initiallyExpanded: true,
+        tilePadding: const EdgeInsets.all(Constants.innerPadding),
+        leading: Padding(
+          padding:
+              const EdgeInsets.symmetric(horizontal: Constants.innerPadding),
+          child: IconButton.filledTonal(
+              icon: const Icon(Icons.edit_rounded),
+              onPressed: () async {
+                provider.curGroup = provider.groups[index];
+                await showDialog(
+                    barrierDismissible: false,
+                    useRootNavigator: false,
+                    context: context,
+                    builder: (BuildContext context) =>
+                        const UpdateGroupScreen());
+              }),
+        ),
         collapsedShape: const RoundedRectangleBorder(
             borderRadius:
                 BorderRadius.all(Radius.circular(Constants.roundedCorners))),
@@ -386,17 +412,236 @@ class _GroupsListScreen extends State<GroupsListScreen> {
             minFontSize: Constants.medium,
             softWrap: true,
             maxLines: 1),
-        trailing: Padding(
-          padding:
-              const EdgeInsets.symmetric(horizontal: Constants.innerPadding),
-          child: IconButton(
-              icon: const Icon(Icons.delete_forever),
-              onPressed: () async {
-                // TODO: Modal for delete with checkDelete;
-                // Factor out into a method.
-                provider.curGroup = provider.groups[index];
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: Constants.innerPadding),
+              child: IconButton(
+                  icon: const Icon(Icons.delete_forever),
+                  onPressed: () async {
+                    if (checkDelete) {
+                      return await showDialog<bool?>(
+                          barrierDismissible: true,
+                          context: context,
+                          builder: (BuildContext context) {
+                            bool dontAsk = !checkDelete;
+                            return StatefulBuilder(
+                              builder: (context, setState) => Dialog(
+                                  insetPadding: const EdgeInsets.all(
+                                      Constants.innerDialogPadding),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(
+                                        Constants.innerPadding),
+                                    child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          const Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.start,
+                                              children: [
+                                                Expanded(
+                                                  child: AutoSizeText(
+                                                    "Delete Group?",
+                                                    style:
+                                                        Constants.headerStyle,
+                                                    softWrap: true,
+                                                    overflow:
+                                                        TextOverflow.visible,
+                                                    maxLines: 2,
+                                                    minFontSize:
+                                                        Constants.medium,
+                                                  ),
+                                                )
+                                              ]),
+                                          const Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            children: [
+                                              Expanded(
+                                                child: AutoSizeText(
+                                                  "This cannot be undone.",
+                                                  style: Constants
+                                                      .largeHeaderStyle,
+                                                  softWrap: true,
+                                                  overflow:
+                                                      TextOverflow.visible,
+                                                  maxLines: 2,
+                                                  minFontSize: Constants.medium,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          Padding(
+                                            padding: const EdgeInsets.symmetric(
+                                                vertical:
+                                                    Constants.innerPadding),
+                                            child: Row(
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment
+                                                        .spaceBetween,
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  Expanded(
+                                                    child: Padding(
+                                                      padding:
+                                                          const EdgeInsets.only(
+                                                              right: Constants
+                                                                  .padding),
+                                                      child: FilledButton
+                                                          .tonalIcon(
+                                                              icon: const Icon(Icons
+                                                                  .close_outlined),
+                                                              onPressed: () {
+                                                                Navigator.pop(
+                                                                    context,
+                                                                    false);
+                                                              },
+                                                              label: const AutoSizeText(
+                                                                  "Cancel",
+                                                                  softWrap:
+                                                                      false,
+                                                                  overflow:
+                                                                      TextOverflow
+                                                                          .visible,
+                                                                  maxLines: 1,
+                                                                  minFontSize:
+                                                                      Constants
+                                                                          .small)),
+                                                    ),
+                                                  ),
+                                                  Expanded(
+                                                    child: Padding(
+                                                      padding:
+                                                          const EdgeInsets.only(
+                                                              left: Constants
+                                                                  .padding),
+                                                      child: FilledButton.icon(
+                                                        icon: const Icon(Icons
+                                                            .delete_forever_rounded),
+                                                        onPressed: () {
+                                                          Navigator.pop(
+                                                              context, true);
+                                                        },
+                                                        label:
+                                                            const AutoSizeText(
+                                                                "Delete",
+                                                                softWrap: false,
+                                                                overflow:
+                                                                    TextOverflow
+                                                                        .visible,
+                                                                maxLines: 1,
+                                                                minFontSize:
+                                                                    Constants
+                                                                        .small),
+                                                      ),
+                                                    ),
+                                                  )
+                                                ]),
+                                          ),
+                                          CheckboxListTile(
+                                              value: dontAsk,
+                                              shape: const RoundedRectangleBorder(
+                                                  borderRadius: BorderRadius.all(
+                                                      Radius.circular(Constants
+                                                          .roundedCorners))),
+                                              checkboxShape:
+                                                  const CircleBorder(),
+                                              title: const AutoSizeText(
+                                                "Don't ask me again",
+                                                overflow: TextOverflow.visible,
+                                                softWrap: false,
+                                                maxLines: 1,
+                                                minFontSize: Constants.medium,
+                                              ),
+                                              onChanged: (value) {
+                                                // TODO: Factor this into user class pls.
+                                                setState(() {
+                                                  dontAsk = value!;
+                                                  checkDelete = !value;
+                                                });
+                                              })
+                                        ]),
+                                  )),
+                            );
+                          }).then((delete) async {
+                        if (delete ?? false) {
+                          await handleDelete(
+                              provider: provider,
+                              index: index,
+                              context: context);
+                        }
+                      });
+                    } else {
+                      await handleDelete(
+                          provider: provider, index: index, context: context);
+                    }
+                  }),
+            ),
+            (reorderable)
+                ? ReorderableDragStartListener(
+                    index: index, child: const Icon(Icons.drag_handle_rounded))
+                : const SizedBox.shrink(),
+          ],
+        ),
+        children: [
+          buildToDosList(
+            index: index,
+            physics: const NeverScrollableScrollPhysics(),
+          ),
+          const PaddedDivider(padding: Constants.padding),
+          buildCreateToDoBar(
+              context: context, id: provider.groups[index].localID!),
+        ],
+      ),
+    );
+  }
 
-                await provider.deleteGroup().catchError((e) {
+  Future<void> handleDelete(
+      {required GroupProvider provider,
+      required int index,
+      required BuildContext context}) async {
+    provider.curGroup = provider.groups[index];
+
+    await provider.deleteGroup().catchError((e) {
+      Flushbar? error;
+
+      error = Flushbars.createError(
+        message: e.cause,
+        context: context,
+        dismissCallback: () => error?.dismiss(),
+      );
+
+      error.show(context);
+    },
+        test: (e) =>
+            e is FailureToDeleteException || e is FailureToUploadException);
+  }
+
+  ListView buildToDosList(
+      {required int index,
+      ScrollPhysics physics = const BouncingScrollPhysics()}) {
+    Group group = groupProvider.groups[index];
+    return ListView(physics: physics, shrinkWrap: true, children: [
+      Consumer<GroupProvider>(
+        builder: (BuildContext context, GroupProvider value, Widget? child) {
+          return ReorderableListView.builder(
+              buildDefaultDragHandles: false,
+              physics: const NeverScrollableScrollPhysics(),
+              shrinkWrap: true,
+              itemCount: group.toDos.length,
+              onReorder: (int oldIndex, int newIndex) async {
+                group.toDos = await value
+                    .reorderGroupToDos(
+                        oldIndex: oldIndex,
+                        newIndex: newIndex,
+                        toDos: group.toDos)
+                    .catchError((e) {
                   Flushbar? error;
 
                   error = Flushbars.createError(
@@ -406,33 +651,150 @@ class _GroupsListScreen extends State<GroupsListScreen> {
                   );
 
                   error.show(context);
+                  return List<ToDo>.empty(growable: true);
                 },
-                    test: (e) =>
-                        e is FailureToDeleteException ||
-                        e is FailureToUploadException);
+                        test: (e) =>
+                            e is FailureToCreateException ||
+                            e is FailureToUploadException);
+              },
+              itemBuilder: (BuildContext context, int index) {
+                return buildToDoListTile(
+                    group: group, index: index, context: context);
+              });
+        },
+      ),
+      // TODO: Stretch goal: decouple tasks from groups to use separate loading.
+      (loading)
+          ? const Padding(
+              padding: EdgeInsets.all(Constants.padding),
+              child: Center(child: CircularProgressIndicator()),
+            )
+          : const SizedBox.shrink()
+    ]);
+  }
+
+  ListTile buildToDoListTile(
+      {required Group group,
+      required int index,
+      required BuildContext context}) {
+    return ListTile(
+        key: ValueKey(index),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: Constants.innerPadding),
+        shape: const RoundedRectangleBorder(
+            borderRadius:
+                BorderRadius.all(Radius.circular(Constants.roundedCorners))),
+        leading: Padding(
+          padding:
+              const EdgeInsets.symmetric(horizontal: Constants.innerPadding),
+          child: Checkbox(
+              shape: const CircleBorder(),
+              splashRadius: 15,
+              value: group.toDos[index].completed,
+              onChanged: (bool? completed) async {
+                group.toDos[index].completed = completed!;
+                toDoProvider.curToDo = group.toDos[index];
+                await updateGroupToDo(context: context);
               }),
         ),
-        // TODO: Listview builder from group tasks.
-        // Needs to be a future builder -> snag from create group.
-        // OR -> wait. Hold on. Use a consumer/ref.context. && the Group's own list object.
-        children: [
-          // Scrollbar(
-          //   thumbVisibility: true,
-          //   child: null,
-          //   controller: null,
-          //   child: buildToDosList(
-          //     smallScreen: smallScreen,
-          //     physics: scrollPhysics,
-          //   ),
-          //   const PaddedDivider(padding: Constants.padding),
-          //   buildToDoSearchBar(),
-          //   const PaddedDivider(
-          //     padding: Constants.innerPadding)
-          //   ),
-          //   buildCreateToDoBar(context: context)
-          // ),
-        ],
-      ),
-    );
+        title: AutoSizeText(group.toDos[index].name,
+            overflow: TextOverflow.visible,
+            style: Constants.headerStyle,
+            minFontSize: Constants.medium,
+            softWrap: true,
+            maxLines: 1),
+        onTap: () async {
+          toDoProvider.curToDo = group.toDos[index];
+          await showDialog(
+                  barrierDismissible: false,
+                  useRootNavigator: false,
+                  context: context,
+                  builder: (BuildContext context) => const UpdateToDoScreen())
+              .catchError((e) {
+            Flushbar? error;
+
+            error = Flushbars.createError(
+              message: e.cause,
+              context: context,
+              dismissCallback: () => error?.dismiss(),
+            );
+
+            error.show(context);
+          },
+                  test: (e) =>
+                      e is FailureToCreateException ||
+                      e is FailureToUploadException).whenComplete(
+                  () => setState(() {}));
+        },
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                getBatteryIcon(toDo: group.toDos[index]),
+                AutoSizeText(
+                  "${group.toDos[index].weight}",
+                  overflow: TextOverflow.visible,
+                  minFontSize: Constants.large,
+                  softWrap: false,
+                  maxLines: 1,
+                ),
+              ],
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: Constants.innerPadding),
+              child: IconButton(
+                  icon: const Icon(Icons.remove_circle_outline),
+                  onPressed: () async {
+                    group.toDos[index].groupID = null;
+                    toDoProvider.curToDo = group.toDos[index];
+                    await updateGroupToDo(context: context)
+                        .whenComplete(() => setState(() {
+                              ToDo toDo = group.toDos[index];
+                              group.toDos.remove(toDo);
+                            }));
+                  }),
+            ),
+            ReorderableDragStartListener(
+                index: index, child: const Icon(Icons.drag_handle_rounded)),
+          ],
+        ));
+  }
+
+  ListTile buildCreateToDoBar(
+      {required BuildContext context, required int id}) {
+    return ListTile(
+        leading: const Icon(Icons.add_outlined),
+        title: const AutoSizeText("Add New Task",
+            maxLines: 1,
+            overflow: TextOverflow.visible,
+            softWrap: false,
+            minFontSize: Constants.small),
+        onTap: () async {
+          await showDialog(
+              barrierDismissible: false,
+              useRootNavigator: false,
+              context: context,
+              builder: (BuildContext context) =>
+                  CreateToDoScreen(groupID: id)).whenComplete(() async {
+            allData = false;
+            await resetPagination();
+          }).catchError((e) {
+            Flushbar? error;
+
+            error = Flushbars.createError(
+              message: e.cause,
+              context: context,
+              dismissCallback: () => error?.dismiss(),
+            );
+
+            error.show(context);
+          },
+              test: (e) =>
+                  e is FailureToCreateException ||
+                  e is FailureToUploadException);
+        });
   }
 }

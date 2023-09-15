@@ -345,7 +345,7 @@ P _userDeserializeProp<P>(
 const _UsercurThemeEnumValueMap = {
   'light': 0,
   'dark': 1,
-  'hiContrast': 2,
+  'hi_contrast': 2,
 };
 const _UsercurThemeValueEnumMap = {
   0: UserThemeData.light,

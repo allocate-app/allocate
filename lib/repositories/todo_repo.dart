@@ -593,11 +593,22 @@ class ToDoRepo implements ToDoRepository {
       _isarClient.toDos.where().isSyncedEqualTo(false).findAll();
 
   @override
+  Future<List<ToDo>> getUpcoming({int limit = 50, int offset = 0}) async =>
+      await _isarClient.toDos
+          .where()
+          .dueDateGreaterThan(Constants.today)
+          .sortByDueDate()
+          .thenByLastUpdated()
+          .offset(offset)
+          .limit(limit)
+          .findAll();
+
+  @override
   Future<List<ToDo>> getOverdues({int limit = 50, int offset = 0}) async =>
       await _isarClient.toDos
-          .filter()
+          .where()
           .dueDateLessThan(Constants.today)
-          .sortByDueDate()
+          .sortByDueDateDesc()
           .thenByLastUpdated()
           .offset(offset)
           .limit(limit)

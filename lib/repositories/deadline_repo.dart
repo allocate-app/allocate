@@ -425,9 +425,20 @@ class DeadlineRepo implements DeadlineRepository {
       _isarClient.deadlines.where().isSyncedEqualTo(false).findAll();
 
   @override
+  Future<List<Deadline>> getUpcoming({int limit = 50, int offset = 0}) async =>
+      _isarClient.deadlines
+          .where()
+          .dueDateGreaterThan(Constants.today)
+          .sortByDueDate()
+          .thenByLastUpdated()
+          .offset(offset)
+          .limit(limit)
+          .findAll();
+
+  @override
   Future<List<Deadline>> getOverdues({int limit = 50, int offset = 0}) async =>
       _isarClient.deadlines
-          .filter()
+          .where()
           .dueDateLessThan(Constants.today)
           .sortByDueDateDesc()
           .thenByLastUpdated()

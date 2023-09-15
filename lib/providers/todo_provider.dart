@@ -23,6 +23,7 @@ class ToDoProvider extends ChangeNotifier {
   ToDo? curToDo;
 
   List<ToDo> toDos = [];
+  List<ToDo> recentToDos = [];
 
   late ToDoSorter sorter;
 
@@ -287,6 +288,9 @@ class ToDoProvider extends ChangeNotifier {
 
   Future<List<ToDo>> getOverdues({int limit = 50, int offset = 0}) =>
       _toDoService.getOverdues(limit: limit, offset: offset);
+
+  Future<List<ToDo>> getUpcoming({int limit = 5, int offset = 0}) =>
+      _toDoService.getUpcoming(limit: limit, offset: offset);
 
   Future<List<ToDo>> searchToDos({required String searchString}) async =>
       _toDoService.searchToDos(searchString: searchString);

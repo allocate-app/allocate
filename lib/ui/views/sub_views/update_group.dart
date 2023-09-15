@@ -103,7 +103,7 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
     mainScrollController.addListener(() async {
       // Bottom: Run the query.
       if (mainScrollController.offset >=
-              mainScrollController.position.maxScrollExtent &&
+          mainScrollController.position.maxScrollExtent &&
           !allData) {
         if (!loading) {
           setState(() => loading = true);
@@ -113,7 +113,7 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
     });
 
     scrollPhysics =
-        const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics());
+    const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics());
     nameEditingController = TextEditingController(text: group.name);
     nameEditingController.addListener(() {
       nameErrorText = null;
@@ -136,32 +136,33 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
     setState(() => loading = true);
     return Future.delayed(
         const Duration(seconds: 1),
-        () async => await groupProvider
-                .getToDosByGroupId(
-                    id: group.localID,
-                    limit: Constants.limitPerQuery,
-                    offset: offset)
-                .then((newToDos) {
-              offset += newToDos.length;
+            () async =>
+        await groupProvider
+            .getToDosByGroupId(
+            id: group.localID,
+            limit: Constants.limitPerQuery,
+            offset: offset)
+            .then((newToDos) {
+          offset += newToDos.length;
 
-              group.toDos.addAll(newToDos);
-              setState(() {
-                loading = false;
-                allData = newToDos.length < Constants.limitPerQuery;
-              });
-            }).catchError(
+          group.toDos.addAll(newToDos);
+          setState(() {
+            loading = false;
+            allData = newToDos.length < Constants.limitPerQuery;
+          });
+        }).catchError(
               (e) {
-                Flushbar? error;
+            Flushbar? error;
 
-                error = Flushbars.createError(
-                  message: e.cause ?? "Query Error",
-                  context: context,
-                  dismissCallback: () => error?.dismiss(),
-                );
+            error = Flushbars.createError(
+              message: e.cause ?? "Query Error",
+              context: context,
+              dismissCallback: () => error?.dismiss(),
+            );
 
-                error.show(context);
-              },
-            ));
+            error.show(context);
+          },
+        ));
   }
 
   @override
@@ -208,9 +209,9 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
           dismissCallback: () => error?.dismiss(),
         );
       },
-              test: (e) =>
-                  e is FailureToCreateException ||
-                  e is FailureToUpdateException);
+          test: (e) =>
+          e is FailureToCreateException ||
+              e is FailureToUpdateException);
     }).catchError((e) {
       Flushbar? error;
 
@@ -221,7 +222,7 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
       );
     },
         test: (e) =>
-            e is FailureToCreateException || e is FailureToUpdateException);
+        e is FailureToCreateException || e is FailureToUpdateException);
   }
 
   Future<void> updateGroupToDo({required BuildContext context}) async {
@@ -237,13 +238,12 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
       error.show(context);
     },
         test: (e) =>
-            e is FailureToCreateException || e is FailureToUploadException);
+        e is FailureToCreateException || e is FailureToUploadException);
   }
 
-  Future<void> handleHistorySelection(
-      {required MapEntry<String, int> toDoData,
-      required SearchController controller,
-      required BuildContext context}) async {
+  Future<void> handleHistorySelection({required MapEntry<String, int> toDoData,
+    required SearchController controller,
+    required BuildContext context}) async {
     controller.closeView("");
     setState(() {
       checkClose = true;
@@ -271,10 +271,9 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
     });
   }
 
-  Future<void> handleToDoSelection(
-      {required ToDo toDo,
-      required SearchController controller,
-      required BuildContext context}) async {
+  Future<void> handleToDoSelection({required ToDo toDo,
+    required SearchController controller,
+    required BuildContext context}) async {
     // Controller logic
     controller.closeView("");
     setState(() {
@@ -300,7 +299,7 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
       error.show(context);
     },
         test: (e) =>
-            e is FailureToCreateException || e is FailureToUploadException);
+        e is FailureToCreateException || e is FailureToUploadException);
 
     searchHistory.insert(0, MapEntry(toDo.name, toDo.id));
   }
@@ -325,12 +324,12 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
     int weight = (toDo.taskType == TaskType.small)
         ? toDo.weight
         : remap(
-                x: toDo.weight,
-                inMin: 0,
-                inMax: Constants.maxWeight,
-                outMin: 0,
-                outMax: 5)
-            .toInt();
+        x: toDo.weight,
+        inMin: 0,
+        inMax: Constants.maxWeight,
+        outMin: 0,
+        outMax: 5)
+        .toInt();
 
     return Constants.batteryIcons[weight]!;
   }
@@ -338,9 +337,15 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
   @override
   Widget build(BuildContext context) {
     bool largeScreen =
-        (MediaQuery.of(context).size.width >= Constants.largeScreen);
+    (MediaQuery
+        .of(context)
+        .size
+        .width >= Constants.largeScreen);
     bool smallScreen =
-        (MediaQuery.of(context).size.width <= Constants.smallScreen);
+    (MediaQuery
+        .of(context)
+        .size
+        .width <= Constants.smallScreen);
     return (largeScreen)
         ? buildDesktopDialog(context: context, smallScreen: smallScreen)
         : buildMobileDialog(context: context, smallScreen: smallScreen);
@@ -352,7 +357,7 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
       insetPadding: const EdgeInsets.all(Constants.outerDialogPadding),
       child: ConstrainedBox(
         constraints:
-            const BoxConstraints(maxHeight: Constants.maxLandscapeDialogHeight),
+        const BoxConstraints(maxHeight: Constants.maxLandscapeDialogHeight),
         child: Padding(
           padding: const EdgeInsets.all(Constants.padding),
           child: Column(
@@ -391,29 +396,30 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         Expanded(
-                            // Name And Description.
+                          // Name And Description.
                             child: Column(
                                 mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
+                                MainAxisAlignment.spaceBetween,
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                              // Title
-                              Padding(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: Constants.padding),
-                                child: buildNameTile(smallScreen: smallScreen),
-                              ),
-                              const PaddedDivider(
-                                  padding: Constants.innerPadding),
-                              Expanded(
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: Constants.innerPadding),
-                                  child: buildDescriptionTile(
-                                      smallScreen: smallScreen),
-                                ),
-                              ),
-                            ])),
+                                  // Title
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: Constants.padding),
+                                    child: buildNameTile(
+                                        smallScreen: smallScreen),
+                                  ),
+                                  const PaddedDivider(
+                                      padding: Constants.innerPadding),
+                                  Expanded(
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: Constants.innerPadding),
+                                      child: buildDescriptionTile(
+                                          smallScreen: smallScreen),
+                                    ),
+                                  ),
+                                ])),
                         Expanded(
                           // I am unsure about this scroll controller.
                           flex: 2,
@@ -437,11 +443,12 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
                                       color: Colors.transparent,
                                       shape: RoundedRectangleBorder(
                                           side: BorderSide(
-                                              color: Theme.of(context)
+                                              color: Theme
+                                                  .of(context)
                                                   .colorScheme
                                                   .outline,
                                               strokeAlign:
-                                                  BorderSide.strokeAlignInside),
+                                              BorderSide.strokeAlignInside),
                                           borderRadius: const BorderRadius.all(
                                               Radius.circular(
                                                   Constants.roundedCorners))),
@@ -455,13 +462,13 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
                                             softWrap: false,
                                             minFontSize: Constants.small),
                                         collapsedShape:
-                                            const RoundedRectangleBorder(
-                                                side: BorderSide(
-                                                    strokeAlign: BorderSide
-                                                        .strokeAlignOutside),
-                                                borderRadius: BorderRadius.all(
-                                                    Radius.circular(Constants
-                                                        .roundedCorners))),
+                                        const RoundedRectangleBorder(
+                                            side: BorderSide(
+                                                strokeAlign: BorderSide
+                                                    .strokeAlignOutside),
+                                            borderRadius: BorderRadius.all(
+                                                Radius.circular(Constants
+                                                    .roundedCorners))),
                                         shape: const RoundedRectangleBorder(
                                             side: BorderSide(
                                                 strokeAlign: BorderSide
@@ -495,7 +502,7 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
                 const PaddedDivider(padding: Constants.padding),
                 Padding(
                   padding:
-                      const EdgeInsets.symmetric(horizontal: Constants.padding),
+                  const EdgeInsets.symmetric(horizontal: Constants.padding),
                   child: buildUpdateDeleteRow(context: context),
                 )
               ]),
@@ -518,7 +525,7 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
               Flexible(
                 child: Padding(
                   padding:
-                      const EdgeInsets.symmetric(horizontal: Constants.padding),
+                  const EdgeInsets.symmetric(horizontal: Constants.padding),
                   child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -569,7 +576,10 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
                             shape: RoundedRectangleBorder(
                                 side: BorderSide(
                                     color:
-                                        Theme.of(context).colorScheme.outline,
+                                    Theme
+                                        .of(context)
+                                        .colorScheme
+                                        .outline,
                                     strokeAlign: BorderSide.strokeAlignInside),
                                 borderRadius: const BorderRadius.all(
                                     Radius.circular(Constants.roundedCorners))),
@@ -585,14 +595,14 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
                               collapsedShape: const RoundedRectangleBorder(
                                   side: BorderSide(
                                       strokeAlign:
-                                          BorderSide.strokeAlignOutside),
+                                      BorderSide.strokeAlignOutside),
                                   borderRadius: BorderRadius.all(
                                       Radius.circular(
                                           Constants.roundedCorners))),
                               shape: const RoundedRectangleBorder(
                                   side: BorderSide(
                                       strokeAlign:
-                                          BorderSide.strokeAlignOutside),
+                                      BorderSide.strokeAlignOutside),
                                   borderRadius: BorderRadius.all(
                                       Radius.circular(
                                           Constants.roundedCorners))),
@@ -619,7 +629,7 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
               const PaddedDivider(padding: Constants.padding),
               Padding(
                 padding:
-                    const EdgeInsets.symmetric(horizontal: Constants.padding),
+                const EdgeInsets.symmetric(horizontal: Constants.padding),
                 child: buildUpdateDeleteRow(context: context),
               )
             ]),
@@ -637,11 +647,11 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
             minFontSize: Constants.small),
         onTap: () async {
           await showDialog(
-                  barrierDismissible: false,
-                  useRootNavigator: false,
-                  context: context,
-                  builder: (BuildContext context) =>
-                      CreateToDoScreen(groupID: group.localID))
+              barrierDismissible: false,
+              useRootNavigator: false,
+              context: context,
+              builder: (BuildContext context) =>
+                  CreateToDoScreen(groupID: group.localID))
               .whenComplete(() async {
             checkClose = true;
             allData = false;
@@ -657,9 +667,9 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
 
             error.show(context);
           },
-                  test: (e) =>
-                      e is FailureToCreateException ||
-                      e is FailureToUploadException);
+              test: (e) =>
+              e is FailureToCreateException ||
+                  e is FailureToUploadException);
         });
   }
 
@@ -689,7 +699,7 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
                             ),
                             Padding(
                                 padding:
-                                    const EdgeInsets.all(Constants.padding),
+                                const EdgeInsets.all(Constants.padding),
                                 child: FilledButton.tonalIcon(
                                   onPressed: () =>
                                       Navigator.pop(context, false),
@@ -720,9 +730,9 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
     return Row(mainAxisAlignment: MainAxisAlignment.end, children: [
       Flexible(
           child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
-        child: buildDeleteButton(context: context),
-      )),
+            padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
+            child: buildDeleteButton(context: context),
+          )),
       Flexible(
         child: buildUpdateButton(context: context),
       )
@@ -755,9 +765,9 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
       children: [
         Expanded(
             child: Padding(
-          padding: const EdgeInsets.all(Constants.padding),
-          child: buildGroupName(smallScreen: smallScreen),
-        )),
+              padding: const EdgeInsets.all(Constants.padding),
+              child: buildGroupName(smallScreen: smallScreen),
+            )),
       ],
     );
   }
@@ -770,17 +780,17 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
         isDense: smallScreen,
         suffixIcon: (group.name != "")
             ? IconButton(
-                icon: const Icon(Icons.clear),
-                onPressed: () {
-                  checkClose = true;
-                  nameEditingController.clear();
-                  setState(() => group.name = "");
-                })
+            icon: const Icon(Icons.clear),
+            onPressed: () {
+              checkClose = true;
+              nameEditingController.clear();
+              setState(() => group.name = "");
+            })
             : null,
         contentPadding: const EdgeInsets.all(Constants.innerPadding),
         border: const OutlineInputBorder(
             borderRadius:
-                BorderRadius.all(Radius.circular(Constants.roundedCorners)),
+            BorderRadius.all(Radius.circular(Constants.roundedCorners)),
             borderSide: BorderSide(
               strokeAlign: BorderSide.strokeAlignOutside,
             )),
@@ -805,16 +815,16 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
           hintText: "Description",
           border: const OutlineInputBorder(
               borderRadius:
-                  BorderRadius.all(Radius.circular(Constants.roundedCorners)),
+              BorderRadius.all(Radius.circular(Constants.roundedCorners)),
               borderSide: BorderSide(
                 strokeAlign: BorderSide.strokeAlignOutside,
               )),
         ));
   }
 
-  ListView buildToDosList(
-      {bool smallScreen = false,
-      ScrollPhysics physics = const BouncingScrollPhysics()}) {
+  // TODO: remove smallScreen.
+  ListView buildToDosList({bool smallScreen = false,
+    ScrollPhysics physics = const BouncingScrollPhysics()}) {
     return ListView(
         controller: subScrollController,
         physics: physics,
@@ -824,15 +834,16 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
             builder:
                 (BuildContext context, GroupProvider value, Widget? child) {
               return ReorderableListView.builder(
+                  buildDefaultDragHandles: false,
                   physics: const NeverScrollableScrollPhysics(),
                   shrinkWrap: true,
                   itemCount: group.toDos.length,
                   onReorder: (int oldIndex, int newIndex) async {
-                    group.toDos = await groupProvider
+                    group.toDos = await value
                         .reorderGroupToDos(
-                            oldIndex: oldIndex,
-                            newIndex: newIndex,
-                            toDos: group.toDos)
+                        oldIndex: oldIndex,
+                        newIndex: newIndex,
+                        toDos: group.toDos)
                         .catchError((e) {
                       Flushbar? error;
 
@@ -845,9 +856,9 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
                       error.show(context);
                       return List<ToDo>.empty(growable: true);
                     },
-                            test: (e) =>
-                                e is FailureToCreateException ||
-                                e is FailureToUploadException);
+                        test: (e) =>
+                        e is FailureToCreateException ||
+                            e is FailureToUploadException);
                   },
                   itemBuilder: (BuildContext context, int index) {
                     return buildToDoListTile(
@@ -859,35 +870,32 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
           ),
           (loading)
               ? const Padding(
-                  padding: EdgeInsets.all(Constants.padding),
-                  child: Center(child: CircularProgressIndicator()),
-                )
+            padding: EdgeInsets.all(Constants.padding),
+            child: Center(child: CircularProgressIndicator()),
+          )
               : const SizedBox.shrink()
         ]);
   }
 
-  ListTile buildToDoListTile(
-      {required int index,
-      bool smallScreen = false,
-      required BuildContext context}) {
+  ListTile buildToDoListTile({required int index,
+    bool smallScreen = false,
+    required BuildContext context}) {
     return ListTile(
+        contentPadding:
+        const EdgeInsets.symmetric(horizontal: Constants.innerPadding),
         key: ValueKey(index),
         shape: const RoundedRectangleBorder(
             borderRadius:
-                BorderRadius.all(Radius.circular(Constants.roundedCorners))),
-        leading: Padding(
-          padding:
-              const EdgeInsets.symmetric(horizontal: Constants.innerPadding),
-          child: Checkbox(
-              shape: const CircleBorder(),
-              splashRadius: 15,
-              value: group.toDos[index].completed,
-              onChanged: (bool? completed) async {
-                group.toDos[index].completed = completed!;
-                toDoProvider.curToDo = group.toDos[index];
-                await updateGroupToDo(context: context);
-              }),
-        ),
+            BorderRadius.all(Radius.circular(Constants.roundedCorners))),
+        leading: Checkbox(
+            shape: const CircleBorder(),
+            splashRadius: 15,
+            value: group.toDos[index].completed,
+            onChanged: (bool? completed) async {
+              group.toDos[index].completed = completed!;
+              toDoProvider.curToDo = group.toDos[index];
+              await updateGroupToDo(context: context);
+            }),
         title: AutoSizeText(group.toDos[index].name,
             overflow: TextOverflow.visible,
             style: Constants.headerStyle,
@@ -897,10 +905,10 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
         onTap: () async {
           toDoProvider.curToDo = group.toDos[index];
           await showDialog(
-                  barrierDismissible: false,
-                  useRootNavigator: false,
-                  context: context,
-                  builder: (BuildContext context) => const UpdateToDoScreen())
+              barrierDismissible: false,
+              useRootNavigator: false,
+              context: context,
+              builder: (BuildContext context) => const UpdateToDoScreen())
               .catchError((e) {
             Flushbar? error;
 
@@ -912,51 +920,51 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
 
             error.show(context);
           },
-                  test: (e) =>
-                      e is FailureToCreateException ||
-                      e is FailureToUploadException).whenComplete(
+              test: (e) =>
+              e is FailureToCreateException ||
+                  e is FailureToUploadException).whenComplete(
                   () => setState(() {}));
         },
-        trailing: Padding(
-          padding:
-              const EdgeInsets.symmetric(horizontal: Constants.innerPadding),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: Constants.padding),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      getBatteryIcon(toDo: group.toDos[index]),
-                      AutoSizeText(
-                        "${group.toDos[index].weight}",
-                        overflow: TextOverflow.visible,
-                        minFontSize: Constants.large,
-                        softWrap: false,
-                        maxLines: 1,
-                      ),
-                    ],
-                  )),
-              IconButton(
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                getBatteryIcon(toDo: group.toDos[index]),
+                AutoSizeText(
+                  "${group.toDos[index].weight}",
+                  overflow: TextOverflow.visible,
+                  minFontSize: Constants.large,
+                  softWrap: false,
+                  maxLines: 1,
+                ),
+              ],
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: Constants.innerPadding),
+              child: IconButton(
                   icon: const Icon(Icons.remove_circle_outline),
                   onPressed: () async {
                     // These should very much be put into a temporary buffer.
                     group.toDos[index].groupID = null;
                     toDoProvider.curToDo = group.toDos[index];
                     await updateGroupToDo(context: context)
-                        .whenComplete(() => setState(() {
-                              ToDo toDo = group.toDos[index];
-                              group.toDos.remove(toDo);
+                        .whenComplete(() =>
+                        setState(() {
+                          ToDo toDo = group.toDos[index];
+                          group.toDos.remove(toDo);
 
-                              // In case of discard, restore the ID and place in a buffer.
-                              toDo.groupID = group.localID;
-                              discards.add(toDo);
-                            }));
+                          // In case of discard, restore the ID and place in a buffer.
+                          toDo.groupID = group.localID;
+                          discards.add(toDo);
+                        }));
                   }),
-            ],
-          ),
+            ),
+            ReorderableDragStartListener(
+                index: index, child: const Icon(Icons.drag_handle_rounded))
+          ],
         ));
   }
 
@@ -980,19 +988,21 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
         if (controller.text.isEmpty) {
           if (searchHistory.isNotEmpty) {
             return searchHistory
-                .map((MapEntry<String, int> toDoData) => ListTile(
-                      leading: const Icon(Icons.history),
-                      title: AutoSizeText(
-                        toDoData.key,
-                        maxLines: 1,
-                        softWrap: false,
-                        overflow: TextOverflow.visible,
-                      ),
-                      onTap: () => handleHistorySelection(
+                .map((MapEntry<String, int> toDoData) =>
+                ListTile(
+                  leading: const Icon(Icons.history),
+                  title: AutoSizeText(
+                    toDoData.key,
+                    maxLines: 1,
+                    softWrap: false,
+                    overflow: TextOverflow.visible,
+                  ),
+                  onTap: () =>
+                      handleHistorySelection(
                           context: context,
                           toDoData: toDoData,
                           controller: controller),
-                    ))
+                ))
                 .toList();
           }
           final searchFuture = toDoProvider.mostRecent(limit: 5);
@@ -1003,7 +1013,7 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
         }
         // Search query iterable.
         final searchFuture =
-            toDoProvider.searchToDos(searchString: controller.text);
+        toDoProvider.searchToDos(searchString: controller.text);
         return [
           buildToDoSelectionList(
               searchFuture: searchFuture, controller: controller)
@@ -1014,7 +1024,7 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
 
   FutureBuilder<List<ToDo>> buildToDoSelectionList(
       {required Future<List<ToDo>> searchFuture,
-      required SearchController controller}) {
+        required SearchController controller}) {
     return FutureBuilder(
         future: searchFuture,
         builder: (context, snapshot) {
@@ -1028,10 +1038,11 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
                   itemBuilder: (BuildContext context, int index) {
                     return ListTile(
                         title: AutoSizeText(toDos[index].name),
-                        onTap: () => handleToDoSelection(
-                            context: context,
-                            toDo: toDos[index],
-                            controller: controller));
+                        onTap: () =>
+                            handleToDoSelection(
+                                context: context,
+                                toDo: toDos[index],
+                                controller: controller));
                   });
             }
             // This is what to render if no data.
