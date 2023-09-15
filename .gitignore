@@ -72,3 +72,4 @@ doc/api/
 /macos/Runner/Assets.xcassets/
 /snap/gui/
 /ios/Runner/Assets.xcassets/
+/lib/ui/app_router.gr.dart
