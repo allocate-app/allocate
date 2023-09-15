@@ -2266,6 +2266,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
       {bool smallScreen = false,
       ScrollPhysics physics = const BouncingScrollPhysics()}) {
     return ReorderableListView.builder(
+      buildDefaultDragHandles: false,
       physics: physics,
       shrinkWrap: true,
       itemCount: min(Constants.numTasks[taskType]!, shownTasks),
@@ -2285,6 +2286,8 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
       },
       itemBuilder: (BuildContext context, int index) {
         return CheckboxListTile(
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: Constants.innerPadding),
             key: ValueKey(index),
             checkboxShape: const CircleBorder(),
             controlAffinity: ListTileControlAffinity.leading,
@@ -2385,160 +2388,35 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                 }),
 
             // Delete Subtask
-            secondary: Padding(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: Constants.innerPadding),
-              child: IconButton(
-                  icon: const Icon(Icons.delete),
-                  onPressed: () => setState(() {
-                        SubTask st = subTasks.removeAt(index);
-                        st = SubTask();
-                        subTasks.add(st);
-                        TextEditingController ct =
-                            subTaskEditingController.removeAt(index);
-                        ct.value = ct.value.copyWith(text: st.name);
-                        subTaskEditingController.add(ct);
-
-                        shownTasks--;
-                        shownTasks = max(shownTasks, 0);
-                        sumWeight = toDoProvider.calculateWeight(
-                            subTasks: List.generate(
-                                Constants.numTasks[taskType]!,
-                                (index) => subTasks[index]));
-                      })),
-            ));
-      },
-    );
-  }
-
-  // TODO: Remove once ready for prod.
-  ListView buildSubTasksList(
-      {bool smallScreen = false,
-      ScrollPhysics physics = const BouncingScrollPhysics()}) {
-    return ListView.separated(
-      // Possibly need scroll controller.
-      physics: physics,
-      shrinkWrap: true,
-      itemCount: min(Constants.numTasks[taskType]!, shownTasks),
-      separatorBuilder: (context, index) => const Divider(),
-      itemBuilder: (BuildContext context, int index) {
-        return CheckboxListTile(
-            checkboxShape: const CircleBorder(),
-            controlAffinity: ListTileControlAffinity.leading,
-            shape: const CircleBorder(),
-            title: Row(
+            secondary: Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                IconButton(
-                  icon: Constants.batteryIcons[subTasks[index].weight]!,
-                  selectedIcon:
-                      Constants.selectedBatteryIcons[subTasks[index].weight]!,
-                  onPressed: () {
-                    showModalBottomSheet<void>(
-                        showDragHandle: true,
-                        context: context,
-                        builder: (BuildContext context) {
-                          return StatefulBuilder(
-                            builder: (context, setState) => Center(
-                                heightFactor: 1,
-                                child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      // const Icon(Icons.drag_handle_rounded),
-                                      const Text("Energy Drain",
-                                          style: Constants.headerStyle),
-                                      Padding(
-                                          padding: const EdgeInsets.all(
-                                              Constants.padding),
-                                          child: Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.spaceEvenly,
-                                            children: [
-                                              const Icon(Icons.battery_full),
-                                              Expanded(
-                                                child: Slider(
-                                                  value: subTasks[index]
-                                                      .weight
-                                                      .toDouble(),
-                                                  max: Constants.maxTaskWeight
-                                                      .toDouble(),
-                                                  label: (subTasks[index]
-                                                              .weight >
-                                                          (Constants.maxTaskWeight /
-                                                                  2)
-                                                              .floor())
-                                                      ? " ${subTasks[index].weight} ${Constants.lowBattery}"
-                                                      : " ${subTasks[index].weight} ${Constants.fullBattery}",
-                                                  divisions:
-                                                      Constants.maxTaskWeight,
-                                                  onChanged: (value) =>
-                                                      setState(() {
-                                                    checkClose = true;
-                                                    subTasks[index].weight =
-                                                        value.toInt();
-                                                  }),
-                                                ),
-                                              ),
-                                              const Icon(Icons.battery_1_bar),
-                                            ],
-                                          )),
-                                    ])),
-                          );
-                        }).whenComplete(() => setState(() {
-                          checkClose = true;
-                          sumWeight = toDoProvider.calculateWeight(
-                              subTasks: List.generate(
-                                  Constants.numTasks[taskType]!,
-                                  (index) => subTasks[index]));
-                          realDuration = toDoProvider.calculateRealDuration(
-                              weight: sumWeight, duration: expectedDuration);
-                        }));
-                  },
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: Constants.innerPadding),
+                  child: IconButton(
+                      icon: const Icon(Icons.delete),
+                      onPressed: () => setState(() {
+                            SubTask st = subTasks.removeAt(index);
+                            st = SubTask();
+                            subTasks.add(st);
+                            TextEditingController ct =
+                                subTaskEditingController.removeAt(index);
+                            ct.value = ct.value.copyWith(text: st.name);
+                            subTaskEditingController.add(ct);
+
+                            shownTasks--;
+                            shownTasks = max(shownTasks, 0);
+                            sumWeight = toDoProvider.calculateWeight(
+                                subTasks: List.generate(
+                                    Constants.numTasks[taskType]!,
+                                    (index) => subTasks[index]));
+                          })),
                 ),
-                Expanded(
-                  child: AutoSizeTextField(
-                      controller: subTaskEditingController[index],
-                      maxLines: 1,
-                      minFontSize: Constants.small,
-                      decoration: const InputDecoration.collapsed(
-                        hintText: "Step name",
-                      ),
-                      onChanged: (value) {
-                        subTasks[index].name = value;
-                        subTaskEditingController[index].value =
-                            subTaskEditingController[index].value.copyWith(
-                                  text: value,
-                                  selection: TextSelection.collapsed(
-                                      offset: value.length),
-                                );
-                      }),
-                ),
+                ReorderableDragStartListener(
+                    index: index, child: const Icon(Icons.drag_handle_rounded))
               ],
-            ),
-            value: subTasks[index].completed,
-            onChanged: (bool? value) => setState(() {
-                  checkClose = true;
-                  subTasks[index].completed = value!;
-                }),
-
-            // Delete Subtask
-            secondary: IconButton(
-                icon: const Icon(Icons.delete),
-                onPressed: () => setState(() {
-                      SubTask st = subTasks.removeAt(index);
-                      st = SubTask();
-                      subTasks.add(st);
-                      TextEditingController ct =
-                          subTaskEditingController.removeAt(index);
-                      subTaskEditingController.add(ct);
-                      ct.value = ct.value.copyWith(text: st.name);
-
-                      shownTasks--;
-                      shownTasks = max(shownTasks, 0);
-                      sumWeight = toDoProvider.calculateWeight(
-                          subTasks: List.generate(Constants.numTasks[taskType]!,
-                              (index) => subTasks[index]));
-                    })));
+            ));
       },
     );
   }

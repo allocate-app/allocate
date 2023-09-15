@@ -770,6 +770,7 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
         ));
   }
 
+  // TODO: remove small screen.
   ListView buildToDosList(
       {bool smallScreen = false,
       ScrollPhysics physics = const BouncingScrollPhysics()}) {
@@ -781,6 +782,7 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
           Consumer<ToDoProvider>(
             builder: (BuildContext context, ToDoProvider value, Widget? child) {
               return ReorderableListView.builder(
+                  buildDefaultDragHandles: false,
                   physics: const NeverScrollableScrollPhysics(),
                   shrinkWrap: true,
                   itemCount: value.toDos.length,
@@ -830,36 +832,34 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
       required ToDoProvider provider,
       required BuildContext context}) {
     return ListTile(
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: Constants.innerPadding),
         key: ValueKey(index),
         shape: const RoundedRectangleBorder(
             borderRadius:
                 BorderRadius.all(Radius.circular(Constants.roundedCorners))),
-        leading: Padding(
-          padding:
-              const EdgeInsets.symmetric(horizontal: Constants.innerPadding),
-          child: Checkbox(
-              shape: const CircleBorder(),
-              splashRadius: 15,
-              value: provider.toDos[index].completed,
-              onChanged: (bool? completed) async {
-                provider.curToDo = provider.toDos[index];
-                provider.curToDo!.completed = completed!;
-                await provider.updateToDo().catchError((e) {
-                  Flushbar? error;
+        leading: Checkbox(
+            shape: const CircleBorder(),
+            splashRadius: 15,
+            value: provider.toDos[index].completed,
+            onChanged: (bool? completed) async {
+              provider.curToDo = provider.toDos[index];
+              provider.curToDo!.completed = completed!;
+              await provider.updateToDo().catchError((e) {
+                Flushbar? error;
 
-                  error = Flushbars.createError(
-                    message: e.cause,
-                    context: context,
-                    dismissCallback: () => error?.dismiss(),
-                  );
+                error = Flushbars.createError(
+                  message: e.cause,
+                  context: context,
+                  dismissCallback: () => error?.dismiss(),
+                );
 
-                  error.show(context);
-                },
-                    test: (e) =>
-                        e is FailureToCreateException ||
-                        e is FailureToUploadException);
-              }),
-        ),
+                error.show(context);
+              },
+                  test: (e) =>
+                      e is FailureToCreateException ||
+                      e is FailureToUploadException);
+            }),
         title: AutoSizeText(provider.toDos[index].name,
             overflow: TextOverflow.visible,
             style: Constants.headerStyle,
@@ -888,29 +888,26 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
                       e is FailureToCreateException ||
                       e is FailureToUploadException);
         },
-        trailing: Padding(
-          padding:
-              const EdgeInsets.symmetric(horizontal: Constants.innerPadding),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: Constants.padding),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      getBatteryIcon(toDo: provider.toDos[index]),
-                      AutoSizeText(
-                        "${provider.toDos[index].weight}",
-                        overflow: TextOverflow.visible,
-                        minFontSize: Constants.large,
-                        softWrap: false,
-                        maxLines: 1,
-                      ),
-                    ],
-                  )),
-              IconButton(
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                getBatteryIcon(toDo: provider.toDos[index]),
+                AutoSizeText(
+                  "${provider.toDos[index].weight}",
+                  overflow: TextOverflow.visible,
+                  minFontSize: Constants.large,
+                  softWrap: false,
+                  maxLines: 1,
+                ),
+              ],
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: Constants.innerPadding),
+              child: IconButton(
                   icon: const Icon(Icons.remove_circle_outline),
                   onPressed: () async {
                     provider.curToDo = provider.toDos[index];
@@ -919,8 +916,10 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
                     await updateGroupToDo(provider: provider, context: context)
                         .whenComplete(() => setState(() {}));
                   }),
-            ],
-          ),
+            ),
+            ReorderableDragStartListener(
+                index: index, child: const Icon(Icons.drag_handle_rounded))
+          ],
         ));
   }
 

@@ -25,6 +25,7 @@ class DeadlineProvider extends ChangeNotifier {
   Deadline? curDeadline;
 
   List<Deadline> deadlines = [];
+  List<Deadline> recentDeadlines = [];
 
   late DeadlineSorter sorter;
 
@@ -235,6 +236,9 @@ class DeadlineProvider extends ChangeNotifier {
 
   Future<List<Deadline>> getOverdues({int limit = 50, int offset = 0}) =>
       _deadlineService.getOverdues(limit: limit, offset: offset);
+
+  Future<List<Deadline>> getUpcoming({int limit = 5, int offset = 0}) =>
+      _deadlineService.getUpcoming(limit: limit, offset: offset);
 
   Future<List<Deadline>> searchDeadlines(
           {required String searchString}) async =>

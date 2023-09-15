@@ -372,11 +372,22 @@ class ReminderRepo implements ReminderRepository {
       _isarClient.reminders.where().isSyncedEqualTo(false).findAll();
 
   @override
+  Future<List<Reminder>> getUpcoming({int limit = 50, int offset = 0}) async =>
+      await _isarClient.reminders
+          .where()
+          .dueDateGreaterThan(Constants.today)
+          .sortByDueDate()
+          .thenByLastUpdated()
+          .offset(offset)
+          .limit(limit)
+          .findAll();
+
+  @override
   Future<List<Reminder>> getOverdues({int limit = 50, int offset = 0}) async =>
       await _isarClient.reminders
-          .filter()
+          .where()
           .dueDateLessThan(Constants.today)
-          .sortByDueDate()
+          .sortByDueDateDesc()
           .thenByLastUpdated()
           .offset(offset)
           .limit(limit)

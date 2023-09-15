@@ -175,6 +175,9 @@ class ReminderService {
   Future<List<Reminder>> getOverdues({int limit = 50, int offset = 0}) async =>
       _repository.getOverdues(limit: limit, offset: offset);
 
+  Future<List<Reminder>> getUpcoming({int limit = 50, int offset = 0}) async =>
+      _repository.getUpcoming(limit: limit, offset: offset);
+
   Future<void> updateReminder({required Reminder reminder}) async =>
       _repository.update(reminder);
 

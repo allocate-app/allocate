@@ -195,6 +195,9 @@ class ToDoService {
   Future<List<ToDo>> getOverdues({int limit = 50, int offset = 0}) async =>
       _repository.getOverdues(limit: limit, offset: offset);
 
+  Future<List<ToDo>> getUpcoming({int limit = 50, int offset = 0}) async =>
+      _repository.getUpcoming(limit: limit, offset: offset);
+
   Future<ToDo?> getToDoByID({int? id}) async =>
       (null != id) ? _repository.getByID(id: id) : null;
 

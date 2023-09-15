@@ -2,9 +2,11 @@ import 'dart:io';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:isar/isar.dart';
 import 'package:provider/provider.dart';
 import 'package:window_manager/window_manager.dart';
 
+import '../model/task/todo.dart';
 import '../providers/deadline_provider.dart';
 import '../providers/group_provider.dart';
 import '../providers/reminder_provider.dart';
@@ -16,6 +18,7 @@ import '../services/notification_service.dart';
 import '../services/supabase_service.dart';
 import '../ui/views/route_views/home_screen.dart';
 import '../util/constants.dart';
+import '../util/enums.dart';
 
 // Async for windowmanager & desktop apps.
 void main() async {
@@ -112,6 +115,9 @@ class _NavigationTester extends State<NavigationTester> with WindowListener {
     if (!Platform.isAndroid && !Platform.isIOS) {
       windowManager.addListener(this);
     }
+    // Test to inject 100 tasks.
+    // testListView();
+
     super.initState();
   }
 
@@ -132,6 +138,28 @@ class _NavigationTester extends State<NavigationTester> with WindowListener {
   void onWindowClose() async {
     await dispose();
     await windowManager.destroy();
+  }
+
+  void testListView() async {
+    List<ToDo> testToDos = List.generate(
+        100,
+        (i) => ToDo(
+              taskType: TaskType.small,
+              name: 'Test: $i',
+              expectedDuration: 0,
+              realDuration: 0,
+              startDate: DateTime.now().subtract(const Duration(days: 1)),
+              dueDate: DateTime.now().subtract(const Duration(days: 1)),
+              repeatDays: List.filled(7, false),
+              subTasks: [],
+              lastUpdated: DateTime.now(),
+            ));
+    Isar isarClient = IsarService.instance.isarClient;
+    await IsarService.instance.isarClient.writeTxn(() async {
+      for (ToDo toDo in testToDos) {
+        await isarClient.toDos.put(toDo);
+      }
+    });
   }
 
   @override

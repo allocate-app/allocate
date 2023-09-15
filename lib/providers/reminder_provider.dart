@@ -25,6 +25,7 @@ class ReminderProvider extends ChangeNotifier {
   Reminder? curReminder;
 
   List<Reminder> reminders = [];
+  List<Reminder> recentReminders = [];
 
   late ReminderSorter sorter;
 
@@ -207,6 +208,9 @@ class ReminderProvider extends ChangeNotifier {
 
   Future<List<Reminder>> getOverdues({int limit = 50, int offset = 0}) =>
       _reminderService.getOverdues(limit: limit, offset: offset);
+
+  Future<List<Reminder>> getUpcoming({int limit = 5, int offset = 0}) =>
+      _reminderService.getUpcoming(limit: limit, offset: offset);
 
   Future<List<Reminder>> searchReminders(
           {required String searchString}) async =>

@@ -4,9 +4,15 @@ import '../function/overdue.dart';
 import '../function/repeatable.dart';
 import '../function/repository.dart';
 import '../function/search.dart';
+import '../function/upcoming.dart';
 
 abstract interface class ToDoRepository
-    implements Repository<ToDo>, Search<ToDo>, Overdue<ToDo>, Repeatable<ToDo> {
+    implements
+        Repository<ToDo>,
+        Search<ToDo>,
+        Overdue<ToDo>,
+        Upcoming<ToDo>,
+        Repeatable<ToDo> {
   Future<List<ToDo>> getRepoByGroupID(
       {required int groupID, int limit, int offset});
 
