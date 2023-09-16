@@ -29,7 +29,6 @@ class _CompletedListScreen extends State<CompletedListScreen> {
 
   late final ToDoProvider toDoProvider;
 
-  // For linked todos.
   late final ScrollController mainScrollController;
   late final ScrollPhysics scrollPhysics;
 

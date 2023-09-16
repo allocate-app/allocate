@@ -1,5 +1,6 @@
 import "package:flutter/material.dart";
 
+// TODO: Finish this.
 class CalendarScreen extends StatefulWidget {
   const CalendarScreen({Key? key}) : super(key: key);
 
@@ -7,10 +8,10 @@ class CalendarScreen extends StatefulWidget {
   State<CalendarScreen> createState() => _CalendarScreen();
 }
 
-// This needs to be a dialog.
 class _CalendarScreen extends State<CalendarScreen> {
   @override
   void initState() {
+    super.initState();
     throw UnimplementedError();
   }
 

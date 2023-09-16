@@ -16,7 +16,8 @@ import '../../../util/constants.dart';
 import '../../widgets/desktop_drawer_wrapper.dart';
 import '../../widgets/flushbars.dart';
 import '../../widgets/padded_divider.dart';
-import '../sub_views.dart';
+import '../sub_views/create_group.dart';
+import '../sub_views/update_group.dart';
 
 @RoutePage()
 class HomeScreen extends StatefulWidget {
@@ -48,8 +49,10 @@ class _HomeScreen extends State<HomeScreen> {
 
   void updateDayWeight() async {
     await toDoProvider.getMyDayWeight().then((weight) {
-      weight += routineProvider.routineWeight;
-      userProvider.myDayTotal = weight;
+      setState(() {
+        weight += routineProvider.routineWeight;
+        userProvider.myDayTotal = weight;
+      });
     });
   }
 
@@ -173,10 +176,11 @@ class _HomeScreen extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    bool largeScreen =
-        (MediaQuery.of(context).size.width >= Constants.largeScreen);
-    bool smallScreen =
-        (MediaQuery.of(context).size.width <= Constants.smallScreen);
+    //TODO: refactor the media query ALL SCREENS to avoid running twice;
+    double width = MediaQuery.of(context).size.width;
+
+    bool largeScreen = (width >= Constants.largeScreen);
+    bool smallScreen = (width <= Constants.smallScreen);
 
     return (largeScreen)
         ? buildDesktop(context: context, largeScreen: largeScreen)
@@ -235,41 +239,44 @@ class _HomeScreen extends State<HomeScreen> {
         children: [
           // User name bar
           // Possible stretch Goal: add user images?
-          ListTile(
-            contentPadding: const EdgeInsets.all(Constants.innerPadding),
-            shape: const RoundedRectangleBorder(
-                borderRadius: BorderRadius.all(
-                    Radius.circular(Constants.roundedCorners))),
-            leading: CircleAvatar(
-                child:
-                    Text("${userProvider.curUser?.userName[0].toUpperCase()}")),
-            // Possible TODO: Refactor this to take a first/last name?
-            title: Text("${userProvider.curUser?.userName}"),
-            // Possible TODO: Refactor this to use an enum.
-            subtitle: (null !=
-                    SupabaseService.instance.supabaseClient.auth.currentSession)
-                ? const Text("Online")
-                : const Text("Offline"),
-            onTap: () => setState(() {
-              selectedPageIndex =
-                  Constants.viewRoutes.indexOf(Constants.settingsScreen);
-              resetProviders();
-              if (!largeScreen) {
-                Navigator.pop(context);
-              }
-            }),
-            trailing: IconButton(
-              icon: const Icon(Icons.search_outlined),
-              selectedIcon: const Icon(Icons.search),
-              onPressed: () {
-                Flushbar? alert;
-                alert = Flushbars.createAlert(
-                  context: context,
-                  message: "Feature not implemented yet, coming soon!",
-                  dismissCallback: () => alert?.dismiss(),
-                );
-                alert.show(context);
-              },
+          Padding(
+            padding: const EdgeInsets.all(Constants.innerPadding),
+            child: ListTile(
+              shape: const RoundedRectangleBorder(
+                  borderRadius: BorderRadius.all(
+                      Radius.circular(Constants.roundedCorners))),
+              leading: CircleAvatar(
+                  child: Text(
+                      "${userProvider.curUser?.userName[0].toUpperCase()}")),
+              // Possible TODO: Refactor this to take a first/last name?
+              title: Text("${userProvider.curUser?.userName}"),
+              // Possible TODO: Refactor this to use an enum.
+              subtitle: (null !=
+                      SupabaseService
+                          .instance.supabaseClient.auth.currentSession)
+                  ? const Text("Online")
+                  : const Text("Offline"),
+              onTap: () => setState(() {
+                selectedPageIndex =
+                    Constants.viewRoutes.indexOf(Constants.settingsScreen);
+                resetProviders();
+                if (!largeScreen) {
+                  Navigator.pop(context);
+                }
+              }),
+              trailing: IconButton(
+                icon: const Icon(Icons.search_outlined),
+                selectedIcon: const Icon(Icons.search),
+                onPressed: () {
+                  Flushbar? alert;
+                  alert = Flushbars.createAlert(
+                    context: context,
+                    message: "Feature not implemented yet, coming soon!",
+                    dismissCallback: () => alert?.dismiss(),
+                  );
+                  alert.show(context);
+                },
+              ),
             ),
           ),
           const PaddedDivider(padding: Constants.innerPadding),

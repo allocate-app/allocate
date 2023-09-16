@@ -187,13 +187,18 @@ class ToDoProvider extends ChangeNotifier {
   }
 
   Future<void> updateToDo() async {
+    await updateToDoAsync();
+    notifyListeners();
+  }
+
+  Future<void> updateToDoAsync() async {
     curToDo!.lastUpdated = DateTime.now();
     if (curToDo!.repeatable && null == curToDo!.repeatID) {
       curToDo!.repeatID = curToDo!.hashCode;
     }
 
     try {
-      _toDoService.updateToDo(toDo: curToDo!);
+      return await _toDoService.updateToDo(toDo: curToDo!);
     } on FailureToUploadException catch (e) {
       log(e.cause);
       return Future.error(e);
@@ -201,7 +206,6 @@ class ToDoProvider extends ChangeNotifier {
       log(e.cause);
       return Future.error(e);
     }
-    notifyListeners();
   }
 
   Future<void> updateBatch({List<ToDo>? toDos}) async {

@@ -20,6 +20,7 @@ class UserProvider extends ChangeNotifier {
   final _authenticationService = AuthenticationService();
 
   int myDayTotal = 0;
+  int myDayIndex = 0;
 
   User? curUser;
 
@@ -46,24 +47,23 @@ class UserProvider extends ChangeNotifier {
     });
   }
 
-  void refreshRoutines() {
-  }
-
+  void refreshRoutines() {}
 
   // TODO: fix this. Can likely just be update.
-  Future<void> createUser({required String userName,
-    bool syncOnline = false,
-    bool? isSynced,
-    int? bandwidth,
-    UserThemeData? theme,
-    int? curMornID,
-    int? curAftID,
-    int? curEveID,
-    GroupSorter? groupSorter,
-    DeadlineSorter? deadlineSorter,
-    ReminderSorter? reminderSorter,
-    RoutineSorter? routineSorter,
-    ToDoSorter? toDoSorter}) async {
+  Future<void> createUser(
+      {required String userName,
+      bool syncOnline = false,
+      bool? isSynced,
+      int? bandwidth,
+      UserThemeData? theme,
+      int? curMornID,
+      int? curAftID,
+      int? curEveID,
+      GroupSorter? groupSorter,
+      DeadlineSorter? deadlineSorter,
+      ReminderSorter? reminderSorter,
+      RoutineSorter? routineSorter,
+      ToDoSorter? toDoSorter}) async {
     curUser = User(
         userName: userName,
         syncOnline: syncOnline,

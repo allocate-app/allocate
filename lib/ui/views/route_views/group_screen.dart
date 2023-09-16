@@ -747,7 +747,7 @@ class _GroupsListScreen extends State<GroupsListScreen> {
               padding: const EdgeInsets.symmetric(
                   horizontal: Constants.innerPadding),
               child: IconButton(
-                  icon: const Icon(Icons.remove_circle_outline),
+                  icon: const Icon(Icons.remove_circle_outline_rounded),
                   onPressed: () async {
                     group.toDos[index].groupID = null;
                     toDoProvider.curToDo = group.toDos[index];
