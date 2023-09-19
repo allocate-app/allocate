@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../../../providers/user_provider.dart';
 import '../../../util/constants.dart';
+import '../sub_views/my_day_routines.dart';
 import '../sub_views/my_day_todos.dart';
 
 class MyDayScreen extends StatefulWidget {
@@ -26,7 +27,7 @@ class _MyDayScreen extends State<MyDayScreen> {
   // THESE NEED TO BE STATEFUL WIDGETS.
   static const List<Widget> views = [
     MyDayToDos(),
-    Icon(Icons.repeat_on_rounded),
+    MyDayRoutines(),
     Icon(Icons.calendar_month_rounded)
   ];
 

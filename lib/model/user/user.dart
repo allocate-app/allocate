@@ -37,6 +37,11 @@ class User with EquatableMixin implements Copyable<User> {
   int? curAftID;
   int? curEveID;
 
+  // Routine TOD.
+  int? mornHour;
+  int? aftHour;
+  int? eveHour;
+
   // Sorting preferences
   GroupSorter? groupSorter;
   DeadlineSorter? deadlineSorter;
@@ -102,8 +107,10 @@ class User with EquatableMixin implements Copyable<User> {
         "curAftID": curAftID,
         "curEveID": curEveID,
         "groupSorter": (null != groupSorter) ? groupSorter!.toEntity() : null,
-        "reminderSorter": (null != reminderSorter) ? reminderSorter!.toEntity() : null,
-        "routineSorter": (null != routineSorter) ? routineSorter!.toEntity() : null,
+        "reminderSorter":
+            (null != reminderSorter) ? reminderSorter!.toEntity() : null,
+        "routineSorter":
+            (null != routineSorter) ? routineSorter!.toEntity() : null,
         "toDoSorter": (null != toDoSorter) ? toDoSorter!.toEntity() : null,
         "lastOpened": lastOpened.toIso8601String()
       };
@@ -177,7 +184,8 @@ class User with EquatableMixin implements Copyable<User> {
       ];
 
   @override
-  toString() => "userName: $userName, syncOnline: $syncOnline, bandwidth: $bandwidth, "
+  toString() =>
+      "userName: $userName, syncOnline: $syncOnline, bandwidth: $bandwidth, "
       "curTheme: ${curTheme.name}, curMornID: $curMornID, curAftID: $curAftID, curEveID: $curEveID,"
       "groupSorter: $groupSorter, deadlineSorter: $deadlineSorter,"
       "reminderSorter: $reminderSorter, routineSorter: $routineSorter, "

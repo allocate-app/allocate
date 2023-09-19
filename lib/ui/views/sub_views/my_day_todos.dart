@@ -27,7 +27,6 @@ class MyDayToDos extends StatefulWidget {
 }
 
 class _MyDayToDos extends State<MyDayToDos> {
-  late bool checkDelete;
   late bool allData;
   late bool loading;
   late int offset;
@@ -63,7 +62,6 @@ class _MyDayToDos extends State<MyDayToDos> {
     updateScreen = true;
     loading = toDoProvider.rebuild;
     allData = false;
-    checkDelete = true;
     offset = (toDoProvider.rebuild) ? 0 : toDoProvider.toDos.length;
   }
 

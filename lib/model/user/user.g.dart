@@ -17,84 +17,99 @@ const UserSchema = CollectionSchema(
   name: r'User',
   id: -7838171048429979076,
   properties: {
-    r'bandwidth': PropertySchema(
+    r'aftHour': PropertySchema(
       id: 0,
+      name: r'aftHour',
+      type: IsarType.long,
+    ),
+    r'bandwidth': PropertySchema(
+      id: 1,
       name: r'bandwidth',
       type: IsarType.long,
     ),
     r'checkDelete': PropertySchema(
-      id: 1,
+      id: 2,
       name: r'checkDelete',
       type: IsarType.bool,
     ),
     r'curAftID': PropertySchema(
-      id: 2,
+      id: 3,
       name: r'curAftID',
       type: IsarType.long,
     ),
     r'curEveID': PropertySchema(
-      id: 3,
+      id: 4,
       name: r'curEveID',
       type: IsarType.long,
     ),
     r'curMornID': PropertySchema(
-      id: 4,
+      id: 5,
       name: r'curMornID',
       type: IsarType.long,
     ),
     r'curTheme': PropertySchema(
-      id: 5,
+      id: 6,
       name: r'curTheme',
       type: IsarType.byte,
       enumMap: _UsercurThemeEnumValueMap,
     ),
     r'deadlineSorter': PropertySchema(
-      id: 6,
+      id: 7,
       name: r'deadlineSorter',
       type: IsarType.object,
       target: r'DeadlineSorter',
     ),
+    r'eveHour': PropertySchema(
+      id: 8,
+      name: r'eveHour',
+      type: IsarType.long,
+    ),
     r'groupSorter': PropertySchema(
-      id: 7,
+      id: 9,
       name: r'groupSorter',
       type: IsarType.object,
       target: r'GroupSorter',
     ),
     r'isSynced': PropertySchema(
-      id: 8,
+      id: 10,
       name: r'isSynced',
       type: IsarType.bool,
     ),
     r'lastOpened': PropertySchema(
-      id: 9,
+      id: 11,
       name: r'lastOpened',
       type: IsarType.dateTime,
     ),
+    r'mornHour': PropertySchema(
+      id: 12,
+      name: r'mornHour',
+      type: IsarType.long,
+    ),
     r'reminderSorter': PropertySchema(
-      id: 10,
+      id: 13,
       name: r'reminderSorter',
       type: IsarType.object,
       target: r'ReminderSorter',
     ),
     r'routineSorter': PropertySchema(
-      id: 11,
+      id: 14,
       name: r'routineSorter',
       type: IsarType.object,
       target: r'RoutineSorter',
     ),
     r'syncOnline': PropertySchema(
-      id: 12,
+      id: 15,
       name: r'syncOnline',
       type: IsarType.bool,
     ),
     r'toDoSorter': PropertySchema(
-      id: 13,
+      id: 16,
       name: r'toDoSorter',
       type: IsarType.object,
       target: r'ToDoSorter',
     ),
     r'userName': PropertySchema(
-      id: 14,
+      id: 17,
       name: r'userName',
       type: IsarType.string,
     )
@@ -189,46 +204,49 @@ void _userSerialize(
   List<int> offsets,
   Map<Type, List<int>> allOffsets,
 ) {
-  writer.writeLong(offsets[0], object.bandwidth);
-  writer.writeBool(offsets[1], object.checkDelete);
-  writer.writeLong(offsets[2], object.curAftID);
-  writer.writeLong(offsets[3], object.curEveID);
-  writer.writeLong(offsets[4], object.curMornID);
-  writer.writeByte(offsets[5], object.curTheme.index);
+  writer.writeLong(offsets[0], object.aftHour);
+  writer.writeLong(offsets[1], object.bandwidth);
+  writer.writeBool(offsets[2], object.checkDelete);
+  writer.writeLong(offsets[3], object.curAftID);
+  writer.writeLong(offsets[4], object.curEveID);
+  writer.writeLong(offsets[5], object.curMornID);
+  writer.writeByte(offsets[6], object.curTheme.index);
   writer.writeObject<DeadlineSorter>(
-    offsets[6],
+    offsets[7],
     allOffsets,
     DeadlineSorterSchema.serialize,
     object.deadlineSorter,
   );
+  writer.writeLong(offsets[8], object.eveHour);
   writer.writeObject<GroupSorter>(
-    offsets[7],
+    offsets[9],
     allOffsets,
     GroupSorterSchema.serialize,
     object.groupSorter,
   );
-  writer.writeBool(offsets[8], object.isSynced);
-  writer.writeDateTime(offsets[9], object.lastOpened);
+  writer.writeBool(offsets[10], object.isSynced);
+  writer.writeDateTime(offsets[11], object.lastOpened);
+  writer.writeLong(offsets[12], object.mornHour);
   writer.writeObject<ReminderSorter>(
-    offsets[10],
+    offsets[13],
     allOffsets,
     ReminderSorterSchema.serialize,
     object.reminderSorter,
   );
   writer.writeObject<RoutineSorter>(
-    offsets[11],
+    offsets[14],
     allOffsets,
     RoutineSorterSchema.serialize,
     object.routineSorter,
   );
-  writer.writeBool(offsets[12], object.syncOnline);
+  writer.writeBool(offsets[15], object.syncOnline);
   writer.writeObject<ToDoSorter>(
-    offsets[13],
+    offsets[16],
     allOffsets,
     ToDoSorterSchema.serialize,
     object.toDoSorter,
   );
-  writer.writeString(offsets[14], object.userName);
+  writer.writeString(offsets[17], object.userName);
 }
 
 User _userDeserialize(
@@ -238,44 +256,47 @@ User _userDeserialize(
   Map<Type, List<int>> allOffsets,
 ) {
   final object = User(
-    bandwidth: reader.readLongOrNull(offsets[0]) ?? 100,
-    checkDelete: reader.readBoolOrNull(offsets[1]) ?? true,
-    curAftID: reader.readLongOrNull(offsets[2]),
-    curEveID: reader.readLongOrNull(offsets[3]),
-    curMornID: reader.readLongOrNull(offsets[4]),
-    curTheme: _UsercurThemeValueEnumMap[reader.readByteOrNull(offsets[5])] ??
+    bandwidth: reader.readLongOrNull(offsets[1]) ?? 100,
+    checkDelete: reader.readBoolOrNull(offsets[2]) ?? true,
+    curAftID: reader.readLongOrNull(offsets[3]),
+    curEveID: reader.readLongOrNull(offsets[4]),
+    curMornID: reader.readLongOrNull(offsets[5]),
+    curTheme: _UsercurThemeValueEnumMap[reader.readByteOrNull(offsets[6])] ??
         UserThemeData.dark,
     deadlineSorter: reader.readObjectOrNull<DeadlineSorter>(
-      offsets[6],
+      offsets[7],
       DeadlineSorterSchema.deserialize,
       allOffsets,
     ),
     groupSorter: reader.readObjectOrNull<GroupSorter>(
-      offsets[7],
+      offsets[9],
       GroupSorterSchema.deserialize,
       allOffsets,
     ),
-    isSynced: reader.readBoolOrNull(offsets[8]) ?? false,
-    lastOpened: reader.readDateTime(offsets[9]),
+    isSynced: reader.readBoolOrNull(offsets[10]) ?? false,
+    lastOpened: reader.readDateTime(offsets[11]),
     reminderSorter: reader.readObjectOrNull<ReminderSorter>(
-      offsets[10],
+      offsets[13],
       ReminderSorterSchema.deserialize,
       allOffsets,
     ),
     routineSorter: reader.readObjectOrNull<RoutineSorter>(
-      offsets[11],
+      offsets[14],
       RoutineSorterSchema.deserialize,
       allOffsets,
     ),
-    syncOnline: reader.readBool(offsets[12]),
+    syncOnline: reader.readBool(offsets[15]),
     toDoSorter: reader.readObjectOrNull<ToDoSorter>(
-      offsets[13],
+      offsets[16],
       ToDoSorterSchema.deserialize,
       allOffsets,
     ),
-    userName: reader.readString(offsets[14]),
+    userName: reader.readString(offsets[17]),
   );
+  object.aftHour = reader.readLongOrNull(offsets[0]);
+  object.eveHour = reader.readLongOrNull(offsets[8]);
   object.localID = id;
+  object.mornHour = reader.readLongOrNull(offsets[12]);
   return object;
 }
 
@@ -287,55 +308,61 @@ P _userDeserializeProp<P>(
 ) {
   switch (propertyId) {
     case 0:
-      return (reader.readLongOrNull(offset) ?? 100) as P;
-    case 1:
-      return (reader.readBoolOrNull(offset) ?? true) as P;
-    case 2:
       return (reader.readLongOrNull(offset)) as P;
+    case 1:
+      return (reader.readLongOrNull(offset) ?? 100) as P;
+    case 2:
+      return (reader.readBoolOrNull(offset) ?? true) as P;
     case 3:
       return (reader.readLongOrNull(offset)) as P;
     case 4:
       return (reader.readLongOrNull(offset)) as P;
     case 5:
+      return (reader.readLongOrNull(offset)) as P;
+    case 6:
       return (_UsercurThemeValueEnumMap[reader.readByteOrNull(offset)] ??
           UserThemeData.dark) as P;
-    case 6:
+    case 7:
       return (reader.readObjectOrNull<DeadlineSorter>(
         offset,
         DeadlineSorterSchema.deserialize,
         allOffsets,
       )) as P;
-    case 7:
+    case 8:
+      return (reader.readLongOrNull(offset)) as P;
+    case 9:
       return (reader.readObjectOrNull<GroupSorter>(
         offset,
         GroupSorterSchema.deserialize,
         allOffsets,
       )) as P;
-    case 8:
-      return (reader.readBoolOrNull(offset) ?? false) as P;
-    case 9:
-      return (reader.readDateTime(offset)) as P;
     case 10:
+      return (reader.readBoolOrNull(offset) ?? false) as P;
+    case 11:
+      return (reader.readDateTime(offset)) as P;
+    case 12:
+      return (reader.readLongOrNull(offset)) as P;
+    case 13:
       return (reader.readObjectOrNull<ReminderSorter>(
         offset,
         ReminderSorterSchema.deserialize,
         allOffsets,
       )) as P;
-    case 11:
+    case 14:
       return (reader.readObjectOrNull<RoutineSorter>(
         offset,
         RoutineSorterSchema.deserialize,
         allOffsets,
       )) as P;
-    case 12:
+    case 15:
       return (reader.readBool(offset)) as P;
-    case 13:
+    case 16:
       return (reader.readObjectOrNull<ToDoSorter>(
         offset,
         ToDoSorterSchema.deserialize,
         allOffsets,
       )) as P;
-    case 14:
+    case 17:
       return (reader.readString(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -539,6 +566,74 @@ extension UserQueryWhere on QueryBuilder<User, User, QWhereClause> {
 }
 
 extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
+  QueryBuilder<User, User, QAfterFilterCondition> aftHourIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'aftHour',
+      ));
+    });
+  }
+
+  QueryBuilder<User, User, QAfterFilterCondition> aftHourIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'aftHour',
+      ));
+    });
+  }
+
+  QueryBuilder<User, User, QAfterFilterCondition> aftHourEqualTo(int? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'aftHour',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<User, User, QAfterFilterCondition> aftHourGreaterThan(
+    int? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'aftHour',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<User, User, QAfterFilterCondition> aftHourLessThan(
+    int? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'aftHour',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<User, User, QAfterFilterCondition> aftHourBetween(
+    int? lower,
+    int? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'aftHour',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
   QueryBuilder<User, User, QAfterFilterCondition> bandwidthEqualTo(int value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
@@ -874,6 +969,74 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
+  QueryBuilder<User, User, QAfterFilterCondition> eveHourIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'eveHour',
+      ));
+    });
+  }
+
+  QueryBuilder<User, User, QAfterFilterCondition> eveHourIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'eveHour',
+      ));
+    });
+  }
+
+  QueryBuilder<User, User, QAfterFilterCondition> eveHourEqualTo(int? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'eveHour',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<User, User, QAfterFilterCondition> eveHourGreaterThan(
+    int? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'eveHour',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<User, User, QAfterFilterCondition> eveHourLessThan(
+    int? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'eveHour',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<User, User, QAfterFilterCondition> eveHourBetween(
+    int? lower,
+    int? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'eveHour',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
   QueryBuilder<User, User, QAfterFilterCondition> groupSorterIsNull() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(const FilterCondition.isNull(
@@ -996,6 +1159,74 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.between(
         property: r'localID',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<User, User, QAfterFilterCondition> mornHourIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'mornHour',
+      ));
+    });
+  }
+
+  QueryBuilder<User, User, QAfterFilterCondition> mornHourIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'mornHour',
+      ));
+    });
+  }
+
+  QueryBuilder<User, User, QAfterFilterCondition> mornHourEqualTo(int? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'mornHour',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<User, User, QAfterFilterCondition> mornHourGreaterThan(
+    int? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'mornHour',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<User, User, QAfterFilterCondition> mornHourLessThan(
+    int? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'mornHour',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<User, User, QAfterFilterCondition> mornHourBetween(
+    int? lower,
+    int? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'mornHour',
         lower: lower,
         includeLower: includeLower,
         upper: upper,
@@ -1232,6 +1463,18 @@ extension UserQueryObject on QueryBuilder<User, User, QFilterCondition> {
 extension UserQueryLinks on QueryBuilder<User, User, QFilterCondition> {}
 
 extension UserQuerySortBy on QueryBuilder<User, User, QSortBy> {
+  QueryBuilder<User, User, QAfterSortBy> sortByAftHour() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'aftHour', Sort.asc);
+    });
+  }
+
+  QueryBuilder<User, User, QAfterSortBy> sortByAftHourDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'aftHour', Sort.desc);
+    });
+  }
+
   QueryBuilder<User, User, QAfterSortBy> sortByBandwidth() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'bandwidth', Sort.asc);
@@ -1304,6 +1547,18 @@ extension UserQuerySortBy on QueryBuilder<User, User, QSortBy> {
     });
   }
 
+  QueryBuilder<User, User, QAfterSortBy> sortByEveHour() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'eveHour', Sort.asc);
+    });
+  }
+
+  QueryBuilder<User, User, QAfterSortBy> sortByEveHourDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'eveHour', Sort.desc);
+    });
+  }
+
   QueryBuilder<User, User, QAfterSortBy> sortByIsSynced() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isSynced', Sort.asc);
@@ -1325,6 +1580,18 @@ extension UserQuerySortBy on QueryBuilder<User, User, QSortBy> {
   QueryBuilder<User, User, QAfterSortBy> sortByLastOpenedDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'lastOpened', Sort.desc);
+    });
+  }
+
+  QueryBuilder<User, User, QAfterSortBy> sortByMornHour() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'mornHour', Sort.asc);
+    });
+  }
+
+  QueryBuilder<User, User, QAfterSortBy> sortByMornHourDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'mornHour', Sort.desc);
     });
   }
 
@@ -1354,6 +1621,18 @@ extension UserQuerySortBy on QueryBuilder<User, User, QSortBy> {
 }
 
 extension UserQuerySortThenBy on QueryBuilder<User, User, QSortThenBy> {
+  QueryBuilder<User, User, QAfterSortBy> thenByAftHour() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'aftHour', Sort.asc);
+    });
+  }
+
+  QueryBuilder<User, User, QAfterSortBy> thenByAftHourDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'aftHour', Sort.desc);
+    });
+  }
+
   QueryBuilder<User, User, QAfterSortBy> thenByBandwidth() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'bandwidth', Sort.asc);
@@ -1426,6 +1705,18 @@ extension UserQuerySortThenBy on QueryBuilder<User, User, QSortThenBy> {
     });
   }
 
+  QueryBuilder<User, User, QAfterSortBy> thenByEveHour() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'eveHour', Sort.asc);
+    });
+  }
+
+  QueryBuilder<User, User, QAfterSortBy> thenByEveHourDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'eveHour', Sort.desc);
+    });
+  }
+
   QueryBuilder<User, User, QAfterSortBy> thenByIsSynced() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isSynced', Sort.asc);
@@ -1462,6 +1753,18 @@ extension UserQuerySortThenBy on QueryBuilder<User, User, QSortThenBy> {
     });
   }
 
+  QueryBuilder<User, User, QAfterSortBy> thenByMornHour() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'mornHour', Sort.asc);
+    });
+  }
+
+  QueryBuilder<User, User, QAfterSortBy> thenByMornHourDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'mornHour', Sort.desc);
+    });
+  }
+
   QueryBuilder<User, User, QAfterSortBy> thenBySyncOnline() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'syncOnline', Sort.asc);
@@ -1488,6 +1791,12 @@ extension UserQuerySortThenBy on QueryBuilder<User, User, QSortThenBy> {
 }
 
 extension UserQueryWhereDistinct on QueryBuilder<User, User, QDistinct> {
+  QueryBuilder<User, User, QDistinct> distinctByAftHour() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'aftHour');
+    });
+  }
+
   QueryBuilder<User, User, QDistinct> distinctByBandwidth() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'bandwidth');
@@ -1524,6 +1833,12 @@ extension UserQueryWhereDistinct on QueryBuilder<User, User, QDistinct> {
     });
   }
 
+  QueryBuilder<User, User, QDistinct> distinctByEveHour() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'eveHour');
+    });
+  }
+
   QueryBuilder<User, User, QDistinct> distinctByIsSynced() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'isSynced');
@@ -1533,6 +1848,12 @@ extension UserQueryWhereDistinct on QueryBuilder<User, User, QDistinct> {
   QueryBuilder<User, User, QDistinct> distinctByLastOpened() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'lastOpened');
+    });
+  }
+
+  QueryBuilder<User, User, QDistinct> distinctByMornHour() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'mornHour');
     });
   }
 
@@ -1554,6 +1875,12 @@ extension UserQueryProperty on QueryBuilder<User, User, QQueryProperty> {
   QueryBuilder<User, int, QQueryOperations> localIDProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'localID');
+    });
+  }
+
+  QueryBuilder<User, int?, QQueryOperations> aftHourProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'aftHour');
     });
   }
 
@@ -1600,6 +1927,12 @@ extension UserQueryProperty on QueryBuilder<User, User, QQueryProperty> {
     });
   }
 
+  QueryBuilder<User, int?, QQueryOperations> eveHourProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'eveHour');
+    });
+  }
+
   QueryBuilder<User, GroupSorter?, QQueryOperations> groupSorterProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'groupSorter');
@@ -1615,6 +1948,12 @@ extension UserQueryProperty on QueryBuilder<User, User, QQueryProperty> {
   QueryBuilder<User, DateTime, QQueryOperations> lastOpenedProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'lastOpened');
+    });
+  }
+
+  QueryBuilder<User, int?, QQueryOperations> mornHourProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'mornHour');
     });
   }
 

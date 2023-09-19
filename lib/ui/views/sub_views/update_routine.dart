@@ -1394,7 +1394,7 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
   AutoSizeTextField buildRoutineName({bool smallScreen = false}) {
     return AutoSizeTextField(
       maxLines: 1,
-      minFontSize: Constants.medium,
+      minFontSize: Constants.large,
       decoration: InputDecoration(
         isDense: smallScreen,
         suffixIcon: (routine.name != "")

@@ -18,7 +18,8 @@ import "../../widgets/flushbars.dart";
 import "../../widgets/padded_divider.dart";
 
 class CreateRoutineScreen extends StatefulWidget {
-  const CreateRoutineScreen({Key? key}) : super(key: key);
+  const CreateRoutineScreen({Key? key, this.routineTime}) : super(key: key);
+  final RoutineTime? routineTime;
 
   @override
   State<CreateRoutineScreen> createState() => _CreateRoutineScreen();
@@ -75,7 +76,7 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
 
     routineTasks = List.generate(Constants.maxNumTasks, (_) => SubTask());
     shownTasks = 0;
-    routineTime = RoutineTime.none;
+    routineTime = widget.routineTime ?? RoutineTime.none;
   }
 
   void initializeControllers() {
@@ -572,7 +573,7 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
                                     padding: const EdgeInsets.symmetric(
                                         horizontal: Constants.innerPadding),
                                     child: Card(
-                                      clipBehavior: Clip.hardEdge,
+                                      clipBehavior: Clip.antiAlias,
                                       elevation: 0,
                                       color: Colors.transparent,
                                       shape: RoundedRectangleBorder(
@@ -1363,7 +1364,7 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
   AutoSizeTextField buildRoutineName({bool smallScreen = false}) {
     return AutoSizeTextField(
       maxLines: 1,
-      minFontSize: Constants.medium,
+      minFontSize: Constants.large,
       decoration: InputDecoration(
         isDense: smallScreen,
         suffixIcon: (name != "")
