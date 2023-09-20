@@ -4,6 +4,7 @@ import 'package:allocate/ui/views/sub_views/update_deadline.dart';
 import 'package:allocate/ui/views/sub_views/update_reminder.dart';
 import 'package:allocate/ui/views/sub_views/update_todo.dart';
 import 'package:auto_size_text/auto_size_text.dart';
+import 'package:equatable/equatable.dart';
 import "package:flutter/material.dart";
 import 'package:jiffy/jiffy.dart';
 import 'package:provider/provider.dart';
@@ -25,7 +26,9 @@ class CalendarScreen extends StatefulWidget {
   State<CalendarScreen> createState() => _CalendarScreen();
 }
 
-// TODO: flesh out implementation, add reminders -> Add repeating functionality?
+// TODO: once populateCalendar fixed, add an init function to check end of month on page load
+// TODO: abstract populate calendar to method -> RUN ON PG LOAD && separate methods -> listeners run populate method.
+// TODO: Also -> store "latest date" every page turn. If it's later, run the populate method.
 class _CalendarScreen extends State<CalendarScreen> {
   late final ValueNotifier<List<CalendarEvent>> _selectedEvents;
   late final LinkedHashMap<DateTime, Set<CalendarEvent>> _events;
@@ -58,6 +61,7 @@ class _CalendarScreen extends State<CalendarScreen> {
   void initState() {
     super.initState();
     initializeProviders();
+    initializeParameters();
   }
 
   void initializeProviders() {
@@ -79,6 +83,8 @@ class _CalendarScreen extends State<CalendarScreen> {
       hashCode: getHashCode,
     );
 
+    _selectedEvents = ValueNotifier(getEventsForDay(_selectedDay));
+
     initializeEvents();
   }
 
@@ -86,7 +92,7 @@ class _CalendarScreen extends State<CalendarScreen> {
     await getEvents().whenComplete(() {
       if (mounted) {
         setState(() {
-          _selectedEvents = ValueNotifier(getEventsForDay(_selectedDay));
+          _selectedEvents.value = getEventsForDay(_selectedDay);
         });
       }
     });
@@ -233,10 +239,17 @@ class _CalendarScreen extends State<CalendarScreen> {
             onPageChanged: (focusedDay) async {
               _focusedDay = focusedDay;
               if (focusedDay.isAfter(Constants.today)) {
+                // TODO: Refactor this into a method -> Also, change this.
+                // Should generate 3 months ahead mb & stop. Query is duplicating.
+                DateTime limit =
+                    Jiffy.parseFromDateTime(focusedDay).add(months: 1).dateTime;
                 await Future.wait([
-                  toDoProvider.populateCalendar(limit: focusedDay),
-                  deadlineProvider.populateCalendar(limit: focusedDay),
-                ]).whenComplete(() => setState(() {}));
+                  toDoProvider.populateCalendar(limit: limit),
+                  //deadlineProvider.populateCalendar(limit: limit),
+                ]).whenComplete(() async {
+                  await getEvents(day: focusedDay)
+                      .whenComplete(() => setState(() {}));
+                });
               }
             }),
         Expanded(child: buildEventTile())
@@ -292,7 +305,7 @@ class _CalendarScreen extends State<CalendarScreen> {
 }
 
 // TODO: Possibly refactor this to grab via ID? Possibly not too terrible to store the object. Come back to this.
-class CalendarEvent {
+class CalendarEvent with EquatableMixin {
   final String title;
   final ModelType modelType;
   final ToDo? toDo;
@@ -308,4 +321,7 @@ class CalendarEvent {
 
   @override
   String toString() => "Title: $title, Type: $modelType";
+
+  @override
+  List<Object?> get props => [title, modelType];
 }

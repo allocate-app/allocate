@@ -425,6 +425,17 @@ class DeadlineRepo implements DeadlineRepository {
       _isarClient.deadlines.where().isSyncedEqualTo(false).findAll();
 
   @override
+  Future<List<Deadline>> getRange({DateTime? start, DateTime? end}) async {
+    start = start ?? DateTime.now().copyWith(day: 0);
+    end = end ?? Jiffy.parseFromDateTime(start).add(months: 1).dateTime;
+    // TODO: Possibly sort this.
+    return await _isarClient.deadlines
+        .where()
+        .dueDateBetween(start, end)
+        .findAll();
+  }
+
+  @override
   Future<List<Deadline>> getUpcoming({int limit = 50, int offset = 0}) async =>
       _isarClient.deadlines
           .where()

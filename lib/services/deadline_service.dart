@@ -16,20 +16,28 @@ class DeadlineService {
 
   DateTime? getRepeatDate({required Deadline deadline}) =>
       switch (deadline.frequency) {
-        (Frequency.daily) => Jiffy.parseFromDateTime(deadline.startDate)
+        (Frequency.daily) =>
+        Jiffy
+            .parseFromDateTime(deadline.startDate)
             .add(days: deadline.repeatSkip)
             .dateTime,
-        (Frequency.weekly) => Jiffy.parseFromDateTime(deadline.startDate)
+        (Frequency.weekly) =>
+        Jiffy
+            .parseFromDateTime(deadline.startDate)
             .add(weeks: deadline.repeatSkip)
             .dateTime,
-        (Frequency.monthly) => Jiffy.parseFromDateTime(deadline.startDate)
+        (Frequency.monthly) =>
+        Jiffy
+            .parseFromDateTime(deadline.startDate)
             .add(months: deadline.repeatSkip)
             .dateTime,
-        (Frequency.yearly) => Jiffy.parseFromDateTime(deadline.startDate)
+        (Frequency.yearly) =>
+        Jiffy
+            .parseFromDateTime(deadline.startDate)
             .add(years: deadline.repeatSkip)
             .dateTime,
         (Frequency.custom) => getCustom(deadline: deadline),
-        //Once should never repeat -> fixing asynchronously in case validation fails.
+      //Once should never repeat -> fixing asynchronously in case validation fails.
         (Frequency.once) => null,
       };
 
@@ -48,10 +56,12 @@ class DeadlineService {
 
     Deadline newDeadline = deadline.copyWith(
         startDate: nextRepeatDate,
-        dueDate: Jiffy.parseFromDateTime(nextRepeatDate)
+        dueDate: Jiffy
+            .parseFromDateTime(nextRepeatDate)
             .add(microseconds: dueOffset)
             .dateTime,
-        warnDate: Jiffy.parseFromDateTime(nextRepeatDate)
+        warnDate: Jiffy
+            .parseFromDateTime(nextRepeatDate)
             .add(microseconds: warnOffset)
             .dateTime);
 
@@ -61,7 +71,7 @@ class DeadlineService {
         NotificationService.instance
             .validateWarnDate(warnDate: newDeadline.warnDate)) {
       String newDue =
-          Jiffy.parseFromDateTime(newDeadline.dueDate).toLocal().toString();
+      Jiffy.parseFromDateTime(newDeadline.dueDate).toLocal().toString();
       NotificationService.instance.scheduleNotification(
           id: newDeadline.notificationID!,
           warnDate: newDeadline.warnDate,
@@ -110,10 +120,12 @@ class DeadlineService {
 
       Deadline newDeadline = deadline.copyWith(
           startDate: nextRepeatDate,
-          dueDate: Jiffy.parseFromDateTime(nextRepeatDate)
+          dueDate: Jiffy
+              .parseFromDateTime(nextRepeatDate)
               .add(microseconds: dueOffset)
               .dateTime,
-          warnDate: Jiffy.parseFromDateTime(nextRepeatDate)
+          warnDate: Jiffy
+              .parseFromDateTime(nextRepeatDate)
               .add(microseconds: warnOffset)
               .dateTime);
 
@@ -124,7 +136,7 @@ class DeadlineService {
           NotificationService.instance
               .validateWarnDate(warnDate: newDeadline.warnDate)) {
         String newDue =
-            Jiffy.parseFromDateTime(newDeadline.dueDate).toLocal().toString();
+        Jiffy.parseFromDateTime(newDeadline.dueDate).toLocal().toString();
         NotificationService.instance.scheduleNotification(
             id: newDeadline.notificationID!,
             warnDate: newDeadline.warnDate,
@@ -161,7 +173,8 @@ class DeadlineService {
 
     // ie. if it is within the same week.
     if (index + 1 > deadline.startDate.weekday) {
-      return Jiffy.parseFromDateTime(deadline.startDate)
+      return Jiffy
+          .parseFromDateTime(deadline.startDate)
           .add(days: numDays)
           .dateTime;
     }
@@ -173,62 +186,81 @@ class DeadlineService {
     // These should be handled within the validator.
     switch (deadline.customFreq) {
       case CustomFrequency.weekly:
-        return nextRepeatJiffy.add(weeks: deadline.repeatSkip).dateTime;
+        return nextRepeatJiffy
+            .add(weeks: deadline.repeatSkip)
+            .dateTime;
       case CustomFrequency.monthly:
-        return nextRepeatJiffy.add(months: deadline.repeatSkip).dateTime;
+        return nextRepeatJiffy
+            .add(months: deadline.repeatSkip)
+            .dateTime;
       case CustomFrequency.yearly:
-        return nextRepeatJiffy.add(years: deadline.repeatSkip).dateTime;
+        return nextRepeatJiffy
+            .add(years: deadline.repeatSkip)
+            .dateTime;
     }
   }
 
   Future<void> createDeadline({required Deadline deadline}) async =>
+      await
       _repository.create(deadline);
 
   Future<List<Deadline>> searchDeadlines(
-          {required String searchString}) async =>
+      {required String searchString}) async =>
+      await
       _repository.search(searchString: searchString);
 
   Future<List<Deadline>> getDeadlines({int limit = 50, int offset = 0}) async =>
+      await
       _repository.getRepoList(limit: limit, offset: offset);
 
-  Future<List<Deadline>> getDeadlinesBy(
-          {required SortableView<Deadline> sorter,
-          int limit = 50,
-          int offset = 0}) async =>
+  Future<List<Deadline>> getDeadlinesBy({required SortableView<Deadline> sorter,
+    int limit = 50,
+    int offset = 0}) async =>
+      await
       _repository.getRepoListBy(sorter: sorter, limit: limit, offset: offset);
 
-  Future<Deadline?> getDeadlineByID({required int id}) =>
+  Future<Deadline?> getDeadlineByID({required int id}) async =>
+      await
       _repository.getByID(id: id);
 
+  Future<List<Deadline>> getRange({DateTime? start, DateTime? end}) async =>
+      await _repository.getRange(start: start, end: end);
+
   Future<List<Deadline>> getOverdues({int limit = 50, int offset = 0}) async =>
+      await
       _repository.getOverdues(limit: limit, offset: offset);
 
   Future<List<Deadline>> getUpcoming({int limit = 50, int offset = 0}) async =>
+      await
       _repository.getUpcoming(limit: limit, offset: offset);
 
   Future<List<Deadline>> mostRecent({int limit = 5}) async =>
+      await
       _repository.mostRecent(limit: limit);
 
   Future<void> updateDeadline({required Deadline deadline}) async =>
+      await
       _repository.update(deadline);
 
   Future<void> updateBatch({required List<Deadline> deadlines}) async =>
+      await
       _repository.updateBatch(deadlines);
 
   Future<void> deleteDeadline({required Deadline deadline}) async =>
+      await
       _repository.delete(deadline);
 
-  Future<void> clearDeletesLocalRepo() async => _repository.deleteLocal();
+  Future<void> clearDeletesLocalRepo() async => await _repository.deleteLocal();
 
   Future<void> deleteFutures({required Deadline deadline}) async =>
+      await
       _repository.deleteFutures(deleteFrom: deadline);
 
-  Future<void> syncRepo() async => _repository.syncRepo();
+  Future<void> syncRepo() async => await _repository.syncRepo();
 
-  Future<List<Deadline>> reorderDeadlines(
-      {required List<Deadline> deadlines,
-      required int oldIndex,
-      required int newIndex}) async {
+  Future<List<Deadline>> reorderDeadlines({required List<Deadline> deadlines,
+    required int oldIndex,
+    required int newIndex}) async {
     if (oldIndex < newIndex) {
       newIndex--;
     }

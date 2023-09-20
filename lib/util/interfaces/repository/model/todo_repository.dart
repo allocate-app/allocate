@@ -1,5 +1,6 @@
 import '../../../../model/task/todo.dart';
 import '../../sortable.dart';
+import '../function/date_range.dart';
 import '../function/overdue.dart';
 import '../function/repeatable.dart';
 import '../function/repository.dart';
@@ -12,6 +13,7 @@ abstract interface class ToDoRepository
         Search<ToDo>,
         Overdue<ToDo>,
         Upcoming<ToDo>,
+        DateRange<ToDo>,
         Repeatable<ToDo> {
   Future<List<ToDo>> getRepoByGroupID(
       {required int groupID, int limit, int offset});

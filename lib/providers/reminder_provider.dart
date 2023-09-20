@@ -251,9 +251,7 @@ class ReminderProvider extends ChangeNotifier {
   bool validateWarnDate({DateTime? warnDate}) => _notificationService
       .validateWarnDate(warnDate: warnDate ?? curReminder!.dueDate);
 
-// TODO: Write this Query, add interface.
   Future<List<Reminder>> getRemindersBetween(
-      {required DateTime start, required DateTime end}) {
-    throw UnimplementedError();
-  }
+          {DateTime? start, DateTime? end}) async =>
+      _reminderService.getRange(start: start, end: end);
 }

@@ -41,39 +41,39 @@ class RoutineService {
           .toInt();
 
   Future<void> createRoutine({required Routine routine}) async =>
-      _repository.create(routine);
+      await _repository.create(routine);
 
   Future<List<Routine>> searchRoutines({required String searchString}) async =>
-      _repository.search(searchString: searchString);
+      await _repository.search(searchString: searchString);
 
   Future<List<Routine>> getRoutines({int limit = 50, int offset = 0}) async =>
-      _repository.getRepoList(limit: limit, offset: offset);
+      await _repository.getRepoList(limit: limit, offset: offset);
 
   Future<List<Routine>> getRoutinesBy(
           {int limit = 50,
           int offset = 0,
           required SortableView<Routine> routineSorter}) async =>
-      _repository.getRepoListBy(
+      await _repository.getRepoListBy(
           sorter: routineSorter, limit: limit, offset: offset);
 
   Future<Routine?> getRoutineById({required int id}) async =>
-      _repository.getByID(id: id);
+      await _repository.getByID(id: id);
 
   Future<List<Routine>> mostRecent({int limit = 5}) async =>
-      _repository.mostRecent(limit: limit);
+      await _repository.mostRecent(limit: limit);
 
   Future<void> updateRoutine({required Routine routine}) async =>
-      _repository.update(routine);
+      await _repository.update(routine);
 
   Future<void> updateBatch({required List<Routine> routines}) async =>
-      _repository.updateBatch(routines);
+      await _repository.updateBatch(routines);
 
   Future<void> deleteRoutine({required Routine routine}) async =>
-      _repository.delete(routine);
+      await _repository.delete(routine);
 
-  Future<void> clearDeletesLocalRepo() async => _repository.deleteLocal();
+  Future<void> clearDeletesLocalRepo() async => await _repository.deleteLocal();
 
-  Future<void> syncRepo() async => _repository.syncRepo();
+  Future<void> syncRepo() async => await _repository.syncRepo();
 
   Future<List<Routine>> reorderRoutines(
       {required List<Routine> routines,
@@ -87,7 +87,7 @@ class RoutineService {
     for (int i = 0; i < routines.length; i++) {
       routines[i].customViewIndex = i;
     }
-    _repository.updateBatch(routines);
+    await _repository.updateBatch(routines);
     return routines;
   }
 

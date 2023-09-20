@@ -151,53 +151,65 @@ class ReminderService {
   // }
 
   Future<void> createReminder({required Reminder reminder}) async =>
+      await
       _repository.create(reminder);
 
   Future<List<Reminder>> searchReminders(
-          {required String searchString}) async =>
+      {required String searchString}) async =>
+      await
       _repository.search(searchString: searchString);
 
   Future<List<Reminder>> getReminders({int limit = 50, int offset = 0}) async =>
+      await
       _repository.getRepoList(limit: limit, offset: offset);
 
-  Future<List<Reminder>> getRemindersBy(
-          {required SortableView<Reminder> sorter,
-          int limit = 50,
-          int offset = 0}) async =>
+  Future<List<Reminder>> getRemindersBy({required SortableView<Reminder> sorter,
+    int limit = 50,
+    int offset = 0}) async =>
+      await
       _repository.getRepoListBy(sorter: sorter, limit: limit, offset: offset);
 
   Future<Reminder?> getReminderByID({required int id}) async =>
+      await
       _repository.getByID(id: id);
 
+  Future<List<Reminder>> getRange({DateTime? start, DateTime? end}) async =>
+      await _repository.getRange(start: start, end: end);
+
   Future<List<Reminder>> mostRecent({int limit = 5}) async =>
+      await
       _repository.mostRecent(limit: limit);
 
   Future<List<Reminder>> getOverdues({int limit = 50, int offset = 0}) async =>
+      await
       _repository.getOverdues(limit: limit, offset: offset);
 
   Future<List<Reminder>> getUpcoming({int limit = 50, int offset = 0}) async =>
+      await
       _repository.getUpcoming(limit: limit, offset: offset);
 
   Future<void> updateReminder({required Reminder reminder}) async =>
+      await
       _repository.update(reminder);
 
   Future<void> updateBatch({required List<Reminder> reminders}) async =>
+      await
       _repository.updateBatch(reminders);
 
   Future<void> deleteReminder({required Reminder reminder}) async =>
+      await
       _repository.delete(reminder);
 
-  Future<void> clearDeletesLocalRepo() async => _repository.deleteLocal();
+  Future<void> clearDeletesLocalRepo() async => await _repository.deleteLocal();
 
   // Future<void> deleteFutures({required Reminder reminder}) async =>
   //     _repository.deleteFutures(deleteFrom: reminder);
 
-  Future<void> syncRepo() async => _repository.syncRepo();
+  Future<void> syncRepo() async => await _repository.syncRepo();
 
-  Future<List<Reminder>> reorderReminders(
-      {required List<Reminder> reminders,
-      required int oldIndex,
-      required int newIndex}) async {
+  Future<List<Reminder>> reorderReminders({required List<Reminder> reminders,
+    required int oldIndex,
+    required int newIndex}) async {
     if (oldIndex < newIndex) {
       newIndex--;
     }
@@ -206,7 +218,7 @@ class ReminderService {
     for (int i = 0; i < reminders.length; i++) {
       reminders[i].customViewIndex = i;
     }
-    _repository.updateBatch(reminders);
+    await _repository.updateBatch(reminders);
     return reminders;
   }
 }

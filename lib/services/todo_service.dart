@@ -89,14 +89,12 @@ class ToDoService {
   Future<void> populateCalendar({required DateTime limit}) async {
     DateTime startTime = DateTime.now();
     while (startTime.isBefore(limit)) {
-      List<ToDo> repeatables = await _repository.getRepeatables(now: limit);
+      List<ToDo> repeatables = await _repository.getRepeatables(now: startTime);
 
-      if (repeatables.isEmpty) {
-        break;
-      }
-      checkRepeating(now: startTime, repeatables: repeatables);
-
-      startTime.add(const Duration(days: 1));
+      await checkRepeating(now: startTime, repeatables: repeatables)
+          .whenComplete(() {
+        startTime = startTime.add(const Duration(days: 1));
+      });
     }
   }
 
@@ -131,7 +129,7 @@ class ToDoService {
       toUpdate.add(newToDo);
       toUpdate.add(toDo);
     }
-    updateBatch(toDos: toUpdate);
+    await updateBatch(toDos: toUpdate);
   }
 
   DateTime? getCustom({required ToDo toDo}) {
@@ -177,45 +175,49 @@ class ToDoService {
   }
 
   Future<void> createToDo({required ToDo toDo}) async =>
-      _repository.create(toDo);
+      await _repository.create(toDo);
 
   Future<List<ToDo>> searchToDos({required String searchString}) async =>
-      _repository.search(searchString: searchString);
+      await _repository.search(searchString: searchString);
 
   Future<List<ToDo>> getToDos({int limit = 50, int offset = 0}) async =>
-      _repository.getRepoList(limit: limit, offset: offset);
+      await _repository.getRepoList(limit: limit, offset: offset);
 
   Future<List<ToDo>> getToDosBy(
           {required SortableView<ToDo> toDoSorter,
           int limit = 50,
           int offset = 0}) async =>
-      _repository.getRepoListBy(
+      await _repository.getRepoListBy(
           sorter: toDoSorter, limit: limit, offset: offset);
 
+  Future<List<ToDo>> getRange({DateTime? start, DateTime? end}) async =>
+      await _repository.getRange(start: start, end: end);
+
   Future<List<ToDo>> getOverdues({int limit = 50, int offset = 0}) async =>
-      _repository.getOverdues(limit: limit, offset: offset);
+      await _repository.getOverdues(limit: limit, offset: offset);
 
   Future<List<ToDo>> getUpcoming({int limit = 50, int offset = 0}) async =>
-      _repository.getUpcoming(limit: limit, offset: offset);
+      await _repository.getUpcoming(limit: limit, offset: offset);
 
   Future<ToDo?> getToDoByID({int? id}) async =>
-      (null != id) ? _repository.getByID(id: id) : null;
+      (null != id) ? await _repository.getByID(id: id) : null;
 
   Future<List<ToDo>> mostRecent({int limit = 5}) async =>
-      _repository.mostRecent(limit: limit);
+      await _repository.mostRecent(limit: limit);
 
   Future<List<ToDo>> getMyDay(
           {required SortableView<ToDo> toDoSorter,
           int limit = 50,
           int offset = 0}) async =>
-      _repository.getMyDay(sorter: toDoSorter, limit: limit, offset: offset);
+      await _repository.getMyDay(
+          sorter: toDoSorter, limit: limit, offset: offset);
 
   Future<List<ToDo>> getByGroup(
       {int? groupID, int limit = 50, int offset = 0}) async {
     if (null == groupID) {
       return [];
     }
-    return _repository.getRepoByGroupID(
+    return await _repository.getRepoByGroupID(
         groupID: groupID, limit: limit, offset: offset);
   }
 
@@ -223,24 +225,24 @@ class ToDoService {
           {required SortableView<ToDo> toDoSorter,
           int limit = 50,
           int offset = 0}) async =>
-      _repository.getCompleted(
+      await _repository.getCompleted(
           sorter: toDoSorter, limit: limit, offset: offset);
 
   Future<void> updateToDo({required ToDo toDo}) async =>
-      _repository.update(toDo);
+      await _repository.update(toDo);
 
   Future<void> updateBatch({required List<ToDo> toDos}) async =>
-      _repository.updateBatch(toDos);
+      await _repository.updateBatch(toDos);
 
   Future<void> deleteToDo({required ToDo toDo}) async =>
-      _repository.delete(toDo);
+      await _repository.delete(toDo);
 
   Future<void> clearDeletesLocalRepo() async => _repository.deleteLocal();
 
   Future<void> deleteFutures({required ToDo toDo}) async =>
-      _repository.deleteFutures(deleteFrom: toDo);
+      await _repository.deleteFutures(deleteFrom: toDo);
 
-  Future<void> syncRepo() async => _repository.syncRepo();
+  Future<void> syncRepo() async => await _repository.syncRepo();
 
   // Likely better to not use.
   Future<void> toggleMyDay({required ToDo toDo}) async {
@@ -277,7 +279,7 @@ class ToDoService {
     for (int i = 0; i < toDos.length; i++) {
       toDos[i].groupIndex = i;
     }
-    _repository.updateBatch(toDos);
+    await _repository.updateBatch(toDos);
     return toDos;
   }
 }

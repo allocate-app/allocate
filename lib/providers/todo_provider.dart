@@ -125,7 +125,7 @@ class ToDoProvider extends ChangeNotifier {
     List<SubTask>? subTasks,
   }) async {
     List<SubTask> buffer =
-        List.generate(Constants.numTasks[taskType]!, (index) => SubTask());
+    List.generate(Constants.numTasks[taskType]!, (index) => SubTask());
 
     if (null != subTasks && buffer.isNotEmpty) {
       List.copyRange(buffer, 0, subTasks, 0, Constants.numTasks[taskType]!);
@@ -320,7 +320,7 @@ class ToDoProvider extends ChangeNotifier {
                   minute: Constants.midnight.minute),
               repeatDays: List.filled(7, false),
               subTasks:
-                  List.filled(Constants.numTasks[TaskType.small]!, SubTask()),
+              List.filled(Constants.numTasks[TaskType.small]!, SubTask()),
               lastUpdated: DateTime.now());
 
   Future<List<ToDo>> getToDos({int limit = 50, int offset = 0}) async =>
@@ -348,7 +348,7 @@ class ToDoProvider extends ChangeNotifier {
   }
 
   Future<List<ToDo>> getToDosCompleted(
-          {int limit = 50, int offset = 0}) async =>
+      {int limit = 50, int offset = 0}) async =>
       await _toDoService.getCompleted(
           toDoSorter: sorter, limit: limit, offset: offset);
 
@@ -357,9 +357,6 @@ class ToDoProvider extends ChangeNotifier {
         toDoSorter: sorter, limit: limit, offset: offset);
   }
 
-  // TODO: Write this Query, add interface.
-  Future<List<ToDo>> getToDosBetween(
-      {required DateTime start, required DateTime end}) {
-    throw UnimplementedError();
-  }
+  Future<List<ToDo>> getToDosBetween({DateTime? start, DateTime? end}) async =>
+      await _toDoService.getRange(start: start, end: end);
 }
