@@ -1,3 +1,9 @@
+enum ModelType {
+  toDo,
+  deadline,
+  reminder,
+}
+
 enum Priority { low, medium, high }
 
 enum Frequency { once, daily, weekly, monthly, yearly, custom }

@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../../../providers/user_provider.dart';
 import '../../../util/constants.dart';
+import '../sub_views/calendar.dart';
 import '../sub_views/my_day_routines.dart';
 import '../sub_views/my_day_todos.dart';
 
@@ -28,7 +29,7 @@ class _MyDayScreen extends State<MyDayScreen> {
   static const List<Widget> views = [
     MyDayToDos(),
     MyDayRoutines(),
-    Icon(Icons.calendar_month_rounded)
+    CalendarScreen(),
   ];
 
   @override

@@ -89,7 +89,7 @@ class ToDoService {
   Future<void> populateCalendar({required DateTime limit}) async {
     DateTime startTime = DateTime.now();
     while (startTime.isBefore(limit)) {
-      List<ToDo> repeatables = await _repository.getRepeatables(now: startTime);
+      List<ToDo> repeatables = await _repository.getRepeatables(now: limit);
 
       if (repeatables.isEmpty) {
         break;

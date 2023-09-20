@@ -281,4 +281,10 @@ class DeadlineProvider extends ChangeNotifier {
 
   bool validateWarnDate({DateTime? warnDate}) => _notificationService
       .validateWarnDate(warnDate: warnDate ?? curDeadline!.warnDate);
+
+  // TODO: implement this query;
+  Future<List<Deadline>> getDeadlinesBetween(
+      {required DateTime start, required DateTime end}) {
+    throw UnimplementedError();
+  }
 }

@@ -58,7 +58,7 @@ class ReminderService {
   // Future<void> populateCalendar({required DateTime limit}) async {
   //   DateTime startTime = DateTime.now();
   //   while (startTime.isBefore(limit)) {
-  //     List<Reminder> repeatables = await _repository.getRepeatables(now: startTime);
+  //     List<Reminder> repeatables = await _repository.getRepeatables(now: limit);
   //
   //     if (repeatables.isEmpty) {
   //       break;

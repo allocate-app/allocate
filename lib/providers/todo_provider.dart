@@ -356,4 +356,10 @@ class ToDoProvider extends ChangeNotifier {
     toDos = await _toDoService.getCompleted(
         toDoSorter: sorter, limit: limit, offset: offset);
   }
+
+  // TODO: Write this Query, add interface.
+  Future<List<ToDo>> getToDosBetween(
+      {required DateTime start, required DateTime end}) {
+    throw UnimplementedError();
+  }
 }
