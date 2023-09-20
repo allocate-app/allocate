@@ -39,24 +39,15 @@ class _CalendarScreen extends State<CalendarScreen> {
 
   late final CalendarStyle calendarStyle = CalendarStyle(
       selectedDecoration: BoxDecoration(
-        color: Theme
-            .of(context)
-            .colorScheme
-            .primary,
+        color: Theme.of(context).colorScheme.primary,
         shape: BoxShape.circle,
       ),
       todayDecoration: BoxDecoration(
-        color: Theme
-            .of(context)
-            .colorScheme
-            .primaryContainer,
+        color: Theme.of(context).colorScheme.primaryContainer,
         shape: BoxShape.circle,
       ),
       todayTextStyle: TextStyle(
-        color: Theme
-            .of(context)
-            .colorScheme
-            .primary,
+        color: Theme.of(context).colorScheme.primary,
       ));
 
   late ToDoProvider toDoProvider;
@@ -73,6 +64,10 @@ class _CalendarScreen extends State<CalendarScreen> {
     toDoProvider = Provider.of(context, listen: false);
     reminderProvider = Provider.of(context, listen: false);
     deadlineProvider = Provider.of(context, listen: false);
+
+    toDoProvider.addListener(getToDoEvents);
+    reminderProvider.addListener(getReminderEvents);
+    deadlineProvider.addListener(getDeadlineEvents);
   }
 
   void initializeParameters() {
@@ -100,10 +95,7 @@ class _CalendarScreen extends State<CalendarScreen> {
   Future<void> getEvents({DateTime? day}) async {
     day = day ?? Constants.today.copyWith(day: 0);
 
-    DateTime end = Jiffy
-        .parseFromDateTime(day)
-        .add(months: 1)
-        .dateTime;
+    DateTime end = Jiffy.parseFromDateTime(day).add(months: 1).dateTime;
     await Future.wait([
       getToDoEvents(start: day, end: end),
       getDeadlineEvents(start: day, end: end),
@@ -113,13 +105,10 @@ class _CalendarScreen extends State<CalendarScreen> {
 
   Future<void> getToDoEvents({DateTime? start, DateTime? end}) async {
     start = start ?? Constants.today.copyWith(day: 1);
-    end = end ?? Jiffy
-        .parseFromDateTime(start)
-        .add(months: 1)
-        .dateTime;
+    end = end ?? Jiffy.parseFromDateTime(start).add(months: 1).dateTime;
 
     List<ToDo> toDos =
-    await toDoProvider.getToDosBetween(start: start, end: end);
+        await toDoProvider.getToDosBetween(start: start, end: end);
 
     for (ToDo toDo in toDos) {
       DateTime day = toDo.dueDate.copyWith(
@@ -136,13 +125,10 @@ class _CalendarScreen extends State<CalendarScreen> {
 
   Future<void> getDeadlineEvents({DateTime? start, DateTime? end}) async {
     start = start ?? Constants.today.copyWith(day: 1);
-    end = end ?? Jiffy
-        .parseFromDateTime(start)
-        .add(months: 1)
-        .dateTime;
+    end = end ?? Jiffy.parseFromDateTime(start).add(months: 1).dateTime;
 
     List<Deadline> deadlines =
-    await deadlineProvider.getDeadlinesBetween(start: start, end: end);
+        await deadlineProvider.getDeadlinesBetween(start: start, end: end);
 
     for (Deadline deadline in deadlines) {
       DateTime day = deadline.dueDate.copyWith(
@@ -159,13 +145,10 @@ class _CalendarScreen extends State<CalendarScreen> {
 
   Future<void> getReminderEvents({DateTime? start, DateTime? end}) async {
     start = start ?? Constants.today.copyWith(day: 1);
-    end = end ?? Jiffy
-        .parseFromDateTime(start)
-        .add(months: 1)
-        .dateTime;
+    end = end ?? Jiffy.parseFromDateTime(start).add(months: 1).dateTime;
 
     List<Reminder> reminders =
-    await reminderProvider.getRemindersBetween(start: start, end: end);
+        await reminderProvider.getRemindersBetween(start: start, end: end);
 
     for (Reminder reminder in reminders) {
       DateTime day = reminder.dueDate.copyWith(
@@ -200,6 +183,34 @@ class _CalendarScreen extends State<CalendarScreen> {
   }
 
   @override
+  void dispose() {
+    toDoProvider.removeListener(getToDoEvents);
+    reminderProvider.removeListener(getReminderEvents);
+    deadlineProvider.removeListener(getDeadlineEvents);
+    super.dispose();
+  }
+
+  Widget getModelIcon({required ModelType modelType}) {
+    Icon icon = switch (modelType) {
+      ModelType.toDo => const Icon(Icons.task_rounded),
+      ModelType.deadline => const Icon(Icons.announcement_rounded),
+      ModelType.reminder => const Icon(Icons.push_pin_rounded),
+    };
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: Border.all(
+              color: Theme.of(context).colorScheme.outline,
+              strokeAlign: BorderSide.strokeAlignOutside)),
+      child: Padding(
+        padding: const EdgeInsets.all(Constants.padding),
+        child: icon,
+      ),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -228,12 +239,12 @@ class _CalendarScreen extends State<CalendarScreen> {
                 ]).whenComplete(() => setState(() {}));
               }
             }),
-        Expanded(child: buildEvents())
+        Expanded(child: buildEventTile())
       ],
     );
   }
 
-  Widget buildEvents() {
+  Widget buildEventTile() {
     return ValueListenableBuilder<List<CalendarEvent>>(
       valueListenable: _selectedEvents,
       builder:
@@ -242,8 +253,9 @@ class _CalendarScreen extends State<CalendarScreen> {
             itemCount: value.length,
             itemBuilder: (BuildContext context, int index) {
               return ListTile(
+                  leading: getModelIcon(modelType: value[index].modelType),
                   contentPadding:
-                  const EdgeInsets.symmetric(horizontal: Constants.padding),
+                      const EdgeInsets.symmetric(horizontal: Constants.padding),
                   title: AutoSizeText(
                     value[index].title,
                     minFontSize: Constants.medium,
@@ -287,11 +299,12 @@ class CalendarEvent {
   final Deadline? deadline;
   final Reminder? reminder;
 
-  const CalendarEvent({required this.title,
-    required this.modelType,
-    this.toDo,
-    this.deadline,
-    this.reminder});
+  const CalendarEvent(
+      {required this.title,
+      required this.modelType,
+      this.toDo,
+      this.deadline,
+      this.reminder});
 
   @override
   String toString() => "Title: $title, Type: $modelType";
