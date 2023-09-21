@@ -26,9 +26,9 @@ class CalendarScreen extends StatefulWidget {
   State<CalendarScreen> createState() => _CalendarScreen();
 }
 
-// TODO: once populateCalendar fixed, add an init function to check end of month on page load
-// TODO: abstract populate calendar to method -> RUN ON PG LOAD && separate methods -> listeners run populate method.
-// TODO: Also -> store "latest date" every page turn. If it's later, run the populate method.
+// TODO: Make calendar population more efficient -> Add an optional start date to method in service classes.
+// ie. Run the populate calendar from latest to new focused day.
+// On page reset, run the query from today up to the focused day.
 class _CalendarScreen extends State<CalendarScreen> {
   late final ValueNotifier<List<CalendarEvent>> _selectedEvents;
   late final LinkedHashMap<DateTime, Set<CalendarEvent>> _events;
@@ -36,6 +36,8 @@ class _CalendarScreen extends State<CalendarScreen> {
   late final CalendarFormat calendarFormat;
   late DateTime _focusedDay;
   DateTime? _selectedDay;
+
+  late DateTime latest;
 
   late final HeaderStyle headerStyle = const HeaderStyle(
       formatButtonVisible: false, titleTextStyle: Constants.headerStyle);
@@ -62,6 +64,7 @@ class _CalendarScreen extends State<CalendarScreen> {
     super.initState();
     initializeProviders();
     initializeParameters();
+    resetEvents();
   }
 
   void initializeProviders() {
@@ -69,23 +72,22 @@ class _CalendarScreen extends State<CalendarScreen> {
     reminderProvider = Provider.of(context, listen: false);
     deadlineProvider = Provider.of(context, listen: false);
 
-    toDoProvider.addListener(getToDoEvents);
-    reminderProvider.addListener(getReminderEvents);
-    deadlineProvider.addListener(getDeadlineEvents);
+    toDoProvider.addListener(resetEvents);
+    reminderProvider.addListener(resetEvents);
+    deadlineProvider.addListener(resetEvents);
   }
 
   void initializeParameters() {
     calendarFormat = CalendarFormat.month;
     _focusedDay = Constants.today;
     _selectedDay = _focusedDay;
+    latest = _focusedDay;
     _events = LinkedHashMap<DateTime, Set<CalendarEvent>>(
       equals: isSameDay,
       hashCode: getHashCode,
     );
 
     _selectedEvents = ValueNotifier(getEventsForDay(_selectedDay));
-
-    initializeEvents();
   }
 
   Future<void> initializeEvents() async {
@@ -98,15 +100,46 @@ class _CalendarScreen extends State<CalendarScreen> {
     });
   }
 
+  // Only grab the events in view.
+  Future<void> resetEvents() async {
+    _events.clear();
+    await populateCalendars(startDay: _focusedDay.copyWith(day: 1));
+  }
+
+  Future<void> populateCalendars({DateTime? startDay}) async {
+    // TODO: Refactor this into a method -> Also, change this.
+    // Should generate 3 months ahead mb & stop. Query is duplicating.
+    startDay = startDay ??
+        Constants.today.copyWith(
+            day: 1,
+            hour: Constants.midnight.hour,
+            minute: Constants.midnight.minute);
+    DateTime limit = Jiffy.parseFromDateTime(startDay).add(months: 1).dateTime;
+    await Future.wait([
+      // TODO: add the other providers here pls.
+      toDoProvider.populateCalendar(limit: limit),
+      //deadlineProvider.populateCalendar(limit: limit),
+    ]).whenComplete(() async {
+      await getEvents(day: startDay).whenComplete(() {
+        if (mounted) {
+          setState(() {
+            latest = startDay!;
+            _selectedEvents.value = getEventsForDay(_selectedDay);
+          });
+        }
+      });
+    });
+  }
+
   Future<void> getEvents({DateTime? day}) async {
-    day = day ?? Constants.today.copyWith(day: 0);
+    day = day ?? Constants.today.copyWith(day: 1);
 
     DateTime end = Jiffy.parseFromDateTime(day).add(months: 1).dateTime;
     await Future.wait([
       getToDoEvents(start: day, end: end),
       getDeadlineEvents(start: day, end: end),
       getReminderEvents(start: day, end: end),
-    ]).whenComplete(() => setState(() {}));
+    ]);
   }
 
   Future<void> getToDoEvents({DateTime? start, DateTime? end}) async {
@@ -117,14 +150,26 @@ class _CalendarScreen extends State<CalendarScreen> {
         await toDoProvider.getToDosBetween(start: start, end: end);
 
     for (ToDo toDo in toDos) {
-      DateTime day = toDo.dueDate.copyWith(
+      DateTime startDay = toDo.startDate.copyWith(
           hour: Constants.midnight.hour, minute: Constants.midnight.minute);
-      CalendarEvent event = CalendarEvent(
-          title: toDo.name, modelType: ModelType.toDo, toDo: toDo);
-      if (_events.containsKey(day)) {
-        _events[day]!.add(event);
+      DateTime dueDay = toDo.dueDate.copyWith(
+          hour: Constants.midnight.hour, minute: Constants.midnight.minute);
+
+      CalendarEvent startEvent = CalendarEvent(
+          title: "Start: ${toDo.name}", modelType: ModelType.toDo, toDo: toDo);
+      CalendarEvent dueEvent = CalendarEvent(
+          title: "Due: ${toDo.name}", modelType: ModelType.toDo, toDo: toDo);
+
+      if (_events.containsKey(startDay)) {
+        _events[startDay]!.add(startEvent);
       } else {
-        _events[day] = {event};
+        _events[startDay] = {startEvent};
+      }
+
+      if (_events.containsKey(dueDay)) {
+        _events[dueDay]!.add(dueEvent);
+      } else {
+        _events[dueDay] = {dueEvent};
       }
     }
   }
@@ -190,9 +235,9 @@ class _CalendarScreen extends State<CalendarScreen> {
 
   @override
   void dispose() {
-    toDoProvider.removeListener(getToDoEvents);
-    reminderProvider.removeListener(getReminderEvents);
-    deadlineProvider.removeListener(getDeadlineEvents);
+    toDoProvider.removeListener(resetEvents);
+    reminderProvider.removeListener(resetEvents);
+    deadlineProvider.removeListener(resetEvents);
     super.dispose();
   }
 
@@ -238,18 +283,12 @@ class _CalendarScreen extends State<CalendarScreen> {
             },
             onPageChanged: (focusedDay) async {
               _focusedDay = focusedDay;
-              if (focusedDay.isAfter(Constants.today)) {
-                // TODO: Refactor this into a method -> Also, change this.
-                // Should generate 3 months ahead mb & stop. Query is duplicating.
-                DateTime limit =
-                    Jiffy.parseFromDateTime(focusedDay).add(months: 1).dateTime;
-                await Future.wait([
-                  toDoProvider.populateCalendar(limit: limit),
-                  //deadlineProvider.populateCalendar(limit: limit),
-                ]).whenComplete(() async {
-                  await getEvents(day: focusedDay)
-                      .whenComplete(() => setState(() {}));
-                });
+              if (focusedDay.isAfter(latest)) {
+                // Populate new data if existing -- grabs events afterward.
+                await populateCalendars(startDay: focusedDay);
+              } else {
+                // Just grab events.
+                getEvents(day: focusedDay);
               }
             }),
         Expanded(child: buildEventTile())
@@ -265,39 +304,43 @@ class _CalendarScreen extends State<CalendarScreen> {
         return ListView.builder(
             itemCount: value.length,
             itemBuilder: (BuildContext context, int index) {
-              return ListTile(
-                  leading: getModelIcon(modelType: value[index].modelType),
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: Constants.padding),
-                  title: AutoSizeText(
-                    value[index].title,
-                    minFontSize: Constants.medium,
-                    maxLines: 1,
-                    overflow: TextOverflow.visible,
-                    softWrap: false,
-                  ),
-                  onTap: () async {
-                    late Widget dialog;
-                    switch (value[index].modelType) {
-                      case ModelType.toDo:
-                        dialog = const UpdateToDoScreen();
-                        toDoProvider.curToDo = value[index].toDo;
-                        break;
-                      case ModelType.deadline:
-                        dialog = const UpdateDeadlineScreen();
-                        deadlineProvider.curDeadline = value[index].deadline;
-                        break;
-                      case ModelType.reminder:
-                        dialog = const UpdateReminderScreen();
-                        reminderProvider.curReminder = value[index].reminder;
-                        break;
-                    }
-                    await showDialog(
-                        barrierDismissible: false,
-                        useRootNavigator: false,
-                        context: context,
-                        builder: (BuildContext context) => dialog);
-                  });
+              return Padding(
+                padding: const EdgeInsets.all(Constants.halfPadding),
+                child: ListTile(
+                    shape: const RoundedRectangleBorder(
+                        borderRadius: BorderRadius.all(
+                            Radius.circular(Constants.roundedCorners))),
+                    leading: getModelIcon(modelType: value[index].modelType),
+                    title: AutoSizeText(
+                      value[index].title,
+                      minFontSize: Constants.medium,
+                      maxLines: 1,
+                      overflow: TextOverflow.visible,
+                      softWrap: false,
+                    ),
+                    onTap: () async {
+                      late Widget dialog;
+                      switch (value[index].modelType) {
+                        case ModelType.toDo:
+                          dialog = const UpdateToDoScreen();
+                          toDoProvider.curToDo = value[index].toDo;
+                          break;
+                        case ModelType.deadline:
+                          dialog = const UpdateDeadlineScreen();
+                          deadlineProvider.curDeadline = value[index].deadline;
+                          break;
+                        case ModelType.reminder:
+                          dialog = const UpdateReminderScreen();
+                          reminderProvider.curReminder = value[index].reminder;
+                          break;
+                      }
+                      await showDialog(
+                          barrierDismissible: false,
+                          useRootNavigator: false,
+                          context: context,
+                          builder: (BuildContext context) => dialog);
+                    }),
+              );
             });
       },
     );

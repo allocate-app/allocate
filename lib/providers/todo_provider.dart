@@ -125,7 +125,7 @@ class ToDoProvider extends ChangeNotifier {
     List<SubTask>? subTasks,
   }) async {
     List<SubTask> buffer =
-    List.generate(Constants.numTasks[taskType]!, (index) => SubTask());
+        List.generate(Constants.numTasks[taskType]!, (index) => SubTask());
 
     if (null != subTasks && buffer.isNotEmpty) {
       List.copyRange(buffer, 0, subTasks, 0, Constants.numTasks[taskType]!);
@@ -138,10 +138,15 @@ class ToDoProvider extends ChangeNotifier {
     realDuration = realDuration ??
         _toDoService.calculateRealDuration(
             weight: weight, duration: expectedDuration);
-
-    startDate = startDate ??
-        DateTime.now().copyWith(
-            hour: Constants.midnight.hour, minute: Constants.midnight.minute);
+//TODO: add zeroing logic to model
+    startDate =
+        startDate?.copyWith(second: 0, microsecond: 0, millisecond: 0) ??
+            DateTime.now().copyWith(
+                hour: Constants.midnight.hour,
+                minute: Constants.midnight.minute,
+                second: 0,
+                millisecond: 0,
+                microsecond: 0);
     dueDate = dueDate ?? startDate.copyWith();
 
     if (startDate.isAfter(dueDate)) {
@@ -225,9 +230,10 @@ class ToDoProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> deleteToDo() async {
+// TODO: move this logic to other models.
+  Future<void> deleteToDo({ToDo? toDo}) async {
     try {
-      _toDoService.deleteToDo(toDo: curToDo!);
+      _toDoService.deleteToDo(toDo: toDo ?? curToDo!);
     } on FailureToDeleteException catch (e) {
       log(e.cause);
       return Future.error(e);
@@ -320,7 +326,7 @@ class ToDoProvider extends ChangeNotifier {
                   minute: Constants.midnight.minute),
               repeatDays: List.filled(7, false),
               subTasks:
-              List.filled(Constants.numTasks[TaskType.small]!, SubTask()),
+                  List.filled(Constants.numTasks[TaskType.small]!, SubTask()),
               lastUpdated: DateTime.now());
 
   Future<List<ToDo>> getToDos({int limit = 50, int offset = 0}) async =>
@@ -348,7 +354,7 @@ class ToDoProvider extends ChangeNotifier {
   }
 
   Future<List<ToDo>> getToDosCompleted(
-      {int limit = 50, int offset = 0}) async =>
+          {int limit = 50, int offset = 0}) async =>
       await _toDoService.getCompleted(
           toDoSorter: sorter, limit: limit, offset: offset);
 

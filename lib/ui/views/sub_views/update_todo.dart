@@ -330,6 +330,8 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
             test: (e) =>
                 e is FailureToCreateException || e is FailureToUploadException);
         toDo.repeatable = false;
+        // TODO: move to other model;
+        toDo.frequency = Frequency.once;
       } else {
         toDo.repeatable = (toDo.frequency != Frequency.once);
       }
@@ -338,7 +340,6 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
     }
 
     toDo.subTasks.setAll(0, cacheSubTasks);
-
     return await toDoProvider.updateToDo().whenComplete(() {
       Navigator.pop(context);
     }).catchError((e) {

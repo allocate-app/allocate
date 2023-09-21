@@ -38,7 +38,7 @@ class ToDoRepo implements ToDoRepository {
     if (null != _supabaseClient.auth.currentSession) {
       Map<String, dynamic> toDoEntity = toDo.toEntity();
       final List<Map<String, dynamic>> response =
-      await _supabaseClient.from("toDos").insert(toDoEntity).select("id");
+          await _supabaseClient.from("toDos").insert(toDoEntity).select("id");
 
       id = response.last["id"];
 
@@ -71,7 +71,7 @@ class ToDoRepo implements ToDoRepository {
     if (null != _supabaseClient.auth.currentSession) {
       Map<String, dynamic> toDoEntity = toDo.toEntity();
       final List<Map<String, dynamic>> response =
-      await _supabaseClient.from("toDos").upsert(toDoEntity).select("id");
+          await _supabaseClient.from("toDos").upsert(toDoEntity).select("id");
 
       id = response.last["id"];
       if (null == id) {
@@ -106,9 +106,9 @@ class ToDoRepo implements ToDoRepository {
     if (null != _supabaseClient.auth.currentSession) {
       ids.clear();
       List<Map<String, dynamic>> toDoEntities =
-      toDos.map((toDo) => toDo.toEntity()).toList();
+          toDos.map((toDo) => toDo.toEntity()).toList();
       final List<Map<String, dynamic>> responses =
-      await _supabaseClient.from("toDos").upsert(toDoEntities).select("id");
+          await _supabaseClient.from("toDos").upsert(toDoEntities).select("id");
 
       ids = responses.map((response) => response["id"] as int?).toList();
 
@@ -144,13 +144,14 @@ class ToDoRepo implements ToDoRepository {
 
   // This is a "Set stuff up for the next delete on sync" kind of delete.
   // They will be hidden from the view, and removed in the background.
+  // TODO: Move bugfix over to other models.
   @override
   Future<void> deleteFutures({required ToDo deleteFrom}) async {
     List<ToDo> toDelete = await _isarClient.toDos
         .where()
         .repeatIDEqualTo(deleteFrom.repeatID)
         .filter()
-        .repeatableEqualTo(true)
+        .dueDateGreaterThan(deleteFrom.dueDate)
         .findAll();
 
     // This is to prevent a race condition.
@@ -195,10 +196,10 @@ class ToDoRepo implements ToDoRepository {
       }).toList();
 
       final List<Map<String, dynamic>> responses =
-      await _supabaseClient.from("toDos").upsert(syncEntities).select("id");
+          await _supabaseClient.from("toDos").upsert(syncEntities).select("id");
 
       List<int?> ids =
-      responses.map((response) => response["id"] as int?).toList();
+          responses.map((response) => response["id"] as int?).toList();
 
       if (ids.any((id) => null == id)) {
         unsyncedToDos.map((toDo) => toDo.isSynced = false);
@@ -226,7 +227,7 @@ class ToDoRepo implements ToDoRepository {
       }
 
       List<ToDo> toDos =
-      toDoEntities.map((toDo) => ToDo.fromEntity(entity: toDo)).toList();
+          toDoEntities.map((toDo) => ToDo.fromEntity(entity: toDo)).toList();
       await _isarClient.writeTxn(() async {
         await _isarClient.toDos.clear();
         for (ToDo toDo in toDos) {
@@ -259,7 +260,7 @@ class ToDoRepo implements ToDoRepository {
 
   @override
   Future<List<ToDo>> getRepoList(
-      {int limit = 50, int offset = 0, bool completed = false}) async =>
+          {int limit = 50, int offset = 0, bool completed = false}) async =>
       _isarClient.toDos
           .where()
           .completedEqualTo(completed)
@@ -272,10 +273,11 @@ class ToDoRepo implements ToDoRepository {
           .findAll();
 
   @override
-  Future<List<ToDo>> getRepoListBy({int limit = 50,
-    int offset = 0,
-    bool completed = false,
-    required SortableView<ToDo> sorter}) async {
+  Future<List<ToDo>> getRepoListBy(
+      {int limit = 50,
+      int offset = 0,
+      bool completed = false,
+      required SortableView<ToDo> sorter}) async {
     switch (sorter.sortMethod) {
       case SortMethod.name:
         if (sorter.descending) {
@@ -398,16 +400,18 @@ class ToDoRepo implements ToDoRepository {
   }
 
   @override
-  Future<List<ToDo>> getCompleted({required SortableView<ToDo> sorter,
-    int limit = 50,
-    int offset = 0}) async =>
+  Future<List<ToDo>> getCompleted(
+          {required SortableView<ToDo> sorter,
+          int limit = 50,
+          int offset = 0}) async =>
       await getRepoListBy(
           sorter: sorter, limit: limit, offset: offset, completed: true);
 
   @override
-  Future<List<ToDo>> getMyDay({required SortableView<ToDo> sorter,
-    int limit = 50,
-    int offset = 0}) async {
+  Future<List<ToDo>> getMyDay(
+      {required SortableView<ToDo> sorter,
+      int limit = 50,
+      int offset = 0}) async {
     switch (sorter.sortMethod) {
       case SortMethod.name:
         if (sorter.descending) {
@@ -550,27 +554,26 @@ class ToDoRepo implements ToDoRepository {
   }
 
   @override
-  Future<int> getMyDayWeight({int limit = 50}) async =>
-      _isarClient.toDos
-          .where()
-          .myDayEqualTo(true)
-          .filter()
-          .toDeleteEqualTo(false)
-          .completedEqualTo(false)
-          .limit(limit)
-          .weightProperty()
-          .sum();
+  Future<int> getMyDayWeight({int limit = 50}) async => _isarClient.toDos
+      .where()
+      .myDayEqualTo(true)
+      .filter()
+      .toDeleteEqualTo(false)
+      .completedEqualTo(false)
+      .limit(limit)
+      .weightProperty()
+      .sum();
 
   @override
   Future<List<ToDo>> getRepoByGroupID(
-      {required int groupID, int limit = 50, int offset = 0}) async =>
+          {required int groupID, int limit = 50, int offset = 0}) async =>
       _isarClient.toDos
           .where()
           .groupIDEqualTo(groupID)
           .filter()
           .toDeleteEqualTo(false)
-      // TODO: Factor this out to a user preference?
-      //.completedEqualTo(false)
+          // TODO: Factor this out to a user preference?
+          //.completedEqualTo(false)
           .sortByGroupIndex()
           .thenByLastUpdated()
           .offset(offset)
@@ -578,13 +581,12 @@ class ToDoRepo implements ToDoRepository {
           .findAll();
 
   @override
-  Future<List<ToDo>> getRepeatables({DateTime? now}) async =>
-      _isarClient.toDos
-          .where()
-          .repeatableEqualTo(true)
-          .filter()
-          .dueDateLessThan(now ?? Constants.today)
-          .findAll();
+  Future<List<ToDo>> getRepeatables({DateTime? now}) async => _isarClient.toDos
+      .where()
+      .repeatableEqualTo(true)
+      .filter()
+      .dueDateLessThan(now ?? Constants.today)
+      .findAll();
 
   Future<List<int>> getDeleteIds() async =>
       _isarClient.toDos.where().toDeleteEqualTo(true).idProperty().findAll();
@@ -592,17 +594,17 @@ class ToDoRepo implements ToDoRepository {
   Future<List<ToDo>> getUnsynced() async =>
       _isarClient.toDos.where().isSyncedEqualTo(false).findAll();
 
+  // TODO: Move to other objects in the model;
   @override
   Future<List<ToDo>> getRange({DateTime? start, DateTime? end}) async {
     start = start ?? DateTime.now().copyWith(day: 0);
-    end = end ?? Jiffy
-        .parseFromDateTime(start)
-        .add(months: 1)
-        .dateTime;
+    end = end ?? Jiffy.parseFromDateTime(start).add(months: 1).dateTime;
     // TODO: Possibly sort this.
     return await _isarClient.toDos
         .where()
         .dueDateBetween(start, end)
+        .filter()
+        .toDeleteEqualTo(false)
         .findAll();
   }
 
