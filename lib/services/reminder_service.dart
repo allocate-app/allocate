@@ -202,7 +202,7 @@ class ReminderService {
   Future<void> clearDeletesLocalRepo() async => await _repository.deleteLocal();
 
   Future<void> deleteFutures({required Reminder reminder}) async =>
-      _repository.deleteFutures(deleteFrom: reminder);
+      await _repository.deleteFutures(deleteFrom: reminder);
 
   Future<void> syncRepo() async => await _repository.syncRepo();
 

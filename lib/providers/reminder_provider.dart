@@ -154,10 +154,10 @@ class ReminderProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> deleteReminder() async {
+  Future<void> deleteReminder({Reminder? reminder}) async {
     await cancelNotification();
     try {
-      await _reminderService.deleteReminder(reminder: curReminder!);
+      await _reminderService.deleteReminder(reminder: reminder ?? curReminder!);
     } on FailureToDeleteException catch (e) {
       log(e.cause);
       return Future.error(e);
@@ -182,12 +182,12 @@ class ReminderProvider extends ChangeNotifier {
   Future<void> checkRepeating({DateTime? now}) async =>
       await _reminderService.checkRepeating(now: now ?? DateTime.now());
 
-  Future<void> nextRepeat() async =>
-      await _reminderService.nextRepeatable(reminder: curReminder!);
+  Future<void> nextRepeat({Reminder? reminder}) async =>
+      await _reminderService.nextRepeatable(reminder: reminder ?? curReminder!);
 
-  // This also cancels upcoming notifications.
-  Future<void> deleteFutures() async =>
-      await _reminderService.deleteFutures(reminder: curReminder!);
+  // This also cancels upcoming notifications.-- TODO: This needs a try catch block.
+  Future<void> deleteFutures({Reminder? reminder}) async =>
+      await _reminderService.deleteFutures(reminder: reminder ?? curReminder!);
 
   Future<void> populateCalendar({DateTime? limit}) async =>
       await _reminderService.populateCalendar(limit: limit ?? DateTime.now());

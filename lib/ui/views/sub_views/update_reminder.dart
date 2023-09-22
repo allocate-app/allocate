@@ -1,15 +1,20 @@
+import 'dart:math';
+
 import 'package:another_flushbar/flushbar.dart';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:auto_size_text_field/auto_size_text_field.dart';
 import 'package:calendar_date_picker2/calendar_date_picker2.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:intl/intl.dart';
 import 'package:jiffy/jiffy.dart';
+import 'package:numberpicker/numberpicker.dart';
 import 'package:provider/provider.dart';
 
 import '../../../model/task/reminder.dart';
 import '../../../providers/reminder_provider.dart';
 import '../../../util/constants.dart';
+import '../../../util/enums.dart';
 import '../../../util/exceptions.dart';
 import '../../widgets/flushbars.dart';
 import '../../widgets/padded_divider.dart';
@@ -26,6 +31,7 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
   late bool checkClose;
 
   late final ReminderProvider reminderProvider;
+  late final Reminder prevReminder;
 
   // Name
   late final TextEditingController nameEditingController;
@@ -47,6 +53,7 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
 
   void initializeParameters() {
     checkClose = false;
+    prevReminder = reminder.copy();
   }
 
   void initializeControllers() {
@@ -384,7 +391,90 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
     return valid;
   }
 
-  handleUpdate({required BuildContext context}) async {
+  Future<void> handleUpdate({required BuildContext context}) async {
+    if (prevReminder.frequency != Frequency.once && checkClose) {
+      bool? updateSingle = await showModalBottomSheet<bool?>(
+          showDragHandle: true,
+          context: context,
+          builder: (BuildContext context) {
+            return StatefulBuilder(
+                builder: (context, setState) => Center(
+                    heightFactor: 1,
+                    child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.all(Constants.padding),
+                            child: FilledButton.icon(
+                                onPressed: () => Navigator.pop(context, true),
+                                label: const Text("This Event"),
+                                icon: const Icon(Icons.arrow_upward_outlined)),
+                          ),
+                          Padding(
+                              padding: const EdgeInsets.all(Constants.padding),
+                              child: FilledButton.tonalIcon(
+                                onPressed: () => Navigator.pop(context, false),
+                                label: const Text("All Future Events"),
+                                icon: const Icon(Icons.repeat_outlined),
+                              ))
+                        ])));
+          });
+      // If the modal is discarded.
+      if (null == updateSingle) {
+        return;
+      }
+
+      // TODO: Refactor error handling to something easier to read -- Like firing an event to watch in the main gui.
+      // On updating a repeating event, clear all future events
+      await reminderProvider.deleteFutures(reminder: prevReminder).catchError(
+          (e) {
+        Flushbar? error;
+
+        error = Flushbars.createError(
+          message: e.cause,
+          context: context,
+          dismissCallback: () => error?.dismiss(),
+        );
+
+        error.show(context);
+      },
+          test: (e) =>
+              e is FailureToCreateException || e is FailureToUploadException);
+
+      // Updating all future events relies on deleting all future events ->
+      // They are assumed to be re-generated on the next calendar view or day passing.
+      // If only updating the one event, generate the next one in the database.
+
+      // TODO: Refactor the error handling to something easier to read.
+      if (updateSingle) {
+        prevReminder.repeatable = true;
+        // Need to sever the connection to future repeating events.
+        reminder.repeatID = reminder.hashCode;
+
+        await reminderProvider.nextRepeat(reminder: prevReminder).catchError(
+            (e) {
+          Flushbar? error;
+
+          error = Flushbars.createError(
+            message: e.cause,
+            context: context,
+            dismissCallback: () => error?.dismiss(),
+          );
+
+          error.show(context);
+        },
+            test: (e) =>
+                e is FailureToCreateException || e is FailureToUploadException);
+        reminder.repeatable = false;
+        reminder.frequency = Frequency.once;
+      } else {
+        reminder.repeatable = (reminder.frequency != Frequency.once);
+      }
+    } else {
+      reminder.repeatable = (reminder.frequency != Frequency.once);
+    }
+
     return await reminderProvider.updateReminder().whenComplete(() {
       Navigator.pop(context);
     }).catchError((e) {
@@ -403,6 +493,81 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
   }
 
   Future<void> handleDelete({required BuildContext context}) async {
+    if (prevReminder.frequency != Frequency.once) {
+      bool? updateSingle = await showModalBottomSheet<bool?>(
+          showDragHandle: true,
+          context: context,
+          builder: (BuildContext context) {
+            return StatefulBuilder(
+                builder: (context, setState) => Center(
+                    heightFactor: 1,
+                    child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.all(Constants.padding),
+                            child: FilledButton.icon(
+                                onPressed: () => Navigator.pop(context, true),
+                                label: const Text("Delete This Event"),
+                                icon: const Icon(Icons.arrow_upward_outlined)),
+                          ),
+                          Padding(
+                              padding: const EdgeInsets.all(Constants.padding),
+                              child: FilledButton.tonalIcon(
+                                onPressed: () => Navigator.pop(context, false),
+                                label: const Text("Delete All"),
+                                icon: const Icon(Icons.repeat_outlined),
+                              ))
+                        ])));
+          });
+      // If the modal is discarded.
+      if (null == updateSingle) {
+        return;
+      }
+
+      // TODO: Refactor error handling to something easier to read -- Like firing an event to watch in the main gui.
+      // On updating a repeating event, clear all future events
+      await reminderProvider.deleteFutures(reminder: prevReminder).catchError(
+          (e) {
+        Flushbar? error;
+
+        error = Flushbars.createError(
+          message: e.cause,
+          context: context,
+          dismissCallback: () => error?.dismiss(),
+        );
+
+        error.show(context);
+      }, test: (e) => e is FailureToDeleteException);
+
+      // Updating all future events relies on deleting all future events ->
+      // They are assumed to be re-generated on the next calendar view or day passing.
+      // If only updating the one event, generate the next one in the database.
+
+      // TODO: Refactor the error handling to something easier to read.
+      if (updateSingle) {
+        prevReminder.repeatable = true;
+        // Need to sever the connection to future repeating events.
+        reminder.repeatID = reminder.hashCode;
+
+        await reminderProvider.nextRepeat(reminder: prevReminder).catchError(
+            (e) {
+          Flushbar? error;
+
+          error = Flushbars.createError(
+            message: e.cause,
+            context: context,
+            dismissCallback: () => error?.dismiss(),
+          );
+
+          error.show(context);
+        },
+            test: (e) =>
+                e is FailureToCreateException || e is FailureToUploadException);
+      }
+    }
+
     return await reminderProvider.deleteReminder().whenComplete(() {
       Navigator.pop(context);
     }).catchError((e) {
@@ -415,7 +580,9 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
       );
 
       error.show(context);
-    }, test: (e) => e is FailureToDeleteException);
+    },
+        test: (e) =>
+            e is FailureToCreateException || e is FailureToUploadException);
   }
 
   @override
@@ -470,7 +637,13 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
                           horizontal: Constants.padding),
                       child: buildDateTimeTile(smallScreen: smallScreen),
                     ),
-
+                    // Repeatable Stuff -> Show status, on click, open a dialog.
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: Constants.padding),
+                      child: buildRepeatableTile(
+                          context: context, smallScreen: smallScreen),
+                    ),
                     const PaddedDivider(padding: Constants.padding),
                     Padding(
                       padding: const EdgeInsets.symmetric(
@@ -647,6 +820,374 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
     );
   }
 
+  ListTile buildRepeatableTile(
+      {required BuildContext context, bool smallScreen = false}) {
+    return ListTile(
+        leading: const Icon(Icons.event_repeat_outlined),
+        title: (reminder.frequency == Frequency.once)
+            ? const AutoSizeText("Set Recurring?",
+                overflow: TextOverflow.visible,
+                minFontSize: Constants.small,
+                maxLines: 2,
+                softWrap: true)
+            : AutoSizeText(toBeginningOfSentenceCase(reminder.frequency.name)!,
+                overflow: TextOverflow.visible,
+                minFontSize: Constants.small,
+                maxLines: 1,
+                softWrap: false),
+        onTap: () {
+          showDialog(
+              context: context,
+              builder: (BuildContext context) {
+                Frequency cacheFreq = reminder.frequency;
+                Set<int> cacheWeekdays = {};
+                for (int i = 0; i < reminder.repeatDays.length; i++) {
+                  if (reminder.repeatDays[i]) {
+                    cacheWeekdays.add(i);
+                  }
+                }
+
+                if (cacheWeekdays.isEmpty) {
+                  int day = (Constants.nullDate != reminder.dueDate)
+                      ? max(reminder.dueDate.weekday - 1, 0)
+                      : max(DateTime.now().weekday - 1, 0);
+                  cacheWeekdays.add(day);
+                }
+
+                int cacheSkip = reminder.repeatSkip;
+
+                return StatefulBuilder(builder: (context, setState) {
+                  return Dialog(
+                      child: Padding(
+                          padding: const EdgeInsets.all(Constants.innerPadding),
+                          child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    mainAxisAlignment: MainAxisAlignment.start,
+                                    children: [
+                                      Expanded(
+                                        child: AutoSizeText(
+                                          "Set Recurring",
+                                          softWrap: false,
+                                          maxLines: 1,
+                                          minFontSize: Constants.medium,
+                                          overflow: TextOverflow.visible,
+                                          style: Constants.headerStyle,
+                                        ),
+                                      )
+                                    ]),
+                                const Row(
+                                  mainAxisSize: MainAxisSize.max,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Flexible(
+                                      child: AutoSizeText(
+                                        "Repeat:",
+                                        softWrap: false,
+                                        maxLines: 1,
+                                        minFontSize: Constants.medium,
+                                        overflow: TextOverflow.visible,
+                                        style: Constants.largeHeaderStyle,
+                                      ),
+                                    ),
+                                    Flexible(
+                                      child: FittedBox(
+                                          fit: BoxFit.fill,
+                                          child: Icon(Icons.repeat_outlined,
+                                              size: Constants.medIconSize)),
+                                    ),
+                                  ],
+                                ),
+                                // This is a hacky override until m3 Has width-scaling for DropdownMenu
+                                Padding(
+                                  padding: (cacheFreq != Frequency.once &&
+                                          cacheFreq != Frequency.daily)
+                                      ? const EdgeInsets.fromLTRB(
+                                          Constants.innerPadding,
+                                          Constants.innerPadding,
+                                          Constants.innerPadding,
+                                          Constants.halfPadding)
+                                      : const EdgeInsets.all(
+                                          Constants.innerPadding),
+                                  child: InputDecorator(
+                                    decoration: const InputDecoration(
+                                      border: OutlineInputBorder(
+                                          gapPadding: 1,
+                                          borderRadius: BorderRadius.all(
+                                              Radius.circular(
+                                                  Constants.circular)),
+                                          borderSide: BorderSide(
+                                              strokeAlign: BorderSide
+                                                  .strokeAlignOutside)),
+                                    ),
+                                    child: DropdownButtonHideUnderline(
+                                      child: DropdownButton<Frequency>(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: Constants.padding),
+                                        isDense: true,
+                                        isExpanded: true,
+                                        dropdownColor: Constants.dialogColor(
+                                            context: context),
+                                        borderRadius: const BorderRadius.all(
+                                            Radius.circular(
+                                                Constants.roundedCorners)),
+                                        value: cacheFreq,
+                                        onChanged: (Frequency? value) =>
+                                            setState(() {
+                                          checkClose = true;
+                                          cacheFreq = value ?? cacheFreq;
+                                        }),
+                                        items: Frequency.values
+                                            .map((Frequency frequency) =>
+                                                DropdownMenuItem<Frequency>(
+                                                  value: frequency,
+                                                  child: AutoSizeText(
+                                                    "${toBeginningOfSentenceCase(frequency.name)}",
+                                                    softWrap: false,
+                                                    maxLines: 1,
+                                                    minFontSize:
+                                                        Constants.small,
+                                                  ),
+                                                ))
+                                            .toList(),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+
+                                (cacheFreq == Frequency.custom)
+                                    ? Column(
+                                        children: [
+                                          // Days of the week - Wrap in padding and a container
+                                          Padding(
+                                            padding: const EdgeInsets.fromLTRB(
+                                                Constants.innerPadding,
+                                                Constants.innerPadding,
+                                                Constants.innerPadding,
+                                                0),
+                                            child: Wrap(
+                                                spacing: 5,
+                                                runSpacing: 5,
+                                                alignment: WrapAlignment.center,
+                                                runAlignment:
+                                                    WrapAlignment.center,
+                                                children: Constants.weekDays
+                                                    .map((weekDay) => InputChip(
+                                                        backgroundColor:
+                                                            Constants.dialogColor(
+                                                                context:
+                                                                    context),
+                                                        shape:
+                                                            const RoundedRectangleBorder(
+                                                          borderRadius:
+                                                              BorderRadius.all(
+                                                                  Radius.circular(
+                                                                      Constants
+                                                                          .circular)),
+                                                          side: BorderSide(
+                                                            strokeAlign: BorderSide
+                                                                .strokeAlignOutside,
+                                                          ),
+                                                        ),
+                                                        label: AutoSizeText(
+                                                            weekDay.key,
+                                                            minFontSize:
+                                                                Constants.small,
+                                                            maxLines: 1,
+                                                            softWrap: false,
+                                                            overflow:
+                                                                TextOverflow
+                                                                    .visible),
+                                                        selected: cacheWeekdays
+                                                            .contains(
+                                                                weekDay.value),
+                                                        onSelected:
+                                                            (bool selected) =>
+                                                                setState(() {
+                                                                  checkClose =
+                                                                      true;
+                                                                  if (selected) {
+                                                                    cacheWeekdays
+                                                                        .add(weekDay
+                                                                            .value);
+                                                                  } else {
+                                                                    cacheWeekdays
+                                                                        .remove(
+                                                                            weekDay.value);
+                                                                    if (cacheWeekdays
+                                                                        .isEmpty) {
+                                                                      int day = (Constants.nullDate !=
+                                                                              reminder
+                                                                                  .dueDate)
+                                                                          ? max(
+                                                                              reminder.dueDate.weekday -
+                                                                                  1,
+                                                                              0)
+                                                                          : max(
+                                                                              DateTime.now().weekday - 1,
+                                                                              0);
+                                                                      cacheWeekdays
+                                                                          .add(
+                                                                              day);
+                                                                    }
+                                                                  }
+                                                                })))
+                                                    .toList()),
+                                          ),
+                                        ],
+                                      )
+                                    : const SizedBox.shrink(),
+
+                                // Repeat Skip
+                                (cacheFreq != Frequency.once &&
+                                        cacheFreq != Frequency.daily)
+                                    ? Padding(
+                                        padding: const EdgeInsets.all(
+                                            Constants.innerPadding),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: [
+                                            const Flexible(
+                                                child: AutoSizeText(
+                                              "Every",
+                                              minFontSize: Constants.small,
+                                              style: Constants.headerStyle,
+                                              overflow: TextOverflow.visible,
+                                              softWrap: false,
+                                              maxLines: 1,
+                                            )),
+                                            Expanded(
+                                                child: NumberPicker(
+                                                    itemCount: 1,
+                                                    textStyle: Constants
+                                                        .numberPickerSecondary(
+                                                            context: context),
+                                                    selectedTextStyle: Constants
+                                                        .numberPickerPrimary(
+                                                            context: context),
+                                                    minValue: 1,
+                                                    maxValue: 100,
+                                                    value: cacheSkip,
+                                                    haptics: true,
+                                                    onChanged: (value) {
+                                                      SemanticsService.announce(
+                                                          "Skip value: $value",
+                                                          Directionality.of(
+                                                              context));
+                                                      setState(() {
+                                                        checkClose = true;
+                                                        cacheSkip = value;
+                                                      });
+                                                    })),
+                                            Flexible(
+                                              child: AutoSizeText(
+                                                (cacheFreq == Frequency.custom)
+                                                    ? "Week${(cacheSkip > 1) ? "s" : "."}"
+                                                    : cacheFreq.name.replaceAll(
+                                                        "ly",
+                                                        (cacheSkip > 1)
+                                                            ? "s."
+                                                            : "."),
+                                                minFontSize: Constants.small,
+                                                style: Constants.headerStyle,
+                                                overflow: TextOverflow.visible,
+                                                softWrap: false,
+                                                maxLines: 1,
+                                                textAlign: TextAlign.end,
+                                              ),
+                                            )
+                                          ],
+                                        ),
+                                      )
+                                    : const SizedBox.shrink(),
+
+                                Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Expanded(
+                                        child: Padding(
+                                          padding: const EdgeInsets.only(
+                                              right: Constants.padding),
+                                          child: FilledButton.tonalIcon(
+                                              icon: const Icon(
+                                                  Icons.close_outlined),
+                                              onPressed: () =>
+                                                  Navigator.pop(context),
+                                              label: const AutoSizeText(
+                                                  "Cancel",
+                                                  softWrap: false,
+                                                  overflow:
+                                                      TextOverflow.visible,
+                                                  maxLines: 1,
+                                                  minFontSize:
+                                                      Constants.small)),
+                                        ),
+                                      ),
+                                      Expanded(
+                                        child: Padding(
+                                          padding: const EdgeInsets.only(
+                                              left: Constants.padding),
+                                          child: FilledButton.icon(
+                                            icon:
+                                                const Icon(Icons.done_outlined),
+                                            onPressed: () {
+                                              setState(() {
+                                                checkClose = true;
+                                                reminder.frequency = cacheFreq;
+                                                reminder.repeatSkip = cacheSkip;
+
+                                                if (cacheWeekdays.isEmpty) {
+                                                  cacheWeekdays.add(
+                                                      reminder.dueDate.weekday -
+                                                          1);
+                                                }
+                                                for (int i = 0;
+                                                    i <
+                                                        reminder
+                                                            .repeatDays.length;
+                                                    i++) {
+                                                  reminder.repeatDays[i] =
+                                                      cacheWeekdays.contains(i);
+                                                }
+                                              });
+                                              Navigator.pop(context);
+                                            },
+                                            label: const AutoSizeText("Done",
+                                                softWrap: false,
+                                                overflow: TextOverflow.visible,
+                                                maxLines: 1,
+                                                minFontSize: Constants.small),
+                                          ),
+                                        ),
+                                      )
+                                    ])
+                              ])));
+                });
+              }).then((_) => setState(() {}));
+        },
+        trailing: (reminder.frequency != Frequency.once)
+            ? IconButton(
+                icon: const Icon(Icons.clear),
+                onPressed: () => setState(() {
+                      checkClose = true;
+                      reminder.frequency = Frequency.once;
+
+                      reminder.repeatDays
+                          .fillRange(0, reminder.repeatDays.length, false);
+
+                      reminder.repeatSkip = 1;
+                    }))
+            : null);
+  }
+
   Row buildUpdateDeleteRow({required BuildContext context}) {
     return Row(mainAxisAlignment: MainAxisAlignment.end, children: [
       Flexible(
@@ -674,7 +1215,7 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
         onPressed: () async {
           bool validData = validateData();
           if (validData) {
-            handleUpdate(context: context);
+            await handleUpdate(context: context);
           }
           // Then save.
         });

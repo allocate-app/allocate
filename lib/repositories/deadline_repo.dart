@@ -130,7 +130,7 @@ class DeadlineRepo implements DeadlineRepository {
   Future<void> delete(Deadline deadline) async {
     if (null == _supabaseClient.auth.currentSession) {
       deadline.toDelete = true;
-      update(deadline);
+      await update(deadline);
       return;
     }
 
@@ -155,17 +155,16 @@ class DeadlineRepo implements DeadlineRepository {
 
     // This is to prevent a race condition & accidentally deleting a notification.
     toDelete.remove(deleteFrom);
-
-    toDelete.map((Deadline deadline) => deadline.toDelete = true);
+    toDelete.map((Deadline deadline) => deadline.toDelete = true).toList();
 
     List<int> cancelIDs = toDelete
         .map((Deadline deadline) => deadline.notificationID!)
         .toList(growable: false);
 
     // This is a temporary implementation solution to handle bulk cancelling from repeating deadlines.
-    NotificationService.instance.cancelFutures(ids: cancelIDs);
+    await NotificationService.instance.cancelFutures(ids: cancelIDs);
 
-    updateBatch(toDelete);
+    await updateBatch(toDelete);
   }
 
   @override
@@ -412,6 +411,7 @@ class DeadlineRepo implements DeadlineRepository {
           .where()
           .repeatableEqualTo(true)
           .filter()
+          .toDeleteEqualTo(false)
           .dueDateLessThan(now ?? Constants.today)
           .findAll();
 

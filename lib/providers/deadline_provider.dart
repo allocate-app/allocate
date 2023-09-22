@@ -174,7 +174,7 @@ class DeadlineProvider extends ChangeNotifier {
   }
 
   Future<void> deleteDeadline() async {
-    cancelNotification();
+    await cancelNotification();
     try {
       await _deadlineService.deleteDeadline(deadline: curDeadline!);
     } on FailureToDeleteException catch (e) {

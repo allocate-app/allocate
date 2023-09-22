@@ -127,7 +127,7 @@ class ReminderRepo implements ReminderRepository {
   Future<void> delete(Reminder reminder) async {
     if (null == _supabaseClient.auth.currentSession) {
       reminder.toDelete = true;
-      update(reminder);
+      await update(reminder);
       return;
     }
 
@@ -152,17 +152,18 @@ class ReminderRepo implements ReminderRepository {
 
     // This is to prevent a race condition & accidentally deleting a notification.
     toDelete.remove(deleteFrom);
-
-    toDelete.map((Reminder reminder) => reminder.toDelete = true);
+    toDelete
+        .map((Reminder reminder) => reminder.toDelete = true)
+        .toList(growable: false);
 
     List<int> cancelIDs = toDelete
         .map((Reminder reminder) => reminder.notificationID!)
         .toList(growable: false);
 
     // This is a temporary implementation solution to handle bulk cancelling from repeating reminders.
-    NotificationService.instance.cancelFutures(ids: cancelIDs);
+    await NotificationService.instance.cancelFutures(ids: cancelIDs);
 
-    updateBatch(toDelete);
+    await updateBatch(toDelete);
   }
 
   @override
@@ -381,6 +382,7 @@ class ReminderRepo implements ReminderRepository {
           .where()
           .repeatableEqualTo(true)
           .filter()
+          .toDeleteEqualTo(false)
           .dueDateLessThan(now ?? Constants.today)
           .findAll();
 
@@ -398,11 +400,13 @@ class ReminderRepo implements ReminderRepository {
   @override
   Future<List<Reminder>> getRange({DateTime? start, DateTime? end}) async {
     start = start ?? DateTime.now().copyWith(day: 0);
-    end = end ?? Jiffy.parseFromDateTime(start).add(months: 1).dateTime;
+    end = end ?? start.copyWith(month: start.month + 1);
     // TODO: Possibly sort this.
     return await _isarClient.reminders
         .where()
         .dueDateBetween(start, end)
+        .filter()
+        .toDeleteEqualTo(false)
         .findAll();
   }
 

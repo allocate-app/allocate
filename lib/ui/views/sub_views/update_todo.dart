@@ -2983,7 +2983,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
         onPressed: () async {
           bool validData = validateData();
           if (validData) {
-            handleUpdate(context: context);
+            await handleUpdate(context: context);
           }
           // Then save.
         });

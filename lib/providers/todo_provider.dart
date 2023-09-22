@@ -278,7 +278,7 @@ class ToDoProvider extends ChangeNotifier {
 
   Future<void> deleteFutures({ToDo? toDo}) async {
     try {
-      _toDoService.deleteFutures(toDo: toDo ?? curToDo!);
+      await _toDoService.deleteFutures(toDo: toDo ?? curToDo!);
     } on FailureToUpdateException catch (e) {
       log(e.cause);
       return Future.error(e);

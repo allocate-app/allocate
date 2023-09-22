@@ -124,7 +124,7 @@ class ToDoRepo implements ToDoRepository {
   Future<void> delete(ToDo toDo) async {
     if (null == _supabaseClient.auth.currentSession) {
       toDo.toDelete = true;
-      update(toDo);
+      await update(toDo);
       return;
     }
 
@@ -155,7 +155,7 @@ class ToDoRepo implements ToDoRepository {
     // This is to prevent a race condition.
     toDelete.remove(deleteFrom);
     toDelete.map((ToDo toDo) => toDo.toDelete = true).toList(growable: false);
-    updateBatch(toDelete).whenComplete(() {});
+    await updateBatch(toDelete);
   }
 
   @override
@@ -582,6 +582,7 @@ class ToDoRepo implements ToDoRepository {
       .where()
       .repeatableEqualTo(true)
       .filter()
+      .toDeleteEqualTo(false)
       .dueDateLessThan(now ?? Constants.today)
       .findAll();
 
