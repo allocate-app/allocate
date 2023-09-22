@@ -150,8 +150,6 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
           deadline.repeatDays[i] = prevDeadline.repeatDays[i];
         }
       }
-    } else {
-      deadline.customFreq = CustomFrequency.weekly;
     }
 
     return valid;
@@ -524,6 +522,7 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
             test: (e) =>
                 e is FailureToCreateException || e is FailureToUploadException);
         deadline.repeatable = false;
+        deadline.frequency = Frequency.once;
       } else {
         deadline.repeatable = (deadline.frequency != Frequency.once);
       }
@@ -1274,7 +1273,7 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
               final int numDays =
                   (tmpDue?.difference(initDate).inDays ?? 0) + 1;
               List<DateTime?> showDates = List.generate(
-                  numDays, (i) => initDate.add(Duration(days: i)));
+                  numDays, (i) => initDate.copyWith(day: initDate.day + i));
 
               // List ->
               return StatefulBuilder(
@@ -1902,7 +1901,6 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
               context: context,
               builder: (BuildContext context) {
                 Frequency cacheFreq = deadline.frequency;
-                CustomFrequency cacheCustom = deadline.customFreq;
                 Set<int> cacheWeekdays = {};
 
                 for (int i = 0; i < deadline.repeatDays.length; i++) {
@@ -2024,68 +2022,7 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                                 (cacheFreq == Frequency.custom)
                                     ? Column(
                                         children: [
-                                          Padding(
-                                            padding: const EdgeInsets.symmetric(
-                                                horizontal:
-                                                    Constants.innerPadding),
-                                            child: InputDecorator(
-                                              decoration: const InputDecoration(
-                                                border: OutlineInputBorder(
-                                                    gapPadding: 0,
-                                                    borderRadius:
-                                                        BorderRadius.all(
-                                                            Radius.circular(
-                                                                Constants
-                                                                    .circular)),
-                                                    borderSide: BorderSide(
-                                                        strokeAlign: BorderSide
-                                                            .strokeAlignOutside)),
-                                              ),
-                                              child:
-                                                  DropdownButtonHideUnderline(
-                                                child: DropdownButton<
-                                                    CustomFrequency>(
-                                                  padding: const EdgeInsets
-                                                      .symmetric(
-                                                      horizontal:
-                                                          Constants.padding),
-                                                  isDense: true,
-                                                  isExpanded: true,
-                                                  dropdownColor:
-                                                      Constants.dialogColor(
-                                                          context: context),
-                                                  borderRadius: const BorderRadius
-                                                      .all(Radius.circular(
-                                                          Constants
-                                                              .roundedCorners)),
-                                                  value: cacheCustom,
-                                                  onChanged: (CustomFrequency?
-                                                          value) =>
-                                                      setState(() =>
-                                                          cacheCustom = value ??
-                                                              cacheCustom),
-                                                  items: CustomFrequency.values
-                                                      .map((CustomFrequency
-                                                              customFreq) =>
-                                                          DropdownMenuItem<
-                                                              CustomFrequency>(
-                                                            value: customFreq,
-                                                            child: AutoSizeText(
-                                                              "${toBeginningOfSentenceCase(customFreq.name)}",
-                                                              softWrap: false,
-                                                              maxLines: 1,
-                                                              minFontSize:
-                                                                  Constants
-                                                                      .small,
-                                                            ),
-                                                          ))
-                                                      .toList(),
-                                                ),
-                                              ),
-                                            ),
-                                          ),
                                           // Days of the week - Wrap in padding and a container
-
                                           Padding(
                                             padding: const EdgeInsets.fromLTRB(
                                                 Constants.innerPadding,
@@ -2207,12 +2144,7 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                                             Flexible(
                                               child: AutoSizeText(
                                                 (cacheFreq == Frequency.custom)
-                                                    ? cacheCustom.name
-                                                        .replaceAll(
-                                                            "ly",
-                                                            (cacheSkip > 1)
-                                                                ? "s."
-                                                                : ".")
+                                                    ? "week${(cacheSkip > 1) ? "s." : "."}"
                                                     : cacheFreq.name.replaceAll(
                                                         "ly",
                                                         (cacheSkip > 1)
@@ -2266,8 +2198,6 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                                               setState(() {
                                                 checkClose = true;
                                                 deadline.frequency = cacheFreq;
-                                                deadline.customFreq =
-                                                    cacheCustom;
                                                 deadline.repeatSkip = cacheSkip;
                                                 deadline.repeatSkip = cacheSkip;
                                                 if (cacheWeekdays.isEmpty) {
@@ -2305,7 +2235,6 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                 onPressed: () => setState(() {
                       checkClose = true;
                       deadline.frequency = Frequency.once;
-                      deadline.customFreq = CustomFrequency.weekly;
                       deadline.repeatDays
                           .fillRange(0, deadline.repeatDays.length, false);
                       deadline.repeatSkip = 1;

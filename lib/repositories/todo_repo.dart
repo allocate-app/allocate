@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:isar/isar.dart';
-import 'package:jiffy/jiffy.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../model/task/todo.dart';
@@ -144,7 +143,6 @@ class ToDoRepo implements ToDoRepository {
 
   // This is a "Set stuff up for the next delete on sync" kind of delete.
   // They will be hidden from the view, and removed in the background.
-  // TODO: Move bugfix over to other models.
   @override
   Future<void> deleteFutures({required ToDo deleteFrom}) async {
     List<ToDo> toDelete = await _isarClient.toDos
@@ -156,7 +154,6 @@ class ToDoRepo implements ToDoRepository {
 
     // This is to prevent a race condition.
     toDelete.remove(deleteFrom);
-
     toDelete.map((ToDo toDo) => toDo.toDelete = true).toList(growable: false);
     updateBatch(toDelete).whenComplete(() {});
   }
@@ -598,8 +595,7 @@ class ToDoRepo implements ToDoRepository {
   @override
   Future<List<ToDo>> getRange({DateTime? start, DateTime? end}) async {
     start = start ?? DateTime.now().copyWith(day: 0);
-    end = end ?? Jiffy.parseFromDateTime(start).add(months: 1).dateTime;
-    // TODO: Possibly sort this.
+    end = end ?? start.copyWith(month: start.month + 1);
     return await _isarClient.toDos
         .where()
         .dueDateBetween(start, end)

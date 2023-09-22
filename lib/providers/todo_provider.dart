@@ -119,7 +119,6 @@ class ToDoProvider extends ChangeNotifier {
     bool? completed,
     bool? repeatable,
     Frequency? frequency,
-    CustomFrequency? customFreq,
     List<bool>? repeatDays,
     int? repeatSkip,
     List<SubTask>? subTasks,
@@ -150,7 +149,7 @@ class ToDoProvider extends ChangeNotifier {
     dueDate = dueDate ?? startDate.copyWith();
 
     if (startDate.isAfter(dueDate)) {
-      dueDate = startDate.add(const Duration(minutes: 15));
+      dueDate = startDate.copyWith(minute: startDate.minute + 15);
     }
 
     curToDo = ToDo(
@@ -168,7 +167,6 @@ class ToDoProvider extends ChangeNotifier {
         completed: completed ?? false,
         repeatable: repeatable ?? false,
         frequency: frequency ?? Frequency.once,
-        customFreq: customFreq ?? CustomFrequency.weekly,
         repeatDays: repeatDays ?? List.filled(7, false, growable: false),
         repeatSkip: repeatSkip ?? 1,
         subTasks: subTasks,
@@ -230,10 +228,9 @@ class ToDoProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-// TODO: move this logic to other models.
   Future<void> deleteToDo({ToDo? toDo}) async {
     try {
-      _toDoService.deleteToDo(toDo: toDo ?? curToDo!);
+      await _toDoService.deleteToDo(toDo: toDo ?? curToDo!);
     } on FailureToDeleteException catch (e) {
       log(e.cause);
       return Future.error(e);

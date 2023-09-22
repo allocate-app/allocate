@@ -27,28 +27,54 @@ const ReminderSchema = CollectionSchema(
       name: r'dueDate',
       type: IsarType.dateTime,
     ),
-    r'isSynced': PropertySchema(
+    r'frequency': PropertySchema(
       id: 2,
+      name: r'frequency',
+      type: IsarType.byte,
+      enumMap: _ReminderfrequencyEnumValueMap,
+    ),
+    r'isSynced': PropertySchema(
+      id: 3,
       name: r'isSynced',
       type: IsarType.bool,
     ),
     r'lastUpdated': PropertySchema(
-      id: 3,
+      id: 4,
       name: r'lastUpdated',
       type: IsarType.dateTime,
     ),
     r'name': PropertySchema(
-      id: 4,
+      id: 5,
       name: r'name',
       type: IsarType.string,
     ),
     r'notificationID': PropertySchema(
-      id: 5,
+      id: 6,
       name: r'notificationID',
       type: IsarType.long,
     ),
+    r'repeatDays': PropertySchema(
+      id: 7,
+      name: r'repeatDays',
+      type: IsarType.boolList,
+    ),
+    r'repeatID': PropertySchema(
+      id: 8,
+      name: r'repeatID',
+      type: IsarType.long,
+    ),
+    r'repeatSkip': PropertySchema(
+      id: 9,
+      name: r'repeatSkip',
+      type: IsarType.long,
+    ),
+    r'repeatable': PropertySchema(
+      id: 10,
+      name: r'repeatable',
+      type: IsarType.bool,
+    ),
     r'toDelete': PropertySchema(
-      id: 6,
+      id: 11,
       name: r'toDelete',
       type: IsarType.bool,
     )
@@ -67,6 +93,19 @@ const ReminderSchema = CollectionSchema(
       properties: [
         IndexPropertySchema(
           name: r'customViewIndex',
+          type: IndexType.value,
+          caseSensitive: false,
+        )
+      ],
+    ),
+    r'repeatID': IndexSchema(
+      id: -1773997408086213934,
+      name: r'repeatID',
+      unique: false,
+      replace: false,
+      properties: [
+        IndexPropertySchema(
+          name: r'repeatID',
           type: IndexType.value,
           caseSensitive: false,
         )
@@ -106,6 +145,19 @@ const ReminderSchema = CollectionSchema(
       properties: [
         IndexPropertySchema(
           name: r'dueDate',
+          type: IndexType.value,
+          caseSensitive: false,
+        )
+      ],
+    ),
+    r'repeatable': IndexSchema(
+      id: -187828716759116876,
+      name: r'repeatable',
+      unique: false,
+      replace: false,
+      properties: [
+        IndexPropertySchema(
+          name: r'repeatable',
           type: IndexType.value,
           caseSensitive: false,
         )
@@ -166,6 +218,7 @@ int _reminderEstimateSize(
 ) {
   var bytesCount = offsets.last;
   bytesCount += 3 + object.name.length * 3;
+  bytesCount += 3 + object.repeatDays.length;
   return bytesCount;
 }
 
@@ -177,11 +230,16 @@ void _reminderSerialize(
 ) {
   writer.writeLong(offsets[0], object.customViewIndex);
   writer.writeDateTime(offsets[1], object.dueDate);
-  writer.writeBool(offsets[2], object.isSynced);
-  writer.writeDateTime(offsets[3], object.lastUpdated);
-  writer.writeString(offsets[4], object.name);
-  writer.writeLong(offsets[5], object.notificationID);
-  writer.writeBool(offsets[6], object.toDelete);
+  writer.writeByte(offsets[2], object.frequency.index);
+  writer.writeBool(offsets[3], object.isSynced);
+  writer.writeDateTime(offsets[4], object.lastUpdated);
+  writer.writeString(offsets[5], object.name);
+  writer.writeLong(offsets[6], object.notificationID);
+  writer.writeBoolList(offsets[7], object.repeatDays);
+  writer.writeLong(offsets[8], object.repeatID);
+  writer.writeLong(offsets[9], object.repeatSkip);
+  writer.writeBool(offsets[10], object.repeatable);
+  writer.writeBool(offsets[11], object.toDelete);
 }
 
 Reminder _reminderDeserialize(
@@ -192,14 +250,21 @@ Reminder _reminderDeserialize(
 ) {
   final object = Reminder(
     dueDate: reader.readDateTime(offsets[1]),
-    lastUpdated: reader.readDateTime(offsets[3]),
-    name: reader.readString(offsets[4]),
-    notificationID: reader.readLongOrNull(offsets[5]),
+    frequency:
+        _ReminderfrequencyValueEnumMap[reader.readByteOrNull(offsets[2])] ??
+            Frequency.once,
+    lastUpdated: reader.readDateTime(offsets[4]),
+    name: reader.readString(offsets[5]),
+    notificationID: reader.readLongOrNull(offsets[6]),
+    repeatDays: reader.readBoolList(offsets[7]) ?? [],
+    repeatID: reader.readLongOrNull(offsets[8]),
+    repeatSkip: reader.readLongOrNull(offsets[9]) ?? 1,
+    repeatable: reader.readBoolOrNull(offsets[10]) ?? false,
   );
   object.customViewIndex = reader.readLong(offsets[0]);
   object.id = id;
-  object.isSynced = reader.readBool(offsets[2]);
-  object.toDelete = reader.readBool(offsets[6]);
+  object.isSynced = reader.readBool(offsets[3]);
+  object.toDelete = reader.readBool(offsets[11]);
   return object;
 }
 
@@ -215,19 +280,47 @@ P _reminderDeserializeProp<P>(
     case 1:
       return (reader.readDateTime(offset)) as P;
     case 2:
-      return (reader.readBool(offset)) as P;
+      return (_ReminderfrequencyValueEnumMap[reader.readByteOrNull(offset)] ??
+          Frequency.once) as P;
     case 3:
-      return (reader.readDateTime(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 4:
-      return (reader.readString(offset)) as P;
+      return (reader.readDateTime(offset)) as P;
     case 5:
-      return (reader.readLongOrNull(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 6:
+      return (reader.readLongOrNull(offset)) as P;
+    case 7:
+      return (reader.readBoolList(offset) ?? []) as P;
+    case 8:
+      return (reader.readLongOrNull(offset)) as P;
+    case 9:
+      return (reader.readLongOrNull(offset) ?? 1) as P;
+    case 10:
+      return (reader.readBoolOrNull(offset) ?? false) as P;
+    case 11:
       return (reader.readBool(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
   }
 }
+
+const _ReminderfrequencyEnumValueMap = {
+  'once': 0,
+  'daily': 1,
+  'weekly': 2,
+  'monthly': 3,
+  'yearly': 4,
+  'custom': 5,
+};
+const _ReminderfrequencyValueEnumMap = {
+  0: Frequency.once,
+  1: Frequency.daily,
+  2: Frequency.weekly,
+  3: Frequency.monthly,
+  4: Frequency.yearly,
+  5: Frequency.custom,
+};
 
 Id _reminderGetId(Reminder object) {
   return object.id;
@@ -256,6 +349,14 @@ extension ReminderQueryWhereSort on QueryBuilder<Reminder, Reminder, QWhere> {
     });
   }
 
+  QueryBuilder<Reminder, Reminder, QAfterWhere> anyRepeatID() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(
+        const IndexWhereClause.any(indexName: r'repeatID'),
+      );
+    });
+  }
+
   QueryBuilder<Reminder, Reminder, QAfterWhere> anyNotificationID() {
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(
@@ -268,6 +369,14 @@ extension ReminderQueryWhereSort on QueryBuilder<Reminder, Reminder, QWhere> {
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(
         const IndexWhereClause.any(indexName: r'dueDate'),
+      );
+    });
+  }
+
+  QueryBuilder<Reminder, Reminder, QAfterWhere> anyRepeatable() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(
+        const IndexWhereClause.any(indexName: r'repeatable'),
       );
     });
   }
@@ -449,6 +558,116 @@ extension ReminderQueryWhere on QueryBuilder<Reminder, Reminder, QWhereClause> {
         lower: [lowerCustomViewIndex],
         includeLower: includeLower,
         upper: [upperCustomViewIndex],
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<Reminder, Reminder, QAfterWhereClause> repeatIDIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'repeatID',
+        value: [null],
+      ));
+    });
+  }
+
+  QueryBuilder<Reminder, Reminder, QAfterWhereClause> repeatIDIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'repeatID',
+        lower: [null],
+        includeLower: false,
+        upper: [],
+      ));
+    });
+  }
+
+  QueryBuilder<Reminder, Reminder, QAfterWhereClause> repeatIDEqualTo(
+      int? repeatID) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'repeatID',
+        value: [repeatID],
+      ));
+    });
+  }
+
+  QueryBuilder<Reminder, Reminder, QAfterWhereClause> repeatIDNotEqualTo(
+      int? repeatID) {
+    return QueryBuilder.apply(this, (query) {
+      if (query.whereSort == Sort.asc) {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'repeatID',
+              lower: [],
+              upper: [repeatID],
+              includeUpper: false,
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'repeatID',
+              lower: [repeatID],
+              includeLower: false,
+              upper: [],
+            ));
+      } else {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'repeatID',
+              lower: [repeatID],
+              includeLower: false,
+              upper: [],
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'repeatID',
+              lower: [],
+              upper: [repeatID],
+              includeUpper: false,
+            ));
+      }
+    });
+  }
+
+  QueryBuilder<Reminder, Reminder, QAfterWhereClause> repeatIDGreaterThan(
+    int? repeatID, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'repeatID',
+        lower: [repeatID],
+        includeLower: include,
+        upper: [],
+      ));
+    });
+  }
+
+  QueryBuilder<Reminder, Reminder, QAfterWhereClause> repeatIDLessThan(
+    int? repeatID, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'repeatID',
+        lower: [],
+        upper: [repeatID],
+        includeUpper: include,
+      ));
+    });
+  }
+
+  QueryBuilder<Reminder, Reminder, QAfterWhereClause> repeatIDBetween(
+    int? lowerRepeatID,
+    int? upperRepeatID, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'repeatID',
+        lower: [lowerRepeatID],
+        includeLower: includeLower,
+        upper: [upperRepeatID],
         includeUpper: includeUpper,
       ));
     });
@@ -696,6 +915,51 @@ extension ReminderQueryWhere on QueryBuilder<Reminder, Reminder, QWhereClause> {
         upper: [upperDueDate],
         includeUpper: includeUpper,
       ));
+    });
+  }
+
+  QueryBuilder<Reminder, Reminder, QAfterWhereClause> repeatableEqualTo(
+      bool repeatable) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'repeatable',
+        value: [repeatable],
+      ));
+    });
+  }
+
+  QueryBuilder<Reminder, Reminder, QAfterWhereClause> repeatableNotEqualTo(
+      bool repeatable) {
+    return QueryBuilder.apply(this, (query) {
+      if (query.whereSort == Sort.asc) {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'repeatable',
+              lower: [],
+              upper: [repeatable],
+              includeUpper: false,
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'repeatable',
+              lower: [repeatable],
+              includeLower: false,
+              upper: [],
+            ));
+      } else {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'repeatable',
+              lower: [repeatable],
+              includeLower: false,
+              upper: [],
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'repeatable',
+              lower: [],
+              upper: [repeatable],
+              includeUpper: false,
+            ));
+      }
     });
   }
 
@@ -983,6 +1247,59 @@ extension ReminderQueryFilter
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.between(
         property: r'dueDate',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<Reminder, Reminder, QAfterFilterCondition> frequencyEqualTo(
+      Frequency value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'frequency',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<Reminder, Reminder, QAfterFilterCondition> frequencyGreaterThan(
+    Frequency value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'frequency',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<Reminder, Reminder, QAfterFilterCondition> frequencyLessThan(
+    Frequency value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'frequency',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<Reminder, Reminder, QAfterFilterCondition> frequencyBetween(
+    Frequency lower,
+    Frequency upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'frequency',
         lower: lower,
         includeLower: includeLower,
         upper: upper,
@@ -1310,6 +1627,236 @@ extension ReminderQueryFilter
     });
   }
 
+  QueryBuilder<Reminder, Reminder, QAfterFilterCondition>
+      repeatDaysElementEqualTo(bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'repeatDays',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<Reminder, Reminder, QAfterFilterCondition>
+      repeatDaysLengthEqualTo(int length) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'repeatDays',
+        length,
+        true,
+        length,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<Reminder, Reminder, QAfterFilterCondition> repeatDaysIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'repeatDays',
+        0,
+        true,
+        0,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<Reminder, Reminder, QAfterFilterCondition>
+      repeatDaysIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'repeatDays',
+        0,
+        false,
+        999999,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<Reminder, Reminder, QAfterFilterCondition>
+      repeatDaysLengthLessThan(
+    int length, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'repeatDays',
+        0,
+        true,
+        length,
+        include,
+      );
+    });
+  }
+
+  QueryBuilder<Reminder, Reminder, QAfterFilterCondition>
+      repeatDaysLengthGreaterThan(
+    int length, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'repeatDays',
+        length,
+        include,
+        999999,
+        true,
+      );
+    });
+  }
+
+  QueryBuilder<Reminder, Reminder, QAfterFilterCondition>
+      repeatDaysLengthBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.listLength(
+        r'repeatDays',
+        lower,
+        includeLower,
+        upper,
+        includeUpper,
+      );
+    });
+  }
+
+  QueryBuilder<Reminder, Reminder, QAfterFilterCondition> repeatIDIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'repeatID',
+      ));
+    });
+  }
+
+  QueryBuilder<Reminder, Reminder, QAfterFilterCondition> repeatIDIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'repeatID',
+      ));
+    });
+  }
+
+  QueryBuilder<Reminder, Reminder, QAfterFilterCondition> repeatIDEqualTo(
+      int? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'repeatID',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<Reminder, Reminder, QAfterFilterCondition> repeatIDGreaterThan(
+    int? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'repeatID',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<Reminder, Reminder, QAfterFilterCondition> repeatIDLessThan(
+    int? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'repeatID',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<Reminder, Reminder, QAfterFilterCondition> repeatIDBetween(
+    int? lower,
+    int? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'repeatID',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<Reminder, Reminder, QAfterFilterCondition> repeatSkipEqualTo(
+      int value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'repeatSkip',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<Reminder, Reminder, QAfterFilterCondition> repeatSkipGreaterThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'repeatSkip',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<Reminder, Reminder, QAfterFilterCondition> repeatSkipLessThan(
+    int value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'repeatSkip',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<Reminder, Reminder, QAfterFilterCondition> repeatSkipBetween(
+    int lower,
+    int upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'repeatSkip',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<Reminder, Reminder, QAfterFilterCondition> repeatableEqualTo(
+      bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'repeatable',
+        value: value,
+      ));
+    });
+  }
+
   QueryBuilder<Reminder, Reminder, QAfterFilterCondition> toDeleteEqualTo(
       bool value) {
     return QueryBuilder.apply(this, (query) {
@@ -1349,6 +1896,18 @@ extension ReminderQuerySortBy on QueryBuilder<Reminder, Reminder, QSortBy> {
   QueryBuilder<Reminder, Reminder, QAfterSortBy> sortByDueDateDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'dueDate', Sort.desc);
+    });
+  }
+
+  QueryBuilder<Reminder, Reminder, QAfterSortBy> sortByFrequency() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'frequency', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Reminder, Reminder, QAfterSortBy> sortByFrequencyDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'frequency', Sort.desc);
     });
   }
 
@@ -1400,6 +1959,42 @@ extension ReminderQuerySortBy on QueryBuilder<Reminder, Reminder, QSortBy> {
     });
   }
 
+  QueryBuilder<Reminder, Reminder, QAfterSortBy> sortByRepeatID() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'repeatID', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Reminder, Reminder, QAfterSortBy> sortByRepeatIDDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'repeatID', Sort.desc);
+    });
+  }
+
+  QueryBuilder<Reminder, Reminder, QAfterSortBy> sortByRepeatSkip() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'repeatSkip', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Reminder, Reminder, QAfterSortBy> sortByRepeatSkipDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'repeatSkip', Sort.desc);
+    });
+  }
+
+  QueryBuilder<Reminder, Reminder, QAfterSortBy> sortByRepeatable() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'repeatable', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Reminder, Reminder, QAfterSortBy> sortByRepeatableDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'repeatable', Sort.desc);
+    });
+  }
+
   QueryBuilder<Reminder, Reminder, QAfterSortBy> sortByToDelete() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'toDelete', Sort.asc);
@@ -1436,6 +2031,18 @@ extension ReminderQuerySortThenBy
   QueryBuilder<Reminder, Reminder, QAfterSortBy> thenByDueDateDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'dueDate', Sort.desc);
+    });
+  }
+
+  QueryBuilder<Reminder, Reminder, QAfterSortBy> thenByFrequency() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'frequency', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Reminder, Reminder, QAfterSortBy> thenByFrequencyDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'frequency', Sort.desc);
     });
   }
 
@@ -1499,6 +2106,42 @@ extension ReminderQuerySortThenBy
     });
   }
 
+  QueryBuilder<Reminder, Reminder, QAfterSortBy> thenByRepeatID() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'repeatID', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Reminder, Reminder, QAfterSortBy> thenByRepeatIDDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'repeatID', Sort.desc);
+    });
+  }
+
+  QueryBuilder<Reminder, Reminder, QAfterSortBy> thenByRepeatSkip() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'repeatSkip', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Reminder, Reminder, QAfterSortBy> thenByRepeatSkipDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'repeatSkip', Sort.desc);
+    });
+  }
+
+  QueryBuilder<Reminder, Reminder, QAfterSortBy> thenByRepeatable() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'repeatable', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Reminder, Reminder, QAfterSortBy> thenByRepeatableDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'repeatable', Sort.desc);
+    });
+  }
+
   QueryBuilder<Reminder, Reminder, QAfterSortBy> thenByToDelete() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'toDelete', Sort.asc);
@@ -1526,6 +2169,12 @@ extension ReminderQueryWhereDistinct
     });
   }
 
+  QueryBuilder<Reminder, Reminder, QDistinct> distinctByFrequency() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'frequency');
+    });
+  }
+
   QueryBuilder<Reminder, Reminder, QDistinct> distinctByIsSynced() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'isSynced');
@@ -1548,6 +2197,30 @@ extension ReminderQueryWhereDistinct
   QueryBuilder<Reminder, Reminder, QDistinct> distinctByNotificationID() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'notificationID');
+    });
+  }
+
+  QueryBuilder<Reminder, Reminder, QDistinct> distinctByRepeatDays() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'repeatDays');
+    });
+  }
+
+  QueryBuilder<Reminder, Reminder, QDistinct> distinctByRepeatID() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'repeatID');
+    });
+  }
+
+  QueryBuilder<Reminder, Reminder, QDistinct> distinctByRepeatSkip() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'repeatSkip');
+    });
+  }
+
+  QueryBuilder<Reminder, Reminder, QDistinct> distinctByRepeatable() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'repeatable');
     });
   }
 
@@ -1578,6 +2251,12 @@ extension ReminderQueryProperty
     });
   }
 
+  QueryBuilder<Reminder, Frequency, QQueryOperations> frequencyProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'frequency');
+    });
+  }
+
   QueryBuilder<Reminder, bool, QQueryOperations> isSyncedProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'isSynced');
@@ -1599,6 +2278,30 @@ extension ReminderQueryProperty
   QueryBuilder<Reminder, int?, QQueryOperations> notificationIDProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'notificationID');
+    });
+  }
+
+  QueryBuilder<Reminder, List<bool>, QQueryOperations> repeatDaysProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'repeatDays');
+    });
+  }
+
+  QueryBuilder<Reminder, int?, QQueryOperations> repeatIDProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'repeatID');
+    });
+  }
+
+  QueryBuilder<Reminder, int, QQueryOperations> repeatSkipProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'repeatSkip');
+    });
+  }
+
+  QueryBuilder<Reminder, bool, QQueryOperations> repeatableProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'repeatable');
     });
   }
 

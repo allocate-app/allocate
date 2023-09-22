@@ -57,8 +57,6 @@ class ToDo with EquatableMixin implements Copyable<ToDo> {
 
   @Enumerated(EnumType.ordinal)
   Frequency frequency;
-  @Enumerated(EnumType.ordinal)
-  CustomFrequency customFreq;
   final List<bool> repeatDays;
   int repeatSkip;
   @Index()
@@ -84,7 +82,6 @@ class ToDo with EquatableMixin implements Copyable<ToDo> {
       this.completed = false,
       this.repeatable = false,
       this.frequency = Frequency.once,
-      this.customFreq = CustomFrequency.weekly,
       required this.repeatDays,
       this.repeatSkip = 1,
       required this.subTasks,
@@ -110,7 +107,6 @@ class ToDo with EquatableMixin implements Copyable<ToDo> {
         completed = entity["completed"] as bool,
         repeatable = entity["repeatable"] as bool,
         frequency = Frequency.values[entity["frequency"]],
-        customFreq = CustomFrequency.values[entity["customFreq"]],
         repeatDays = entity["repeatDays"] as List<bool>,
         repeatSkip = entity["repeatSkip"] as int,
         subTasks = List.from(
@@ -140,7 +136,6 @@ class ToDo with EquatableMixin implements Copyable<ToDo> {
         "completed": completed,
         "repeatable": repeatable,
         "frequency": frequency.index,
-        "customFreq": customFreq.index,
         "repeatDays": repeatDays,
         "repeatSkip": repeatSkip,
         "subTasks": jsonEncode(
@@ -165,7 +160,6 @@ class ToDo with EquatableMixin implements Copyable<ToDo> {
       completed: completed,
       repeatable: repeatable,
       frequency: frequency,
-      customFreq: customFreq,
       repeatDays: List.from(repeatDays),
       repeatSkip: repeatSkip,
       subTasks: List.from(subTasks),
@@ -188,7 +182,6 @@ class ToDo with EquatableMixin implements Copyable<ToDo> {
           bool? completed,
           bool? repeatable,
           Frequency? frequency,
-          CustomFrequency? customFreq,
           List<bool>? repeatDays,
           int? repeatSkip,
           List<SubTask>? subTasks,
@@ -209,7 +202,6 @@ class ToDo with EquatableMixin implements Copyable<ToDo> {
           completed: completed ?? this.completed,
           repeatable: repeatable ?? this.repeatable,
           frequency: frequency ?? this.frequency,
-          customFreq: customFreq ?? this.customFreq,
           repeatDays: List.from(repeatDays ?? this.repeatDays),
           repeatSkip: repeatSkip ?? this.repeatSkip,
           subTasks: List.from(
@@ -238,7 +230,6 @@ class ToDo with EquatableMixin implements Copyable<ToDo> {
         myDay,
         repeatable,
         frequency,
-        customFreq,
         repeatDays,
         repeatSkip,
         isSynced,
@@ -251,7 +242,7 @@ class ToDo with EquatableMixin implements Copyable<ToDo> {
       "ToDo(id: $id, taskType: ${taskType.name} repeatID: $repeatID customViewIndex: $customViewIndex, groupID: $groupID, groupIndex: $groupIndex,"
       " name: $name, description: $description, weight: $weight, expectedDuration: $expectedDuration,"
       " priority: ${priority.name}, completed: $completed, startDate: $startDate, dueDate: $dueDate, myDay: $myDay,"
-      "repeatable: $repeatable, frequency: ${frequency.name}, customFreq: ${customFreq.name}, repeatDays: $repeatDays,"
+      "repeatable: $repeatable, frequency: ${frequency.name},  repeatDays: $repeatDays,"
       "repeatSkip: $repeatSkip, isSynced: $isSynced, subTasks: $subTasks,"
       "toDelete: $toDelete), lastUpdated: $lastUpdated";
 }

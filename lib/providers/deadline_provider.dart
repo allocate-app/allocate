@@ -94,7 +94,6 @@ class DeadlineProvider extends ChangeNotifier {
     Priority priority = Priority.low,
     bool? repeatable,
     Frequency? frequency,
-    CustomFrequency? customFreq,
     List<bool>? repeatDays,
     int? repeatSkip,
   }) async {
@@ -123,7 +122,6 @@ class DeadlineProvider extends ChangeNotifier {
         priority: priority,
         repeatable: repeatable ?? false,
         frequency: frequency ?? Frequency.once,
-        customFreq: customFreq ?? CustomFrequency.weekly,
         repeatDays: repeatDays ?? List.filled(7, false),
         repeatSkip: repeatSkip ?? 1,
         lastUpdated: DateTime.now());
@@ -136,10 +134,10 @@ class DeadlineProvider extends ChangeNotifier {
     }
 
     try {
-      _deadlineService.createDeadline(deadline: curDeadline!);
+      await _deadlineService.createDeadline(deadline: curDeadline!);
 
       if (curDeadline!.warnMe) {
-        scheduleNotification();
+        await scheduleNotification();
       }
     } on FailureToCreateException catch (e) {
       log(e.cause);
@@ -156,14 +154,14 @@ class DeadlineProvider extends ChangeNotifier {
   Future<void> updateDeadline() async {
     curDeadline!.lastUpdated = DateTime.now();
 
-    cancelNotification();
+    await cancelNotification();
     if (curDeadline!.warnMe && validateWarnDate()) {
       curDeadline!.notificationID =
           curDeadline!.notificationID ?? curDeadline!.hashCode;
-      scheduleNotification();
+      await scheduleNotification();
     }
     try {
-      _deadlineService.updateDeadline(deadline: curDeadline!);
+      await _deadlineService.updateDeadline(deadline: curDeadline!);
     } on FailureToUploadException catch (e) {
       log(e.cause);
       return Future.error(e);
@@ -178,7 +176,7 @@ class DeadlineProvider extends ChangeNotifier {
   Future<void> deleteDeadline() async {
     cancelNotification();
     try {
-      _deadlineService.deleteDeadline(deadline: curDeadline!);
+      await _deadlineService.deleteDeadline(deadline: curDeadline!);
     } on FailureToDeleteException catch (e) {
       log(e.cause);
       return Future.error(e);
@@ -206,17 +204,17 @@ class DeadlineProvider extends ChangeNotifier {
 
   // This also schedules notifications.
   Future<void> checkRepeating({DateTime? now}) async =>
-      _deadlineService.checkRepeating(now: now ?? DateTime.now());
+      await _deadlineService.checkRepeating(now: now ?? DateTime.now());
 
   Future<void> nextRepeat({Deadline? deadline}) async =>
-      _deadlineService.nextRepeatable(deadline: deadline ?? curDeadline!);
+      await _deadlineService.nextRepeatable(deadline: deadline ?? curDeadline!);
 
   // This also cancels upcoming notifications.
   Future<void> deleteFutures({Deadline? deadline}) async =>
-      _deadlineService.deleteFutures(deadline: deadline ?? curDeadline!);
+      await _deadlineService.deleteFutures(deadline: deadline ?? curDeadline!);
 
   Future<void> populateCalendar({DateTime? limit}) async =>
-      _deadlineService.populateCalendar(limit: limit ?? DateTime.now());
+      await _deadlineService.populateCalendar(limit: limit ?? DateTime.now());
 
   Future<List<Deadline>> getDeadlines(
           {required int limit, required int offset}) async =>
@@ -234,15 +232,15 @@ class DeadlineProvider extends ChangeNotifier {
   Future<void> setDeadlinesBy() async =>
       deadlines = await _deadlineService.getDeadlinesBy(sorter: sorter);
 
-  Future<List<Deadline>> getOverdues({int limit = 50, int offset = 0}) =>
-      _deadlineService.getOverdues(limit: limit, offset: offset);
+  Future<List<Deadline>> getOverdues({int limit = 50, int offset = 0}) async =>
+      await _deadlineService.getOverdues(limit: limit, offset: offset);
 
-  Future<List<Deadline>> getUpcoming({int limit = 5, int offset = 0}) =>
-      _deadlineService.getUpcoming(limit: limit, offset: offset);
+  Future<List<Deadline>> getUpcoming({int limit = 5, int offset = 0}) async =>
+      await _deadlineService.getUpcoming(limit: limit, offset: offset);
 
   Future<List<Deadline>> searchDeadlines(
           {required String searchString}) async =>
-      _deadlineService.searchDeadlines(searchString: searchString);
+      await _deadlineService.searchDeadlines(searchString: searchString);
 
   Future<List<Deadline>> mostRecent({int limit = 5}) async =>
       await _deadlineService.mostRecent(limit: 5);
@@ -266,7 +264,7 @@ class DeadlineProvider extends ChangeNotifier {
         .toLocal()
         .yMMMMEEEEdjm
         .toString();
-    _notificationService.scheduleNotification(
+    await _notificationService.scheduleNotification(
         id: curDeadline!.notificationID!,
         warnDate: curDeadline!.warnDate,
         message: "${curDeadline!.name} is due: $newDue",
@@ -275,7 +273,8 @@ class DeadlineProvider extends ChangeNotifier {
 
   Future<void> cancelNotification() async {
     if (null != curDeadline!.notificationID) {
-      _notificationService.cancelNotification(id: curDeadline!.notificationID!);
+      await _notificationService.cancelNotification(
+          id: curDeadline!.notificationID!);
     }
   }
 

@@ -1,7 +1,11 @@
+import 'package:jiffy/jiffy.dart';
+
 import '../model/task/reminder.dart';
 import '../repositories/reminder_repo.dart';
+import '../util/enums.dart';
 import '../util/interfaces/repository/model/reminder_repository.dart';
 import '../util/interfaces/sortable.dart';
+import 'notification_service.dart';
 
 class ReminderService {
   //Default repo for now, switch as needed for testing.
@@ -9,207 +13,203 @@ class ReminderService {
 
   set repository(ReminderRepository repo) => _repository = repo;
 
-  // For now, consider shelving repeating reminders. Other models are more appropriate.
-  // DateTime? getRepeatDate({required Reminder reminder}) => switch (reminder.frequency) {
-  //       (Frequency.daily) =>
-  //         Jiffy.parseFromDateTime(reminder.startDate).add(days: reminder.repeatSkip).dateTime,
-  //       (Frequency.weekly) =>
-  //         Jiffy.parseFromDateTime(reminder.startDate).add(weeks: reminder.repeatSkip).dateTime,
-  //       (Frequency.monthly) =>
-  //         Jiffy.parseFromDateTime(reminder.startDate).add(months: reminder.repeatSkip).dateTime,
-  //       (Frequency.yearly) =>
-  //         Jiffy.parseFromDateTime(reminder.startDate).add(years: reminder.repeatSkip).dateTime,
-  //       (Frequency.custom) => getCustom(reminder: reminder),
-  //       //Once should never repeat -> fixing asynchronously in case validation fails.
-  //       (Frequency.once) => null,
-  //     };
-  //
-  // Future<void> nextRepeatable({required Reminder reminder}) async {
-  //   DateTime? nextRepeatDate = getRepeatDate(reminder: reminder);
-  //
-  //   if (null == nextRepeatDate) {
-  //     return;
-  //   }
-  //
-  //   int dueOffset = Jiffy.parseFromDateTime(reminder.dueDate)
-  //       .diff(Jiffy.parseFromDateTime(reminder.startDate)) as int;
-  //
-  //   int warnOffset = Jiffy.parseFromDateTime(reminder.warnDate)
-  //       .diff(Jiffy.parseFromDateTime(reminder.startDate)) as int;
-  //
-  //   Reminder newReminder = reminder.copyWith(
-  //       startDate: nextRepeatDate,
-  //       dueDate: Jiffy.parseFromDateTime(nextRepeatDate).add(microseconds: dueOffset).dateTime,
-  //       warnDate: Jiffy.parseFromDateTime(nextRepeatDate).add(microseconds: warnOffset).dateTime);
-  //
-  //   String newDue = Jiffy.parseFromDateTime(newReminder.dueDate).toLocal().toString();
-  //
-  //   newReminder.notificationID = newReminder.hashCode;
-  //   NotificationService.instance.scheduleNotification(
-  //       id: newReminder.notificationID!,
-  //       warnDate: newReminder.warnDate,
-  //       message: "${newReminder.name} IS DUE: $newDue",
-  //       payload: "REMINDER\n${newReminder.notificationID!}");
-  //
-  //   return updateReminder(reminder: newReminder);
-  // }
-  //
-  // // TODO: this could be repeated.
-  // Future<void> populateCalendar({required DateTime limit}) async {
-  //   DateTime startTime = DateTime.now();
-  //   while (startTime.isBefore(limit)) {
-  //     List<Reminder> repeatables = await _repository.getRepeatables(now: limit);
-  //
-  //     if (repeatables.isEmpty) {
-  //       break;
-  //     }
-  //     checkRepeating(now: startTime, repeatables: repeatables);
-  //
-  //     startTime.add(const Duration(days: 1));
-  //   }
-  // }
-  //
-  // // This is somewhat hacky, but populateCalendar needs an early escape.
-  // Future<void> checkRepeating({required DateTime now, List<Reminder>? repeatables}) async {
-  //   List<Reminder> toUpdate = List.empty(growable: true);
-  //
-  //   repeatables = repeatables ?? await _repository.getRepeatables(now: now);
-  //
-  //   for (Reminder reminder in repeatables) {
-  //     // This needs to be factored out into its own method.
-  //     DateTime? nextRepeatDate = getRepeatDate(reminder: reminder);
-  //
-  //     if (null == nextRepeatDate) {
-  //       reminder.repeatable = false;
-  //       continue;
-  //     }
-  //
-  //     int dueOffset = Jiffy.parseFromDateTime(reminder.dueDate)
-  //         .diff(Jiffy.parseFromDateTime(reminder.startDate)) as int;
-  //
-  //     int warnOffset = Jiffy.parseFromDateTime(reminder.warnDate)
-  //         .diff(Jiffy.parseFromDateTime(reminder.startDate)) as int;
-  //
-  //     Reminder newReminder = reminder.copyWith(
-  //         startDate: nextRepeatDate,
-  //         dueDate: Jiffy.parseFromDateTime(nextRepeatDate).add(microseconds: dueOffset).dateTime,
-  //         warnDate: Jiffy.parseFromDateTime(nextRepeatDate).add(microseconds: warnOffset).dateTime);
-  //
-  //     newReminder.notificationID = newReminder.hashCode;
-  //
-  //     String newDue = Jiffy.parseFromDateTime(newReminder.dueDate).toLocal().toString();
-  //     NotificationService.instance.scheduleNotification(
-  //         id: newReminder.notificationID!,
-  //         warnDate: newReminder.warnDate,
-  //         message: "${newReminder.name} is DUE: $newDue ",
-  //         payload: "REMINDER\n${newReminder.notificationID!}");
-  //
-  //     reminder.repeatable = false;
-  //     toUpdate.add(newReminder);
-  //     toUpdate.add(reminder);
-  //   }
-  //   updateBatch(reminders: toUpdate);
-  // }
-  //
-  // DateTime? getCustom({required Reminder reminder}) {
-  //   int numDays = 1;
-  //
-  //   // Weekday is 1-indexed.
-  //   int index = reminder.startDate.weekday % 7;
-  //   while (true) {
-  //     if (reminder.repeatDays[index] = true) {
-  //       break;
-  //     }
-  //     numDays += 1;
-  //     index = (index + 1) % 7;
-  //     // This will only happen if there are no repeat days in the list.
-  //     // This is an error and should be caught during validation.
-  //     // If it does somehow happen, assume it is once repeatable and thus repeated.
-  //     if (numDays > 7) {
-  //       log("Repeat Error: no repeating dates.");
-  //       return null;
-  //     }
-  //   }
-  //
-  //   // ie. if it is within the same week.
-  //   if (index + 1 > reminder.startDate.weekday) {
-  //     return Jiffy.parseFromDateTime(reminder.startDate).add(days: numDays).dateTime;
-  //   }
-  //
-  //   Jiffy nextRepeatJiffy =
-  //       Jiffy.parseFromDateTime(reminder.startDate).add(days: numDays).subtract(weeks: 1);
-  //
-  //   // These should be handled within the validator.
-  //   switch (reminder.customFreq) {
-  //     case CustomFrequency.weekly:
-  //       return nextRepeatJiffy.add(weeks: reminder.repeatSkip).dateTime;
-  //     case CustomFrequency.monthly:
-  //       return nextRepeatJiffy.add(months: reminder.repeatSkip).dateTime;
-  //     case CustomFrequency.yearly:
-  //       return nextRepeatJiffy.add(years: reminder.repeatSkip).dateTime;
-  //   }
-  // }
+//This may not be necessary, but keep for now
+  int getDateTimeDayOffset({required DateTime start, required DateTime end}) {
+    start = DateTime.utc(start.year, start.month, start.day, start.hour,
+        start.minute, start.second, start.millisecond, start.microsecond);
+    end = DateTime.utc(end.year, end.month, end.day, end.hour, end.minute,
+        end.second, end.millisecond, end.microsecond);
+    return end.difference(start).inDays;
+  }
+
+  DateTime? getRepeatDate({required Reminder reminder}) =>
+      switch (reminder.frequency) {
+        (Frequency.daily) => reminder.dueDate.copyWith(
+            day: reminder.dueDate.day + reminder.repeatSkip,
+            hour: reminder.dueDate.hour,
+            minute: reminder.dueDate.minute),
+        (Frequency.weekly) => reminder.dueDate.copyWith(
+            day: reminder.dueDate.day + (reminder.repeatSkip * 7),
+            hour: reminder.dueDate.hour,
+            minute: reminder.dueDate.minute),
+        (Frequency.monthly) => reminder.dueDate.copyWith(
+            month: reminder.dueDate.month + reminder.repeatSkip,
+            hour: reminder.dueDate.hour,
+            minute: reminder.dueDate.minute),
+        (Frequency.yearly) => reminder.dueDate.copyWith(
+            year: reminder.dueDate.year + reminder.repeatSkip,
+            hour: reminder.dueDate.hour,
+            minute: reminder.dueDate.minute),
+        (Frequency.custom) => getCustom(reminder: reminder),
+        //Once should never repeat -> fixing asynchronously in case validation fails.
+        (Frequency.once) => null,
+      };
+
+  Future<void> nextRepeatable({required Reminder reminder}) async {
+    DateTime? nextRepeatDate = getRepeatDate(reminder: reminder);
+
+    if (null == nextRepeatDate) {
+      return;
+    }
+
+    Reminder newReminder = reminder.copyWith(
+      dueDate: nextRepeatDate,
+    );
+
+    // Scheduling logic.
+    newReminder.notificationID = newReminder.hashCode;
+    if (NotificationService.instance
+        .validateWarnDate(warnDate: newReminder.dueDate)) {
+      String newDue =
+          Jiffy.parseFromDateTime(newReminder.dueDate).toLocal().toString();
+      NotificationService.instance.scheduleNotification(
+          id: newReminder.notificationID!,
+          warnDate: newReminder.dueDate,
+          message: "${newReminder.name} IS DUE: $newDue",
+          payload: "REMINDER\n${newReminder.notificationID}");
+    }
+
+    return updateReminder(reminder: newReminder);
+  }
+
+  Future<void> populateCalendar({required DateTime limit}) async {
+    DateTime startTime = DateTime.now();
+    while (startTime.isBefore(limit)) {
+      List<Reminder> repeatables =
+          await _repository.getRepeatables(now: startTime);
+
+      await checkRepeating(now: startTime, repeatables: repeatables)
+          .whenComplete(() {
+        startTime = startTime.copyWith(day: startTime.day + 1);
+      });
+    }
+  }
+
+  // This is somewhat hacky, but populateCalendar needs an early escape.
+  Future<void> checkRepeating(
+      {required DateTime now, List<Reminder>? repeatables}) async {
+    List<Reminder> toUpdate = List.empty(growable: true);
+
+    repeatables = repeatables ?? await _repository.getRepeatables(now: now);
+
+    for (Reminder reminder in repeatables) {
+      DateTime? nextRepeatDate = getRepeatDate(reminder: reminder);
+
+      if (null == nextRepeatDate) {
+        reminder.repeatable = false;
+        toUpdate.add(reminder);
+        continue;
+      }
+
+      Reminder newReminder = reminder.copyWith(
+        dueDate: nextRepeatDate,
+      );
+
+      newReminder.notificationID = newReminder.hashCode;
+
+      // Scheduling logic.
+      if (NotificationService.instance
+          .validateWarnDate(warnDate: newReminder.dueDate)) {
+        String newDue =
+            Jiffy.parseFromDateTime(newReminder.dueDate).toLocal().toString();
+        await NotificationService.instance.scheduleNotification(
+            id: newReminder.notificationID!,
+            warnDate: newReminder.dueDate,
+            message: "${newReminder.name} IS DUE: $newDue",
+            payload: "REMINDER\n${newReminder.notificationID!}");
+      }
+
+      reminder.repeatable = false;
+      toUpdate.add(newReminder);
+      toUpdate.add(reminder);
+    }
+    await updateBatch(reminders: toUpdate);
+  }
+
+  DateTime? getCustom({required Reminder reminder}) {
+    int start = reminder.dueDate.weekday - 1;
+    int end = 0;
+    if (start + 1 != 7) {
+      end = reminder.repeatDays.indexOf(true, start + 1);
+      if (end > 0) {
+        return reminder.dueDate.copyWith(
+            day: reminder.dueDate.day + (end - start),
+            hour: reminder.dueDate.hour,
+            minute: reminder.dueDate.minute);
+      }
+    }
+    end = reminder.repeatDays.indexOf(true);
+    int offset = end - start;
+    DateTime nextDate =
+        reminder.dueDate.copyWith(day: reminder.dueDate.day + offset);
+
+    nextDate = nextDate.copyWith(
+        day: nextDate.day + (7 * reminder.repeatSkip),
+        hour: reminder.dueDate.hour,
+        minute: reminder.dueDate.minute,
+        second: 0,
+        millisecond: 0,
+        microsecond: 0);
+
+    // This is to compensate for leap-years and 30/31 day issues
+    int edgeOffset = end - nextDate.weekday + 1;
+    nextDate = nextDate.copyWith(day: nextDate.day + edgeOffset);
+
+    return nextDate;
+  }
 
   Future<void> createReminder({required Reminder reminder}) async =>
-      await
-      _repository.create(reminder);
+      await _repository.create(reminder);
 
   Future<List<Reminder>> searchReminders(
-      {required String searchString}) async =>
-      await
-      _repository.search(searchString: searchString);
+          {required String searchString}) async =>
+      await _repository.search(searchString: searchString);
 
   Future<List<Reminder>> getReminders({int limit = 50, int offset = 0}) async =>
-      await
-      _repository.getRepoList(limit: limit, offset: offset);
+      await _repository.getRepoList(limit: limit, offset: offset);
 
-  Future<List<Reminder>> getRemindersBy({required SortableView<Reminder> sorter,
-    int limit = 50,
-    int offset = 0}) async =>
-      await
-      _repository.getRepoListBy(sorter: sorter, limit: limit, offset: offset);
+  Future<List<Reminder>> getRemindersBy(
+          {required SortableView<Reminder> sorter,
+          int limit = 50,
+          int offset = 0}) async =>
+      await _repository.getRepoListBy(
+          sorter: sorter, limit: limit, offset: offset);
 
   Future<Reminder?> getReminderByID({required int id}) async =>
-      await
-      _repository.getByID(id: id);
+      await _repository.getByID(id: id);
 
   Future<List<Reminder>> getRange({DateTime? start, DateTime? end}) async =>
       await _repository.getRange(start: start, end: end);
 
   Future<List<Reminder>> mostRecent({int limit = 5}) async =>
-      await
-      _repository.mostRecent(limit: limit);
+      await _repository.mostRecent(limit: limit);
 
   Future<List<Reminder>> getOverdues({int limit = 50, int offset = 0}) async =>
-      await
-      _repository.getOverdues(limit: limit, offset: offset);
+      await _repository.getOverdues(limit: limit, offset: offset);
 
   Future<List<Reminder>> getUpcoming({int limit = 50, int offset = 0}) async =>
-      await
-      _repository.getUpcoming(limit: limit, offset: offset);
+      await _repository.getUpcoming(limit: limit, offset: offset);
 
   Future<void> updateReminder({required Reminder reminder}) async =>
-      await
-      _repository.update(reminder);
+      await _repository.update(reminder);
 
   Future<void> updateBatch({required List<Reminder> reminders}) async =>
-      await
-      _repository.updateBatch(reminders);
+      await _repository.updateBatch(reminders);
 
   Future<void> deleteReminder({required Reminder reminder}) async =>
-      await
-      _repository.delete(reminder);
+      await _repository.delete(reminder);
 
   Future<void> clearDeletesLocalRepo() async => await _repository.deleteLocal();
 
-  // Future<void> deleteFutures({required Reminder reminder}) async =>
-  //     _repository.deleteFutures(deleteFrom: reminder);
+  Future<void> deleteFutures({required Reminder reminder}) async =>
+      _repository.deleteFutures(deleteFrom: reminder);
 
   Future<void> syncRepo() async => await _repository.syncRepo();
 
-  Future<List<Reminder>> reorderReminders({required List<Reminder> reminders,
-    required int oldIndex,
-    required int newIndex}) async {
+  Future<List<Reminder>> reorderReminders(
+      {required List<Reminder> reminders,
+      required int oldIndex,
+      required int newIndex}) async {
     if (oldIndex < newIndex) {
       newIndex--;
     }

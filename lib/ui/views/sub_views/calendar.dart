@@ -6,7 +6,6 @@ import 'package:allocate/ui/views/sub_views/update_todo.dart';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:equatable/equatable.dart';
 import "package:flutter/material.dart";
-import 'package:jiffy/jiffy.dart';
 import 'package:provider/provider.dart';
 import 'package:table_calendar/table_calendar.dart';
 
@@ -27,8 +26,6 @@ class CalendarScreen extends StatefulWidget {
 }
 
 // TODO: Make calendar population more efficient -> Add an optional start date to method in service classes.
-// ie. Run the populate calendar from latest to new focused day.
-// On page reset, run the query from today up to the focused day.
 class _CalendarScreen extends State<CalendarScreen> {
   late final ValueNotifier<List<CalendarEvent>> _selectedEvents;
   late final LinkedHashMap<DateTime, Set<CalendarEvent>> _events;
@@ -81,7 +78,7 @@ class _CalendarScreen extends State<CalendarScreen> {
     calendarFormat = CalendarFormat.month;
     _focusedDay = Constants.today;
     _selectedDay = _focusedDay;
-    latest = _focusedDay;
+    latest = _focusedDay.copyWith(day: 1, month: _focusedDay.month + 1);
     _events = LinkedHashMap<DateTime, Set<CalendarEvent>>(
       equals: isSameDay,
       hashCode: getHashCode,
@@ -100,30 +97,28 @@ class _CalendarScreen extends State<CalendarScreen> {
     });
   }
 
-  // Only grab the events in view.
+  // Grab all events up to the current limit.
   Future<void> resetEvents() async {
     _events.clear();
-    await populateCalendars(startDay: _focusedDay.copyWith(day: 1));
+    await populateCalendars(limit: latest);
   }
 
-  Future<void> populateCalendars({DateTime? startDay}) async {
-    // TODO: Refactor this into a method -> Also, change this.
-    // Should generate 3 months ahead mb & stop. Query is duplicating.
+  Future<void> populateCalendars({DateTime? startDay, DateTime? limit}) async {
     startDay = startDay ??
         Constants.today.copyWith(
             day: 1,
             hour: Constants.midnight.hour,
             minute: Constants.midnight.minute);
-    DateTime limit = Jiffy.parseFromDateTime(startDay).add(months: 1).dateTime;
+    limit = limit ?? startDay.copyWith(month: startDay.month + 1);
     await Future.wait([
-      // TODO: add the other providers here pls.
       toDoProvider.populateCalendar(limit: limit),
-      //deadlineProvider.populateCalendar(limit: limit),
+      deadlineProvider.populateCalendar(limit: limit),
+      reminderProvider.populateCalendar(limit: limit),
     ]).whenComplete(() async {
-      await getEvents(day: startDay).whenComplete(() {
+      await getEvents(day: startDay, end: limit).whenComplete(() {
         if (mounted) {
           setState(() {
-            latest = startDay!;
+            latest = limit!;
             _selectedEvents.value = getEventsForDay(_selectedDay);
           });
         }
@@ -131,10 +126,10 @@ class _CalendarScreen extends State<CalendarScreen> {
     });
   }
 
-  Future<void> getEvents({DateTime? day}) async {
+  Future<void> getEvents({DateTime? day, DateTime? end}) async {
     day = day ?? Constants.today.copyWith(day: 1);
 
-    DateTime end = Jiffy.parseFromDateTime(day).add(months: 1).dateTime;
+    end = end ?? day.copyWith(month: day.month + 1);
     await Future.wait([
       getToDoEvents(start: day, end: end),
       getDeadlineEvents(start: day, end: end),
@@ -144,7 +139,8 @@ class _CalendarScreen extends State<CalendarScreen> {
 
   Future<void> getToDoEvents({DateTime? start, DateTime? end}) async {
     start = start ?? Constants.today.copyWith(day: 1);
-    end = end ?? Jiffy.parseFromDateTime(start).add(months: 1).dateTime;
+
+    end = end ?? start.copyWith(month: start.month + 1);
 
     List<ToDo> toDos =
         await toDoProvider.getToDosBetween(start: start, end: end);
@@ -176,7 +172,7 @@ class _CalendarScreen extends State<CalendarScreen> {
 
   Future<void> getDeadlineEvents({DateTime? start, DateTime? end}) async {
     start = start ?? Constants.today.copyWith(day: 1);
-    end = end ?? Jiffy.parseFromDateTime(start).add(months: 1).dateTime;
+    end = end ?? start.copyWith(month: start.month + 1);
 
     List<Deadline> deadlines =
         await deadlineProvider.getDeadlinesBetween(start: start, end: end);
@@ -185,7 +181,9 @@ class _CalendarScreen extends State<CalendarScreen> {
       DateTime day = deadline.dueDate.copyWith(
           hour: Constants.midnight.hour, minute: Constants.midnight.minute);
       CalendarEvent event = CalendarEvent(
-          title: deadline.name, modelType: ModelType.toDo, deadline: deadline);
+          title: deadline.name,
+          modelType: ModelType.deadline,
+          deadline: deadline);
       if (_events.containsKey(day)) {
         _events[day]!.add(event);
       } else {
@@ -196,7 +194,7 @@ class _CalendarScreen extends State<CalendarScreen> {
 
   Future<void> getReminderEvents({DateTime? start, DateTime? end}) async {
     start = start ?? Constants.today.copyWith(day: 1);
-    end = end ?? Jiffy.parseFromDateTime(start).add(months: 1).dateTime;
+    end = end ?? start.copyWith(month: start.month + 1);
 
     List<Reminder> reminders =
         await reminderProvider.getRemindersBetween(start: start, end: end);
@@ -205,7 +203,9 @@ class _CalendarScreen extends State<CalendarScreen> {
       DateTime day = reminder.dueDate.copyWith(
           hour: Constants.midnight.hour, minute: Constants.midnight.minute);
       CalendarEvent event = CalendarEvent(
-          title: reminder.name, modelType: ModelType.toDo, reminder: reminder);
+          title: reminder.name,
+          modelType: ModelType.reminder,
+          reminder: reminder);
       if (_events.containsKey(day)) {
         _events[day]!.add(event);
       } else {
@@ -283,12 +283,14 @@ class _CalendarScreen extends State<CalendarScreen> {
             },
             onPageChanged: (focusedDay) async {
               _focusedDay = focusedDay;
-              if (focusedDay.isAfter(latest)) {
+              DateTime testDay =
+                  focusedDay.copyWith(month: focusedDay.month + 1);
+              if (testDay.isAfter(latest)) {
                 // Populate new data if existing -- grabs events afterward.
                 await populateCalendars(startDay: focusedDay);
               } else {
                 // Just grab events.
-                getEvents(day: focusedDay);
+                getEvents(day: focusedDay, end: latest);
               }
             }),
         Expanded(child: buildEventTile())

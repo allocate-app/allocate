@@ -14,6 +14,7 @@ import '../../../util/exceptions.dart';
 import '../../widgets/flushbars.dart';
 import '../../widgets/padded_divider.dart';
 
+//TODO: Bring repeatable tile over.
 class UpdateReminderScreen extends StatefulWidget {
   const UpdateReminderScreen({Key? key}) : super(key: key);
 
@@ -668,7 +669,7 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
 
   FilledButton buildUpdateButton({required BuildContext context}) {
     return FilledButton.icon(
-        label: const Text("Update Deadline"),
+        label: const Text("Update Reminder"),
         icon: const Icon(Icons.add),
         onPressed: () async {
           bool validData = validateData();

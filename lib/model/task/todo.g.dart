@@ -22,123 +22,117 @@ const ToDoSchema = CollectionSchema(
       name: r'completed',
       type: IsarType.bool,
     ),
-    r'customFreq': PropertySchema(
-      id: 1,
-      name: r'customFreq',
-      type: IsarType.byte,
-      enumMap: _ToDocustomFreqEnumValueMap,
-    ),
     r'customViewIndex': PropertySchema(
-      id: 2,
+      id: 1,
       name: r'customViewIndex',
       type: IsarType.long,
     ),
     r'description': PropertySchema(
-      id: 3,
+      id: 2,
       name: r'description',
       type: IsarType.string,
     ),
     r'dueDate': PropertySchema(
-      id: 4,
+      id: 3,
       name: r'dueDate',
       type: IsarType.dateTime,
     ),
     r'expectedDuration': PropertySchema(
-      id: 5,
+      id: 4,
       name: r'expectedDuration',
       type: IsarType.long,
     ),
     r'frequency': PropertySchema(
-      id: 6,
+      id: 5,
       name: r'frequency',
       type: IsarType.byte,
       enumMap: _ToDofrequencyEnumValueMap,
     ),
     r'groupID': PropertySchema(
-      id: 7,
+      id: 6,
       name: r'groupID',
       type: IsarType.long,
     ),
     r'groupIndex': PropertySchema(
-      id: 8,
+      id: 7,
       name: r'groupIndex',
       type: IsarType.long,
     ),
     r'isSynced': PropertySchema(
-      id: 9,
+      id: 8,
       name: r'isSynced',
       type: IsarType.bool,
     ),
     r'lastUpdated': PropertySchema(
-      id: 10,
+      id: 9,
       name: r'lastUpdated',
       type: IsarType.dateTime,
     ),
     r'myDay': PropertySchema(
-      id: 11,
+      id: 10,
       name: r'myDay',
       type: IsarType.bool,
     ),
     r'name': PropertySchema(
-      id: 12,
+      id: 11,
       name: r'name',
       type: IsarType.string,
     ),
     r'priority': PropertySchema(
-      id: 13,
+      id: 12,
       name: r'priority',
       type: IsarType.byte,
       enumMap: _ToDopriorityEnumValueMap,
     ),
     r'realDuration': PropertySchema(
-      id: 14,
+      id: 13,
       name: r'realDuration',
       type: IsarType.long,
     ),
     r'repeatDays': PropertySchema(
-      id: 15,
+      id: 14,
       name: r'repeatDays',
       type: IsarType.boolList,
     ),
     r'repeatID': PropertySchema(
-      id: 16,
+      id: 15,
       name: r'repeatID',
       type: IsarType.long,
     ),
     r'repeatSkip': PropertySchema(
-      id: 17,
+      id: 16,
       name: r'repeatSkip',
       type: IsarType.long,
     ),
     r'repeatable': PropertySchema(
-      id: 18,
+      id: 17,
       name: r'repeatable',
       type: IsarType.bool,
     ),
     r'startDate': PropertySchema(
-      id: 19,
+      id: 18,
       name: r'startDate',
       type: IsarType.dateTime,
     ),
     r'subTasks': PropertySchema(
-      id: 20,
+      id: 19,
       name: r'subTasks',
       type: IsarType.objectList,
       target: r'SubTask',
     ),
     r'taskType': PropertySchema(
-      id: 21,
+      id: 20,
       name: r'taskType',
       type: IsarType.byte,
       enumMap: _ToDotaskTypeEnumValueMap,
     ),
     r'toDelete': PropertySchema(
-      id: 22,
+      id: 21,
       name: r'toDelete',
       type: IsarType.bool,
     ),
     r'weight': PropertySchema(
-      id: 23,
+      id: 22,
       name: r'weight',
       type: IsarType.long,
     )
@@ -367,34 +361,33 @@ void _toDoSerialize(
   Map<Type, List<int>> allOffsets,
 ) {
   writer.writeBool(offsets[0], object.completed);
-  writer.writeByte(offsets[1], object.customFreq.index);
-  writer.writeLong(offsets[2], object.customViewIndex);
-  writer.writeString(offsets[3], object.description);
-  writer.writeDateTime(offsets[4], object.dueDate);
-  writer.writeLong(offsets[5], object.expectedDuration);
-  writer.writeByte(offsets[6], object.frequency.index);
-  writer.writeLong(offsets[7], object.groupID);
-  writer.writeLong(offsets[8], object.groupIndex);
-  writer.writeBool(offsets[9], object.isSynced);
-  writer.writeDateTime(offsets[10], object.lastUpdated);
-  writer.writeBool(offsets[11], object.myDay);
-  writer.writeString(offsets[12], object.name);
-  writer.writeByte(offsets[13], object.priority.index);
-  writer.writeLong(offsets[14], object.realDuration);
-  writer.writeBoolList(offsets[15], object.repeatDays);
-  writer.writeLong(offsets[16], object.repeatID);
-  writer.writeLong(offsets[17], object.repeatSkip);
-  writer.writeBool(offsets[18], object.repeatable);
-  writer.writeDateTime(offsets[19], object.startDate);
+  writer.writeLong(offsets[1], object.customViewIndex);
+  writer.writeString(offsets[2], object.description);
+  writer.writeDateTime(offsets[3], object.dueDate);
+  writer.writeLong(offsets[4], object.expectedDuration);
+  writer.writeByte(offsets[5], object.frequency.index);
+  writer.writeLong(offsets[6], object.groupID);
+  writer.writeLong(offsets[7], object.groupIndex);
+  writer.writeBool(offsets[8], object.isSynced);
+  writer.writeDateTime(offsets[9], object.lastUpdated);
+  writer.writeBool(offsets[10], object.myDay);
+  writer.writeString(offsets[11], object.name);
+  writer.writeByte(offsets[12], object.priority.index);
+  writer.writeLong(offsets[13], object.realDuration);
+  writer.writeBoolList(offsets[14], object.repeatDays);
+  writer.writeLong(offsets[15], object.repeatID);
+  writer.writeLong(offsets[16], object.repeatSkip);
+  writer.writeBool(offsets[17], object.repeatable);
+  writer.writeDateTime(offsets[18], object.startDate);
   writer.writeObjectList<SubTask>(
-    offsets[20],
+    offsets[19],
     allOffsets,
     SubTaskSchema.serialize,
     object.subTasks,
   );
-  writer.writeByte(offsets[21], object.taskType.index);
-  writer.writeBool(offsets[22], object.toDelete);
-  writer.writeLong(offsets[23], object.weight);
+  writer.writeByte(offsets[20], object.taskType.index);
+  writer.writeBool(offsets[21], object.toDelete);
+  writer.writeLong(offsets[22], object.weight);
 }
 
 ToDo _toDoDeserialize(
@@ -405,42 +398,39 @@ ToDo _toDoDeserialize(
 ) {
   final object = ToDo(
     completed: reader.readBoolOrNull(offsets[0]) ?? false,
-    customFreq:
-        _ToDocustomFreqValueEnumMap[reader.readByteOrNull(offsets[1])] ??
-            CustomFrequency.weekly,
-    description: reader.readStringOrNull(offsets[3]) ?? "",
-    dueDate: reader.readDateTime(offsets[4]),
-    expectedDuration: reader.readLong(offsets[5]),
-    frequency: _ToDofrequencyValueEnumMap[reader.readByteOrNull(offsets[6])] ??
+    description: reader.readStringOrNull(offsets[2]) ?? "",
+    dueDate: reader.readDateTime(offsets[3]),
+    expectedDuration: reader.readLong(offsets[4]),
+    frequency: _ToDofrequencyValueEnumMap[reader.readByteOrNull(offsets[5])] ??
         Frequency.once,
-    groupID: reader.readLongOrNull(offsets[7]),
-    lastUpdated: reader.readDateTime(offsets[10]),
-    myDay: reader.readBoolOrNull(offsets[11]) ?? false,
-    name: reader.readString(offsets[12]),
-    priority: _ToDopriorityValueEnumMap[reader.readByteOrNull(offsets[13])] ??
+    groupID: reader.readLongOrNull(offsets[6]),
+    lastUpdated: reader.readDateTime(offsets[9]),
+    myDay: reader.readBoolOrNull(offsets[10]) ?? false,
+    name: reader.readString(offsets[11]),
+    priority: _ToDopriorityValueEnumMap[reader.readByteOrNull(offsets[12])] ??
         Priority.low,
-    realDuration: reader.readLong(offsets[14]),
-    repeatDays: reader.readBoolList(offsets[15]) ?? [],
-    repeatID: reader.readLongOrNull(offsets[16]),
-    repeatSkip: reader.readLongOrNull(offsets[17]) ?? 1,
-    repeatable: reader.readBoolOrNull(offsets[18]) ?? false,
-    startDate: reader.readDateTime(offsets[19]),
+    realDuration: reader.readLong(offsets[13]),
+    repeatDays: reader.readBoolList(offsets[14]) ?? [],
+    repeatID: reader.readLongOrNull(offsets[15]),
+    repeatSkip: reader.readLongOrNull(offsets[16]) ?? 1,
+    repeatable: reader.readBoolOrNull(offsets[17]) ?? false,
+    startDate: reader.readDateTime(offsets[18]),
     subTasks: reader.readObjectList<SubTask>(
-          offsets[20],
+          offsets[19],
           SubTaskSchema.deserialize,
           allOffsets,
           SubTask(),
         ) ??
         [],
-    taskType: _ToDotaskTypeValueEnumMap[reader.readByteOrNull(offsets[21])] ??
+    taskType: _ToDotaskTypeValueEnumMap[reader.readByteOrNull(offsets[20])] ??
         TaskType.small,
-    weight: reader.readLongOrNull(offsets[23]) ?? 0,
+    weight: reader.readLongOrNull(offsets[22]) ?? 0,
   );
-  object.customViewIndex = reader.readLong(offsets[2]);
-  object.groupIndex = reader.readLong(offsets[8]);
+  object.customViewIndex = reader.readLong(offsets[1]);
+  object.groupIndex = reader.readLong(offsets[7]);
   object.id = id;
-  object.isSynced = reader.readBool(offsets[9]);
-  object.toDelete = reader.readBool(offsets[22]);
+  object.isSynced = reader.readBool(offsets[8]);
+  object.toDelete = reader.readBool(offsets[21]);
   return object;
 }
 
@@ -454,47 +444,44 @@ P _toDoDeserializeProp<P>(
     case 0:
       return (reader.readBoolOrNull(offset) ?? false) as P;
     case 1:
-      return (_ToDocustomFreqValueEnumMap[reader.readByteOrNull(offset)] ??
-          CustomFrequency.weekly) as P;
+      return (reader.readLong(offset)) as P;
     case 2:
-      return (reader.readLong(offset)) as P;
-    case 3:
       return (reader.readStringOrNull(offset) ?? "") as P;
-    case 4:
+    case 3:
       return (reader.readDateTime(offset)) as P;
-    case 5:
+    case 4:
       return (reader.readLong(offset)) as P;
-    case 6:
+    case 5:
       return (_ToDofrequencyValueEnumMap[reader.readByteOrNull(offset)] ??
           Frequency.once) as P;
-    case 7:
+    case 6:
       return (reader.readLongOrNull(offset)) as P;
-    case 8:
+    case 7:
       return (reader.readLong(offset)) as P;
-    case 9:
+    case 8:
       return (reader.readBool(offset)) as P;
-    case 10:
+    case 9:
       return (reader.readDateTime(offset)) as P;
-    case 11:
+    case 10:
       return (reader.readBoolOrNull(offset) ?? false) as P;
-    case 12:
+    case 11:
       return (reader.readString(offset)) as P;
-    case 13:
+    case 12:
       return (_ToDopriorityValueEnumMap[reader.readByteOrNull(offset)] ??
           Priority.low) as P;
-    case 14:
+    case 13:
       return (reader.readLong(offset)) as P;
-    case 15:
+    case 14:
       return (reader.readBoolList(offset) ?? []) as P;
-    case 16:
+    case 15:
       return (reader.readLongOrNull(offset)) as P;
-    case 17:
+    case 16:
       return (reader.readLongOrNull(offset) ?? 1) as P;
-    case 18:
+    case 17:
       return (reader.readBoolOrNull(offset) ?? false) as P;
-    case 19:
+    case 18:
       return (reader.readDateTime(offset)) as P;
-    case 20:
+    case 19:
       return (reader.readObjectList<SubTask>(
             offset,
             SubTaskSchema.deserialize,
@@ -502,28 +489,18 @@ P _toDoDeserializeProp<P>(
             SubTask(),
           ) ??
           []) as P;
-    case 21:
+    case 20:
       return (_ToDotaskTypeValueEnumMap[reader.readByteOrNull(offset)] ??
           TaskType.small) as P;
-    case 22:
+    case 21:
       return (reader.readBool(offset)) as P;
-    case 23:
+    case 22:
       return (reader.readLongOrNull(offset) ?? 0) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
   }
 }
 
-const _ToDocustomFreqEnumValueMap = {
-  'weekly': 0,
-  'monthly': 1,
-  'yearly': 2,
-};
-const _ToDocustomFreqValueEnumMap = {
-  0: CustomFrequency.weekly,
-  1: CustomFrequency.monthly,
-  2: CustomFrequency.yearly,
-};
 const _ToDofrequencyEnumValueMap = {
   'once': 0,
   'daily': 1,
@@ -1775,59 +1752,6 @@ extension ToDoQueryFilter on QueryBuilder<ToDo, ToDo, QFilterCondition> {
       return query.addFilterCondition(FilterCondition.equalTo(
         property: r'completed',
         value: value,
-      ));
-    });
-  }
-
-  QueryBuilder<ToDo, ToDo, QAfterFilterCondition> customFreqEqualTo(
-      CustomFrequency value) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'customFreq',
-        value: value,
-      ));
-    });
-  }
-
-  QueryBuilder<ToDo, ToDo, QAfterFilterCondition> customFreqGreaterThan(
-    CustomFrequency value, {
-    bool include = false,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        include: include,
-        property: r'customFreq',
-        value: value,
-      ));
-    });
-  }
-
-  QueryBuilder<ToDo, ToDo, QAfterFilterCondition> customFreqLessThan(
-    CustomFrequency value, {
-    bool include = false,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.lessThan(
-        include: include,
-        property: r'customFreq',
-        value: value,
-      ));
-    });
-  }
-
-  QueryBuilder<ToDo, ToDo, QAfterFilterCondition> customFreqBetween(
-    CustomFrequency lower,
-    CustomFrequency upper, {
-    bool includeLower = true,
-    bool includeUpper = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.between(
-        property: r'customFreq',
-        lower: lower,
-        includeLower: includeLower,
-        upper: upper,
-        includeUpper: includeUpper,
       ));
     });
   }
@@ -3151,18 +3075,6 @@ extension ToDoQuerySortBy on QueryBuilder<ToDo, ToDo, QSortBy> {
     });
   }
 
-  QueryBuilder<ToDo, ToDo, QAfterSortBy> sortByCustomFreq() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'customFreq', Sort.asc);
-    });
-  }
-
-  QueryBuilder<ToDo, ToDo, QAfterSortBy> sortByCustomFreqDesc() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'customFreq', Sort.desc);
-    });
-  }
-
   QueryBuilder<ToDo, ToDo, QAfterSortBy> sortByCustomViewIndex() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'customViewIndex', Sort.asc);
@@ -3414,18 +3326,6 @@ extension ToDoQuerySortThenBy on QueryBuilder<ToDo, ToDo, QSortThenBy> {
   QueryBuilder<ToDo, ToDo, QAfterSortBy> thenByCompletedDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'completed', Sort.desc);
-    });
-  }
-
-  QueryBuilder<ToDo, ToDo, QAfterSortBy> thenByCustomFreq() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'customFreq', Sort.asc);
-    });
-  }
-
-  QueryBuilder<ToDo, ToDo, QAfterSortBy> thenByCustomFreqDesc() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'customFreq', Sort.desc);
     });
   }
 
@@ -3689,12 +3589,6 @@ extension ToDoQueryWhereDistinct on QueryBuilder<ToDo, ToDo, QDistinct> {
     });
   }
 
-  QueryBuilder<ToDo, ToDo, QDistinct> distinctByCustomFreq() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addDistinctBy(r'customFreq');
-    });
-  }
-
   QueryBuilder<ToDo, ToDo, QDistinct> distinctByCustomViewIndex() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'customViewIndex');
@@ -3834,12 +3728,6 @@ extension ToDoQueryProperty on QueryBuilder<ToDo, ToDo, QQueryProperty> {
   QueryBuilder<ToDo, bool, QQueryOperations> completedProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'completed');
-    });
-  }
-
-  QueryBuilder<ToDo, CustomFrequency, QQueryOperations> customFreqProperty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addPropertyName(r'customFreq');
     });
   }
 

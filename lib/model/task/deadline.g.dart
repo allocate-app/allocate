@@ -17,96 +17,90 @@ const DeadlineSchema = CollectionSchema(
   name: r'Deadline',
   id: -3906690819049898737,
   properties: {
-    r'customFreq': PropertySchema(
-      id: 0,
-      name: r'customFreq',
-      type: IsarType.byte,
-      enumMap: _DeadlinecustomFreqEnumValueMap,
-    ),
     r'customViewIndex': PropertySchema(
-      id: 1,
+      id: 0,
       name: r'customViewIndex',
       type: IsarType.long,
     ),
     r'description': PropertySchema(
-      id: 2,
+      id: 1,
       name: r'description',
       type: IsarType.string,
     ),
     r'dueDate': PropertySchema(
-      id: 3,
+      id: 2,
       name: r'dueDate',
       type: IsarType.dateTime,
     ),
     r'frequency': PropertySchema(
-      id: 4,
+      id: 3,
       name: r'frequency',
       type: IsarType.byte,
       enumMap: _DeadlinefrequencyEnumValueMap,
     ),
     r'isSynced': PropertySchema(
-      id: 5,
+      id: 4,
       name: r'isSynced',
       type: IsarType.bool,
     ),
     r'lastUpdated': PropertySchema(
-      id: 6,
+      id: 5,
       name: r'lastUpdated',
       type: IsarType.dateTime,
     ),
     r'name': PropertySchema(
-      id: 7,
+      id: 6,
       name: r'name',
       type: IsarType.string,
     ),
     r'notificationID': PropertySchema(
-      id: 8,
+      id: 7,
       name: r'notificationID',
       type: IsarType.long,
     ),
     r'priority': PropertySchema(
-      id: 9,
+      id: 8,
       name: r'priority',
       type: IsarType.byte,
       enumMap: _DeadlinepriorityEnumValueMap,
     ),
     r'repeatDays': PropertySchema(
-      id: 10,
+      id: 9,
       name: r'repeatDays',
       type: IsarType.boolList,
     ),
     r'repeatID': PropertySchema(
-      id: 11,
+      id: 10,
       name: r'repeatID',
       type: IsarType.long,
     ),
     r'repeatSkip': PropertySchema(
-      id: 12,
+      id: 11,
       name: r'repeatSkip',
       type: IsarType.long,
     ),
     r'repeatable': PropertySchema(
-      id: 13,
+      id: 12,
       name: r'repeatable',
       type: IsarType.bool,
     ),
     r'startDate': PropertySchema(
-      id: 14,
+      id: 13,
       name: r'startDate',
       type: IsarType.dateTime,
     ),
     r'toDelete': PropertySchema(
-      id: 15,
+      id: 14,
       name: r'toDelete',
       type: IsarType.bool,
     ),
     r'warnDate': PropertySchema(
-      id: 16,
+      id: 15,
       name: r'warnDate',
       type: IsarType.dateTime,
     ),
     r'warnMe': PropertySchema(
-      id: 17,
+      id: 16,
       name: r'warnMe',
       type: IsarType.bool,
     )
@@ -274,24 +268,23 @@ void _deadlineSerialize(
   List<int> offsets,
   Map<Type, List<int>> allOffsets,
 ) {
-  writer.writeByte(offsets[0], object.customFreq.index);
-  writer.writeLong(offsets[1], object.customViewIndex);
-  writer.writeString(offsets[2], object.description);
-  writer.writeDateTime(offsets[3], object.dueDate);
-  writer.writeByte(offsets[4], object.frequency.index);
-  writer.writeBool(offsets[5], object.isSynced);
-  writer.writeDateTime(offsets[6], object.lastUpdated);
-  writer.writeString(offsets[7], object.name);
-  writer.writeLong(offsets[8], object.notificationID);
-  writer.writeByte(offsets[9], object.priority.index);
-  writer.writeBoolList(offsets[10], object.repeatDays);
-  writer.writeLong(offsets[11], object.repeatID);
-  writer.writeLong(offsets[12], object.repeatSkip);
-  writer.writeBool(offsets[13], object.repeatable);
-  writer.writeDateTime(offsets[14], object.startDate);
-  writer.writeBool(offsets[15], object.toDelete);
-  writer.writeDateTime(offsets[16], object.warnDate);
-  writer.writeBool(offsets[17], object.warnMe);
+  writer.writeLong(offsets[0], object.customViewIndex);
+  writer.writeString(offsets[1], object.description);
+  writer.writeDateTime(offsets[2], object.dueDate);
+  writer.writeByte(offsets[3], object.frequency.index);
+  writer.writeBool(offsets[4], object.isSynced);
+  writer.writeDateTime(offsets[5], object.lastUpdated);
+  writer.writeString(offsets[6], object.name);
+  writer.writeLong(offsets[7], object.notificationID);
+  writer.writeByte(offsets[8], object.priority.index);
+  writer.writeBoolList(offsets[9], object.repeatDays);
+  writer.writeLong(offsets[10], object.repeatID);
+  writer.writeLong(offsets[11], object.repeatSkip);
+  writer.writeBool(offsets[12], object.repeatable);
+  writer.writeDateTime(offsets[13], object.startDate);
+  writer.writeBool(offsets[14], object.toDelete);
+  writer.writeDateTime(offsets[15], object.warnDate);
+  writer.writeBool(offsets[16], object.warnMe);
 }
 
 Deadline _deadlineDeserialize(
@@ -301,32 +294,29 @@ Deadline _deadlineDeserialize(
   Map<Type, List<int>> allOffsets,
 ) {
   final object = Deadline(
-    customFreq:
-        _DeadlinecustomFreqValueEnumMap[reader.readByteOrNull(offsets[0])] ??
-            CustomFrequency.weekly,
-    description: reader.readStringOrNull(offsets[2]) ?? "",
-    dueDate: reader.readDateTime(offsets[3]),
+    description: reader.readStringOrNull(offsets[1]) ?? "",
+    dueDate: reader.readDateTime(offsets[2]),
     frequency:
-        _DeadlinefrequencyValueEnumMap[reader.readByteOrNull(offsets[4])] ??
+        _DeadlinefrequencyValueEnumMap[reader.readByteOrNull(offsets[3])] ??
             Frequency.once,
-    lastUpdated: reader.readDateTime(offsets[6]),
-    name: reader.readString(offsets[7]),
-    notificationID: reader.readLongOrNull(offsets[8]),
+    lastUpdated: reader.readDateTime(offsets[5]),
+    name: reader.readString(offsets[6]),
+    notificationID: reader.readLongOrNull(offsets[7]),
     priority:
-        _DeadlinepriorityValueEnumMap[reader.readByteOrNull(offsets[9])] ??
+        _DeadlinepriorityValueEnumMap[reader.readByteOrNull(offsets[8])] ??
             Priority.low,
-    repeatDays: reader.readBoolList(offsets[10]) ?? [],
-    repeatID: reader.readLongOrNull(offsets[11]),
-    repeatSkip: reader.readLongOrNull(offsets[12]) ?? 1,
-    repeatable: reader.readBoolOrNull(offsets[13]) ?? false,
-    startDate: reader.readDateTime(offsets[14]),
-    warnDate: reader.readDateTime(offsets[16]),
-    warnMe: reader.readBoolOrNull(offsets[17]) ?? false,
+    repeatDays: reader.readBoolList(offsets[9]) ?? [],
+    repeatID: reader.readLongOrNull(offsets[10]),
+    repeatSkip: reader.readLongOrNull(offsets[11]) ?? 1,
+    repeatable: reader.readBoolOrNull(offsets[12]) ?? false,
+    startDate: reader.readDateTime(offsets[13]),
+    warnDate: reader.readDateTime(offsets[15]),
+    warnMe: reader.readBoolOrNull(offsets[16]) ?? false,
   );
-  object.customViewIndex = reader.readLong(offsets[1]);
+  object.customViewIndex = reader.readLong(offsets[0]);
   object.id = id;
-  object.isSynced = reader.readBool(offsets[5]);
-  object.toDelete = reader.readBool(offsets[15]);
+  object.isSynced = reader.readBool(offsets[4]);
+  object.toDelete = reader.readBool(offsets[14]);
   return object;
 }
 
@@ -338,59 +328,46 @@ P _deadlineDeserializeProp<P>(
 ) {
   switch (propertyId) {
     case 0:
-      return (_DeadlinecustomFreqValueEnumMap[reader.readByteOrNull(offset)] ??
-          CustomFrequency.weekly) as P;
-    case 1:
       return (reader.readLong(offset)) as P;
-    case 2:
+    case 1:
       return (reader.readStringOrNull(offset) ?? "") as P;
-    case 3:
+    case 2:
       return (reader.readDateTime(offset)) as P;
-    case 4:
+    case 3:
       return (_DeadlinefrequencyValueEnumMap[reader.readByteOrNull(offset)] ??
           Frequency.once) as P;
-    case 5:
+    case 4:
       return (reader.readBool(offset)) as P;
-    case 6:
+    case 5:
       return (reader.readDateTime(offset)) as P;
-    case 7:
+    case 6:
       return (reader.readString(offset)) as P;
-    case 8:
+    case 7:
       return (reader.readLongOrNull(offset)) as P;
-    case 9:
+    case 8:
       return (_DeadlinepriorityValueEnumMap[reader.readByteOrNull(offset)] ??
           Priority.low) as P;
-    case 10:
+    case 9:
       return (reader.readBoolList(offset) ?? []) as P;
-    case 11:
+    case 10:
       return (reader.readLongOrNull(offset)) as P;
-    case 12:
+    case 11:
       return (reader.readLongOrNull(offset) ?? 1) as P;
-    case 13:
+    case 12:
       return (reader.readBoolOrNull(offset) ?? false) as P;
+    case 13:
+      return (reader.readDateTime(offset)) as P;
     case 14:
-      return (reader.readDateTime(offset)) as P;
-    case 15:
       return (reader.readBool(offset)) as P;
-    case 16:
+    case 15:
       return (reader.readDateTime(offset)) as P;
-    case 17:
+    case 16:
       return (reader.readBoolOrNull(offset) ?? false) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
   }
 }
 
-const _DeadlinecustomFreqEnumValueMap = {
-  'weekly': 0,
-  'monthly': 1,
-  'yearly': 2,
-};
-const _DeadlinecustomFreqValueEnumMap = {
-  0: CustomFrequency.weekly,
-  1: CustomFrequency.monthly,
-  2: CustomFrequency.yearly,
-};
 const _DeadlinefrequencyEnumValueMap = {
   'once': 0,
   'daily': 1,
@@ -1295,59 +1272,6 @@ extension DeadlineQueryWhere on QueryBuilder<Deadline, Deadline, QWhereClause> {
 
 extension DeadlineQueryFilter
     on QueryBuilder<Deadline, Deadline, QFilterCondition> {
-  QueryBuilder<Deadline, Deadline, QAfterFilterCondition> customFreqEqualTo(
-      CustomFrequency value) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'customFreq',
-        value: value,
-      ));
-    });
-  }
-
-  QueryBuilder<Deadline, Deadline, QAfterFilterCondition> customFreqGreaterThan(
-    CustomFrequency value, {
-    bool include = false,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        include: include,
-        property: r'customFreq',
-        value: value,
-      ));
-    });
-  }
-
-  QueryBuilder<Deadline, Deadline, QAfterFilterCondition> customFreqLessThan(
-    CustomFrequency value, {
-    bool include = false,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.lessThan(
-        include: include,
-        property: r'customFreq',
-        value: value,
-      ));
-    });
-  }
-
-  QueryBuilder<Deadline, Deadline, QAfterFilterCondition> customFreqBetween(
-    CustomFrequency lower,
-    CustomFrequency upper, {
-    bool includeLower = true,
-    bool includeUpper = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.between(
-        property: r'customFreq',
-        lower: lower,
-        includeLower: includeLower,
-        upper: upper,
-        includeUpper: includeUpper,
-      ));
-    });
-  }
-
   QueryBuilder<Deadline, Deadline, QAfterFilterCondition>
       customViewIndexEqualTo(int value) {
     return QueryBuilder.apply(this, (query) {
@@ -2378,18 +2302,6 @@ extension DeadlineQueryLinks
     on QueryBuilder<Deadline, Deadline, QFilterCondition> {}
 
 extension DeadlineQuerySortBy on QueryBuilder<Deadline, Deadline, QSortBy> {
-  QueryBuilder<Deadline, Deadline, QAfterSortBy> sortByCustomFreq() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'customFreq', Sort.asc);
-    });
-  }
-
-  QueryBuilder<Deadline, Deadline, QAfterSortBy> sortByCustomFreqDesc() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'customFreq', Sort.desc);
-    });
-  }
-
   QueryBuilder<Deadline, Deadline, QAfterSortBy> sortByCustomViewIndex() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'customViewIndex', Sort.asc);
@@ -2585,18 +2497,6 @@ extension DeadlineQuerySortBy on QueryBuilder<Deadline, Deadline, QSortBy> {
 
 extension DeadlineQuerySortThenBy
     on QueryBuilder<Deadline, Deadline, QSortThenBy> {
-  QueryBuilder<Deadline, Deadline, QAfterSortBy> thenByCustomFreq() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'customFreq', Sort.asc);
-    });
-  }
-
-  QueryBuilder<Deadline, Deadline, QAfterSortBy> thenByCustomFreqDesc() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'customFreq', Sort.desc);
-    });
-  }
-
   QueryBuilder<Deadline, Deadline, QAfterSortBy> thenByCustomViewIndex() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'customViewIndex', Sort.asc);
@@ -2804,12 +2704,6 @@ extension DeadlineQuerySortThenBy
 
 extension DeadlineQueryWhereDistinct
     on QueryBuilder<Deadline, Deadline, QDistinct> {
-  QueryBuilder<Deadline, Deadline, QDistinct> distinctByCustomFreq() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addDistinctBy(r'customFreq');
-    });
-  }
-
   QueryBuilder<Deadline, Deadline, QDistinct> distinctByCustomViewIndex() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'customViewIndex');
@@ -2920,13 +2814,6 @@ extension DeadlineQueryProperty
   QueryBuilder<Deadline, int, QQueryOperations> idProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'id');
-    });
-  }
-
-  QueryBuilder<Deadline, CustomFrequency, QQueryOperations>
-      customFreqProperty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addPropertyName(r'customFreq');
     });
   }
 

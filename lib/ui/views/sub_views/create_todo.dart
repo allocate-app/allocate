@@ -87,7 +87,6 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
 
   // Repeat
   late Frequency frequency;
-  late CustomFrequency customFreq;
 
   late TextEditingController repeatSkipEditingController;
   late int repeatSkip;
@@ -131,7 +130,6 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
     searchHistory = List.empty(growable: true);
 
     frequency = Frequency.once;
-    customFreq = CustomFrequency.weekly;
 
     repeatSkip = 1;
 
@@ -264,8 +262,6 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
         weekDayList
             .add(min(((startDate?.weekday ?? DateTime.now().weekday) - 1), 0));
       }
-    } else {
-      customFreq = CustomFrequency.weekly;
     }
 
     return valid;
@@ -326,7 +322,6 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
           completed: completed,
           repeatable: frequency != Frequency.once,
           frequency: frequency,
-          customFreq: customFreq,
           repeatDays: weekDays,
           repeatSkip: repeatSkip,
           subTasks: subTasks,
@@ -1104,7 +1099,6 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
               context: context,
               builder: (BuildContext context) {
                 Frequency cacheFreq = frequency;
-                CustomFrequency cacheCustom = customFreq;
                 Set<int> cacheWeekdays = Set.from(weekDayList);
                 if (cacheWeekdays.isEmpty) {
                   int day = (null != startDate)
@@ -1218,68 +1212,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                                 (cacheFreq == Frequency.custom)
                                     ? Column(
                                         children: [
-                                          Padding(
-                                            padding: const EdgeInsets.symmetric(
-                                                horizontal:
-                                                    Constants.innerPadding),
-                                            child: InputDecorator(
-                                              decoration: const InputDecoration(
-                                                border: OutlineInputBorder(
-                                                    gapPadding: 0,
-                                                    borderRadius:
-                                                        BorderRadius.all(
-                                                            Radius.circular(
-                                                                Constants
-                                                                    .circular)),
-                                                    borderSide: BorderSide(
-                                                        strokeAlign: BorderSide
-                                                            .strokeAlignOutside)),
-                                              ),
-                                              child:
-                                                  DropdownButtonHideUnderline(
-                                                child: DropdownButton<
-                                                    CustomFrequency>(
-                                                  padding: const EdgeInsets
-                                                      .symmetric(
-                                                      horizontal:
-                                                          Constants.padding),
-                                                  isDense: true,
-                                                  isExpanded: true,
-                                                  dropdownColor:
-                                                      Constants.dialogColor(
-                                                          context: context),
-                                                  borderRadius: const BorderRadius
-                                                      .all(Radius.circular(
-                                                          Constants
-                                                              .roundedCorners)),
-                                                  value: cacheCustom,
-                                                  onChanged: (CustomFrequency?
-                                                          value) =>
-                                                      setState(() =>
-                                                          cacheCustom = value ??
-                                                              cacheCustom),
-                                                  items: CustomFrequency.values
-                                                      .map((CustomFrequency
-                                                              customFreq) =>
-                                                          DropdownMenuItem<
-                                                              CustomFrequency>(
-                                                            value: customFreq,
-                                                            child: AutoSizeText(
-                                                              "${toBeginningOfSentenceCase(customFreq.name)}",
-                                                              softWrap: false,
-                                                              maxLines: 1,
-                                                              minFontSize:
-                                                                  Constants
-                                                                      .small,
-                                                            ),
-                                                          ))
-                                                      .toList(),
-                                                ),
-                                              ),
-                                            ),
-                                          ),
                                           // Days of the week - Wrap in padding and a container
-
                                           Padding(
                                             padding: const EdgeInsets.fromLTRB(
                                                 Constants.innerPadding,
@@ -1400,12 +1333,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                                             Flexible(
                                               child: AutoSizeText(
                                                 (cacheFreq == Frequency.custom)
-                                                    ? cacheCustom.name
-                                                        .replaceAll(
-                                                            "ly",
-                                                            (cacheSkip > 1)
-                                                                ? "s."
-                                                                : ".")
+                                                    ? "week${(cacheSkip > 1) ? "s." : "."}"
                                                     : cacheFreq.name.replaceAll(
                                                         "ly",
                                                         (cacheSkip > 1)
@@ -1458,7 +1386,6 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                                             onPressed: () {
                                               setState(() {
                                                 frequency = cacheFreq;
-                                                customFreq = cacheCustom;
                                                 weekDayList = cacheWeekdays;
                                                 repeatSkip = cacheSkip;
                                               });
@@ -1483,7 +1410,6 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                 onPressed: () => setState(() {
                       checkClose = true;
                       frequency = Frequency.once;
-                      customFreq = CustomFrequency.weekly;
                       weekDayList.clear();
                       repeatSkip = 1;
                     }))
@@ -1858,7 +1784,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
               final int numDays =
                   (tmpDue?.difference(initDate).inDays ?? 0) + 1;
               List<DateTime?> showDates = List.generate(
-                  numDays, (i) => initDate.add(Duration(days: i)));
+                  numDays, (i) => initDate.copyWith(day: initDate.day + 1));
 
               // List ->
               return StatefulBuilder(

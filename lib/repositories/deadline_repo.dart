@@ -150,7 +150,7 @@ class DeadlineRepo implements DeadlineRepository {
         .where()
         .repeatIDEqualTo(deleteFrom.repeatID)
         .filter()
-        .repeatableEqualTo(true)
+        .dueDateGreaterThan(deleteFrom.dueDate)
         .findAll();
 
     // This is to prevent a race condition & accidentally deleting a notification.
@@ -427,11 +427,12 @@ class DeadlineRepo implements DeadlineRepository {
   @override
   Future<List<Deadline>> getRange({DateTime? start, DateTime? end}) async {
     start = start ?? DateTime.now().copyWith(day: 0);
-    end = end ?? Jiffy.parseFromDateTime(start).add(months: 1).dateTime;
-    // TODO: Possibly sort this.
+    end = end ?? start.copyWith(month: start.month + 1);
     return await _isarClient.deadlines
         .where()
         .dueDateBetween(start, end)
+        .filter()
+        .toDeleteEqualTo(false)
         .findAll();
   }
 

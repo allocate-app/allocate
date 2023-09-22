@@ -851,7 +851,6 @@ void main() {
               Jiffy.parse("2023 Jul 25th", pattern: "yyyy MMM do").dateTime,
           repeatable: true,
           frequency: Frequency.custom,
-          customFreq: CustomFrequency.weekly,
           repeatSkip: 2,
           repeatDays: [true, true, false, false, false, false, false]);
 
@@ -894,7 +893,6 @@ void main() {
               Jiffy.parse("2023 Jul 25th", pattern: "yyyy MMM do").dateTime,
           repeatable: true,
           frequency: Frequency.custom,
-          customFreq: CustomFrequency.monthly,
           repeatSkip: 1,
           repeatDays: [true, false, true, false, true, false, false]);
 

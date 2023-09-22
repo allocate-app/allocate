@@ -93,7 +93,7 @@ class RoutineService {
 
   Future<void> resetRoutine({required Routine routine}) async {
     routine.routineTasks.map((rt) => rt.completed = false);
-    _repository.update(routine);
+    await _repository.update(routine);
   }
 
   Future<void> resetRoutines({required List<Routine?> routines}) async {
@@ -104,6 +104,6 @@ class RoutineService {
         toUpdate.add(routine);
       }
     }
-    _repository.updateBatch(toUpdate);
+    await _repository.updateBatch(toUpdate);
   }
 }

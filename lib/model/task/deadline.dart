@@ -36,8 +36,6 @@ class Deadline with EquatableMixin implements Copyable<Deadline> {
   bool repeatable;
   @Enumerated(EnumType.ordinal)
   Frequency frequency;
-  @Enumerated(EnumType.ordinal)
-  CustomFrequency customFreq;
   List<bool> repeatDays;
   int repeatSkip;
 
@@ -61,7 +59,6 @@ class Deadline with EquatableMixin implements Copyable<Deadline> {
       this.priority = Priority.low,
       this.repeatable = false,
       this.frequency = Frequency.once,
-      this.customFreq = CustomFrequency.weekly,
       required this.repeatDays,
       this.repeatSkip = 1,
       required this.lastUpdated});
@@ -80,7 +77,6 @@ class Deadline with EquatableMixin implements Copyable<Deadline> {
         priority = Priority.values[entity["priority"]],
         repeatable = entity["repeatable"],
         frequency = Frequency.values[entity["frequency"]],
-        customFreq = CustomFrequency.values[entity["customFreq"]],
         repeatDays = entity["repeatDays"] as List<bool>,
         repeatSkip = entity["repeatSkip"] as int,
         lastUpdated = DateTime.parse(entity["lastUpdated"]),
@@ -100,7 +96,6 @@ class Deadline with EquatableMixin implements Copyable<Deadline> {
         "priority": priority.index,
         "repeatable": repeatable,
         "frequency": frequency.index,
-        "customFreq": customFreq.index,
         "repeatDays": repeatDays,
         "repeatSkip": repeatSkip,
         "lastUpdated": lastUpdated.toIso8601String()
@@ -119,7 +114,6 @@ class Deadline with EquatableMixin implements Copyable<Deadline> {
         priority: priority,
         repeatable: repeatable,
         frequency: frequency,
-        customFreq: customFreq,
         repeatDays: List.from(repeatDays),
         repeatSkip: repeatSkip,
         lastUpdated: lastUpdated,
@@ -128,7 +122,7 @@ class Deadline with EquatableMixin implements Copyable<Deadline> {
   @override
   Deadline copyWith(
           {int? repeatID,
-            int? notificationID,
+          int? notificationID,
           String? name,
           String? description,
           DateTime? startDate,
@@ -138,12 +132,11 @@ class Deadline with EquatableMixin implements Copyable<Deadline> {
           Priority? priority,
           bool? repeatable,
           Frequency? frequency,
-          CustomFrequency? customFreq,
           List<bool>? repeatDays,
           int? repeatSkip,
           DateTime? lastUpdated}) =>
       Deadline(
-        repeatID: repeatID ?? this.repeatID,
+          repeatID: repeatID ?? this.repeatID,
           notificationID: notificationID ?? this.notificationID,
           name: name ?? this.name,
           description: description ?? this.description,
@@ -154,7 +147,6 @@ class Deadline with EquatableMixin implements Copyable<Deadline> {
           priority: priority ?? this.priority,
           repeatable: repeatable ?? this.repeatable,
           frequency: frequency ?? this.frequency,
-          customFreq: customFreq ?? this.customFreq,
           repeatDays: List.from(repeatDays ?? this.repeatDays),
           repeatSkip: repeatSkip ?? this.repeatSkip,
           lastUpdated: lastUpdated ?? this.lastUpdated);
@@ -162,8 +154,8 @@ class Deadline with EquatableMixin implements Copyable<Deadline> {
   @ignore
   @override
   List<Object?> get props => [
-    // TODO: This is a current race condition in testing.
-    // ID should be able to be returned once built.
+        // TODO: This is a current race condition in testing.
+        // ID should be able to be returned once built.
         //id,
         notificationID,
         name,
@@ -175,16 +167,16 @@ class Deadline with EquatableMixin implements Copyable<Deadline> {
         priority,
         repeatable,
         frequency,
-        customFreq,
         repeatDays,
         repeatSkip,
         lastUpdated,
       ];
 
   @override
-  String toString() => "Deadline(id: $id, repeatID: $repeatID, customViewIndex: $customViewIndex,"
+  String toString() =>
+      "Deadline(id: $id, repeatID: $repeatID, customViewIndex: $customViewIndex,"
       " name: $name, description: $description, startDate: $startDate, "
       "dueDate $dueDate, warDate: $warnDate, warnMe: $warnMe, priority: "
       "${priority.name}, repeatable: $repeatable, frequency: ${frequency.name}, "
-      "customFreq: ${customFreq.name}, repeatDays: $repeatDays, repeatSkip: $repeatSkip, lastUpdated: $lastUpdated)";
+      "repeatDays: $repeatDays, repeatSkip: $repeatSkip, lastUpdated: $lastUpdated)";
 }
