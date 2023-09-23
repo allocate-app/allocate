@@ -102,9 +102,14 @@ class GroupProvider extends ChangeNotifier {
   }
 
   Future<void> updateGroup() async {
+    await updateGroupAsync();
+    notifyListeners();
+  }
+
+  Future<void> updateGroupAsync() async {
     curGroup!.lastUpdated = DateTime.now();
     try {
-      await _groupService.updateGroup(group: curGroup!);
+      return await _groupService.updateGroup(group: curGroup!);
     } on FailureToUploadException catch (e) {
       log(e.cause);
       return Future.error(e);
@@ -112,7 +117,6 @@ class GroupProvider extends ChangeNotifier {
       log(e.cause);
       return Future.error(e);
     }
-    notifyListeners();
   }
 
   Future<void> deleteGroup() async {

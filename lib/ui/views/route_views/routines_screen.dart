@@ -9,6 +9,7 @@ import '../../../providers/routine_provider.dart';
 import '../../../util/constants.dart';
 import '../../../util/enums.dart';
 import '../../../util/exceptions.dart';
+import '../../../util/numbers.dart';
 import '../../../util/sorting/routine_sorter.dart';
 import '../../widgets/flushbars.dart';
 import '../sub_views/create_routine.dart';
@@ -104,9 +105,11 @@ class _RoutinesListScreen extends State<RoutinesListScreen> {
 
     return OutlinedButton(
       style: OutlinedButton.styleFrom(
-        padding: const EdgeInsets.all(Constants.padding),
-        shape: const CircleBorder(),
-      ),
+          padding: const EdgeInsets.all(Constants.innerPadding),
+          shape: const CircleBorder(),
+          side: BorderSide(
+            color: Theme.of(context).colorScheme.outlineVariant,
+          )),
       onPressed: () async {
         await showDialog<RoutineTime>(
           context: context,
@@ -153,7 +156,7 @@ class _RoutinesListScreen extends State<RoutinesListScreen> {
                             Flexible(
                               child: FittedBox(
                                   fit: BoxFit.fill,
-                                  child: Icon(Icons.schedule_outlined,
+                                  child: Icon(Icons.schedule_rounded,
                                       size: Constants.medIconSize)),
                             ),
                           ],
@@ -305,6 +308,19 @@ class _RoutinesListScreen extends State<RoutinesListScreen> {
     mainScrollController.dispose();
     routineProvider.removeListener(resetPagination);
     super.dispose();
+  }
+
+  Icon getBatteryIcon({required Routine routine}) {
+    // Icon is scaled for sum-weight.
+    int weight = remap(
+            x: routine.weight,
+            inMin: 0,
+            inMax: Constants.maxWeight,
+            outMin: 0,
+            outMax: 5)
+        .toInt();
+
+    return Constants.batteryIcons[weight]!;
   }
 
   @override
@@ -526,6 +542,19 @@ class _RoutinesListScreen extends State<RoutinesListScreen> {
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              getBatteryIcon(routine: provider.routines[index]),
+              AutoSizeText(
+                "${provider.routines[index].weight}",
+                overflow: TextOverflow.visible,
+                minFontSize: Constants.large,
+                softWrap: false,
+                maxLines: 1,
+              ),
+            ],
+          ),
           Padding(
             padding:
                 const EdgeInsets.symmetric(horizontal: Constants.innerPadding),

@@ -226,7 +226,7 @@ class DeadlineService {
 
   Future<void> clearDeletesLocalRepo() async => await _repository.deleteLocal();
 
-  Future<void> deleteFutures({required Deadline deadline}) async =>
+  Future<List<Deadline>> deleteFutures({required Deadline deadline}) async =>
       await _repository.deleteFutures(deleteFrom: deadline);
 
   Future<void> syncRepo() async => await _repository.syncRepo();

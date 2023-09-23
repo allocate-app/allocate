@@ -142,7 +142,7 @@ class ReminderRepo implements ReminderRepository {
   }
 
   @override
-  Future<void> deleteFutures({required Reminder deleteFrom}) async {
+  Future<List<Reminder>> deleteFutures({required Reminder deleteFrom}) async {
     List<Reminder> toDelete = await _isarClient.reminders
         .where()
         .repeatIDEqualTo(deleteFrom.repeatID)
@@ -156,14 +156,8 @@ class ReminderRepo implements ReminderRepository {
         .map((Reminder reminder) => reminder.toDelete = true)
         .toList(growable: false);
 
-    List<int> cancelIDs = toDelete
-        .map((Reminder reminder) => reminder.notificationID!)
-        .toList(growable: false);
-
-    // This is a temporary implementation solution to handle bulk cancelling from repeating reminders.
-    await NotificationService.instance.cancelFutures(ids: cancelIDs);
-
     await updateBatch(toDelete);
+    return toDelete;
   }
 
   @override
@@ -246,7 +240,7 @@ class ReminderRepo implements ReminderRepository {
           _isarClient.reminders.put(reminder);
         }
       });
-
+      //TODO: MOVE THIS TO AN INTERFACE AND CALL FROM THE PROVIDER CLASS.
       resetNotifications();
     });
   }
@@ -257,11 +251,11 @@ class ReminderRepo implements ReminderRepository {
     await NotificationService.instance
         .cancelAllNotifications()
         .whenComplete(() async {
-      final List<Reminder> toSchedule = await getWarnMes();
+      final List<Reminder> toSchedule = await grabWarnMes();
       for (Reminder reminder in toSchedule) {
         String newDue = Jiffy.parseFromDateTime(reminder.dueDate)
             .toLocal()
-            .yMMMMEEEEdjm
+            .format(pattern: "yMMMMEEEEdjm")
             .toString();
 
         NotificationService.instance.scheduleNotification(
@@ -366,14 +360,14 @@ class ReminderRepo implements ReminderRepository {
     }
   }
 
-  // There is probably a better name - all reminders warn.
-  Future<List<Reminder>> getWarnMes({DateTime? now}) async =>
+  @override
+  Future<List<Reminder>> grabWarnMes({DateTime? now, int limit = 10}) async =>
       _isarClient.reminders
           .where()
           .dueDateGreaterThan(now ?? Constants.today)
           // IOS has a hard limit of 64 notificiations.
           .sortByDueDate()
-          .limit(64)
+          .limit(limit)
           .findAll();
 
   @override

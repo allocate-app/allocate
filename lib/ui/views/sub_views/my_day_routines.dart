@@ -158,7 +158,7 @@ class _MyDayRoutines extends State<MyDayRoutines> {
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           border: Border.all(
-              color: Theme.of(context).colorScheme.outline,
+              color: Theme.of(context).colorScheme.outlineVariant,
               strokeAlign: BorderSide.strokeAlignOutside),
         ),
         child: Padding(
@@ -228,7 +228,8 @@ class _MyDayRoutines extends State<MyDayRoutines> {
       color: Colors.transparent,
       shape: RoundedRectangleBorder(
           side: BorderSide(
-              color: Theme.of(context).colorScheme.outline,
+              width: 2,
+              color: Theme.of(context).colorScheme.outlineVariant,
               strokeAlign: BorderSide.strokeAlignInside),
           borderRadius: const BorderRadius.all(
               Radius.circular(Constants.roundedCorners))),
@@ -338,7 +339,8 @@ class _MyDayRoutines extends State<MyDayRoutines> {
       color: Colors.transparent,
       shape: RoundedRectangleBorder(
           side: BorderSide(
-              color: Theme.of(context).colorScheme.outline,
+              width: 2,
+              color: Theme.of(context).colorScheme.outlineVariant,
               strokeAlign: BorderSide.strokeAlignInside),
           borderRadius: const BorderRadius.all(
               Radius.circular(Constants.roundedCorners))),
@@ -389,7 +391,7 @@ class _MyDayRoutines extends State<MyDayRoutines> {
           if (searchHistory.isNotEmpty) {
             return searchHistory
                 .map((MapEntry<String, int> routineData) => ListTile(
-                      leading: const Icon(Icons.history),
+                      leading: const Icon(Icons.history_rounded),
                       title: AutoSizeText(
                         routineData.key,
                         maxLines: 1,
@@ -452,7 +454,7 @@ class _MyDayRoutines extends State<MyDayRoutines> {
       required RoutineTime timeOfDay}) {
     return FutureBuilder(
         future: searchFuture,
-        builder: (context, snapshot) {
+        builder: (BuildContext context, AsyncSnapshot<List<Routine>> snapshot) {
           if (snapshot.connectionState == ConnectionState.done) {
             final List<Routine>? routines = snapshot.data;
             if (null != routines) {

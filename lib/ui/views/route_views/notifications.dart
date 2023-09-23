@@ -1,12 +1,15 @@
 import 'package:another_flushbar/flushbar.dart';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
+import 'package:jiffy/jiffy.dart';
 import 'package:provider/provider.dart';
 
 import '../../../model/task/deadline.dart';
+import '../../../model/task/group.dart';
 import '../../../model/task/reminder.dart';
 import '../../../model/task/todo.dart';
 import '../../../providers/deadline_provider.dart';
+import '../../../providers/group_provider.dart';
 import '../../../providers/reminder_provider.dart';
 import '../../../providers/todo_provider.dart';
 import '../../../util/constants.dart';
@@ -45,6 +48,7 @@ class _NotificationsScreen extends State<NotificationsScreen> {
   late final ToDoProvider toDoProvider;
   late final ReminderProvider reminderProvider;
   late final DeadlineProvider deadlineProvider;
+  late final GroupProvider groupProvider;
 
   late final ScrollController mainScrollController;
   late final ScrollController toDoScrollController;
@@ -77,6 +81,7 @@ class _NotificationsScreen extends State<NotificationsScreen> {
     toDoProvider = Provider.of<ToDoProvider>(context, listen: false);
     reminderProvider = Provider.of<ReminderProvider>(context, listen: false);
     deadlineProvider = Provider.of<DeadlineProvider>(context, listen: false);
+    groupProvider = Provider.of<GroupProvider>(context, listen: false);
 
     toDoProvider.addListener(resetToDoPagination);
     reminderProvider.addListener(resetReminderPagination);
@@ -323,6 +328,41 @@ class _NotificationsScreen extends State<NotificationsScreen> {
     return Constants.batteryIcons[weight]!;
   }
 
+  Widget getReminderIcon({required Reminder reminder}) {
+    Widget icon = (reminder.repeatable)
+        ? const Tooltip(
+            message: "Repeating", child: Icon(Icons.restart_alt_rounded))
+        : const Icon(null);
+    return DecoratedBox(
+      decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: Border.all(
+              color: Theme.of(context).colorScheme.outlineVariant,
+              strokeAlign: BorderSide.strokeAlignOutside)),
+      child: Padding(
+        padding: const EdgeInsets.all(Constants.quarterPadding),
+        child: icon,
+      ),
+    );
+  }
+
+  Widget getDeadlineIcon({required Deadline deadline}) {
+    Widget icon = (deadline.warnMe)
+        ? const Icon(Icons.notifications_rounded)
+        : const Icon(null);
+    return DecoratedBox(
+      decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: Border.all(
+              color: Theme.of(context).colorScheme.outlineVariant,
+              strokeAlign: BorderSide.strokeAlignOutside)),
+      child: Padding(
+        padding: const EdgeInsets.all(Constants.quarterPadding),
+        child: icon,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     bool largeScreen =
@@ -361,13 +401,13 @@ class _NotificationsScreen extends State<NotificationsScreen> {
                       horizontalPadding: Constants.innerPadding,
                       verticalPadding: Constants.innerPadding,
                       title: "Upcoming",
-                      children: buildUpcoming(),
+                      children: buildUpcoming(smallScreen: smallScreen),
                       leading: const Icon(Icons.upcoming_rounded)),
                   buildExpansionTile(
                       horizontalPadding: Constants.innerPadding,
                       verticalPadding: Constants.innerPadding,
                       title: "Overdue",
-                      children: buildOverdue(),
+                      children: buildOverdue(smallScreen: smallScreen),
                       leading: const Icon(Icons.notification_important_rounded))
                 ]),
           )
@@ -387,7 +427,7 @@ class _NotificationsScreen extends State<NotificationsScreen> {
         shape: RoundedRectangleBorder(
             side: BorderSide(
                 color: Theme.of(context).colorScheme.outlineVariant,
-                width: 1.5,
+                width: 2,
                 strokeAlign: BorderSide.strokeAlignInside),
             borderRadius: const BorderRadius.all(
                 Radius.circular(Constants.roundedCorners))),
@@ -416,13 +456,13 @@ class _NotificationsScreen extends State<NotificationsScreen> {
         ));
   }
 
-  List<Widget> buildUpcoming() {
+  List<Widget> buildUpcoming({bool smallScreen = false}) {
     return [
       buildExpansionTile(
           horizontalPadding: Constants.innerPadding,
           title: "Tasks",
           leading: const Icon(Icons.task_rounded),
-          children: [buildUpcomingToDos()]),
+          children: [buildUpcomingToDos(smallScreen: smallScreen)]),
       buildExpansionTile(
           horizontalPadding: Constants.innerPadding,
           title: "Reminders",
@@ -436,13 +476,13 @@ class _NotificationsScreen extends State<NotificationsScreen> {
     ];
   }
 
-  List<Widget> buildOverdue() {
+  List<Widget> buildOverdue({bool smallScreen = false}) {
     return [
       buildExpansionTile(
           horizontalPadding: Constants.innerPadding,
           title: "Tasks",
           leading: const Icon(Icons.task_rounded),
-          children: [buildOverdueToDos()]),
+          children: [buildOverdueToDos(smallScreen: smallScreen)]),
       buildExpansionTile(
           horizontalPadding: Constants.innerPadding,
           title: "Reminders",
@@ -456,7 +496,7 @@ class _NotificationsScreen extends State<NotificationsScreen> {
     ];
   }
 
-  ListView buildUpcomingToDos() {
+  ListView buildUpcomingToDos({bool smallScreen = false}) {
     return ListView(
         physics: const NeverScrollableScrollPhysics(),
         shrinkWrap: true,
@@ -468,7 +508,8 @@ class _NotificationsScreen extends State<NotificationsScreen> {
               shrinkWrap: true,
               itemCount: value.recentToDos.length,
               itemBuilder: (BuildContext context, int index) {
-                return buildToDoListTile(toDo: value.recentToDos[index]);
+                return buildToDoListTile(
+                    toDo: value.recentToDos[index], smallScreen: smallScreen);
               },
             );
           }),
@@ -481,7 +522,7 @@ class _NotificationsScreen extends State<NotificationsScreen> {
         ]);
   }
 
-  Widget buildOverdueToDos() {
+  Widget buildOverdueToDos({bool smallScreen = false}) {
     return ConstrainedBox(
       constraints:
           const BoxConstraints(maxHeight: Constants.maxListHeightBeforeScroll),
@@ -497,7 +538,8 @@ class _NotificationsScreen extends State<NotificationsScreen> {
                 shrinkWrap: true,
                 itemCount: value.toDos.length,
                 itemBuilder: (BuildContext context, int index) {
-                  return buildToDoListTile(toDo: value.toDos[index]);
+                  return buildToDoListTile(
+                      toDo: value.toDos[index], smallScreen: smallScreen);
                 },
               );
             }),
@@ -511,7 +553,7 @@ class _NotificationsScreen extends State<NotificationsScreen> {
     );
   }
 
-  ListTile buildToDoListTile({required ToDo toDo}) {
+  ListTile buildToDoListTile({required ToDo toDo, smallScreen = false}) {
     return ListTile(
         contentPadding:
             const EdgeInsets.symmetric(horizontal: Constants.innerPadding),
@@ -521,28 +563,33 @@ class _NotificationsScreen extends State<NotificationsScreen> {
         leading: Padding(
           padding:
               const EdgeInsets.symmetric(horizontal: Constants.innerPadding),
-          child: Checkbox(
-              shape: const CircleBorder(),
-              splashRadius: 15,
-              value: toDo.completed,
-              onChanged: (bool? completed) async {
-                toDo.completed = completed!;
-                toDoProvider.curToDo = toDo;
-                await toDoProvider.updateToDo().catchError((e) {
-                  Flushbar? error;
+          child: Transform.scale(
+            scale: (smallScreen)
+                ? Constants.largeCheckboxMinScale
+                : Constants.largeCheckboxScale,
+            child: Checkbox(
+                shape: const CircleBorder(),
+                splashRadius: 15,
+                value: toDo.completed,
+                onChanged: (bool? completed) async {
+                  toDo.completed = completed!;
+                  toDoProvider.curToDo = toDo;
+                  await toDoProvider.updateToDo().catchError((e) {
+                    Flushbar? error;
 
-                  error = Flushbars.createError(
-                    message: e.cause,
-                    context: context,
-                    dismissCallback: () => error?.dismiss(),
-                  );
+                    error = Flushbars.createError(
+                      message: e.cause,
+                      context: context,
+                      dismissCallback: () => error?.dismiss(),
+                    );
 
-                  error.show(context);
-                },
-                    test: (e) =>
-                        e is FailureToCreateException ||
-                        e is FailureToUploadException);
-              }),
+                    error.show(context);
+                  },
+                      test: (e) =>
+                          e is FailureToCreateException ||
+                          e is FailureToUploadException);
+                }),
+          ),
         ),
         title: AutoSizeText(toDo.name,
             overflow: TextOverflow.visible,
@@ -550,6 +597,7 @@ class _NotificationsScreen extends State<NotificationsScreen> {
             minFontSize: Constants.medium,
             softWrap: true,
             maxLines: 1),
+        subtitle: buildToDoSubtitle(toDo: toDo),
         onTap: () async {
           toDoProvider.curToDo = toDo;
           await showDialog(
@@ -634,19 +682,25 @@ class _NotificationsScreen extends State<NotificationsScreen> {
     );
   }
 
-  buildReminderListTile({required Reminder reminder}) {
+  Widget buildReminderListTile({required Reminder reminder}) {
     return ListTile(
         contentPadding:
             const EdgeInsets.symmetric(horizontal: Constants.innerPadding),
         shape: const RoundedRectangleBorder(
             borderRadius:
                 BorderRadius.all(Radius.circular(Constants.roundedCorners))),
+        leading: Padding(
+          padding:
+              const EdgeInsets.symmetric(horizontal: Constants.innerPadding),
+          child: getReminderIcon(reminder: reminder),
+        ),
         title: AutoSizeText(reminder.name,
             overflow: TextOverflow.visible,
             style: Constants.headerStyle,
             minFontSize: Constants.medium,
             softWrap: true,
             maxLines: 1),
+        subtitle: buildReminderSubtitle(reminder: reminder),
         onTap: () async {
           reminderProvider.curReminder = reminder;
           await showDialog(
@@ -714,16 +768,18 @@ class _NotificationsScreen extends State<NotificationsScreen> {
     );
   }
 
-  buildDeadlineListTile({required Deadline deadline}) {
+  Widget buildDeadlineListTile({required Deadline deadline}) {
     return ListTile(
         contentPadding:
             const EdgeInsets.symmetric(horizontal: Constants.innerPadding),
         shape: const RoundedRectangleBorder(
             borderRadius:
                 BorderRadius.all(Radius.circular(Constants.roundedCorners))),
-        leading: (deadline.warnMe)
-            ? const Icon(Icons.notifications_rounded)
-            : const Icon(null),
+        leading: Padding(
+          padding:
+              const EdgeInsets.symmetric(horizontal: Constants.innerPadding),
+          child: getDeadlineIcon(deadline: deadline),
+        ),
         title: AutoSizeText(
           deadline.name,
           overflow: TextOverflow.visible,
@@ -732,6 +788,7 @@ class _NotificationsScreen extends State<NotificationsScreen> {
           softWrap: true,
           maxLines: 1,
         ),
+        subtitle: buildDeadlineSubtitle(deadline: deadline),
         onTap: () async {
           deadlineProvider.curDeadline = deadline;
           await showDialog(
@@ -740,5 +797,135 @@ class _NotificationsScreen extends State<NotificationsScreen> {
               context: context,
               builder: (BuildContext context) => const UpdateDeadlineScreen());
         });
+  }
+
+  Widget buildToDoSubtitle({required ToDo toDo}) {
+    return Wrap(
+        spacing: Constants.halfPadding,
+        runSpacing: Constants.halfPadding,
+        children: [
+          buildGroupName(id: toDo.groupID),
+          buildDueDate(dueDate: toDo.dueDate),
+          buildPriorityIcon(priority: toDo.priority)
+        ]);
+  }
+
+  Widget buildDeadlineSubtitle({required Deadline deadline}) {
+    return Wrap(
+        spacing: Constants.halfPadding,
+        runSpacing: Constants.halfPadding,
+        children: [
+          buildDueDate(dueDate: deadline.dueDate),
+          (deadline.warnMe)
+              ? buildWarnDate(warnDate: deadline.warnDate)
+              : const SizedBox.shrink(),
+          buildPriorityIcon(priority: deadline.priority)
+        ]);
+  }
+
+  Widget buildReminderSubtitle({required Reminder reminder}) {
+    return Wrap(
+        spacing: Constants.halfPadding,
+        runSpacing: Constants.halfPadding,
+        children: [
+          buildDueDate(dueDate: reminder.dueDate),
+          buildDueTime(dueDate: reminder.dueDate)
+        ]);
+  }
+
+  Widget buildGroupName({int? id}) {
+    if (null == id) {
+      return const SizedBox.shrink();
+    }
+    return FutureBuilder(
+      future: groupProvider.getGroupByID(id: id),
+      builder: (BuildContext context, AsyncSnapshot<Group?> snapshot) {
+        if (snapshot.connectionState == ConnectionState.done) {
+          Group? group = snapshot.data;
+          if (null != group) {
+            return DecoratedBox(
+              decoration: BoxDecoration(
+                  shape: BoxShape.rectangle,
+                  borderRadius: const BorderRadius.all(
+                      Radius.circular(Constants.roundedCorners)),
+                  border: Border.all(
+                      color: Theme.of(context).colorScheme.outlineVariant,
+                      strokeAlign: BorderSide.strokeAlignOutside)),
+              child: Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: Constants.padding),
+                child: AutoSizeText(
+                  group.name,
+                  minFontSize: Constants.medium,
+                  overflow: TextOverflow.ellipsis,
+                  softWrap: false,
+                  maxLines: 1,
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            );
+          }
+          return const SizedBox.shrink();
+        }
+        return ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 50),
+          child: const LinearProgressIndicator(
+            minHeight: Constants.minIconSize,
+            borderRadius:
+                BorderRadius.all(Radius.circular(Constants.roundedCorners)),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget buildDueDate({required DateTime dueDate}) {
+    return Wrap(spacing: Constants.halfPadding, children: [
+      const Icon(Icons.event_rounded, size: Constants.minIconSize),
+      AutoSizeText(
+          Jiffy.parseFromDateTime(dueDate).toLocal().format(pattern: "MMM d"),
+          softWrap: false,
+          overflow: TextOverflow.visible,
+          maxLines: 2,
+          maxFontSize: Constants.large,
+          minFontSize: Constants.small)
+    ]);
+  }
+
+  Widget buildPriorityIcon({required Priority priority}) {
+    return switch (priority) {
+      Priority.low =>
+        const Tooltip(message: "Low", child: Icon(Icons.low_priority_rounded)),
+      Priority.medium => const Tooltip(
+          message: "Medium", child: Icon(Icons.outlined_flag_rounded)),
+      Priority.high => const Tooltip(
+          message: "High", child: Icon(Icons.priority_high_rounded)),
+    };
+  }
+
+  Widget buildWarnDate({required DateTime warnDate}) {
+    return Wrap(spacing: Constants.halfPadding, children: [
+      const Icon(Icons.notifications_on_rounded, size: Constants.minIconSize),
+      AutoSizeText(
+          Jiffy.parseFromDateTime(warnDate).toLocal().format(pattern: "MMM d"),
+          softWrap: false,
+          overflow: TextOverflow.visible,
+          maxLines: 2,
+          maxFontSize: Constants.large,
+          minFontSize: Constants.small)
+    ]);
+  }
+
+  Widget buildDueTime({required DateTime dueDate}) {
+    return Wrap(spacing: Constants.halfPadding, children: [
+      const Icon(Icons.schedule_rounded, size: Constants.minIconSize),
+      AutoSizeText(
+          Jiffy.parseFromDateTime(dueDate).toLocal().format(pattern: "hh:mm a"),
+          softWrap: false,
+          overflow: TextOverflow.visible,
+          maxLines: 2,
+          maxFontSize: Constants.large,
+          minFontSize: Constants.small)
+    ]);
   }
 }

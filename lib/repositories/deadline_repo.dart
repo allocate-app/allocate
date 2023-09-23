@@ -145,7 +145,7 @@ class DeadlineRepo implements DeadlineRepository {
   }
 
   @override
-  Future<void> deleteFutures({required Deadline deleteFrom}) async {
+  Future<List<Deadline>> deleteFutures({required Deadline deleteFrom}) async {
     List<Deadline> toDelete = await _isarClient.deadlines
         .where()
         .repeatIDEqualTo(deleteFrom.repeatID)
@@ -157,14 +157,8 @@ class DeadlineRepo implements DeadlineRepository {
     toDelete.remove(deleteFrom);
     toDelete.map((Deadline deadline) => deadline.toDelete = true).toList();
 
-    List<int> cancelIDs = toDelete
-        .map((Deadline deadline) => deadline.notificationID!)
-        .toList(growable: false);
-
-    // This is a temporary implementation solution to handle bulk cancelling from repeating deadlines.
-    await NotificationService.instance.cancelFutures(ids: cancelIDs);
-
     await updateBatch(toDelete);
+    return toDelete;
   }
 
   @override
@@ -259,7 +253,7 @@ class DeadlineRepo implements DeadlineRepository {
     await NotificationService.instance
         .cancelAllNotifications()
         .whenComplete(() async {
-      final List<Deadline> toSchedule = await getWarnMes();
+      final List<Deadline> toSchedule = await grabWarnMes();
       for (Deadline deadline in toSchedule) {
         String newDue = Jiffy.parseFromDateTime(deadline.dueDate)
             .toLocal()
@@ -394,7 +388,8 @@ class DeadlineRepo implements DeadlineRepository {
     }
   }
 
-  Future<List<Deadline>> getWarnMes({DateTime? now}) async =>
+  @override
+  Future<List<Deadline>> grabWarnMes({DateTime? now, int limit = 10}) async =>
       _isarClient.deadlines
           .where()
           .warnMeEqualTo(true)
@@ -402,7 +397,7 @@ class DeadlineRepo implements DeadlineRepository {
           .dueDateGreaterThan(now ?? Constants.today)
           // IOS has a hard limit of 64 notificiations.
           .sortByDueDate()
-          .limit(64)
+          .limit(limit)
           .findAll();
 
   @override

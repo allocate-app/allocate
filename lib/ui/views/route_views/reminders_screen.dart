@@ -137,11 +137,42 @@ class _RemindersListScreen extends State<RemindersListScreen> {
   }
 
   Widget getReminderIcon({required Reminder reminder}) {
-    // TODO: factor value to constants class.
-    if (Jiffy.parseFromDateTime(reminder.dueDate).diff(Jiffy.now()) < 3) {
-      return const Icon(Icons.upcoming_outlined);
-    }
-    return const Icon(null);
+    Widget icon = (reminder.repeatable)
+        ? const Tooltip(
+            message: "Repeating", child: Icon(Icons.restart_alt_rounded))
+        : const Icon(null);
+    return DecoratedBox(
+      decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: Border.all(
+              color: Theme.of(context).colorScheme.outlineVariant,
+              strokeAlign: BorderSide.strokeAlignOutside)),
+      child: Padding(
+        padding: const EdgeInsets.all(Constants.padding),
+        child: icon,
+      ),
+    );
+  }
+
+  Future<void> handleDelete(
+      {required ReminderProvider provider,
+      required int index,
+      required BuildContext context}) async {
+    provider.curReminder = provider.reminders[index];
+
+    await provider.deleteReminder().catchError((e) {
+      Flushbar? error;
+
+      error = Flushbars.createError(
+        message: e.cause,
+        context: context,
+        dismissCallback: () => error?.dismiss(),
+      );
+
+      error.show(context);
+    },
+        test: (e) =>
+            e is FailureToDeleteException || e is FailureToUploadException);
   }
 
   @override
@@ -216,7 +247,7 @@ class _RemindersListScreen extends State<RemindersListScreen> {
             builder: (BuildContext context) => const CreateReminderScreen(),
           ),
           leading: CircleAvatar(
-            child: Icon(Icons.add_outlined,
+            child: Icon(Icons.add_rounded,
                 color: Theme.of(context).colorScheme.onSurfaceVariant),
           ),
           title: const AutoSizeText(
@@ -350,6 +381,7 @@ class _RemindersListScreen extends State<RemindersListScreen> {
           minFontSize: Constants.medium,
           softWrap: true,
           maxLines: 1),
+      subtitle: buildSubtitle(reminder: provider.reminders[index]),
       onTap: () async {
         provider.curReminder = provider.reminders[index];
         await showDialog(
@@ -365,7 +397,7 @@ class _RemindersListScreen extends State<RemindersListScreen> {
             padding:
                 const EdgeInsets.symmetric(horizontal: Constants.innerPadding),
             child: IconButton(
-                icon: const Icon(Icons.delete_forever),
+                icon: const Icon(Icons.delete_forever_rounded),
                 onPressed: () async {
                   if (checkDelete) {
                     return await showDialog<bool?>(
@@ -527,24 +559,39 @@ class _RemindersListScreen extends State<RemindersListScreen> {
     );
   }
 
-  Future<void> handleDelete(
-      {required ReminderProvider provider,
-      required int index,
-      required BuildContext context}) async {
-    provider.curReminder = provider.reminders[index];
+  Widget buildSubtitle({required Reminder reminder}) {
+    return Wrap(
+        spacing: Constants.halfPadding,
+        runSpacing: Constants.halfPadding,
+        children: [
+          buildDueDate(dueDate: reminder.dueDate),
+          buildDueTime(dueDate: reminder.dueDate)
+        ]);
+  }
 
-    await provider.deleteReminder().catchError((e) {
-      Flushbar? error;
+  Widget buildDueDate({required DateTime dueDate}) {
+    return Wrap(spacing: Constants.halfPadding, children: [
+      const Icon(Icons.event_rounded, size: Constants.minIconSize),
+      AutoSizeText(
+          Jiffy.parseFromDateTime(dueDate).toLocal().format(pattern: "MMM d"),
+          softWrap: false,
+          overflow: TextOverflow.visible,
+          maxLines: 2,
+          maxFontSize: Constants.large,
+          minFontSize: Constants.small)
+    ]);
+  }
 
-      error = Flushbars.createError(
-        message: e.cause,
-        context: context,
-        dismissCallback: () => error?.dismiss(),
-      );
-
-      error.show(context);
-    },
-        test: (e) =>
-            e is FailureToDeleteException || e is FailureToUploadException);
+  Widget buildDueTime({required DateTime dueDate}) {
+    return Wrap(spacing: Constants.halfPadding, children: [
+      const Icon(Icons.schedule_rounded, size: Constants.minIconSize),
+      AutoSizeText(
+          Jiffy.parseFromDateTime(dueDate).toLocal().format(pattern: "hh:mm a"),
+          softWrap: false,
+          overflow: TextOverflow.visible,
+          maxLines: 2,
+          maxFontSize: Constants.large,
+          minFontSize: Constants.small)
+    ]);
   }
 }

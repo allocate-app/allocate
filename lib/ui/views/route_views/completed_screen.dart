@@ -2,9 +2,12 @@ import 'package:another_flushbar/flushbar.dart';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:jiffy/jiffy.dart';
 import 'package:provider/provider.dart';
 
+import '../../../model/task/group.dart';
 import '../../../model/task/todo.dart';
+import '../../../providers/group_provider.dart';
 import '../../../providers/todo_provider.dart';
 import '../../../util/constants.dart';
 import '../../../util/enums.dart';
@@ -28,6 +31,7 @@ class _CompletedListScreen extends State<CompletedListScreen> {
   late int offset;
 
   late final ToDoProvider toDoProvider;
+  late final GroupProvider groupProvider;
 
   late final ScrollController mainScrollController;
   late final ScrollPhysics scrollPhysics;
@@ -47,6 +51,7 @@ class _CompletedListScreen extends State<CompletedListScreen> {
 
   void initializeProviders() {
     toDoProvider = Provider.of<ToDoProvider>(context, listen: false);
+    groupProvider = Provider.of<GroupProvider>(context, listen: false);
 
     toDoProvider.addListener(resetPagination);
   }
@@ -147,6 +152,27 @@ class _CompletedListScreen extends State<CompletedListScreen> {
             .toInt();
 
     return Constants.batteryIcons[weight]!;
+  }
+
+  Future<void> handleDelete(
+      {required ToDoProvider provider,
+      required int index,
+      required BuildContext context}) async {
+    provider.curToDo = provider.toDos[index];
+
+    await provider.deleteToDo().catchError((e) {
+      Flushbar? error;
+
+      error = Flushbars.createError(
+        message: e.cause,
+        context: context,
+        dismissCallback: () => error?.dismiss(),
+      );
+
+      error.show(context);
+    },
+        test: (e) =>
+            e is FailureToDeleteException || e is FailureToUploadException);
   }
 
   @override
@@ -363,6 +389,7 @@ class _CompletedListScreen extends State<CompletedListScreen> {
             minFontSize: Constants.medium,
             softWrap: true,
             maxLines: 1),
+        subtitle: buildSubtitle(toDo: provider.toDos[index]),
         onTap: () async {
           provider.curToDo = provider.toDos[index];
           await showDialog(
@@ -391,7 +418,7 @@ class _CompletedListScreen extends State<CompletedListScreen> {
               padding: const EdgeInsets.symmetric(
                   horizontal: Constants.innerPadding),
               child: IconButton(
-                  icon: const Icon(Icons.delete_forever),
+                  icon: const Icon(Icons.delete_forever_rounded),
                   onPressed: () async {
                     if (checkDelete) {
                       return await showDialog<bool?>(
@@ -563,24 +590,84 @@ class _CompletedListScreen extends State<CompletedListScreen> {
         ));
   }
 
-  Future<void> handleDelete(
-      {required ToDoProvider provider,
-      required int index,
-      required BuildContext context}) async {
-    provider.curToDo = provider.toDos[index];
+  Widget buildSubtitle({required ToDo toDo}) {
+    return Wrap(
+        spacing: Constants.halfPadding,
+        runSpacing: Constants.halfPadding,
+        children: [
+          buildGroupName(id: toDo.groupID),
+          buildDueDate(dueDate: toDo.dueDate),
+          buildPriorityIcon(priority: toDo.priority)
+        ]);
+  }
 
-    await provider.deleteToDo().catchError((e) {
-      Flushbar? error;
+  Widget buildGroupName({int? id}) {
+    if (null == id) {
+      return const SizedBox.shrink();
+    }
+    return FutureBuilder(
+      future: groupProvider.getGroupByID(id: id),
+      builder: (BuildContext context, AsyncSnapshot<Group?> snapshot) {
+        if (snapshot.connectionState == ConnectionState.done) {
+          Group? group = snapshot.data;
+          if (null != group) {
+            return DecoratedBox(
+              decoration: BoxDecoration(
+                  shape: BoxShape.rectangle,
+                  borderRadius: const BorderRadius.all(
+                      Radius.circular(Constants.roundedCorners)),
+                  border: Border.all(
+                      color: Theme.of(context).colorScheme.outlineVariant,
+                      strokeAlign: BorderSide.strokeAlignOutside)),
+              child: Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: Constants.padding),
+                child: AutoSizeText(
+                  group.name,
+                  minFontSize: Constants.medium,
+                  overflow: TextOverflow.ellipsis,
+                  softWrap: false,
+                  maxLines: 1,
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            );
+          }
+          return const SizedBox.shrink();
+        }
+        return ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 50),
+          child: const LinearProgressIndicator(
+            minHeight: Constants.minIconSize,
+            borderRadius:
+                BorderRadius.all(Radius.circular(Constants.roundedCorners)),
+          ),
+        );
+      },
+    );
+  }
 
-      error = Flushbars.createError(
-        message: e.cause,
-        context: context,
-        dismissCallback: () => error?.dismiss(),
-      );
+  Widget buildDueDate({required DateTime dueDate}) {
+    return Wrap(spacing: Constants.halfPadding, children: [
+      const Icon(Icons.event_rounded, size: Constants.minIconSize),
+      AutoSizeText(
+          Jiffy.parseFromDateTime(dueDate).toLocal().format(pattern: "MMM d"),
+          softWrap: false,
+          overflow: TextOverflow.visible,
+          maxLines: 2,
+          maxFontSize: Constants.large,
+          minFontSize: Constants.small)
+    ]);
+  }
 
-      error.show(context);
-    },
-        test: (e) =>
-            e is FailureToDeleteException || e is FailureToUploadException);
+  Widget buildPriorityIcon({required Priority priority}) {
+    return switch (priority) {
+      Priority.low =>
+        const Tooltip(message: "Low", child: Icon(Icons.low_priority_rounded)),
+      Priority.medium => const Tooltip(
+          message: "Medium", child: Icon(Icons.outlined_flag_rounded)),
+      Priority.high => const Tooltip(
+          message: "High", child: Icon(Icons.priority_high_rounded)),
+    };
   }
 }

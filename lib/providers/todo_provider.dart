@@ -137,7 +137,6 @@ class ToDoProvider extends ChangeNotifier {
     realDuration = realDuration ??
         _toDoService.calculateRealDuration(
             weight: weight, duration: expectedDuration);
-//TODO: add zeroing logic to model
     startDate =
         startDate?.copyWith(second: 0, microsecond: 0, millisecond: 0) ??
             DateTime.now().copyWith(
@@ -177,14 +176,14 @@ class ToDoProvider extends ChangeNotifier {
     }
 
     try {
-      _toDoService.createToDo(toDo: curToDo!);
+      await _toDoService.createToDo(toDo: curToDo!);
     } on FailureToCreateException catch (e) {
       log(e.cause);
       return Future.error(e);
     } on FailureToUploadException catch (e) {
       log(e.cause);
       curToDo!.isSynced = false;
-      return updateToDo();
+      return await updateToDo();
     }
     notifyListeners();
   }
@@ -254,7 +253,7 @@ class ToDoProvider extends ChangeNotifier {
 
   Future<void> checkRepeating({DateTime? now}) async {
     try {
-      _toDoService.checkRepeating(now: now ?? DateTime.now());
+      await _toDoService.checkRepeating(now: now ?? DateTime.now());
     } on FailureToUpdateException catch (e) {
       log(e.cause);
       return Future.error(e);
@@ -266,7 +265,7 @@ class ToDoProvider extends ChangeNotifier {
 
   Future<void> nextRepeat({ToDo? toDo}) async {
     try {
-      _toDoService.nextRepeatable(toDo: toDo ?? curToDo!);
+      await _toDoService.nextRepeatable(toDo: toDo ?? curToDo!);
     } on FailureToUpdateException catch (e) {
       log(e.cause);
       return Future.error(e);
@@ -288,16 +287,24 @@ class ToDoProvider extends ChangeNotifier {
     }
   }
 
-  // TODO: Finish testing - Hold off -> May not be needed.
-  // Will be populated on calendar view.
-  Future<void> populateCalendar({DateTime? limit}) async =>
-      _toDoService.populateCalendar(limit: limit ?? DateTime.now());
+  Future<void> populateCalendar({DateTime? limit}) async {
+    try {
+      return await _toDoService.populateCalendar(
+          limit: limit ?? DateTime.now());
+    } on FailureToUpdateException catch (e) {
+      log(e.cause);
+      return Future.error(e);
+    } on FailureToUploadException catch (e) {
+      log(e.cause);
+      return Future.error(e);
+    }
+  }
 
-  Future<List<ToDo>> getOverdues({int limit = 50, int offset = 0}) =>
-      _toDoService.getOverdues(limit: limit, offset: offset);
+  Future<List<ToDo>> getOverdues({int limit = 50, int offset = 0}) async =>
+      await _toDoService.getOverdues(limit: limit, offset: offset);
 
-  Future<List<ToDo>> getUpcoming({int limit = 5, int offset = 0}) =>
-      _toDoService.getUpcoming(limit: limit, offset: offset);
+  Future<List<ToDo>> getUpcoming({int limit = 5, int offset = 0}) async =>
+      await _toDoService.getUpcoming(limit: limit, offset: offset);
 
   Future<List<ToDo>> searchToDos({required String searchString}) async =>
       _toDoService.searchToDos(searchString: searchString);

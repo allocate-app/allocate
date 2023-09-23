@@ -7,8 +7,10 @@ import 'package:intl/intl.dart';
 import 'package:jiffy/jiffy.dart';
 import 'package:provider/provider.dart';
 
+import '../../../model/task/group.dart';
 import '../../../model/task/subtask.dart';
 import '../../../model/task/todo.dart';
+import '../../../providers/group_provider.dart';
 import '../../../providers/todo_provider.dart';
 import '../../../providers/user_provider.dart';
 import '../../../util/constants.dart';
@@ -34,6 +36,7 @@ class _MyDayToDos extends State<MyDayToDos> {
 
   late final ToDoProvider toDoProvider;
   late final UserProvider userProvider;
+  late final GroupProvider groupProvider;
 
   late final ScrollController mainScrollController;
   late final ScrollPhysics scrollPhysics;
@@ -54,6 +57,7 @@ class _MyDayToDos extends State<MyDayToDos> {
   void initializeProviders() {
     toDoProvider = Provider.of<ToDoProvider>(context, listen: false);
     userProvider = Provider.of<UserProvider>(context, listen: false);
+    groupProvider = Provider.of<GroupProvider>(context, listen: false);
 
     toDoProvider.addListener(resetPagination);
   }
@@ -427,6 +431,7 @@ class _MyDayToDos extends State<MyDayToDos> {
               minFontSize: Constants.medium,
               softWrap: true,
               maxLines: 1),
+          subtitle: buildSubtitle(toDo: toDo),
           onTap: () async {
             provider.curToDo = provider.toDos[index];
             await showDialog(
@@ -536,6 +541,7 @@ class _MyDayToDos extends State<MyDayToDos> {
             minFontSize: Constants.medium,
             softWrap: true,
             maxLines: 1),
+        subtitle: buildSubtitle(toDo: toDo),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -635,49 +641,59 @@ class _MyDayToDos extends State<MyDayToDos> {
                         context: context,
                         builder: (BuildContext context) {
                           return StatefulBuilder(
-                            builder: (context, setState) => Center(
-                                heightFactor: 1,
-                                child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      const Text("Step Drain",
-                                          style: Constants.headerStyle),
-                                      Padding(
-                                          padding: const EdgeInsets.all(
-                                              Constants.padding),
-                                          child: Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.spaceEvenly,
-                                            children: [
-                                              const Icon(Icons.battery_full),
-                                              Expanded(
-                                                child: Slider(
-                                                  value: cacheSubTasks[index]
-                                                      .weight
-                                                      .toDouble(),
-                                                  max: Constants.maxTaskWeight
-                                                      .toDouble(),
-                                                  label: (cacheSubTasks[index]
-                                                              .weight >
-                                                          (Constants.maxTaskWeight /
-                                                                  2)
-                                                              .floor())
-                                                      ? " ${cacheSubTasks[index].weight} ${Constants.lowBattery}"
-                                                      : " ${cacheSubTasks[index].weight} ${Constants.fullBattery}",
-                                                  divisions:
-                                                      Constants.maxTaskWeight,
-                                                  onChanged: (value) =>
-                                                      setState(() {
-                                                    cacheSubTasks[index]
-                                                        .weight = value.toInt();
-                                                  }),
-                                                ),
-                                              ),
-                                              const Icon(Icons.battery_1_bar),
-                                            ],
-                                          )),
-                                    ])),
+                            builder: (BuildContext context,
+                                    void Function(void Function()) setState) =>
+                                Center(
+                                    heightFactor: 1,
+                                    child: Column(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          const Text("Step Drain",
+                                              style: Constants.headerStyle),
+                                          Padding(
+                                              padding: const EdgeInsets.all(
+                                                  Constants.padding),
+                                              child: Row(
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment
+                                                        .spaceEvenly,
+                                                children: [
+                                                  const Icon(
+                                                      Icons.battery_full),
+                                                  Expanded(
+                                                    child: Slider(
+                                                      value:
+                                                          cacheSubTasks[index]
+                                                              .weight
+                                                              .toDouble(),
+                                                      max: Constants
+                                                          .maxTaskWeight
+                                                          .toDouble(),
+                                                      label: (cacheSubTasks[
+                                                                      index]
+                                                                  .weight >
+                                                              (Constants.maxTaskWeight /
+                                                                      2)
+                                                                  .floor())
+                                                          ? " ${cacheSubTasks[index].weight} ${Constants.lowBattery}"
+                                                          : " ${cacheSubTasks[index].weight} ${Constants.fullBattery}",
+                                                      divisions: Constants
+                                                          .maxTaskWeight,
+                                                      onChanged: (value) =>
+                                                          setState(() {
+                                                        cacheSubTasks[index]
+                                                                .weight =
+                                                            value.toInt();
+                                                      }),
+                                                    ),
+                                                  ),
+                                                  const Icon(Icons
+                                                      .battery_1_bar_rounded),
+                                                ],
+                                              )),
+                                        ])),
                           );
                         }).whenComplete(() => setState(() {
                           toDo.weight = toDoProvider.calculateWeight(
@@ -721,7 +737,7 @@ class _MyDayToDos extends State<MyDayToDos> {
                   padding: const EdgeInsets.symmetric(
                       horizontal: Constants.innerPadding),
                   child: IconButton(
-                      icon: const Icon(Icons.delete),
+                      icon: const Icon(Icons.delete_rounded),
                       onPressed: () => setState(() {
                             SubTask st = cacheSubTasks.removeAt(index);
                             st = SubTask();
@@ -749,5 +765,86 @@ class _MyDayToDos extends State<MyDayToDos> {
         });
       },
     );
+  }
+
+  Widget buildSubtitle({required ToDo toDo}) {
+    return Wrap(
+        spacing: Constants.halfPadding,
+        runSpacing: Constants.halfPadding,
+        children: [
+          buildGroupName(id: toDo.groupID),
+          buildDueDate(dueDate: toDo.dueDate),
+          buildPriorityIcon(priority: toDo.priority)
+        ]);
+  }
+
+  Widget buildGroupName({int? id}) {
+    if (null == id) {
+      return const SizedBox.shrink();
+    }
+    return FutureBuilder(
+      future: groupProvider.getGroupByID(id: id),
+      builder: (BuildContext context, AsyncSnapshot<Group?> snapshot) {
+        if (snapshot.connectionState == ConnectionState.done) {
+          Group? group = snapshot.data;
+          if (null != group) {
+            return DecoratedBox(
+              decoration: BoxDecoration(
+                  shape: BoxShape.rectangle,
+                  borderRadius: const BorderRadius.all(
+                      Radius.circular(Constants.roundedCorners)),
+                  border: Border.all(
+                      color: Theme.of(context).colorScheme.outlineVariant,
+                      strokeAlign: BorderSide.strokeAlignOutside)),
+              child: Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: Constants.padding),
+                child: AutoSizeText(
+                  group.name,
+                  minFontSize: Constants.medium,
+                  overflow: TextOverflow.ellipsis,
+                  softWrap: false,
+                  maxLines: 1,
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            );
+          }
+          return const SizedBox.shrink();
+        }
+        return ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 50),
+          child: const LinearProgressIndicator(
+            minHeight: Constants.minIconSize,
+            borderRadius:
+                BorderRadius.all(Radius.circular(Constants.roundedCorners)),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget buildDueDate({required DateTime dueDate}) {
+    return Wrap(spacing: Constants.halfPadding, children: [
+      const Icon(Icons.event_rounded, size: Constants.minIconSize),
+      AutoSizeText(
+          Jiffy.parseFromDateTime(dueDate).toLocal().format(pattern: "MMM d"),
+          softWrap: false,
+          overflow: TextOverflow.visible,
+          maxLines: 2,
+          maxFontSize: Constants.large,
+          minFontSize: Constants.small)
+    ]);
+  }
+
+  Widget buildPriorityIcon({required Priority priority}) {
+    return switch (priority) {
+      Priority.low =>
+        const Tooltip(message: "Low", child: Icon(Icons.low_priority_rounded)),
+      Priority.medium => const Tooltip(
+          message: "Medium", child: Icon(Icons.outlined_flag_rounded)),
+      Priority.high => const Tooltip(
+          message: "High", child: Icon(Icons.priority_high_rounded)),
+    };
   }
 }

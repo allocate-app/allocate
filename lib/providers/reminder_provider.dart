@@ -93,9 +93,13 @@ class ReminderProvider extends ChangeNotifier {
     int? repeatSkip,
     Frequency? frequency,
   }) async {
-    dueDate = dueDate ??
-        DateTime.now()
-            .copyWith(hour: Constants.eod.hour, minute: Constants.eod.minute);
+    dueDate = dueDate?.copyWith(second: 0, microsecond: 0, millisecond: 0) ??
+        DateTime.now().copyWith(
+            hour: Constants.eod.hour,
+            minute: Constants.eod.minute,
+            second: 0,
+            microsecond: 0,
+            millisecond: 0);
     if (DateTime.now().isAfter(dueDate)) {
       dueDate = dueDate.copyWith(
           day: dueDate.day + 1,
@@ -129,20 +133,28 @@ class ReminderProvider extends ChangeNotifier {
     } on FailureToUploadException catch (e) {
       log(e.cause);
       curReminder!.isSynced = false;
-      return updateReminder();
+      return await updateReminder();
     }
     notifyListeners();
   }
 
   Future<void> updateReminder() async {
+    await updateReminderAsync();
+    notifyListeners();
+  }
+
+  Future<void> updateReminderAsync() async {
     curReminder!.lastUpdated = DateTime.now();
+    if (curReminder!.repeatable && null == curReminder!.repeatID) {
+      curReminder!.repeatID = curReminder!.hashCode;
+    }
     await cancelNotification();
     if (validateWarnDate()) {
-      scheduleNotification();
+      await scheduleNotification();
     }
 
     try {
-      await _reminderService.updateReminder(reminder: curReminder!);
+      return await _reminderService.updateReminder(reminder: curReminder!);
     } on FailureToUploadException catch (e) {
       log(e.cause);
       return Future.error(e);
@@ -151,7 +163,6 @@ class ReminderProvider extends ChangeNotifier {
       cancelNotification();
       return Future.error(e);
     }
-    notifyListeners();
   }
 
   Future<void> deleteReminder({Reminder? reminder}) async {
@@ -179,18 +190,63 @@ class ReminderProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> checkRepeating({DateTime? now}) async =>
+  Future<void> checkRepeating({DateTime? now}) async {
+    try {
       await _reminderService.checkRepeating(now: now ?? DateTime.now());
+    } on FailureToUpdateException catch (e) {
+      log(e.cause);
+      return Future.error(e);
+    } on FailureToUploadException catch (e) {
+      log(e.cause);
+      return Future.error(e);
+    }
+  }
 
-  Future<void> nextRepeat({Reminder? reminder}) async =>
+  Future<void> nextRepeat({Reminder? reminder}) async {
+    try {
       await _reminderService.nextRepeatable(reminder: reminder ?? curReminder!);
+    } on FailureToUpdateException catch (e) {
+      log(e.cause);
+      return Future.error(e);
+    } on FailureToUploadException catch (e) {
+      log(e.cause);
+      return Future.error(e);
+    }
+  }
 
-  // This also cancels upcoming notifications.-- TODO: This needs a try catch block.
-  Future<void> deleteFutures({Reminder? reminder}) async =>
-      await _reminderService.deleteFutures(reminder: reminder ?? curReminder!);
+  Future<List<Reminder>> deleteFutures({Reminder? reminder}) async {
+    try {
+      return await _reminderService.deleteFutures(
+          reminder: reminder ?? curReminder!);
+    } on FailureToUpdateException catch (e) {
+      log(e.cause);
+      return Future.error(e);
+    } on FailureToUploadException catch (e) {
+      log(e.cause);
+      return Future.error(e);
+    }
+  }
 
-  Future<void> populateCalendar({DateTime? limit}) async =>
-      await _reminderService.populateCalendar(limit: limit ?? DateTime.now());
+  Future<void> deleteAndCancelFutures({Reminder? reminder}) async {
+    await deleteFutures(reminder: reminder).then((toDelete) async {
+      List<int> cancelIDs =
+          toDelete.map((reminder) => reminder.notificationID!).toList();
+      return await _notificationService.cancelFutures(ids: cancelIDs);
+    });
+  }
+
+  Future<void> populateCalendar({DateTime? limit}) async {
+    try {
+      return await _reminderService.populateCalendar(
+          limit: limit ?? DateTime.now());
+    } on FailureToUpdateException catch (e) {
+      log(e.cause);
+      return Future.error(e);
+    } on FailureToUploadException catch (e) {
+      log(e.cause);
+      return Future.error(e);
+    }
+  }
 
   Future<List<Reminder>> getReminders({int limit = 50, int offset = 0}) async =>
       await _reminderService.getReminders(limit: limit, offset: offset);
@@ -237,7 +293,7 @@ class ReminderProvider extends ChangeNotifier {
   Future<void> scheduleNotification() async {
     String newDue = Jiffy.parseFromDateTime(curReminder!.dueDate)
         .toLocal()
-        .yMMMMEEEEdjm
+        .format(pattern: "yMMMMEEEEdjm")
         .toString();
     await _notificationService.scheduleNotification(
         id: curReminder!.notificationID!,

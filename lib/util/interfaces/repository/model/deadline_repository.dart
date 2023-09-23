@@ -1,5 +1,6 @@
 import '../../../../model/task/deadline.dart';
 import '../function/date_range.dart';
+import '../function/local_notifications.dart';
 import '../function/overdue.dart';
 import '../function/repeatable.dart';
 import '../function/repository.dart';
@@ -13,4 +14,5 @@ abstract interface class DeadlineRepository
         Overdue<Deadline>,
         Upcoming<Deadline>,
         DateRange<Deadline>,
+        LocalNotifications<Deadline>,
         Search<Deadline> {}

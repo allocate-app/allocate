@@ -234,10 +234,15 @@ class RoutineProvider extends ChangeNotifier {
   }
 
   Future<void> updateRoutine() async {
+    await updateRoutineAsync();
+    notifyListeners();
+  }
+
+  Future<void> updateRoutineAsync() async {
     curRoutine!.lastUpdated = DateTime.now();
 
     try {
-      await _routineService.updateRoutine(routine: curRoutine!);
+      return await _routineService.updateRoutine(routine: curRoutine!);
     } on FailureToUploadException catch (e) {
       log(e.cause);
       return Future.error(e);
@@ -245,7 +250,6 @@ class RoutineProvider extends ChangeNotifier {
       log(e.cause);
       return Future.error(e);
     }
-    notifyListeners();
   }
 
   Future<void> deleteRoutine() async {

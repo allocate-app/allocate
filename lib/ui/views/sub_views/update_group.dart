@@ -1008,7 +1008,7 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
       required SearchController controller}) {
     return FutureBuilder(
         future: searchFuture,
-        builder: (context, snapshot) {
+        builder: (BuildContext context, AsyncSnapshot<List<ToDo>> snapshot) {
           if (snapshot.connectionState == ConnectionState.done) {
             final List<ToDo>? toDos = snapshot.data;
             if (null != toDos) {

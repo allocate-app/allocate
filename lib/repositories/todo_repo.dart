@@ -144,7 +144,7 @@ class ToDoRepo implements ToDoRepository {
   // This is a "Set stuff up for the next delete on sync" kind of delete.
   // They will be hidden from the view, and removed in the background.
   @override
-  Future<void> deleteFutures({required ToDo deleteFrom}) async {
+  Future<List<ToDo>> deleteFutures({required ToDo deleteFrom}) async {
     List<ToDo> toDelete = await _isarClient.toDos
         .where()
         .repeatIDEqualTo(deleteFrom.repeatID)
@@ -156,6 +156,7 @@ class ToDoRepo implements ToDoRepository {
     toDelete.remove(deleteFrom);
     toDelete.map((ToDo toDo) => toDo.toDelete = true).toList(growable: false);
     await updateBatch(toDelete);
+    return toDelete;
   }
 
   @override

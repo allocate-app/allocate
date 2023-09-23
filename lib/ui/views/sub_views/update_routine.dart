@@ -156,6 +156,9 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
       style: OutlinedButton.styleFrom(
         padding: const EdgeInsets.all(Constants.padding),
         shape: const CircleBorder(),
+        side: BorderSide(
+          color: Theme.of(context).colorScheme.outlineVariant,
+        ),
       ),
       onPressed: () async {
         await showDialog<RoutineTime>(
@@ -203,7 +206,7 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
                             Flexible(
                               child: FittedBox(
                                   fit: BoxFit.fill,
-                                  child: Icon(Icons.schedule_outlined,
+                                  child: Icon(Icons.schedule_rounded,
                                       size: Constants.medIconSize)),
                             ),
                           ],
@@ -396,17 +399,20 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
 
   @override
   Widget build(BuildContext context) {
-    bool largeScreen =
-        (MediaQuery.of(context).size.width >= Constants.largeScreen);
-    bool smallScreen =
-        (MediaQuery.of(context).size.width <= Constants.smallScreen);
+    double width = MediaQuery.of(context).size.width;
+    bool largeScreen = (width >= Constants.largeScreen);
+    bool smallScreen = (width <= Constants.smallScreen);
+    bool hugeScreen = (width >= Constants.hugeScreen);
     return (largeScreen)
-        ? buildDesktopDialog(context: context, smallScreen: smallScreen)
+        ? buildDesktopDialog(
+            context: context, smallScreen: smallScreen, hugeScreen: hugeScreen)
         : buildMobileDialog(context: context, smallScreen: smallScreen);
   }
 
   Dialog buildDesktopDialog(
-      {required BuildContext context, bool smallScreen = false}) {
+      {required BuildContext context,
+      bool smallScreen = false,
+      bool hugeScreen = false}) {
     return Dialog(
       insetPadding: const EdgeInsets.all(Constants.outerDialogPadding),
       child: ConstrainedBox(
@@ -444,7 +450,7 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
                                     children: [
                                       Flexible(
                                         child: Tooltip(
-                                          message: "Expected Routine Duration",
+                                          message: "Expected",
                                           child: Padding(
                                             padding: const EdgeInsets.symmetric(
                                                 horizontal: Constants.padding),
@@ -480,7 +486,7 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
                                       ),
                                       Flexible(
                                         child: Tooltip(
-                                          message: "Actual Routine Duration",
+                                          message: "Projected",
                                           child: Padding(
                                             padding: const EdgeInsets.symmetric(
                                                 horizontal: Constants.padding),
@@ -490,7 +496,7 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
                                                   child: FittedBox(
                                                     fit: BoxFit.fill,
                                                     child: Icon(
-                                                      Icons.timer,
+                                                      Icons.timer_rounded,
                                                     ),
                                                   ),
                                                 ),
@@ -566,7 +572,7 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
                               ]),
                         ),
                         Expanded(
-                          flex: 2,
+                          flex: (hugeScreen) ? 2 : 1,
                           child: Scrollbar(
                             thumbVisibility: true,
                             controller: subScrollControllerRight,
@@ -581,80 +587,9 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
                                   Padding(
                                     padding: const EdgeInsets.symmetric(
                                         horizontal: Constants.innerPadding),
-                                    child: Card(
-                                      clipBehavior: Clip.antiAlias,
-                                      elevation: 0,
-                                      color: Colors.transparent,
-                                      shape: RoundedRectangleBorder(
-                                          side: BorderSide(
-                                              color: Theme.of(context)
-                                                  .colorScheme
-                                                  .outline,
-                                              strokeAlign:
-                                                  BorderSide.strokeAlignInside),
-                                          borderRadius: const BorderRadius.all(
-                                              Radius.circular(
-                                                  Constants.roundedCorners))),
-                                      child: ExpansionTile(
-                                        initiallyExpanded: expanded,
-                                        onExpansionChanged: (value) =>
-                                            setState(() => expanded = value),
-                                        title: const AutoSizeText(
-                                            "Routine Steps",
-                                            maxLines: 1,
-                                            overflow: TextOverflow.visible,
-                                            softWrap: false,
-                                            minFontSize: Constants.small),
-                                        subtitle: AutoSizeText(
-                                            "${min(shownTasks, Constants.maxNumTasks)}/${Constants.maxNumTasks} Steps",
-                                            maxLines: 1,
-                                            overflow: TextOverflow.visible,
-                                            softWrap: false,
-                                            minFontSize: Constants.small),
-                                        collapsedShape:
-                                            const RoundedRectangleBorder(
-                                                side: BorderSide(
-                                                    strokeAlign: BorderSide
-                                                        .strokeAlignOutside),
-                                                borderRadius: BorderRadius.all(
-                                                    Radius.circular(Constants
-                                                        .roundedCorners))),
-                                        shape: const RoundedRectangleBorder(
-                                            side: BorderSide(
-                                                strokeAlign: BorderSide
-                                                    .strokeAlignOutside),
-                                            borderRadius: BorderRadius.all(
-                                                Radius.circular(
-                                                    Constants.roundedCorners))),
-                                        children: [
-                                          buildReorderableSubTasks(
-                                              smallScreen: smallScreen,
-                                              physics: scrollPhysics),
-                                          const PaddedDivider(
-                                              padding: Constants.padding),
-                                          (shownTasks < Constants.maxNumTasks)
-                                              ? ListTile(
-                                                  leading: const Icon(
-                                                      Icons.add_outlined),
-                                                  title: const AutoSizeText(
-                                                      "Add a step",
-                                                      maxLines: 1,
-                                                      overflow:
-                                                          TextOverflow.visible,
-                                                      softWrap: false,
-                                                      minFontSize:
-                                                          Constants.small),
-                                                  onTap: () => setState(() {
-                                                        shownTasks++;
-                                                        shownTasks = min(
-                                                            shownTasks,
-                                                            Constants
-                                                                .maxNumTasks);
-                                                      }))
-                                              : const SizedBox.shrink(),
-                                        ],
-                                      ),
-                                    ),
+                                    child: buildRoutineStepsTile(
+                                        context: context,
+                                        smallScreen: smallScreen),
                                   ),
                                 ]),
                           ),
@@ -710,7 +645,7 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
                                 children: [
                                   Flexible(
                                     child: Tooltip(
-                                      message: "Expected Routine Duration",
+                                      message: "Expected",
                                       child: Padding(
                                         padding: const EdgeInsets.symmetric(
                                             horizontal: Constants.padding),
@@ -745,7 +680,7 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
                                   ),
                                   Flexible(
                                     child: Tooltip(
-                                      message: "Actual Routine Duration",
+                                      message: "Projected",
                                       child: Padding(
                                         padding: const EdgeInsets.symmetric(
                                             horizontal: Constants.padding),
@@ -755,7 +690,7 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
                                               child: FittedBox(
                                                 fit: BoxFit.fill,
                                                 child: Icon(
-                                                  Icons.timer,
+                                                  Icons.timer_rounded,
                                                 ),
                                               ),
                                             ),
@@ -818,62 +753,8 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
                     Padding(
                       padding: const EdgeInsets.symmetric(
                           horizontal: Constants.innerPadding),
-                      child: Card(
-                        clipBehavior: Clip.antiAlias,
-                        elevation: 0,
-                        color: Colors.transparent,
-                        shape: RoundedRectangleBorder(
-                            side: BorderSide(
-                                color: Theme.of(context).colorScheme.outline,
-                                strokeAlign: BorderSide.strokeAlignInside),
-                            borderRadius: const BorderRadius.all(
-                                Radius.circular(Constants.roundedCorners))),
-                        child: ExpansionTile(
-                          initiallyExpanded: expanded,
-                          onExpansionChanged: (value) =>
-                              setState(() => expanded = value),
-                          title: const AutoSizeText("Routine Steps",
-                              maxLines: 1,
-                              overflow: TextOverflow.visible,
-                              softWrap: false,
-                              minFontSize: Constants.small),
-                          subtitle: AutoSizeText(
-                              "${min(shownTasks, Constants.maxNumTasks)}/${Constants.maxNumTasks} Steps",
-                              maxLines: 1,
-                              overflow: TextOverflow.visible,
-                              softWrap: false,
-                              minFontSize: Constants.small),
-                          collapsedShape: const RoundedRectangleBorder(
-                              side: BorderSide(
-                                  strokeAlign: BorderSide.strokeAlignOutside),
-                              borderRadius: BorderRadius.all(
-                                  Radius.circular(Constants.roundedCorners))),
-                          shape: const RoundedRectangleBorder(
-                              side: BorderSide(
-                                  strokeAlign: BorderSide.strokeAlignOutside),
-                              borderRadius: BorderRadius.all(
-                                  Radius.circular(Constants.roundedCorners))),
-                          children: [
-                            buildReorderableSubTasks(
-                                smallScreen: smallScreen,
-                                physics: scrollPhysics),
-                            (shownTasks < Constants.maxNumTasks)
-                                ? ListTile(
-                                    leading: const Icon(Icons.add_outlined),
-                                    title: const AutoSizeText("Add a step",
-                                        maxLines: 1,
-                                        overflow: TextOverflow.visible,
-                                        softWrap: false,
-                                        minFontSize: Constants.small),
-                                    onTap: () => setState(() {
-                                          shownTasks++;
-                                          shownTasks = min(shownTasks,
-                                              Constants.maxNumTasks);
-                                        }))
-                                : const SizedBox.shrink(),
-                          ],
-                        ),
-                      ),
+                      child: buildRoutineStepsTile(
+                          context: context, smallScreen: smallScreen),
                     ),
                   ],
                 ),
@@ -905,7 +786,7 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
   FilledButton buildUpdateButton({required BuildContext context}) {
     return FilledButton.icon(
         label: const Text("Update"),
-        icon: const Icon(Icons.add),
+        icon: const Icon(Icons.add_rounded),
         onPressed: () async {
           bool validData = validateData();
           if (validData) {
@@ -918,7 +799,7 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
   FilledButton buildDeleteButton({required BuildContext context}) {
     return FilledButton.tonalIcon(
       label: const Text("Delete"),
-      icon: const Icon(Icons.delete_forever),
+      icon: const Icon(Icons.delete_forever_rounded),
       onPressed: () async => await handleDelete(context: context),
     );
   }
@@ -1002,7 +883,9 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
             key: ValueKey(index),
             checkboxShape: const CircleBorder(),
             controlAffinity: ListTileControlAffinity.leading,
-            shape: const CircleBorder(),
+            shape: const RoundedRectangleBorder(
+                borderRadius: BorderRadius.all(
+                    Radius.circular(Constants.roundedCorners))),
             title: Row(
               children: [
                 IconButton(
@@ -1016,52 +899,60 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
                         context: context,
                         builder: (BuildContext context) {
                           return StatefulBuilder(
-                            builder: (context, setState) => Center(
-                                heightFactor: 1,
-                                child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      const Text("Step Drain",
-                                          style: Constants.headerStyle),
-                                      Padding(
-                                          padding: const EdgeInsets.all(
-                                              Constants.padding),
-                                          child: Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.spaceEvenly,
-                                            children: [
-                                              const Icon(Icons.battery_full),
-                                              Expanded(
-                                                child: Slider(
-                                                  value:
-                                                      cacheRoutineTasks[index]
+                            builder: (BuildContext context,
+                                    void Function(void Function()) setState) =>
+                                Center(
+                                    heightFactor: 1,
+                                    child: Column(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          const Text("Step Drain",
+                                              style: Constants.headerStyle),
+                                          Padding(
+                                              padding: const EdgeInsets.all(
+                                                  Constants.padding),
+                                              child: Row(
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment
+                                                        .spaceEvenly,
+                                                children: [
+                                                  const Icon(Icons
+                                                      .battery_full_rounded),
+                                                  Expanded(
+                                                    child: Slider(
+                                                      value: cacheRoutineTasks[
+                                                              index]
                                                           .weight
                                                           .toDouble(),
-                                                  max: Constants.maxTaskWeight
-                                                      .toDouble(),
-                                                  label: (cacheRoutineTasks[
-                                                                  index]
-                                                              .weight >
-                                                          (Constants.maxTaskWeight /
-                                                                  2)
-                                                              .floor())
-                                                      ? " ${cacheRoutineTasks[index].weight} ${Constants.lowBattery}"
-                                                      : " ${cacheRoutineTasks[index].weight} ${Constants.fullBattery}",
-                                                  divisions:
-                                                      Constants.maxTaskWeight,
-                                                  onChanged: (value) =>
-                                                      setState(() {
-                                                    checkClose = true;
-                                                    cacheRoutineTasks[index]
-                                                        .weight = value.toInt();
-                                                  }),
-                                                ),
-                                              ),
-                                              const Icon(Icons.battery_1_bar),
-                                            ],
-                                          )),
-                                    ])),
+                                                      max: Constants
+                                                          .maxTaskWeight
+                                                          .toDouble(),
+                                                      label: (cacheRoutineTasks[
+                                                                      index]
+                                                                  .weight >
+                                                              (Constants.maxTaskWeight /
+                                                                      2)
+                                                                  .floor())
+                                                          ? " ${cacheRoutineTasks[index].weight} ${Constants.lowBattery}"
+                                                          : " ${cacheRoutineTasks[index].weight} ${Constants.fullBattery}",
+                                                      divisions: Constants
+                                                          .maxTaskWeight,
+                                                      onChanged: (value) =>
+                                                          setState(() {
+                                                        checkClose = true;
+                                                        cacheRoutineTasks[index]
+                                                                .weight =
+                                                            value.toInt();
+                                                      }),
+                                                    ),
+                                                  ),
+                                                  const Icon(Icons
+                                                      .battery_1_bar_rounded),
+                                                ],
+                                              )),
+                                        ])),
                           );
                         }).whenComplete(() => setState(() {
                           routine.weight = routineProvider.calculateWeight(
@@ -1107,7 +998,7 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
                   padding: const EdgeInsets.symmetric(
                       horizontal: Constants.innerPadding),
                   child: IconButton(
-                      icon: const Icon(Icons.delete),
+                      icon: const Icon(Icons.delete_rounded),
                       onPressed: () => setState(() {
                             SubTask st = cacheRoutineTasks.removeAt(index);
                             st = SubTask();
@@ -1139,7 +1030,7 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
                 ? Constants.largeCheckboxMinScale
                 : Constants.largeCheckboxScale,
             child: Tooltip(
-                message: "Time of Day?",
+                message: "Set Routine",
                 child: getTimeOfDayIcon(context: context))),
         Expanded(
             child: Padding(
@@ -1155,21 +1046,25 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
       {required BuildContext context, bool smallScreen = false}) {
     return ListTile(
       leading: const Icon(Icons.timer_outlined),
+      shape: const RoundedRectangleBorder(
+          borderRadius:
+              BorderRadius.all(Radius.circular(Constants.roundedCorners))),
       title: (routine.expectedDuration > 0)
           ? Row(
               children: [
                 Flexible(
-                  child: AutoSizeText(
-                      (smallScreen)
-                          ? Duration(seconds: routine.expectedDuration)
-                              .toString()
-                              .split(".")
-                              .first
-                          : "Expected: ${Duration(seconds: routine.expectedDuration).toString().split(".").first}",
-                      overflow: TextOverflow.visible,
-                      minFontSize: Constants.small,
-                      maxLines: 2,
-                      softWrap: true),
+                  child: Tooltip(
+                    message: "Expected",
+                    child: AutoSizeText(
+                        Duration(seconds: routine.expectedDuration)
+                            .toString()
+                            .split(".")
+                            .first,
+                        overflow: TextOverflow.visible,
+                        minFontSize: Constants.small,
+                        maxLines: 2,
+                        softWrap: true),
+                  ),
                 ),
                 const Padding(
                   padding:
@@ -1179,17 +1074,18 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
                   ),
                 ),
                 Flexible(
-                  child: AutoSizeText(
-                      (smallScreen)
-                          ? Duration(seconds: routine.realDuration)
-                              .toString()
-                              .split(".")
-                              .first
-                          : "Actual: ${Duration(seconds: routine.realDuration).toString().split(".").first}",
-                      overflow: TextOverflow.visible,
-                      minFontSize: Constants.small,
-                      maxLines: 2,
-                      softWrap: true),
+                  child: Tooltip(
+                    message: "Projected",
+                    child: AutoSizeText(
+                        Duration(seconds: routine.realDuration)
+                            .toString()
+                            .split(".")
+                            .first,
+                        overflow: TextOverflow.visible,
+                        minFontSize: Constants.small,
+                        maxLines: 2,
+                        softWrap: true),
+                  ),
                 ),
               ],
             )
@@ -1217,168 +1113,179 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
             int seconds = time;
 
             return StatefulBuilder(
-              builder: (context, setState) => Dialog(
-                  child: Padding(
-                      padding: const EdgeInsets.all(Constants.innerPadding),
-                      child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Row(
-                                mainAxisAlignment: MainAxisAlignment.start,
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Expanded(
-                                    child: AutoSizeText(
-                                      "Expected Duration",
-                                      style: Constants.headerStyle,
-                                      softWrap: true,
-                                      overflow: TextOverflow.visible,
-                                      maxLines: 2,
-                                      minFontSize: Constants.medium,
-                                    ),
-                                  )
-                                ]),
-                            const Flexible(
-                              child: Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                mainAxisSize: MainAxisSize.max,
-                                children: [
-                                  Flexible(
-                                      child: AutoSizeText(
-                                    "Hours | Minutes | Seconds ",
-                                    style: Constants.largeHeaderStyle,
-                                    softWrap: true,
-                                    overflow: TextOverflow.visible,
-                                    maxLines: 1,
-                                    minFontSize: Constants.large,
-                                  )),
-                                  Flexible(
-                                    child: FittedBox(
-                                        fit: BoxFit.fill,
-                                        child: Icon(Icons.timer_outlined,
-                                            size: Constants.medIconSize)),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            Row(
+              builder: (BuildContext context,
+                      void Function(void Function()) setState) =>
+                  Dialog(
+                      child: Padding(
+                          padding: const EdgeInsets.all(Constants.innerPadding),
+                          child: Column(
                               mainAxisSize: MainAxisSize.min,
-                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Expanded(
-                                  child: NumberPicker(
-                                    textStyle: Constants.numberPickerSecondary(
-                                        context: context),
-                                    selectedTextStyle:
-                                        Constants.numberPickerPrimary(
-                                            context: context),
-                                    minValue: 0,
-                                    maxValue: 100,
-                                    value: hours,
-                                    haptics: true,
-                                    onChanged: (value) {
-                                      SemanticsService.announce("$value, hours",
-                                          Directionality.of(context));
-                                      setState(() => hours = value);
-                                    },
+                                const Row(
+                                    mainAxisAlignment: MainAxisAlignment.start,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Expanded(
+                                        child: AutoSizeText(
+                                          "Expected Duration",
+                                          style: Constants.headerStyle,
+                                          softWrap: true,
+                                          overflow: TextOverflow.visible,
+                                          maxLines: 2,
+                                          minFontSize: Constants.medium,
+                                        ),
+                                      )
+                                    ]),
+                                const Flexible(
+                                  child: Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    mainAxisSize: MainAxisSize.max,
+                                    children: [
+                                      Flexible(
+                                          child: AutoSizeText(
+                                        "Hours | Minutes | Seconds ",
+                                        style: Constants.largeHeaderStyle,
+                                        softWrap: true,
+                                        overflow: TextOverflow.visible,
+                                        maxLines: 1,
+                                        minFontSize: Constants.large,
+                                      )),
+                                      Flexible(
+                                        child: FittedBox(
+                                            fit: BoxFit.fill,
+                                            child: Icon(Icons.timer_outlined,
+                                                size: Constants.medIconSize)),
+                                      ),
+                                    ],
                                   ),
                                 ),
-                                const Padding(
-                                    padding: EdgeInsets.symmetric(
-                                        horizontal: Constants.padding),
-                                    child:
-                                        Text(":", style: Constants.timeColon)),
-                                Expanded(
-                                  child: NumberPicker(
-                                    textStyle: Constants.numberPickerSecondary(
-                                        context: context),
-                                    selectedTextStyle:
-                                        Constants.numberPickerPrimary(
-                                            context: context),
-                                    minValue: 0,
-                                    maxValue: 59,
-                                    value: minutes,
-                                    haptics: true,
-                                    onChanged: (value) {
-                                      SemanticsService.announce(
-                                          "$value, minutes",
-                                          Directionality.of(context));
-                                      setState(() => minutes = value);
-                                    },
-                                  ),
-                                ),
-                                const Padding(
-                                    padding: EdgeInsets.symmetric(
-                                        horizontal: Constants.padding),
-                                    child:
-                                        Text(":", style: Constants.timeColon)),
-                                Expanded(
-                                  child: NumberPicker(
-                                    textStyle: Constants.numberPickerSecondary(
-                                        context: context),
-                                    selectedTextStyle:
-                                        Constants.numberPickerPrimary(
-                                            context: context),
-                                    minValue: 0,
-                                    maxValue: 59,
-                                    value: seconds,
-                                    haptics: true,
-                                    onChanged: (value) {
-                                      SemanticsService.announce(
-                                          "$value, seconds",
-                                          Directionality.of(context));
-                                      setState(() => seconds = value);
-                                    },
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 20),
-                            Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceEvenly,
-                                children: [
-                                  Expanded(
-                                    child: Padding(
-                                      padding: const EdgeInsets.only(
-                                          right: Constants.padding),
-                                      child: FilledButton.tonalIcon(
-                                          icon:
-                                              const Icon(Icons.close_outlined),
-                                          onPressed: () =>
-                                              Navigator.pop(context, 0),
-                                          label: const AutoSizeText("Cancel",
-                                              softWrap: false,
-                                              overflow: TextOverflow.visible,
-                                              maxLines: 1,
-                                              minFontSize: Constants.small)),
-                                    ),
-                                  ),
-                                  Expanded(
-                                    child: Padding(
-                                      padding: const EdgeInsets.only(
-                                          left: Constants.padding),
-                                      child: FilledButton.icon(
-                                        icon: const Icon(Icons.done_outlined),
-                                        onPressed: () {
-                                          Navigator.pop(
-                                              context,
-                                              (hours * 3600) +
-                                                  (minutes * 60) +
-                                                  seconds);
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceEvenly,
+                                  children: [
+                                    Expanded(
+                                      child: NumberPicker(
+                                        textStyle:
+                                            Constants.numberPickerSecondary(
+                                                context: context),
+                                        selectedTextStyle:
+                                            Constants.numberPickerPrimary(
+                                                context: context),
+                                        minValue: 0,
+                                        maxValue: 100,
+                                        value: hours,
+                                        haptics: true,
+                                        onChanged: (value) {
+                                          SemanticsService.announce(
+                                              "$value, hours",
+                                              Directionality.of(context));
+                                          setState(() => hours = value);
                                         },
-                                        label: const AutoSizeText("Done",
-                                            softWrap: false,
-                                            overflow: TextOverflow.visible,
-                                            maxLines: 1,
-                                            minFontSize: Constants.small),
                                       ),
                                     ),
-                                  )
-                                ])
-                          ]))),
+                                    const Padding(
+                                        padding: EdgeInsets.symmetric(
+                                            horizontal: Constants.padding),
+                                        child: Text(":",
+                                            style: Constants.timeColon)),
+                                    Expanded(
+                                      child: NumberPicker(
+                                        textStyle:
+                                            Constants.numberPickerSecondary(
+                                                context: context),
+                                        selectedTextStyle:
+                                            Constants.numberPickerPrimary(
+                                                context: context),
+                                        minValue: 0,
+                                        maxValue: 59,
+                                        value: minutes,
+                                        haptics: true,
+                                        onChanged: (value) {
+                                          SemanticsService.announce(
+                                              "$value, minutes",
+                                              Directionality.of(context));
+                                          setState(() => minutes = value);
+                                        },
+                                      ),
+                                    ),
+                                    const Padding(
+                                        padding: EdgeInsets.symmetric(
+                                            horizontal: Constants.padding),
+                                        child: Text(":",
+                                            style: Constants.timeColon)),
+                                    Expanded(
+                                      child: NumberPicker(
+                                        textStyle:
+                                            Constants.numberPickerSecondary(
+                                                context: context),
+                                        selectedTextStyle:
+                                            Constants.numberPickerPrimary(
+                                                context: context),
+                                        minValue: 0,
+                                        maxValue: 59,
+                                        value: seconds,
+                                        haptics: true,
+                                        onChanged: (value) {
+                                          SemanticsService.announce(
+                                              "$value, seconds",
+                                              Directionality.of(context));
+                                          setState(() => seconds = value);
+                                        },
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 20),
+                                Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceEvenly,
+                                    children: [
+                                      Expanded(
+                                        child: Padding(
+                                          padding: const EdgeInsets.only(
+                                              right: Constants.padding),
+                                          child: FilledButton.tonalIcon(
+                                              icon: const Icon(
+                                                  Icons.close_outlined),
+                                              onPressed: () =>
+                                                  Navigator.pop(context, 0),
+                                              label: const AutoSizeText(
+                                                  "Cancel",
+                                                  softWrap: false,
+                                                  overflow:
+                                                      TextOverflow.visible,
+                                                  maxLines: 1,
+                                                  minFontSize:
+                                                      Constants.small)),
+                                        ),
+                                      ),
+                                      Expanded(
+                                        child: Padding(
+                                          padding: const EdgeInsets.only(
+                                              left: Constants.padding),
+                                          child: FilledButton.icon(
+                                            icon:
+                                                const Icon(Icons.done_rounded),
+                                            onPressed: () {
+                                              Navigator.pop(
+                                                  context,
+                                                  (hours * 3600) +
+                                                      (minutes * 60) +
+                                                      seconds);
+                                            },
+                                            label: const AutoSizeText("Done",
+                                                softWrap: false,
+                                                overflow: TextOverflow.visible,
+                                                maxLines: 1,
+                                                minFontSize: Constants.small),
+                                          ),
+                                        ),
+                                      )
+                                    ])
+                              ]))),
             );
           }).then((value) {
         setState(() {
@@ -1399,7 +1306,7 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
         isDense: smallScreen,
         suffixIcon: (routine.name != "")
             ? IconButton(
-                icon: const Icon(Icons.clear),
+                icon: const Icon(Icons.clear_rounded),
                 onPressed: () {
                   checkClose = true;
                   nameEditingController.clear();
@@ -1407,6 +1314,14 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
                 })
             : null,
         contentPadding: const EdgeInsets.all(Constants.innerPadding),
+        enabledBorder: OutlineInputBorder(
+            borderRadius: const BorderRadius.all(
+                Radius.circular(Constants.roundedCorners)),
+            borderSide: BorderSide(
+              width: 2,
+              color: Theme.of(context).colorScheme.outlineVariant,
+              strokeAlign: BorderSide.strokeAlignOutside,
+            )),
         border: const OutlineInputBorder(
             borderRadius:
                 BorderRadius.all(Radius.circular(Constants.roundedCorners)),
@@ -1434,7 +1349,6 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
                           mainAxisAlignment: MainAxisAlignment.center,
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            // const Icon(Icons.drag_handle_rounded),
                             Padding(
                               padding: const EdgeInsets.all(Constants.padding),
                               child: FilledButton.icon(
@@ -1453,7 +1367,7 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
                                       Navigator.pop(context, false),
                                   label: const Text("Continue Editing"),
                                   icon: const Icon(
-                                    Icons.edit_note_outlined,
+                                    Icons.edit_note_rounded,
                                   ),
                                 ))
                           ]));
@@ -1467,7 +1381,62 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
             Navigator.pop(context);
           }
         },
-        icon: const Icon(Icons.close_outlined),
-        selectedIcon: const Icon(Icons.close));
+        icon: const Icon(Icons.close_rounded),
+        selectedIcon: const Icon(Icons.close_rounded));
+  }
+
+  Widget buildRoutineStepsTile(
+      {required BuildContext context, bool smallScreen = false}) {
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      elevation: 0,
+      color: Colors.transparent,
+      shape: RoundedRectangleBorder(
+          side: BorderSide(
+              width: 2,
+              color: Theme.of(context).colorScheme.outlineVariant,
+              strokeAlign: BorderSide.strokeAlignInside),
+          borderRadius: const BorderRadius.all(
+              Radius.circular(Constants.roundedCorners))),
+      child: ExpansionTile(
+        initiallyExpanded: expanded,
+        onExpansionChanged: (value) => setState(() => expanded = value),
+        title: const AutoSizeText("Routine Steps",
+            maxLines: 1,
+            overflow: TextOverflow.visible,
+            softWrap: false,
+            minFontSize: Constants.small),
+        subtitle: AutoSizeText(
+            "${min(shownTasks, Constants.maxNumTasks)}/${Constants.maxNumTasks} Steps",
+            maxLines: 1,
+            overflow: TextOverflow.visible,
+            softWrap: false,
+            minFontSize: Constants.small),
+        collapsedShape: const RoundedRectangleBorder(
+            borderRadius:
+                BorderRadius.all(Radius.circular(Constants.roundedCorners))),
+        shape: const RoundedRectangleBorder(
+            borderRadius:
+                BorderRadius.all(Radius.circular(Constants.roundedCorners))),
+        children: [
+          buildReorderableSubTasks(
+              smallScreen: smallScreen, physics: scrollPhysics),
+          const PaddedDivider(padding: Constants.padding),
+          (shownTasks < Constants.maxNumTasks)
+              ? ListTile(
+                  leading: const Icon(Icons.add_rounded),
+                  title: const AutoSizeText("Add a step",
+                      maxLines: 1,
+                      overflow: TextOverflow.visible,
+                      softWrap: false,
+                      minFontSize: Constants.small),
+                  onTap: () => setState(() {
+                        shownTasks++;
+                        shownTasks = min(shownTasks, Constants.maxNumTasks);
+                      }))
+              : const SizedBox.shrink(),
+        ],
+      ),
+    );
   }
 }

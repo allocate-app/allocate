@@ -2,6 +2,7 @@ import 'package:another_flushbar/flushbar.dart';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:jiffy/jiffy.dart';
 import 'package:provider/provider.dart';
 
 import '../../../model/task/deadline.dart';
@@ -133,6 +134,23 @@ class _DeadlinesListScreen extends State<DeadlinesListScreen> {
     mainScrollController.dispose();
     deadlineProvider.removeListener(resetPagination);
     super.dispose();
+  }
+
+  Widget getDeadlineIcon({required Deadline deadline}) {
+    Widget icon = (deadline.warnMe)
+        ? const Icon(Icons.notifications_rounded)
+        : const Icon(null);
+    return DecoratedBox(
+      decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: Border.all(
+              color: Theme.of(context).colorScheme.outlineVariant,
+              strokeAlign: BorderSide.strokeAlignOutside)),
+      child: Padding(
+        padding: const EdgeInsets.all(Constants.padding),
+        child: icon,
+      ),
+    );
   }
 
   @override
@@ -329,9 +347,7 @@ class _DeadlinesListScreen extends State<DeadlinesListScreen> {
       bool reorderable = false}) {
     return ListTile(
       key: ValueKey(index),
-      leading: (provider.deadlines[index].warnMe)
-          ? const Icon(Icons.notifications_rounded)
-          : const Icon(null),
+      leading: getDeadlineIcon(deadline: provider.deadlines[index]),
       shape: const RoundedRectangleBorder(
           borderRadius:
               BorderRadius.all(Radius.circular(Constants.roundedCorners))),
@@ -341,6 +357,7 @@ class _DeadlinesListScreen extends State<DeadlinesListScreen> {
           minFontSize: Constants.medium,
           softWrap: true,
           maxLines: 1),
+      subtitle: buildSubtitle(deadline: provider.deadlines[index]),
       onTap: () async {
         provider.curDeadline = provider.deadlines[index];
         await showDialog(
@@ -356,7 +373,7 @@ class _DeadlinesListScreen extends State<DeadlinesListScreen> {
             padding:
                 const EdgeInsets.symmetric(horizontal: Constants.innerPadding),
             child: IconButton(
-                icon: const Icon(Icons.delete_forever),
+                icon: const Icon(Icons.delete_forever_rounded),
                 onPressed: () async {
                   if (checkDelete) {
                     return await showDialog<bool?>(
@@ -537,5 +554,55 @@ class _DeadlinesListScreen extends State<DeadlinesListScreen> {
     },
         test: (e) =>
             e is FailureToDeleteException || e is FailureToUploadException);
+  }
+
+  Widget buildSubtitle({required Deadline deadline}) {
+    return Wrap(
+        spacing: Constants.halfPadding,
+        runSpacing: Constants.halfPadding,
+        children: [
+          buildDueDate(dueDate: deadline.dueDate),
+          (deadline.warnMe)
+              ? buildWarnDate(warnDate: deadline.warnDate)
+              : const SizedBox.shrink(),
+          buildPriorityIcon(priority: deadline.priority)
+        ]);
+  }
+
+  Widget buildDueDate({required DateTime dueDate}) {
+    return Wrap(spacing: Constants.halfPadding, children: [
+      const Icon(Icons.event_rounded, size: Constants.minIconSize),
+      AutoSizeText(
+          Jiffy.parseFromDateTime(dueDate).toLocal().format(pattern: "MMM d"),
+          softWrap: false,
+          overflow: TextOverflow.visible,
+          maxLines: 2,
+          maxFontSize: Constants.large,
+          minFontSize: Constants.small)
+    ]);
+  }
+
+  Widget buildWarnDate({required DateTime warnDate}) {
+    return Wrap(spacing: Constants.halfPadding, children: [
+      const Icon(Icons.notifications_on_rounded, size: Constants.minIconSize),
+      AutoSizeText(
+          Jiffy.parseFromDateTime(warnDate).toLocal().format(pattern: "MMM d"),
+          softWrap: false,
+          overflow: TextOverflow.visible,
+          maxLines: 2,
+          maxFontSize: Constants.large,
+          minFontSize: Constants.small)
+    ]);
+  }
+
+  Widget buildPriorityIcon({required Priority priority}) {
+    return switch (priority) {
+      Priority.low =>
+        const Tooltip(message: "Low", child: Icon(Icons.low_priority_rounded)),
+      Priority.medium => const Tooltip(
+          message: "Medium", child: Icon(Icons.outlined_flag_rounded)),
+      Priority.high => const Tooltip(
+          message: "High", child: Icon(Icons.priority_high_rounded)),
+    };
   }
 }

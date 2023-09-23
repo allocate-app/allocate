@@ -3,20 +3,26 @@ import 'dart:collection';
 import 'package:allocate/ui/views/sub_views/update_deadline.dart';
 import 'package:allocate/ui/views/sub_views/update_reminder.dart';
 import 'package:allocate/ui/views/sub_views/update_todo.dart';
+import 'package:another_flushbar/flushbar.dart';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:equatable/equatable.dart';
 import "package:flutter/material.dart";
+import 'package:jiffy/jiffy.dart';
 import 'package:provider/provider.dart';
 import 'package:table_calendar/table_calendar.dart';
 
 import '../../../model/task/deadline.dart';
+import '../../../model/task/group.dart';
 import '../../../model/task/reminder.dart';
 import '../../../model/task/todo.dart';
 import '../../../providers/deadline_provider.dart';
+import '../../../providers/group_provider.dart';
 import '../../../providers/reminder_provider.dart';
 import '../../../providers/todo_provider.dart';
 import '../../../util/constants.dart';
 import '../../../util/enums.dart';
+import '../../../util/exceptions.dart';
+import '../../widgets/flushbars.dart';
 
 class CalendarScreen extends StatefulWidget {
   const CalendarScreen({Key? key}) : super(key: key);
@@ -55,6 +61,7 @@ class _CalendarScreen extends State<CalendarScreen> {
   late ToDoProvider toDoProvider;
   late ReminderProvider reminderProvider;
   late DeadlineProvider deadlineProvider;
+  late GroupProvider groupProvider;
 
   @override
   void initState() {
@@ -68,6 +75,7 @@ class _CalendarScreen extends State<CalendarScreen> {
     toDoProvider = Provider.of(context, listen: false);
     reminderProvider = Provider.of(context, listen: false);
     deadlineProvider = Provider.of(context, listen: false);
+    groupProvider = Provider.of(context, listen: false);
 
     toDoProvider.addListener(resetEvents);
     reminderProvider.addListener(resetEvents);
@@ -123,7 +131,20 @@ class _CalendarScreen extends State<CalendarScreen> {
           });
         }
       });
-    });
+    }).catchError((e) {
+      Flushbar? error;
+
+      error = Flushbars.createError(
+        message: e.cause,
+        context: context,
+        dismissCallback: () => error?.dismiss(),
+      );
+
+      error.show(context);
+      return [];
+    },
+        test: (e) =>
+            e is FailureToUploadException || e is FailureToUpdateException);
   }
 
   Future<void> getEvents({DateTime? day, DateTime? end}) async {
@@ -137,6 +158,7 @@ class _CalendarScreen extends State<CalendarScreen> {
     ]);
   }
 
+  // Events with same due/start date will be one event in the set.
   Future<void> getToDoEvents({DateTime? start, DateTime? end}) async {
     start = start ?? Constants.today.copyWith(day: 1);
 
@@ -151,21 +173,19 @@ class _CalendarScreen extends State<CalendarScreen> {
       DateTime dueDay = toDo.dueDate.copyWith(
           hour: Constants.midnight.hour, minute: Constants.midnight.minute);
 
-      CalendarEvent startEvent = CalendarEvent(
-          title: "Start: ${toDo.name}", modelType: ModelType.toDo, toDo: toDo);
-      CalendarEvent dueEvent = CalendarEvent(
-          title: "Due: ${toDo.name}", modelType: ModelType.toDo, toDo: toDo);
+      CalendarEvent event = CalendarEvent(
+          title: toDo.name, modelType: ModelType.toDo, toDo: toDo);
 
       if (_events.containsKey(startDay)) {
-        _events[startDay]!.add(startEvent);
+        _events[startDay]!.add(event);
       } else {
-        _events[startDay] = {startEvent};
+        _events[startDay] = {event};
       }
 
       if (_events.containsKey(dueDay)) {
-        _events[dueDay]!.add(dueEvent);
+        _events[dueDay]!.add(event);
       } else {
-        _events[dueDay] = {dueEvent};
+        _events[dueDay] = {event};
       }
     }
   }
@@ -178,16 +198,23 @@ class _CalendarScreen extends State<CalendarScreen> {
         await deadlineProvider.getDeadlinesBetween(start: start, end: end);
 
     for (Deadline deadline in deadlines) {
-      DateTime day = deadline.dueDate.copyWith(
+      DateTime startDay = deadline.dueDate.copyWith(
+          hour: Constants.midnight.hour, minute: Constants.midnight.minute);
+      DateTime dueDay = deadline.dueDate.copyWith(
           hour: Constants.midnight.hour, minute: Constants.midnight.minute);
       CalendarEvent event = CalendarEvent(
           title: deadline.name,
           modelType: ModelType.deadline,
           deadline: deadline);
-      if (_events.containsKey(day)) {
-        _events[day]!.add(event);
+      if (_events.containsKey(startDay)) {
+        _events[startDay]!.add(event);
       } else {
-        _events[day] = {event};
+        _events[startDay] = {event};
+      }
+      if (_events.containsKey(dueDay)) {
+        _events[dueDay]!.add(event);
+      } else {
+        _events[dueDay] = {event};
       }
     }
   }
@@ -261,6 +288,184 @@ class _CalendarScreen extends State<CalendarScreen> {
     );
   }
 
+  Widget? getSubtitle(
+      {required ModelType modelType,
+      ToDo? toDo,
+      Deadline? deadline,
+      Reminder? reminder}) {
+    return switch (modelType) {
+      ModelType.toDo => (null != toDo)
+          ? Wrap(
+              children: [
+                // Dates
+                buildDateRow(startDate: toDo.startDate, dueDate: toDo.dueDate),
+              ],
+            )
+          : null,
+      ModelType.deadline => (null != deadline)
+          ? Wrap(children: [
+              buildDateRow(
+                  startDate: deadline.startDate, dueDate: deadline.dueDate),
+              (deadline.warnMe)
+                  ? Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: Constants.padding),
+                      child: buildAlertRow(alertDate: deadline.warnDate),
+                    )
+                  : const SizedBox.shrink()
+            ])
+          : null,
+      ModelType.reminder =>
+        (null != reminder) ? buildAlertRow(alertDate: reminder.dueDate) : null,
+    };
+  }
+
+  Widget buildDateRow(
+      {required DateTime startDate, required DateTime dueDate}) {
+    return Row(mainAxisSize: MainAxisSize.min, children: [
+      const Flexible(
+        child: Icon(Icons.today_rounded),
+      ),
+      Flexible(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
+          child: AutoSizeText(
+              Jiffy.parseFromDateTime(startDate)
+                  .toLocal()
+                  .format(pattern: "MMM d, hh:mm a"),
+              softWrap: false,
+              overflow: TextOverflow.visible,
+              maxLines: 2,
+              minFontSize: Constants.large),
+        ),
+      ),
+      const Flexible(
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: Constants.padding),
+          child: AutoSizeText(
+            "-",
+            softWrap: false,
+            overflow: TextOverflow.visible,
+            maxLines: 1,
+            minFontSize: Constants.large,
+          ),
+        ),
+      ),
+      const Flexible(
+        child: Icon(Icons.event_rounded),
+      ),
+      Flexible(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
+          child: AutoSizeText(
+              Jiffy.parseFromDateTime(dueDate)
+                  .toLocal()
+                  .format(pattern: "MMM d, hh:mm a"),
+              softWrap: false,
+              overflow: TextOverflow.visible,
+              maxLines: 2,
+              minFontSize: Constants.large),
+        ),
+      ),
+    ]);
+  }
+
+  Widget buildAlertRow({required DateTime alertDate}) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const Flexible(child: Icon(Icons.notifications_on_rounded)),
+        Flexible(
+            child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
+          child: AutoSizeText(
+            Jiffy.parseFromDateTime(alertDate)
+                .toLocal()
+                .format(pattern: "MMM d, hh:mm a"),
+            softWrap: false,
+            overflow: TextOverflow.visible,
+            maxLines: 2,
+            minFontSize: Constants.large,
+          ),
+        ))
+      ],
+    );
+  }
+
+  Widget? buildGroupName({int? id}) {
+    if (null == id) {
+      return null;
+    }
+    return FutureBuilder(
+      future: groupProvider.getGroupByID(id: id),
+      builder: (BuildContext context, AsyncSnapshot<Group?> snapshot) {
+        if (snapshot.connectionState == ConnectionState.done) {
+          Group? group = snapshot.data;
+          if (null != group) {
+            return DecoratedBox(
+              decoration: BoxDecoration(
+                  shape: BoxShape.rectangle,
+                  borderRadius: const BorderRadius.all(
+                      Radius.circular(Constants.roundedCorners)),
+                  border: Border.all(
+                      color: Theme.of(context).colorScheme.outlineVariant,
+                      strokeAlign: BorderSide.strokeAlignOutside)),
+              child: Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: Constants.padding),
+                child: AutoSizeText(
+                  group.name,
+                  minFontSize: Constants.large,
+                  overflow: TextOverflow.visible,
+                  softWrap: false,
+                  maxLines: 1,
+                ),
+              ),
+            );
+          }
+          return const SizedBox.shrink();
+        }
+        return ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 50),
+          child: const LinearProgressIndicator(
+            minHeight: Constants.minIconSize,
+            borderRadius:
+                BorderRadius.all(Radius.circular(Constants.roundedCorners)),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget buildDueDate({required CalendarEvent event}) {
+    DateTime dueDate;
+    String pattern;
+    switch (event.modelType) {
+      case ModelType.toDo:
+        dueDate = event.toDo!.dueDate;
+        pattern = "MMM d";
+        break;
+      case ModelType.deadline:
+        dueDate = event.deadline!.dueDate;
+        pattern = "MMM d";
+        break;
+      case ModelType.reminder:
+        dueDate = event.reminder!.dueDate;
+        pattern = "hh:mm a";
+        break;
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
+      child: AutoSizeText(
+          Jiffy.parseFromDateTime(dueDate).toLocal().format(pattern: pattern),
+          softWrap: false,
+          overflow: TextOverflow.visible,
+          maxLines: 2,
+          minFontSize: Constants.large),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -307,15 +512,15 @@ class _CalendarScreen extends State<CalendarScreen> {
             itemCount: value.length,
             itemBuilder: (BuildContext context, int index) {
               return Padding(
-                padding: const EdgeInsets.all(Constants.halfPadding),
-                child: ListTile(
+                  padding: const EdgeInsets.all(Constants.halfPadding),
+                  child: ListTile(
                     shape: const RoundedRectangleBorder(
                         borderRadius: BorderRadius.all(
                             Radius.circular(Constants.roundedCorners))),
                     leading: getModelIcon(modelType: value[index].modelType),
                     title: AutoSizeText(
                       value[index].title,
-                      minFontSize: Constants.medium,
+                      minFontSize: Constants.large,
                       maxLines: 1,
                       overflow: TextOverflow.visible,
                       softWrap: false,
@@ -341,8 +546,9 @@ class _CalendarScreen extends State<CalendarScreen> {
                           useRootNavigator: false,
                           context: context,
                           builder: (BuildContext context) => dialog);
-                    }),
-              );
+                    },
+                    trailing: buildDueDate(event: value[index]),
+                  ));
             });
       },
     );

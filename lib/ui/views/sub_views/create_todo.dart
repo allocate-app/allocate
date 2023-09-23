@@ -344,16 +344,18 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
 
   @override
   Widget build(BuildContext context) {
-    bool largeScreen =
-        (MediaQuery.of(context).size.width >= Constants.largeScreen);
-    bool smallScreen =
-        (MediaQuery.of(context).size.width <= Constants.smallScreen);
+    double width = MediaQuery.of(context).size.width;
+    bool largeScreen = (width >= Constants.largeScreen);
+    bool smallScreen = (width <= Constants.smallScreen);
+    bool hugeScreen = (width >= Constants.hugeScreen);
+
     bool showTimeTile = (null != startDate || null != dueDate);
     return (largeScreen)
         ? buildDesktopDialog(
             context: context,
             showTimeTile: showTimeTile,
-            smallScreen: smallScreen)
+            smallScreen: smallScreen,
+            hugeScreen: hugeScreen)
         : buildMobileDialog(
             context: context,
             showTimeTile: showTimeTile,
@@ -363,7 +365,8 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
   Dialog buildDesktopDialog(
       {required BuildContext context,
       bool smallScreen = false,
-      showTimeTile = false}) {
+      bool showTimeTile = false,
+      bool hugeScreen = false}) {
     return Dialog(
       insetPadding: const EdgeInsets.all(Constants.outerDialogPadding),
       child: ConstrainedBox(
@@ -399,7 +402,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                                   children: [
                                     Flexible(
                                       child: Tooltip(
-                                        message: "Expected Task Duration",
+                                        message: "Expected",
                                         child: Padding(
                                           padding: const EdgeInsets.symmetric(
                                               horizontal: Constants.padding),
@@ -435,7 +438,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                                     ),
                                     Flexible(
                                       child: Tooltip(
-                                        message: "Actual Task Duration",
+                                        message: "Projected",
                                         child: Padding(
                                           padding: const EdgeInsets.symmetric(
                                               horizontal: Constants.padding),
@@ -445,7 +448,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                                                 child: FittedBox(
                                                   fit: BoxFit.fill,
                                                   child: Icon(
-                                                    Icons.timer,
+                                                    Icons.timer_rounded,
                                                   ),
                                                 ),
                                               ),
@@ -530,82 +533,9 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                                     ? Padding(
                                         padding: const EdgeInsets.symmetric(
                                             horizontal: Constants.innerPadding),
-                                        child: Card(
-                                          clipBehavior: Clip.antiAlias,
-                                          elevation: 0,
-                                          color: Colors.transparent,
-                                          shape: RoundedRectangleBorder(
-                                              side: BorderSide(
-                                                  color: Theme.of(context)
-                                                      .colorScheme
-                                                      .outline,
-                                                  strokeAlign: BorderSide
-                                                      .strokeAlignInside),
-                                              borderRadius:
-                                                  const BorderRadius.all(
-                                                      Radius.circular(Constants
-                                                          .roundedCorners))),
-                                          child: ExpansionTile(
-                                            initiallyExpanded: expanded,
-                                            onExpansionChanged: (value) =>
-                                                setState(
-                                                    () => expanded = value),
-                                            title: const AutoSizeText("Steps",
-                                                maxLines: 1,
-                                                overflow: TextOverflow.visible,
-                                                softWrap: false,
-                                                minFontSize: Constants.small),
-                                            subtitle: AutoSizeText(
-                                                "${min(shownTasks, Constants.numTasks[taskType]!)}/${Constants.numTasks[taskType]!} Steps",
-                                                maxLines: 1,
-                                                overflow: TextOverflow.visible,
-                                                softWrap: false,
-                                                minFontSize: Constants.small),
-                                            collapsedShape:
-                                                const RoundedRectangleBorder(
-                                                    side: BorderSide(
-                                                        strokeAlign: BorderSide
-                                                            .strokeAlignOutside),
-                                                    borderRadius: BorderRadius
-                                                        .all(Radius.circular(
-                                                            Constants
-                                                                .roundedCorners))),
-                                            shape: const RoundedRectangleBorder(
-                                                side: BorderSide(
-                                                    strokeAlign: BorderSide
-                                                        .strokeAlignOutside),
-                                                borderRadius: BorderRadius.all(
-                                                    Radius.circular(Constants
-                                                        .roundedCorners))),
-                                            children: [
-                                              buildReorderableSubTasks(
-                                                  smallScreen: smallScreen,
-                                                  physics: scrollPhysics),
-                                              (shownTasks <
-                                                      Constants
-                                                          .numTasks[taskType]!)
-                                                  ? ListTile(
-                                                      leading: const Icon(
-                                                          Icons.add_outlined),
-                                                      title: const AutoSizeText(
-                                                          "Add a step",
-                                                          maxLines: 1,
-                                                          overflow: TextOverflow
-                                                              .visible,
-                                                          softWrap: false,
-                                                          minFontSize:
-                                                              Constants.small),
-                                                      onTap: () => setState(() {
-                                                            shownTasks++;
-                                                            shownTasks = min(
-                                                                shownTasks,
-                                                                Constants
-                                                                    .maxNumTasks);
-                                                          }))
-                                                  : const SizedBox.shrink(),
-                                            ],
-                                          ),
-                                        ),
+                                        child: buildSubTasksTile(
+                                            context: context,
+                                            smallScreen: smallScreen),
                                       )
                                     : const SizedBox.shrink(),
 
@@ -633,14 +563,10 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                                   child: buildPriorityTile(
                                       smallScreen: smallScreen),
                                 ),
-
-                                // const Padding(
-                                //   padding: EdgeInsets.symmetric(vertical: 8.0),
-                                //   child: PaddedDivider(padding: Constants.innerPadding),
-                                // )
                               ]),
                         ),
                         Expanded(
+                          flex: (hugeScreen) ? 2 : 1,
                           child: ListView(
                               controller: subScrollControllerRight,
                               physics: scrollPhysics,
@@ -726,6 +652,60 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                 )
               ]),
         ),
+      ),
+    );
+  }
+
+  Card buildSubTasksTile(
+      {required BuildContext context, bool smallScreen = false}) {
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      elevation: 0,
+      color: Colors.transparent,
+      shape: RoundedRectangleBorder(
+          side: BorderSide(
+              width: 2,
+              color: Theme.of(context).colorScheme.outlineVariant,
+              strokeAlign: BorderSide.strokeAlignInside),
+          borderRadius: const BorderRadius.all(
+              Radius.circular(Constants.roundedCorners))),
+      child: ExpansionTile(
+        initiallyExpanded: expanded,
+        onExpansionChanged: (value) => setState(() => expanded = value),
+        title: const AutoSizeText("Steps",
+            maxLines: 1,
+            overflow: TextOverflow.visible,
+            softWrap: false,
+            minFontSize: Constants.small),
+        subtitle: AutoSizeText(
+            "${min(shownTasks, Constants.numTasks[taskType]!)}/${Constants.numTasks[taskType]!} Steps",
+            maxLines: 1,
+            overflow: TextOverflow.visible,
+            softWrap: false,
+            minFontSize: Constants.small),
+        collapsedShape: const RoundedRectangleBorder(
+            borderRadius:
+                BorderRadius.all(Radius.circular(Constants.roundedCorners))),
+        shape: const RoundedRectangleBorder(
+            borderRadius:
+                BorderRadius.all(Radius.circular(Constants.roundedCorners))),
+        children: [
+          buildReorderableSubTasks(
+              smallScreen: smallScreen, physics: scrollPhysics),
+          (shownTasks < Constants.numTasks[taskType]!)
+              ? ListTile(
+                  leading: const Icon(Icons.add_rounded),
+                  title: const AutoSizeText("Add a step",
+                      maxLines: 1,
+                      overflow: TextOverflow.visible,
+                      softWrap: false,
+                      minFontSize: Constants.small),
+                  onTap: () => setState(() {
+                        shownTasks++;
+                        shownTasks = min(shownTasks, Constants.maxNumTasks);
+                      }))
+              : const SizedBox.shrink(),
+        ],
       ),
     );
   }
@@ -890,72 +870,8 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                           ? Padding(
                               padding: const EdgeInsets.symmetric(
                                   horizontal: Constants.innerPadding),
-                              child: Card(
-                                clipBehavior: Clip.antiAlias,
-                                elevation: 0,
-                                color: Colors.transparent,
-                                shape: RoundedRectangleBorder(
-                                    side: BorderSide(
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .outline,
-                                        strokeAlign:
-                                            BorderSide.strokeAlignInside),
-                                    borderRadius: const BorderRadius.all(
-                                        Radius.circular(
-                                            Constants.roundedCorners))),
-                                child: ExpansionTile(
-                                  initiallyExpanded: expanded,
-                                  onExpansionChanged: (value) =>
-                                      setState(() => expanded = value),
-                                  title: const AutoSizeText("Steps",
-                                      maxLines: 1,
-                                      overflow: TextOverflow.visible,
-                                      softWrap: false,
-                                      minFontSize: Constants.small),
-                                  subtitle: AutoSizeText(
-                                      "${min(shownTasks, Constants.numTasks[taskType]!)}/${Constants.numTasks[taskType]!} Steps",
-                                      maxLines: 1,
-                                      overflow: TextOverflow.visible,
-                                      softWrap: false,
-                                      minFontSize: Constants.small),
-                                  collapsedShape: const RoundedRectangleBorder(
-                                      side: BorderSide(
-                                          strokeAlign:
-                                              BorderSide.strokeAlignOutside),
-                                      borderRadius: BorderRadius.all(
-                                          Radius.circular(
-                                              Constants.roundedCorners))),
-                                  shape: const RoundedRectangleBorder(
-                                      side: BorderSide(
-                                          strokeAlign:
-                                              BorderSide.strokeAlignOutside),
-                                      borderRadius: BorderRadius.all(
-                                          Radius.circular(
-                                              Constants.roundedCorners))),
-                                  children: [
-                                    buildReorderableSubTasks(
-                                        smallScreen: smallScreen,
-                                        physics: scrollPhysics),
-                                    (shownTasks < Constants.numTasks[taskType]!)
-                                        ? ListTile(
-                                            leading:
-                                                const Icon(Icons.add_outlined),
-                                            title: const AutoSizeText(
-                                                "Add a step",
-                                                maxLines: 1,
-                                                overflow: TextOverflow.visible,
-                                                softWrap: false,
-                                                minFontSize: Constants.small),
-                                            onTap: () => setState(() {
-                                                  shownTasks++;
-                                                  shownTasks = min(shownTasks,
-                                                      Constants.maxNumTasks);
-                                                }))
-                                        : const SizedBox.shrink(),
-                                  ],
-                                ),
-                              ),
+                              child: buildSubTasksTile(
+                                  context: context, smallScreen: smallScreen),
                             )
                           : const SizedBox.shrink(),
 
@@ -989,8 +905,6 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                       ),
 
                       // Group Picker
-                      // TODO: figure out how to make this work with screen readers.
-                      // I don't know if SemanticsService will actually work.
                       Padding(
                         padding: const EdgeInsets.symmetric(
                             horizontal: Constants.padding),
@@ -1082,7 +996,10 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
   ListTile buildRepeatableTile(
       {required BuildContext context, bool smallScreen = false}) {
     return ListTile(
-        leading: const Icon(Icons.event_repeat_outlined),
+        leading: const Icon(Icons.event_repeat_rounded),
+        shape: const RoundedRectangleBorder(
+            borderRadius:
+                BorderRadius.all(Radius.circular(Constants.roundedCorners))),
         title: (frequency == Frequency.once)
             ? const AutoSizeText("Set Recurring?",
                 overflow: TextOverflow.visible,
@@ -1108,7 +1025,8 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                 }
 
                 int cacheSkip = repeatSkip;
-                return StatefulBuilder(builder: (context, setState) {
+                return StatefulBuilder(builder: (BuildContext context,
+                    void Function(void Function()) setState) {
                   return Dialog(
                       child: Padding(
                           padding: const EdgeInsets.all(Constants.innerPadding),
@@ -1149,7 +1067,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                                     Flexible(
                                       child: FittedBox(
                                           fit: BoxFit.fill,
-                                          child: Icon(Icons.repeat_outlined,
+                                          child: Icon(Icons.repeat_rounded,
                                               size: Constants.medIconSize)),
                                     ),
                                   ],
@@ -1165,45 +1083,52 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                                           Constants.halfPadding)
                                       : const EdgeInsets.all(
                                           Constants.innerPadding),
-                                  child: InputDecorator(
-                                    decoration: const InputDecoration(
-                                      border: OutlineInputBorder(
-                                          gapPadding: 1,
-                                          borderRadius: BorderRadius.all(
-                                              Radius.circular(
-                                                  Constants.circular)),
-                                          borderSide: BorderSide(
-                                              strokeAlign: BorderSide
-                                                  .strokeAlignOutside)),
+                                  child: DecoratedBox(
+                                    decoration: BoxDecoration(
+                                      border: Border.all(
+                                        width: 2,
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .outlineVariant,
+                                        strokeAlign:
+                                            BorderSide.strokeAlignOutside,
+                                      ),
+                                      borderRadius: const BorderRadius.all(
+                                          Radius.circular(Constants.circular)),
                                     ),
-                                    child: DropdownButtonHideUnderline(
-                                      child: DropdownButton<Frequency>(
-                                        padding: const EdgeInsets.symmetric(
-                                            horizontal: Constants.padding),
-                                        isDense: true,
-                                        isExpanded: true,
-                                        dropdownColor: Constants.dialogColor(
-                                            context: context),
-                                        borderRadius: const BorderRadius.all(
-                                            Radius.circular(
-                                                Constants.roundedCorners)),
-                                        value: cacheFreq,
-                                        onChanged: (Frequency? value) =>
-                                            setState(() =>
-                                                cacheFreq = value ?? cacheFreq),
-                                        items: Frequency.values
-                                            .map((Frequency frequency) =>
-                                                DropdownMenuItem<Frequency>(
-                                                  value: frequency,
-                                                  child: AutoSizeText(
-                                                    "${toBeginningOfSentenceCase(frequency.name)}",
-                                                    softWrap: false,
-                                                    maxLines: 1,
-                                                    minFontSize:
-                                                        Constants.small,
-                                                  ),
-                                                ))
-                                            .toList(),
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(
+                                          Constants.innerPadding),
+                                      child: DropdownButtonHideUnderline(
+                                        child: DropdownButton<Frequency>(
+                                          focusColor: Colors.transparent,
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: Constants.padding),
+                                          isDense: true,
+                                          isExpanded: true,
+                                          dropdownColor: Constants.dialogColor(
+                                              context: context),
+                                          borderRadius: const BorderRadius.all(
+                                              Radius.circular(
+                                                  Constants.roundedCorners)),
+                                          value: cacheFreq,
+                                          onChanged: (Frequency? value) =>
+                                              setState(() => cacheFreq =
+                                                  value ?? cacheFreq),
+                                          items: Frequency.values
+                                              .map((Frequency frequency) =>
+                                                  DropdownMenuItem<Frequency>(
+                                                    value: frequency,
+                                                    child: AutoSizeText(
+                                                      "${toBeginningOfSentenceCase(frequency.name)}",
+                                                      softWrap: false,
+                                                      maxLines: 1,
+                                                      minFontSize:
+                                                          Constants.small,
+                                                    ),
+                                                  ))
+                                              .toList(),
+                                        ),
                                       ),
                                     ),
                                   ),
@@ -1363,7 +1288,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                                               right: Constants.padding),
                                           child: FilledButton.tonalIcon(
                                               icon: const Icon(
-                                                  Icons.close_outlined),
+                                                  Icons.close_rounded),
                                               onPressed: () =>
                                                   Navigator.pop(context),
                                               label: const AutoSizeText(
@@ -1382,7 +1307,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                                               left: Constants.padding),
                                           child: FilledButton.icon(
                                             icon:
-                                                const Icon(Icons.done_outlined),
+                                                const Icon(Icons.done_rounded),
                                             onPressed: () {
                                               setState(() {
                                                 frequency = cacheFreq;
@@ -1418,7 +1343,10 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
 
   ListTile buildTimeTile() {
     return ListTile(
-        leading: const Icon(Icons.schedule_outlined),
+        leading: const Icon(Icons.schedule_rounded),
+        shape: const RoundedRectangleBorder(
+            borderRadius:
+                BorderRadius.all(Radius.circular(Constants.roundedCorners))),
         title: (null == startTime && null == dueTime)
             ? const AutoSizeText(
                 "Add Times",
@@ -1438,12 +1366,15 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                         minFontSize: Constants.small,
                       ))
                     : Flexible(
+                        child: Tooltip(
+                        message: "Start at",
                         child: AutoSizeText(
-                        "Start @: ${startTime!.format(context).toString()}",
-                        softWrap: true,
-                        overflow: TextOverflow.visible,
-                        maxLines: 2,
-                        minFontSize: Constants.small,
+                          startTime!.format(context).toString(),
+                          softWrap: true,
+                          overflow: TextOverflow.visible,
+                          maxLines: 2,
+                          minFontSize: Constants.small,
+                        ),
                       )),
                 (null == dueTime)
                     ? const Flexible(
@@ -1452,7 +1383,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                               horizontal: Constants.padding),
                           child: FittedBox(
                               fit: BoxFit.fill,
-                              child: Icon(Icons.history_toggle_off_outlined)),
+                              child: Icon(Icons.history_toggle_off_rounded)),
                         ),
                       )
                     : const Flexible(
@@ -1461,7 +1392,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                             EdgeInsets.symmetric(horizontal: Constants.padding),
                         child: FittedBox(
                             fit: BoxFit.fill,
-                            child: Icon(Icons.schedule_outlined)),
+                            child: Icon(Icons.schedule_rounded)),
                       )),
                 (null == dueTime)
                     ? const Flexible(
@@ -1474,12 +1405,15 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                         ),
                       )
                     : Flexible(
-                        child: AutoSizeText(
-                          "Due @: ${dueTime!.format(context).toString()}",
-                          softWrap: true,
-                          overflow: TextOverflow.visible,
-                          maxLines: 2,
-                          minFontSize: Constants.small,
+                        child: Tooltip(
+                          message: "Due at",
+                          child: AutoSizeText(
+                            dueTime!.format(context).toString(),
+                            softWrap: true,
+                            overflow: TextOverflow.visible,
+                            maxLines: 2,
+                            minFontSize: Constants.small,
+                          ),
                         ),
                       ),
               ]),
@@ -1490,7 +1424,9 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                 TimeOfDay? tmpStart = startTime;
                 TimeOfDay? tmpDue = dueTime;
                 return StatefulBuilder(
-                    builder: (context, setState) => Dialog(
+                    builder: (BuildContext context,
+                            void Function(void Function()) setState) =>
+                        Dialog(
                             child: Padding(
                           padding: const EdgeInsets.all(Constants.innerPadding),
                           child: Column(
@@ -1530,7 +1466,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                                       Flexible(
                                         child: FittedBox(
                                             fit: BoxFit.fill,
-                                            child: Icon(Icons.schedule_outlined,
+                                            child: Icon(Icons.schedule_rounded,
                                                 size: Constants.medIconSize)),
                                       ),
                                     ],
@@ -1547,6 +1483,19 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                                         Expanded(
                                           flex: 10,
                                           child: OutlinedButton(
+                                              style: OutlinedButton.styleFrom(
+                                                side: BorderSide(
+                                                  width: 2,
+                                                  color: Theme.of(context)
+                                                      .colorScheme
+                                                      .outlineVariant,
+                                                ),
+                                                shape: const RoundedRectangleBorder(
+                                                    borderRadius: BorderRadius
+                                                        .all(Radius.circular(
+                                                            Constants
+                                                                .roundedCorners))),
+                                              ),
                                               onPressed: () async {
                                                 final TimeOfDay? picked =
                                                     await showTimePicker(
@@ -1589,6 +1538,19 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                                         Expanded(
                                           flex: 10,
                                           child: OutlinedButton(
+                                              style: OutlinedButton.styleFrom(
+                                                side: BorderSide(
+                                                  width: 2,
+                                                  color: Theme.of(context)
+                                                      .colorScheme
+                                                      .outlineVariant,
+                                                ),
+                                                shape: const RoundedRectangleBorder(
+                                                    borderRadius: BorderRadius
+                                                        .all(Radius.circular(
+                                                            Constants
+                                                                .roundedCorners))),
+                                              ),
                                               onPressed: () async {
                                                 final TimeOfDay? picked =
                                                     await showTimePicker(
@@ -1634,7 +1596,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                                               right: Constants.padding),
                                           child: FilledButton.tonalIcon(
                                               icon: const Icon(
-                                                  Icons.close_outlined),
+                                                  Icons.close_rounded),
                                               onPressed: () =>
                                                   Navigator.pop(context),
                                               label: const AutoSizeText(
@@ -1653,7 +1615,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                                               left: Constants.padding),
                                           child: FilledButton.icon(
                                             icon:
-                                                const Icon(Icons.done_outlined),
+                                                const Icon(Icons.done_rounded),
                                             onPressed: () {
                                               setState(() {
                                                 startTime = tmpStart;
@@ -1688,7 +1650,10 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
 
   ListTile buildDateTile({required BuildContext context}) {
     return ListTile(
-      leading: const Icon(Icons.today_outlined),
+      leading: const Icon(Icons.today_rounded),
+      shape: const RoundedRectangleBorder(
+          borderRadius:
+              BorderRadius.all(Radius.circular(Constants.roundedCorners))),
       title: (null == startDate && null == dueDate)
           ? const AutoSizeText(
               "Add Dates",
@@ -1711,9 +1676,11 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                       )
                     : Flexible(
                         child: AutoSizeText(
-                            Jiffy.parseFromDateTime(startDate!).format(
-                              pattern: "MMM d",
-                            ),
+                            Jiffy.parseFromDateTime(startDate!)
+                                .toLocal()
+                                .format(
+                                  pattern: "MMM d",
+                                ),
                             softWrap: true,
                             overflow: TextOverflow.visible,
                             maxLines: 2,
@@ -1735,13 +1702,13 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                     ? const Flexible(
                         child: Padding(
                           padding: EdgeInsets.only(right: Constants.padding),
-                          child: Icon(Icons.today_outlined),
+                          child: Icon(Icons.today_rounded),
                         ),
                       )
                     : const Flexible(
                         child: Padding(
                         padding: EdgeInsets.only(right: Constants.padding),
-                        child: Icon(Icons.event_outlined),
+                        child: Icon(Icons.event_rounded),
                       )),
                 (null == dueDate)
                     ? const Flexible(
@@ -1756,6 +1723,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                     : Flexible(
                         child: AutoSizeText(
                             Jiffy.parseFromDateTime(dueDate!)
+                                .toLocal()
                                 .format(pattern: "MMM d"),
                             softWrap: true,
                             overflow: TextOverflow.visible,
@@ -1788,7 +1756,9 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
 
               // List ->
               return StatefulBuilder(
-                  builder: (context, setState) => Dialog(
+                  builder: (BuildContext context,
+                          void Function(void Function()) setState) =>
+                      Dialog(
                           child: Padding(
                         padding: const EdgeInsets.all(Constants.innerPadding),
                         child: Column(
@@ -1828,7 +1798,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                                     Flexible(
                                       child: FittedBox(
                                           fit: BoxFit.fill,
-                                          child: Icon(Icons.date_range_outlined,
+                                          child: Icon(Icons.date_range_rounded,
                                               size: Constants.medIconSize)),
                                     ),
                                   ],
@@ -1849,6 +1819,10 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                                             borderRadius: BorderRadius.circular(
                                                 Constants.roundedCorners),
                                             border: Border.all(
+                                                width: 2,
+                                                color: Theme.of(context)
+                                                    .colorScheme
+                                                    .outlineVariant,
                                                 strokeAlign: BorderSide
                                                     .strokeAlignOutside),
                                           ),
@@ -1872,6 +1846,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                                                           ? AutoSizeText(
                                                               Jiffy.parseFromDateTime(
                                                                       tmpStart!)
+                                                                  .toLocal()
                                                                   .format(
                                                                       pattern:
                                                                           "yMMMMd"),
@@ -1898,7 +1873,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                                                 (tmpStart != null)
                                                     ? IconButton(
                                                         icon: const Icon(Icons
-                                                            .clear_outlined),
+                                                            .clear_rounded),
                                                         selectedIcon:
                                                             const Icon(
                                                                 Icons.clear),
@@ -1935,6 +1910,10 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                                             borderRadius: BorderRadius.circular(
                                                 Constants.roundedCorners),
                                             border: Border.all(
+                                                width: 2,
+                                                color: Theme.of(context)
+                                                    .colorScheme
+                                                    .outlineVariant,
                                                 strokeAlign: BorderSide
                                                     .strokeAlignOutside),
                                           ),
@@ -1956,6 +1935,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                                                           ? AutoSizeText(
                                                               Jiffy.parseFromDateTime(
                                                                       tmpDue!)
+                                                                  .toLocal()
                                                                   .format(
                                                                       pattern:
                                                                           "yMMMMd"),
@@ -1982,7 +1962,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                                                 (tmpDue != null)
                                                     ? IconButton(
                                                         icon: const Icon(Icons
-                                                            .clear_outlined),
+                                                            .clear_rounded),
                                                         selectedIcon:
                                                             const Icon(
                                                                 Icons.clear),
@@ -2039,8 +2019,8 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                                         padding: const EdgeInsets.only(
                                             right: Constants.padding),
                                         child: FilledButton.tonalIcon(
-                                            icon: const Icon(
-                                                Icons.close_outlined),
+                                            icon:
+                                                const Icon(Icons.close_rounded),
                                             onPressed: () =>
                                                 Navigator.pop(context),
                                             label: const AutoSizeText("Cancel",
@@ -2055,7 +2035,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                                         padding: const EdgeInsets.only(
                                             left: Constants.padding),
                                         child: FilledButton.icon(
-                                          icon: const Icon(Icons.done_outlined),
+                                          icon: const Icon(Icons.done_rounded),
                                           onPressed: () {
                                             setState(() {
                                               startDate = tmpStart;
@@ -2217,7 +2197,9 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
             key: ValueKey(index),
             checkboxShape: const CircleBorder(),
             controlAffinity: ListTileControlAffinity.leading,
-            shape: const CircleBorder(),
+            shape: const RoundedRectangleBorder(
+                borderRadius: BorderRadius.all(
+                    Radius.circular(Constants.roundedCorners))),
             title: Row(
               children: [
                 IconButton(
@@ -2230,51 +2212,58 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                         context: context,
                         builder: (BuildContext context) {
                           return StatefulBuilder(
-                            builder: (context, setState) => Center(
-                                heightFactor: 1,
-                                child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      // const Icon(Icons.drag_handle_rounded),
-                                      const Text("Step Drain",
-                                          style: Constants.headerStyle),
-                                      Padding(
-                                          padding: const EdgeInsets.all(
-                                              Constants.padding),
-                                          child: Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.spaceEvenly,
-                                            children: [
-                                              const Icon(Icons.battery_full),
-                                              Expanded(
-                                                child: Slider(
-                                                  value: subTasks[index]
-                                                      .weight
-                                                      .toDouble(),
-                                                  max: Constants.maxTaskWeight
-                                                      .toDouble(),
-                                                  label: (subTasks[index]
-                                                              .weight >
-                                                          (Constants.maxTaskWeight /
-                                                                  2)
-                                                              .floor())
-                                                      ? " ${subTasks[index].weight} ${Constants.lowBattery}"
-                                                      : " ${subTasks[index].weight} ${Constants.fullBattery}",
-                                                  divisions:
-                                                      Constants.maxTaskWeight,
-                                                  onChanged: (value) =>
-                                                      setState(() {
-                                                    checkClose = true;
-                                                    subTasks[index].weight =
-                                                        value.toInt();
-                                                  }),
-                                                ),
-                                              ),
-                                              const Icon(Icons.battery_1_bar),
-                                            ],
-                                          )),
-                                    ])),
+                            builder: (BuildContext context,
+                                    void Function(void Function()) setState) =>
+                                Center(
+                                    heightFactor: 1,
+                                    child: Column(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          // const Icon(Icons.drag_handle_rounded),
+                                          const Text("Step Drain",
+                                              style: Constants.headerStyle),
+                                          Padding(
+                                              padding: const EdgeInsets.all(
+                                                  Constants.padding),
+                                              child: Row(
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment
+                                                        .spaceEvenly,
+                                                children: [
+                                                  const Icon(Icons
+                                                      .battery_full_rounded),
+                                                  Expanded(
+                                                    child: Slider(
+                                                      value: subTasks[index]
+                                                          .weight
+                                                          .toDouble(),
+                                                      max: Constants
+                                                          .maxTaskWeight
+                                                          .toDouble(),
+                                                      label: (subTasks[index]
+                                                                  .weight >
+                                                              (Constants.maxTaskWeight /
+                                                                      2)
+                                                                  .floor())
+                                                          ? " ${subTasks[index].weight} ${Constants.lowBattery}"
+                                                          : " ${subTasks[index].weight} ${Constants.fullBattery}",
+                                                      divisions: Constants
+                                                          .maxTaskWeight,
+                                                      onChanged: (value) =>
+                                                          setState(() {
+                                                        checkClose = true;
+                                                        subTasks[index].weight =
+                                                            value.toInt();
+                                                      }),
+                                                    ),
+                                                  ),
+                                                  const Icon(Icons
+                                                      .battery_1_bar_rounded),
+                                                ],
+                                              )),
+                                        ])),
                           );
                         }).whenComplete(() => setState(() {
                           checkClose = true;
@@ -2321,7 +2310,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                   padding: const EdgeInsets.symmetric(
                       horizontal: Constants.innerPadding),
                   child: IconButton(
-                      icon: const Icon(Icons.delete),
+                      icon: const Icon(Icons.delete_rounded),
                       onPressed: () => setState(() {
                             SubTask st = subTasks.removeAt(index);
                             st = SubTask();
@@ -2403,15 +2392,19 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                           checkClose = true;
                           myDay = !myDay;
                         }))
-                : const Icon(Icons.block_outlined)));
+                : const Icon(Icons.block_rounded)));
   }
 
   SegmentedButton<Priority> buildPriorityTile({bool smallScreen = false}) {
     return SegmentedButton<Priority>(
-        selectedIcon: const Icon(Icons.flag_circle),
+        selectedIcon: const Icon(Icons.flag_circle_rounded),
         style: ButtonStyle(
           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
           visualDensity: VisualDensity.adaptivePlatformDensity,
+          side: MaterialStatePropertyAll<BorderSide>(BorderSide(
+            width: 2,
+            color: Theme.of(context).colorScheme.outlineVariant,
+          )),
         ),
         segments: Priority.values
             .map((Priority type) => ButtonSegment<Priority>(
@@ -2441,6 +2434,14 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
           isDense: smallScreen,
           contentPadding: const EdgeInsets.all(Constants.innerPadding),
           hintText: "Description",
+          enabledBorder: OutlineInputBorder(
+              borderRadius: const BorderRadius.all(
+                  Radius.circular(Constants.roundedCorners)),
+              borderSide: BorderSide(
+                width: 2,
+                color: Theme.of(context).colorScheme.outlineVariant,
+                strokeAlign: BorderSide.strokeAlignOutside,
+              )),
           border: const OutlineInputBorder(
               borderRadius:
                   BorderRadius.all(Radius.circular(Constants.roundedCorners)),
@@ -2454,6 +2455,9 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
       {required BuildContext context, bool smallScreen = false}) {
     return ListTile(
       leading: const Icon(Icons.timer_outlined),
+      shape: const RoundedRectangleBorder(
+          borderRadius:
+              BorderRadius.all(Radius.circular(Constants.roundedCorners))),
       title: (expectedDuration > 0)
           ? Row(
               children: [
@@ -2474,7 +2478,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                   padding:
                       EdgeInsets.symmetric(horizontal: Constants.innerPadding),
                   child: Icon(
-                    Icons.timer,
+                    Icons.timer_rounded,
                   ),
                 ),
                 Flexible(
@@ -2499,7 +2503,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
               softWrap: true),
       trailing: (expectedDuration > 0)
           ? IconButton(
-              icon: const Icon(Icons.clear),
+              icon: const Icon(Icons.clear_rounded),
               onPressed: () => setState(() {
                     checkClose = true;
                     expectedDuration = 0;
@@ -2517,168 +2521,179 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
             int seconds = time;
 
             return StatefulBuilder(
-              builder: (context, setState) => Dialog(
-                  child: Padding(
-                      padding: const EdgeInsets.all(Constants.innerPadding),
-                      child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Row(
-                                mainAxisAlignment: MainAxisAlignment.start,
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Expanded(
-                                    child: AutoSizeText(
-                                      "Expected Duration",
-                                      style: Constants.headerStyle,
-                                      softWrap: true,
-                                      overflow: TextOverflow.visible,
-                                      maxLines: 2,
-                                      minFontSize: Constants.medium,
-                                    ),
-                                  )
-                                ]),
-                            const Flexible(
-                              child: Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                mainAxisSize: MainAxisSize.max,
-                                children: [
-                                  Flexible(
-                                      child: AutoSizeText(
-                                    "Hours | Minutes | Seconds ",
-                                    style: Constants.largeHeaderStyle,
-                                    softWrap: true,
-                                    overflow: TextOverflow.visible,
-                                    maxLines: 1,
-                                    minFontSize: Constants.large,
-                                  )),
-                                  Flexible(
-                                    child: FittedBox(
-                                        fit: BoxFit.fill,
-                                        child: Icon(Icons.timer_outlined,
-                                            size: Constants.medIconSize)),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            Row(
+              builder: (BuildContext context,
+                      void Function(void Function()) setState) =>
+                  Dialog(
+                      child: Padding(
+                          padding: const EdgeInsets.all(Constants.innerPadding),
+                          child: Column(
                               mainAxisSize: MainAxisSize.min,
-                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Expanded(
-                                  child: NumberPicker(
-                                    textStyle: Constants.numberPickerSecondary(
-                                        context: context),
-                                    selectedTextStyle:
-                                        Constants.numberPickerPrimary(
-                                            context: context),
-                                    minValue: 0,
-                                    maxValue: 100,
-                                    value: hours,
-                                    haptics: true,
-                                    onChanged: (value) {
-                                      SemanticsService.announce("$value, hours",
-                                          Directionality.of(context));
-                                      setState(() => hours = value);
-                                    },
+                                const Row(
+                                    mainAxisAlignment: MainAxisAlignment.start,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Expanded(
+                                        child: AutoSizeText(
+                                          "Expected Duration",
+                                          style: Constants.headerStyle,
+                                          softWrap: true,
+                                          overflow: TextOverflow.visible,
+                                          maxLines: 2,
+                                          minFontSize: Constants.medium,
+                                        ),
+                                      )
+                                    ]),
+                                const Flexible(
+                                  child: Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    mainAxisSize: MainAxisSize.max,
+                                    children: [
+                                      Flexible(
+                                          child: AutoSizeText(
+                                        "Hours | Minutes | Seconds ",
+                                        style: Constants.largeHeaderStyle,
+                                        softWrap: true,
+                                        overflow: TextOverflow.visible,
+                                        maxLines: 1,
+                                        minFontSize: Constants.large,
+                                      )),
+                                      Flexible(
+                                        child: FittedBox(
+                                            fit: BoxFit.fill,
+                                            child: Icon(Icons.timer_outlined,
+                                                size: Constants.medIconSize)),
+                                      ),
+                                    ],
                                   ),
                                 ),
-                                const Padding(
-                                    padding: EdgeInsets.symmetric(
-                                        horizontal: Constants.padding),
-                                    child:
-                                        Text(":", style: Constants.timeColon)),
-                                Expanded(
-                                  child: NumberPicker(
-                                    textStyle: Constants.numberPickerSecondary(
-                                        context: context),
-                                    selectedTextStyle:
-                                        Constants.numberPickerPrimary(
-                                            context: context),
-                                    minValue: 0,
-                                    maxValue: 59,
-                                    value: minutes,
-                                    haptics: true,
-                                    onChanged: (value) {
-                                      SemanticsService.announce(
-                                          "$value, minutes",
-                                          Directionality.of(context));
-                                      setState(() => minutes = value);
-                                    },
-                                  ),
-                                ),
-                                const Padding(
-                                    padding: EdgeInsets.symmetric(
-                                        horizontal: Constants.padding),
-                                    child:
-                                        Text(":", style: Constants.timeColon)),
-                                Expanded(
-                                  child: NumberPicker(
-                                    textStyle: Constants.numberPickerSecondary(
-                                        context: context),
-                                    selectedTextStyle:
-                                        Constants.numberPickerPrimary(
-                                            context: context),
-                                    minValue: 0,
-                                    maxValue: 59,
-                                    value: seconds,
-                                    haptics: true,
-                                    onChanged: (value) {
-                                      SemanticsService.announce(
-                                          "$value, seconds",
-                                          Directionality.of(context));
-                                      setState(() => seconds = value);
-                                    },
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 20),
-                            Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceEvenly,
-                                children: [
-                                  Expanded(
-                                    child: Padding(
-                                      padding: const EdgeInsets.only(
-                                          right: Constants.padding),
-                                      child: FilledButton.tonalIcon(
-                                          icon:
-                                              const Icon(Icons.close_outlined),
-                                          onPressed: () =>
-                                              Navigator.pop(context, 0),
-                                          label: const AutoSizeText("Cancel",
-                                              softWrap: false,
-                                              overflow: TextOverflow.visible,
-                                              maxLines: 1,
-                                              minFontSize: Constants.small)),
-                                    ),
-                                  ),
-                                  Expanded(
-                                    child: Padding(
-                                      padding: const EdgeInsets.only(
-                                          left: Constants.padding),
-                                      child: FilledButton.icon(
-                                        icon: const Icon(Icons.done_outlined),
-                                        onPressed: () {
-                                          Navigator.pop(
-                                              context,
-                                              (hours * 3600) +
-                                                  (minutes * 60) +
-                                                  seconds);
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceEvenly,
+                                  children: [
+                                    Expanded(
+                                      child: NumberPicker(
+                                        textStyle:
+                                            Constants.numberPickerSecondary(
+                                                context: context),
+                                        selectedTextStyle:
+                                            Constants.numberPickerPrimary(
+                                                context: context),
+                                        minValue: 0,
+                                        maxValue: 100,
+                                        value: hours,
+                                        haptics: true,
+                                        onChanged: (value) {
+                                          SemanticsService.announce(
+                                              "$value, hours",
+                                              Directionality.of(context));
+                                          setState(() => hours = value);
                                         },
-                                        label: const AutoSizeText("Done",
-                                            softWrap: false,
-                                            overflow: TextOverflow.visible,
-                                            maxLines: 1,
-                                            minFontSize: Constants.small),
                                       ),
                                     ),
-                                  )
-                                ])
-                          ]))),
+                                    const Padding(
+                                        padding: EdgeInsets.symmetric(
+                                            horizontal: Constants.padding),
+                                        child: Text(":",
+                                            style: Constants.timeColon)),
+                                    Expanded(
+                                      child: NumberPicker(
+                                        textStyle:
+                                            Constants.numberPickerSecondary(
+                                                context: context),
+                                        selectedTextStyle:
+                                            Constants.numberPickerPrimary(
+                                                context: context),
+                                        minValue: 0,
+                                        maxValue: 59,
+                                        value: minutes,
+                                        haptics: true,
+                                        onChanged: (value) {
+                                          SemanticsService.announce(
+                                              "$value, minutes",
+                                              Directionality.of(context));
+                                          setState(() => minutes = value);
+                                        },
+                                      ),
+                                    ),
+                                    const Padding(
+                                        padding: EdgeInsets.symmetric(
+                                            horizontal: Constants.padding),
+                                        child: Text(":",
+                                            style: Constants.timeColon)),
+                                    Expanded(
+                                      child: NumberPicker(
+                                        textStyle:
+                                            Constants.numberPickerSecondary(
+                                                context: context),
+                                        selectedTextStyle:
+                                            Constants.numberPickerPrimary(
+                                                context: context),
+                                        minValue: 0,
+                                        maxValue: 59,
+                                        value: seconds,
+                                        haptics: true,
+                                        onChanged: (value) {
+                                          SemanticsService.announce(
+                                              "$value, seconds",
+                                              Directionality.of(context));
+                                          setState(() => seconds = value);
+                                        },
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 20),
+                                Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceEvenly,
+                                    children: [
+                                      Expanded(
+                                        child: Padding(
+                                          padding: const EdgeInsets.only(
+                                              right: Constants.padding),
+                                          child: FilledButton.tonalIcon(
+                                              icon: const Icon(
+                                                  Icons.close_rounded),
+                                              onPressed: () =>
+                                                  Navigator.pop(context, 0),
+                                              label: const AutoSizeText(
+                                                  "Cancel",
+                                                  softWrap: false,
+                                                  overflow:
+                                                      TextOverflow.visible,
+                                                  maxLines: 1,
+                                                  minFontSize:
+                                                      Constants.small)),
+                                        ),
+                                      ),
+                                      Expanded(
+                                        child: Padding(
+                                          padding: const EdgeInsets.only(
+                                              left: Constants.padding),
+                                          child: FilledButton.icon(
+                                            icon:
+                                                const Icon(Icons.done_rounded),
+                                            onPressed: () {
+                                              Navigator.pop(
+                                                  context,
+                                                  (hours * 3600) +
+                                                      (minutes * 60) +
+                                                      seconds);
+                                            },
+                                            label: const AutoSizeText("Done",
+                                                softWrap: false,
+                                                overflow: TextOverflow.visible,
+                                                maxLines: 1,
+                                                minFontSize: Constants.small),
+                                          ),
+                                        ),
+                                      )
+                                    ])
+                              ]))),
             );
           }).then((value) {
         setState(() {
@@ -2700,7 +2715,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
         isDense: smallScreen,
         suffixIcon: (name != "")
             ? IconButton(
-                icon: const Icon(Icons.clear),
+                icon: const Icon(Icons.clear_rounded),
                 onPressed: () {
                   checkClose = true;
                   nameEditingController.clear();
@@ -2708,6 +2723,14 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                 })
             : null,
         contentPadding: const EdgeInsets.all(Constants.innerPadding),
+        enabledBorder: OutlineInputBorder(
+            borderRadius: const BorderRadius.all(
+                Radius.circular(Constants.roundedCorners)),
+            borderSide: BorderSide(
+              width: 2,
+              color: Theme.of(context).colorScheme.outlineVariant,
+              strokeAlign: BorderSide.strokeAlignOutside,
+            )),
         border: const OutlineInputBorder(
             borderRadius:
                 BorderRadius.all(Radius.circular(Constants.roundedCorners)),
@@ -2735,7 +2758,6 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                           mainAxisAlignment: MainAxisAlignment.center,
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            // const Icon(Icons.drag_handle_rounded),
                             Padding(
                               padding: const EdgeInsets.all(Constants.padding),
                               child: FilledButton.icon(
@@ -2754,7 +2776,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                                       Navigator.pop(context, false),
                                   label: const Text("Continue Editing"),
                                   icon: const Icon(
-                                    Icons.edit_note_outlined,
+                                    Icons.edit_note_rounded,
                                   ),
                                 ))
                           ]));
@@ -2768,8 +2790,8 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
             Navigator.pop(context);
           }
         },
-        icon: const Icon(Icons.close_outlined),
-        selectedIcon: const Icon(Icons.close));
+        icon: const Icon(Icons.close_rounded),
+        selectedIcon: const Icon(Icons.close_rounded));
   }
 
   SegmentedButton<TaskType> buildTaskTypeButton({bool smallScreen = false}) {
@@ -2777,6 +2799,10 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
         style: ButtonStyle(
           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
           visualDensity: VisualDensity.adaptivePlatformDensity,
+          side: MaterialStatePropertyAll<BorderSide>(BorderSide(
+            width: 2,
+            color: Theme.of(context).colorScheme.outlineVariant,
+          )),
         ),
         segments: TaskType.values
             .map((TaskType type) => ButtonSegment<TaskType>(
@@ -2806,7 +2832,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
       required SearchController controller}) {
     return FutureBuilder(
         future: searchFuture,
-        builder: (context, snapshot) {
+        builder: (BuildContext context, AsyncSnapshot<List<Group>> snapshot) {
           if (snapshot.connectionState == ConnectionState.done) {
             final List<Group>? groups = snapshot.data;
             if (null != groups) {
@@ -2835,8 +2861,9 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
     return SearchAnchor.bar(
         isFullScreen: false,
         barSide: MaterialStatePropertyAll(BorderSide(
+            width: 2,
             strokeAlign: BorderSide.strokeAlignOutside,
-            color: Theme.of(context).colorScheme.outline)),
+            color: Theme.of(context).colorScheme.outlineVariant)),
         barBackgroundColor: const MaterialStatePropertyAll(Colors.transparent),
         barElevation: const MaterialStatePropertyAll(0),
         viewConstraints: const BoxConstraints(
@@ -2848,7 +2875,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
             if (searchHistory.isNotEmpty) {
               return searchHistory
                   .map((MapEntry<String, int> groupData) => ListTile(
-                        leading: const Icon(Icons.history),
+                        leading: const Icon(Icons.history_rounded),
                         title: AutoSizeText(
                           groupData.key,
                           maxLines: 1,

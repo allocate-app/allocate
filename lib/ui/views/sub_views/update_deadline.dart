@@ -165,282 +165,305 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
         context: context,
         builder: (BuildContext context) {
           return StatefulBuilder(
-              builder: (context, setState) => Dialog(
-                  child: Padding(
-                      padding: const EdgeInsets.all(Constants.innerPadding),
-                      child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            const Row(
-                              mainAxisAlignment: MainAxisAlignment.start,
+              builder: (BuildContext context,
+                      void Function(void Function()) setState) =>
+                  Dialog(
+                      child: Padding(
+                          padding: const EdgeInsets.all(Constants.innerPadding),
+                          child: Column(
                               mainAxisSize: MainAxisSize.min,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
-                                Expanded(
-                                  child: AutoSizeText(
-                                    "Select Warning Date",
-                                    style: Constants.headerStyle,
-                                    softWrap: true,
-                                    overflow: TextOverflow.visible,
-                                    maxLines: 2,
-                                    minFontSize: Constants.medium,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const Flexible(
-                              child: Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                mainAxisSize: MainAxisSize.max,
-                                children: [
-                                  Flexible(
-                                      child: AutoSizeText(
-                                    "Date | Time ",
-                                    style: Constants.largeHeaderStyle,
-                                    softWrap: true,
-                                    overflow: TextOverflow.visible,
-                                    maxLines: 1,
-                                    minFontSize: Constants.large,
-                                  )),
-                                  Flexible(
-                                    child: FittedBox(
-                                        fit: BoxFit.fill,
-                                        child: Icon(Icons.alarm_outlined,
-                                            size: Constants.medIconSize)),
-                                  ),
-                                ],
-                              ),
-                            ),
-
-                            Padding(
-                              padding: const EdgeInsets.symmetric(
-                                  vertical: Constants.innerPadding),
-                              child: Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  mainAxisSize: MainAxisSize.max,
+                                const Row(
+                                  mainAxisAlignment: MainAxisAlignment.start,
+                                  mainAxisSize: MainAxisSize.min,
                                   children: [
                                     Expanded(
-                                      flex: 3,
-                                      child: Container(
-                                        decoration: BoxDecoration(
-                                          borderRadius: BorderRadius.circular(
-                                              Constants.roundedCorners),
-                                          border: Border.all(
-                                              strokeAlign: BorderSide
-                                                  .strokeAlignOutside),
-                                        ),
-                                        child: Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.spaceBetween,
-                                            mainAxisSize: MainAxisSize.max,
-                                            children: [
-                                              Expanded(
-                                                child: TextButton(
-                                                    onPressed: () {
-                                                      // Consider moving this to shifting focus to calendar
-                                                      // using focusNode.
-                                                      if (null == tmpWarnDate) {
-                                                        setState(() =>
-                                                            tmpWarnDate =
-                                                                DateTime.now());
-                                                      }
-                                                    },
-                                                    child: (null != tmpWarnDate)
-                                                        ? AutoSizeText(
-                                                            Jiffy.parseFromDateTime(
-                                                                    tmpWarnDate!)
-                                                                .format(
-                                                                    pattern:
-                                                                        "yMMMMd"),
-                                                            softWrap: false,
-                                                            overflow:
-                                                                TextOverflow
-                                                                    .visible,
-                                                            maxLines: 1,
-                                                            minFontSize:
-                                                                Constants.small,
-                                                          )
-                                                        : const AutoSizeText(
-                                                            "Warn Date",
-                                                            softWrap: true,
-                                                            overflow:
-                                                                TextOverflow
-                                                                    .visible,
-                                                            maxLines: 1,
-                                                            minFontSize:
-                                                                Constants
-                                                                    .small)),
-                                              ),
-                                              (null != tmpWarnDate)
-                                                  ? IconButton(
-                                                      icon: const Icon(
-                                                          Icons.clear_outlined),
-                                                      selectedIcon: const Icon(
-                                                          Icons.clear),
-                                                      onPressed: () =>
-                                                          setState(() {
-                                                        checkClose = true;
-                                                        tmpWarnDate = null;
-                                                      }),
-                                                    )
-                                                  : const SizedBox.shrink()
-                                            ]),
+                                      child: AutoSizeText(
+                                        "Select Warning Date",
+                                        style: Constants.headerStyle,
+                                        softWrap: true,
+                                        overflow: TextOverflow.visible,
+                                        maxLines: 2,
+                                        minFontSize: Constants.medium,
                                       ),
                                     ),
-                                    const Flexible(
-                                      child: Padding(
-                                        padding: EdgeInsets.symmetric(
-                                            horizontal: Constants.padding),
-                                        child: AutoSizeText("@",
-                                            style: Constants.hugeHeaderStyle,
-                                            softWrap: false,
-                                            overflow: TextOverflow.visible,
-                                            maxLines: 1,
-                                            minFontSize: Constants.small),
+                                  ],
+                                ),
+                                const Flexible(
+                                  child: Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    mainAxisSize: MainAxisSize.max,
+                                    children: [
+                                      Flexible(
+                                          child: AutoSizeText(
+                                        "Date | Time ",
+                                        style: Constants.largeHeaderStyle,
+                                        softWrap: true,
+                                        overflow: TextOverflow.visible,
+                                        maxLines: 1,
+                                        minFontSize: Constants.large,
+                                      )),
+                                      Flexible(
+                                        child: FittedBox(
+                                            fit: BoxFit.fill,
+                                            child: Icon(Icons.alarm_outlined,
+                                                size: Constants.medIconSize)),
                                       ),
-                                    ),
-                                    Expanded(
-                                      flex: 3,
-                                      child: Container(
-                                        decoration: BoxDecoration(
-                                          borderRadius: BorderRadius.circular(
-                                              Constants.roundedCorners),
-                                          border: Border.all(
-                                              strokeAlign: BorderSide
-                                                  .strokeAlignOutside),
-                                        ),
-                                        child: Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.spaceBetween,
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              Expanded(
-                                                child: TextButton(
-                                                    onPressed: () async {
-                                                      final TimeOfDay? picked =
-                                                          await showTimePicker(
-                                                        context: context,
-                                                        initialTime:
-                                                            tmpWarnTime,
-                                                      );
-                                                      if (null != picked) {
-                                                        setState(() {
-                                                          tmpWarnTime = picked;
-                                                        });
-                                                      }
-                                                    },
-                                                    child: (Constants
-                                                                .midnight !=
-                                                            tmpWarnTime)
-                                                        ? AutoSizeText(
-                                                            tmpWarnTime
-                                                                .format(context)
-                                                                .toString(),
-                                                            softWrap: false,
-                                                            overflow:
-                                                                TextOverflow
-                                                                    .visible,
-                                                            maxLines: 1,
-                                                            minFontSize:
-                                                                Constants.small,
-                                                          )
-                                                        : const AutoSizeText(
-                                                            "Warn Time",
-                                                            softWrap: true,
-                                                            overflow:
-                                                                TextOverflow
-                                                                    .visible,
-                                                            maxLines: 1,
-                                                            minFontSize:
-                                                                Constants
-                                                                    .small)),
-                                              ),
-                                              (Constants.midnight !=
-                                                      tmpWarnTime)
-                                                  ? IconButton(
-                                                      icon: const Icon(
-                                                          Icons.clear_outlined),
-                                                      selectedIcon: const Icon(
-                                                          Icons.clear),
-                                                      onPressed: () =>
-                                                          setState(() {
-                                                        checkClose = true;
-                                                        tmpWarnTime =
-                                                            Constants.midnight;
-                                                      }),
-                                                    )
-                                                  : const SizedBox.shrink()
-                                            ]),
-                                      ),
-                                    ),
-                                  ]),
-                            ),
-
-                            // Calendar picker here.
-
-                            Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  CalendarDatePicker2(
-                                      config: CalendarDatePicker2Config(
-                                        calendarType:
-                                            CalendarDatePicker2Type.single,
-                                        firstDate: DateTime(1970),
-                                        lastDate: DateTime(3000),
-                                      ),
-                                      value: [tmpWarnDate],
-                                      onValueChanged: (dates) {
-                                        setState(() {
-                                          tmpWarnDate = dates.firstOrNull ??
-                                              Constants.nullDate;
-                                        });
-                                      }),
-                                ]),
-
-                            Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Expanded(
-                                    child: Padding(
-                                      padding: const EdgeInsets.only(
-                                          right: Constants.padding),
-                                      child: FilledButton.tonalIcon(
-                                          icon:
-                                              const Icon(Icons.close_outlined),
-                                          onPressed: () =>
-                                              Navigator.pop(context, false),
-                                          label: const AutoSizeText("Cancel",
-                                              softWrap: false,
-                                              overflow: TextOverflow.visible,
-                                              maxLines: 1,
-                                              minFontSize: Constants.small)),
-                                    ),
+                                    ],
                                   ),
-                                  Expanded(
-                                    child: Padding(
-                                      padding: const EdgeInsets.only(
-                                          left: Constants.padding),
-                                      child: FilledButton.icon(
-                                        icon: const Icon(Icons.done_outlined),
-                                        onPressed: () {
-                                          Navigator.pop(context, true);
-                                        },
-                                        label: const AutoSizeText("Done",
-                                            softWrap: false,
-                                            overflow: TextOverflow.visible,
-                                            maxLines: 1,
-                                            minFontSize: Constants.small),
+                                ),
+
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                      vertical: Constants.innerPadding),
+                                  child: Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      mainAxisSize: MainAxisSize.max,
+                                      children: [
+                                        Expanded(
+                                          flex: 3,
+                                          child: Container(
+                                            decoration: BoxDecoration(
+                                              borderRadius:
+                                                  BorderRadius.circular(
+                                                      Constants.roundedCorners),
+                                              border: Border.all(
+                                                  strokeAlign: BorderSide
+                                                      .strokeAlignOutside),
+                                            ),
+                                            child: Row(
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment
+                                                        .spaceBetween,
+                                                mainAxisSize: MainAxisSize.max,
+                                                children: [
+                                                  Expanded(
+                                                    child: TextButton(
+                                                        onPressed: () {
+                                                          // Consider moving this to shifting focus to calendar
+                                                          // using focusNode.
+                                                          if (null ==
+                                                              tmpWarnDate) {
+                                                            setState(() =>
+                                                                tmpWarnDate =
+                                                                    DateTime
+                                                                        .now());
+                                                          }
+                                                        },
+                                                        child: (null !=
+                                                                tmpWarnDate)
+                                                            ? AutoSizeText(
+                                                                Jiffy.parseFromDateTime(
+                                                                        tmpWarnDate!)
+                                                                    .toLocal()
+                                                                    .format(
+                                                                        pattern:
+                                                                            "yMMMMd"),
+                                                                softWrap: false,
+                                                                overflow:
+                                                                    TextOverflow
+                                                                        .visible,
+                                                                maxLines: 1,
+                                                                minFontSize:
+                                                                    Constants
+                                                                        .small,
+                                                              )
+                                                            : const AutoSizeText(
+                                                                "Warn Date",
+                                                                softWrap: true,
+                                                                overflow:
+                                                                    TextOverflow
+                                                                        .visible,
+                                                                maxLines: 1,
+                                                                minFontSize:
+                                                                    Constants
+                                                                        .small)),
+                                                  ),
+                                                  (null != tmpWarnDate)
+                                                      ? IconButton(
+                                                          icon: const Icon(Icons
+                                                              .clear_outlined),
+                                                          selectedIcon:
+                                                              const Icon(
+                                                                  Icons.clear),
+                                                          onPressed: () =>
+                                                              setState(() {
+                                                            checkClose = true;
+                                                            tmpWarnDate = null;
+                                                          }),
+                                                        )
+                                                      : const SizedBox.shrink()
+                                                ]),
+                                          ),
+                                        ),
+                                        const Flexible(
+                                          child: Padding(
+                                            padding: EdgeInsets.symmetric(
+                                                horizontal: Constants.padding),
+                                            child: AutoSizeText("@",
+                                                style:
+                                                    Constants.hugeHeaderStyle,
+                                                softWrap: false,
+                                                overflow: TextOverflow.visible,
+                                                maxLines: 1,
+                                                minFontSize: Constants.small),
+                                          ),
+                                        ),
+                                        Expanded(
+                                          flex: 3,
+                                          child: Container(
+                                            decoration: BoxDecoration(
+                                              borderRadius:
+                                                  BorderRadius.circular(
+                                                      Constants.roundedCorners),
+                                              border: Border.all(
+                                                  strokeAlign: BorderSide
+                                                      .strokeAlignOutside),
+                                            ),
+                                            child: Row(
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment
+                                                        .spaceBetween,
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  Expanded(
+                                                    child: TextButton(
+                                                        onPressed: () async {
+                                                          final TimeOfDay?
+                                                              picked =
+                                                              await showTimePicker(
+                                                            context: context,
+                                                            initialTime:
+                                                                tmpWarnTime,
+                                                          );
+                                                          if (null != picked) {
+                                                            setState(() {
+                                                              tmpWarnTime =
+                                                                  picked;
+                                                            });
+                                                          }
+                                                        },
+                                                        child: (Constants
+                                                                    .midnight !=
+                                                                tmpWarnTime)
+                                                            ? AutoSizeText(
+                                                                tmpWarnTime
+                                                                    .format(
+                                                                        context)
+                                                                    .toString(),
+                                                                softWrap: false,
+                                                                overflow:
+                                                                    TextOverflow
+                                                                        .visible,
+                                                                maxLines: 1,
+                                                                minFontSize:
+                                                                    Constants
+                                                                        .small,
+                                                              )
+                                                            : const AutoSizeText(
+                                                                "Warn Time",
+                                                                softWrap: true,
+                                                                overflow:
+                                                                    TextOverflow
+                                                                        .visible,
+                                                                maxLines: 1,
+                                                                minFontSize:
+                                                                    Constants
+                                                                        .small)),
+                                                  ),
+                                                  (Constants.midnight !=
+                                                          tmpWarnTime)
+                                                      ? IconButton(
+                                                          icon: const Icon(Icons
+                                                              .clear_outlined),
+                                                          selectedIcon:
+                                                              const Icon(
+                                                                  Icons.clear),
+                                                          onPressed: () =>
+                                                              setState(() {
+                                                            checkClose = true;
+                                                            tmpWarnTime =
+                                                                Constants
+                                                                    .midnight;
+                                                          }),
+                                                        )
+                                                      : const SizedBox.shrink()
+                                                ]),
+                                          ),
+                                        ),
+                                      ]),
+                                ),
+
+                                // Calendar picker here.
+
+                                Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      CalendarDatePicker2(
+                                          config: CalendarDatePicker2Config(
+                                            calendarType:
+                                                CalendarDatePicker2Type.single,
+                                            firstDate: DateTime(1970),
+                                            lastDate: DateTime(3000),
+                                          ),
+                                          value: [tmpWarnDate],
+                                          onValueChanged: (dates) {
+                                            setState(() {
+                                              tmpWarnDate = dates.firstOrNull ??
+                                                  Constants.nullDate;
+                                            });
+                                          }),
+                                    ]),
+
+                                Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Expanded(
+                                        child: Padding(
+                                          padding: const EdgeInsets.only(
+                                              right: Constants.padding),
+                                          child: FilledButton.tonalIcon(
+                                              icon: const Icon(
+                                                  Icons.close_outlined),
+                                              onPressed: () =>
+                                                  Navigator.pop(context, false),
+                                              label: const AutoSizeText(
+                                                  "Cancel",
+                                                  softWrap: false,
+                                                  overflow:
+                                                      TextOverflow.visible,
+                                                  maxLines: 1,
+                                                  minFontSize:
+                                                      Constants.small)),
+                                        ),
                                       ),
-                                    ),
-                                  )
-                                ]),
-                          ]))));
+                                      Expanded(
+                                        child: Padding(
+                                          padding: const EdgeInsets.only(
+                                              left: Constants.padding),
+                                          child: FilledButton.icon(
+                                            icon:
+                                                const Icon(Icons.done_outlined),
+                                            onPressed: () {
+                                              Navigator.pop(context, true);
+                                            },
+                                            label: const AutoSizeText("Done",
+                                                softWrap: false,
+                                                overflow: TextOverflow.visible,
+                                                maxLines: 1,
+                                                minFontSize: Constants.small),
+                                          ),
+                                        ),
+                                      )
+                                    ]),
+                              ]))));
         }).then((setFields) {
       setState(() {
         if (setFields ?? false) {
@@ -462,35 +485,43 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
           context: context,
           builder: (BuildContext context) {
             return StatefulBuilder(
-                builder: (context, setState) => Center(
-                    heightFactor: 1,
-                    child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.all(Constants.padding),
-                            child: FilledButton.icon(
-                                onPressed: () => Navigator.pop(context, true),
-                                label: const Text("This Event"),
-                                icon: const Icon(Icons.arrow_upward_outlined)),
-                          ),
-                          Padding(
-                              padding: const EdgeInsets.all(Constants.padding),
-                              child: FilledButton.tonalIcon(
-                                onPressed: () => Navigator.pop(context, false),
-                                label: const Text("All Future Events"),
-                                icon: const Icon(Icons.repeat_outlined),
-                              ))
-                        ])));
+                builder: (BuildContext context,
+                        void Function(void Function()) setState) =>
+                    Center(
+                        heightFactor: 1,
+                        child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Padding(
+                                padding:
+                                    const EdgeInsets.all(Constants.padding),
+                                child: FilledButton.icon(
+                                    onPressed: () =>
+                                        Navigator.pop(context, true),
+                                    label: const Text("This Event"),
+                                    icon: const Icon(
+                                        Icons.arrow_upward_outlined)),
+                              ),
+                              Padding(
+                                  padding:
+                                      const EdgeInsets.all(Constants.padding),
+                                  child: FilledButton.tonalIcon(
+                                    onPressed: () =>
+                                        Navigator.pop(context, false),
+                                    label: const Text("All Future Events"),
+                                    icon: const Icon(Icons.repeat_outlined),
+                                  ))
+                            ])));
           });
       // If the modal is discarded.
       if (null == updateSingle) {
         return;
       }
 
-      await deadlineProvider.deleteFutures(deadline: prevDeadline).catchError(
-          (e) {
+      await deadlineProvider
+          .deleteAndCancelFutures(deadline: prevDeadline)
+          .catchError((e) {
         Flushbar? error;
 
         error = Flushbars.createError(
@@ -554,35 +585,43 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
           context: context,
           builder: (BuildContext context) {
             return StatefulBuilder(
-                builder: (context, setState) => Center(
-                    heightFactor: 1,
-                    child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.all(Constants.padding),
-                            child: FilledButton.icon(
-                                onPressed: () => Navigator.pop(context, true),
-                                label: const Text("Delete This Event"),
-                                icon: const Icon(Icons.arrow_upward_outlined)),
-                          ),
-                          Padding(
-                              padding: const EdgeInsets.all(Constants.padding),
-                              child: FilledButton.tonalIcon(
-                                onPressed: () => Navigator.pop(context, false),
-                                label: const Text("Delete All"),
-                                icon: const Icon(Icons.repeat_outlined),
-                              ))
-                        ])));
+                builder: (BuildContext context,
+                        void Function(void Function()) setState) =>
+                    Center(
+                        heightFactor: 1,
+                        child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Padding(
+                                padding:
+                                    const EdgeInsets.all(Constants.padding),
+                                child: FilledButton.icon(
+                                    onPressed: () =>
+                                        Navigator.pop(context, true),
+                                    label: const Text("Delete This Event"),
+                                    icon: const Icon(
+                                        Icons.arrow_upward_outlined)),
+                              ),
+                              Padding(
+                                  padding:
+                                      const EdgeInsets.all(Constants.padding),
+                                  child: FilledButton.tonalIcon(
+                                    onPressed: () =>
+                                        Navigator.pop(context, false),
+                                    label: const Text("Delete All"),
+                                    icon: const Icon(Icons.repeat_outlined),
+                                  ))
+                            ])));
           });
       // If the modal is discarded.
       if (null == updateSingle) {
         return;
       }
 
-      await deadlineProvider.deleteFutures(deadline: prevDeadline).catchError(
-          (e) {
+      await deadlineProvider
+          .deleteAndCancelFutures(deadline: prevDeadline)
+          .catchError((e) {
         Flushbar? error;
 
         error = Flushbars.createError(
@@ -1049,6 +1088,7 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                       const EdgeInsets.symmetric(horizontal: Constants.padding),
                   child: AutoSizeText(
                       Jiffy.parseFromDateTime(deadline.warnDate)
+                          .toLocal()
                           .format(pattern: "MMM d"),
                       softWrap: true,
                       overflow: TextOverflow.visible,
@@ -1060,7 +1100,7 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                   ? const Flexible(
                       child: Padding(
                         padding: EdgeInsets.only(right: Constants.padding),
-                        child: Flexible(child: Icon(Icons.schedule_outlined)),
+                        child: Icon(Icons.schedule_outlined),
                       ),
                     )
                   : const Flexible(
@@ -1195,9 +1235,11 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                       )
                     : Flexible(
                         child: AutoSizeText(
-                            Jiffy.parseFromDateTime(deadline.startDate).format(
-                              pattern: "MMM d",
-                            ),
+                            Jiffy.parseFromDateTime(deadline.startDate)
+                                .toLocal()
+                                .format(
+                                  pattern: "MMM d",
+                                ),
                             softWrap: true,
                             overflow: TextOverflow.visible,
                             maxLines: 2,
@@ -1219,7 +1261,7 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                     ? const Flexible(
                         child: Padding(
                           padding: EdgeInsets.only(right: Constants.padding),
-                          child: Flexible(child: Icon(Icons.today_outlined)),
+                          child: Icon(Icons.today_outlined),
                         ),
                       )
                     : const Flexible(
@@ -1240,6 +1282,7 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                     : Flexible(
                         child: AutoSizeText(
                             Jiffy.parseFromDateTime(deadline.dueDate)
+                                .toLocal()
                                 .format(pattern: "MMM d"),
                             softWrap: true,
                             overflow: TextOverflow.visible,
@@ -1277,7 +1320,9 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
 
               // List ->
               return StatefulBuilder(
-                  builder: (context, setState) => Dialog(
+                  builder: (BuildContext context,
+                          void Function(void Function()) setState) =>
+                      Dialog(
                           child: Padding(
                         padding: const EdgeInsets.all(Constants.innerPadding),
                         child: Column(
@@ -1658,7 +1703,9 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
               context: context,
               builder: (BuildContext context) {
                 return StatefulBuilder(
-                    builder: (context, setState) => Dialog(
+                    builder: (BuildContext context,
+                            void Function(void Function()) setState) =>
+                        Dialog(
                             child: Padding(
                           padding: const EdgeInsets.all(Constants.innerPadding),
                           child: Column(
@@ -1918,7 +1965,8 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
 
                 int cacheSkip = deadline.repeatSkip;
 
-                return StatefulBuilder(builder: (context, setState) {
+                return StatefulBuilder(builder: (BuildContext context,
+                    void Function(void Function()) setState) {
                   return Dialog(
                       child: Padding(
                           padding: const EdgeInsets.all(Constants.innerPadding),

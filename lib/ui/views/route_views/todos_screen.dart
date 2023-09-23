@@ -3,9 +3,12 @@ import 'package:another_flushbar/flushbar.dart';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:jiffy/jiffy.dart';
 import 'package:provider/provider.dart';
 
+import '../../../model/task/group.dart';
 import '../../../model/task/todo.dart';
+import '../../../providers/group_provider.dart';
 import '../../../providers/todo_provider.dart';
 import '../../../util/constants.dart';
 import '../../../util/enums.dart';
@@ -13,11 +16,6 @@ import '../../../util/exceptions.dart';
 import '../../../util/numbers.dart';
 import '../../../util/sorting/todo_sorter.dart';
 import '../../widgets/flushbars.dart';
-
-// TODO: Refactor checkbox listtile and build from scratch
-
-// TODO: Migrate checkbox listtile to updateGroup, createGroup && Completed.
-// Must needs be clean.
 
 class ToDosListScreen extends StatefulWidget {
   const ToDosListScreen({Key? key}) : super(key: key);
@@ -33,6 +31,7 @@ class _ToDosListScreen extends State<ToDosListScreen> {
   late int offset;
 
   late final ToDoProvider toDoProvider;
+  late final GroupProvider groupProvider;
 
   // For linked todos.
   late final ScrollController mainScrollController;
@@ -57,6 +56,7 @@ class _ToDosListScreen extends State<ToDosListScreen> {
 
   void initializeProviders() {
     toDoProvider = Provider.of<ToDoProvider>(context, listen: false);
+    groupProvider = Provider.of<GroupProvider>(context, listen: false);
 
     toDoProvider.addListener(resetPagination);
   }
@@ -195,9 +195,6 @@ class _ToDosListScreen extends State<ToDosListScreen> {
                         Radius.circular(Constants.roundedCorners)),
                     onChanged: (method) {
                       if (null != method) {
-                        // TODO: When user, add in.
-                        // ALSO: CHANGE PROXY PROVIDER.
-                        // SHOULD JUST BE AT START && SAVE ACCORDINGLY.
                         setState(() {
                           toDoProvider.sortMethod = method;
                         });
@@ -232,7 +229,7 @@ class _ToDosListScreen extends State<ToDosListScreen> {
             builder: (BuildContext context) => const CreateToDoScreen(),
           ),
           leading: CircleAvatar(
-            child: Icon(Icons.add_outlined,
+            child: Icon(Icons.add_rounded,
                 color: Theme.of(context).colorScheme.onSurfaceVariant),
           ),
           title: const AutoSizeText(
@@ -393,6 +390,7 @@ class _ToDosListScreen extends State<ToDosListScreen> {
             minFontSize: Constants.medium,
             softWrap: true,
             maxLines: 1),
+        subtitle: buildSubtitle(toDo: provider.toDos[index]),
         onTap: () async {
           provider.curToDo = provider.toDos[index];
           await showDialog(
@@ -421,7 +419,7 @@ class _ToDosListScreen extends State<ToDosListScreen> {
               padding: const EdgeInsets.symmetric(
                   horizontal: Constants.innerPadding),
               child: IconButton(
-                  icon: const Icon(Icons.delete_forever),
+                  icon: const Icon(Icons.delete_forever_rounded),
                   onPressed: () async {
                     if (checkDelete) {
                       return await showDialog<bool?>(
@@ -565,7 +563,7 @@ class _ToDosListScreen extends State<ToDosListScreen> {
                                                 // TODO: Factor this into user class pls.
                                                 setState(() {
                                                   dontAsk = value!;
-                                                  checkDelete = !value;
+                                                  checkDelete = !value!;
                                                 });
                                               })
                                         ]),
@@ -611,5 +609,86 @@ class _ToDosListScreen extends State<ToDosListScreen> {
     },
         test: (e) =>
             e is FailureToDeleteException || e is FailureToUploadException);
+  }
+
+  Widget buildSubtitle({required ToDo toDo}) {
+    return Wrap(
+        spacing: Constants.halfPadding,
+        runSpacing: Constants.halfPadding,
+        children: [
+          buildGroupName(id: toDo.groupID),
+          buildDueDate(dueDate: toDo.dueDate),
+          buildPriorityIcon(priority: toDo.priority)
+        ]);
+  }
+
+  Widget buildGroupName({int? id}) {
+    if (null == id) {
+      return const SizedBox.shrink();
+    }
+    return FutureBuilder(
+      future: groupProvider.getGroupByID(id: id),
+      builder: (BuildContext context, AsyncSnapshot<Group?> snapshot) {
+        if (snapshot.connectionState == ConnectionState.done) {
+          Group? group = snapshot.data;
+          if (null != group) {
+            return DecoratedBox(
+              decoration: BoxDecoration(
+                  shape: BoxShape.rectangle,
+                  borderRadius: const BorderRadius.all(
+                      Radius.circular(Constants.roundedCorners)),
+                  border: Border.all(
+                      color: Theme.of(context).colorScheme.outlineVariant,
+                      strokeAlign: BorderSide.strokeAlignOutside)),
+              child: Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: Constants.padding),
+                child: AutoSizeText(
+                  group.name,
+                  minFontSize: Constants.medium,
+                  overflow: TextOverflow.ellipsis,
+                  softWrap: false,
+                  maxLines: 1,
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            );
+          }
+          return const SizedBox.shrink();
+        }
+        return ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 50),
+          child: const LinearProgressIndicator(
+            minHeight: Constants.minIconSize,
+            borderRadius:
+                BorderRadius.all(Radius.circular(Constants.roundedCorners)),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget buildDueDate({required DateTime dueDate}) {
+    return Wrap(spacing: Constants.halfPadding, children: [
+      const Icon(Icons.event_rounded, size: Constants.minIconSize),
+      AutoSizeText(
+          Jiffy.parseFromDateTime(dueDate).toLocal().format(pattern: "MMM d"),
+          softWrap: false,
+          overflow: TextOverflow.visible,
+          maxLines: 2,
+          maxFontSize: Constants.large,
+          minFontSize: Constants.small)
+    ]);
+  }
+
+  Widget buildPriorityIcon({required Priority priority}) {
+    return switch (priority) {
+      Priority.low =>
+        const Tooltip(message: "Low", child: Icon(Icons.low_priority_rounded)),
+      Priority.medium => const Tooltip(
+          message: "Medium", child: Icon(Icons.outlined_flag_rounded)),
+      Priority.high => const Tooltip(
+          message: "High", child: Icon(Icons.priority_high_rounded)),
+    };
   }
 }
