@@ -4,9 +4,6 @@ import "dart:ui";
 import "package:flutter/material.dart";
 import "package:isar/isar.dart";
 import "package:jiffy/jiffy.dart";
-import "package:path_provider_linux/path_provider_linux.dart";
-import "package:path_provider_macos/path_provider_macos.dart";
-import "package:path_provider_windows/path_provider_windows.dart";
 import "package:supabase_flutter/supabase_flutter.dart";
 import "package:test/test.dart";
 
@@ -64,14 +61,6 @@ Isar? isarClient;
 ToDoProvider? provider;
 
 void main() {
-  // This is for pathprovider.
-  if (Platform.isWindows) {
-    PathProviderWindows.registerWith();
-  } else if (Platform.isMacOS) {
-    PathProviderMacOS.registerWith();
-  } else {
-    PathProviderLinux.registerWith();
-  }
 
   DartPluginRegistrant.ensureInitialized();
 
