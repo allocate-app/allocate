@@ -2,19 +2,22 @@ import 'package:equatable/equatable.dart';
 import 'package:isar/isar.dart';
 
 import '../../util/interfaces/copyable.dart';
+import '../../util/interfaces/i_model.dart';
 import 'todo.dart';
 
 part "group.g.dart";
 
 @Collection(inheritance: false)
-class Group with EquatableMixin implements Copyable<Group> {
+class Group with EquatableMixin implements Copyable<Group>, IModel {
   Id id = Isar.autoIncrement;
 
+  @override
   @Index()
   int? localID;
 
   @Index()
   int customViewIndex = -1;
+  @override
   @Index()
   String name;
   String description;

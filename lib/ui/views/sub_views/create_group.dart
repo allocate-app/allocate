@@ -753,9 +753,7 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
     return AutoSizeTextField(
         controller: descriptionEditingController,
         maxLines: Constants.descripMaxLinesBeforeScroll,
-        minLines: (smallScreen)
-            ? Constants.descripMinLinesMobile
-            : Constants.descripMinLinesDesktop,
+        minLines: Constants.descripMinLines,
         minFontSize: Constants.medium,
         decoration: InputDecoration(
           isDense: smallScreen,

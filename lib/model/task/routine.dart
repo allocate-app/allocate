@@ -4,17 +4,20 @@ import "package:equatable/equatable.dart";
 import "package:isar/isar.dart";
 
 import "../../util/interfaces/copyable.dart";
+import "../../util/interfaces/i_model.dart";
 import "subtask.dart";
 
 part "routine.g.dart";
 
 @Collection(inheritance: false)
-class Routine with EquatableMixin implements Copyable<Routine> {
+class Routine with EquatableMixin implements Copyable<Routine>, IModel {
   Id id = Isar.autoIncrement;
 
+  @override
   @Index()
   int? localID;
 
+  @override
   @Index()
   String name;
 

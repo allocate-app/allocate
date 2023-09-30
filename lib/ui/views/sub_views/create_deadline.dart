@@ -1015,10 +1015,10 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
         controller: descriptionEditingController,
         maxLines: (smallScreen) ? Constants.descripMaxLinesBeforeScroll : null,
         minLines: (smallScreen)
-            ? Constants.descripMinLinesMobile
+            ? Constants.descripMinLines
             : (largeScreen)
                 ? Constants.descripMaxLinesBeforeScroll
-                : Constants.descripMinLinesDesktop,
+                : Constants.descripMinLines,
         minFontSize: Constants.medium,
         decoration: InputDecoration(
           isDense: smallScreen,

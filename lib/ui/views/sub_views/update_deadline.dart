@@ -1190,15 +1190,11 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
     return AutoSizeTextField(
         controller: descriptionEditingController,
         maxLines: (smallScreen) ? Constants.descripMaxLinesBeforeScroll : null,
-        minLines: (smallScreen)
-            ? Constants.descripMinLinesMobile
-            : (largeScreen)
-                ? Constants.descripMaxLinesBeforeScroll
-                : Constants.descripMinLinesDesktop,
+        minLines: Constants.descripMinLines,
         minFontSize: Constants.medium,
         decoration: InputDecoration(
           isDense: smallScreen,
-          contentPadding: const EdgeInsets.all(Constants.innerPadding),
+          contentPadding: const EdgeInsets.all(Constants.innerPadding * 2),
           hintText: "Description",
           border: const OutlineInputBorder(
               borderRadius:

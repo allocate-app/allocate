@@ -3,6 +3,7 @@ import 'package:isar/isar.dart';
 
 import '../../util/enums.dart';
 import '../../util/interfaces/copyable.dart';
+import '../../util/interfaces/i_model.dart';
 
 /// DeadLines are meant for large-projects that have a due-date. They are just the project description
 /// and that alone, so as to not overwhelm with the temptation of overloading subtasks.
@@ -10,14 +11,19 @@ import '../../util/interfaces/copyable.dart';
 part "deadline.g.dart";
 
 @Collection(inheritance: false)
-class Deadline with EquatableMixin implements Copyable<Deadline> {
+class Deadline with EquatableMixin implements Copyable<Deadline>, IModel {
+  @ignore
+  @override
+  int? localID;
+
   Id id = Isar.autoIncrement;
   @Index()
-  int customViewIndex = -1;
+  int customViewIndex;
   @Index()
   int? repeatID;
   @Index()
   int? notificationID;
+  @override
   @Index()
   String name;
   String description;
@@ -50,6 +56,7 @@ class Deadline with EquatableMixin implements Copyable<Deadline> {
   Deadline(
       {this.repeatID,
       this.notificationID,
+      this.customViewIndex = -1,
       required this.name,
       this.description = "",
       required this.startDate,
@@ -105,6 +112,7 @@ class Deadline with EquatableMixin implements Copyable<Deadline> {
   Deadline copy() => Deadline(
         notificationID: notificationID,
         repeatID: repeatID,
+        customViewIndex: customViewIndex,
         name: name,
         description: description,
         startDate: startDate,
@@ -123,6 +131,7 @@ class Deadline with EquatableMixin implements Copyable<Deadline> {
   Deadline copyWith(
           {int? repeatID,
           int? notificationID,
+          int? customViewIndex,
           String? name,
           String? description,
           DateTime? startDate,
@@ -138,6 +147,7 @@ class Deadline with EquatableMixin implements Copyable<Deadline> {
       Deadline(
           repeatID: repeatID ?? this.repeatID,
           notificationID: notificationID ?? this.notificationID,
+          customViewIndex: customViewIndex ?? this.customViewIndex,
           name: name ?? this.name,
           description: description ?? this.description,
           startDate: startDate ?? this.startDate,
