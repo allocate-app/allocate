@@ -593,10 +593,9 @@ class ToDoRepo implements ToDoRepository {
   Future<List<ToDo>> getUnsynced() async =>
       _isarClient.toDos.where().isSyncedEqualTo(false).findAll();
 
-  // TODO: Move to other objects in the model;
   @override
   Future<List<ToDo>> getRange({DateTime? start, DateTime? end}) async {
-    start = start ?? DateTime.now().copyWith(day: 0);
+    start = start ?? DateTime.now().copyWith(day: 1);
     end = end ?? start.copyWith(month: start.month + 1);
     return await _isarClient.toDos
         .where()

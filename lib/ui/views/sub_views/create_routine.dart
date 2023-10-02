@@ -145,6 +145,7 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
     return Constants.batteryIcons[weight]!;
   }
 
+  // Move to bottom of class.
   Widget getTimeOfDayIcon({
     required BuildContext context,
   }) {
@@ -562,6 +563,7 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
                                     context: context, smallScreen: smallScreen),
                               ),
                             ])),
+                        // TODO: Refactor this: ListView should be in a constrained box.
                         Expanded(
                           flex: (hugeScreen) ? 2 : 1,
                           child: Scrollbar(

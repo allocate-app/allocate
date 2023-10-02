@@ -116,7 +116,10 @@ class _CalendarScreen extends State<CalendarScreen> {
         Constants.today.copyWith(
             day: 1,
             hour: Constants.midnight.hour,
-            minute: Constants.midnight.minute);
+            minute: Constants.midnight.minute,
+            second: 0,
+            microsecond: 0,
+            millisecond: 0);
     limit = limit ?? startDay.copyWith(month: startDay.month + 1);
     await Future.wait([
       toDoProvider.populateCalendar(limit: limit),

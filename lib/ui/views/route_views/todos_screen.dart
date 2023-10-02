@@ -341,6 +341,7 @@ class _ToDosListScreen extends State<ToDosListScreen> {
         });
   }
 
+// TODO: Refactor this into the tiles factory.
   ListTile buildToDoListTile(
       {required int index,
       bool smallScreen = false,
@@ -393,11 +394,14 @@ class _ToDosListScreen extends State<ToDosListScreen> {
         subtitle: buildSubtitle(toDo: provider.toDos[index]),
         onTap: () async {
           provider.curToDo = provider.toDos[index];
-          await showDialog(
+          ToDo? discarded = await showDialog(
               barrierDismissible: false,
               useRootNavigator: false,
               context: context,
               builder: (BuildContext context) => const UpdateToDoScreen());
+          if (null != discarded) {
+            provider.toDos[index] = discarded;
+          }
         },
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
@@ -563,7 +567,7 @@ class _ToDosListScreen extends State<ToDosListScreen> {
                                                 // TODO: Factor this into user class pls.
                                                 setState(() {
                                                   dontAsk = value!;
-                                                  checkDelete = !value!;
+                                                  checkDelete = value;
                                                 });
                                               })
                                         ]),
