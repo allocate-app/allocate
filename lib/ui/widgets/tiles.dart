@@ -1913,18 +1913,55 @@ class Tiles {
 
   // Create Button
   static Widget createButton({
+    String label = "Create",
     EdgeInsetsGeometry outerPadding = EdgeInsets.zero,
     required Future<void> Function() handleCreate,
   }) =>
-      Padding(
-        padding: outerPadding,
-        child: Row(mainAxisAlignment: MainAxisAlignment.end, children: [
-          FilledButton.icon(
-              label: const Text("Create"),
+      Align(
+        alignment: Alignment.centerRight,
+        child: Padding(
+          padding: outerPadding,
+          child: FilledButton.icon(
+              label: Text(label),
               icon: const Icon(Icons.add_rounded),
-              onPressed: handleCreate)
-        ]),
+              onPressed: handleCreate),
+        ),
       );
 
-// Update & Delete buttons.
+// Delete Button
+
+  static Widget deleteButton({
+    EdgeInsetsGeometry outerPadding = EdgeInsets.zero,
+    required Future<void> Function() handleDelete,
+  }) =>
+      Padding(
+        padding: outerPadding,
+        child: FilledButton.tonalIcon(
+            label: const Text("Delete"),
+            icon: const Icon(Icons.delete_forever_rounded),
+            onPressed: handleDelete),
+      );
+
+// Combination Create & delete
+  static Widget updateAndDeleteButtons({
+    EdgeInsetsGeometry updateButtonPadding = EdgeInsets.zero,
+    EdgeInsetsGeometry deleteButtonPadding = EdgeInsets.zero,
+    required Future<void> Function() handleUpdate,
+    required Future<void> Function() handleDelete,
+  }) =>
+      Align(
+        alignment: Alignment.centerRight,
+        child: Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Tiles.deleteButton(
+                  outerPadding: deleteButtonPadding,
+                  handleDelete: handleDelete),
+              Tiles.createButton(
+                  label: "Update",
+                  outerPadding: updateButtonPadding,
+                  handleCreate: handleUpdate)
+            ]),
+      );
 }

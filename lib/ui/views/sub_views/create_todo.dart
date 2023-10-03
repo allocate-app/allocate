@@ -356,6 +356,8 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
       sumWeight = toDoProvider.calculateWeight(
           subTasks: List.generate(
               Constants.numTasks[taskType]!, (index) => subTasks[index]));
+      realDuration = toDoProvider.calculateRealDuration(
+          weight: sumWeight, duration: expectedDuration);
     });
   }
 
@@ -565,10 +567,9 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                                     errorText: nameErrorText,
                                     controller: nameEditingController,
                                     outerPadding: const EdgeInsets.symmetric(
-                                        horizontal: Constants.innerPadding),
-                                    textFieldPadding:
-                                        const EdgeInsets.symmetric(
-                                      horizontal: Constants.padding,
+                                        horizontal: Constants.halfPadding),
+                                    textFieldPadding: const EdgeInsets.only(
+                                      left: Constants.padding,
                                     ),
                                     handleClear: clearNameField),
                                 Tiles.weightTile(
@@ -595,29 +596,6 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                                       : null,
                                 ),
 
-                                const PaddedDivider(
-                                    padding: Constants.innerPadding),
-                                // TaskType
-                                const Row(children: [
-                                  Expanded(
-                                    child: AutoSizeText("Task Type",
-                                        maxLines: 1,
-                                        softWrap: true,
-                                        textAlign: TextAlign.center,
-                                        minFontSize: Constants.medium,
-                                        style: Constants.headerStyle),
-                                  )
-                                ]),
-                                Padding(
-                                  padding: const EdgeInsets.all(
-                                      Constants.innerPadding),
-                                  child: buildTaskTypeButton(),
-                                ),
-                                // Subtasks -- Factory Widget. == UH, why does this have padding?
-                                (taskType != TaskType.small)
-                                    ? buildSubTasksTile(physics: scrollPhysics)
-                                    : const SizedBox.shrink(),
-
                                 const PaddedDivider(padding: Constants.padding),
                                 // My Day
                                 Tiles.myDayTile(
@@ -635,6 +613,67 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                                       horizontal: Constants.padding),
                                   priority: priority,
                                   onSelectionChanged: changePriority,
+                                ),
+                                const Padding(
+                                  padding: EdgeInsets.symmetric(
+                                      vertical: Constants.padding),
+                                  child:
+                                      PaddedDivider(padding: Constants.padding),
+                                ),
+                                // Expected Duration / RealDuration -> Show status, on click, open a dialog.
+                                Tiles.durationTile(
+                                  expectedDuration: expectedDuration,
+                                  context: context,
+                                  realDuration: realDuration,
+                                  outerPadding: const EdgeInsets.symmetric(
+                                      horizontal: Constants.padding),
+                                  handleClear: clearDuration,
+                                  handleUpdate: updateDuration,
+                                ),
+
+                                const PaddedDivider(padding: Constants.padding),
+                                // DateTime -> Show status, on click, open a dialog.
+                                //startDate
+                                Tiles.dateRangeTile(
+                                  context: context,
+                                  outerPadding: const EdgeInsets.symmetric(
+                                      horizontal: Constants.padding),
+                                  startDate: startDate,
+                                  dueDate: dueDate,
+                                  handleClear: clearDates,
+                                  handleUpdate: updateDates,
+                                ),
+                                const PaddedDivider(padding: Constants.padding),
+                                // Time
+
+                                (showTimeTile)
+                                    ? Tiles.timeTile(
+                                        outerPadding:
+                                            const EdgeInsets.symmetric(
+                                                horizontal: Constants.padding),
+                                        startTime: startTime,
+                                        dueTime: dueTime,
+                                        context: context,
+                                        handleClear: clearTimes,
+                                        handleUpdate: updateTimes,
+                                      )
+                                    : const SizedBox.shrink(),
+                                (showTimeTile)
+                                    ? const PaddedDivider(
+                                        padding: Constants.padding)
+                                    : const SizedBox.shrink(),
+
+                                // Repeatable Stuff -> Show status, on click, open a dialog.
+                                Tiles.repeatableTile(
+                                  context: context,
+                                  outerPadding: const EdgeInsets.symmetric(
+                                      horizontal: Constants.padding),
+                                  frequency: frequency,
+                                  weekdayList: weekdayList,
+                                  repeatSkip: repeatSkip,
+                                  startDate: startDate,
+                                  handleUpdate: updateRepeatable,
+                                  handleClear: clearRepeatable,
                                 ),
                               ]),
                         ),
@@ -657,9 +696,29 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                                   search: groupProvider.searchGroups,
                                 ),
 
-                                const PaddedDivider(
-                                    padding: Constants.innerPadding),
+                                const PaddedDivider(padding: Constants.padding),
+                                // TaskType
+                                const Row(children: [
+                                  Expanded(
+                                    child: AutoSizeText("Task Type",
+                                        maxLines: 1,
+                                        softWrap: true,
+                                        textAlign: TextAlign.center,
+                                        minFontSize: Constants.medium,
+                                        style: Constants.headerStyle),
+                                  )
+                                ]),
+                                Padding(
+                                  padding:
+                                      const EdgeInsets.all(Constants.padding),
+                                  child: buildTaskTypeButton(),
+                                ),
+                                // Subtasks -- Factory Widget. == UH, why does this have padding?
+                                (taskType != TaskType.small)
+                                    ? buildSubTasksTile()
+                                    : const SizedBox.shrink(),
 
+                                const PaddedDivider(padding: Constants.padding),
                                 // Description
                                 Tiles.descriptionTile(
                                   controller: descriptionEditingController,
@@ -667,72 +726,12 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                                       horizontal: Constants.padding),
                                   context: context,
                                 ),
-
-                                const PaddedDivider(
-                                    padding: Constants.innerPadding),
-                                // Expected Duration / RealDuration -> Show status, on click, open a dialog.
-                                Tiles.durationTile(
-                                  expectedDuration: expectedDuration,
-                                  context: context,
-                                  realDuration: realDuration,
-                                  outerPadding: const EdgeInsets.symmetric(
-                                      horizontal: Constants.padding),
-                                  handleClear: clearDuration,
-                                  handleUpdate: updateDuration,
-                                ),
-
-                                const PaddedDivider(
-                                    padding: Constants.innerPadding),
-                                // DateTime -> Show status, on click, open a dialog.
-                                //startDate
-                                Tiles.dateRangeTile(
-                                  context: context,
-                                  outerPadding: const EdgeInsets.symmetric(
-                                      horizontal: Constants.padding),
-                                  startDate: startDate,
-                                  dueDate: dueDate,
-                                  handleClear: clearDates,
-                                  handleUpdate: updateDates,
-                                ),
-                                const PaddedDivider(
-                                    padding: Constants.innerPadding),
-                                // Time
-
-                                (showTimeTile)
-                                    ? Tiles.timeTile(
-                                        outerPadding:
-                                            const EdgeInsets.symmetric(
-                                                horizontal: Constants.padding),
-                                        startTime: startTime,
-                                        dueTime: dueTime,
-                                        context: context,
-                                        handleClear: clearTimes,
-                                        handleUpdate: updateTimes,
-                                      )
-                                    : const SizedBox.shrink(),
-                                (showTimeTile)
-                                    ? const PaddedDivider(
-                                        padding: Constants.innerPadding)
-                                    : const SizedBox.shrink(),
-
-                                // Repeatable Stuff -> Show status, on click, open a dialog.
-                                Tiles.repeatableTile(
-                                  context: context,
-                                  outerPadding: const EdgeInsets.symmetric(
-                                      horizontal: Constants.padding),
-                                  frequency: frequency,
-                                  weekdayList: weekdayList,
-                                  repeatSkip: repeatSkip,
-                                  startDate: startDate,
-                                  handleUpdate: updateRepeatable,
-                                  handleClear: clearRepeatable,
-                                ),
                               ]),
                         )
                       ]),
                 ),
 
-                const PaddedDivider(padding: Constants.padding),
+                const PaddedDivider(padding: Constants.halfPadding),
                 Tiles.createButton(
                   outerPadding:
                       const EdgeInsets.symmetric(horizontal: Constants.padding),
@@ -772,9 +771,8 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                     const EdgeInsets.symmetric(horizontal: Constants.padding),
                 handleClose: handleClose,
               ),
-              const PaddedDivider(padding: Constants.padding),
-              Expanded(
-                flex: 10,
+              const PaddedDivider(padding: Constants.halfPadding),
+              Flexible(
                 child: ListView(
                   shrinkWrap: true,
                   controller: mainScrollController,
@@ -789,8 +787,8 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                         controller: nameEditingController,
                         outerPadding: const EdgeInsets.symmetric(
                             horizontal: Constants.padding),
-                        textFieldPadding: const EdgeInsets.symmetric(
-                          horizontal: Constants.halfPadding,
+                        textFieldPadding: const EdgeInsets.only(
+                          left: Constants.halfPadding,
                         ),
                         handleClear: clearNameField),
 
@@ -815,7 +813,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                             )
                           : null,
                     ),
-                    const PaddedDivider(padding: Constants.innerPadding),
+                    const PaddedDivider(padding: Constants.padding),
                     // TaskType -- This is only one-screen.
                     const Row(children: [
                       Expanded(
@@ -828,7 +826,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                       )
                     ]),
                     Padding(
-                      padding: const EdgeInsets.all(Constants.innerPadding),
+                      padding: const EdgeInsets.all(Constants.padding),
                       child: buildTaskTypeButton(),
                     ),
 
@@ -860,7 +858,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                     const Padding(
                       padding:
                           EdgeInsets.symmetric(vertical: Constants.padding),
-                      child: PaddedDivider(padding: Constants.innerPadding),
+                      child: PaddedDivider(padding: Constants.padding),
                     ),
 
                     // Group Picker
@@ -876,8 +874,8 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
 
                     const Padding(
                       padding:
-                          EdgeInsets.symmetric(horizontal: Constants.padding),
-                      child: PaddedDivider(padding: Constants.innerPadding),
+                          EdgeInsets.symmetric(vertical: Constants.padding),
+                      child: PaddedDivider(padding: Constants.padding),
                     ),
 
                     // Description
@@ -972,6 +970,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
           minFontSize: Constants.small),
       children: [
         ListViews.reorderableSubtasks(
+            physics: physics,
             context: context,
             subTasks: subTasks,
             itemCount: min(Constants.numTasks[taskType]!, shownTasks),

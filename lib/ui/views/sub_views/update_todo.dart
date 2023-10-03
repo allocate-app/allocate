@@ -227,7 +227,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
     return valid;
   }
 
-  Future<void> handleUpdate({required BuildContext context}) async {
+  Future<void> handleUpdate() async {
     if (prevToDo.frequency != Frequency.once && checkClose) {
       bool? updateSingle = await showModalBottomSheet<bool?>(
           showDragHandle: true,
@@ -327,7 +327,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
             e is FailureToCreateException || e is FailureToUploadException);
   }
 
-  Future<void> handleDelete({required BuildContext context}) async {
+  Future<void> handleDelete() async {
     if (prevToDo.frequency != Frequency.once) {
       bool? updateSingle = await showModalBottomSheet<bool?>(
           showDragHandle: true,
@@ -525,6 +525,8 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
       shownTasks--;
       shownTasks = max(shownTasks, 0);
       toDo.weight = toDoProvider.calculateWeight(subTasks: cacheSubTasks);
+      toDo.realDuration = toDoProvider.calculateRealDuration(
+          weight: toDo.weight, duration: toDo.expectedDuration);
     });
   }
 
@@ -657,6 +659,12 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
     return weekdays;
   }
 
+  Future<void> updateAndValidate() async {
+    if (validateData()) {
+      await handleUpdate();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     double width = MediaQuery.of(context).size.width;
@@ -728,10 +736,9 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                                     errorText: nameErrorText,
                                     controller: nameEditingController,
                                     outerPadding: const EdgeInsets.symmetric(
-                                        horizontal: Constants.innerPadding),
-                                    textFieldPadding:
-                                        const EdgeInsets.symmetric(
-                                      horizontal: Constants.padding,
+                                        horizontal: Constants.halfPadding),
+                                    textFieldPadding: const EdgeInsets.only(
+                                      left: Constants.padding,
                                     ),
                                     handleClear: clearNameField),
                                 Tiles.weightTile(
@@ -753,15 +760,6 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                                         )
                                       : null,
                                 ),
-                                const PaddedDivider(
-                                    padding: Constants.innerPadding),
-                                // Subtasks
-                                (toDo.taskType != TaskType.small)
-                                    ? buildSubTasksTile(
-                                        physics: scrollPhysics,
-                                      )
-                                    : const SizedBox.shrink(),
-
                                 const PaddedDivider(padding: Constants.padding),
                                 // My Day
                                 Tiles.myDayTile(
@@ -780,41 +778,12 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                                   priority: toDo.priority,
                                   onSelectionChanged: changePriority,
                                 ),
-                              ]),
-                        ),
-                        Expanded(
-                          child: ListView(
-                              controller: subScrollControllerRight,
-                              physics: scrollPhysics,
-                              shrinkWrap: true,
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: Constants.padding),
-                              children: [
-                                SearchRecents<Group>(
-                                  padding:
-                                      const EdgeInsets.all(Constants.padding),
-                                  handleDataSelection: handleGroupSelection,
-                                  handleHistorySelection:
-                                      handleHistorySelection,
-                                  searchController: groupEditingController,
-                                  mostRecent: groupProvider.mostRecent,
-                                  search: groupProvider.searchGroups,
+                                const Padding(
+                                  padding: EdgeInsets.symmetric(
+                                      vertical: Constants.padding),
+                                  child:
+                                      PaddedDivider(padding: Constants.padding),
                                 ),
-
-                                const PaddedDivider(
-                                    padding: Constants.innerPadding),
-
-                                // Description
-                                Tiles.descriptionTile(
-                                  controller: descriptionEditingController,
-                                  outerPadding: const EdgeInsets.symmetric(
-                                      horizontal: Constants.padding),
-                                  context: context,
-                                ),
-
-                                const PaddedDivider(
-                                    padding: Constants.innerPadding),
-
                                 // Expected Duration / RealDuration -> Show status, on click, open a dialog.
                                 Tiles.durationTile(
                                   expectedDuration: toDo.expectedDuration,
@@ -826,8 +795,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                                   handleUpdate: updateDuration,
                                 ),
 
-                                const PaddedDivider(
-                                    padding: Constants.innerPadding),
+                                const PaddedDivider(padding: Constants.padding),
                                 // DateTime -> Show status, on click, open a dialog.
                                 Tiles.dateRangeTile(
                                   context: context,
@@ -871,7 +839,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                                     : const SizedBox.shrink(),
                                 (showTimeTile)
                                     ? const PaddedDivider(
-                                        padding: Constants.innerPadding)
+                                        padding: Constants.padding)
                                     : const SizedBox.shrink(),
                                 // Repeatable Stuff -> Show status, on click, open a dialog.
                                 Tiles.repeatableTile(
@@ -889,15 +857,54 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                                   handleClear: clearRepeatable,
                                 ),
                               ]),
+                        ),
+                        Expanded(
+                          child: ListView(
+                              controller: subScrollControllerRight,
+                              physics: scrollPhysics,
+                              shrinkWrap: true,
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: Constants.padding),
+                              children: [
+                                SearchRecents<Group>(
+                                  padding:
+                                      const EdgeInsets.all(Constants.padding),
+                                  handleDataSelection: handleGroupSelection,
+                                  handleHistorySelection:
+                                      handleHistorySelection,
+                                  searchController: groupEditingController,
+                                  mostRecent: groupProvider.mostRecent,
+                                  search: groupProvider.searchGroups,
+                                ),
+
+                                const PaddedDivider(padding: Constants.padding),
+                                // Subtasks
+                                (toDo.taskType != TaskType.small)
+                                    ? buildSubTasksTile()
+                                    : const SizedBox.shrink(),
+
+                                const PaddedDivider(padding: Constants.padding),
+
+                                // Description
+                                Tiles.descriptionTile(
+                                  controller: descriptionEditingController,
+                                  outerPadding: const EdgeInsets.symmetric(
+                                      horizontal: Constants.padding),
+                                  context: context,
+                                ),
+                              ]),
                         )
                       ]),
                 ),
 
                 const PaddedDivider(padding: Constants.padding),
-                Padding(
-                  padding:
+                Tiles.updateAndDeleteButtons(
+                  handleDelete: handleDelete,
+                  handleUpdate: updateAndValidate,
+                  updateButtonPadding:
                       const EdgeInsets.symmetric(horizontal: Constants.padding),
-                  child: buildUpdateDeleteRow(context: context),
+                  deleteButtonPadding:
+                      const EdgeInsets.symmetric(horizontal: Constants.padding),
                 )
               ]),
         ),
@@ -932,7 +939,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                   padding:
                       const EdgeInsets.symmetric(horizontal: Constants.padding),
                   handleClose: handleClose),
-              const PaddedDivider(padding: Constants.padding),
+              const PaddedDivider(padding: Constants.halfPadding),
               Flexible(
                 child: ListView(
                   shrinkWrap: true,
@@ -948,9 +955,9 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                         errorText: nameErrorText,
                         controller: nameEditingController,
                         outerPadding: const EdgeInsets.symmetric(
-                            horizontal: Constants.innerPadding),
-                        textFieldPadding: const EdgeInsets.symmetric(
-                          horizontal: Constants.padding,
+                            horizontal: Constants.padding),
+                        textFieldPadding: const EdgeInsets.only(
+                          left: Constants.halfPadding,
                         ),
                         handleClear: clearNameField),
 
@@ -972,7 +979,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                           : null,
                     ),
 
-                    const PaddedDivider(padding: Constants.innerPadding),
+                    const PaddedDivider(padding: Constants.padding),
 
                     // Subtasks
                     (toDo.taskType != TaskType.small)
@@ -997,7 +1004,11 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                       onSelectionChanged: changePriority,
                     ),
 
-                    const PaddedDivider(padding: Constants.innerPadding),
+                    const Padding(
+                      padding:
+                          EdgeInsets.symmetric(vertical: Constants.padding),
+                      child: PaddedDivider(padding: Constants.padding),
+                    ),
 
                     SearchRecents<Group>(
                       padding: const EdgeInsets.all(Constants.padding),
@@ -1010,8 +1021,8 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
 
                     const Padding(
                       padding:
-                          EdgeInsets.symmetric(horizontal: Constants.padding),
-                      child: PaddedDivider(padding: Constants.innerPadding),
+                          EdgeInsets.symmetric(vertical: Constants.padding),
+                      child: PaddedDivider(padding: Constants.padding),
                     ),
 
                     // Description
@@ -1092,10 +1103,13 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
               ),
 
               const PaddedDivider(padding: Constants.padding),
-              Padding(
-                padding:
+              Tiles.updateAndDeleteButtons(
+                handleDelete: handleDelete,
+                handleUpdate: updateAndValidate,
+                updateButtonPadding:
                     const EdgeInsets.symmetric(horizontal: Constants.padding),
-                child: buildUpdateDeleteRow(context: context),
+                deleteButtonPadding:
+                    const EdgeInsets.symmetric(horizontal: Constants.padding),
               )
             ]),
       ),
@@ -1117,6 +1131,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
           minFontSize: Constants.small),
       children: [
         ListViews.reorderableSubtasks(
+            physics: physics,
             context: context,
             subTasks: cacheSubTasks,
             itemCount: min(Constants.numTasks[toDo.taskType]!, shownTasks),
@@ -1134,37 +1149,6 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
             : const SizedBox.shrink(),
       ],
     );
-  }
-
-  Row buildUpdateDeleteRow({required BuildContext context}) {
-    return Row(mainAxisAlignment: MainAxisAlignment.end, children: [
-      Flexible(
-        child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
-            child: buildDeleteButton(context: context)),
-      ),
-      Flexible(child: buildUpdateButton(context: context)),
-    ]);
-  }
-
-  FilledButton buildDeleteButton({required BuildContext context}) {
-    return FilledButton.tonalIcon(
-      label: const Text("Delete"),
-      icon: const Icon(Icons.delete_forever_rounded),
-      onPressed: () async => await handleDelete(context: context),
-    );
-  }
-
-  FilledButton buildUpdateButton({required BuildContext context}) {
-    return FilledButton.icon(
-        label: const Text("Update"),
-        icon: const Icon(Icons.add_rounded),
-        onPressed: () async {
-          if (validateData()) {
-            await handleUpdate(context: context);
-          }
-          // Then save.
-        });
   }
 
   Widget buildCheckbox({double scale = 1}) {
