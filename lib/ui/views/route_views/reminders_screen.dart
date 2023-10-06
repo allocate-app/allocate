@@ -384,11 +384,14 @@ class _RemindersListScreen extends State<RemindersListScreen> {
       subtitle: buildSubtitle(reminder: provider.reminders[index]),
       onTap: () async {
         provider.curReminder = provider.reminders[index];
-        await showDialog(
+        Reminder? discarded = await showDialog(
             barrierDismissible: false,
             useRootNavigator: false,
             context: context,
             builder: (BuildContext context) => const UpdateReminderScreen());
+        if (null != discarded) {
+          provider.reminders[index] = discarded;
+        }
       },
       trailing: Row(
         mainAxisSize: MainAxisSize.min,

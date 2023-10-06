@@ -312,6 +312,7 @@ class Tiles {
     return Padding(
       padding: outerPadding,
       child: ListTile(
+        contentPadding: const EdgeInsets.only(left: Constants.innerPadding),
         leading: const Icon(Icons.timer_outlined),
         shape: const RoundedRectangleBorder(
             borderRadius:
@@ -576,6 +577,7 @@ class Tiles {
       Padding(
         padding: outerPadding,
         child: ListTile(
+          contentPadding: const EdgeInsets.only(left: Constants.innerPadding),
           leading: const Icon(Icons.today_rounded),
           shape: const RoundedRectangleBorder(
               borderRadius:
@@ -1041,6 +1043,7 @@ class Tiles {
       Padding(
         padding: outerPadding,
         child: ListTile(
+            contentPadding: const EdgeInsets.only(left: Constants.innerPadding),
             leading: const Icon(Icons.schedule_rounded),
             shape: const RoundedRectangleBorder(
                 borderRadius: BorderRadius.all(
@@ -1471,6 +1474,7 @@ class Tiles {
       Padding(
         padding: outerPadding,
         child: ListTile(
+            contentPadding: const EdgeInsets.only(left: Constants.innerPadding),
             leading: (useAlertIcon)
                 ? alertIconButton(
                     warn: showDate,
@@ -1876,6 +1880,7 @@ class Tiles {
     return Padding(
       padding: outerPadding,
       child: ListTile(
+          contentPadding: const EdgeInsets.only(left: Constants.innerPadding),
           leading: const Icon(Icons.event_repeat_rounded),
           shape: const RoundedRectangleBorder(
               borderRadius:

@@ -149,7 +149,7 @@ class ReminderProvider extends ChangeNotifier {
       curReminder!.repeatID = curReminder!.hashCode;
     }
     await cancelNotification();
-    if (validateWarnDate()) {
+    if (validateDueDate()) {
       await scheduleNotification();
     }
 
@@ -307,8 +307,9 @@ class ReminderProvider extends ChangeNotifier {
         id: curReminder!.notificationID!);
   }
 
-  bool validateWarnDate({DateTime? warnDate}) => _notificationService
-      .validateWarnDate(warnDate: warnDate ?? curReminder!.dueDate);
+  // TODO: name this agnostically.
+  bool validateDueDate({DateTime? dueDate}) => _notificationService
+      .validateWarnDate(warnDate: dueDate ?? curReminder!.dueDate);
 
   Future<List<Reminder>> getRemindersBetween(
           {DateTime? start, DateTime? end}) async =>

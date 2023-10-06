@@ -360,11 +360,14 @@ class _DeadlinesListScreen extends State<DeadlinesListScreen> {
       subtitle: buildSubtitle(deadline: provider.deadlines[index]),
       onTap: () async {
         provider.curDeadline = provider.deadlines[index];
-        await showDialog(
+        Deadline? discarded = await showDialog<Deadline>(
             barrierDismissible: false,
             useRootNavigator: false,
             context: context,
             builder: (BuildContext context) => const UpdateDeadlineScreen());
+        if (null != discarded) {
+          provider.deadlines[index] = discarded;
+        }
       },
       trailing: Row(
         mainAxisSize: MainAxisSize.min,

@@ -92,7 +92,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
   late int repeatSkip;
 
   late Set<int> weekdayList;
-  late List<bool> weekDays;
+  late List<bool> weekdays;
 
   late final List<TextEditingController> subTaskEditingController;
   late final List<SubTask> subTasks;
@@ -136,7 +136,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
     subTasks = List.generate(Constants.maxNumTasks, (_) => SubTask());
     shownTasks = 0;
     weekdayList = {};
-    weekDays = List.generate(7, (_) => false);
+    weekdays = List.generate(7, (_) => false);
     groupID = widget.groupID;
   }
 
@@ -274,10 +274,8 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
   }
 
   Future<void> handleCreate() async {
-    mergeDateTimes();
-
     for (int index in weekdayList) {
-      weekDays[index] = true;
+      weekdays[index] = true;
     }
 
     await toDoProvider
@@ -296,7 +294,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
           completed: completed,
           repeatable: frequency != Frequency.once,
           frequency: frequency,
-          repeatDays: weekDays,
+          repeatDays: weekdays,
           repeatSkip: repeatSkip,
           subTasks: subTasks,
         )
@@ -491,6 +489,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
   }
 
   Future<void> createAndValidate() async {
+    mergeDateTimes();
     if (validateData()) {
       await handleCreate();
     }

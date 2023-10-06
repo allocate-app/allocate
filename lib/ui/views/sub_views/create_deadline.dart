@@ -63,7 +63,7 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
   late int repeatSkip;
 
   late Set<int> weekdayList;
-  late List<bool> weekDays;
+  late List<bool> weekdays;
 
   @override
   void initState() {
@@ -93,7 +93,7 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
     warnMe = false;
 
     weekdayList = {};
-    weekDays = List.generate(7, (_) => false);
+    weekdays = List.generate(7, (_) => false);
   }
 
   void initializeProviders() {
@@ -183,10 +183,8 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
   }
 
   Future<void> handleCreate() async {
-    mergeDateTimes();
-
     for (int index in weekdayList) {
-      weekDays[index] = true;
+      weekdays[index] = true;
     }
 
     await deadlineProvider
@@ -200,7 +198,7 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
           priority: priority,
           repeatable: frequency != Frequency.once,
           frequency: frequency,
-          repeatDays: weekDays,
+          repeatDays: weekdays,
           repeatSkip: repeatSkip,
         )
         .whenComplete(() => Navigator.pop(context))
@@ -323,6 +321,7 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
   }
 
   Future<void> createAndValidate() async {
+    mergeDateTimes();
     if (validateData()) {
       await handleCreate();
     }

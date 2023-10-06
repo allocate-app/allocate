@@ -26,7 +26,6 @@ class NotificationService {
 
   static NotificationService get instance => _instance;
 
-
   late final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin;
 
   static const AndroidNotificationDetails _androidNotificationDetails =
@@ -60,30 +59,30 @@ class NotificationService {
   );
 
   static const AndroidInitializationSettings initializationSettingsAndroid =
-  AndroidInitializationSettings("@mipmap/ic_launcher");
+      AndroidInitializationSettings("@mipmap/ic_launcher");
 
   static const DarwinInitializationSettings initializationSettingsDarwin =
-  DarwinInitializationSettings();
+      DarwinInitializationSettings();
 
   static const LinuxInitializationSettings initializationSettingsLinux =
-  LinuxInitializationSettings(defaultActionName: "Open notification");
-
-
+      LinuxInitializationSettings(defaultActionName: "Open notification");
 
   Future<void> init() async {
     // Timezones
     tz.initializeTimeZones();
-    final String timeZoneName = Constants.timezoneNames[DateTime.now().timeZoneOffset.inMilliseconds];
+    final String timeZoneName =
+        Constants.timezoneNames[DateTime.now().timeZoneOffset.inMilliseconds];
     tz.setLocalLocation(tz.getLocation(timeZoneName));
 
-
-    if(Platform.isWindows)
-      {
-        return await initWindows();
-      }
+    if (Platform.isWindows) {
+      return await initWindows();
+    }
 
     flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
-    await flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()?.requestPermission();
+    await flutterLocalNotificationsPlugin
+        .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>()
+        ?.requestPermission();
 
     // LocalNotifierSettings
     const initSettings = InitializationSettings(
@@ -97,31 +96,29 @@ class NotificationService {
         onDidReceiveNotificationResponse: onDidReceiveNotificationResponse);
 
     return await handleAppLaunch();
-
-    }
+  }
 
   Future<void> initWindows() async {
     // Windows
-    winLocalNotificationPlugin = WindowsNotification(applicationId: Constants.windowsApplicationID);
+    winLocalNotificationPlugin =
+        WindowsNotification(applicationId: Constants.windowsApplicationID);
     winLocalNotificationPlugin.initNotificationCallBack(
         (NotificationMessage data, EventType eventType, String? args) async {
-          if(eventType == EventType.onActivate)
-            {
-              NotificationResponse response = NotificationResponse(
-                notificationResponseType: NotificationResponseType.selectedNotification,
-                id: int.tryParse(data.id),
-                payload: data.payload["payload"],
-              );
+      if (eventType == EventType.onActivate) {
+        NotificationResponse response = NotificationResponse(
+          notificationResponseType:
+              NotificationResponseType.selectedNotification,
+          id: int.tryParse(data.id),
+          payload: data.payload["payload"],
+        );
 
-              return  await onDidReceiveNotificationResponse(response);
-            }
-          if(eventType == EventType.onDismissed)
-            {
-              winLocalNotificationPlugin.removeNotificationId(data.id, data.group ?? Constants.applicationName);
-            }
-        }
-    );
-
+        return await onDidReceiveNotificationResponse(response);
+      }
+      if (eventType == EventType.onDismissed) {
+        winLocalNotificationPlugin.removeNotificationId(
+            data.id, data.group ?? Constants.applicationName);
+      }
+    });
   }
 
   // NOTE: id should be the object's hashcode. Payload is TYPE\n notificationID.
@@ -133,94 +130,93 @@ class NotificationService {
   }) async {
     final scheduleDate = tz.TZDateTime.from(warnDate, tz.local);
 
-    if(Platform.isIOS || Platform.isAndroid || Platform.isMacOS)
-      {
-        // Mobile/MacOS only.
-        return await flutterLocalNotificationsPlugin.zonedSchedule(
-          id,
-          //Title
-          Constants.applicationName,
-          message,
-          scheduleDate,
-          _notificationDetails,
-          uiLocalNotificationDateInterpretation:
-          UILocalNotificationDateInterpretation.absoluteTime,
-          payload: payload,
-          androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-        );
-      }
+    if (Platform.isIOS || Platform.isAndroid || Platform.isMacOS) {
+      // Mobile/MacOS only.
+      return await flutterLocalNotificationsPlugin.zonedSchedule(
+        id,
+        //Title
+        Constants.applicationName,
+        message,
+        scheduleDate,
+        _notificationDetails,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
+        payload: payload,
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      );
+    }
 
-    if(Platform.isLinux)
-      {
-        return await scheduleLinux(id: id, warnDate: warnDate, message: message, payload: payload);
-      }
+    if (Platform.isLinux) {
+      return await scheduleLinux(
+          id: id, warnDate: warnDate, message: message, payload: payload);
+    }
 
-    if(Platform.isWindows)
-      {
-        return await scheduleWindows(id: id, warnDate: warnDate, message: message, payload: payload);
-      }
-
+    if (Platform.isWindows) {
+      return await scheduleWindows(
+          id: id, warnDate: warnDate, message: message, payload: payload);
+    }
   }
 
-  Future<void> scheduleLinux({required int id,
-    required DateTime warnDate,
-    required String message, String? payload}) async {
+  Future<void> scheduleLinux(
+      {required int id,
+      required DateTime warnDate,
+      required String message,
+      String? payload}) async {
     TimeScheduler timeScheduler = TimeScheduler();
     timeScheduler.run(() async {
       await showNotificationLinux(
-      id: id, warnDate: warnDate, message: message, payload: payload
-      );
+          id: id, warnDate: warnDate, message: message, payload: payload);
       timeScheduler.dispose();
-
-
     }, tz.TZDateTime.from(warnDate, tz.local));
 
-    desktopLocalNotifications.addAll({id : timeScheduler});
+    desktopLocalNotifications.addAll({id: timeScheduler});
   }
 
-  Future<void>scheduleWindows({required int id, required DateTime warnDate, required String message, String? payload}) async {
-
+  Future<void> scheduleWindows(
+      {required int id,
+      required DateTime warnDate,
+      required String message,
+      String? payload}) async {
     NotificationMessage notification = NotificationMessage.fromPluginTemplate(
-      id.toString(), Constants.applicationName, message, payload: {"payload": payload}, group: Constants.applicationName
-    );
+        id.toString(), Constants.applicationName, message,
+        payload: {"payload": payload}, group: Constants.applicationName);
 
     TimeScheduler timeScheduler = TimeScheduler();
     timeScheduler.run(() async {
-      await winLocalNotificationPlugin.showNotificationPluginTemplate(notification);
+      await winLocalNotificationPlugin
+          .showNotificationPluginTemplate(notification);
       timeScheduler.dispose();
     }, tz.TZDateTime.from(warnDate, tz.local));
 
-    desktopLocalNotifications.addAll({id : timeScheduler});
-
+    desktopLocalNotifications.addAll({id: timeScheduler});
   }
 
-  Future<void> showNotificationLinux({required int id, required DateTime warnDate,
-  required String message, String? payload}) async
-  {
+  Future<void> showNotificationLinux(
+      {required int id,
+      required DateTime warnDate,
+      required String message,
+      String? payload}) async {
     await flutterLocalNotificationsPlugin.show(
-      // Id
-      id,
-      // Header
-      Constants.applicationName,
-      // Message
-      message,
-      // Notification Details
-      _notificationDetails,
-      // Payload
-      payload: payload
-    );
+        // Id
+        id,
+        // Header
+        Constants.applicationName,
+        // Message
+        message,
+        // Notification Details
+        _notificationDetails,
+        // Payload
+        payload: payload);
   }
-
 
   Future<void> cancelNotification({required int id}) async {
-    if(Platform.isWindows || Platform.isLinux){
+    if (Platform.isWindows || Platform.isLinux) {
       desktopLocalNotifications[id]?.dispose();
       desktopLocalNotifications.remove(id);
       return;
     }
 
     await flutterLocalNotificationsPlugin.cancel(id);
-
   }
 
   Future<void> cancelFutures({required List<int> ids}) async {
@@ -230,14 +226,13 @@ class NotificationService {
   }
 
   Future<void> cancelAllNotifications() async {
-    if(Platform.isWindows || Platform.isLinux)
-      {
-        desktopLocalNotifications.forEach((k, v){
-          v.dispose();
-          desktopLocalNotifications.remove(k);
-        });
-        desktopLocalNotifications.clear();
-      }
+    if (Platform.isWindows || Platform.isLinux) {
+      desktopLocalNotifications.forEach((k, v) {
+        v.dispose();
+        desktopLocalNotifications.remove(k);
+      });
+      desktopLocalNotifications.clear();
+    }
     await flutterLocalNotificationsPlugin.cancelAll();
   }
 
@@ -277,12 +272,16 @@ class NotificationService {
   }
 
   bool validateWarnDate({required DateTime warnDate}) {
-    return tz.TZDateTime.from(warnDate, tz.local).isAfter(tz.TZDateTime.now(tz.local));
+    return tz.TZDateTime.from(warnDate, tz.local)
+        .isAfter(tz.TZDateTime.now(tz.local));
   }
 
   Future<void> handleAppLaunch() async {
-    final NotificationAppLaunchDetails? notificationAppLaunchDetails = (!kIsWeb && !Platform.isLinux) ?
-        await flutterLocalNotificationsPlugin.getNotificationAppLaunchDetails() : null;
+    final NotificationAppLaunchDetails? notificationAppLaunchDetails =
+        (!kIsWeb && !Platform.isLinux)
+            ? await flutterLocalNotificationsPlugin
+                .getNotificationAppLaunchDetails()
+            : null;
     return onDidReceiveNotificationResponse(
         notificationAppLaunchDetails?.notificationResponse);
   }
