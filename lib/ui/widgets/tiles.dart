@@ -365,7 +365,8 @@ class Tiles {
             ? IconButton(
                 icon: const Icon(Icons.clear_rounded), onPressed: handleClear)
             : const SizedBox.shrink(),
-        onTap: () => showDialog<int>(
+        // TODO: Could be refactored into a helper method.
+        onTap: () async => await showDialog<int>(
             context: context,
             builder: (BuildContext context) {
               int time = expectedDuration;
@@ -379,6 +380,8 @@ class Tiles {
                 builder: (BuildContext context,
                         void Function(void Function()) setState) =>
                     Dialog(
+                        insetPadding:
+                            const EdgeInsets.all(Constants.innerPadding),
                         child: Padding(
                             padding:
                                 const EdgeInsets.all(Constants.innerPadding),
@@ -657,8 +660,9 @@ class Tiles {
               ? IconButton(
                   icon: const Icon(Icons.clear), onPressed: handleClear)
               : null,
-          onTap: () {
-            showDialog<void>(
+          // TODO: This should probably be refactored.
+          onTap: () async {
+            await showDialog<void>(
                 context: context,
                 builder: (BuildContext context) {
                   DateTime? tmpStart = startDate;
@@ -1106,8 +1110,9 @@ class Tiles {
                             ),
                           ),
                   ]),
-            onTap: () {
-              showDialog<void>(
+            // TODO: This should probably be refactored
+            onTap: () async {
+              await showDialog<void>(
                   context: context,
                   builder: (BuildContext context) {
                     TimeOfDay? tmpStart = startTime;
@@ -1446,7 +1451,411 @@ class Tiles {
                 : null),
       );
 
-  // SINGLE DATE TILE - TBD
+  // SINGLE DATE TILE
+  static Widget singleDateTimeTile({
+    EdgeInsetsGeometry outerPadding = EdgeInsets.zero,
+    required BuildContext context,
+    Widget? leading,
+    DateTime? date,
+    TimeOfDay? time,
+    bool useAlertIcon = false,
+    bool showDate = false,
+    String unsetDateText = "",
+    String unsetTimeText = "",
+    String dialogHeader = "",
+    required void Function() handleClear,
+    required void Function(
+            {bool? checkClose, DateTime? newDate, TimeOfDay? newTime})
+        handleUpdate,
+  }) =>
+      Padding(
+        padding: outerPadding,
+        child: ListTile(
+            leading: (useAlertIcon)
+                ? alertIconButton(
+                    warn: showDate,
+                    onTap: () async {
+                      await innerDateTimeDialog(
+                          date: date,
+                          time: time,
+                          context: context,
+                          dialogHeader: dialogHeader,
+                          handleUpdate: handleUpdate);
+                    })
+                : leading,
+            shape: const RoundedRectangleBorder(
+                borderRadius: BorderRadius.all(
+                    Radius.circular(Constants.roundedCorners))),
+            title: (showDate && null != date)
+                ? Row(children: [
+                    Flexible(
+                      child: AutoSizeText(
+                        Jiffy.parseFromDateTime(date).format(pattern: "MMM d"),
+                        softWrap: false,
+                        overflow: TextOverflow.visible,
+                        maxLines: 1,
+                        minFontSize: Constants.huge,
+                      ),
+                    ),
+                    (null != time)
+                        ? const Flexible(
+                            child: Padding(
+                              padding: EdgeInsets.symmetric(
+                                  horizontal: Constants.padding),
+                              child: Icon(Icons.schedule_outlined),
+                            ),
+                          )
+                        : const Flexible(
+                            child: Padding(
+                            padding: EdgeInsets.symmetric(
+                                horizontal: Constants.padding),
+                            child: Icon(Icons.history_toggle_off_outlined),
+                          )),
+                    (null != time)
+                        ? Flexible(
+                            child: AutoSizeText(
+                              time.format(context).toString(),
+                              softWrap: false,
+                              overflow: TextOverflow.visible,
+                              maxLines: 1,
+                              minFontSize: Constants.huge,
+                            ),
+                          )
+                        : Flexible(
+                            child: AutoSizeText(
+                              unsetTimeText,
+                              overflow: TextOverflow.visible,
+                              softWrap: false,
+                              minFontSize: Constants.medium,
+                              maxLines: 1,
+                            ),
+                          ),
+                  ])
+                : AutoSizeText(
+                    unsetDateText,
+                    overflow: TextOverflow.visible,
+                    softWrap: true,
+                    minFontSize: Constants.medium,
+                    maxLines: 2,
+                  ),
+            onTap: () async {
+              await innerDateTimeDialog(
+                  date: date,
+                  time: time,
+                  context: context,
+                  dialogHeader: dialogHeader,
+                  handleUpdate: handleUpdate);
+            },
+            trailing: (showDate && null != date)
+                ? IconButton(
+                    icon: const Icon(Icons.clear_rounded),
+                    onPressed: handleClear,
+                  )
+                : null),
+      );
+
+  static Future<void> innerDateTimeDialog({
+    DateTime? date,
+    TimeOfDay? time,
+    required BuildContext context,
+    String dialogHeader = "",
+    required void Function(
+            {bool? checkClose, DateTime? newDate, TimeOfDay? newTime})
+        handleUpdate,
+  }) async {
+    DateTime? tmpDate = date;
+    TimeOfDay? tmpTime = time;
+    await showDialog<bool?>(
+        context: context,
+        builder: (BuildContext context) {
+          return StatefulBuilder(
+              builder: (context, setState) => Dialog(
+                  insetPadding: const EdgeInsets.all(Constants.innerPadding),
+                  child: Padding(
+                      padding: const EdgeInsets.all(Constants.innerPadding),
+                      child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Expanded(
+                                  child: AutoSizeText(
+                                    dialogHeader,
+                                    style: Constants.headerStyle,
+                                    softWrap: true,
+                                    overflow: TextOverflow.visible,
+                                    maxLines: 2,
+                                    minFontSize: Constants.medium,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const Flexible(
+                              child: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                mainAxisSize: MainAxisSize.max,
+                                children: [
+                                  Flexible(
+                                      child: AutoSizeText(
+                                    "Date | Time ",
+                                    style: Constants.largeHeaderStyle,
+                                    softWrap: true,
+                                    overflow: TextOverflow.visible,
+                                    maxLines: 1,
+                                    minFontSize: Constants.large,
+                                  )),
+                                  Flexible(
+                                    child: FittedBox(
+                                        fit: BoxFit.fill,
+                                        child: Icon(Icons.alarm_outlined,
+                                            size: Constants.medIconSize)),
+                                  ),
+                                ],
+                              ),
+                            ),
+
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                  vertical: Constants.innerPadding),
+                              child: Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  mainAxisSize: MainAxisSize.max,
+                                  children: [
+                                    Expanded(
+                                      flex: 3,
+                                      child: Container(
+                                        decoration: BoxDecoration(
+                                          borderRadius: BorderRadius.circular(
+                                              Constants.roundedCorners),
+                                          border: Border.all(
+                                              strokeAlign: BorderSide
+                                                  .strokeAlignOutside),
+                                        ),
+                                        child: Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.spaceBetween,
+                                            mainAxisSize: MainAxisSize.max,
+                                            children: [
+                                              Expanded(
+                                                child: TextButton(
+                                                    onPressed: () {
+                                                      // Consider moving this to shifting focus to calendar
+                                                      // using focusNode.
+                                                      if (null == tmpDate) {
+                                                        setState(() => tmpDate =
+                                                            DateTime.now());
+                                                      }
+                                                    },
+                                                    child: (null != tmpDate)
+                                                        ? AutoSizeText(
+                                                            Jiffy.parseFromDateTime(
+                                                                    tmpDate!)
+                                                                .format(
+                                                                    pattern:
+                                                                        "MMM d, yyyy"),
+                                                            softWrap: false,
+                                                            overflow:
+                                                                TextOverflow
+                                                                    .visible,
+                                                            maxLines: 1,
+                                                            minFontSize:
+                                                                Constants.small,
+                                                          )
+                                                        : const AutoSizeText(
+                                                            "Date",
+                                                            softWrap: true,
+                                                            overflow:
+                                                                TextOverflow
+                                                                    .visible,
+                                                            maxLines: 1,
+                                                            minFontSize:
+                                                                Constants
+                                                                    .small)),
+                                              ),
+                                              (null != tmpDate)
+                                                  ? IconButton(
+                                                      icon: const Icon(
+                                                          Icons.clear_outlined),
+                                                      selectedIcon: const Icon(
+                                                          Icons.clear),
+                                                      onPressed: () =>
+                                                          setState(() {
+                                                        tmpDate = null;
+                                                      }),
+                                                    )
+                                                  : const SizedBox.shrink()
+                                            ]),
+                                      ),
+                                    ),
+                                    const Flexible(
+                                      child: Padding(
+                                        padding: EdgeInsets.symmetric(
+                                            horizontal: Constants.padding),
+                                        child: AutoSizeText("@",
+                                            style: Constants.hugeHeaderStyle,
+                                            softWrap: false,
+                                            overflow: TextOverflow.visible,
+                                            maxLines: 1,
+                                            minFontSize: Constants.small),
+                                      ),
+                                    ),
+                                    Expanded(
+                                      flex: 3,
+                                      child: Container(
+                                        decoration: BoxDecoration(
+                                          borderRadius: BorderRadius.circular(
+                                              Constants.roundedCorners),
+                                          border: Border.all(
+                                              strokeAlign: BorderSide
+                                                  .strokeAlignOutside),
+                                        ),
+                                        child: Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.spaceBetween,
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Expanded(
+                                                child: TextButton(
+                                                    onPressed: () async {
+                                                      final TimeOfDay? picked =
+                                                          await showTimePicker(
+                                                        context: context,
+                                                        initialTime: tmpTime ??
+                                                            Constants.midnight,
+                                                      );
+                                                      if (null != picked) {
+                                                        setState(() =>
+                                                            tmpTime = picked);
+                                                      }
+                                                    },
+                                                    child: (null != tmpTime)
+                                                        ? AutoSizeText(
+                                                            tmpTime!
+                                                                .format(context)
+                                                                .toString(),
+                                                            softWrap: false,
+                                                            overflow:
+                                                                TextOverflow
+                                                                    .visible,
+                                                            maxLines: 1,
+                                                            minFontSize:
+                                                                Constants.small,
+                                                          )
+                                                        : const AutoSizeText(
+                                                            "Time",
+                                                            softWrap: true,
+                                                            overflow:
+                                                                TextOverflow
+                                                                    .visible,
+                                                            maxLines: 1,
+                                                            minFontSize:
+                                                                Constants
+                                                                    .small)),
+                                              ),
+                                              (null != tmpTime)
+                                                  ? IconButton(
+                                                      icon: const Icon(
+                                                          Icons.clear_outlined),
+                                                      selectedIcon: const Icon(
+                                                          Icons.clear),
+                                                      onPressed: () =>
+                                                          setState(() {
+                                                        tmpTime = null;
+                                                      }),
+                                                    )
+                                                  : const SizedBox.shrink(),
+                                            ]),
+                                      ),
+                                    ),
+                                  ]),
+                            ),
+
+                            // Calendar picker here.
+
+                            Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  CalendarDatePicker2(
+                                      config: CalendarDatePicker2Config(
+                                        calendarType:
+                                            CalendarDatePicker2Type.single,
+                                        firstDate: DateTime(1970),
+                                        lastDate: DateTime(3000),
+                                      ),
+                                      value: [tmpDate],
+                                      onValueChanged: (dates) {
+                                        setState(() {
+                                          tmpDate = dates.firstOrNull;
+                                        });
+                                      }),
+                                ]),
+
+                            Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Expanded(
+                                    child: Padding(
+                                      padding: const EdgeInsets.only(
+                                          right: Constants.padding),
+                                      child: FilledButton.tonalIcon(
+                                          icon:
+                                              const Icon(Icons.close_outlined),
+                                          onPressed: () {
+                                            Navigator.pop(context);
+                                            handleUpdate(
+                                                newDate: date, newTime: time);
+                                          },
+                                          label: const AutoSizeText("Cancel",
+                                              softWrap: false,
+                                              overflow: TextOverflow.visible,
+                                              maxLines: 1,
+                                              minFontSize: Constants.small)),
+                                    ),
+                                  ),
+                                  Expanded(
+                                    child: Padding(
+                                      padding: const EdgeInsets.only(
+                                          left: Constants.padding),
+                                      child: FilledButton.icon(
+                                        icon: const Icon(Icons.done_outlined),
+                                        onPressed: () {
+                                          Navigator.pop(context);
+                                          handleUpdate(
+                                              checkClose: true,
+                                              newDate: tmpDate,
+                                              newTime: tmpTime);
+                                        },
+                                        label: const AutoSizeText("Done",
+                                            softWrap: false,
+                                            overflow: TextOverflow.visible,
+                                            maxLines: 1,
+                                            minFontSize: Constants.small),
+                                      ),
+                                    ),
+                                  )
+                                ]),
+                          ]))));
+        });
+  }
+
+  // This is not ideal and fairly coupled. TODO: Figure out how to organize.
+  static Widget alertIconButton({bool warn = false, void Function()? onTap}) =>
+      (warn)
+          ? IconButton.filledTonal(
+              icon: const Icon(Icons.notifications_on_rounded),
+              onPressed: onTap,
+            )
+          : IconButton.outlined(
+              icon: const Icon(Icons.notifications_outlined), onPressed: onTap);
 
   // REPEATABLE
   static Widget repeatableTile({
@@ -1482,8 +1891,9 @@ class Tiles {
                   minFontSize: Constants.small,
                   maxLines: 1,
                   softWrap: false),
-          onTap: () {
-            showDialog(
+          // TODO: Consider refactoring into a helper dialog
+          onTap: () async {
+            await showDialog(
                 context: context,
                 builder: (BuildContext context) {
                   Frequency cacheFreq = frequency;
@@ -1499,6 +1909,8 @@ class Tiles {
                   return StatefulBuilder(builder: (BuildContext context,
                       void Function(void Function()) setState) {
                     return Dialog(
+                        insetPadding:
+                            const EdgeInsets.all(Constants.innerPadding),
                         child: Padding(
                             padding:
                                 const EdgeInsets.all(Constants.innerPadding),
@@ -1886,13 +2298,17 @@ class Tiles {
     }
     return ListTile(
         leading: leading,
+        shape: const RoundedRectangleBorder(
+            borderRadius:
+                BorderRadius.all(Radius.circular(Constants.roundedCorners))),
         title: AutoSizeText(
           title,
           overflow: TextOverflow.visible,
           softWrap: true,
           minFontSize: Constants.medium,
           maxLines: 2,
-        ));
+        ),
+        onTap: toggleMyDay);
   }
 
   /// Boilerplate.

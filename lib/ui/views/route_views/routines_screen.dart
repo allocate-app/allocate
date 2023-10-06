@@ -66,7 +66,7 @@ class _RoutinesListScreen extends State<RoutinesListScreen> {
     mainScrollController.addListener(() async {
       // Bottom: Run the query.
       if (mainScrollController.offset >=
-              mainScrollController.position.maxScrollExtent &&
+          mainScrollController.position.maxScrollExtent &&
           !allData) {
         if (!loading && mounted) {
           await fetchData();
@@ -75,7 +75,7 @@ class _RoutinesListScreen extends State<RoutinesListScreen> {
     });
 
     scrollPhysics =
-        const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics());
+    const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics());
   }
 
   Widget getArrowDirection({required SortMethod method}) {
@@ -90,10 +90,9 @@ class _RoutinesListScreen extends State<RoutinesListScreen> {
     return const Icon(Icons.arrow_upward_rounded);
   }
 
-  Widget getTimeOfDayIcon(
-      {required Routine routine,
-      required BuildContext context,
-      required RoutineProvider provider}) {
+  Widget getTimeOfDayIcon({required Routine routine,
+    required BuildContext context,
+    required RoutineProvider provider}) {
     RoutineTime routineTime = provider.getRoutineTime(routine: routine);
 
     Icon? icon = switch (routineTime) {
@@ -108,7 +107,10 @@ class _RoutinesListScreen extends State<RoutinesListScreen> {
           padding: const EdgeInsets.all(Constants.innerPadding),
           shape: const CircleBorder(),
           side: BorderSide(
-            color: Theme.of(context).colorScheme.outlineVariant,
+            color: Theme
+                .of(context)
+                .colorScheme
+                .outlineVariant,
           )),
       onPressed: () async {
         await showDialog<RoutineTime>(
@@ -116,139 +118,151 @@ class _RoutinesListScreen extends State<RoutinesListScreen> {
           builder: (BuildContext context) {
             return Dialog(
                 child: ConstrainedBox(
-              constraints: const BoxConstraints(
-                  maxWidth: Constants.smallLandscapeDialogWidth),
-              child: Padding(
-                padding: const EdgeInsets.all(Constants.innerPadding),
-                child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Row(
-                          mainAxisAlignment: MainAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Expanded(
-                              child: AutoSizeText(
-                                "Set Routine Time",
-                                style: Constants.headerStyle,
-                                softWrap: true,
-                                overflow: TextOverflow.visible,
-                                maxLines: 2,
-                                minFontSize: Constants.medium,
-                              ),
-                            )
-                          ]),
-                      const Flexible(
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          mainAxisSize: MainAxisSize.max,
-                          children: [
-                            Flexible(
-                                child: AutoSizeText(
-                              "Morning | Afternoon | Evening ",
-                              style: Constants.largeHeaderStyle,
-                              softWrap: true,
-                              overflow: TextOverflow.visible,
-                              maxLines: 1,
-                              minFontSize: Constants.large,
-                            )),
-                            Flexible(
-                              child: FittedBox(
-                                  fit: BoxFit.fill,
-                                  child: Icon(Icons.schedule_rounded,
-                                      size: Constants.medIconSize)),
+                  constraints: const BoxConstraints(
+                      maxWidth: Constants.smallLandscapeDialogWidth),
+                  child: Padding(
+                    padding: const EdgeInsets.all(Constants.innerPadding),
+                    child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Row(
+                              mainAxisAlignment: MainAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Expanded(
+                                  child: AutoSizeText(
+                                    "Set Routine Time",
+                                    style: Constants.headerStyle,
+                                    softWrap: true,
+                                    overflow: TextOverflow.visible,
+                                    maxLines: 2,
+                                    minFontSize: Constants.medium,
+                                  ),
+                                )
+                              ]),
+                          const Flexible(
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              mainAxisSize: MainAxisSize.max,
+                              children: [
+                                Flexible(
+                                    child: AutoSizeText(
+                                      "Morning | Afternoon | Evening ",
+                                      style: Constants.largeHeaderStyle,
+                                      softWrap: true,
+                                      overflow: TextOverflow.visible,
+                                      maxLines: 1,
+                                      minFontSize: Constants.large,
+                                    )),
+                                Flexible(
+                                  child: FittedBox(
+                                      fit: BoxFit.fill,
+                                      child: Icon(Icons.schedule_rounded,
+                                          size: Constants.medIconSize)),
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
-                      ),
-                      Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          mainAxisSize: MainAxisSize.max,
-                          children: [
-                            Flexible(
-                                child: Padding(
-                              padding: const EdgeInsets.all(Constants.padding),
-                              child: FittedBox(
-                                fit: BoxFit.fill,
-                                child: (routine == provider.curMorning)
-                                    ? IconButton.filledTonal(
-                                        iconSize: Constants.lgIconSize,
-                                        icon: const Icon(
-                                            Icons.wb_twilight_rounded),
-                                        onPressed: () => Navigator.pop(
-                                            context, RoutineTime.none))
-                                    : IconButton.outlined(
-                                        iconSize: Constants.lgIconSize,
-                                        icon: const Icon(
-                                            Icons.wb_twilight_rounded),
-                                        onPressed: () => Navigator.pop(
-                                            context, RoutineTime.morning)),
-                              ),
-                            )),
-                            Flexible(
-                              child: Padding(
-                                padding:
+                          ),
+                          Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              mainAxisSize: MainAxisSize.max,
+                              children: [
+                                Flexible(
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(
+                                          Constants.padding),
+                                      child: FittedBox(
+                                        fit: BoxFit.fill,
+                                        child: (routine == provider.curMorning)
+                                            ? IconButton.filledTonal(
+                                            iconSize: Constants.lgIconSize,
+                                            icon: const Icon(
+                                                Icons.wb_twilight_rounded),
+                                            onPressed: () =>
+                                                Navigator.pop(
+                                                    context, RoutineTime.none))
+                                            : IconButton.outlined(
+                                            iconSize: Constants.lgIconSize,
+                                            icon: const Icon(
+                                                Icons.wb_twilight_rounded),
+                                            onPressed: () =>
+                                                Navigator.pop(
+                                                    context,
+                                                    RoutineTime.morning)),
+                                      ),
+                                    )),
+                                Flexible(
+                                  child: Padding(
+                                    padding:
                                     const EdgeInsets.all(Constants.padding),
-                                child: FittedBox(
-                                  fit: BoxFit.fill,
-                                  child: (routine == provider.curAfternoon)
-                                      ? IconButton.filledTonal(
+                                    child: FittedBox(
+                                      fit: BoxFit.fill,
+                                      child: (routine == provider.curAfternoon)
+                                          ? IconButton.filledTonal(
                                           iconSize: Constants.lgIconSize,
                                           icon: const Icon(
                                               Icons.lunch_dining_rounded),
-                                          onPressed: () => Navigator.pop(
-                                              context, RoutineTime.none))
-                                      : IconButton.outlined(
+                                          onPressed: () =>
+                                              Navigator.pop(
+                                                  context, RoutineTime.none))
+                                          : IconButton.outlined(
                                           iconSize: Constants.lgIconSize,
                                           icon: const Icon(
                                               Icons.lunch_dining_rounded),
-                                          onPressed: () => Navigator.pop(
-                                              context, RoutineTime.afternoon)),
+                                          onPressed: () =>
+                                              Navigator.pop(
+                                                  context,
+                                                  RoutineTime.afternoon)),
+                                    ),
+                                  ),
                                 ),
-                              ),
-                            ),
-                            Flexible(
-                              child: Padding(
-                                padding:
+                                Flexible(
+                                  child: Padding(
+                                    padding:
                                     const EdgeInsets.all(Constants.padding),
-                                child: FittedBox(
-                                  fit: BoxFit.fill,
-                                  child: (routine == provider.curEvening)
-                                      ? IconButton.filledTonal(
+                                    child: FittedBox(
+                                      fit: BoxFit.fill,
+                                      child: (routine == provider.curEvening)
+                                          ? IconButton.filledTonal(
                                           iconSize: Constants.lgIconSize,
                                           icon: const Icon(Icons.bed_rounded),
-                                          onPressed: () => Navigator.pop(
-                                              context, RoutineTime.none))
-                                      : IconButton.outlined(
+                                          onPressed: () =>
+                                              Navigator.pop(
+                                                  context, RoutineTime.none))
+                                          : IconButton.outlined(
                                           iconSize: Constants.lgIconSize,
                                           icon: const Icon(Icons.bed_rounded),
-                                          onPressed: () => Navigator.pop(
-                                              context, RoutineTime.evening)),
-                                ),
-                              ),
-                            )
-                          ]),
-                      Flexible(
-                        child: Padding(
-                            padding: const EdgeInsets.all(Constants.padding),
-                            child: Tooltip(
-                              message: "Remove.",
-                              child: FittedBox(
-                                fit: BoxFit.fill,
-                                child: IconButton.outlined(
-                                  iconSize: Constants.medIconSize,
-                                  icon:
+                                          onPressed: () =>
+                                              Navigator.pop(
+                                                  context,
+                                                  RoutineTime.evening)),
+                                    ),
+                                  ),
+                                )
+                              ]),
+                          Flexible(
+                            child: Padding(
+                                padding: const EdgeInsets.all(
+                                    Constants.padding),
+                                child: Tooltip(
+                                  message: "Remove.",
+                                  child: FittedBox(
+                                    fit: BoxFit.fill,
+                                    child: IconButton.outlined(
+                                      iconSize: Constants.medIconSize,
+                                      icon:
                                       const Icon(Icons.remove_circle_outlined),
-                                  onPressed: () =>
-                                      Navigator.pop(context, RoutineTime.none),
-                                ),
-                              ),
-                            )),
-                      )
-                    ]),
-              ),
-            ));
+                                      onPressed: () =>
+                                          Navigator.pop(
+                                              context, RoutineTime.none),
+                                    ),
+                                  ),
+                                )),
+                          )
+                        ]),
+                  ),
+                ));
           },
         ).then((RoutineTime? time) {
           if (time == null) {
@@ -268,31 +282,32 @@ class _RoutinesListScreen extends State<RoutinesListScreen> {
     setState(() => loading = true);
     return Future.delayed(
         const Duration(seconds: 1),
-        () async => await routineProvider
-                .getRoutinesBy(limit: Constants.limitPerQuery, offset: offset)
-                .then((newRoutines) {
-              offset += newRoutines.length;
-              routineProvider.routines.addAll(newRoutines);
-              allData = newRoutines.length < Constants.limitPerQuery;
+            () async =>
+        await routineProvider
+            .getRoutinesBy(limit: Constants.limitPerQuery, offset: offset)
+            .then((newRoutines) {
+          offset += newRoutines.length;
+          routineProvider.routines.addAll(newRoutines);
+          allData = newRoutines.length < Constants.limitPerQuery;
 
-              if (mounted) {
-                setState(() {
-                  loading = false;
-                });
-              }
-            }).catchError(
+          if (mounted) {
+            setState(() {
+              loading = false;
+            });
+          }
+        }).catchError(
               (e) {
-                Flushbar? error;
+            Flushbar? error;
 
-                error = Flushbars.createError(
-                  message: e.cause ?? "Error with retrieval",
-                  context: context,
-                  dismissCallback: () => error?.dismiss(),
-                );
+            error = Flushbars.createError(
+              message: e.cause ?? "Error with retrieval",
+              context: context,
+              dismissCallback: () => error?.dismiss(),
+            );
 
-                error.show(context);
-              },
-            ));
+            error.show(context);
+          },
+        ));
   }
 
   Future<void> resetPagination() async {
@@ -313,11 +328,11 @@ class _RoutinesListScreen extends State<RoutinesListScreen> {
   Icon getBatteryIcon({required Routine routine}) {
     // Icon is scaled for sum-weight.
     int weight = remap(
-            x: routine.weight,
-            inMin: 0,
-            inMax: Constants.maxWeight,
-            outMin: 0,
-            outMax: 5)
+        x: routine.weight,
+        inMin: 0,
+        inMax: Constants.maxWeight,
+        outMin: 0,
+        outMax: 5)
         .toInt();
 
     return Constants.batteryIcons[weight]!;
@@ -327,9 +342,15 @@ class _RoutinesListScreen extends State<RoutinesListScreen> {
   Widget build(BuildContext context) {
     // TODO: Remove this @ first build if still unused.
     bool largeScreen =
-        (MediaQuery.of(context).size.width >= Constants.largeScreen);
+    (MediaQuery
+        .of(context)
+        .size
+        .width >= Constants.largeScreen);
     bool smallScreen =
-        (MediaQuery.of(context).size.width <= Constants.smallScreen);
+    (MediaQuery
+        .of(context)
+        .size
+        .width <= Constants.smallScreen);
 
     return Padding(
       padding: const EdgeInsets.all(Constants.innerPadding),
@@ -354,8 +375,8 @@ class _RoutinesListScreen extends State<RoutinesListScreen> {
                     value: routineProvider.sortMethod,
                     icon: (routineProvider.sortMethod != SortMethod.none)
                         ? (routineProvider.descending)
-                            ? const Icon(Icons.arrow_downward_rounded)
-                            : const Icon(Icons.arrow_upward_rounded)
+                        ? const Icon(Icons.arrow_downward_rounded)
+                        : const Icon(Icons.arrow_upward_rounded)
                         : null,
                     borderRadius: const BorderRadius.all(
                         Radius.circular(Constants.roundedCorners)),
@@ -368,17 +389,18 @@ class _RoutinesListScreen extends State<RoutinesListScreen> {
                     },
                     items: RoutineSorter.sortMethods
                         .map<DropdownMenuItem<SortMethod>>(
-                            (method) => DropdownMenuItem<SortMethod>(
-                                  value: method,
-                                  child: Padding(
-                                    padding:
-                                        const EdgeInsets.all(Constants.padding),
-                                    child: Text(
-                                      toBeginningOfSentenceCase(
-                                          method.name.replaceAll("_", " "))!,
-                                    ),
-                                  ),
-                                ))
+                            (method) =>
+                            DropdownMenuItem<SortMethod>(
+                              value: method,
+                              child: Padding(
+                                padding:
+                                const EdgeInsets.all(Constants.padding),
+                                child: Text(
+                                  toBeginningOfSentenceCase(
+                                      method.name.replaceAll("_", " "))!,
+                                ),
+                              ),
+                            ))
                         .toList(growable: false)),
               ),
             ]),
@@ -387,16 +409,20 @@ class _RoutinesListScreen extends State<RoutinesListScreen> {
               horizontal: Constants.innerPadding, vertical: Constants.padding),
           shape: const RoundedRectangleBorder(
             borderRadius:
-                BorderRadius.all(Radius.circular(Constants.roundedCorners)),
+            BorderRadius.all(Radius.circular(Constants.roundedCorners)),
           ),
-          onTap: () async => await showDialog(
+          onTap: () async =>
+          await showDialog(
             barrierDismissible: false,
             context: context,
             builder: (BuildContext context) => const CreateRoutineScreen(),
           ),
           leading: CircleAvatar(
             child: Icon(Icons.add_outlined,
-                color: Theme.of(context).colorScheme.onSurfaceVariant),
+                color: Theme
+                    .of(context)
+                    .colorScheme
+                    .onSurfaceVariant),
           ),
           title: const AutoSizeText(
             "Create New",
@@ -410,18 +436,17 @@ class _RoutinesListScreen extends State<RoutinesListScreen> {
           child: (loading)
               ? const CircularProgressIndicator()
               : buildRoutinesList(
-                  smallScreen: smallScreen,
-                  physics: scrollPhysics,
-                  largeScreen: largeScreen),
+              smallScreen: smallScreen,
+              physics: scrollPhysics,
+              largeScreen: largeScreen),
         ),
       ]),
     );
   }
 
-  ListView buildRoutinesList(
-      {bool smallScreen = false,
-      ScrollPhysics physics = const BouncingScrollPhysics(),
-      largeScreen = false}) {
+  ListView buildRoutinesList({bool smallScreen = false,
+    ScrollPhysics physics = const BouncingScrollPhysics(),
+    largeScreen = false}) {
     return ListView(
         controller: mainScrollController,
         physics: physics,
@@ -442,17 +467,16 @@ class _RoutinesListScreen extends State<RoutinesListScreen> {
           ),
           (loading)
               ? const Padding(
-                  padding: EdgeInsets.all(Constants.padding),
-                  child: Center(child: CircularProgressIndicator()),
-                )
+            padding: EdgeInsets.all(Constants.padding),
+            child: Center(child: CircularProgressIndicator()),
+          )
               : const SizedBox.shrink()
         ]);
   }
 
-  ReorderableListView buildReorderable(
-      {required RoutineProvider provider,
-      required BuildContext context,
-      bool largeScreen = false}) {
+  ReorderableListView buildReorderable({required RoutineProvider provider,
+    required BuildContext context,
+    bool largeScreen = false}) {
     return ReorderableListView.builder(
         buildDefaultDragHandles: false,
         physics: const NeverScrollableScrollPhysics(),
@@ -476,9 +500,9 @@ class _RoutinesListScreen extends State<RoutinesListScreen> {
             error.show(context);
             return List<Routine>.empty(growable: true);
           },
-                  test: (e) =>
-                      e is FailureToCreateException ||
-                      e is FailureToUploadException);
+              test: (e) =>
+              e is FailureToCreateException ||
+                  e is FailureToUploadException);
           if (provider.routines.isEmpty) {
             resetPagination();
           }
@@ -493,10 +517,9 @@ class _RoutinesListScreen extends State<RoutinesListScreen> {
         });
   }
 
-  ListView buildImmutable(
-      {required RoutineProvider provider,
-      required BuildContext context,
-      bool largeScreen = false}) {
+  ListView buildImmutable({required RoutineProvider provider,
+    required BuildContext context,
+    bool largeScreen = false}) {
     return ListView.builder(
         physics: const NeverScrollableScrollPhysics(),
         shrinkWrap: true,
@@ -510,11 +533,10 @@ class _RoutinesListScreen extends State<RoutinesListScreen> {
         });
   }
 
-  ListTile buildRoutineListTile(
-      {required int index,
-      required BuildContext context,
-      required RoutineProvider provider,
-      bool reorderable = false}) {
+  ListTile buildRoutineListTile({required int index,
+    required BuildContext context,
+    required RoutineProvider provider,
+    bool reorderable = false}) {
     return ListTile(
       key: ValueKey(index),
       leading: getTimeOfDayIcon(
@@ -524,7 +546,7 @@ class _RoutinesListScreen extends State<RoutinesListScreen> {
       ),
       shape: const RoundedRectangleBorder(
           borderRadius:
-              BorderRadius.all(Radius.circular(Constants.roundedCorners))),
+          BorderRadius.all(Radius.circular(Constants.roundedCorners))),
       title: AutoSizeText(provider.routines[index].name,
           overflow: TextOverflow.visible,
           style: Constants.headerStyle,
@@ -533,11 +555,15 @@ class _RoutinesListScreen extends State<RoutinesListScreen> {
           maxLines: 1),
       onTap: () async {
         provider.curRoutine = provider.routines[index];
-        await showDialog(
+        // TODO: Factor this tile out.
+        Routine? discarded = await showDialog<Routine>(
             barrierDismissible: false,
             useRootNavigator: false,
             context: context,
             builder: (BuildContext context) => const UpdateRoutineScreen());
+        if (null != discarded) {
+          provider.routines[index] = discarded;
+        }
       },
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
@@ -557,7 +583,7 @@ class _RoutinesListScreen extends State<RoutinesListScreen> {
           ),
           Padding(
             padding:
-                const EdgeInsets.symmetric(horizontal: Constants.innerPadding),
+            const EdgeInsets.symmetric(horizontal: Constants.innerPadding),
             child: IconButton(
                 icon: const Icon(Icons.delete_forever),
                 onPressed: () async {
@@ -568,71 +594,80 @@ class _RoutinesListScreen extends State<RoutinesListScreen> {
                         builder: (BuildContext context) {
                           bool dontAsk = !checkDelete;
                           return StatefulBuilder(
-                            builder: (context, setState) => Dialog(
-                                insetPadding: const EdgeInsets.all(
-                                    Constants.innerDialogPadding),
-                                child: Padding(
-                                  padding: const EdgeInsets.all(
-                                      Constants.innerPadding),
-                                  child: Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        const Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.start,
-                                            children: [
-                                              Expanded(
-                                                child: AutoSizeText(
-                                                  "Delete Routine?",
-                                                  style: Constants.headerStyle,
-                                                  softWrap: true,
-                                                  overflow:
-                                                      TextOverflow.visible,
-                                                  maxLines: 2,
-                                                  minFontSize: Constants.medium,
-                                                ),
-                                              )
-                                            ]),
-                                        const Row(
+                            builder: (context, setState) =>
+                                Dialog(
+                                    insetPadding: const EdgeInsets.all(
+                                        Constants.innerDialogPadding),
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(
+                                          Constants.innerPadding),
+                                      child: Column(
                                           mainAxisSize: MainAxisSize.min,
                                           mainAxisAlignment:
-                                              MainAxisAlignment.center,
+                                          MainAxisAlignment.center,
                                           children: [
-                                            Expanded(
-                                              child: AutoSizeText(
-                                                "This cannot be undone.",
-                                                style:
-                                                    Constants.largeHeaderStyle,
-                                                softWrap: true,
-                                                overflow: TextOverflow.visible,
-                                                maxLines: 2,
-                                                minFontSize: Constants.medium,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                        Padding(
-                                          padding: const EdgeInsets.symmetric(
-                                              vertical: Constants.innerPadding),
-                                          child: Row(
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment
-                                                      .spaceBetween,
+                                            const Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                mainAxisAlignment:
+                                                MainAxisAlignment.start,
+                                                children: [
+                                                  Expanded(
+                                                    child: AutoSizeText(
+                                                      "Delete Routine?",
+                                                      style: Constants
+                                                          .headerStyle,
+                                                      softWrap: true,
+                                                      overflow:
+                                                      TextOverflow.visible,
+                                                      maxLines: 2,
+                                                      minFontSize: Constants
+                                                          .medium,
+                                                    ),
+                                                  )
+                                                ]),
+                                            const Row(
                                               mainAxisSize: MainAxisSize.min,
+                                              mainAxisAlignment:
+                                              MainAxisAlignment.center,
                                               children: [
                                                 Expanded(
-                                                  child: Padding(
-                                                    padding:
+                                                  child: AutoSizeText(
+                                                    "This cannot be undone.",
+                                                    style:
+                                                    Constants.largeHeaderStyle,
+                                                    softWrap: true,
+                                                    overflow: TextOverflow
+                                                        .visible,
+                                                    maxLines: 2,
+                                                    minFontSize: Constants
+                                                        .medium,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                            Padding(
+                                              padding: const EdgeInsets
+                                                  .symmetric(
+                                                  vertical: Constants
+                                                      .innerPadding),
+                                              child: Row(
+                                                  mainAxisAlignment:
+                                                  MainAxisAlignment
+                                                      .spaceBetween,
+                                                  mainAxisSize: MainAxisSize
+                                                      .min,
+                                                  children: [
+                                                    Expanded(
+                                                      child: Padding(
+                                                        padding:
                                                         const EdgeInsets.only(
                                                             right: Constants
                                                                 .padding),
-                                                    child:
+                                                        child:
                                                         FilledButton.tonalIcon(
-                                                            icon: const Icon(Icons
-                                                                .close_outlined),
+                                                            icon: const Icon(
+                                                                Icons
+                                                                    .close_outlined),
                                                             onPressed: () {
                                                               Navigator.pop(
                                                                   context,
@@ -642,63 +677,67 @@ class _RoutinesListScreen extends State<RoutinesListScreen> {
                                                                 "Cancel",
                                                                 softWrap: false,
                                                                 overflow:
-                                                                    TextOverflow
-                                                                        .visible,
+                                                                TextOverflow
+                                                                    .visible,
                                                                 maxLines: 1,
                                                                 minFontSize:
-                                                                    Constants
-                                                                        .small)),
-                                                  ),
-                                                ),
-                                                Expanded(
-                                                  child: Padding(
-                                                    padding:
+                                                                Constants
+                                                                    .small)),
+                                                      ),
+                                                    ),
+                                                    Expanded(
+                                                      child: Padding(
+                                                        padding:
                                                         const EdgeInsets.only(
                                                             left: Constants
                                                                 .padding),
-                                                    child: FilledButton.icon(
-                                                      icon: const Icon(Icons
-                                                          .delete_forever_rounded),
-                                                      onPressed: () {
-                                                        Navigator.pop(
-                                                            context, true);
-                                                      },
-                                                      label: const AutoSizeText(
-                                                          "Delete",
-                                                          softWrap: false,
-                                                          overflow: TextOverflow
-                                                              .visible,
-                                                          maxLines: 1,
-                                                          minFontSize:
+                                                        child: FilledButton
+                                                            .icon(
+                                                          icon: const Icon(Icons
+                                                              .delete_forever_rounded),
+                                                          onPressed: () {
+                                                            Navigator.pop(
+                                                                context, true);
+                                                          },
+                                                          label: const AutoSizeText(
+                                                              "Delete",
+                                                              softWrap: false,
+                                                              overflow: TextOverflow
+                                                                  .visible,
+                                                              maxLines: 1,
+                                                              minFontSize:
                                                               Constants.small),
-                                                    ),
-                                                  ),
-                                                )
-                                              ]),
-                                        ),
-                                        CheckboxListTile(
-                                            value: dontAsk,
-                                            shape: const RoundedRectangleBorder(
-                                                borderRadius: BorderRadius.all(
-                                                    Radius.circular(Constants
-                                                        .roundedCorners))),
-                                            checkboxShape: const CircleBorder(),
-                                            title: const AutoSizeText(
-                                              "Don't ask me again",
-                                              overflow: TextOverflow.visible,
-                                              softWrap: false,
-                                              maxLines: 1,
-                                              minFontSize: Constants.medium,
+                                                        ),
+                                                      ),
+                                                    )
+                                                  ]),
                                             ),
-                                            onChanged: (value) {
-                                              // TODO: Factor this into user class pls.
-                                              setState(() {
-                                                dontAsk = value!;
-                                                checkDelete = !value;
-                                              });
-                                            })
-                                      ]),
-                                )),
+                                            CheckboxListTile(
+                                                value: dontAsk,
+                                                shape: const RoundedRectangleBorder(
+                                                    borderRadius: BorderRadius
+                                                        .all(
+                                                        Radius.circular(
+                                                            Constants
+                                                                .roundedCorners))),
+                                                checkboxShape: const CircleBorder(),
+                                                title: const AutoSizeText(
+                                                  "Don't ask me again",
+                                                  overflow: TextOverflow
+                                                      .visible,
+                                                  softWrap: false,
+                                                  maxLines: 1,
+                                                  minFontSize: Constants.medium,
+                                                ),
+                                                onChanged: (value) {
+                                                  // TODO: Factor this into user class pls.
+                                                  setState(() {
+                                                    dontAsk = value!;
+                                                    checkDelete = !value;
+                                                  });
+                                                })
+                                          ]),
+                                    )),
                           );
                         }).then((delete) async {
                       if (delete ?? false) {
@@ -714,17 +753,16 @@ class _RoutinesListScreen extends State<RoutinesListScreen> {
           ),
           (reorderable)
               ? ReorderableDragStartListener(
-                  index: index, child: const Icon(Icons.drag_handle_rounded))
+              index: index, child: const Icon(Icons.drag_handle_rounded))
               : const SizedBox.shrink()
         ],
       ),
     );
   }
 
-  Future<void> handleDelete(
-      {required RoutineProvider provider,
-      required int index,
-      required BuildContext context}) async {
+  Future<void> handleDelete({required RoutineProvider provider,
+    required int index,
+    required BuildContext context}) async {
     provider.curRoutine = provider.routines[index];
 
     await provider.deleteRoutine().catchError((e) {
@@ -739,6 +777,6 @@ class _RoutinesListScreen extends State<RoutinesListScreen> {
       error.show(context);
     },
         test: (e) =>
-            e is FailureToDeleteException || e is FailureToUploadException);
+        e is FailureToDeleteException || e is FailureToUploadException);
   }
 }

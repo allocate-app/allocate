@@ -11,7 +11,6 @@ import "../../../providers/routine_provider.dart";
 import "../../../util/constants.dart";
 import "../../../util/enums.dart";
 import "../../../util/exceptions.dart";
-import "../../../util/numbers.dart";
 import "../../widgets/expanded_listtile.dart";
 import "../../widgets/flushbars.dart";
 import "../../widgets/listviews.dart";
@@ -131,23 +130,6 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
     return valid;
   }
 
-  // TODO: delete this
-  Icon getBatteryIcon({required int weight, required bool selected}) {
-    // Icon is scaled for sum-weight.
-    weight = remap(
-            x: weight,
-            inMin: 0,
-            inMax: Constants.maxWeight,
-            outMin: 0,
-            outMax: 5)
-        .toInt();
-
-    if (selected) {
-      return Constants.selectedBatteryIcons[weight]!;
-    }
-    return Constants.batteryIcons[weight]!;
-  }
-
   Future<void> handleCreate() async {
     await routineProvider
         .createRoutine(
@@ -177,48 +159,6 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
     },
             test: (e) =>
                 e is FailureToCreateException || e is FailureToUploadException);
-  }
-
-  Widget buildDrainBar({required int weight, required BuildContext context}) {
-    double offset = weight.toDouble() / Constants.maxWeight.toDouble();
-    return Stack(alignment: Alignment.center, children: [
-      Padding(
-        padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
-        child: Container(
-          decoration: BoxDecoration(
-              border: Border.all(
-                  color: Theme.of(context).colorScheme.outline,
-                  width: 3,
-                  strokeAlign: BorderSide.strokeAlignCenter),
-              shape: BoxShape.rectangle,
-              borderRadius: const BorderRadius.all(Radius.circular(10))),
-          child: Padding(
-            padding: const EdgeInsets.all(Constants.halfPadding),
-            child: LinearProgressIndicator(
-                color: (offset < 0.8) ? null : Colors.redAccent,
-                minHeight: 50,
-                value: 1 - offset,
-                // Possibly remove
-                borderRadius: const BorderRadius.all(Radius.circular(10))),
-          ),
-        ),
-      ),
-      Align(
-          alignment: Alignment.centerRight,
-          child: Container(
-              height: 40,
-              width: 8,
-              decoration: BoxDecoration(
-                borderRadius: const BorderRadius.all(Radius.circular(2)),
-                color: Theme.of(context).colorScheme.outline,
-              ))),
-      AutoSizeText("$weight",
-          minFontSize: Constants.large,
-          softWrap: false,
-          maxLines: 1,
-          overflow: TextOverflow.visible,
-          style: Constants.hugeHeaderStyle),
-    ]);
   }
 
   void handleClose({required bool willDiscard}) {
@@ -382,16 +322,16 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
                                 errorText: nameErrorText,
                                 controller: nameEditingController,
                                 outerPadding: const EdgeInsets.symmetric(
-                                    horizontal: Constants.innerPadding),
-                                textFieldPadding: const EdgeInsets.symmetric(
-                                  horizontal: Constants.padding,
+                                    horizontal: Constants.padding),
+                                textFieldPadding: const EdgeInsets.only(
+                                  left: Constants.halfPadding,
                                 ),
                                 handleClear: clearNameField),
                             Tiles.weightTile(
                               outerPadding:
                                   const EdgeInsets.all(Constants.innerPadding),
                               batteryPadding: const EdgeInsets.symmetric(
-                                  horizontal: Constants.innerPadding),
+                                  horizontal: Constants.padding),
                               constraints: const BoxConstraints(maxWidth: 200),
                               weight: weight.toDouble(),
                               max: Constants.maxWeight.toDouble(),
@@ -413,6 +353,7 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
                         thumbVisibility: true,
                         child: ListView(
                             controller: subScrollControllerRight,
+                            physics: scrollPhysics,
                             shrinkWrap: true,
                             children: [buildRoutineTasksTile()]),
                       ))
@@ -471,8 +412,8 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
                         controller: nameEditingController,
                         outerPadding: const EdgeInsets.symmetric(
                             horizontal: Constants.padding),
-                        textFieldPadding: const EdgeInsets.symmetric(
-                          horizontal: Constants.halfPadding,
+                        textFieldPadding: const EdgeInsets.only(
+                          left: Constants.halfPadding,
                         ),
                         handleClear: clearNameField),
                     Tiles.weightTile(
@@ -495,12 +436,6 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
                       handleClear: clearDuration,
                       handleUpdate: updateDuration,
                     ),
-                    // Padding(
-                    //   padding: const EdgeInsets.symmetric(
-                    //       horizontal: Constants.padding),
-                    //   child: buildDurationTile(
-                    //       context: context, smallScreen: smallScreen),
-                    // ),
 
                     const PaddedDivider(padding: Constants.padding),
 
@@ -569,7 +504,7 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
 
     return OutlinedButton(
       style: OutlinedButton.styleFrom(
-        padding: const EdgeInsets.all(Constants.padding),
+        padding: const EdgeInsets.all(Constants.innerPadding),
         shape: const CircleBorder(),
         side: BorderSide(
           color: Theme.of(context).colorScheme.outlineVariant,

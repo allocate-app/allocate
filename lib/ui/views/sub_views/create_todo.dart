@@ -567,9 +567,9 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                                     errorText: nameErrorText,
                                     controller: nameEditingController,
                                     outerPadding: const EdgeInsets.symmetric(
-                                        horizontal: Constants.halfPadding),
+                                        horizontal: Constants.padding),
                                     textFieldPadding: const EdgeInsets.only(
-                                      left: Constants.padding,
+                                      left: Constants.halfPadding,
                                     ),
                                     handleClear: clearNameField),
                                 Tiles.weightTile(
