@@ -298,7 +298,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
           repeatSkip: repeatSkip,
           subTasks: subTasks,
         )
-        .whenComplete(() => Navigator.pop(context))
+        .whenComplete(() => Navigator.pop(context, toDoProvider.curToDo))
         .catchError((e) {
       Flushbar? error;
 
@@ -550,7 +550,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Expanded(
+                        Flexible(
                           child: ListView(
                               padding: const EdgeInsets.symmetric(
                                   horizontal: Constants.padding),
@@ -676,7 +676,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                                 ),
                               ]),
                         ),
-                        Expanded(
+                        Flexible(
                           child: ListView(
                               controller: subScrollControllerRight,
                               physics: scrollPhysics,
@@ -685,6 +685,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                                   horizontal: Constants.padding),
                               children: [
                                 SearchRecents<Group>(
+                                  hintText: "Search Groups",
                                   padding:
                                       const EdgeInsets.all(Constants.padding),
                                   handleDataSelection: handleGroupSelection,
@@ -862,6 +863,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
 
                     // Group Picker
                     SearchRecents<Group>(
+                      hintText: "Search Groups",
                       padding: const EdgeInsets.symmetric(
                           horizontal: Constants.padding),
                       searchController: groupEditingController,

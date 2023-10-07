@@ -8,12 +8,14 @@ class SearchRecents<T extends IModel> extends StatefulWidget {
   const SearchRecents(
       {super.key,
       this.padding = EdgeInsets.zero,
+      this.hintText = "",
       required this.searchController,
       required this.handleHistorySelection,
       required this.mostRecent,
       required this.search,
       required this.handleDataSelection});
 
+  final String hintText;
   final EdgeInsetsGeometry padding;
   final SearchController searchController;
   final void Function({required MapEntry<String, int> data})
@@ -54,7 +56,7 @@ class _SearchRecents<T extends IModel> extends State<SearchRecents<T>> {
           barElevation: const MaterialStatePropertyAll(0),
           viewConstraints: const BoxConstraints(
               maxHeight: Constants.maxSearchHeightBeforeScroll),
-          barHintText: "Search Groups",
+          barHintText: widget.hintText,
           searchController: widget.searchController,
           suggestionsBuilder: (context, SearchController controller) {
             if (controller.text.isEmpty) {

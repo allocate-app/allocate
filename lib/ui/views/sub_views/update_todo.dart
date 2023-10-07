@@ -675,7 +675,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Expanded(
+                        Flexible(
                           child: ListView(
                               padding: const EdgeInsets.symmetric(
                                   horizontal: Constants.padding),
@@ -813,7 +813,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                                 ),
                               ]),
                         ),
-                        Expanded(
+                        Flexible(
                           child: ListView(
                               controller: subScrollControllerRight,
                               physics: scrollPhysics,
@@ -822,6 +822,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                                   horizontal: Constants.padding),
                               children: [
                                 SearchRecents<Group>(
+                                  hintText: "Search Groups",
                                   padding:
                                       const EdgeInsets.all(Constants.padding),
                                   handleDataSelection: handleGroupSelection,
@@ -966,6 +967,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                     ),
 
                     SearchRecents<Group>(
+                      hintText: "Search Groups",
                       padding: const EdgeInsets.all(Constants.padding),
                       handleDataSelection: handleGroupSelection,
                       handleHistorySelection: handleHistorySelection,

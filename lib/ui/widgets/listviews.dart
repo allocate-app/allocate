@@ -2,8 +2,30 @@ import 'package:allocate/ui/widgets/tiles.dart';
 import 'package:flutter/material.dart';
 
 import '../../model/task/subtask.dart';
+import '../../model/task/todo.dart';
 
 class ListViews {
+  static reorderableToDos({
+    required BuildContext context,
+    required List<ToDo> toDos,
+    ScrollPhysics physics = const NeverScrollableScrollPhysics(),
+    required void Function(int oldIndex, int newIndex) onReorder,
+  }) =>
+      ReorderableListView.builder(
+        buildDefaultDragHandles: false,
+        physics: physics,
+        shrinkWrap: true,
+        onReorder: onReorder,
+        onReorderStart: (_) {
+          FocusScope.of(context).unfocus();
+        },
+        itemCount: toDos.length,
+        itemBuilder: (BuildContext context, int index) {
+          // TODO: FINISH;
+          throw UnimplementedError();
+        },
+      );
+
   static reorderableSubtasks({
     required BuildContext context,
     required List<SubTask> subTasks,
