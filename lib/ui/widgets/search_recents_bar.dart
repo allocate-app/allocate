@@ -13,11 +13,13 @@ class SearchRecents<T extends IModel> extends StatefulWidget {
       required this.handleHistorySelection,
       required this.mostRecent,
       required this.search,
+        this.clearOnSelection = false,
       required this.handleDataSelection});
 
   final String hintText;
   final EdgeInsetsGeometry padding;
   final SearchController searchController;
+  final bool clearOnSelection;
   final void Function({required MapEntry<String, int> data})
       handleHistorySelection;
   final void Function({required int id}) handleDataSelection;
@@ -33,7 +35,6 @@ class _SearchRecents<T extends IModel> extends State<SearchRecents<T>> {
 
   void updateHistory({required MapEntry<String, int> data}) {
     setState(() {
-      // TODO: Tweak this when reusing.
       if (searchHistory.length >= Constants.historyLength) {
         searchHistory.removeLast();
       }
@@ -73,6 +74,9 @@ class _SearchRecents<T extends IModel> extends State<SearchRecents<T>> {
                           onTap: () {
                             controller.closeView(data.key);
                             widget.handleHistorySelection(data: data);
+                            if(widget.clearOnSelection){
+                              controller.value = controller.value.copyWith(text: "");
+                            }
                           },
                         ))
                     .toList();
@@ -117,7 +121,10 @@ class _SearchRecents<T extends IModel> extends State<SearchRecents<T>> {
                           updateHistory(
                               data: MapEntry(
                                   data[index].name, data[index].localID!));
-                          widget.handleDataSelection;
+                          widget.handleDataSelection(id: data[index].localID!);
+                          if(widget.clearOnSelection){
+                            controller.value = controller.value.copyWith(text: "");
+                          }
                         });
                   });
             }

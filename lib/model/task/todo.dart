@@ -12,9 +12,16 @@ part "todo.g.dart";
 
 @Collection(inheritance: false)
 class ToDo with EquatableMixin implements Copyable<ToDo>, IModel {
+ // This is a bandaid solution with the current implementation.
   @ignore
   @override
-  int? localID;
+  int? get localID =>id;
+
+  @ignore
+  @override
+  set localID(id){
+    // LOL, do nothing.
+  }
 
 
   Id id = Isar.autoIncrement;

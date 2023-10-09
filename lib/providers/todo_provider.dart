@@ -174,8 +174,12 @@ class ToDoProvider extends ChangeNotifier {
     if (repeatable ?? false) {
       curToDo!.repeatID = curToDo.hashCode;
     }
+    // Work on refactoring this out.
+    curToDo!.localID = curToDo.hashCode;
 
     try {
+      // TODO: Refactor db to return the object, or:
+      // THE ID.
       await _toDoService.createToDo(toDo: curToDo!);
     } on FailureToCreateException catch (e) {
       log(e.cause);
@@ -185,6 +189,7 @@ class ToDoProvider extends ChangeNotifier {
       curToDo!.isSynced = false;
       return await updateToDo();
     }
+
     notifyListeners();
   }
 

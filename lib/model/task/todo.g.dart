@@ -398,12 +398,14 @@ ToDo _toDoDeserialize(
 ) {
   final object = ToDo(
     completed: reader.readBoolOrNull(offsets[0]) ?? false,
+    customViewIndex: reader.readLongOrNull(offsets[1]) ?? -1,
     description: reader.readStringOrNull(offsets[2]) ?? "",
     dueDate: reader.readDateTime(offsets[3]),
     expectedDuration: reader.readLong(offsets[4]),
     frequency: _ToDofrequencyValueEnumMap[reader.readByteOrNull(offsets[5])] ??
         Frequency.once,
     groupID: reader.readLongOrNull(offsets[6]),
+    groupIndex: reader.readLongOrNull(offsets[7]) ?? -1,
     lastUpdated: reader.readDateTime(offsets[9]),
     myDay: reader.readBoolOrNull(offsets[10]) ?? false,
     name: reader.readString(offsets[11]),
@@ -426,8 +428,6 @@ ToDo _toDoDeserialize(
         TaskType.small,
     weight: reader.readLongOrNull(offsets[22]) ?? 0,
   );
-  object.customViewIndex = reader.readLong(offsets[1]);
-  object.groupIndex = reader.readLong(offsets[7]);
   object.id = id;
   object.isSynced = reader.readBool(offsets[8]);
   object.toDelete = reader.readBool(offsets[21]);
@@ -444,7 +444,7 @@ P _toDoDeserializeProp<P>(
     case 0:
       return (reader.readBoolOrNull(offset) ?? false) as P;
     case 1:
-      return (reader.readLong(offset)) as P;
+      return (reader.readLongOrNull(offset) ?? -1) as P;
     case 2:
       return (reader.readStringOrNull(offset) ?? "") as P;
     case 3:
@@ -457,7 +457,7 @@ P _toDoDeserializeProp<P>(
     case 6:
       return (reader.readLongOrNull(offset)) as P;
     case 7:
-      return (reader.readLong(offset)) as P;
+      return (reader.readLongOrNull(offset) ?? -1) as P;
     case 8:
       return (reader.readBool(offset)) as P;
     case 9:

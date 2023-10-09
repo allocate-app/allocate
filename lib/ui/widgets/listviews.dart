@@ -10,6 +10,9 @@ class ListViews {
     required List<ToDo> toDos,
     ScrollPhysics physics = const NeverScrollableScrollPhysics(),
     required void Function(int oldIndex, int newIndex) onReorder,
+    required Future<void> Function({required ToDo toDo}) onChanged,
+    required Future<void> Function({required int index}) onTap,
+    required void Function({required int index}) handleRemove,
   }) =>
       ReorderableListView.builder(
         buildDefaultDragHandles: false,
@@ -20,10 +23,14 @@ class ListViews {
           FocusScope.of(context).unfocus();
         },
         itemCount: toDos.length,
-        itemBuilder: (BuildContext context, int index) {
-          // TODO: FINISH;
-          throw UnimplementedError();
-        },
+        itemBuilder: (BuildContext context, int index) => Tiles.toDoCheckTile(
+            index: index,
+            toDo: toDos[index],
+            showHandle: (toDos.length > 1),
+            onChanged: onChanged,
+            onTap: onTap,
+            handleRemove: handleRemove,
+          ),
       );
 
   static reorderableSubtasks({

@@ -13,6 +13,7 @@ import '../../model/task/subtask.dart';
 import '../../model/task/todo.dart';
 import '../../util/constants.dart';
 import '../../util/enums.dart';
+import '../../util/numbers.dart';
 import 'drain_bar.dart';
 
 class Tiles {
@@ -157,11 +158,14 @@ class Tiles {
           ));
 
   // TODO: Finish this and figure out how best to handle onTap.
+  // TODO: Return after provider refactor.
   static Widget toDoCheckTile({
     required int index,
     required ToDo toDo,
+    bool showHandle = false,
     required Future<void> Function({required ToDo toDo}) onChanged,
-    required Future<void> Function({required ToDo toDo}) onTap,
+    required Future<void> Function({required int index}) onTap,
+    required void Function({required int index}) handleRemove,
   }) {
     return ListTile(
       contentPadding:
@@ -184,8 +188,35 @@ class Tiles {
           minFontSize: Constants.medium,
           softWrap: true,
           maxLines: 1),
-      onTap: () async => await onTap(toDo: toDo),
-    );
+      onTap: () async => await onTap(index: index),
+      trailing: Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+       Row(mainAxisSize: MainAxisSize.min,
+       children:[
+        Constants.batteryIcons[(toDo.taskType == TaskType.small) ? toDo.weight : remap(x: toDo.weight, inMin: 0, inMax: Constants.maxWeight, outMin: 0, outMax: 5).toInt()]!,
+         AutoSizeText("${toDo.weight}",
+           overflow: TextOverflow.visible,
+           minFontSize: Constants.large,
+           softWrap: false,
+           maxLines: 1,
+         ),
+           ]),
+      Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: Constants.innerPadding),
+        child: IconButton(
+          icon: const Icon(Icons.remove_circle_outline_rounded),
+          onPressed: () => handleRemove(index: index),
+        )
+      ),
+      (showHandle)
+          ? ReorderableDragStartListener(
+          index: index,
+          child: const Icon(Icons.drag_handle_rounded))
+          : const SizedBox.shrink(),
+    ]
+    ));
   }
 
   /// Model Parameter Tiles

@@ -294,6 +294,7 @@ Deadline _deadlineDeserialize(
   Map<Type, List<int>> allOffsets,
 ) {
   final object = Deadline(
+    customViewIndex: reader.readLongOrNull(offsets[0]) ?? -1,
     description: reader.readStringOrNull(offsets[1]) ?? "",
     dueDate: reader.readDateTime(offsets[2]),
     frequency:
@@ -313,7 +314,6 @@ Deadline _deadlineDeserialize(
     warnDate: reader.readDateTime(offsets[15]),
     warnMe: reader.readBoolOrNull(offsets[16]) ?? false,
   );
-  object.customViewIndex = reader.readLong(offsets[0]);
   object.id = id;
   object.isSynced = reader.readBool(offsets[4]);
   object.toDelete = reader.readBool(offsets[14]);
@@ -328,7 +328,7 @@ P _deadlineDeserializeProp<P>(
 ) {
   switch (propertyId) {
     case 0:
-      return (reader.readLong(offset)) as P;
+      return (reader.readLongOrNull(offset) ?? -1) as P;
     case 1:
       return (reader.readStringOrNull(offset) ?? "") as P;
     case 2:

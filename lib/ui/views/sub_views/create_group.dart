@@ -42,7 +42,7 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
   late final ToDoProvider toDoProvider;
 
   // Scrolling
-  late final ScrollController mainScrollController;
+  late final ScrollController toDosScrollController;
 
   // For linked todos.
   // TODO: Remove this, it's ick.
@@ -55,8 +55,6 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
   late final SearchController searchController;
   late List<MapEntry<String, int>> searchHistory;
 
-  // Storing todos. Way easier to just cache a list.
-  late List<ToDo> toDos;
 
   // Name
   late String name;
@@ -73,13 +71,13 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
     initializeProviders();
     initializeParameters();
     initializeControllers();
+    resetPagination();
   }
 
   void initializeProviders() {
     groupProvider = Provider.of<GroupProvider>(context, listen: false);
     toDoProvider = Provider.of<ToDoProvider>(context, listen: false);
 
-    toDoProvider.toDos = [];
   }
 
   void initializeParameters() {
@@ -91,27 +89,27 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
     description = "";
     offset = 0;
     searchHistory = List.empty(growable: true);
-    toDos = List.empty(growable: true);
   }
 
   void initializeControllers() {
     searchController = SearchController();
-    mainScrollController = ScrollController();
+    toDosScrollController = ScrollController();
     subScrollController = ScrollController();
     subScrollControllerLeft = ScrollController();
     subScrollControllerRight = ScrollController();
 
-    mainScrollController.addListener(() async {
+
+    toDosScrollController.addListener(() async {
       // Bottom: Run the query.
-      if (mainScrollController.offset >=
-              mainScrollController.position.maxScrollExtent &&
+      if (toDosScrollController.offset >=
+              toDosScrollController.position.maxScrollExtent &&
           !allData) {
         if (!loading) {
-          setState(() => loading = true);
           await fetchData();
         }
       }
-    });
+    }
+    );
 
     scrollPhysics =
         const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics());
@@ -167,20 +165,19 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
   void dispose() {
     nameEditingController.dispose();
     descriptionEditingController.dispose();
-    mainScrollController.dispose();
+    toDosScrollController.dispose();
     subScrollController.dispose();
     subScrollControllerLeft.dispose();
     subScrollControllerRight.dispose();
     super.dispose();
   }
 
-// TODO: can probably nuke this.
+// // TODO: can probably nuke this.
   Future<void> resetPagination() async {
     setState(() {
       offset = 0;
       toDoProvider.toDos.clear();
     });
-    return await fetchData();
   }
 
   bool validateData() {
@@ -200,13 +197,14 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
         .whenComplete(() async {
       int? groupID = groupProvider.curGroup!.localID;
 
-      for (int i = 0; i < toDos.length; i++) {
-        toDos[i].groupID = groupID;
-        toDos[i].groupIndex = i;
+      // TODO: Consider refactoring this pls.
+      for (int i = 0; i < toDoProvider.toDos.length; i++) {
+        toDoProvider.toDos[i].groupID = groupID;
+        toDoProvider.toDos[i].groupIndex = i;
       }
 
       await toDoProvider
-          .updateBatch(toDos: toDos)
+          .updateBatch(toDos: toDoProvider.toDos)
           .whenComplete(() => Navigator.pop(context))
           .catchError((e) {
         Flushbar? error;
@@ -253,7 +251,7 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
   Future<void> handleHistorySelection({
     required MapEntry<String, int> data,
   }) async {
-    ToDo? toDo = await toDoProvider.getToDoByID(id: data.value).catchError((_) {
+    toDoProvider.curToDo = await toDoProvider.getToDoByID(id: data.value).catchError((_) {
       Flushbar? error;
 
       error = Flushbars.createError(
@@ -263,16 +261,19 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
       );
 
       error.show(context);
+      return null;
     });
-    setState(() {
-      checkClose = true;
-      if (null != toDo) {
-        toDos.add(toDo);
-      }
-    });
+
+    // TODO: Haven't figured out how to handle.
+    if(null != toDoProvider.curToDo){
+      toDoProvider.curToDo!.groupID = Constants.initialGroupID;
+      await toDoProvider.updateToDo().whenComplete(() => resetPagination());
+    }
+
   }
 
   Future<void> handleToDoSelection({required int id}) async {
+    print("I'm Calling");
     ToDo? toDo = await toDoProvider.getToDoByID(id: id).catchError((_) {
       Flushbar? error;
 
@@ -283,6 +284,8 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
       );
 
       error.show(context);
+      return null;
+
     });
 
     setState(() {
@@ -291,6 +294,7 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
         toDos.add(toDo);
       }
     });
+    print(toDos);
   }
 
   Icon getBatteryIcon({required ToDo toDo}) {
@@ -330,13 +334,13 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
       await handleCreate();
     }
   }
-
+// TODO: Refactor. Old method by id worked better.
   Future<void> createToDo() async {
     ToDo? created = await showDialog(
             barrierDismissible: false,
             useRootNavigator: false,
             context: context,
-            builder: (BuildContext context) => const CreateToDoScreen())
+            builder: (BuildContext context) => const CreateToDoScreen(groupID: Constants.initialGroupID))
         .catchError((e) {
       Flushbar? error;
 
@@ -350,9 +354,12 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
     },
             test: (e) =>
                 e is FailureToCreateException || e is FailureToUploadException);
-    if (null != created && created.groupID == Constants.initialGroupID) {
-      toDos.add(created);
-    }
+    // TODO: Return once db refactor.
+    setState(() {
+      if (null != created && created.groupID == Constants.initialGroupID) {
+        toDoProvider.toDos.add(created);
+      }
+    });
   }
 
   void reorderToDos(int oldIndex, int newIndex) {
@@ -361,9 +368,63 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
       if (oldIndex < newIndex) {
         newIndex--;
       }
-      ToDo toDo = toDos.removeAt(oldIndex);
-      toDos.insert(newIndex, toDo);
+      ToDo toDo = toDoProvider.toDos.removeAt(oldIndex);
+      toDoProvider.toDos.insert(newIndex, toDo);
     });
+  }
+
+  Future<void> completeToDo({required ToDo toDo}) async {
+    // TODO: test this -> The object -should- be updated by reference.
+    // TODO: refactor update to take a ToDo object.
+    // TODO: refactor UpdateToDo to take a ToDo object.
+    toDoProvider.curToDo = toDo;
+    // This may not even need to be repainted.
+    return await toDoProvider.updateToDo().then((_) => setState((){}));
+
+  }
+
+ void removeToDo({required int index}) async {
+   ToDo removed = toDoProvider.toDos.removeAt(index);
+   removed.groupID = null;
+   toDoProvider.curToDo = removed;
+   await toDoProvider.updateToDo();
+   // This shouldn't likely need to rebuild.
+ }
+
+
+  // TODO: refactor this once provider & db query refactored.
+  // -RETURN THE OBJECT.
+  // TODO: refactor - using the id works better.
+  Future<void> updateToDo({required int index}) async {
+    toDoProvider.curToDo = toDoProvider.toDos[index];
+    ToDo? discarded = await showDialog(
+                  barrierDismissible: false,
+                  useRootNavigator: false,
+                  context: context,
+                  builder: (BuildContext context) => const UpdateToDoScreen())
+              .catchError((e) {
+            Flushbar? error;
+
+            error = Flushbars.createError(
+              message: e.cause,
+              context: context,
+              dismissCallback: () => error?.dismiss(),
+            );
+
+            error.show(context);
+          },
+                  test: (e) =>
+                      e is FailureToCreateException ||
+                      e is FailureToUploadException);
+
+    setState(() {
+      if(null != discarded){
+        toDoProvider.toDos[index] = discarded;
+        return;
+      }
+
+    });
+
   }
 
   @override
@@ -451,64 +512,7 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
                                     horizontal: Constants.padding),
                                 children: [
                                   // TODO: refactor using custom expansiontile.
-                                  Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: Constants.innerPadding),
-                                    child: Card(
-                                      clipBehavior: Clip.antiAlias,
-                                      elevation: 0,
-                                      color: Colors.transparent,
-                                      shape: RoundedRectangleBorder(
-                                          side: BorderSide(
-                                              color: Theme.of(context)
-                                                  .colorScheme
-                                                  .outline,
-                                              strokeAlign:
-                                                  BorderSide.strokeAlignInside),
-                                          borderRadius: const BorderRadius.all(
-                                              Radius.circular(
-                                                  Constants.roundedCorners))),
-                                      child: ExpansionTile(
-                                        initiallyExpanded: expanded,
-                                        onExpansionChanged: (value) =>
-                                            setState(() => expanded = value),
-                                        title: const AutoSizeText("Tasks",
-                                            maxLines: 1,
-                                            overflow: TextOverflow.visible,
-                                            softWrap: false,
-                                            minFontSize: Constants.small),
-                                        collapsedShape:
-                                            const RoundedRectangleBorder(
-                                                side: BorderSide(
-                                                    strokeAlign: BorderSide
-                                                        .strokeAlignOutside),
-                                                borderRadius: BorderRadius.all(
-                                                    Radius.circular(Constants
-                                                        .roundedCorners))),
-                                        shape: const RoundedRectangleBorder(
-                                            side: BorderSide(
-                                                strokeAlign: BorderSide
-                                                    .strokeAlignOutside),
-                                            borderRadius: BorderRadius.all(
-                                                Radius.circular(
-                                                    Constants.roundedCorners))),
-                                        children: [
-                                          Scrollbar(
-                                              thumbVisibility: true,
-                                              controller: subScrollController,
-                                              child: buildToDosList(
-                                                  smallScreen: smallScreen,
-                                                  physics: scrollPhysics)),
-                                          const PaddedDivider(
-                                              padding: Constants.padding),
-                                          buildToDoSearchBar(),
-                                          const PaddedDivider(
-                                              padding: Constants.padding),
-                                          buildCreateToDoBar(context: context)
-                                        ],
-                                      ),
-                                    ),
-                                  ),
+                                  buildToDosTile(physics: scrollPhysics),
                                 ]),
                           ),
                         )
@@ -553,7 +557,7 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
               Flexible(
                 child: ListView(
                     shrinkWrap: true,
-                    controller: mainScrollController,
+                    controller: toDosScrollController,
                     physics: scrollPhysics,
                     children: [
                       Tiles.nameTile(
@@ -578,54 +582,7 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
                       ),
                       const PaddedDivider(padding: Constants.padding),
                       // TODO: Refactor with custom expansionTile.
-                      Padding(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: Constants.innerPadding),
-                        child: Card(
-                          clipBehavior: Clip.antiAlias,
-                          elevation: 0,
-                          color: Colors.transparent,
-                          shape: RoundedRectangleBorder(
-                              side: BorderSide(
-                                  color: Theme.of(context).colorScheme.outline,
-                                  strokeAlign: BorderSide.strokeAlignInside),
-                              borderRadius: const BorderRadius.all(
-                                  Radius.circular(Constants.roundedCorners))),
-                          child: ExpansionTile(
-                            initiallyExpanded: expanded,
-                            onExpansionChanged: (value) =>
-                                setState(() => expanded = value),
-                            title: const AutoSizeText("Tasks",
-                                maxLines: 1,
-                                overflow: TextOverflow.visible,
-                                softWrap: false,
-                                minFontSize: Constants.small),
-                            collapsedShape: const RoundedRectangleBorder(
-                                side: BorderSide(
-                                    strokeAlign: BorderSide.strokeAlignOutside),
-                                borderRadius: BorderRadius.all(
-                                    Radius.circular(Constants.roundedCorners))),
-                            shape: const RoundedRectangleBorder(
-                                side: BorderSide(
-                                    strokeAlign: BorderSide.strokeAlignOutside),
-                                borderRadius: BorderRadius.all(
-                                    Radius.circular(Constants.roundedCorners))),
-                            children: [
-                              Scrollbar(
-                                  thumbVisibility: true,
-                                  controller: subScrollController,
-                                  child: buildToDosList(
-                                      smallScreen: smallScreen,
-                                      physics: scrollPhysics)),
-                              const PaddedDivider(padding: Constants.padding),
-                              buildToDoSearchBar(),
-                              const PaddedDivider(
-                                  padding: Constants.innerPadding),
-                              buildCreateToDoBar(context: context)
-                            ],
-                          ),
-                        ),
-                      ),
+                      buildToDosTile(physics: scrollPhysics),
                     ]),
               ),
 
@@ -952,20 +909,24 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
           overflow: TextOverflow.visible,
           softWrap: false,
           minFontSize: Constants.small),
-      subtitle: AutoSizeText("${toDoProvider.toDos} Tasks",
+      subtitle: AutoSizeText("${toDoProvider.toDos.length} Tasks",
           maxLines: 1,
           overflow: TextOverflow.visible,
           softWrap: false,
           minFontSize: Constants.small),
       children: [
-        // TODO: Return once list tile built.
-        ListViews.reorderableToDos(
-          context: context,
-          toDos: toDos,
-          physics: physics,
-          onReorder: reorderToDos,
-        ),
+        Consumer<ToDoProvider>(builder: (BuildContext context, ToDoProvider value, Widget? child) => ListViews.reorderableToDos(
+            context: context,
+            toDos: value.toDos,
+            physics: physics,
+            onReorder: reorderToDos,
+            onChanged: completeToDo,
+            handleRemove: removeToDo,
+            onTap: updateToDo,
+          ),),
+
         SearchRecents<ToDo>(
+          clearOnSelection: true,
           hintText: "Search Tasks",
           padding: const EdgeInsets.all(Constants.padding),
           handleDataSelection: handleToDoSelection,
