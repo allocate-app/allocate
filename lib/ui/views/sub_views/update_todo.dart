@@ -26,6 +26,7 @@ import "../../widgets/title_bar.dart";
 class UpdateToDoScreen extends StatefulWidget {
   final int? groupID;
 
+  // TODO: Add a map entry instead.
   const UpdateToDoScreen({Key? key, this.groupID}) : super(key: key);
 
   @override
@@ -108,6 +109,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
   void initializeParams() {
     checkClose = false;
     prevToDo = toDo.copy();
+    prevToDo.id = toDo.id;
     shownTasks = toDo.subTasks.indexOf(SubTask());
     if (shownTasks < 0) {
       shownTasks = toDo.subTasks.length;
@@ -141,8 +143,8 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
     groupEditingController = SearchController();
     groupProvider
         .getGroupByID(id: toDo.groupID)
-        .then((group) =>
-            setState(() => groupEditingController.text = group?.name ?? ""))
+        .then((group) => setState(() => groupEditingController.value =
+            groupEditingController.value.copyWith(text: group?.name ?? "")))
         .catchError((_) {
       Flushbar? error;
 
@@ -155,7 +157,6 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
       error.show(context);
     });
     groupEditingController.addListener(() {
-      checkClose = true;
       String newText = nameEditingController.text;
       SemanticsService.announce(newText, Directionality.of(context));
     });
@@ -191,7 +192,6 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
   }
 
   void handleGroupSelection({required int id}) {
-    // Controller logic
     setState(() {
       checkClose = true;
       toDo.groupID = id;
@@ -418,9 +418,14 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
             e is FailureToCreateException || e is FailureToUploadException);
   }
 
-  void handleClose({required bool willDiscard}) {
+  // This should be an async method
+  // TODO: refactor once Update ToDo has parameters
+  Future<void> handleClose({required bool willDiscard}) async {
     if (willDiscard) {
-      Navigator.pop(context, prevToDo);
+      toDoProvider.curToDo = prevToDo;
+      await toDoProvider
+          .updateToDo()
+          .whenComplete(() => Navigator.pop(context));
     }
 
     if (mounted) {
@@ -833,7 +838,10 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                                   search: groupProvider.searchGroups,
                                 ),
 
-                                const PaddedDivider(padding: Constants.padding),
+                                (toDo.taskType != TaskType.small)
+                                    ? const PaddedDivider(
+                                        padding: Constants.padding)
+                                    : const SizedBox.shrink(),
                                 // Subtasks
                                 (toDo.taskType != TaskType.small)
                                     ? buildSubTasksTile()

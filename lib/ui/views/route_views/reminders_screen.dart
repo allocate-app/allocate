@@ -95,11 +95,12 @@ class _RemindersListScreen extends State<RemindersListScreen> {
     return Future.delayed(
         const Duration(seconds: 1),
         () async => await reminderProvider
-                .getRemindersBy(limit: Constants.limitPerQuery, offset: offset)
+                .getRemindersBy(
+                    limit: Constants.minLimitPerQuery, offset: offset)
                 .then((newReminders) {
               offset += newReminders.length;
               reminderProvider.reminders.addAll(newReminders);
-              allData = newReminders.length < Constants.limitPerQuery;
+              allData = newReminders.length < Constants.minLimitPerQuery;
 
               if (mounted) {
                 setState(() {

@@ -156,6 +156,8 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
     });
 
     groupEditingController = SearchController();
+
+    // TODO: revisit this -> once KV pair implemented.
     groupProvider
         .getGroupByID(id: groupID)
         .then((group) =>
@@ -172,7 +174,6 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
       error.show(context);
     });
     groupEditingController.addListener(() {
-      checkClose = true;
       String newText = nameEditingController.text;
       SemanticsService.announce(newText, Directionality.of(context));
     });
@@ -225,7 +226,6 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
   }
 
   void handleGroupSelection({required int id}) {
-    // Controller logic
     setState(() {
       checkClose = true;
       groupID = id;

@@ -107,11 +107,11 @@ class _MyDayToDos extends State<MyDayToDos> {
     return Future.delayed(
         const Duration(seconds: 1),
         () async => await toDoProvider
-                .getMyDay(limit: Constants.limitPerQuery, offset: offset)
+                .getMyDay(limit: Constants.minLimitPerQuery, offset: offset)
                 .then((newToDos) {
               offset += newToDos.length;
               toDoProvider.toDos.addAll(newToDos);
-              allData = newToDos.length < Constants.limitPerQuery ||
+              allData = newToDos.length < Constants.minLimitPerQuery ||
                   userProvider.myDayTotal >=
                       (userProvider.curUser?.bandwidth ??
                           Constants.maxBandwidth);

@@ -95,11 +95,12 @@ class _DeadlinesListScreen extends State<DeadlinesListScreen> {
     return Future.delayed(
         const Duration(seconds: 1),
         () async => await deadlineProvider
-                .getDeadlinesBy(limit: Constants.limitPerQuery, offset: offset)
+                .getDeadlinesBy(
+                    limit: Constants.minLimitPerQuery, offset: offset)
                 .then((newDeadlines) {
               offset += newDeadlines.length;
               deadlineProvider.deadlines.addAll(newDeadlines);
-              allData = newDeadlines.length < Constants.limitPerQuery;
+              allData = newDeadlines.length < Constants.minLimitPerQuery;
 
               if (mounted) {
                 setState(() {

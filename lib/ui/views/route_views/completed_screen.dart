@@ -99,11 +99,11 @@ class _CompletedListScreen extends State<CompletedListScreen> {
         const Duration(seconds: 1),
         () async => await toDoProvider
                 .getToDosCompleted(
-                    limit: Constants.limitPerQuery, offset: offset)
+                    limit: Constants.minLimitPerQuery, offset: offset)
                 .then((newToDos) {
               offset += newToDos.length;
               toDoProvider.toDos.addAll(newToDos);
-              allData = newToDos.length < Constants.limitPerQuery;
+              allData = newToDos.length < Constants.minLimitPerQuery;
 
               if (mounted) {
                 setState(() {

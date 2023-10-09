@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../../util/constants.dart';
 import '../../util/interfaces/i_model.dart';
 
+// TODO: Refactor this to take a persistent kv pair
 class SearchRecents<T extends IModel> extends StatefulWidget {
   const SearchRecents(
       {super.key,
@@ -13,7 +14,7 @@ class SearchRecents<T extends IModel> extends StatefulWidget {
       required this.handleHistorySelection,
       required this.mostRecent,
       required this.search,
-        this.clearOnSelection = false,
+      this.clearOnSelection = false,
       required this.handleDataSelection});
 
   final String hintText;
@@ -31,6 +32,7 @@ class SearchRecents<T extends IModel> extends StatefulWidget {
 }
 
 class _SearchRecents<T extends IModel> extends State<SearchRecents<T>> {
+  // TODO: Add a persistent item if it's here.
   late List<MapEntry<String, int>> searchHistory = List.empty(growable: true);
 
   void updateHistory({required MapEntry<String, int> data}) {
@@ -38,6 +40,7 @@ class _SearchRecents<T extends IModel> extends State<SearchRecents<T>> {
       if (searchHistory.length >= Constants.historyLength) {
         searchHistory.removeLast();
       }
+      // Refactor this to accommodate a persistent one.
       searchHistory.insert(0, data);
     });
   }
@@ -74,12 +77,14 @@ class _SearchRecents<T extends IModel> extends State<SearchRecents<T>> {
                           onTap: () {
                             controller.closeView(data.key);
                             widget.handleHistorySelection(data: data);
-                            if(widget.clearOnSelection){
-                              controller.value = controller.value.copyWith(text: "");
+                            if (widget.clearOnSelection) {
+                              controller.value =
+                                  controller.value.copyWith(text: "");
                             }
                           },
                         ))
                     .toList();
+                // Consider appending the map entry here?
               }
               final searchFuture = widget.mostRecent();
               return [
@@ -105,6 +110,8 @@ class _SearchRecents<T extends IModel> extends State<SearchRecents<T>> {
         builder: (BuildContext context, AsyncSnapshot<List<T>> snapshot) {
           if (snapshot.connectionState == ConnectionState.done) {
             final List<T>? data = snapshot.data;
+            // TODO: Refactor this to accommodate a persistent search item.
+            // ie. an object that -hasn't- been created yet.
             if (null != data) {
               return ListView.builder(
                   shrinkWrap: true,
@@ -122,13 +129,14 @@ class _SearchRecents<T extends IModel> extends State<SearchRecents<T>> {
                               data: MapEntry(
                                   data[index].name, data[index].localID!));
                           widget.handleDataSelection(id: data[index].localID!);
-                          if(widget.clearOnSelection){
-                            controller.value = controller.value.copyWith(text: "");
+                          if (widget.clearOnSelection) {
+                            controller.value =
+                                controller.value.copyWith(text: "");
                           }
                         });
                   });
             }
-            // This is what to render if no data.
+            // This is what to render if no data. -- PERSISTENT entry here -> Consider making a separate widget.
             return const SizedBox.shrink();
           }
           return const Padding(

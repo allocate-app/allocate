@@ -129,7 +129,7 @@ class GroupProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<List<ToDo>> getToDosByGroupId(
+  Future<List<ToDo>> getToDosByGroupID(
       {int? id, int limit = 50, int offset = 0}) async {
     return await _toDoService.getByGroup(
         groupID: id ?? curGroup?.localID, limit: limit, offset: offset);
@@ -157,7 +157,7 @@ class GroupProvider extends ChangeNotifier {
       {required int oldIndex, required int newIndex, List<ToDo>? toDos}) async {
     try {
       return await _toDoService.reorderGroupToDos(
-          toDos: toDos ?? curGroup!.toDos,
+          toDos: toDos ?? curGroup!.toDos!,
           oldIndex: oldIndex,
           newIndex: newIndex);
     } on FailureToUpdateException catch (e) {

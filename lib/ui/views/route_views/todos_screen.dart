@@ -103,11 +103,11 @@ class _ToDosListScreen extends State<ToDosListScreen> {
     return Future.delayed(
         const Duration(seconds: 1),
         () async => await toDoProvider
-                .getToDosBy(limit: Constants.limitPerQuery, offset: offset)
+                .getToDosBy(limit: Constants.minLimitPerQuery, offset: offset)
                 .then((newToDos) {
               offset += newToDos.length;
               toDoProvider.toDos.addAll(newToDos);
-              allData = newToDos.length < Constants.limitPerQuery;
+              allData = newToDos.length < Constants.minLimitPerQuery;
               if (mounted) {
                 setState(() {
                   loading = false;

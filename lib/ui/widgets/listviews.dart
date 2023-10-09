@@ -4,13 +4,14 @@ import 'package:flutter/material.dart';
 import '../../model/task/subtask.dart';
 import '../../model/task/todo.dart';
 
+// TODO: Implement crossfade
 class ListViews {
   static reorderableToDos({
     required BuildContext context,
     required List<ToDo> toDos,
     ScrollPhysics physics = const NeverScrollableScrollPhysics(),
     required void Function(int oldIndex, int newIndex) onReorder,
-    required Future<void> Function({required ToDo toDo}) onChanged,
+    required Future<void> Function({required int index, bool value}) onChanged,
     required Future<void> Function({required int index}) onTap,
     required void Function({required int index}) handleRemove,
   }) =>
@@ -24,13 +25,13 @@ class ListViews {
         },
         itemCount: toDos.length,
         itemBuilder: (BuildContext context, int index) => Tiles.toDoCheckTile(
-            index: index,
-            toDo: toDos[index],
-            showHandle: (toDos.length > 1),
-            onChanged: onChanged,
-            onTap: onTap,
-            handleRemove: handleRemove,
-          ),
+          index: index,
+          toDo: toDos[index],
+          showHandle: (toDos.length > 1),
+          onChanged: onChanged,
+          onTap: onTap,
+          handleRemove: handleRemove,
+        ),
       );
 
   static reorderableSubtasks({

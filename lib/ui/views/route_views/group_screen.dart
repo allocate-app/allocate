@@ -103,13 +103,13 @@ class _GroupsListScreen extends State<GroupsListScreen> {
         const Duration(seconds: 1),
         () async => await groupProvider
                 .getGroupsBy(
-                    limit: Constants.limitPerQuery,
+                    limit: Constants.minLimitPerQuery,
                     offset: offset,
                     grabToDos: true)
                 .then((newGroups) {
               offset += newGroups.length;
               groupProvider.groups.addAll(newGroups);
-              allData = newGroups.length < Constants.limitPerQuery;
+              allData = newGroups.length < Constants.minLimitPerQuery;
 
               if (mounted) {
                 setState(() {
@@ -635,7 +635,7 @@ class _GroupsListScreen extends State<GroupsListScreen> {
               buildDefaultDragHandles: false,
               physics: const NeverScrollableScrollPhysics(),
               shrinkWrap: true,
-              itemCount: group.toDos.length,
+              itemCount: group.toDos!.length,
               onReorder: (int oldIndex, int newIndex) async {
                 group.toDos = await value
                     .reorderGroupToDos(
@@ -691,21 +691,21 @@ class _GroupsListScreen extends State<GroupsListScreen> {
           child: Checkbox(
               shape: const CircleBorder(),
               splashRadius: 15,
-              value: group.toDos[index].completed,
+              value: group.toDos![index].completed,
               onChanged: (bool? completed) async {
-                group.toDos[index].completed = completed!;
-                toDoProvider.curToDo = group.toDos[index];
+                group.toDos![index].completed = completed!;
+                toDoProvider.curToDo = group.toDos![index];
                 await updateGroupToDo(context: context);
               }),
         ),
-        title: AutoSizeText(group.toDos[index].name,
+        title: AutoSizeText(group.toDos![index].name,
             overflow: TextOverflow.visible,
             style: Constants.headerStyle,
             minFontSize: Constants.medium,
             softWrap: true,
             maxLines: 1),
         onTap: () async {
-          toDoProvider.curToDo = group.toDos[index];
+          toDoProvider.curToDo = group.toDos![index];
           await showDialog(
                   barrierDismissible: false,
                   useRootNavigator: false,
@@ -733,9 +733,9 @@ class _GroupsListScreen extends State<GroupsListScreen> {
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                getBatteryIcon(toDo: group.toDos[index]),
+                getBatteryIcon(toDo: group.toDos![index]),
                 AutoSizeText(
-                  "${group.toDos[index].weight}",
+                  "${group.toDos![index].weight}",
                   overflow: TextOverflow.visible,
                   minFontSize: Constants.large,
                   softWrap: false,
@@ -749,12 +749,12 @@ class _GroupsListScreen extends State<GroupsListScreen> {
               child: IconButton(
                   icon: const Icon(Icons.remove_circle_outline_rounded),
                   onPressed: () async {
-                    group.toDos[index].groupID = null;
-                    toDoProvider.curToDo = group.toDos[index];
+                    group.toDos![index].groupID = null;
+                    toDoProvider.curToDo = group.toDos![index];
                     await updateGroupToDo(context: context)
                         .whenComplete(() => setState(() {
-                              ToDo toDo = group.toDos[index];
-                              group.toDos.remove(toDo);
+                              ToDo toDo = group.toDos![index];
+                              group.toDos!.remove(toDo);
                             }));
                   }),
             ),

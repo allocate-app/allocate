@@ -12,7 +12,7 @@ class Group with EquatableMixin implements Copyable<Group>, IModel {
   Id id = Isar.autoIncrement;
 
   @override
-  @Index()
+  @Index() // TODO: REMOVE THIS AND REFACTOR DB TO HOLD A LOCAL ID.
   int? localID;
 
   @Index()
@@ -28,11 +28,16 @@ class Group with EquatableMixin implements Copyable<Group>, IModel {
   @Index()
   DateTime lastUpdated;
 
-  // This may actually be best removed. TODO.
-  @ignore
-  List<ToDo> toDos = [];
+  // TODO: Make non-null when revisiting to refactor. It's not necessary.
 
-  Group({required this.name, this.description = "", required this.lastUpdated});
+  @ignore
+  List<ToDo>? toDos = [];
+
+  Group({required this.name,
+    this.description = "",
+    required this.lastUpdated,
+    this.localID,
+    this.toDos});
 
   Group.fromEntity({required Map<String, dynamic> entity})
       : id = entity["id"] as Id,
@@ -41,7 +46,8 @@ class Group with EquatableMixin implements Copyable<Group>, IModel {
         description = entity["description"] as String,
         lastUpdated = DateTime.parse(entity["lastUpdated"]);
 
-  Map<String, dynamic> toEntity() => {
+  Map<String, dynamic> toEntity() =>
+      {
         "name": name,
         "localID": localID,
         "description": description,
@@ -50,14 +56,25 @@ class Group with EquatableMixin implements Copyable<Group>, IModel {
 
   @override
   Group copy() =>
-      Group(name: name, description: description, lastUpdated: lastUpdated);
+      Group(
+          name: name,
+          description: description,
+          lastUpdated: lastUpdated,
+          localID: localID,
+          toDos: List.from(toDos ?? []));
 
   @override
-  Group copyWith({String? name, String? description, DateTime? lastUpdated}) =>
+  Group copyWith({String? name,
+    String? description,
+    DateTime? lastUpdated,
+    int? localID,
+    List<ToDo>? toDos}) =>
       Group(
           name: name ?? this.name,
           description: description ?? this.description,
-          lastUpdated: lastUpdated ?? this.lastUpdated);
+          lastUpdated: lastUpdated ?? this.lastUpdated,
+          localID: localID ?? this.localID,
+          toDos: List.from(toDos ?? this.toDos ?? []));
 
   @ignore
   @override
@@ -66,7 +83,8 @@ class Group with EquatableMixin implements Copyable<Group>, IModel {
 
   @override
   String toString() =>
-      "Group(id: $id, customViewIndex: $customViewIndex, name: $name,"
-      "description: $description, isSynced: $isSynced, toDelete: $toDelete"
-      "lastUpdated: $lastUpdated";
+      "Group(id: $id, customViewIndex: $customViewIndex, name: $name, "
+          "description: $description, isSynced: $isSynced, toDelete: $toDelete, "
+          "toDos: $toDos, "
+          "lastUpdated: $lastUpdated";
 }

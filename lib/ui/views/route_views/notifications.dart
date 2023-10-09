@@ -193,11 +193,12 @@ class _NotificationsScreen extends State<NotificationsScreen> {
     return Future.delayed(
         const Duration(seconds: 1),
         () async => await toDoProvider
-                .getOverdues(limit: Constants.limitPerQuery, offset: toDoOffset)
+                .getOverdues(
+                    limit: Constants.minLimitPerQuery, offset: toDoOffset)
                 .then((newToDos) {
               toDoOffset += newToDos.length;
               toDoProvider.toDos.addAll(newToDos);
-              allToDos = newToDos.length < Constants.limitPerQuery;
+              allToDos = newToDos.length < Constants.minLimitPerQuery;
 
               if (mounted) {
                 setState(() => overdueToDoLoading = false);
@@ -235,11 +236,11 @@ class _NotificationsScreen extends State<NotificationsScreen> {
         const Duration(seconds: 1),
         () async => await reminderProvider
                 .getOverdues(
-                    limit: Constants.limitPerQuery, offset: reminderOffset)
+                    limit: Constants.minLimitPerQuery, offset: reminderOffset)
                 .then((newReminders) {
               reminderOffset += newReminders.length;
               reminderProvider.reminders.addAll(newReminders);
-              allReminders = newReminders.length < Constants.limitPerQuery;
+              allReminders = newReminders.length < Constants.minLimitPerQuery;
 
               if (mounted) {
                 setState(() => overdueReminderLoading = false);
@@ -277,11 +278,11 @@ class _NotificationsScreen extends State<NotificationsScreen> {
         const Duration(seconds: 1),
         () async => await deadlineProvider
                 .getOverdues(
-                    limit: Constants.limitPerQuery, offset: deadlineOffset)
+                    limit: Constants.minLimitPerQuery, offset: deadlineOffset)
                 .then((newDeadlines) {
               deadlineOffset += newDeadlines.length;
               deadlineProvider.deadlines.addAll(newDeadlines);
-              allDeadlines = newDeadlines.length < Constants.limitPerQuery;
+              allDeadlines = newDeadlines.length < Constants.minLimitPerQuery;
 
               if (mounted) {
                 setState(() => overdueDeadlineLoading = false);

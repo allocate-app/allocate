@@ -47,6 +47,7 @@ class _HomeScreen extends State<HomeScreen> {
 
   late final ScrollPhysics scrollPhysics;
 
+  // TODO: refactor this into two integers with a getter.
   void updateDayWeight() async {
     await toDoProvider.getMyDayWeight().then((weight) {
       setState(() {
@@ -73,18 +74,45 @@ class _HomeScreen extends State<HomeScreen> {
     userProvider = Provider.of<UserProvider>(context, listen: false);
     groupProvider = Provider.of<GroupProvider>(context, listen: false);
 
-    toDoProvider.addListener(updateDayWeight);
-    routineProvider.addListener(updateDayWeight);
-    groupProvider.addListener(resetNavGroups);
+    toDoProvider.addListener(rebuildToDo);
+    routineProvider.addListener(rebuildRoutine);
+    groupProvider.addListener(rebuildGroup);
   }
 
   void resetProviders() {
-    toDoProvider.rebuild = true;
-    routineProvider.rebuild = true;
-    deadlineProvider.rebuild = true;
-    reminderProvider.rebuild = true;
+    rebuildToDo();
+    rebuildRoutine();
+    rebuildDeadline();
+    rebuildReminder();
+    // TODO: Figure this out.
     // userProvider.rebuild = true
+    rebuildGroup();
+  }
+
+  void rebuildGroup() {
     groupProvider.rebuild = true;
+    resetNavGroups();
+  }
+
+  void rebuildReminder() {
+    reminderProvider.rebuild = true;
+  }
+
+  void rebuildDeadline() {
+    deadlineProvider.rebuild = true;
+  }
+
+  void rebuildRoutine() {
+    routineProvider.rebuild = true;
+    // TODO: Refactor this to only affect routine weight;
+    updateDayWeight();
+  }
+
+  void rebuildToDo() {
+    toDoProvider.rebuild = true;
+    // TODO: Refactor this to only affect toDo weight;
+    updateDayWeight();
+    resetNavGroups();
   }
 
   void initializeParams() {
@@ -105,7 +133,7 @@ class _HomeScreen extends State<HomeScreen> {
     });
 
     return Future.delayed(
-        const Duration(seconds: 1),
+        const Duration(milliseconds: 100),
         () async => await groupProvider
             .mostRecent(grabToDos: true)
             .then((groups) => setState(() {
@@ -117,9 +145,9 @@ class _HomeScreen extends State<HomeScreen> {
   @override
   void dispose() {
     navScrollController.dispose();
-    toDoProvider.removeListener(updateDayWeight);
-    routineProvider.removeListener(updateDayWeight);
-    groupProvider.removeListener(resetNavGroups);
+    toDoProvider.removeListener(rebuildToDo);
+    routineProvider.removeListener(rebuildRoutine);
+    groupProvider.removeListener(rebuildGroup);
     super.dispose();
   }
 
@@ -403,9 +431,9 @@ class _HomeScreen extends State<HomeScreen> {
                               value.recentGroups[index] = value.curGroup!);
                         });
                       },
-                      trailing: (value.recentGroups[index].toDos.length > 1)
+                      trailing: (value.recentGroups[index].toDos!.isNotEmpty)
                           ? AutoSizeText(
-                              "${value.recentGroups[index].toDos.length}",
+                              "${value.recentGroups[index].toDos!.length}",
                               maxLines: 1,
                               overflow: TextOverflow.visible,
                               softWrap: false,
