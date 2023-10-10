@@ -37,34 +37,29 @@ const RoutineSchema = CollectionSchema(
       name: r'lastUpdated',
       type: IsarType.dateTime,
     ),
-    r'localID': PropertySchema(
-      id: 4,
-      name: r'localID',
-      type: IsarType.long,
-    ),
     r'name': PropertySchema(
-      id: 5,
+      id: 4,
       name: r'name',
       type: IsarType.string,
     ),
     r'realDuration': PropertySchema(
-      id: 6,
+      id: 5,
       name: r'realDuration',
       type: IsarType.long,
     ),
     r'routineTasks': PropertySchema(
-      id: 7,
+      id: 6,
       name: r'routineTasks',
       type: IsarType.objectList,
       target: r'SubTask',
     ),
     r'toDelete': PropertySchema(
-      id: 8,
+      id: 7,
       name: r'toDelete',
       type: IsarType.bool,
     ),
     r'weight': PropertySchema(
-      id: 9,
+      id: 8,
       name: r'weight',
       type: IsarType.long,
     )
@@ -75,19 +70,6 @@ const RoutineSchema = CollectionSchema(
   deserializeProp: _routineDeserializeProp,
   idName: r'id',
   indexes: {
-    r'localID': IndexSchema(
-      id: 9154622928032500643,
-      name: r'localID',
-      unique: false,
-      replace: false,
-      properties: [
-        IndexPropertySchema(
-          name: r'localID',
-          type: IndexType.value,
-          caseSensitive: false,
-        )
-      ],
-    ),
     r'name': IndexSchema(
       id: 879695947855722453,
       name: r'name',
@@ -216,17 +198,16 @@ void _routineSerialize(
   writer.writeLong(offsets[1], object.expectedDuration);
   writer.writeBool(offsets[2], object.isSynced);
   writer.writeDateTime(offsets[3], object.lastUpdated);
-  writer.writeLong(offsets[4], object.localID);
-  writer.writeString(offsets[5], object.name);
-  writer.writeLong(offsets[6], object.realDuration);
+  writer.writeString(offsets[4], object.name);
+  writer.writeLong(offsets[5], object.realDuration);
   writer.writeObjectList<SubTask>(
-    offsets[7],
+    offsets[6],
     allOffsets,
     SubTaskSchema.serialize,
     object.routineTasks,
   );
-  writer.writeBool(offsets[8], object.toDelete);
-  writer.writeLong(offsets[9], object.weight);
+  writer.writeBool(offsets[7], object.toDelete);
+  writer.writeLong(offsets[8], object.weight);
 }
 
 Routine _routineDeserialize(
@@ -238,22 +219,21 @@ Routine _routineDeserialize(
   final object = Routine(
     expectedDuration: reader.readLong(offsets[1]),
     lastUpdated: reader.readDateTime(offsets[3]),
-    name: reader.readString(offsets[5]),
-    realDuration: reader.readLong(offsets[6]),
+    name: reader.readString(offsets[4]),
+    realDuration: reader.readLong(offsets[5]),
     routineTasks: reader.readObjectList<SubTask>(
-          offsets[7],
+          offsets[6],
           SubTaskSchema.deserialize,
           allOffsets,
           SubTask(),
         ) ??
         [],
-    weight: reader.readLongOrNull(offsets[9]) ?? 0,
+    weight: reader.readLongOrNull(offsets[8]) ?? 0,
   );
   object.customViewIndex = reader.readLong(offsets[0]);
   object.id = id;
   object.isSynced = reader.readBool(offsets[2]);
-  object.localID = reader.readLongOrNull(offsets[4]);
-  object.toDelete = reader.readBool(offsets[8]);
+  object.toDelete = reader.readBool(offsets[7]);
   return object;
 }
 
@@ -273,12 +253,10 @@ P _routineDeserializeProp<P>(
     case 3:
       return (reader.readDateTime(offset)) as P;
     case 4:
-      return (reader.readLongOrNull(offset)) as P;
-    case 5:
       return (reader.readString(offset)) as P;
-    case 6:
+    case 5:
       return (reader.readLong(offset)) as P;
-    case 7:
+    case 6:
       return (reader.readObjectList<SubTask>(
             offset,
             SubTaskSchema.deserialize,
@@ -286,9 +264,9 @@ P _routineDeserializeProp<P>(
             SubTask(),
           ) ??
           []) as P;
-    case 8:
+    case 7:
       return (reader.readBool(offset)) as P;
-    case 9:
+    case 8:
       return (reader.readLongOrNull(offset) ?? 0) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -311,14 +289,6 @@ extension RoutineQueryWhereSort on QueryBuilder<Routine, Routine, QWhere> {
   QueryBuilder<Routine, Routine, QAfterWhere> anyId() {
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(const IdWhereClause.any());
-    });
-  }
-
-  QueryBuilder<Routine, Routine, QAfterWhere> anyLocalID() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(
-        const IndexWhereClause.any(indexName: r'localID'),
-      );
     });
   }
 
@@ -432,116 +402,6 @@ extension RoutineQueryWhere on QueryBuilder<Routine, Routine, QWhereClause> {
         lower: lowerId,
         includeLower: includeLower,
         upper: upperId,
-        includeUpper: includeUpper,
-      ));
-    });
-  }
-
-  QueryBuilder<Routine, Routine, QAfterWhereClause> localIDIsNull() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(IndexWhereClause.equalTo(
-        indexName: r'localID',
-        value: [null],
-      ));
-    });
-  }
-
-  QueryBuilder<Routine, Routine, QAfterWhereClause> localIDIsNotNull() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(IndexWhereClause.between(
-        indexName: r'localID',
-        lower: [null],
-        includeLower: false,
-        upper: [],
-      ));
-    });
-  }
-
-  QueryBuilder<Routine, Routine, QAfterWhereClause> localIDEqualTo(
-      int? localID) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(IndexWhereClause.equalTo(
-        indexName: r'localID',
-        value: [localID],
-      ));
-    });
-  }
-
-  QueryBuilder<Routine, Routine, QAfterWhereClause> localIDNotEqualTo(
-      int? localID) {
-    return QueryBuilder.apply(this, (query) {
-      if (query.whereSort == Sort.asc) {
-        return query
-            .addWhereClause(IndexWhereClause.between(
-              indexName: r'localID',
-              lower: [],
-              upper: [localID],
-              includeUpper: false,
-            ))
-            .addWhereClause(IndexWhereClause.between(
-              indexName: r'localID',
-              lower: [localID],
-              includeLower: false,
-              upper: [],
-            ));
-      } else {
-        return query
-            .addWhereClause(IndexWhereClause.between(
-              indexName: r'localID',
-              lower: [localID],
-              includeLower: false,
-              upper: [],
-            ))
-            .addWhereClause(IndexWhereClause.between(
-              indexName: r'localID',
-              lower: [],
-              upper: [localID],
-              includeUpper: false,
-            ));
-      }
-    });
-  }
-
-  QueryBuilder<Routine, Routine, QAfterWhereClause> localIDGreaterThan(
-    int? localID, {
-    bool include = false,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(IndexWhereClause.between(
-        indexName: r'localID',
-        lower: [localID],
-        includeLower: include,
-        upper: [],
-      ));
-    });
-  }
-
-  QueryBuilder<Routine, Routine, QAfterWhereClause> localIDLessThan(
-    int? localID, {
-    bool include = false,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(IndexWhereClause.between(
-        indexName: r'localID',
-        lower: [],
-        upper: [localID],
-        includeUpper: include,
-      ));
-    });
-  }
-
-  QueryBuilder<Routine, Routine, QAfterWhereClause> localIDBetween(
-    int? lowerLocalID,
-    int? upperLocalID, {
-    bool includeLower = true,
-    bool includeUpper = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(IndexWhereClause.between(
-        indexName: r'localID',
-        lower: [lowerLocalID],
-        includeLower: includeLower,
-        upper: [upperLocalID],
         includeUpper: includeUpper,
       ));
     });
@@ -1267,75 +1127,6 @@ extension RoutineQueryFilter
     });
   }
 
-  QueryBuilder<Routine, Routine, QAfterFilterCondition> localIDIsNull() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(const FilterCondition.isNull(
-        property: r'localID',
-      ));
-    });
-  }
-
-  QueryBuilder<Routine, Routine, QAfterFilterCondition> localIDIsNotNull() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(const FilterCondition.isNotNull(
-        property: r'localID',
-      ));
-    });
-  }
-
-  QueryBuilder<Routine, Routine, QAfterFilterCondition> localIDEqualTo(
-      int? value) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'localID',
-        value: value,
-      ));
-    });
-  }
-
-  QueryBuilder<Routine, Routine, QAfterFilterCondition> localIDGreaterThan(
-    int? value, {
-    bool include = false,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        include: include,
-        property: r'localID',
-        value: value,
-      ));
-    });
-  }
-
-  QueryBuilder<Routine, Routine, QAfterFilterCondition> localIDLessThan(
-    int? value, {
-    bool include = false,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.lessThan(
-        include: include,
-        property: r'localID',
-        value: value,
-      ));
-    });
-  }
-
-  QueryBuilder<Routine, Routine, QAfterFilterCondition> localIDBetween(
-    int? lower,
-    int? upper, {
-    bool includeLower = true,
-    bool includeUpper = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.between(
-        property: r'localID',
-        lower: lower,
-        includeLower: includeLower,
-        upper: upper,
-        includeUpper: includeUpper,
-      ));
-    });
-  }
-
   QueryBuilder<Routine, Routine, QAfterFilterCondition> nameEqualTo(
     String value, {
     bool caseSensitive = true,
@@ -1733,18 +1524,6 @@ extension RoutineQuerySortBy on QueryBuilder<Routine, Routine, QSortBy> {
     });
   }
 
-  QueryBuilder<Routine, Routine, QAfterSortBy> sortByLocalID() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'localID', Sort.asc);
-    });
-  }
-
-  QueryBuilder<Routine, Routine, QAfterSortBy> sortByLocalIDDesc() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'localID', Sort.desc);
-    });
-  }
-
   QueryBuilder<Routine, Routine, QAfterSortBy> sortByName() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'name', Sort.asc);
@@ -1856,18 +1635,6 @@ extension RoutineQuerySortThenBy
     });
   }
 
-  QueryBuilder<Routine, Routine, QAfterSortBy> thenByLocalID() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'localID', Sort.asc);
-    });
-  }
-
-  QueryBuilder<Routine, Routine, QAfterSortBy> thenByLocalIDDesc() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'localID', Sort.desc);
-    });
-  }
-
   QueryBuilder<Routine, Routine, QAfterSortBy> thenByName() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'name', Sort.asc);
@@ -1943,12 +1710,6 @@ extension RoutineQueryWhereDistinct
     });
   }
 
-  QueryBuilder<Routine, Routine, QDistinct> distinctByLocalID() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addDistinctBy(r'localID');
-    });
-  }
-
   QueryBuilder<Routine, Routine, QDistinct> distinctByName(
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
@@ -2004,12 +1765,6 @@ extension RoutineQueryProperty
   QueryBuilder<Routine, DateTime, QQueryOperations> lastUpdatedProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'lastUpdated');
-    });
-  }
-
-  QueryBuilder<Routine, int?, QQueryOperations> localIDProperty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addPropertyName(r'localID');
     });
   }
 

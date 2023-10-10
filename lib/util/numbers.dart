@@ -20,3 +20,19 @@ num smoothstep({num x = 0, num v0 = 0, num v1 = 1}) {
   x = clamp(x: (x - v0) / (v1 - v0));
   return pow(x, 3) * (3 * x * (2 * x - 5) + 10);
 }
+
+// I am borrowing this from the recommended implementation from ISAR.
+int fastHash(String string) {
+  int hash = 0xcbf29ce484222325;
+
+  int i = 0;
+  while (i < string.length) {
+    final codeUnit = string.codeUnitAt(i++);
+    hash ^= codeUnit >> 8;
+    hash *= 0x100000001b3;
+    hash ^= codeUnit & 0xFF;
+    hash *= 0x100000001b3;
+  }
+
+  return hash;
+}

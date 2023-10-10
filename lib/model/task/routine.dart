@@ -3,6 +3,8 @@ import "dart:convert";
 import "package:equatable/equatable.dart";
 import "package:isar/isar.dart";
 
+import "../../util/constants.dart";
+import "../../util/enums.dart";
 import "../../util/interfaces/copyable.dart";
 import "../../util/interfaces/i_model.dart";
 import "subtask.dart";
@@ -11,11 +13,13 @@ part "routine.g.dart";
 
 @Collection(inheritance: false)
 class Routine with EquatableMixin implements Copyable<Routine>, IModel {
-  Id id = Isar.autoIncrement;
+  @override
+  @ignore
+  ModelType modelType = ModelType.routine;
 
   @override
   @Index()
-  int? localID;
+  Id id = Constants.generateID();
 
   @override
   @Index()
@@ -53,7 +57,6 @@ class Routine with EquatableMixin implements Copyable<Routine>, IModel {
 
   Routine.fromEntity({required Map<String, dynamic> entity})
       : id = entity["id"] as Id,
-        localID = entity["localID"] as int?,
         name = entity["name"] as String,
         weight = entity["weight"] as int,
         expectedDuration = entity["expectedDuration"],
@@ -68,7 +71,7 @@ class Routine with EquatableMixin implements Copyable<Routine>, IModel {
         lastUpdated = DateTime.parse(entity["lastUpdated"]);
 
   Map<String, dynamic> toEntity() => {
-        "localID": localID,
+        "id": id,
         "customViewIndex": customViewIndex,
         "name": name,
         "weight": weight,
@@ -107,20 +110,11 @@ class Routine with EquatableMixin implements Copyable<Routine>, IModel {
   @ignore
   @override
   List<Object?> get props => [
-        //id,
-        localID,
-        name,
-        weight,
-        expectedDuration,
-        routineTasks,
-        customViewIndex,
-        isSynced,
-        toDelete,
+        id,
       ];
 
   @override
-  String toString() =>
-      "Routine(id: $id, localID: $localID customViewIndex: $customViewIndex, "
+  String toString() => "Routine(id: $id,  customViewIndex: $customViewIndex, "
       "name: $name, weight: $weight, expectedDuration: $expectedDuration,"
       "routineTasks: $routineTasks, isSynced: $isSynced, toDelete: $toDelete, lastUpdated: $lastUpdated)";
 }

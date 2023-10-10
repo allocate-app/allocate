@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:isar/isar.dart';
 
+import '../../util/constants.dart';
 import '../../util/enums.dart';
 import '../../util/interfaces/copyable.dart';
 import '../../util/interfaces/i_model.dart';
@@ -12,11 +13,13 @@ part "deadline.g.dart";
 
 @Collection(inheritance: false)
 class Deadline with EquatableMixin implements Copyable<Deadline>, IModel {
-  @ignore
   @override
-  int? localID;
+  @ignore
+  ModelType modelType = ModelType.deadline;
 
-  Id id = Isar.autoIncrement;
+  @override
+  @Index()
+  Id id = Constants.generateID();
   @Index()
   int customViewIndex;
   @Index()
@@ -92,8 +95,10 @@ class Deadline with EquatableMixin implements Copyable<Deadline>, IModel {
 
   // No id for syncing - assigned via autoincrement online.
   Map<String, dynamic> toEntity() => {
+        "id": id,
         "customViewIndex": customViewIndex,
         "notificationID": notificationID,
+        "repeatID": repeatID,
         "name": name,
         "description": description,
         "startDate": startDate.toIso8601String(),
@@ -163,24 +168,7 @@ class Deadline with EquatableMixin implements Copyable<Deadline>, IModel {
 
   @ignore
   @override
-  List<Object?> get props => [
-        // TODO: This is a current race condition in testing.
-        // ID should be able to be returned once built.
-        //id,
-        notificationID,
-        name,
-        description,
-        startDate,
-        dueDate,
-        warnDate,
-        warnMe,
-        priority,
-        repeatable,
-        frequency,
-        repeatDays,
-        repeatSkip,
-        lastUpdated,
-      ];
+  List<Object?> get props => [id];
 
   @override
   String toString() =>

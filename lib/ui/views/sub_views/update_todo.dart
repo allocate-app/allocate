@@ -161,7 +161,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
       });
     }
     groupEditingController.addListener(() {
-      String newText = nameEditingController.text;
+      String newText = groupEditingController.text;
       SemanticsService.announce(newText, Directionality.of(context));
     });
 
@@ -203,11 +203,11 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
   }
 
   void handleHistorySelection({
-    required MapEntry<String, int> data,
+    required int id,
   }) {
     setState(() {
       checkClose = true;
-      toDo.groupID = data.value;
+      toDo.groupID = id;
     });
   }
 
@@ -426,9 +426,8 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
   // TODO: refactor once Update ToDo has parameters
   Future<void> handleClose({required bool willDiscard}) async {
     if (willDiscard) {
-      toDoProvider.curToDo = prevToDo;
       await toDoProvider
-          .updateToDo()
+          .updateToDo(toDo: prevToDo)
           .whenComplete(() => Navigator.pop(context));
     }
 
@@ -830,7 +829,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                               padding: const EdgeInsets.symmetric(
                                   horizontal: Constants.padding),
                               children: [
-                                SearchRecents<Group>(
+                                SearchRecentsBar<Group>(
                                   persistentEntry: widget.initialGroup,
                                   hintText: "Search Groups",
                                   padding:
@@ -979,7 +978,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                       child: PaddedDivider(padding: Constants.padding),
                     ),
 
-                    SearchRecents<Group>(
+                    SearchRecentsBar<Group>(
                       hintText: "Search Groups",
                       padding: const EdgeInsets.all(Constants.padding),
                       handleDataSelection: handleGroupSelection,

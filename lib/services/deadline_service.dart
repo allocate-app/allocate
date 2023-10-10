@@ -1,11 +1,9 @@
-import 'package:jiffy/jiffy.dart';
-
 import '../model/task/deadline.dart';
 import '../repositories/deadline_repo.dart';
+import '../util/constants.dart';
 import '../util/enums.dart';
 import '../util/interfaces/repository/model/deadline_repository.dart';
 import '../util/interfaces/sortable.dart';
-import 'notification_service.dart';
 
 class DeadlineService {
   DeadlineRepository _repository = DeadlineRepo();
@@ -66,21 +64,9 @@ class DeadlineService {
           minute: deadline.warnDate.minute),
     );
 
-    // Scheduling logic.
-    newDeadline.notificationID = newDeadline.hashCode;
-    if (newDeadline.warnMe &&
-        NotificationService.instance
-            .validateWarnDate(warnDate: newDeadline.warnDate)) {
-      String newDue =
-          Jiffy.parseFromDateTime(newDeadline.dueDate).toLocal().toString();
-      NotificationService.instance.scheduleNotification(
-          id: newDeadline.notificationID!,
-          warnDate: newDeadline.warnDate,
-          message: "${newDeadline.name} IS DUE: $newDue",
-          payload: "DEADLINE\n${newDeadline.notificationID}");
-    }
+    newDeadline.notificationID = Constants.generateID();
 
-    return await updateDeadline(deadline: newDeadline);
+    await updateDeadline(deadline: newDeadline);
   }
 
   Future<void> populateCalendar({required DateTime limit}) async {
@@ -129,20 +115,7 @@ class DeadlineService {
               hour: deadline.warnDate.hour,
               minute: deadline.warnDate.minute));
 
-      newDeadline.notificationID = newDeadline.hashCode;
-
-      // Scheduling logic.
-      if (newDeadline.warnMe &&
-          NotificationService.instance
-              .validateWarnDate(warnDate: newDeadline.warnDate)) {
-        String newDue =
-            Jiffy.parseFromDateTime(newDeadline.dueDate).toLocal().toString();
-        await NotificationService.instance.scheduleNotification(
-            id: newDeadline.notificationID!,
-            warnDate: newDeadline.warnDate,
-            message: "${newDeadline.name} IS DUE: $newDue",
-            payload: "DEADLINE\n${newDeadline.notificationID!}");
-      }
+      newDeadline.notificationID = Constants.generateID();
 
       deadline.repeatable = false;
       toUpdate.add(newDeadline);
@@ -183,7 +156,7 @@ class DeadlineService {
     return nextDate;
   }
 
-  Future<void> createDeadline({required Deadline deadline}) async =>
+  Future<Deadline> createDeadline({required Deadline deadline}) async =>
       await _repository.create(deadline);
 
   Future<List<Deadline>> searchDeadlines(
@@ -200,8 +173,8 @@ class DeadlineService {
       await _repository.getRepoListBy(
           sorter: sorter, limit: limit, offset: offset);
 
-  Future<Deadline?> getDeadlineByID({required int id}) async =>
-      await _repository.getByID(id: id);
+  Future<Deadline?> getDeadlineByID({int? id}) async =>
+      (null != id) ? await _repository.getByID(id: id) : null;
 
   Future<List<Deadline>> getRange({DateTime? start, DateTime? end}) async =>
       await _repository.getRange(start: start, end: end);
@@ -215,7 +188,7 @@ class DeadlineService {
   Future<List<Deadline>> mostRecent({int limit = 5}) async =>
       await _repository.mostRecent(limit: limit);
 
-  Future<void> updateDeadline({required Deadline deadline}) async =>
+  Future<Deadline> updateDeadline({required Deadline deadline}) async =>
       await _repository.update(deadline);
 
   Future<void> updateBatch({required List<Deadline> deadlines}) async =>

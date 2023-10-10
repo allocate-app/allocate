@@ -18,7 +18,7 @@ class RoutineRepo implements RoutineRepository {
   final Isar _isarClient = IsarService.instance.isarClient;
 
   @override
-  Future<void> create(Routine routine) async {
+  Future<Routine> create(Routine routine) async {
     routine.isSynced = (null != _supabaseClient.auth.currentSession);
 
     late int? id;
@@ -50,10 +50,11 @@ class RoutineRepo implements RoutineRepository {
             "Supabase Open: ${null != _supabaseClient.auth.currentSession}");
       }
     }
+    return routine;
   }
 
   @override
-  Future<void> update(Routine routine) async {
+  Future<Routine> update(Routine routine) async {
     routine.isSynced = (null != _supabaseClient.auth.currentSession);
 
     // This is just for error checking.
@@ -84,6 +85,7 @@ class RoutineRepo implements RoutineRepository {
             "Supabase Open: ${null != _supabaseClient.auth.currentSession}");
       }
     }
+    return routine;
   }
 
   @override
@@ -246,7 +248,7 @@ class RoutineRepo implements RoutineRepository {
 
   @override
   Future<Routine?> getByID({required int id}) async =>
-      await _isarClient.routines.where().localIDEqualTo(id).findFirst();
+      await _isarClient.routines.where().idEqualTo(id).findFirst();
 
   @override
   Future<List<Routine>> getRepoList({int limit = 50, int offset = 0}) async {

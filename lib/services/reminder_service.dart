@@ -1,11 +1,9 @@
-import 'package:jiffy/jiffy.dart';
-
 import '../model/task/reminder.dart';
 import '../repositories/reminder_repo.dart';
+import '../util/constants.dart';
 import '../util/enums.dart';
 import '../util/interfaces/repository/model/reminder_repository.dart';
 import '../util/interfaces/sortable.dart';
-import 'notification_service.dart';
 
 class ReminderService {
   //Default repo for now, switch as needed for testing.
@@ -56,20 +54,8 @@ class ReminderService {
       dueDate: nextRepeatDate,
     );
 
-    // Scheduling logic.
-    newReminder.notificationID = newReminder.hashCode;
-    if (NotificationService.instance
-        .validateWarnDate(warnDate: newReminder.dueDate)) {
-      String newDue =
-          Jiffy.parseFromDateTime(newReminder.dueDate).toLocal().toString();
-      NotificationService.instance.scheduleNotification(
-          id: newReminder.notificationID!,
-          warnDate: newReminder.dueDate,
-          message: "${newReminder.name} IS DUE: $newDue",
-          payload: "REMINDER\n${newReminder.notificationID}");
-    }
-
-    return updateReminder(reminder: newReminder);
+    newReminder.notificationID = Constants.generateID();
+    await updateReminder(reminder: newReminder);
   }
 
   Future<void> populateCalendar({required DateTime limit}) async {
@@ -105,19 +91,7 @@ class ReminderService {
         dueDate: nextRepeatDate,
       );
 
-      newReminder.notificationID = newReminder.hashCode;
-
-      // Scheduling logic.
-      if (NotificationService.instance
-          .validateWarnDate(warnDate: newReminder.dueDate)) {
-        String newDue =
-            Jiffy.parseFromDateTime(newReminder.dueDate).toLocal().toString();
-        await NotificationService.instance.scheduleNotification(
-            id: newReminder.notificationID!,
-            warnDate: newReminder.dueDate,
-            message: "${newReminder.name} IS DUE: $newDue",
-            payload: "REMINDER\n${newReminder.notificationID!}");
-      }
+      newReminder.notificationID = Constants.generateID();
 
       reminder.repeatable = false;
       toUpdate.add(newReminder);
@@ -158,7 +132,7 @@ class ReminderService {
     return nextDate;
   }
 
-  Future<void> createReminder({required Reminder reminder}) async =>
+  Future<Reminder> createReminder({required Reminder reminder}) async =>
       await _repository.create(reminder);
 
   Future<List<Reminder>> searchReminders(
@@ -175,8 +149,8 @@ class ReminderService {
       await _repository.getRepoListBy(
           sorter: sorter, limit: limit, offset: offset);
 
-  Future<Reminder?> getReminderByID({required int id}) async =>
-      await _repository.getByID(id: id);
+  Future<Reminder?> getReminderByID({int? id}) async =>
+      (null != id) ? await _repository.getByID(id: id) : null;
 
   Future<List<Reminder>> getRange({DateTime? start, DateTime? end}) async =>
       await _repository.getRange(start: start, end: end);
@@ -190,7 +164,7 @@ class ReminderService {
   Future<List<Reminder>> getUpcoming({int limit = 50, int offset = 0}) async =>
       await _repository.getUpcoming(limit: limit, offset: offset);
 
-  Future<void> updateReminder({required Reminder reminder}) async =>
+  Future<Reminder> updateReminder({required Reminder reminder}) async =>
       await _repository.update(reminder);
 
   Future<void> updateBatch({required List<Reminder> reminders}) async =>

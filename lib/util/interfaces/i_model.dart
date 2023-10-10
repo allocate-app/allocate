@@ -1,6 +1,8 @@
+import '../enums.dart';
+
 abstract interface class IModel {
   String name = "";
 
-  // TODO: Refactor this to just be the id.
-  int? localID;
+  int id = 0;
+  late ModelType modelType;
 }

@@ -1,3 +1,3 @@
 abstract interface class LocalNotifications<T> {
-  Future<List<T>> grabWarnMes({DateTime? now, int limit = 20});
+  Future<List<T>> getWarnMes({DateTime? now, int limit = 20});
 }

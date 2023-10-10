@@ -177,7 +177,12 @@ class _CalendarScreen extends State<CalendarScreen> {
           hour: Constants.midnight.hour, minute: Constants.midnight.minute);
 
       CalendarEvent event = CalendarEvent(
-          title: toDo.name, modelType: ModelType.toDo, toDo: toDo);
+        title: toDo.name,
+        id: toDo.id,
+        pattern: "MMM d",
+        modelType: ModelType.toDo,
+        dueDate: toDo.dueDate,
+      );
 
       if (_events.containsKey(startDay)) {
         _events[startDay]!.add(event);
@@ -207,8 +212,10 @@ class _CalendarScreen extends State<CalendarScreen> {
           hour: Constants.midnight.hour, minute: Constants.midnight.minute);
       CalendarEvent event = CalendarEvent(
           title: deadline.name,
+          id: deadline.id,
+          pattern: "MMM d",
           modelType: ModelType.deadline,
-          deadline: deadline);
+          dueDate: deadline.dueDate);
       if (_events.containsKey(startDay)) {
         _events[startDay]!.add(event);
       } else {
@@ -234,8 +241,10 @@ class _CalendarScreen extends State<CalendarScreen> {
           hour: Constants.midnight.hour, minute: Constants.midnight.minute);
       CalendarEvent event = CalendarEvent(
           title: reminder.name,
+          pattern: "hh:mm a",
+          id: reminder.id,
           modelType: ModelType.reminder,
-          reminder: reminder);
+          dueDate: reminder.dueDate);
       if (_events.containsKey(day)) {
         _events[day]!.add(event);
       } else {
@@ -276,6 +285,7 @@ class _CalendarScreen extends State<CalendarScreen> {
       ModelType.toDo => const Icon(Icons.task_rounded),
       ModelType.deadline => const Icon(Icons.announcement_rounded),
       ModelType.reminder => const Icon(Icons.push_pin_rounded),
+      _ => throw InvalidEventItemException("ModelType: $modelType"),
     };
 
     return DecoratedBox(
@@ -291,11 +301,13 @@ class _CalendarScreen extends State<CalendarScreen> {
     );
   }
 
+  // This is not called at the moment. Ignore the todo and remove.
   Widget? getSubtitle(
       {required ModelType modelType,
       ToDo? toDo,
       Deadline? deadline,
       Reminder? reminder}) {
+    // TODO: refactor this and parameterize.
     return switch (modelType) {
       ModelType.toDo => (null != toDo)
           ? Wrap(
@@ -320,6 +332,7 @@ class _CalendarScreen extends State<CalendarScreen> {
           : null,
       ModelType.reminder =>
         (null != reminder) ? buildAlertRow(alertDate: reminder.dueDate) : null,
+      _ => throw InvalidEventItemException("ModelType: $modelType"),
     };
   }
 
@@ -441,27 +454,12 @@ class _CalendarScreen extends State<CalendarScreen> {
   }
 
   Widget buildDueDate({required CalendarEvent event}) {
-    DateTime dueDate;
-    String pattern;
-    switch (event.modelType) {
-      case ModelType.toDo:
-        dueDate = event.toDo!.dueDate;
-        pattern = "MMM d";
-        break;
-      case ModelType.deadline:
-        dueDate = event.deadline!.dueDate;
-        pattern = "MMM d";
-        break;
-      case ModelType.reminder:
-        dueDate = event.reminder!.dueDate;
-        pattern = "hh:mm a";
-        break;
-    }
-
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
       child: AutoSizeText(
-          Jiffy.parseFromDateTime(dueDate).toLocal().format(pattern: pattern),
+          Jiffy.parseFromDateTime(event.dueDate)
+              .toLocal()
+              .format(pattern: event.pattern),
           softWrap: false,
           overflow: TextOverflow.visible,
           maxLines: 2,
@@ -528,27 +526,63 @@ class _CalendarScreen extends State<CalendarScreen> {
                       overflow: TextOverflow.visible,
                       softWrap: false,
                     ),
+                    // TODO: Factor this out into a method for Tiles class.
                     onTap: () async {
                       late Widget dialog;
+                      late Future<void>? future;
                       switch (value[index].modelType) {
                         case ModelType.toDo:
                           dialog = const UpdateToDoScreen();
-                          toDoProvider.curToDo = value[index].toDo;
+                          future = Future.wait([
+                            toDoProvider
+                                .getToDoByID(id: value[index].id)
+                                .then((toDo) {
+                              if (null == toDo) {
+                                throw InvalidEventItemException(
+                                    "Event: ${value[index].toString()}");
+                              }
+                              return toDoProvider.curToDo = toDo;
+                            })
+                          ]);
                           break;
                         case ModelType.deadline:
                           dialog = const UpdateDeadlineScreen();
-                          deadlineProvider.curDeadline = value[index].deadline;
+                          future = Future.wait([
+                            deadlineProvider
+                                .getDeadlineByID(id: value[index].id)
+                                .then((deadline) {
+                              if (null == deadline) {
+                                throw InvalidEventItemException(
+                                    "Event: ${value[index].toString()}");
+                              }
+                              return deadlineProvider.curDeadline = deadline;
+                            })
+                          ]);
                           break;
                         case ModelType.reminder:
                           dialog = const UpdateReminderScreen();
-                          reminderProvider.curReminder = value[index].reminder;
+                          future = Future.wait([
+                            reminderProvider
+                                .getReminderByID(id: value[index].id)
+                                .then((reminder) {
+                              if (null == reminder) {
+                                throw InvalidEventItemException(
+                                    "Event: ${value[index].toString()}");
+                              }
+                              return reminderProvider.curReminder = reminder;
+                            })
+                          ]);
                           break;
+                        default:
+                          throw InvalidEventItemException(
+                              "Event: ${value[index].toString()}");
                       }
-                      await showDialog(
+
+                      await future.whenComplete(() async => await showDialog(
                           barrierDismissible: false,
                           useRootNavigator: false,
                           context: context,
-                          builder: (BuildContext context) => dialog);
+                          builder: (BuildContext context) => dialog));
                     },
                     trailing: buildDueDate(event: value[index]),
                   ));
@@ -558,24 +592,24 @@ class _CalendarScreen extends State<CalendarScreen> {
   }
 }
 
-// TODO: Possibly refactor this to grab via ID? Possibly not too terrible to store the object. Come back to this.
 class CalendarEvent with EquatableMixin {
   final String title;
+  final String pattern;
   final ModelType modelType;
-  final ToDo? toDo;
-  final Deadline? deadline;
-  final Reminder? reminder;
+  final DateTime dueDate;
+  final int id;
 
   const CalendarEvent(
       {required this.title,
+      required this.pattern,
+      required this.id,
       required this.modelType,
-      this.toDo,
-      this.deadline,
-      this.reminder});
+      required this.dueDate});
 
   @override
-  String toString() => "Title: $title, Type: $modelType";
+  String toString() =>
+      "id: $id, Title: $title, Type: $modelType, pattern: $pattern, dueDate: $dueDate";
 
   @override
-  List<Object?> get props => [title, modelType];
+  List<Object?> get props => [id, title, pattern, modelType, dueDate];
 }

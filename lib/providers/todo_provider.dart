@@ -23,11 +23,15 @@ class ToDoProvider extends ChangeNotifier {
   ToDo? curToDo;
 
   List<ToDo> toDos = [];
+
+  // This is for search list
   List<ToDo> recentToDos = [];
 
   late ToDoSorter sorter;
 
   User? user;
+
+  int myDayWeight = 0;
 
   ToDoProvider({this.user, ToDoService? service})
       : _toDoService = service ?? ToDoService() {
@@ -37,6 +41,7 @@ class ToDoProvider extends ChangeNotifier {
 
   Future<void> init() async {
     startTimer();
+    setMyDayWeight();
   }
 
   void startTimer() {
@@ -78,16 +83,18 @@ class ToDoProvider extends ChangeNotifier {
 
   List<SortMethod> get sortMethods => ToDoSorter.sortMethods;
 
-  Future<int> getMyDayWeight() async => _toDoService.getMyDayWeight();
+  Future<int> getMyDayWeight() async => await _toDoService.getMyDayWeight();
+
+  Future<void> setMyDayWeight() async => myDayWeight = await getMyDayWeight();
 
   Future<void> recalculateWeight() async {
     _toDoService.recalculateWeight(toDo: curToDo!);
-    updateToDo();
+    await updateToDo();
   }
 
   Future<void> recalculateRealDuration() async {
     _toDoService.setRealDuration(toDo: curToDo!);
-    updateToDo();
+    await updateToDo();
   }
 
   Future<void> _syncRepo() async {
@@ -145,7 +152,8 @@ class ToDoProvider extends ChangeNotifier {
                 second: 0,
                 millisecond: 0,
                 microsecond: 0);
-    dueDate = dueDate ?? startDate.copyWith();
+    dueDate = dueDate?.copyWith(second: 0, microsecond: 0, millisecond: 0) ??
+        startDate.copyWith();
 
     if (startDate.isAfter(dueDate)) {
       dueDate = startDate.copyWith(minute: startDate.minute + 15);
@@ -172,15 +180,11 @@ class ToDoProvider extends ChangeNotifier {
         lastUpdated: DateTime.now());
 
     if (repeatable ?? false) {
-      curToDo!.repeatID = curToDo.hashCode;
+      curToDo!.repeatID = Constants.generateID();
     }
-    // Work on refactoring this out.
-    curToDo!.localID = curToDo.hashCode;
 
     try {
-      // TODO: Refactor db to return the object, or:
-      // THE ID.
-      await _toDoService.createToDo(toDo: curToDo!);
+      curToDo = await _toDoService.createToDo(toDo: curToDo!);
     } on FailureToCreateException catch (e) {
       log(e.cause);
       return Future.error(e);
@@ -193,19 +197,20 @@ class ToDoProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> updateToDo() async {
-    await updateToDoAsync();
+  Future<void> updateToDo({ToDo? toDo}) async {
+    await updateToDoAsync(toDo: toDo ?? curToDo!);
     notifyListeners();
   }
 
-  Future<void> updateToDoAsync() async {
-    curToDo!.lastUpdated = DateTime.now();
-    if (curToDo!.repeatable && null == curToDo!.repeatID) {
-      curToDo!.repeatID = curToDo!.hashCode;
+  Future<void> updateToDoAsync({ToDo? toDo}) async {
+    toDo = toDo ?? curToDo!;
+    toDo.lastUpdated = DateTime.now();
+    if (toDo.repeatable && null == toDo.repeatID) {
+      toDo.repeatID = Constants.generateID();
     }
 
     try {
-      return await _toDoService.updateToDo(toDo: curToDo!);
+      curToDo = await _toDoService.updateToDo(toDo: toDo);
     } on FailureToUploadException catch (e) {
       log(e.cause);
       return Future.error(e);
@@ -221,7 +226,7 @@ class ToDoProvider extends ChangeNotifier {
       toDo.lastUpdated = DateTime.now();
     }
     try {
-      _toDoService.updateBatch(toDos: toDos);
+      await _toDoService.updateBatch(toDos: toDos);
     } on FailureToUploadException catch (e) {
       log(e.cause);
       return Future.error(e);
@@ -233,11 +238,16 @@ class ToDoProvider extends ChangeNotifier {
   }
 
   Future<void> deleteToDo({ToDo? toDo}) async {
+    toDo = toDo ?? curToDo!;
     try {
-      await _toDoService.deleteToDo(toDo: toDo ?? curToDo!);
+      await _toDoService.deleteToDo(toDo: toDo);
     } on FailureToDeleteException catch (e) {
       log(e.cause);
       return Future.error(e);
+    }
+
+    if (curToDo == toDo) {
+      curToDo = null;
     }
     notifyListeners();
   }
@@ -321,22 +331,7 @@ class ToDoProvider extends ChangeNotifier {
       await _toDoService.getToDoByID(id: id);
 
   Future<void> setToDoByID({required int id}) async =>
-      curToDo = await _toDoService.getToDoByID(id: id) ??
-          ToDo(
-              taskType: TaskType.small,
-              name: '',
-              expectedDuration: 0,
-              realDuration: 0,
-              startDate: DateTime.now().copyWith(
-                  hour: Constants.midnight.hour,
-                  minute: Constants.midnight.minute),
-              dueDate: DateTime.now().copyWith(
-                  hour: Constants.midnight.hour,
-                  minute: Constants.midnight.minute),
-              repeatDays: List.filled(7, false),
-              subTasks:
-                  List.filled(Constants.numTasks[TaskType.small]!, SubTask()),
-              lastUpdated: DateTime.now());
+      curToDo = await _toDoService.getToDoByID(id: id);
 
   Future<List<ToDo>> getToDos({int limit = 50, int offset = 0}) async =>
       await _toDoService.getToDos(limit: limit, offset: offset);

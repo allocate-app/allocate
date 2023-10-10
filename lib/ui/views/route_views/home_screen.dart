@@ -47,15 +47,8 @@ class _HomeScreen extends State<HomeScreen> {
 
   late final ScrollPhysics scrollPhysics;
 
-  // TODO: refactor this into two integers with a getter.
-  void updateDayWeight() async {
-    await toDoProvider.getMyDayWeight().then((weight) {
-      setState(() {
-        weight += routineProvider.routineWeight;
-        userProvider.myDayTotal = weight;
-      });
-    });
-  }
+  int get myDayTotal =>
+      toDoProvider.myDayWeight + routineProvider.routineWeight;
 
   @override
   void initState() {
@@ -63,7 +56,6 @@ class _HomeScreen extends State<HomeScreen> {
     initializeProviders();
     initializeParams();
     initializeControllers();
-    updateDayWeight();
   }
 
   void initializeProviders() {
@@ -77,6 +69,7 @@ class _HomeScreen extends State<HomeScreen> {
     toDoProvider.addListener(rebuildToDo);
     routineProvider.addListener(rebuildRoutine);
     groupProvider.addListener(rebuildGroup);
+    resetProviders();
   }
 
   void resetProviders() {
@@ -104,14 +97,12 @@ class _HomeScreen extends State<HomeScreen> {
 
   void rebuildRoutine() {
     routineProvider.rebuild = true;
-    // TODO: Refactor this to only affect routine weight;
-    updateDayWeight();
   }
 
   void rebuildToDo() {
     toDoProvider.rebuild = true;
-    // TODO: Refactor this to only affect toDo weight;
-    updateDayWeight();
+    // These are asynchronous, but can happen in the background - navGroups calls setState
+    toDoProvider.setMyDayWeight();
     resetNavGroups();
   }
 
@@ -151,11 +142,11 @@ class _HomeScreen extends State<HomeScreen> {
     super.dispose();
   }
 
+  // TODO: Refactor this to the const widget
   Widget buildDrainBar({required BuildContext context}) {
     int maxBandwidth =
         userProvider.curUser?.bandwidth ?? Constants.maxBandwidth;
-    double offset =
-        userProvider.myDayTotal.toDouble() / maxBandwidth.toDouble();
+    double offset = myDayTotal.toDouble() / maxBandwidth.toDouble();
     return Transform.scale(
       scale: 0.75,
       child: ConstrainedBox(
@@ -256,9 +247,10 @@ class _HomeScreen extends State<HomeScreen> {
     return NavigationDrawer(
         onDestinationSelected: (index) {
           setState(() {
-            selectedPageIndex = index;
             resetProviders();
+            selectedPageIndex = index;
           });
+
           if (!largeScreen) {
             Navigator.pop(context);
           }
@@ -284,20 +276,23 @@ class _HomeScreen extends State<HomeScreen> {
                           .instance.supabaseClient.auth.currentSession)
                   ? const Text("Online")
                   : const Text("Offline"),
-              onTap: () => setState(() {
-                selectedPageIndex =
-                    Constants.viewRoutes.indexOf(Constants.settingsScreen);
-                resetProviders();
+              onTap: () {
+                setState(() {
+                  resetProviders();
+                  selectedPageIndex =
+                      Constants.viewRoutes.indexOf(Constants.settingsScreen);
+                });
                 if (!largeScreen) {
                   Navigator.pop(context);
                 }
-              }),
+              },
+              // TODO: refactor this to search anchor
               trailing: IconButton(
                 icon: const Icon(Icons.search_outlined),
                 selectedIcon: const Icon(Icons.search),
                 onPressed: () {
                   Flushbar? alert;
-                  alert = Flushbars.createAlert(
+                  alert = Flushbars.createError(
                     context: context,
                     message: "Feature not implemented yet, coming soon!",
                     dismissCallback: () => alert?.dismiss(),
@@ -352,14 +347,16 @@ class _HomeScreen extends State<HomeScreen> {
                       overflow: TextOverflow.ellipsis,
                       softWrap: false,
                     ),
-                    onTap: () => setState(() {
-                          resetProviders();
-                          selectedPageIndex = Constants.viewRoutes
-                              .indexOf(Constants.groupScreen);
-                          if (!largeScreen) {
-                            Navigator.pop(context);
-                          }
-                        })),
+                    onTap: () {
+                      setState(() {
+                        resetProviders();
+                        selectedPageIndex =
+                            Constants.viewRoutes.indexOf(Constants.groupScreen);
+                      });
+                      if (!largeScreen) {
+                        Navigator.pop(context);
+                      }
+                    }),
 
                 ListTile(
                     contentPadding: const EdgeInsets.symmetric(
@@ -380,21 +377,21 @@ class _HomeScreen extends State<HomeScreen> {
                           useRootNavigator: false,
                           context: context,
                           builder: (BuildContext context) =>
-                              const CreateGroupScreen()).whenComplete(() {
-                        resetNavGroups();
-                      });
+                              const CreateGroupScreen());
                     }),
 
-                buildNavGroupTile(),
+                buildNavGroupTile(physics: scrollPhysics),
               ],
             ),
           )
         ]);
   }
 
-  ListView buildNavGroupTile() {
+  ListView buildNavGroupTile(
+      {ScrollPhysics physics = const NeverScrollableScrollPhysics()}) {
     return ListView(
-        physics: const NeverScrollableScrollPhysics(),
+        physics: physics,
+        controller: navScrollController,
         shrinkWrap: true,
         children: [
           Consumer<GroupProvider>(builder:
@@ -402,7 +399,6 @@ class _HomeScreen extends State<HomeScreen> {
             return ListView.builder(
                 padding: EdgeInsets.zero,
                 shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
                 itemCount: value.recentGroups.length,
                 itemBuilder: (BuildContext context, int index) {
                   return ListTile(
@@ -426,14 +422,11 @@ class _HomeScreen extends State<HomeScreen> {
                             useRootNavigator: false,
                             context: context,
                             builder: (BuildContext context) =>
-                                const UpdateGroupScreen()).whenComplete(() {
-                          setState(() =>
-                              value.recentGroups[index] = value.curGroup!);
-                        });
+                                const UpdateGroupScreen());
                       },
-                      trailing: (value.recentGroups[index].toDos!.isNotEmpty)
+                      trailing: (value.recentGroups[index].toDos.isNotEmpty)
                           ? AutoSizeText(
-                              "${value.recentGroups[index].toDos!.length}",
+                              "${value.recentGroups[index].toDos.length}",
                               maxLines: 1,
                               overflow: TextOverflow.visible,
                               softWrap: false,

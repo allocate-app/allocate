@@ -18,12 +18,11 @@ class ToDoRepo implements ToDoRepository {
   final Isar _isarClient = IsarService.instance.isarClient;
 
   @override
-  Future<void> create(ToDo toDo) async {
+  Future<ToDo> create(ToDo toDo) async {
     toDo.isSynced = (null != _supabaseClient.auth.currentSession);
 
     late int? id;
     await _isarClient.writeTxn(() async {
-      //This will require to be corrected once db is generated.
       id = await _isarClient.toDos.put(toDo);
     });
 
@@ -48,10 +47,12 @@ class ToDoRepo implements ToDoRepository {
             "Supabase Open: ${null != _supabaseClient.auth.currentSession}");
       }
     }
+
+    return toDo;
   }
 
   @override
-  Future<void> update(ToDo toDo) async {
+  Future<ToDo> update(ToDo toDo) async {
     toDo.isSynced = (null != _supabaseClient.auth.currentSession);
 
     // This is just for error checking.
@@ -80,6 +81,7 @@ class ToDoRepo implements ToDoRepository {
             "Supabase Open: ${null != _supabaseClient.auth.currentSession}");
       }
     }
+    return toDo;
   }
 
   @override
@@ -610,6 +612,8 @@ class ToDoRepo implements ToDoRepository {
       await _isarClient.toDos
           .where()
           .dueDateGreaterThan(Constants.today)
+          .filter()
+          .toDeleteEqualTo(false)
           .sortByDueDate()
           .thenByLastUpdated()
           .offset(offset)
@@ -621,6 +625,8 @@ class ToDoRepo implements ToDoRepository {
       await _isarClient.toDos
           .where()
           .dueDateLessThan(Constants.today)
+          .filter()
+          .toDeleteEqualTo(false)
           .sortByDueDateDesc()
           .thenByLastUpdated()
           .offset(offset)

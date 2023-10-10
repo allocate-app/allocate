@@ -53,7 +53,7 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
   late final ScrollPhysics scrollPhysics;
 
   // For Task search.
-  late final SearchController searchController;
+  late final SearchController toDoSearchController;
 
   // Name
   late final TextEditingController nameEditingController;
@@ -69,7 +69,7 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
   late Group prevGroup;
 
   // Convenience getter.
-  List<ToDo> get toDos => groupProvider.curGroup!.toDos!;
+  List<ToDo> get toDos => groupProvider.curGroup!.toDos;
 
   set toDos(List<ToDo> newToDos) => groupProvider.curGroup!.toDos = newToDos;
 
@@ -80,7 +80,7 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
     initializeParameters();
     initializeControllers();
     resetPagination().whenComplete(() {
-      prevGroup.toDos = List.from(group.toDos!);
+      prevGroup.toDos = List.from(group.toDos);
     });
     prevGroup = group.copy();
     prevGroup.id = group.id;
@@ -105,13 +105,12 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
   }
 
   void initializeControllers() {
-    searchController = SearchController();
     toDosScrollController = ScrollController();
     subScrollControllerLeft = ScrollController();
     subScrollControllerRight = ScrollController();
 
+    // TODO: refactor this -> should be a button.
     toDosScrollController.addListener(() async {
-      // Bottom: Run the query.
       if (toDosScrollController.offset >=
               toDosScrollController.position.maxScrollExtent &&
           !allData) {
@@ -139,6 +138,11 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
       SemanticsService.announce(newText, Directionality.of(context));
       group.description = newText;
     });
+    toDoSearchController = SearchController();
+    toDoSearchController.addListener(() {
+      String newText = toDoSearchController.text;
+      SemanticsService.announce(newText, Directionality.of(context));
+    });
   }
 
   @override
@@ -148,6 +152,7 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
     toDosScrollController.dispose();
     subScrollControllerLeft.dispose();
     subScrollControllerRight.dispose();
+    toDoSearchController.dispose();
     toDoProvider.removeListener(resetPagination);
     super.dispose();
   }
@@ -184,7 +189,7 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
   Future<List<ToDo>> fetchData() async {
     setState(() => loading = true);
     return await groupProvider
-        .getToDosByGroupID(id: group.localID, limit: limit, offset: offset)
+        .getToDosByGroupID(id: group.id, limit: limit, offset: offset)
         .catchError(
       (e) {
         Flushbar? error;
@@ -221,10 +226,10 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
   }
 
   Future<void> handleHistorySelection({
-    required MapEntry<String, int> data,
+    required int id,
   }) async {
     toDoProvider.curToDo =
-        await toDoProvider.getToDoByID(id: data.value).catchError((_) {
+        await toDoProvider.getToDoByID(id: id).catchError((_) {
       Flushbar? error;
 
       error = Flushbars.createError(
@@ -238,7 +243,7 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
     });
     // TODO: refactor this more cleanly in provider.
     if (null != toDoProvider.curToDo) {
-      toDoProvider.curToDo!.groupID = group.localID;
+      toDoProvider.curToDo!.groupID = group.id;
       await toDoProvider.updateToDo();
     }
   }
@@ -260,21 +265,21 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
 
     // TODO: refactor this more cleanly in provider.
     if (null != toDoProvider.curToDo) {
-      toDoProvider.curToDo!.groupID = group.localID;
+      toDoProvider.curToDo!.groupID = group.id;
       await toDoProvider.updateToDo();
     }
   }
 
   Future<void> handleClose({required bool willDiscard}) async {
     if (willDiscard) {
-      for (ToDo toDo in prevGroup.toDos!) {
+      for (ToDo toDo in prevGroup.toDos) {
         toDos.remove(toDo);
-        toDo.groupID = prevGroup.localID;
+        toDo.groupID = prevGroup.id;
       }
 
       for (ToDo toDo in toDos) {
         toDo.groupID = null;
-        prevGroup.toDos!.add(toDo);
+        prevGroup.toDos.add(toDo);
       }
 
       groupProvider.curGroup = prevGroup;
@@ -310,8 +315,7 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
         context: context,
         builder: (BuildContext context) => CreateToDoScreen(
               initialGroup: MapEntry<String, int>(
-                  (group.name.isNotEmpty) ? group.name : "New Group",
-                  group.localID!),
+                  (group.name.isNotEmpty) ? group.name : "New Group", group.id),
             )).catchError((e) {
       Flushbar? error;
 
@@ -359,8 +363,7 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
         context: context,
         builder: (BuildContext context) => UpdateToDoScreen(
               initialGroup: MapEntry<String, int>(
-                  (group.name.isNotEmpty) ? group.name : "New Group",
-                  group.localID!),
+                  (group.name.isNotEmpty) ? group.name : "New Group", group.id),
             )).catchError((e) {
       Flushbar? error;
 
@@ -386,7 +389,7 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
 
   Future<void> handleUpdate() async {
     await groupProvider.updateGroup().whenComplete(() async {
-      int? groupID = groupProvider.curGroup!.localID;
+      int? groupID = groupProvider.curGroup!.id;
 
       for (int i = 0; i < toDos.length; i++) {
         toDos[i].groupID = groupID;
@@ -629,13 +632,13 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
           onTap: updateToDo,
         ),
         // TODO: refactor this to take a persistent history object.
-        SearchRecents<ToDo>(
+        SearchRecentsBar<ToDo>(
           clearOnSelection: true,
           hintText: "Search Tasks",
           padding: const EdgeInsets.all(Constants.padding),
           handleDataSelection: handleToDoSelection,
           handleHistorySelection: handleHistorySelection,
-          searchController: searchController,
+          searchController: toDoSearchController,
           mostRecent: toDoProvider.mostRecent,
           search: toDoProvider.searchToDos,
         ),

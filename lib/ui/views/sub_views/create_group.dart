@@ -53,7 +53,7 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
   late final ScrollPhysics scrollPhysics;
 
   // For Task search.
-  late final SearchController searchController;
+  late final SearchController toDoSearchController;
 
   // Name
   late String name;
@@ -96,7 +96,6 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
   }
 
   void initializeControllers() {
-    searchController = SearchController();
     toDosScrollController = ScrollController();
     subScrollControllerLeft = ScrollController();
     subScrollControllerRight = ScrollController();
@@ -130,6 +129,12 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
       SemanticsService.announce(newText, Directionality.of(context));
       description = newText;
     });
+
+    toDoSearchController = SearchController();
+    toDoSearchController.addListener(() {
+      String newText = toDoSearchController.text;
+      SemanticsService.announce(newText, Directionality.of(context));
+    });
   }
 
   @override
@@ -137,6 +142,7 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
     nameEditingController.dispose();
     descriptionEditingController.dispose();
     toDosScrollController.dispose();
+    toDoSearchController.dispose();
     subScrollControllerLeft.dispose();
     subScrollControllerRight.dispose();
     toDoProvider.removeListener(resetPagination);
@@ -208,9 +214,7 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
     await groupProvider
         .createGroup(name: name, description: description)
         .whenComplete(() async {
-      int? groupID = groupProvider.curGroup!.localID;
-
-      print(groupID);
+      int? groupID = groupProvider.curGroup!.id;
 
       for (int i = 0; i < toDos.length; i++) {
         toDos[i].groupID = groupID;
@@ -246,10 +250,10 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
   }
 
   Future<void> handleHistorySelection({
-    required MapEntry<String, int> data,
+    required int id,
   }) async {
     toDoProvider.curToDo =
-        await toDoProvider.getToDoByID(id: data.value).catchError((_) {
+        await toDoProvider.getToDoByID(id: id).catchError((_) {
       Flushbar? error;
 
       error = Flushbars.createError(
@@ -606,13 +610,13 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
           onTap: updateToDo,
         ),
         // TODO: refactor this to take a persistent history object.
-        SearchRecents<ToDo>(
+        SearchRecentsBar<ToDo>(
           clearOnSelection: true,
           hintText: "Search Tasks",
           padding: const EdgeInsets.all(Constants.padding),
           handleDataSelection: handleToDoSelection,
           handleHistorySelection: handleHistorySelection,
-          searchController: searchController,
+          searchController: toDoSearchController,
           mostRecent: toDoProvider.mostRecent,
           search: toDoProvider.searchToDos,
         ),

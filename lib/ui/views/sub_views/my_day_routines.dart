@@ -1,4 +1,4 @@
-//TODO: Finish -> Needs Three ExpansionTiles & possibly a numerical weight.
+//TODO: Refactor using Custom tiles -> Expansion + Search.
 import 'package:another_flushbar/flushbar.dart';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
@@ -121,7 +121,7 @@ class _MyDayRoutines extends State<MyDayRoutines> {
     });
     await setRoutine(routine: routine, timeOfDay: timeOfDay).whenComplete(() {
       setState(() {
-        searchHistory.insert(0, MapEntry(routine.name, routine.localID!));
+        searchHistory.insert(0, MapEntry(routine.name, routine.id));
       });
     });
   }

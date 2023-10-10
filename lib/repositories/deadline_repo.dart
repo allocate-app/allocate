@@ -1,10 +1,8 @@
 import 'package:isar/isar.dart';
-import 'package:jiffy/jiffy.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../model/task/deadline.dart';
 import '../services/isar_service.dart';
-import '../services/notification_service.dart';
 import '../services/supabase_service.dart';
 import '../util/constants.dart';
 import '../util/enums.dart';
@@ -19,7 +17,7 @@ class DeadlineRepo implements DeadlineRepository {
   final Isar _isarClient = IsarService.instance.isarClient;
 
   @override
-  Future<void> create(Deadline deadline) async {
+  Future<Deadline> create(Deadline deadline) async {
     deadline.isSynced = (null != _supabaseClient.auth.currentSession);
     late int? id;
 
@@ -48,10 +46,11 @@ class DeadlineRepo implements DeadlineRepository {
             "Supabase Open: ${null != _supabaseClient.auth.currentSession}");
       }
     }
+    return deadline;
   }
 
   @override
-  Future<void> update(Deadline deadline) async {
+  Future<Deadline> update(Deadline deadline) async {
     deadline.isSynced = (null != _supabaseClient.auth.currentSession);
 
     late int? id;
@@ -65,8 +64,6 @@ class DeadlineRepo implements DeadlineRepository {
           "Time: $Constants.today\n"
           "Isar Open: ${_isarClient.isOpen}");
     }
-
-    deadline.id = id!;
 
     if (null != _supabaseClient.auth.currentSession) {
       Map<String, dynamic> deadlineEntity = deadline.toEntity();
@@ -84,6 +81,7 @@ class DeadlineRepo implements DeadlineRepository {
             "Supabase Open: ${null != _supabaseClient.auth.currentSession}");
       }
     }
+    return deadline;
   }
 
   @override
@@ -238,34 +236,7 @@ class DeadlineRepo implements DeadlineRepository {
         for (Deadline deadline in deadlines) {
           _isarClient.deadlines.put(deadline);
         }
-        // This is 100% not an ideal solution.
-        // On every sync, notifications are cancelled and then re-scheduled.
-        // FUTURE TODO: Reconsider using FCM instead. Local Linux and Windows
-        // will require a future solution.
-        resetNotifications();
       });
-    });
-  }
-
-  // FUTURE TODO: Refactor this up to the provider class - > Or make implentation agnostic for the service.
-  // OR: Send a dynamic object to Notification service.
-  Future<void> resetNotifications() async {
-    await NotificationService.instance
-        .cancelAllNotifications()
-        .whenComplete(() async {
-      final List<Deadline> toSchedule = await grabWarnMes();
-      for (Deadline deadline in toSchedule) {
-        String newDue = Jiffy.parseFromDateTime(deadline.dueDate)
-            .toLocal()
-            .yMMMMEEEEdjm
-            .toString();
-
-        NotificationService.instance.scheduleNotification(
-            id: deadline.notificationID!,
-            warnDate: deadline.warnDate,
-            message: "${deadline.name} is due: $newDue",
-            payload: "DEADLINE\n${deadline.notificationID}");
-      }
     });
   }
 
@@ -286,19 +257,15 @@ class DeadlineRepo implements DeadlineRepository {
           .limit(limit)
           .findAll();
 
-  // TODO: May not be used.
-  // The only need for this is to grab by notificationID for push notifications.
   @override
   Future<Deadline?> getByID({required int id}) async =>
-      await _isarClient.deadlines.where().notificationIDEqualTo(id).findFirst();
+      await _isarClient.deadlines.where().idEqualTo(id).findFirst();
 
   @override
   Future<List<Deadline>> getRepoList({int limit = 50, int offset = 0}) =>
       _isarClient.deadlines
           .where()
           .toDeleteEqualTo(false)
-          .filter()
-          .dueDateGreaterThan(Constants.yesterday)
           .sortByCustomViewIndex()
           .thenByLastUpdated()
           .offset(offset)
@@ -316,8 +283,6 @@ class DeadlineRepo implements DeadlineRepository {
           return _isarClient.deadlines
               .where()
               .toDeleteEqualTo(false)
-              .filter()
-              .dueDateGreaterThan(Constants.yesterday)
               .sortByNameDesc()
               .thenByLastUpdated()
               .offset(offset)
@@ -327,8 +292,6 @@ class DeadlineRepo implements DeadlineRepository {
           return _isarClient.deadlines
               .where()
               .toDeleteEqualTo(false)
-              .filter()
-              .dueDateGreaterThan(Constants.yesterday)
               .sortByName()
               .thenByLastUpdated()
               .offset(offset)
@@ -340,8 +303,6 @@ class DeadlineRepo implements DeadlineRepository {
           return _isarClient.deadlines
               .where()
               .toDeleteEqualTo(false)
-              .filter()
-              .dueDateGreaterThan(Constants.yesterday)
               .sortByPriorityDesc()
               .thenByLastUpdated()
               .offset(offset)
@@ -351,8 +312,6 @@ class DeadlineRepo implements DeadlineRepository {
           return _isarClient.deadlines
               .where()
               .toDeleteEqualTo(false)
-              .filter()
-              .dueDateGreaterThan(Constants.yesterday)
               .sortByPriority()
               .thenByLastUpdated()
               .offset(offset)
@@ -364,8 +323,6 @@ class DeadlineRepo implements DeadlineRepository {
           return _isarClient.deadlines
               .where()
               .toDeleteEqualTo(false)
-              .filter()
-              .dueDateGreaterThan(Constants.yesterday)
               .sortByDueDateDesc()
               .thenByLastUpdated()
               .offset(offset)
@@ -375,8 +332,6 @@ class DeadlineRepo implements DeadlineRepository {
           return _isarClient.deadlines
               .where()
               .toDeleteEqualTo(false)
-              .filter()
-              .dueDateGreaterThan(Constants.yesterday)
               .sortByDueDate()
               .thenByLastUpdated()
               .offset(offset)
@@ -389,13 +344,13 @@ class DeadlineRepo implements DeadlineRepository {
   }
 
   @override
-  Future<List<Deadline>> grabWarnMes({DateTime? now, int limit = 10}) async =>
+  Future<List<Deadline>> getWarnMes({DateTime? now, int limit = 10}) async =>
       _isarClient.deadlines
           .where()
           .warnMeEqualTo(true)
           .filter()
+          .toDeleteEqualTo(false)
           .dueDateGreaterThan(now ?? Constants.today)
-          // IOS has a hard limit of 64 notificiations.
           .sortByDueDate()
           .limit(limit)
           .findAll();
@@ -436,6 +391,8 @@ class DeadlineRepo implements DeadlineRepository {
       _isarClient.deadlines
           .where()
           .dueDateGreaterThan(Constants.today)
+          .filter()
+          .toDeleteEqualTo(false)
           .sortByDueDate()
           .thenByLastUpdated()
           .offset(offset)
@@ -447,6 +404,8 @@ class DeadlineRepo implements DeadlineRepository {
       _isarClient.deadlines
           .where()
           .dueDateLessThan(Constants.today)
+          .filter()
+          .toDeleteEqualTo(false)
           .sortByDueDateDesc()
           .thenByLastUpdated()
           .offset(offset)

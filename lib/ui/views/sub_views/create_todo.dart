@@ -42,9 +42,8 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
   late final GroupProvider groupProvider;
 
   // Scrolling
-  late final ScrollController mainScrollController;
-  late final ScrollController subScrollControllerLeft;
-  late final ScrollController subScrollControllerRight;
+  late final ScrollController mobileScrollController;
+  late final ScrollController desktopScrollController;
   late final ScrollPhysics scrollPhysics;
 
   // Param fields.
@@ -105,7 +104,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
 
     initializeParameters();
 
-    initializeControllers().whenComplete(() {});
+    initializeControllers();
   }
 
   void initializeParameters() {
@@ -140,10 +139,10 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
     groupID = widget.initialGroup?.value;
   }
 
-  Future<void> initializeControllers() async {
-    mainScrollController = ScrollController();
-    subScrollControllerLeft = ScrollController();
-    subScrollControllerRight = ScrollController();
+  void initializeControllers() async {
+    mobileScrollController = ScrollController();
+    desktopScrollController = ScrollController();
+
     scrollPhysics =
         const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics());
     nameEditingController = TextEditingController();
@@ -160,7 +159,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
         .copyWith(text: widget.initialGroup?.key ?? "");
 
     groupEditingController.addListener(() {
-      String newText = nameEditingController.text;
+      String newText = groupEditingController.text;
       SemanticsService.announce(newText, Directionality.of(context));
     });
 
@@ -208,6 +207,8 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
     for (TextEditingController controller in subTaskEditingController) {
       controller.dispose();
     }
+    mobileScrollController.dispose();
+    desktopScrollController.dispose();
     super.dispose();
   }
 
@@ -219,11 +220,11 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
   }
 
   void handleHistorySelection({
-    required MapEntry<String, int> data,
+    required int id,
   }) {
     setState(() {
       checkClose = true;
-      groupID = data.value;
+      groupID = id;
     });
   }
 
@@ -506,226 +507,243 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
   }) {
     return Dialog(
       insetPadding: const EdgeInsets.all(Constants.outerDialogPadding),
-      child: ConstrainedBox(
-        constraints:
-            const BoxConstraints(maxHeight: Constants.maxLandscapeDialogHeight),
-        child: Padding(
-          padding: const EdgeInsets.all(Constants.padding),
-          child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Title && Close Button
-                TitleBar(
-                  currentContext: context,
-                  title: "New Task",
-                  centerWidget: (expectedDuration > 0)
-                      ? TitleBar.toDoCenterWidget(
-                          expectedDuration: expectedDuration,
-                          realDuration: realDuration)
-                      : null,
-                  checkClose: checkClose,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: Constants.padding),
-                  handleClose: handleClose,
-                ),
-                const PaddedDivider(padding: Constants.padding),
-                Expanded(
-                  child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Flexible(
-                          child: ListView(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: Constants.padding),
-                              shrinkWrap: true,
-                              controller: subScrollControllerLeft,
-                              physics: scrollPhysics,
-                              children: [
-                                Tiles.nameTile(
-                                    context: context,
-                                    leading: buildCheckbox(
-                                        scale: Constants.largeCheckboxScale),
-                                    hintText: "Task Name",
-                                    errorText: nameErrorText,
-                                    controller: nameEditingController,
-                                    outerPadding: const EdgeInsets.symmetric(
-                                        horizontal: Constants.padding),
-                                    textFieldPadding: const EdgeInsets.only(
-                                      left: Constants.halfPadding,
-                                    ),
-                                    handleClear: clearNameField),
-                                Tiles.weightTile(
-                                  outerPadding: const EdgeInsets.all(
-                                      Constants.innerPadding),
-                                  batteryPadding: const EdgeInsets.symmetric(
-                                      horizontal: Constants.innerPadding),
-                                  constraints:
-                                      const BoxConstraints(maxWidth: 200),
-                                  weight: (taskType == TaskType.small)
-                                      ? weight.toDouble()
-                                      : sumWeight.toDouble(),
-                                  max: (taskType == TaskType.small)
-                                      ? Constants.maxTaskWeight.toDouble()
-                                      : Constants.maxWeight.toDouble(),
-                                  slider: (taskType == TaskType.small)
-                                      ? Tiles.weightSlider(
-                                          weight: (taskType == TaskType.small)
-                                              ? weight.toDouble()
-                                              : sumWeight.toDouble(),
-                                          handleWeightChange:
-                                              handleWeightChange,
-                                        )
-                                      : null,
-                                ),
-
-                                const PaddedDivider(padding: Constants.padding),
-                                // My Day
-                                Tiles.myDayTile(
-                                    myDay: myDay,
-                                    canAdd: (userProvider.myDayTotal + weight <=
-                                        (userProvider.curUser?.bandwidth ??
-                                            Constants.maxBandwidth)),
-                                    toggleMyDay: toggleMyDay),
-
-                                const PaddedDivider(padding: Constants.padding),
-                                // Priority
-                                Tiles.priorityTile(
-                                  context: context,
-                                  outerPadding: const EdgeInsets.symmetric(
+      child: Padding(
+        padding: const EdgeInsets.all(Constants.padding),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          // Title && Close Button
+          TitleBar(
+            currentContext: context,
+            title: "New Task",
+            centerWidget: (expectedDuration > 0)
+                ? TitleBar.toDoCenterWidget(
+                    expectedDuration: expectedDuration,
+                    realDuration: realDuration)
+                : null,
+            checkClose: checkClose,
+            padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
+            handleClose: handleClose,
+          ),
+          const PaddedDivider(padding: Constants.padding),
+          Flexible(
+            child: Scrollbar(
+              thumbVisibility: true,
+              controller: desktopScrollController,
+              child: ListView(
+                  shrinkWrap: true,
+                  controller: desktopScrollController,
+                  physics: scrollPhysics,
+                  children: [
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(
+                          maxHeight: Constants.maxLandscapeDialogHeight),
+                      child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Flexible(
+                              child: ListView(
+                                  padding: const EdgeInsets.symmetric(
                                       horizontal: Constants.padding),
-                                  priority: priority,
-                                  onSelectionChanged: changePriority,
-                                ),
-                                const Padding(
-                                  padding: EdgeInsets.symmetric(
-                                      vertical: Constants.padding),
-                                  child:
-                                      PaddedDivider(padding: Constants.padding),
-                                ),
-                                // Expected Duration / RealDuration -> Show status, on click, open a dialog.
-                                Tiles.durationTile(
-                                  expectedDuration: expectedDuration,
-                                  context: context,
-                                  realDuration: realDuration,
-                                  outerPadding: const EdgeInsets.symmetric(
-                                      horizontal: Constants.padding),
-                                  handleClear: clearDuration,
-                                  handleUpdate: updateDuration,
-                                ),
-
-                                const PaddedDivider(padding: Constants.padding),
-                                // DateTime -> Show status, on click, open a dialog.
-                                //startDate
-                                Tiles.dateRangeTile(
-                                  context: context,
-                                  outerPadding: const EdgeInsets.symmetric(
-                                      horizontal: Constants.padding),
-                                  startDate: startDate,
-                                  dueDate: dueDate,
-                                  handleClear: clearDates,
-                                  handleUpdate: updateDates,
-                                ),
-                                const PaddedDivider(padding: Constants.padding),
-                                // Time
-
-                                (showTimeTile)
-                                    ? Tiles.timeTile(
+                                  shrinkWrap: true,
+                                  physics: const NeverScrollableScrollPhysics(),
+                                  children: [
+                                    Tiles.nameTile(
+                                        context: context,
+                                        leading: buildCheckbox(
+                                            scale:
+                                                Constants.largeCheckboxScale),
+                                        hintText: "Task Name",
+                                        errorText: nameErrorText,
+                                        controller: nameEditingController,
                                         outerPadding:
                                             const EdgeInsets.symmetric(
                                                 horizontal: Constants.padding),
-                                        startTime: startTime,
-                                        dueTime: dueTime,
-                                        context: context,
-                                        handleClear: clearTimes,
-                                        handleUpdate: updateTimes,
+                                        textFieldPadding: const EdgeInsets.only(
+                                          left: Constants.halfPadding,
+                                        ),
+                                        handleClear: clearNameField),
+                                    Tiles.weightTile(
+                                      outerPadding: const EdgeInsets.all(
+                                          Constants.innerPadding),
+                                      batteryPadding:
+                                          const EdgeInsets.symmetric(
+                                              horizontal:
+                                                  Constants.innerPadding),
+                                      constraints:
+                                          const BoxConstraints(maxWidth: 200),
+                                      weight: (taskType == TaskType.small)
+                                          ? weight.toDouble()
+                                          : sumWeight.toDouble(),
+                                      max: (taskType == TaskType.small)
+                                          ? Constants.maxTaskWeight.toDouble()
+                                          : Constants.maxWeight.toDouble(),
+                                      slider: (taskType == TaskType.small)
+                                          ? Tiles.weightSlider(
+                                              weight:
+                                                  (taskType == TaskType.small)
+                                                      ? weight.toDouble()
+                                                      : sumWeight.toDouble(),
+                                              handleWeightChange:
+                                                  handleWeightChange,
+                                            )
+                                          : null,
+                                    ),
+
+                                    const PaddedDivider(
+                                        padding: Constants.padding),
+                                    // My Day
+                                    Tiles.myDayTile(
+                                        myDay: myDay,
+                                        canAdd: (userProvider.myDayTotal +
+                                                weight <=
+                                            (userProvider.curUser?.bandwidth ??
+                                                Constants.maxBandwidth)),
+                                        toggleMyDay: toggleMyDay),
+
+                                    const PaddedDivider(
+                                        padding: Constants.padding),
+                                    // Priority
+                                    Tiles.priorityTile(
+                                      context: context,
+                                      outerPadding: const EdgeInsets.symmetric(
+                                          horizontal: Constants.padding),
+                                      priority: priority,
+                                      onSelectionChanged: changePriority,
+                                    ),
+                                    const Padding(
+                                      padding: EdgeInsets.symmetric(
+                                          vertical: Constants.padding),
+                                      child: PaddedDivider(
+                                          padding: Constants.padding),
+                                    ),
+                                    // Expected Duration / RealDuration -> Show status, on click, open a dialog.
+                                    Tiles.durationTile(
+                                      expectedDuration: expectedDuration,
+                                      context: context,
+                                      realDuration: realDuration,
+                                      outerPadding: const EdgeInsets.symmetric(
+                                          horizontal: Constants.padding),
+                                      handleClear: clearDuration,
+                                      handleUpdate: updateDuration,
+                                    ),
+
+                                    const PaddedDivider(
+                                        padding: Constants.padding),
+                                    // DateTime -> Show status, on click, open a dialog.
+                                    //startDate
+                                    Tiles.dateRangeTile(
+                                      context: context,
+                                      outerPadding: const EdgeInsets.symmetric(
+                                          horizontal: Constants.padding),
+                                      startDate: startDate,
+                                      dueDate: dueDate,
+                                      handleClear: clearDates,
+                                      handleUpdate: updateDates,
+                                    ),
+                                    const PaddedDivider(
+                                        padding: Constants.padding),
+                                    // Time
+
+                                    (showTimeTile)
+                                        ? Tiles.timeTile(
+                                            outerPadding:
+                                                const EdgeInsets.symmetric(
+                                                    horizontal:
+                                                        Constants.padding),
+                                            startTime: startTime,
+                                            dueTime: dueTime,
+                                            context: context,
+                                            handleClear: clearTimes,
+                                            handleUpdate: updateTimes,
+                                          )
+                                        : const SizedBox.shrink(),
+                                    (showTimeTile)
+                                        ? const PaddedDivider(
+                                            padding: Constants.padding)
+                                        : const SizedBox.shrink(),
+
+                                    // Repeatable Stuff -> Show status, on click, open a dialog.
+                                    Tiles.repeatableTile(
+                                      context: context,
+                                      outerPadding: const EdgeInsets.symmetric(
+                                          horizontal: Constants.padding),
+                                      frequency: frequency,
+                                      weekdayList: weekdayList,
+                                      repeatSkip: repeatSkip,
+                                      startDate: startDate,
+                                      handleUpdate: updateRepeatable,
+                                      handleClear: clearRepeatable,
+                                    ),
+                                  ]),
+                            ),
+                            Flexible(
+                              child: ListView(
+                                  physics: const NeverScrollableScrollPhysics(),
+                                  shrinkWrap: true,
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: Constants.padding),
+                                  children: [
+                                    SearchRecentsBar<Group>(
+                                      persistentEntry: widget.initialGroup,
+                                      hintText: "Search Groups",
+                                      padding: const EdgeInsets.all(
+                                          Constants.padding),
+                                      handleDataSelection: handleGroupSelection,
+                                      handleHistorySelection:
+                                          handleHistorySelection,
+                                      searchController: groupEditingController,
+                                      mostRecent: groupProvider.mostRecent,
+                                      search: groupProvider.searchGroups,
+                                    ),
+
+                                    const PaddedDivider(
+                                        padding: Constants.padding),
+                                    // TaskType
+                                    const Row(children: [
+                                      Expanded(
+                                        child: AutoSizeText("Task Type",
+                                            maxLines: 1,
+                                            softWrap: true,
+                                            textAlign: TextAlign.center,
+                                            minFontSize: Constants.medium,
+                                            style: Constants.headerStyle),
                                       )
-                                    : const SizedBox.shrink(),
-                                (showTimeTile)
-                                    ? const PaddedDivider(
-                                        padding: Constants.padding)
-                                    : const SizedBox.shrink(),
+                                    ]),
+                                    Padding(
+                                      padding: const EdgeInsets.all(
+                                          Constants.padding),
+                                      child: buildTaskTypeButton(),
+                                    ),
+                                    // Subtasks -- Factory Widget. == UH, why does this have padding?
+                                    (taskType != TaskType.small)
+                                        ? buildSubTasksTile()
+                                        : const SizedBox.shrink(),
 
-                                // Repeatable Stuff -> Show status, on click, open a dialog.
-                                Tiles.repeatableTile(
-                                  context: context,
-                                  outerPadding: const EdgeInsets.symmetric(
-                                      horizontal: Constants.padding),
-                                  frequency: frequency,
-                                  weekdayList: weekdayList,
-                                  repeatSkip: repeatSkip,
-                                  startDate: startDate,
-                                  handleUpdate: updateRepeatable,
-                                  handleClear: clearRepeatable,
-                                ),
-                              ]),
-                        ),
-                        Flexible(
-                          child: ListView(
-                              controller: subScrollControllerRight,
-                              physics: scrollPhysics,
-                              shrinkWrap: true,
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: Constants.padding),
-                              children: [
-                                SearchRecents<Group>(
-                                  persistentEntry: widget.initialGroup,
-                                  hintText: "Search Groups",
-                                  padding:
-                                      const EdgeInsets.all(Constants.padding),
-                                  handleDataSelection: handleGroupSelection,
-                                  handleHistorySelection:
-                                      handleHistorySelection,
-                                  searchController: groupEditingController,
-                                  mostRecent: groupProvider.mostRecent,
-                                  search: groupProvider.searchGroups,
-                                ),
+                                    const PaddedDivider(
+                                        padding: Constants.padding),
+                                    // Description
+                                    Tiles.descriptionTile(
+                                      controller: descriptionEditingController,
+                                      outerPadding: const EdgeInsets.symmetric(
+                                          horizontal: Constants.padding),
+                                      context: context,
+                                    ),
+                                  ]),
+                            )
+                          ]),
+                    ),
+                  ]),
+            ),
+          ),
 
-                                const PaddedDivider(padding: Constants.padding),
-                                // TaskType
-                                const Row(children: [
-                                  Expanded(
-                                    child: AutoSizeText("Task Type",
-                                        maxLines: 1,
-                                        softWrap: true,
-                                        textAlign: TextAlign.center,
-                                        minFontSize: Constants.medium,
-                                        style: Constants.headerStyle),
-                                  )
-                                ]),
-                                Padding(
-                                  padding:
-                                      const EdgeInsets.all(Constants.padding),
-                                  child: buildTaskTypeButton(),
-                                ),
-                                // Subtasks -- Factory Widget. == UH, why does this have padding?
-                                (taskType != TaskType.small)
-                                    ? buildSubTasksTile()
-                                    : const SizedBox.shrink(),
-
-                                const PaddedDivider(padding: Constants.padding),
-                                // Description
-                                Tiles.descriptionTile(
-                                  controller: descriptionEditingController,
-                                  outerPadding: const EdgeInsets.symmetric(
-                                      horizontal: Constants.padding),
-                                  context: context,
-                                ),
-                              ]),
-                        )
-                      ]),
-                ),
-
-                const PaddedDivider(padding: Constants.halfPadding),
-                Tiles.createButton(
-                  outerPadding:
-                      const EdgeInsets.symmetric(horizontal: Constants.padding),
-                  handleCreate: createAndValidate,
-                ),
-              ]),
-        ),
+          const PaddedDivider(padding: Constants.halfPadding),
+          Tiles.createButton(
+            outerPadding:
+                const EdgeInsets.symmetric(horizontal: Constants.padding),
+            handleCreate: createAndValidate,
+          ),
+        ]),
       ),
     );
   }
@@ -762,7 +780,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
               Flexible(
                 child: ListView(
                   shrinkWrap: true,
-                  controller: mainScrollController,
+                  controller: mobileScrollController,
                   physics: scrollPhysics,
                   children: [
                     Tiles.nameTile(
@@ -849,7 +867,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                     ),
 
                     // Group Picker
-                    SearchRecents<Group>(
+                    SearchRecentsBar<Group>(
                       hintText: "Search Groups",
                       padding: const EdgeInsets.symmetric(
                           horizontal: Constants.padding),

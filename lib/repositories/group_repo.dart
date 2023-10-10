@@ -15,7 +15,7 @@ class GroupRepo implements GroupRepository {
   final Isar _isarClient = IsarService.instance.isarClient;
 
   @override
-  Future<void> create(Group group) async {
+  Future<Group> create(Group group) async {
     group.isSynced = (null != _supabaseClient.auth.currentSession);
     late int? id;
 
@@ -30,8 +30,6 @@ class GroupRepo implements GroupRepository {
           "Isar Open: ${_isarClient.isOpen}");
     }
 
-    group.id = id!;
-
     if (null != _supabaseClient.auth.currentSession) {
       Map<String, dynamic> groupEntity = group.toEntity();
       final List<Map<String, dynamic>> response =
@@ -41,10 +39,11 @@ class GroupRepo implements GroupRepository {
         throw FailureToUploadException("Failed to sync group on create");
       }
     }
+    return group;
   }
 
   @override
-  Future<void> update(Group group) async {
+  Future<Group> update(Group group) async {
     group.isSynced = (null != _supabaseClient.auth.currentSession);
 
     late int? id;
@@ -73,6 +72,7 @@ class GroupRepo implements GroupRepository {
             "Supabase Open: ${null != _supabaseClient.auth.currentSession}");
       }
     }
+    return group;
   }
 
   @override
@@ -233,7 +233,7 @@ class GroupRepo implements GroupRepository {
 
   @override
   Future<Group?> getByID({required int id}) async =>
-      await _isarClient.groups.where().localIDEqualTo(id).findFirst();
+      await _isarClient.groups.where().idEqualTo(id).findFirst();
 
   // Basic query logic.
   @override

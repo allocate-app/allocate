@@ -367,9 +367,10 @@ class _ToDosListScreen extends State<ToDosListScreen> {
                   splashRadius: 15,
                   value: provider.toDos[index].completed,
                   onChanged: (bool? completed) async {
-                    provider.curToDo = provider.toDos[index];
-                    provider.curToDo!.completed = completed!;
-                    await provider.updateToDo().catchError((e) {
+                    provider.toDos[index].completed = completed!;
+                    await provider
+                        .updateToDo(toDo: provider.toDos[index])
+                        .catchError((e) {
                       Flushbar? error;
 
                       error = Flushbars.createError(
@@ -380,9 +381,9 @@ class _ToDosListScreen extends State<ToDosListScreen> {
 
                       error.show(context);
                     },
-                        test: (e) =>
-                            e is FailureToCreateException ||
-                            e is FailureToUploadException);
+                            test: (e) =>
+                                e is FailureToCreateException ||
+                                e is FailureToUploadException);
                   })),
         ),
         title: AutoSizeText(provider.toDos[index].name,
@@ -394,14 +395,11 @@ class _ToDosListScreen extends State<ToDosListScreen> {
         subtitle: buildSubtitle(toDo: provider.toDos[index]),
         onTap: () async {
           provider.curToDo = provider.toDos[index];
-          ToDo? discarded = await showDialog(
+          await showDialog(
               barrierDismissible: false,
               useRootNavigator: false,
               context: context,
               builder: (BuildContext context) => const UpdateToDoScreen());
-          if (null != discarded) {
-            provider.toDos[index] = discarded;
-          }
         },
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
@@ -567,7 +565,7 @@ class _ToDosListScreen extends State<ToDosListScreen> {
                                                 // TODO: Factor this into user class pls.
                                                 setState(() {
                                                   dontAsk = value!;
-                                                  checkDelete = value;
+                                                  checkDelete = !value;
                                                 });
                                               })
                                         ]),
@@ -598,9 +596,7 @@ class _ToDosListScreen extends State<ToDosListScreen> {
       {required ToDoProvider provider,
       required int index,
       required BuildContext context}) async {
-    provider.curToDo = provider.toDos[index];
-
-    await provider.deleteToDo().catchError((e) {
+    await provider.deleteToDo(toDo: provider.toDos[index]).catchError((e) {
       Flushbar? error;
 
       error = Flushbars.createError(

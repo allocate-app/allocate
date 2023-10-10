@@ -1,6 +1,7 @@
 import "package:equatable/equatable.dart";
 import "package:isar/isar.dart";
 
+import "../../util/constants.dart";
 import "../../util/enums.dart";
 import "../../util/interfaces/copyable.dart";
 import "../../util/interfaces/i_model.dart";
@@ -11,12 +12,13 @@ part "reminder.g.dart";
 /// so much as they are a thing to remember.
 @Collection(inheritance: false)
 class Reminder with EquatableMixin implements Copyable<Reminder>, IModel {
-
-  @ignore
   @override
-  int? localID;
+  @ignore
+  ModelType modelType = ModelType.reminder;
 
-  Id id = Isar.autoIncrement;
+  @override
+  @Index()
+  Id id = Constants.generateID();
   @Index()
   int customViewIndex = -1;
   @Index()
@@ -104,6 +106,7 @@ class Reminder with EquatableMixin implements Copyable<Reminder>, IModel {
 
   Map<String, dynamic> toEntity() =>
       {
+        "id": id,
         "customViewIndex": customViewIndex,
         "repeatID": repeatID,
         "notificationID": notificationID,
@@ -118,22 +121,7 @@ class Reminder with EquatableMixin implements Copyable<Reminder>, IModel {
 
   @ignore
   @override
-  List<Object?> get props =>
-      [
-        // TODO: re-test once app built. Currently a race condition && nullptr due to testing widget.
-        // id,
-        notificationID,
-        repeatID,
-        customViewIndex,
-        name,
-        dueDate,
-        frequency,
-        repeatable,
-        repeatDays,
-        repeatSkip,
-        isSynced,
-        toDelete
-      ];
+  List<Object?> get props => [id];
 
   @override
   String toString() => "Reminder(id: $id, notificationID: $notificationID, "

@@ -209,18 +209,21 @@ class NotificationService {
         payload: payload);
   }
 
-  Future<void> cancelNotification({required int id}) async {
+  Future<void> cancelNotification({required int? id}) async {
+    if (null == id) {
+      return;
+    }
     if (Platform.isWindows || Platform.isLinux) {
       desktopLocalNotifications[id]?.dispose();
       desktopLocalNotifications.remove(id);
       return;
     }
 
-    await flutterLocalNotificationsPlugin.cancel(id);
+    return await flutterLocalNotificationsPlugin.cancel(id);
   }
 
-  Future<void> cancelFutures({required List<int> ids}) async {
-    for (int id in ids) {
+  Future<void> cancelFutures({required List<int?> ids}) async {
+    for (int? id in ids) {
       await cancelNotification(id: id);
     }
   }
@@ -271,8 +274,8 @@ class NotificationService {
     }
   }
 
-  bool validateWarnDate({required DateTime warnDate}) {
-    return tz.TZDateTime.from(warnDate, tz.local)
+  bool validateNotificationDate({required DateTime notificationDate}) {
+    return tz.TZDateTime.from(notificationDate, tz.local)
         .isAfter(tz.TZDateTime.now(tz.local));
   }
 

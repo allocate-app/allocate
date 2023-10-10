@@ -40,7 +40,7 @@ class RoutineService {
               routine.expectedDuration)
           .toInt();
 
-  Future<void> createRoutine({required Routine routine}) async =>
+  Future<Routine> createRoutine({required Routine routine}) async =>
       await _repository.create(routine);
 
   Future<List<Routine>> searchRoutines({required String searchString}) async =>
@@ -56,13 +56,13 @@ class RoutineService {
       await _repository.getRepoListBy(
           sorter: routineSorter, limit: limit, offset: offset);
 
-  Future<Routine?> getRoutineById({required int id}) async =>
-      await _repository.getByID(id: id);
+  Future<Routine?> getRoutineByID({int? id}) async =>
+      (null != id) ? await _repository.getByID(id: id) : null;
 
   Future<List<Routine>> mostRecent({int limit = 5}) async =>
       await _repository.mostRecent(limit: limit);
 
-  Future<void> updateRoutine({required Routine routine}) async =>
+  Future<Routine> updateRoutine({required Routine routine}) async =>
       await _repository.update(routine);
 
   Future<void> updateBatch({required List<Routine> routines}) async =>

@@ -9,7 +9,7 @@ class GroupService {
 
   set repository(GroupRepository repo) => _repository = repo;
 
-  Future<void> createGroup({required Group group}) async =>
+  Future<Group> createGroup({required Group group}) async =>
       await _repository.create(group);
 
   Future<List<Group>> searchGroups({required String searchString}) async =>
@@ -31,7 +31,7 @@ class GroupService {
   Future<List<Group>> mostRecent({int limit = 5}) async =>
       await _repository.mostRecent(limit: limit);
 
-  Future<void> updateGroup({required Group group}) async =>
+  Future<Group> updateGroup({required Group group}) async =>
       await _repository.update(group);
 
   Future<void> updateBatch({required List<Group> groups}) async =>

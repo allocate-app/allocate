@@ -33,18 +33,23 @@ class RoutineProvider extends ChangeNotifier {
 
   set curMorning(Routine? newRoutine) {
     _curMorning = newRoutine;
-    user?.curMornID = newRoutine?.localID;
+    user?.curMornID = newRoutine?.id;
   }
 
   set curAfternoon(Routine? newRoutine) {
     _curAfternoon = newRoutine;
-    user?.curAftID = newRoutine?.localID;
+    user?.curAftID = newRoutine?.id;
   }
 
   set curEvening(Routine? newRoutine) {
     _curEvening = newRoutine;
-    user?.curEveID = newRoutine?.localID;
+    user?.curEveID = newRoutine?.id;
   }
+
+  int get routineWeight =>
+      (curMorning?.weight ?? 0) +
+      (curAfternoon?.weight ?? 0) +
+      (curEvening?.weight ?? 0);
 
   List<Routine> routines = [];
 
@@ -62,11 +67,6 @@ class RoutineProvider extends ChangeNotifier {
     startTimer();
   }
 
-  int get routineWeight =>
-      (curMorning?.weight ?? 0) +
-      (curAfternoon?.weight ?? 0) +
-      (curEvening?.weight ?? 0);
-
   void startTimer() {
     syncTimer = Timer.periodic(const Duration(seconds: 10), (timer) {
       if (user?.syncOnline ?? false) {
@@ -79,7 +79,6 @@ class RoutineProvider extends ChangeNotifier {
 
   Future<void> handleRoutineTime(
       {RoutineTime time = RoutineTime.none, Routine? routine}) async {
-    // Online id does not really matter -> Object will be set accordingly.
     routine = routine ?? curRoutine;
     _unsetRoutine(routine: routine);
 
@@ -128,15 +127,15 @@ class RoutineProvider extends ChangeNotifier {
 
   Future<void> setRoutines() async {
     curMorning = (null != user?.curMornID!)
-        ? await _routineService.getRoutineById(id: user!.curMornID!)
+        ? await _routineService.getRoutineByID(id: user!.curMornID!)
         : null;
 
     curAfternoon = (null != user?.curAftID!)
-        ? await _routineService.getRoutineById(id: user!.curAftID!)
+        ? await _routineService.getRoutineByID(id: user!.curAftID!)
         : null;
 
     curEvening = (null != user?.curAftID!)
-        ? await _routineService.getRoutineById(id: user!.curAftID!)
+        ? await _routineService.getRoutineByID(id: user!.curAftID!)
         : null;
     notifyListeners();
   }
@@ -190,7 +189,6 @@ class RoutineProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Subtasks are fixed-length.
   Future<void> createRoutine(
       {required String name,
       int? expectedDuration,
@@ -218,10 +216,8 @@ class RoutineProvider extends ChangeNotifier {
         routineTasks: routineTasks,
         lastUpdated: DateTime.now());
 
-    curRoutine!.localID = curRoutine!.hashCode;
-
     try {
-      await _routineService.createRoutine(routine: curRoutine!);
+      curRoutine = await _routineService.createRoutine(routine: curRoutine!);
     } on FailureToCreateException catch (e) {
       log(e.cause);
       return Future.error(e);
@@ -233,16 +229,17 @@ class RoutineProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> updateRoutine() async {
-    await updateRoutineAsync();
+  Future<void> updateRoutine({Routine? routine}) async {
+    await updateRoutineAsync(routine: routine);
     notifyListeners();
   }
 
-  Future<void> updateRoutineAsync() async {
-    curRoutine!.lastUpdated = DateTime.now();
+  Future<void> updateRoutineAsync({Routine? routine}) async {
+    routine = routine ?? curRoutine!;
+    routine.lastUpdated = DateTime.now();
 
     try {
-      return await _routineService.updateRoutine(routine: curRoutine!);
+      curRoutine = await _routineService.updateRoutine(routine: routine);
     } on FailureToUploadException catch (e) {
       log(e.cause);
       return Future.error(e);
@@ -252,12 +249,16 @@ class RoutineProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> deleteRoutine() async {
+  Future<void> deleteRoutine({Routine? routine}) async {
+    routine = routine ?? curRoutine!;
     try {
-      await _routineService.deleteRoutine(routine: curRoutine!);
+      await _routineService.deleteRoutine(routine: routine);
     } on FailureToDeleteException catch (e) {
       log(e.cause);
       return Future.error(e);
+    }
+    if (routine == curRoutine) {
+      curRoutine = null;
     }
     notifyListeners();
   }
@@ -328,11 +329,11 @@ class RoutineProvider extends ChangeNotifier {
   Future<List<Routine>> mostRecent({int limit = 5}) async =>
       await _routineService.mostRecent(limit: 5);
 
-  Future<Routine?> getRoutineByID({required int id}) async =>
-      await _routineService.getRoutineById(id: id);
+  Future<Routine?> getRoutineByID({int? id}) async =>
+      await _routineService.getRoutineByID(id: id);
 
   Future<void> setRoutineByID({required int id}) async =>
-      curRoutine = await _routineService.getRoutineById(id: id) ??
+      curRoutine = await _routineService.getRoutineByID(id: id) ??
           Routine(
               name: '',
               expectedDuration: 0,

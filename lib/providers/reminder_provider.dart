@@ -118,17 +118,18 @@ class ReminderProvider extends ChangeNotifier {
     );
 
     if (curReminder!.repeatable) {
-      curReminder!.repeatID = curReminder.hashCode;
+      curReminder!.repeatID = Constants.generateID();
     }
 
-    curReminder!.notificationID = curReminder.hashCode;
+    curReminder!.notificationID = Constants.generateID();
 
     try {
-      await _reminderService.createReminder(reminder: curReminder!);
+      curReminder =
+          await _reminderService.createReminder(reminder: curReminder!);
       await scheduleNotification();
     } on FailureToCreateException catch (e) {
       log(e.cause);
-      cancelNotification();
+      await cancelNotification();
       return Future.error(e);
     } on FailureToUploadException catch (e) {
       log(e.cause);
@@ -138,40 +139,46 @@ class ReminderProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> updateReminder() async {
-    await updateReminderAsync();
+  Future<void> updateReminder({Reminder? reminder}) async {
+    await updateReminderAsync(reminder: reminder);
     notifyListeners();
   }
 
-  Future<void> updateReminderAsync() async {
-    curReminder!.lastUpdated = DateTime.now();
-    if (curReminder!.repeatable && null == curReminder!.repeatID) {
-      curReminder!.repeatID = curReminder!.hashCode;
-    }
-    await cancelNotification();
-    if (validateDueDate()) {
-      await scheduleNotification();
+  Future<void> updateReminderAsync({Reminder? reminder}) async {
+    reminder = reminder ?? curReminder!;
+    reminder.lastUpdated = DateTime.now();
+    if (reminder.repeatable && null == reminder.repeatID) {
+      reminder.repeatID = Constants.generateID();
     }
 
     try {
-      return await _reminderService.updateReminder(reminder: curReminder!);
+      curReminder =
+          await _reminderService.updateReminder(reminder: curReminder!);
+      await cancelNotification();
+      if (validateDueDate()) {
+        await scheduleNotification();
+      }
     } on FailureToUploadException catch (e) {
       log(e.cause);
       return Future.error(e);
     } on FailureToUpdateException catch (e) {
       log(e.cause);
-      cancelNotification();
+      await cancelNotification();
       return Future.error(e);
     }
   }
 
   Future<void> deleteReminder({Reminder? reminder}) async {
-    await cancelNotification();
+    reminder = reminder ?? curReminder!;
+    await cancelNotification(reminder: reminder);
     try {
-      await _reminderService.deleteReminder(reminder: reminder ?? curReminder!);
+      await _reminderService.deleteReminder(reminder: reminder);
     } on FailureToDeleteException catch (e) {
       log(e.cause);
       return Future.error(e);
+    }
+    if (reminder == curReminder) {
+      curReminder = null;
     }
     notifyListeners();
   }
@@ -229,8 +236,8 @@ class ReminderProvider extends ChangeNotifier {
 
   Future<void> deleteAndCancelFutures({Reminder? reminder}) async {
     await deleteFutures(reminder: reminder).then((toDelete) async {
-      List<int> cancelIDs =
-          toDelete.map((reminder) => reminder.notificationID!).toList();
+      List<int?> cancelIDs =
+          toDelete.map((reminder) => reminder.notificationID).toList();
       return await _notificationService.cancelFutures(ids: cancelIDs);
     });
   }
@@ -277,7 +284,7 @@ class ReminderProvider extends ChangeNotifier {
   Future<List<Reminder>> mostRecent({int limit = 5}) async =>
       await _reminderService.mostRecent(limit: 5);
 
-  Future<Reminder?> getReminderByID({required int id}) async =>
+  Future<Reminder?> getReminderByID({int? id}) async =>
       await _reminderService.getReminderByID(id: id);
 
   Future<void> setReminderByID({required int id}) async =>
@@ -290,26 +297,28 @@ class ReminderProvider extends ChangeNotifier {
               repeatDays: List.filled(7, false),
               lastUpdated: DateTime.now());
 
-  Future<void> scheduleNotification() async {
-    String newDue = Jiffy.parseFromDateTime(curReminder!.dueDate)
+  Future<void> scheduleNotification({Reminder? reminder}) async {
+    reminder = reminder ?? curReminder!;
+    String newDue = Jiffy.parseFromDateTime(reminder.dueDate)
         .toLocal()
-        .format(pattern: "yMMMMEEEEdjm")
+        .format(pattern: "MMM d, hh:mm a")
         .toString();
     await _notificationService.scheduleNotification(
-        id: curReminder!.notificationID!,
-        warnDate: curReminder!.dueDate,
-        message: "${curReminder!.name} IS DUE: $newDue",
-        payload: "REMINDER\n${curReminder!.notificationID}");
+        id: reminder.notificationID!,
+        warnDate: reminder.dueDate,
+        message:
+            "${reminder.name} is due on: $newDue\n It's okay to ask for more time.",
+        payload: "REMINDER\n${reminder.id}");
   }
 
-  Future<void> cancelNotification() async {
-    await _notificationService.cancelNotification(
-        id: curReminder!.notificationID!);
+  Future<void> cancelNotification({Reminder? reminder}) async {
+    reminder = reminder ?? curReminder!;
+    await _notificationService.cancelNotification(id: reminder.notificationID!);
   }
 
-  // TODO: name this agnostically.
-  bool validateDueDate({DateTime? dueDate}) => _notificationService
-      .validateWarnDate(warnDate: dueDate ?? curReminder!.dueDate);
+  bool validateDueDate({DateTime? dueDate}) =>
+      _notificationService.validateNotificationDate(
+          notificationDate: dueDate ?? curReminder!.dueDate);
 
   Future<List<Reminder>> getRemindersBetween(
           {DateTime? start, DateTime? end}) async =>

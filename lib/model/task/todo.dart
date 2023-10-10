@@ -3,6 +3,7 @@ import "dart:convert";
 import "package:equatable/equatable.dart";
 import "package:isar/isar.dart";
 
+import "../../util/constants.dart";
 import "../../util/enums.dart";
 import "../../util/interfaces/copyable.dart";
 import "../../util/interfaces/i_model.dart";
@@ -12,19 +13,12 @@ part "todo.g.dart";
 
 @Collection(inheritance: false)
 class ToDo with EquatableMixin implements Copyable<ToDo>, IModel {
- // This is a bandaid solution with the current implementation.
-  @ignore
   @override
-  int? get localID =>id;
-
   @ignore
+  ModelType modelType = ModelType.toDo;
+
   @override
-  set localID(id){
-    // LOL, do nothing.
-  }
-
-
-  Id id = Isar.autoIncrement;
+  Id id = Constants.generateID();
 
   @Index()
   int? groupID;
@@ -102,7 +96,7 @@ class ToDo with EquatableMixin implements Copyable<ToDo>, IModel {
 
   // -> From Entitiy.
   ToDo.fromEntity({required Map<String, dynamic> entity})
-      : id = entity["id"] as Id,
+      : id = entity["id"] as int,
         groupID = entity["groupID"] as int,
         repeatID = entity["repeatID"] as int,
         groupIndex = entity["groupIndex"] as int,
@@ -133,6 +127,7 @@ class ToDo with EquatableMixin implements Copyable<ToDo>, IModel {
   // No id for syncing - assigned via autoincrement online.
   Map<String, dynamic> toEntity() =>
       {
+        "id": id,
         "groupID": groupID,
         "repeatID": repeatID,
         "groupIndex": groupIndex,
@@ -154,33 +149,34 @@ class ToDo with EquatableMixin implements Copyable<ToDo>, IModel {
         "repeatSkip": repeatSkip,
         "subTasks": jsonEncode(
             subTasks.map((st) => st.toEntity()).toList(growable: false)),
-        "lastUpdated": lastUpdated.toIso8601String()
+        "lastUpdated": lastUpdated.toIso8601String(),
       };
 
   @override
   ToDo copy() =>
       ToDo(
-          groupID: groupID,
-          repeatID: repeatID,
-          taskType: taskType,
-          groupIndex: groupIndex,
-          customViewIndex: customViewIndex,
-          name: name,
-          description: description,
-          weight: weight,
-          expectedDuration: expectedDuration,
-          realDuration: realDuration,
-          priority: priority,
-          startDate: startDate,
-          dueDate: dueDate,
-          myDay: myDay,
-          completed: completed,
-          repeatable: repeatable,
-          frequency: frequency,
-          repeatDays: List.from(repeatDays),
-          repeatSkip: repeatSkip,
-          subTasks: List.from(subTasks),
-          lastUpdated: lastUpdated);
+        groupID: groupID,
+        repeatID: repeatID,
+        taskType: taskType,
+        groupIndex: groupIndex,
+        customViewIndex: customViewIndex,
+        name: name,
+        description: description,
+        weight: weight,
+        expectedDuration: expectedDuration,
+        realDuration: realDuration,
+        priority: priority,
+        startDate: startDate,
+        dueDate: dueDate,
+        myDay: myDay,
+        completed: completed,
+        repeatable: repeatable,
+        frequency: frequency,
+        repeatDays: List.from(repeatDays),
+        repeatSkip: repeatSkip,
+        subTasks: List.from(subTasks),
+        lastUpdated: lastUpdated,
+      );
 
   @override
   ToDo copyWith({int? groupID,
@@ -203,59 +199,39 @@ class ToDo with EquatableMixin implements Copyable<ToDo>, IModel {
     List<bool>? repeatDays,
     int? repeatSkip,
     List<SubTask>? subTasks,
-    DateTime? lastUpdated}) =>
+    DateTime? lastUpdated,
+    String? deviceID}) =>
       ToDo(
-          repeatID: repeatID ?? this.repeatID,
-          groupID: groupID,
-          groupIndex: groupIndex ?? this.groupIndex,
-          customViewIndex: customViewIndex ?? this.customViewIndex,
-          taskType: taskType ?? this.taskType,
-          name: name ?? this.name,
-          description: description ?? this.description,
-          weight: weight ?? this.weight,
-          expectedDuration: expectedDuration ?? this.expectedDuration,
-          realDuration: realDuration ?? this.realDuration,
-          priority: priority ?? this.priority,
-          startDate: startDate ?? this.startDate,
-          dueDate: dueDate ?? this.dueDate,
-          myDay: myDay ?? this.myDay,
-          completed: completed ?? this.completed,
-          repeatable: repeatable ?? this.repeatable,
-          frequency: frequency ?? this.frequency,
-          repeatDays: List.from(repeatDays ?? this.repeatDays),
-          repeatSkip: repeatSkip ?? this.repeatSkip,
-          subTasks: List.from(
-            subTasks ?? this.subTasks,
-          ),
-          lastUpdated: lastUpdated ?? this.lastUpdated);
+        repeatID: repeatID ?? this.repeatID,
+        groupID: groupID,
+        groupIndex: groupIndex ?? this.groupIndex,
+        customViewIndex: customViewIndex ?? this.customViewIndex,
+        taskType: taskType ?? this.taskType,
+        name: name ?? this.name,
+        description: description ?? this.description,
+        weight: weight ?? this.weight,
+        expectedDuration: expectedDuration ?? this.expectedDuration,
+        realDuration: realDuration ?? this.realDuration,
+        priority: priority ?? this.priority,
+        startDate: startDate ?? this.startDate,
+        dueDate: dueDate ?? this.dueDate,
+        myDay: myDay ?? this.myDay,
+        completed: completed ?? this.completed,
+        repeatable: repeatable ?? this.repeatable,
+        frequency: frequency ?? this.frequency,
+        repeatDays: List.from(repeatDays ?? this.repeatDays),
+        repeatSkip: repeatSkip ?? this.repeatSkip,
+        subTasks: List.from(
+          subTasks ?? this.subTasks,
+        ),
+        lastUpdated: lastUpdated ?? this.lastUpdated,
+      );
 
   @ignore
   @override
   List<Object?> get props =>
       [
-        // Consider bringing this back once full app is built.
-        // Right now, there is a race-condition in testing due to db id.
-        // id,
-        repeatID,
-        customViewIndex,
-        groupID,
-        groupIndex,
-        name,
-        description,
-        weight,
-        expectedDuration,
-        priority,
-        completed,
-        startDate,
-        dueDate,
-        myDay,
-        repeatable,
-        frequency,
-        repeatDays,
-        repeatSkip,
-        isSynced,
-        subTasks,
-        toDelete,
+        id,
       ];
 
   @override

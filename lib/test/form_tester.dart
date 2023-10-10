@@ -102,15 +102,12 @@ class UITester extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       theme: ThemeData(useMaterial3: true),
-      scaffoldMessengerKey: Constants.snackBarKey,
       // Switch this out as needed.
       home: const FormTester(),
     );
   }
 }
 
-/// TODO: NOTE!  GlobalKey should be added to main & given to Material app.
-/// Access by GlobalKey.currentState.getter.
 class FormTester extends StatefulWidget {
   const FormTester({super.key});
 

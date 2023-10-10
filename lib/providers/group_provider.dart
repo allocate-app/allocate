@@ -87,29 +87,29 @@ class GroupProvider extends ChangeNotifier {
         name: name,
         description: description ?? "",
         lastUpdated: DateTime.now());
-    curGroup!.localID = curGroup.hashCode;
     try {
-      await _groupService.createGroup(group: curGroup!);
+      curGroup = await _groupService.createGroup(group: curGroup!);
     } on FailureToCreateException catch (e) {
       log(e.cause);
       return Future.error(e);
     } on FailureToUploadException catch (e) {
       log(e.cause);
       curGroup!.isSynced = false;
-      return updateGroup();
+      return await updateGroup();
     }
     notifyListeners();
   }
 
-  Future<void> updateGroup() async {
-    await updateGroupAsync();
+  Future<void> updateGroup({Group? group}) async {
+    await updateGroupAsync(group: group);
     notifyListeners();
   }
 
-  Future<void> updateGroupAsync() async {
-    curGroup!.lastUpdated = DateTime.now();
+  Future<void> updateGroupAsync({Group? group}) async {
+    group = group ?? curGroup!;
+    group.lastUpdated = DateTime.now();
     try {
-      return await _groupService.updateGroup(group: curGroup!);
+      curGroup = await _groupService.updateGroup(group: group);
     } on FailureToUploadException catch (e) {
       log(e.cause);
       return Future.error(e);
@@ -119,12 +119,16 @@ class GroupProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> deleteGroup() async {
+  Future<void> deleteGroup({Group? group}) async {
+    group = group ?? curGroup!;
     try {
-      await _groupService.deleteGroup(group: curGroup!);
+      await _groupService.deleteGroup(group: group);
     } on FailureToDeleteException catch (e) {
       log(e.cause);
       return Future.error(e);
+    }
+    if (group == curGroup) {
+      curGroup = null;
     }
     notifyListeners();
   }
@@ -132,7 +136,7 @@ class GroupProvider extends ChangeNotifier {
   Future<List<ToDo>> getToDosByGroupID(
       {int? id, int limit = 50, int offset = 0}) async {
     return await _toDoService.getByGroup(
-        groupID: id ?? curGroup?.localID, limit: limit, offset: offset);
+        groupID: id ?? curGroup!.id, limit: limit, offset: offset);
   }
 
   Future<List<Group>> reorderGroups(
@@ -157,7 +161,7 @@ class GroupProvider extends ChangeNotifier {
       {required int oldIndex, required int newIndex, List<ToDo>? toDos}) async {
     try {
       return await _toDoService.reorderGroupToDos(
-          toDos: toDos ?? curGroup!.toDos!,
+          toDos: toDos ?? curGroup!.toDos,
           oldIndex: oldIndex,
           newIndex: newIndex);
     } on FailureToUpdateException catch (e) {
@@ -187,7 +191,7 @@ class GroupProvider extends ChangeNotifier {
         sorter: sorter, limit: limit, offset: offset);
     if (grabToDos) {
       for (Group group in groups) {
-        group.toDos = await _toDoService.getByGroup(groupID: group.localID);
+        group.toDos = await _toDoService.getByGroup(groupID: group.id);
       }
     }
 
@@ -197,8 +201,8 @@ class GroupProvider extends ChangeNotifier {
   Future<void> setGroupsBy() async {
     groups =
         await _groupService.getGroupsBy(sorter: sorter, limit: 50, offset: 0);
-    for (Group g in groups) {
-      g.toDos = await _toDoService.getByGroup(groupID: g.id);
+    for (Group group in groups) {
+      group.toDos = await _toDoService.getByGroup(groupID: group.id);
     }
     notifyListeners();
   }
@@ -211,7 +215,7 @@ class GroupProvider extends ChangeNotifier {
     List<Group> groups = await _groupService.mostRecent(limit: 5);
     if (grabToDos) {
       for (Group group in groups) {
-        group.toDos = await _toDoService.getByGroup(groupID: group.localID);
+        group.toDos = await _toDoService.getByGroup(groupID: group.id);
       }
     }
 
@@ -222,7 +226,7 @@ class GroupProvider extends ChangeNotifier {
       recentGroups = await mostRecent(grabToDos: true);
 
   Future<Group?> getGroupByID({int? id}) async =>
-      await _groupService.getGroupByID(id: id ?? curGroup?.id);
+      await _groupService.getGroupByID(id: id);
 
   Future<void> setGroupByID({required int id}) async =>
       await _groupService.getGroupByID(id: id) ??
