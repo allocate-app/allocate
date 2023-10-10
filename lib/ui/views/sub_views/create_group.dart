@@ -336,12 +336,14 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
   // This should just reset pagination
   Future<void> createToDo() async {
     await showDialog(
-            barrierDismissible: false,
-            useRootNavigator: false,
-            context: context,
-            builder: (BuildContext context) =>
-                const CreateToDoScreen(groupID: Constants.initialGroupID))
-        .catchError((e) {
+        barrierDismissible: false,
+        useRootNavigator: false,
+        context: context,
+        builder: (BuildContext context) => CreateToDoScreen(
+              initialGroup: MapEntry<String, int>(
+                  (name.isNotEmpty) ? name : "New Group",
+                  Constants.initialGroupID),
+            )).catchError((e) {
       Flushbar? error;
 
       error = Flushbars.createError(
@@ -352,8 +354,8 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
 
       error.show(context);
     },
-            test: (e) =>
-                e is FailureToCreateException || e is FailureToUploadException);
+        test: (e) =>
+            e is FailureToCreateException || e is FailureToUploadException);
   }
 
   Future<void> reorderToDos(int oldIndex, int newIndex) async {
@@ -385,11 +387,14 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
   Future<void> updateToDo({required int index}) async {
     toDoProvider.curToDo = toDos[index];
     showDialog(
-            barrierDismissible: false,
-            useRootNavigator: false,
-            context: context,
-            builder: (BuildContext context) => const UpdateToDoScreen())
-        .catchError((e) {
+        barrierDismissible: false,
+        useRootNavigator: false,
+        context: context,
+        builder: (BuildContext context) => UpdateToDoScreen(
+              initialGroup: MapEntry<String, int>(
+                  (name.isNotEmpty) ? name : "New Group",
+                  Constants.initialGroupID),
+            )).catchError((e) {
       Flushbar? error;
 
       error = Flushbars.createError(
@@ -400,8 +405,8 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
 
       error.show(context);
     },
-            test: (e) =>
-                e is FailureToCreateException || e is FailureToUploadException);
+        test: (e) =>
+            e is FailureToCreateException || e is FailureToUploadException);
     // TODO: this needs to be factored out once update ToDo refactored.
     resetPagination();
   }

@@ -597,7 +597,9 @@ class _GroupsListScreen extends State<GroupsListScreen> {
           ),
           const PaddedDivider(padding: Constants.padding),
           buildCreateToDoBar(
-              context: context, id: provider.groups[index].localID!),
+              context: context,
+              id: provider.groups[index].localID!,
+              name: provider.groups[index].name),
         ],
       ),
     );
@@ -707,11 +709,13 @@ class _GroupsListScreen extends State<GroupsListScreen> {
         onTap: () async {
           toDoProvider.curToDo = group.toDos![index];
           await showDialog(
-                  barrierDismissible: false,
-                  useRootNavigator: false,
-                  context: context,
-                  builder: (BuildContext context) => const UpdateToDoScreen())
-              .catchError((e) {
+              barrierDismissible: false,
+              useRootNavigator: false,
+              context: context,
+              builder: (BuildContext context) => UpdateToDoScreen(
+                    initialGroup:
+                        MapEntry<String, int>(group.name, group.localID!),
+                  )).catchError((e) {
             Flushbar? error;
 
             error = Flushbars.createError(
@@ -722,10 +726,10 @@ class _GroupsListScreen extends State<GroupsListScreen> {
 
             error.show(context);
           },
-                  test: (e) =>
-                      e is FailureToCreateException ||
-                      e is FailureToUploadException).whenComplete(
-                  () => setState(() {}));
+              test: (e) =>
+                  e is FailureToCreateException ||
+                  e is FailureToUploadException).whenComplete(
+              () => setState(() {}));
         },
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
@@ -765,7 +769,7 @@ class _GroupsListScreen extends State<GroupsListScreen> {
   }
 
   ListTile buildCreateToDoBar(
-      {required BuildContext context, required int id}) {
+      {required BuildContext context, required String name, required int id}) {
     return ListTile(
         leading: const Icon(Icons.add_outlined),
         title: const AutoSizeText("Add New Task",
@@ -775,11 +779,12 @@ class _GroupsListScreen extends State<GroupsListScreen> {
             minFontSize: Constants.small),
         onTap: () async {
           await showDialog(
-              barrierDismissible: false,
-              useRootNavigator: false,
-              context: context,
-              builder: (BuildContext context) =>
-                  CreateToDoScreen(groupID: id)).whenComplete(() async {
+                  barrierDismissible: false,
+                  useRootNavigator: false,
+                  context: context,
+                  builder: (BuildContext context) => CreateToDoScreen(
+                      initialGroup: MapEntry<String, int>(name, id)))
+              .whenComplete(() async {
             allData = false;
             await resetPagination();
           }).catchError((e) {
@@ -793,9 +798,9 @@ class _GroupsListScreen extends State<GroupsListScreen> {
 
             error.show(context);
           },
-              test: (e) =>
-                  e is FailureToCreateException ||
-                  e is FailureToUploadException);
+                  test: (e) =>
+                      e is FailureToCreateException ||
+                      e is FailureToUploadException);
         });
   }
 }

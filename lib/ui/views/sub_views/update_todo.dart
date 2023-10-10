@@ -24,10 +24,9 @@ import "../../widgets/tiles.dart";
 import "../../widgets/title_bar.dart";
 
 class UpdateToDoScreen extends StatefulWidget {
-  final int? groupID;
+  final MapEntry<String, int>? initialGroup;
 
-  // TODO: Add a map entry instead.
-  const UpdateToDoScreen({Key? key, this.groupID}) : super(key: key);
+  const UpdateToDoScreen({Key? key, this.initialGroup}) : super(key: key);
 
   @override
   State<UpdateToDoScreen> createState() => _UpdateToDoScreen();
@@ -141,21 +140,26 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
     });
 
     groupEditingController = SearchController();
-    groupProvider
-        .getGroupByID(id: toDo.groupID)
-        .then((group) => setState(() => groupEditingController.value =
-            groupEditingController.value.copyWith(text: group?.name ?? "")))
-        .catchError((_) {
-      Flushbar? error;
+    if (null != widget.initialGroup) {
+      groupEditingController.value = groupEditingController.value
+          .copyWith(text: widget.initialGroup?.key ?? "");
+    } else {
+      groupProvider
+          .getGroupByID(id: toDo.groupID)
+          .then((group) => setState(() => groupEditingController.value =
+              groupEditingController.value.copyWith(text: group?.name ?? "")))
+          .catchError((_) {
+        Flushbar? error;
 
-      error = Flushbars.createError(
-        message: "Error with Group Retrieval",
-        context: context,
-        dismissCallback: () => error?.dismiss(),
-      );
+        error = Flushbars.createError(
+          message: "Error with Group Retrieval",
+          context: context,
+          dismissCallback: () => error?.dismiss(),
+        );
 
-      error.show(context);
-    });
+        error.show(context);
+      });
+    }
     groupEditingController.addListener(() {
       String newText = nameEditingController.text;
       SemanticsService.announce(newText, Directionality.of(context));
@@ -210,7 +214,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
   bool validateData() {
     bool valid = true;
     if (groupEditingController.text.isEmpty) {
-      toDo.groupID = widget.groupID;
+      toDo.groupID = null;
     }
     if (nameEditingController.text.isEmpty) {
       valid = false;
@@ -827,6 +831,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                                   horizontal: Constants.padding),
                               children: [
                                 SearchRecents<Group>(
+                                  persistentEntry: widget.initialGroup,
                                   hintText: "Search Groups",
                                   padding:
                                       const EdgeInsets.all(Constants.padding),

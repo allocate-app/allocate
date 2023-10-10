@@ -24,9 +24,9 @@ import "../../widgets/tiles.dart";
 import "../../widgets/title_bar.dart";
 
 class CreateToDoScreen extends StatefulWidget {
-  final int? groupID;
+  final MapEntry<String, int>? initialGroup;
 
-  const CreateToDoScreen({Key? key, this.groupID}) : super(key: key);
+  const CreateToDoScreen({Key? key, this.initialGroup}) : super(key: key);
 
   @override
   State<CreateToDoScreen> createState() => _CreateToDoScreen();
@@ -137,7 +137,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
     shownTasks = 0;
     weekdayList = {};
     weekdays = List.generate(7, (_) => false);
-    groupID = widget.groupID;
+    groupID = widget.initialGroup?.value;
   }
 
   Future<void> initializeControllers() async {
@@ -156,23 +156,9 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
     });
 
     groupEditingController = SearchController();
+    groupEditingController.value = groupEditingController.value
+        .copyWith(text: widget.initialGroup?.key ?? "");
 
-    // TODO: revisit this -> once KV pair implemented.
-    groupProvider
-        .getGroupByID(id: groupID)
-        .then((group) =>
-            setState(() => groupEditingController.text = group?.name ?? ""))
-        .catchError((_) {
-      Flushbar? error;
-
-      error = Flushbars.createError(
-        message: "Error with Group Retrieval",
-        context: context,
-        dismissCallback: () => error?.dismiss(),
-      );
-
-      error.show(context);
-    });
     groupEditingController.addListener(() {
       String newText = nameEditingController.text;
       SemanticsService.announce(newText, Directionality.of(context));
@@ -244,7 +230,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
   bool validateData() {
     bool valid = true;
     if (groupEditingController.text.isEmpty) {
-      groupID = widget.groupID;
+      groupID = null;
     }
     if (nameEditingController.text.isEmpty) {
       valid = false;
@@ -685,6 +671,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                                   horizontal: Constants.padding),
                               children: [
                                 SearchRecents<Group>(
+                                  persistentEntry: widget.initialGroup,
                                   hintText: "Search Groups",
                                   padding:
                                       const EdgeInsets.all(Constants.padding),

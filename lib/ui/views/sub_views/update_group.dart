@@ -308,8 +308,11 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
         barrierDismissible: false,
         useRootNavigator: false,
         context: context,
-        builder: (BuildContext context) =>
-            CreateToDoScreen(groupID: group.localID)).catchError((e) {
+        builder: (BuildContext context) => CreateToDoScreen(
+              initialGroup: MapEntry<String, int>(
+                  (group.name.isNotEmpty) ? group.name : "New Group",
+                  group.localID!),
+            )).catchError((e) {
       Flushbar? error;
 
       error = Flushbars.createError(
@@ -351,11 +354,14 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
   Future<void> updateToDo({required int index}) async {
     toDoProvider.curToDo = toDos[index];
     showDialog(
-            barrierDismissible: false,
-            useRootNavigator: false,
-            context: context,
-            builder: (BuildContext context) => const UpdateToDoScreen())
-        .catchError((e) {
+        barrierDismissible: false,
+        useRootNavigator: false,
+        context: context,
+        builder: (BuildContext context) => UpdateToDoScreen(
+              initialGroup: MapEntry<String, int>(
+                  (group.name.isNotEmpty) ? group.name : "New Group",
+                  group.localID!),
+            )).catchError((e) {
       Flushbar? error;
 
       error = Flushbars.createError(
@@ -366,8 +372,8 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
 
       error.show(context);
     },
-            test: (e) =>
-                e is FailureToCreateException || e is FailureToUploadException);
+        test: (e) =>
+            e is FailureToCreateException || e is FailureToUploadException);
     // TODO: this needs to be factored out once update ToDo refactored.
     resetPagination();
   }
