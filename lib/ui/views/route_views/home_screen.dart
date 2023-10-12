@@ -47,6 +47,7 @@ class _HomeScreen extends State<HomeScreen> {
 
   late final ScrollPhysics scrollPhysics;
 
+  // I haven't fully thought this through yet.
   int get myDayTotal =>
       toDoProvider.myDayWeight + routineProvider.routineWeight;
 
@@ -69,6 +70,8 @@ class _HomeScreen extends State<HomeScreen> {
     toDoProvider.addListener(rebuildToDo);
     routineProvider.addListener(rebuildRoutine);
     groupProvider.addListener(rebuildGroup);
+    deadlineProvider.addListener(rebuildDeadline);
+    reminderProvider.addListener(rebuildReminder);
     resetProviders();
   }
 
@@ -102,7 +105,9 @@ class _HomeScreen extends State<HomeScreen> {
   void rebuildToDo() {
     toDoProvider.rebuild = true;
     // These are asynchronous, but can happen in the background - navGroups calls setState
-    toDoProvider.setMyDayWeight();
+    toDoProvider
+        .setMyDayWeight()
+        .whenComplete(() => userProvider.myDayTotal = myDayTotal);
     resetNavGroups();
   }
 
@@ -139,6 +144,8 @@ class _HomeScreen extends State<HomeScreen> {
     toDoProvider.removeListener(rebuildToDo);
     routineProvider.removeListener(rebuildRoutine);
     groupProvider.removeListener(rebuildGroup);
+    deadlineProvider.removeListener(rebuildDeadline);
+    reminderProvider.removeListener(rebuildReminder);
     super.dispose();
   }
 

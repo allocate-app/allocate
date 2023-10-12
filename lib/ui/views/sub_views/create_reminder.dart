@@ -8,6 +8,7 @@ import '../../../util/constants.dart';
 import '../../../util/enums.dart';
 import '../../../util/exceptions.dart';
 import '../../widgets/flushbars.dart';
+import '../../widgets/leading_widgets.dart';
 import '../../widgets/padded_divider.dart';
 import '../../widgets/tiles.dart';
 import '../../widgets/title_bar.dart';
@@ -42,6 +43,10 @@ class _CreateReminderScreen extends State<CreateReminderScreen> {
   late Set<int> weekdayList;
   late List<bool> weekdays;
 
+  // Scrolling
+  late final ScrollController mainScrollController;
+  late final ScrollPhysics scrollPhysics;
+
   @override
   void initState() {
     super.initState();
@@ -64,6 +69,9 @@ class _CreateReminderScreen extends State<CreateReminderScreen> {
   }
 
   void initializeControllers() {
+    mainScrollController = ScrollController();
+    scrollPhysics =
+    const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics());
     nameEditingController = TextEditingController();
     nameEditingController.addListener(() {
       nameErrorText = null;
@@ -76,6 +84,7 @@ class _CreateReminderScreen extends State<CreateReminderScreen> {
 
   @override
   void dispose() {
+    mainScrollController.dispose();
     nameEditingController.dispose();
     super.dispose();
   }
@@ -123,12 +132,12 @@ class _CreateReminderScreen extends State<CreateReminderScreen> {
     }
     await reminderProvider
         .createReminder(
-            name: name,
-            dueDate: dueDate,
-            repeatable: frequency != Frequency.once,
-            frequency: frequency,
-            repeatDays: weekdays,
-            repeatSkip: repeatSkip)
+        name: name,
+        dueDate: dueDate,
+        repeatable: frequency != Frequency.once,
+        frequency: frequency,
+        repeatDays: weekdays,
+        repeatSkip: repeatSkip)
         .whenComplete(() => Navigator.pop(context))
         .catchError((e) {
       Flushbar? error;
@@ -141,8 +150,8 @@ class _CreateReminderScreen extends State<CreateReminderScreen> {
 
       error.show(context);
     },
-            test: (e) =>
-                e is FailureToCreateException || e is FailureToUploadException);
+        test: (e) =>
+        e is FailureToCreateException || e is FailureToUploadException);
   }
 
   void handleClose({required bool willDiscard}) {
@@ -188,11 +197,10 @@ class _CreateReminderScreen extends State<CreateReminderScreen> {
     });
   }
 
-  void updateRepeatable(
-      {bool? checkClose,
-      required Frequency newFreq,
-      required Set<int> newWeekdays,
-      required int newSkip}) {
+  void updateRepeatable({bool? checkClose,
+    required Frequency newFreq,
+    required Set<int> newWeekdays,
+    required int newSkip}) {
     setState(() {
       this.checkClose = checkClose ?? this.checkClose;
       frequency = newFreq;
@@ -210,7 +218,10 @@ class _CreateReminderScreen extends State<CreateReminderScreen> {
 
   @override
   Widget build(BuildContext context) {
-    double width = MediaQuery.of(context).size.width;
+    double width = MediaQuery
+        .of(context)
+        .size
+        .width;
     bool largeScreen = (width >= Constants.largeScreen);
     bool smallScreen = (width <= Constants.smallScreen);
     bool hugeScreen = (width >= Constants.hugeScreen);
@@ -240,53 +251,74 @@ class _CreateReminderScreen extends State<CreateReminderScreen> {
                       handleClose: handleClose,
                     ),
 
-                    const PaddedDivider(padding: Constants.padding),
-                    Tiles.nameTile(
-                        context: context,
-                        hintText: "Reminder Name",
-                        errorText: nameErrorText,
-                        controller: nameEditingController,
-                        outerPadding: const EdgeInsets.only(
-                            left: Constants.padding,
-                            right: Constants.padding,
-                            bottom: Constants.innerPadding),
-                        textFieldPadding: const EdgeInsets.symmetric(
-                          horizontal: Constants.halfPadding,
-                        ),
-                        handleClear: clearNameField),
+                    const PaddedDivider(padding: Constants.halfPadding),
 
-                    Tiles.singleDateTimeTile(
-                      leading: const Icon(Icons.today_outlined),
-                      outerPadding: const EdgeInsets.symmetric(
-                          horizontal: Constants.padding),
-                      context: context,
-                      date: dueDate,
-                      time: dueTime,
-                      useAlertIcon: false,
-                      showDate: true,
-                      unsetDateText: "Due Date",
-                      unsetTimeText: "Due Time",
-                      dialogHeader: "Select Due Date",
-                      handleClear: clearDue,
-                      handleUpdate: updateDue,
-                    ),
+                    Flexible(
+                        child: Scrollbar(
+                            thumbVisibility: true,
+                            controller: mainScrollController,
+                            child: ListView(
+                                shrinkWrap: true,
+                                controller: mainScrollController,
+                                physics: scrollPhysics,
+                                children: [
+                                  Tiles.nameTile(
+                                      leading: LeadingWidgets.reminderIcon(
+                                        currentContext: context,
+                                        iconPadding: const EdgeInsets.all(
+                                            Constants.padding),
+                                        outerPadding:
+                                        const EdgeInsets.symmetric(
+                                            horizontal:
+                                            Constants.halfPadding),
+                                      ),
+                                      context: context,
+                                      hintText: "Reminder Name",
+                                      errorText: nameErrorText,
+                                      controller: nameEditingController,
+                                      outerPadding: const EdgeInsets.all(
+                                        Constants.padding,
+                                      ),
+                                      textFieldPadding:
+                                      const EdgeInsets.symmetric(
+                                        horizontal: Constants.halfPadding,
+                                      ),
+                                      handleClear: clearNameField),
+                                  const PaddedDivider(
+                                      padding: Constants.padding),
+                                  Tiles.singleDateTimeTile(
+                                    leading: const Icon(Icons.today_outlined),
+                                    outerPadding: const EdgeInsets.symmetric(
+                                        horizontal: Constants.padding),
+                                    context: context,
+                                    date: dueDate,
+                                    time: dueTime,
+                                    useAlertIcon: false,
+                                    showDate: true,
+                                    unsetDateText: "Due Date",
+                                    unsetTimeText: "Due Time",
+                                    dialogHeader: "Select Due Date",
+                                    handleClear: clearDue,
+                                    handleUpdate: updateDue,
+                                  ),
 
-                    const PaddedDivider(padding: Constants.padding),
+                                  const PaddedDivider(
+                                      padding: Constants.padding),
 
-                    // Repeatable Stuff -> Show status, on click, open a dialog.
-                    Tiles.repeatableTile(
-                      context: context,
-                      outerPadding: const EdgeInsets.symmetric(
-                          horizontal: Constants.padding),
-                      frequency: frequency,
-                      weekdayList: weekdayList,
-                      repeatSkip: repeatSkip,
-                      startDate: dueDate,
-                      handleUpdate: updateRepeatable,
-                      handleClear: clearRepeatable,
-                    ),
-
-                    const PaddedDivider(padding: Constants.padding),
+                                  // Repeatable Stuff -> Show status, on click, open a dialog.
+                                  Tiles.repeatableTile(
+                                    context: context,
+                                    outerPadding: const EdgeInsets.symmetric(
+                                        horizontal: Constants.padding),
+                                    frequency: frequency,
+                                    weekdays: weekdayList,
+                                    repeatSkip: repeatSkip,
+                                    startDate: dueDate,
+                                    handleUpdate: updateRepeatable,
+                                    handleClear: clearRepeatable,
+                                  ),
+                                ]))),
+                    const PaddedDivider(padding: Constants.halfPadding),
                     Tiles.createButton(
                       outerPadding: const EdgeInsets.symmetric(
                           horizontal: Constants.padding),

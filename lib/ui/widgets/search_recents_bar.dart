@@ -59,7 +59,7 @@ class _SearchRecents<T extends IModel> extends State<SearchRecentsBar<T>> {
               const MaterialStatePropertyAll(Colors.transparent),
           barElevation: const MaterialStatePropertyAll(0),
           viewConstraints: const BoxConstraints(
-              maxHeight: Constants.maxSearchHeightBeforeScroll),
+              maxHeight: Constants.maxSearchSideBeforeScroll),
           barHintText: widget.hintText,
           searchController: widget.searchController,
           suggestionsBuilder:

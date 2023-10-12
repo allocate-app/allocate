@@ -1,8 +1,6 @@
-import 'dart:math';
-
+import 'package:allocate/ui/widgets/time_dialog.dart';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:auto_size_text_field/auto_size_text_field.dart';
-import 'package:calendar_date_picker2/calendar_date_picker2.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:intl/intl.dart';
@@ -14,7 +12,11 @@ import '../../model/task/todo.dart';
 import '../../util/constants.dart';
 import '../../util/enums.dart';
 import '../../util/numbers.dart';
+import 'date_range_dialog.dart';
+import 'date_time_dialog.dart';
 import 'drain_bar.dart';
+import 'frequency_dialog.dart';
+import 'leading_widgets.dart';
 
 class Tiles {
   /// ListView Tiles
@@ -35,25 +37,26 @@ class Tiles {
           controlAffinity: ListTileControlAffinity.leading,
           shape: const RoundedRectangleBorder(
               borderRadius:
-                  BorderRadius.all(Radius.circular(Constants.roundedCorners))),
+              BorderRadius.all(Radius.circular(Constants.roundedCorners))),
           title: title,
           value: value,
           onChanged: onChanged,
           secondary: secondary);
 
-  static CheckboxListTile subtaskCheckboxTile(
-          {required BuildContext context,
-          required int index,
-          required SubTask subTask,
-          required void Function() onChanged,
-          required void Function() onSubtaskWeightChanged,
-          required void Function({required int index}) onRemoved,
-          required TextEditingController controller,
-          bool showHandle = false}) =>
+
+  // TODO: Factor out statefulbuilder.
+  static CheckboxListTile subtaskCheckboxTile({required BuildContext context,
+    required int index,
+    required SubTask subTask,
+    required void Function() onChanged,
+    required void Function() onSubtaskWeightChanged,
+    required void Function({required int index}) onRemoved,
+    required TextEditingController controller,
+    bool showHandle = false}) =>
       Tiles.checkboxListTile(
           key: ValueKey(index),
           contentPadding:
-              const EdgeInsets.symmetric(horizontal: Constants.innerPadding),
+          const EdgeInsets.symmetric(horizontal: Constants.innerPadding),
           onChanged: (bool? value) {
             subTask.completed = value!;
             onChanged();
@@ -63,7 +66,7 @@ class Tiles {
             child: AutoSizeTextField(
                 controller: controller,
                 minLines: 1,
-                maxLines: 3,
+                maxLines: 2,
                 minFontSize: Constants.large,
                 decoration: const InputDecoration.collapsed(
                   hintText: "Step name",
@@ -93,12 +96,12 @@ class Tiles {
                       builder: (BuildContext context) {
                         return StatefulBuilder(
                           builder: (BuildContext context,
-                                  void Function(void Function()) setState) =>
+                              void Function(void Function()) setState) =>
                               Center(
                                   heightFactor: 1,
                                   child: Column(
                                       mainAxisAlignment:
-                                          MainAxisAlignment.center,
+                                      MainAxisAlignment.center,
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
                                         const Text("Step Drain",
@@ -108,7 +111,7 @@ class Tiles {
                                                 Constants.padding),
                                             child: Row(
                                               mainAxisAlignment:
-                                                  MainAxisAlignment.spaceEvenly,
+                                              MainAxisAlignment.spaceEvenly,
                                               children: [
                                                 const Icon(
                                                     Icons.battery_full_rounded),
@@ -118,13 +121,20 @@ class Tiles {
                                                     max: Constants.maxTaskWeight
                                                         .toDouble(),
                                                     label:
-                                                        "${cacheWeight.toInt()} ${(cacheWeight > (Constants.maxTaskWeight / 2).floor()) ? Constants.lowBattery : Constants.fullBattery}",
+                                                    "${cacheWeight
+                                                        .toInt()} ${(cacheWeight >
+                                                        (Constants
+                                                            .maxTaskWeight / 2)
+                                                            .floor())
+                                                        ? Constants.lowBattery
+                                                        : Constants
+                                                        .fullBattery}",
                                                     divisions:
-                                                        Constants.maxTaskWeight,
+                                                    Constants.maxTaskWeight,
                                                     onChanged: (value) =>
                                                         setState(() {
-                                                      cacheWeight = value;
-                                                    }),
+                                                          cacheWeight = value;
+                                                        }),
                                                   ),
                                                 ),
                                                 const Icon(Icons
@@ -141,18 +151,16 @@ class Tiles {
               ),
               IconButton(
                   visualDensity: VisualDensity.adaptivePlatformDensity,
-                  icon: const Icon(Icons.delete_rounded),
+                  icon: const Icon(Icons.remove_circle_outline_rounded),
                   onPressed: () => onRemoved(index: index)),
               (showHandle)
                   ? ReorderableDragStartListener(
-                      index: index,
-                      child: const Icon(Icons.drag_handle_rounded))
+                  index: index,
+                  child: const Icon(Icons.drag_handle_rounded))
                   : const SizedBox.shrink(),
             ],
           ));
 
-  // TODO: Finish this and figure out how best to handle onTap.
-  // TODO: Return after provider refactor.
   static Widget toDoCheckTile({
     required int index,
     required ToDo toDo,
@@ -163,36 +171,31 @@ class Tiles {
   }) {
     return ListTile(
         contentPadding:
-            const EdgeInsets.symmetric(horizontal: Constants.innerPadding),
+        const EdgeInsets.symmetric(horizontal: Constants.innerPadding),
         key: ValueKey(index),
         shape: const RoundedRectangleBorder(
             borderRadius:
-                BorderRadius.all(Radius.circular(Constants.roundedCorners))),
-        leading: Checkbox(
-            shape: const CircleBorder(),
-            splashRadius: 15,
-            value: toDo.completed,
-            onChanged: (bool? value) {
-              onChanged(index: index, value: value!);
-            }),
+            BorderRadius.all(Radius.circular(Constants.roundedCorners))),
+        leading: LeadingWidgets.toDoCheckbox(
+            completed: toDo.completed,
+            onChanged: (bool? value) => onChanged(index: index, value: value!)),
         title: AutoSizeText(toDo.name,
-            overflow: TextOverflow.visible,
-            style: Constants.headerStyle,
-            minFontSize: Constants.medium,
-            softWrap: true,
-            maxLines: 1),
+            overflow: TextOverflow.ellipsis,
+            minFontSize: Constants.large,
+            softWrap: false,
+            maxLines: 2),
         onTap: () async => await onTap(index: index),
         trailing: Row(mainAxisSize: MainAxisSize.min, children: [
           Row(mainAxisSize: MainAxisSize.min, children: [
             Constants.batteryIcons[(toDo.taskType == TaskType.small)
                 ? toDo.weight
                 : remap(
-                        x: toDo.weight,
-                        inMin: 0,
-                        inMax: Constants.maxWeight,
-                        outMin: 0,
-                        outMax: 5)
-                    .toInt()]!,
+                x: toDo.weight,
+                inMin: 0,
+                inMax: Constants.maxWeight,
+                outMin: 0,
+                outMax: 5)
+                .toInt()]!,
             AutoSizeText(
               "${toDo.weight}",
               overflow: TextOverflow.visible,
@@ -202,15 +205,14 @@ class Tiles {
             ),
           ]),
           Padding(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: Constants.innerPadding),
+              padding: EdgeInsets.zero,
               child: IconButton(
                 icon: const Icon(Icons.remove_circle_outline_rounded),
                 onPressed: () => handleRemove(index: index),
               )),
           (showHandle)
               ? ReorderableDragStartListener(
-                  index: index, child: const Icon(Icons.drag_handle_rounded))
+              index: index, child: const Icon(Icons.drag_handle_rounded))
               : const SizedBox.shrink(),
         ]));
   }
@@ -241,17 +243,20 @@ class Tiles {
                   decoration: InputDecoration(
                     suffixIcon: (controller?.text.isNotEmpty ?? false)
                         ? IconButton(
-                            icon: const Icon(Icons.clear_rounded),
-                            onPressed: handleClear)
+                        icon: const Icon(Icons.clear_rounded),
+                        onPressed: handleClear)
                         : null,
                     contentPadding:
-                        const EdgeInsets.all(Constants.innerPadding),
+                    const EdgeInsets.all(Constants.innerPadding),
                     enabledBorder: OutlineInputBorder(
                         borderRadius: const BorderRadius.all(
                             Radius.circular(Constants.roundedCorners)),
                         borderSide: BorderSide(
                           width: 2,
-                          color: Theme.of(context).colorScheme.outlineVariant,
+                          color: Theme
+                              .of(context)
+                              .colorScheme
+                              .outlineVariant,
                           strokeAlign: BorderSide.strokeAlignOutside,
                         )),
                     border: const OutlineInputBorder(
@@ -311,9 +316,8 @@ class Tiles {
       ]);
 
   // Weight Slider
-  static Widget weightSlider(
-          {required double weight,
-          required void Function(double value)? handleWeightChange}) =>
+  static Widget weightSlider({required double weight,
+    required void Function(double value)? handleWeightChange}) =>
       Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
@@ -323,7 +327,9 @@ class Tiles {
                 value: weight,
                 max: Constants.maxTaskWeight.toDouble(),
                 label:
-                    "$weight ${(weight > (Constants.maxTaskWeight / 2).floor()) ? Constants.lowBattery : Constants.fullBattery}",
+                "$weight ${(weight > (Constants.maxTaskWeight / 2).floor())
+                    ? Constants.lowBattery
+                    : Constants.fullBattery}",
                 divisions: Constants.maxTaskWeight,
                 onChanged: handleWeightChange),
           ),
@@ -332,28 +338,34 @@ class Tiles {
       );
 
   // Description
-  static Widget descriptionTile(
-          {TextEditingController? controller,
-          EdgeInsetsGeometry outerPadding = EdgeInsets.zero,
-          bool isDense = false,
-          required BuildContext context}) =>
+  static Widget descriptionTile({TextEditingController? controller,
+    EdgeInsetsGeometry outerPadding = EdgeInsets.zero,
+    String hintText = "Description",
+    int? maxLines = Constants.mobileMaxLinesBeforeScroll,
+    int minLines = Constants.mobileMinLines,
+    double? minFontSize,
+    bool isDense = false,
+    required BuildContext context}) =>
       Padding(
         padding: outerPadding,
         child: AutoSizeTextField(
             controller: controller,
-            maxLines: Constants.descripMaxLinesBeforeScroll,
-            minLines: Constants.descripMinLines,
-            minFontSize: Constants.large,
+            maxLines: maxLines,
+            minLines: minLines,
+            minFontSize: minFontSize ?? Constants.large,
             decoration: InputDecoration(
               isDense: isDense,
               contentPadding: const EdgeInsets.all(Constants.innerPadding),
-              hintText: "Description",
+              hintText: hintText,
               enabledBorder: OutlineInputBorder(
                   borderRadius: const BorderRadius.all(
                       Radius.circular(Constants.roundedCorners)),
                   borderSide: BorderSide(
                     width: 2,
-                    color: Theme.of(context).colorScheme.outlineVariant,
+                    color: Theme
+                        .of(context)
+                        .colorScheme
+                        .outlineVariant,
                     strokeAlign: BorderSide.strokeAlignOutside,
                   )),
               border: const OutlineInputBorder(
@@ -366,13 +378,16 @@ class Tiles {
       );
 
   // Duration
-  static Widget durationTile(
-      {int expectedDuration = 0,
-      required BuildContext context,
-      int realDuration = 0,
-      EdgeInsetsGeometry outerPadding = EdgeInsets.zero,
-      required void Function() handleClear,
-      required void Function(int? value) handleUpdate}) {
+  // TODO: factor out stateful builder
+  static Widget durationTile({int expectedDuration = 0,
+    int realDuration = 0,
+    int hours = 0,
+    int minutes = 0,
+    int seconds = 0,
+    required BuildContext context,
+    EdgeInsetsGeometry outerPadding = EdgeInsets.zero,
+    required void Function() handleClear,
+    required void Function(int? value) handleUpdate}) {
     return Padding(
       padding: outerPadding,
       child: ListTile(
@@ -380,104 +395,99 @@ class Tiles {
         leading: const Icon(Icons.timer_outlined),
         shape: const RoundedRectangleBorder(
             borderRadius:
-                BorderRadius.all(Radius.circular(Constants.roundedCorners))),
+            BorderRadius.all(Radius.circular(Constants.roundedCorners))),
         title: (expectedDuration > 0)
             ? Row(
-                children: [
-                  Flexible(
-                    child: Tooltip(
-                      message: "Expected",
-                      child: AutoSizeText(
-                          Duration(seconds: expectedDuration)
-                              .toString()
-                              .split(".")
-                              .first,
-                          overflow: TextOverflow.visible,
-                          minFontSize: Constants.large,
-                          maxLines: 1,
-                          softWrap: false),
-                    ),
-                  ),
-                  const Padding(
-                    padding: EdgeInsets.symmetric(
-                        horizontal: Constants.innerPadding),
-                    child: Icon(
-                      Icons.timer_rounded,
-                    ),
-                  ),
-                  Flexible(
-                    child: Tooltip(
-                      message: "Projected",
-                      child: AutoSizeText(
-                          Duration(seconds: realDuration)
-                              .toString()
-                              .split(".")
-                              .first,
-                          overflow: TextOverflow.visible,
-                          minFontSize: Constants.small,
-                          maxLines: 1,
-                          softWrap: true),
-                    ),
-                  ),
-                ],
-              )
+          children: [
+            Flexible(
+              child: Tooltip(
+                message: "Expected",
+                child: AutoSizeText(
+                    Duration(seconds: expectedDuration)
+                        .toString()
+                        .split(".")
+                        .first,
+                    overflow: TextOverflow.visible,
+                    minFontSize: Constants.large,
+                    maxLines: 1,
+                    softWrap: false),
+              ),
+            ),
+            const Padding(
+              padding:
+              EdgeInsets.symmetric(horizontal: Constants.padding),
+              child: Icon(
+                Icons.timer_rounded,
+              ),
+            ),
+            Flexible(
+              child: Tooltip(
+                message: "Projected",
+                child: AutoSizeText(
+                    Duration(seconds: realDuration)
+                        .toString()
+                        .split(".")
+                        .first,
+                    overflow: TextOverflow.visible,
+                    minFontSize: Constants.large,
+                    maxLines: 1,
+                    softWrap: true),
+              ),
+            ),
+          ],
+        )
             : const AutoSizeText("Expected Duration: ",
-                overflow: TextOverflow.visible,
-                minFontSize: Constants.small,
-                maxLines: 2,
-                softWrap: true),
+            overflow: TextOverflow.visible,
+            minFontSize: Constants.small,
+            maxLines: 2,
+            softWrap: true),
         trailing: (expectedDuration > 0)
             ? IconButton(
-                icon: const Icon(Icons.clear_rounded), onPressed: handleClear)
+            icon: const Icon(Icons.clear_rounded), onPressed: handleClear)
             : const SizedBox.shrink(),
-        // TODO: Could be refactored into a helper method.
-        onTap: () async => await showDialog<int>(
+        onTap: () async =>
+        await showDialog<int>(
             context: context,
             builder: (BuildContext context) {
-              int time = expectedDuration;
-              int hours = time ~/ 3600;
-              time %= 3600;
-              int minutes = time ~/ 60;
-              time %= 60;
-              int seconds = time;
-
               return StatefulBuilder(
                 builder: (BuildContext context,
-                        void Function(void Function()) setState) =>
+                    void Function(void Function()) setState) =>
                     Dialog(
                         insetPadding:
-                            const EdgeInsets.all(Constants.innerPadding),
+                        const EdgeInsets.all(Constants.innerPadding),
                         child: Padding(
                             padding:
-                                const EdgeInsets.all(Constants.innerPadding),
+                            const EdgeInsets.all(Constants.innerPadding),
                             child: Column(
                                 mainAxisSize: MainAxisSize.min,
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  const Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.start,
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Expanded(
-                                          child: AutoSizeText(
-                                            "Expected Duration",
-                                            style: Constants.headerStyle,
-                                            softWrap: true,
-                                            overflow: TextOverflow.visible,
-                                            maxLines: 2,
-                                            minFontSize: Constants.medium,
-                                          ),
-                                        )
-                                      ]),
+                                  const Flexible(
+                                    child: Row(
+                                        mainAxisAlignment:
+                                        MainAxisAlignment.start,
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Expanded(
+                                            child: AutoSizeText(
+                                              "Expected Duration",
+                                              style: Constants.headerStyle,
+                                              softWrap: true,
+                                              overflow: TextOverflow.visible,
+                                              maxLines: 2,
+                                              minFontSize: Constants.large,
+                                            ),
+                                          )
+                                        ]),
+                                  ),
                                   const Flexible(
                                     child: Row(
                                       mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
+                                      MainAxisAlignment.spaceBetween,
                                       mainAxisSize: MainAxisSize.max,
                                       children: [
                                         Expanded(
-                                            flex: 2,
+                                            flex: 3,
                                             child: AutoSizeText(
                                               "Hours | Minutes | Seconds ",
                                               style: Constants.largeHeaderStyle,
@@ -495,87 +505,92 @@ class Tiles {
                                       ],
                                     ),
                                   ),
-                                  Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceEvenly,
-                                    children: [
-                                      Expanded(
-                                        child: NumberPicker(
-                                          textStyle:
-                                              Constants.numberPickerSecondary(
-                                                  context: context),
-                                          selectedTextStyle:
-                                              Constants.numberPickerPrimary(
-                                                  context: context),
-                                          minValue: 0,
-                                          maxValue: 100,
-                                          value: hours,
-                                          haptics: true,
-                                          onChanged: (value) {
-                                            SemanticsService.announce(
-                                                "$value, hours",
-                                                Directionality.of(context));
-                                            setState(() => hours = value);
-                                          },
+                                  Flexible(
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      mainAxisAlignment:
+                                      MainAxisAlignment.spaceEvenly,
+                                      children: [
+                                        Expanded(
+                                          child: NumberPicker(
+                                            infiniteLoop: true,
+                                            textStyle:
+                                            Constants.numberPickerSecondary(
+                                                context: context),
+                                            selectedTextStyle:
+                                            Constants.numberPickerPrimary(
+                                                context: context),
+                                            minValue: 0,
+                                            maxValue: 100,
+                                            value: hours,
+                                            haptics: true,
+                                            onChanged: (value) {
+                                              SemanticsService.announce(
+                                                  "$value, hours",
+                                                  Directionality.of(context));
+                                              setState(() => hours = value);
+                                            },
+                                          ),
                                         ),
-                                      ),
-                                      const Padding(
-                                          padding: EdgeInsets.symmetric(
-                                              horizontal: Constants.padding),
-                                          child: Text(":",
-                                              style: Constants.timeColon)),
-                                      Expanded(
-                                        child: NumberPicker(
-                                          textStyle:
-                                              Constants.numberPickerSecondary(
-                                                  context: context),
-                                          selectedTextStyle:
-                                              Constants.numberPickerPrimary(
-                                                  context: context),
-                                          minValue: 0,
-                                          maxValue: 59,
-                                          value: minutes,
-                                          haptics: true,
-                                          onChanged: (value) {
-                                            SemanticsService.announce(
-                                                "$value, minutes",
-                                                Directionality.of(context));
-                                            setState(() => minutes = value);
-                                          },
+                                        const Padding(
+                                            padding: EdgeInsets.symmetric(
+                                                horizontal: Constants.padding),
+                                            child: Text(":",
+                                                style: Constants.timeColon)),
+                                        Expanded(
+                                          child: NumberPicker(
+                                            infiniteLoop: true,
+                                            textStyle:
+                                            Constants.numberPickerSecondary(
+                                                context: context),
+                                            selectedTextStyle:
+                                            Constants.numberPickerPrimary(
+                                                context: context),
+                                            minValue: 0,
+                                            maxValue: 59,
+                                            value: minutes,
+                                            haptics: true,
+                                            onChanged: (value) {
+                                              SemanticsService.announce(
+                                                  "$value, minutes",
+                                                  Directionality.of(context));
+                                              setState(() => minutes = value);
+                                            },
+                                          ),
                                         ),
-                                      ),
-                                      const Padding(
-                                          padding: EdgeInsets.symmetric(
-                                              horizontal: Constants.padding),
-                                          child: Text(":",
-                                              style: Constants.timeColon)),
-                                      Expanded(
-                                        child: NumberPicker(
-                                          textStyle:
-                                              Constants.numberPickerSecondary(
-                                                  context: context),
-                                          selectedTextStyle:
-                                              Constants.numberPickerPrimary(
-                                                  context: context),
-                                          minValue: 0,
-                                          maxValue: 59,
-                                          value: seconds,
-                                          haptics: true,
-                                          onChanged: (value) {
-                                            SemanticsService.announce(
-                                                "$value, seconds",
-                                                Directionality.of(context));
-                                            setState(() => seconds = value);
-                                          },
+                                        const Padding(
+                                            padding: EdgeInsets.symmetric(
+                                                horizontal: Constants.padding),
+                                            child: Text(":",
+                                                style: Constants.timeColon)),
+                                        Expanded(
+                                          child: NumberPicker(
+                                            infiniteLoop: true,
+                                            textStyle:
+                                            Constants.numberPickerSecondary(
+                                                context: context),
+                                            selectedTextStyle:
+                                            Constants.numberPickerPrimary(
+                                                context: context),
+                                            minValue: 0,
+                                            maxValue: 59,
+                                            value: seconds,
+                                            haptics: true,
+                                            onChanged: (value) {
+                                              SemanticsService.announce(
+                                                  "$value, seconds",
+                                                  Directionality.of(context));
+                                              setState(() => seconds = value);
+                                            },
+                                          ),
                                         ),
-                                      ),
-                                    ],
+                                      ],
+                                    ),
                                   ),
                                   const SizedBox(height: 20),
                                   Row(
                                       mainAxisAlignment:
-                                          MainAxisAlignment.spaceEvenly,
+                                      MainAxisAlignment.spaceEvenly,
                                       children: [
                                         Expanded(
                                           child: Padding(
@@ -585,15 +600,16 @@ class Tiles {
                                                 icon: const Icon(
                                                     Icons.close_rounded),
                                                 onPressed: () =>
-                                                    Navigator.pop(context, 0),
+                                                    Navigator.pop(
+                                                        context, null),
                                                 label: const AutoSizeText(
                                                     "Cancel",
                                                     softWrap: false,
                                                     overflow:
-                                                        TextOverflow.visible,
+                                                    TextOverflow.visible,
                                                     maxLines: 1,
                                                     minFontSize:
-                                                        Constants.small)),
+                                                    Constants.small)),
                                           ),
                                         ),
                                         Expanded(
@@ -613,7 +629,7 @@ class Tiles {
                                               label: const AutoSizeText("Done",
                                                   softWrap: false,
                                                   overflow:
-                                                      TextOverflow.visible,
+                                                  TextOverflow.visible,
                                                   maxLines: 1,
                                                   minFontSize: Constants.small),
                                             ),
@@ -627,7 +643,6 @@ class Tiles {
     );
   }
 
-  // DATE-RANGE TILE
   static Widget dateRangeTile({
     EdgeInsetsGeometry outerPadding = EdgeInsets.zero,
     required BuildContext context,
@@ -635,8 +650,8 @@ class Tiles {
     DateTime? dueDate,
     required void Function() handleClear,
     required void Function(
-            {bool? checkClose, DateTime? newStart, DateTime? newDue})
-        handleUpdate,
+        {bool? checkClose, DateTime? newStart, DateTime? newDue})
+    handleUpdate,
   }) =>
       Padding(
         padding: outerPadding,
@@ -645,455 +660,102 @@ class Tiles {
           leading: const Icon(Icons.today_rounded),
           shape: const RoundedRectangleBorder(
               borderRadius:
-                  BorderRadius.all(Radius.circular(Constants.roundedCorners))),
+              BorderRadius.all(Radius.circular(Constants.roundedCorners))),
           title: (null == startDate && null == dueDate)
               ? const AutoSizeText(
-                  "Add Dates",
+            "Add Dates",
+            softWrap: true,
+            overflow: TextOverflow.visible,
+            maxLines: 2,
+            minFontSize: Constants.small,
+          )
+              : Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              (null == startDate)
+                  ? const Flexible(
+                child: AutoSizeText(
+                  "Start?",
                   softWrap: true,
                   overflow: TextOverflow.visible,
                   maxLines: 2,
                   minFontSize: Constants.small,
-                )
-              : Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    (null == startDate)
-                        ? const Flexible(
-                            child: AutoSizeText(
-                              "Start?",
-                              softWrap: true,
-                              overflow: TextOverflow.visible,
-                              maxLines: 2,
-                              minFontSize: Constants.small,
-                            ),
-                          )
-                        : Flexible(
-                            child: AutoSizeText(
-                                Jiffy.parseFromDateTime(startDate)
-                                    .toLocal()
-                                    .format(
-                                      pattern: "MMM d",
-                                    ),
-                                softWrap: false,
-                                overflow: TextOverflow.visible,
-                                maxLines: 1,
-                                minFontSize: Constants.huge)),
-                    const Padding(
-                      padding: EdgeInsets.all(Constants.padding),
-                      child: Text(
-                        "-",
+                ),
+              )
+                  : Flexible(
+                  child: Tooltip(
+                    message: "Start Date",
+                    child: AutoSizeText(
+                        Jiffy.parseFromDateTime(startDate)
+                            .toLocal()
+                            .format(
+                          pattern: "MMM d",
+                        ),
                         softWrap: false,
                         overflow: TextOverflow.visible,
                         maxLines: 1,
-                      ),
-                    ),
-                    (null == dueDate)
-                        ? const Flexible(
-                            child: Padding(
-                              padding:
-                                  EdgeInsets.only(right: Constants.padding),
-                              child: Icon(Icons.today_rounded),
-                            ),
-                          )
-                        : const Flexible(
-                            child: Padding(
-                            padding: EdgeInsets.only(right: Constants.padding),
-                            child: Icon(Icons.event_rounded),
-                          )),
-                    (null == dueDate)
-                        ? const Flexible(
-                            child: AutoSizeText(
-                              "Due?",
-                              softWrap: true,
-                              overflow: TextOverflow.visible,
-                              maxLines: 2,
-                              minFontSize: Constants.small,
-                            ),
-                          )
-                        : Flexible(
-                            child: AutoSizeText(
-                                Jiffy.parseFromDateTime(dueDate)
-                                    .toLocal()
-                                    .format(pattern: "MMM d"),
-                                softWrap: false,
-                                overflow: TextOverflow.visible,
-                                maxLines: 1,
-                                minFontSize: Constants.huge),
-                          )
-                  ],
+                        minFontSize: Constants.huge),
+                  )),
+              (null == dueDate)
+                  ? const Flexible(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                      horizontal: Constants.padding),
+                  child: Icon(Icons.today_rounded),
                 ),
+              )
+                  : const Flexible(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(
+                        horizontal: Constants.padding),
+                    child: Icon(Icons.event_rounded),
+                  )),
+              (null == dueDate)
+                  ? const Flexible(
+                child: AutoSizeText(
+                  "Due?",
+                  softWrap: true,
+                  overflow: TextOverflow.visible,
+                  maxLines: 2,
+                  minFontSize: Constants.small,
+                ),
+              )
+                  : Flexible(
+                child: Tooltip(
+                  message: "Due Date",
+                  child: AutoSizeText(
+                      Jiffy.parseFromDateTime(dueDate)
+                          .toLocal()
+                          .format(pattern: "MMM d"),
+                      softWrap: false,
+                      overflow: TextOverflow.visible,
+                      maxLines: 1,
+                      minFontSize: Constants.huge),
+                ),
+              )
+            ],
+          ),
           trailing: (startDate != null || dueDate != null)
               ? IconButton(
-                  icon: const Icon(Icons.clear), onPressed: handleClear)
+              icon: const Icon(Icons.clear), onPressed: handleClear)
               : null,
-          // TODO: This should probably be refactored.
           onTap: () async {
-            await showDialog<void>(
+            await showDialog<List<DateTime?>?>(
                 context: context,
                 builder: (BuildContext context) {
-                  DateTime? tmpStart = startDate;
-                  DateTime? tmpDue = dueDate;
-                  DateTime initDate = tmpStart ?? tmpDue ?? DateTime.now();
-                  bool setStart = false;
-                  final int numDays =
-                      (tmpDue?.difference(initDate).inDays ?? 0) + 1;
-                  List<DateTime?> showDates = List.generate(
-                      numDays, (i) => initDate.copyWith(day: initDate.day + 1));
-
-                  // List ->
-                  return StatefulBuilder(
-                      builder: (BuildContext context,
-                              void Function(void Function()) setState) =>
-                          Dialog(
-                              insetPadding:
-                                  const EdgeInsets.all(Constants.innerPadding),
-                              child: Padding(
-                                padding: const EdgeInsets.all(
-                                    Constants.innerPadding),
-                                child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      const Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.start,
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Expanded(
-                                              child: AutoSizeText(
-                                                "Select Dates",
-                                                style: Constants.headerStyle,
-                                                softWrap: true,
-                                                overflow: TextOverflow.visible,
-                                                maxLines: 2,
-                                                minFontSize: Constants.medium,
-                                              ),
-                                            )
-                                          ]),
-                                      const Flexible(
-                                        child: Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.spaceBetween,
-                                          mainAxisSize: MainAxisSize.max,
-                                          children: [
-                                            Flexible(
-                                                child: AutoSizeText(
-                                              "Start | Due ",
-                                              style: Constants.largeHeaderStyle,
-                                              softWrap: true,
-                                              overflow: TextOverflow.visible,
-                                              maxLines: 1,
-                                              minFontSize: Constants.large,
-                                            )),
-                                            Flexible(
-                                              child: FittedBox(
-                                                  fit: BoxFit.fill,
-                                                  child: Icon(
-                                                      Icons.date_range_rounded,
-                                                      size: Constants
-                                                          .medIconSize)),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      Padding(
-                                        padding: const EdgeInsets.symmetric(
-                                            vertical: Constants.innerPadding),
-                                        child: Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.spaceEvenly,
-                                            mainAxisSize: MainAxisSize.max,
-                                            children: [
-                                              Expanded(
-                                                flex: 10,
-                                                child: Container(
-                                                  decoration: BoxDecoration(
-                                                    borderRadius: BorderRadius
-                                                        .circular(Constants
-                                                            .roundedCorners),
-                                                    border: Border.all(
-                                                        width: 2,
-                                                        color: Theme.of(context)
-                                                            .colorScheme
-                                                            .outlineVariant,
-                                                        strokeAlign: BorderSide
-                                                            .strokeAlignOutside),
-                                                  ),
-                                                  child: Row(
-                                                      mainAxisAlignment:
-                                                          MainAxisAlignment
-                                                              .spaceBetween,
-                                                      mainAxisSize:
-                                                          MainAxisSize.max,
-                                                      children: [
-                                                        Expanded(
-                                                          child: TextButton(
-                                                              onPressed: () =>
-                                                                  setState(() {
-                                                                    setStart =
-                                                                        true;
-                                                                    tmpStart = tmpStart ??
-                                                                        DateTime
-                                                                            .now();
-                                                                  }),
-                                                              child: (null !=
-                                                                      tmpStart)
-                                                                  ? AutoSizeText(
-                                                                      Jiffy.parseFromDateTime(
-                                                                              tmpStart!)
-                                                                          .toLocal()
-                                                                          .format(
-                                                                              pattern: "MMM d, yyyy"),
-                                                                      softWrap:
-                                                                          false,
-                                                                      overflow:
-                                                                          TextOverflow
-                                                                              .visible,
-                                                                      maxLines:
-                                                                          1,
-                                                                      minFontSize:
-                                                                          Constants
-                                                                              .small,
-                                                                    )
-                                                                  : const AutoSizeText(
-                                                                      "Start Date",
-                                                                      softWrap:
-                                                                          true,
-                                                                      overflow:
-                                                                          TextOverflow
-                                                                              .visible,
-                                                                      maxLines:
-                                                                          1,
-                                                                      minFontSize:
-                                                                          Constants
-                                                                              .small)),
-                                                        ),
-                                                        (tmpStart != null)
-                                                            ? IconButton(
-                                                                icon: const Icon(
-                                                                    Icons
-                                                                        .clear_rounded),
-                                                                selectedIcon:
-                                                                    const Icon(Icons
-                                                                        .clear),
-                                                                onPressed: () =>
-                                                                    setState(
-                                                                        () {
-                                                                  showDates.remove(
-                                                                      tmpStart);
-                                                                  tmpStart =
-                                                                      null;
-                                                                }),
-                                                              )
-                                                            : const SizedBox
-                                                                .shrink(),
-                                                      ]),
-                                                ),
-                                              ),
-                                              const Flexible(
-                                                flex: 1,
-                                                child: Padding(
-                                                  padding: EdgeInsets.symmetric(
-                                                      horizontal: Constants
-                                                          .halfPadding),
-                                                  child: AutoSizeText("|",
-                                                      style: Constants
-                                                          .largeHeaderStyle,
-                                                      softWrap: false,
-                                                      overflow:
-                                                          TextOverflow.visible,
-                                                      maxLines: 1,
-                                                      minFontSize:
-                                                          Constants.small),
-                                                ),
-                                              ),
-                                              Expanded(
-                                                flex: 10,
-                                                child: Container(
-                                                  decoration: BoxDecoration(
-                                                    borderRadius: BorderRadius
-                                                        .circular(Constants
-                                                            .roundedCorners),
-                                                    border: Border.all(
-                                                        width: 2,
-                                                        color: Theme.of(context)
-                                                            .colorScheme
-                                                            .outlineVariant,
-                                                        strokeAlign: BorderSide
-                                                            .strokeAlignOutside),
-                                                  ),
-                                                  child: Row(
-                                                      mainAxisAlignment:
-                                                          MainAxisAlignment
-                                                              .spaceBetween,
-                                                      mainAxisSize:
-                                                          MainAxisSize.max,
-                                                      children: [
-                                                        Expanded(
-                                                          child: TextButton(
-                                                              onPressed: () =>
-                                                                  setState(() {
-                                                                    setStart =
-                                                                        false;
-                                                                    tmpDue = tmpDue ??
-                                                                        DateTime
-                                                                            .now();
-                                                                  }),
-                                                              child: (null !=
-                                                                      tmpDue)
-                                                                  ? AutoSizeText(
-                                                                      Jiffy.parseFromDateTime(
-                                                                              tmpDue!)
-                                                                          .toLocal()
-                                                                          .format(
-                                                                              pattern: "MMM d, yyyy"),
-                                                                      softWrap:
-                                                                          false,
-                                                                      overflow:
-                                                                          TextOverflow
-                                                                              .visible,
-                                                                      maxLines:
-                                                                          1,
-                                                                      minFontSize:
-                                                                          Constants
-                                                                              .small,
-                                                                    )
-                                                                  : const AutoSizeText(
-                                                                      "Due Date",
-                                                                      softWrap:
-                                                                          true,
-                                                                      overflow:
-                                                                          TextOverflow
-                                                                              .visible,
-                                                                      maxLines:
-                                                                          1,
-                                                                      minFontSize:
-                                                                          Constants
-                                                                              .small)),
-                                                        ),
-                                                        (tmpDue != null)
-                                                            ? IconButton(
-                                                                icon: const Icon(
-                                                                    Icons
-                                                                        .clear_rounded),
-                                                                selectedIcon:
-                                                                    const Icon(Icons
-                                                                        .clear),
-                                                                onPressed: () =>
-                                                                    setState(
-                                                                        () {
-                                                                  showDates
-                                                                      .remove(
-                                                                          tmpDue);
-                                                                  tmpDue = null;
-                                                                }),
-                                                              )
-                                                            : const SizedBox
-                                                                .shrink(),
-                                                      ]),
-                                                ),
-                                              ),
-                                            ]),
-                                      ),
-
-                                      // Calendar view.
-                                      Column(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.center,
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            CalendarDatePicker2(
-                                                config:
-                                                    CalendarDatePicker2Config(
-                                                  calendarType:
-                                                      CalendarDatePicker2Type
-                                                          .range,
-                                                  firstDate: DateTime(1970),
-                                                  lastDate: DateTime(3000),
-                                                ),
-                                                value: showDates,
-                                                onValueChanged: (dates) {
-                                                  setState(() {
-                                                    if (dates.length > 1) {
-                                                      tmpStart = dates.first;
-                                                      tmpDue = dates.last;
-                                                    } else {
-                                                      (setStart)
-                                                          ? tmpStart =
-                                                              dates.first
-                                                          : tmpDue =
-                                                              dates.first;
-                                                    }
-                                                    showDates = dates;
-                                                  });
-                                                }),
-                                          ]),
-
-                                      Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.spaceBetween,
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Expanded(
-                                              child: Padding(
-                                                padding: const EdgeInsets.only(
-                                                    right: Constants.padding),
-                                                child: FilledButton.tonalIcon(
-                                                    icon: const Icon(
-                                                        Icons.close_rounded),
-                                                    onPressed: () {
-                                                      Navigator.pop(context);
-                                                      handleUpdate(
-                                                        newStart: startDate,
-                                                        newDue: dueDate,
-                                                      );
-                                                    },
-                                                    label: const AutoSizeText(
-                                                        "Cancel",
-                                                        softWrap: false,
-                                                        overflow: TextOverflow
-                                                            .visible,
-                                                        maxLines: 1,
-                                                        minFontSize:
-                                                            Constants.small)),
-                                              ),
-                                            ),
-                                            Expanded(
-                                              child: Padding(
-                                                padding: const EdgeInsets.only(
-                                                    left: Constants.padding),
-                                                child: FilledButton.icon(
-                                                  icon: const Icon(
-                                                      Icons.done_rounded),
-                                                  // This needs to change.
-                                                  onPressed: () {
-                                                    Navigator.pop(context);
-                                                    handleUpdate(
-                                                        checkClose: true,
-                                                        newStart: tmpStart,
-                                                        newDue: tmpDue);
-                                                  },
-                                                  label: const AutoSizeText(
-                                                      "Done",
-                                                      softWrap: false,
-                                                      overflow:
-                                                          TextOverflow.visible,
-                                                      maxLines: 1,
-                                                      minFontSize:
-                                                          Constants.small),
-                                                ),
-                                              ),
-                                            )
-                                          ]),
-                                    ]),
-                              )));
-                  // This is to update the main context after updating.
-                });
+                  return DateRangeDialog(
+                      startDate: startDate, dueDate: dueDate);
+                }).then((newDates) {
+              if (null == newDates) {
+                return handleUpdate(newStart: startDate, newDue: dueDate);
+              }
+              return handleUpdate(
+                  newStart: newDates[0], newDue: newDates[1], checkClose: true);
+            });
           },
         ),
       );
 
-  // TIME-RANGE TILE
   static Widget timeTile({
     TimeOfDay? startTime,
     TimeOfDay? dueTime,
@@ -1101,8 +763,8 @@ class Tiles {
     required BuildContext context,
     required void Function() handleClear,
     required void Function(
-            {bool checkClose, TimeOfDay? newStart, TimeOfDay? newDue})
-        handleUpdate,
+        {bool checkClose, TimeOfDay? newStart, TimeOfDay? newDue})
+    handleUpdate,
   }) =>
       Padding(
         padding: outerPadding,
@@ -1114,407 +776,84 @@ class Tiles {
                     Radius.circular(Constants.roundedCorners))),
             title: (null == startTime && null == dueTime)
                 ? const AutoSizeText(
-                    "Add Times",
-                    overflow: TextOverflow.visible,
-                    minFontSize: Constants.small,
-                    maxLines: 2,
-                    softWrap: true,
-                  )
+              "Add Times",
+              overflow: TextOverflow.visible,
+              minFontSize: Constants.small,
+              maxLines: 2,
+              softWrap: true,
+            )
                 : Row(children: [
-                    (null == startTime)
-                        ? const Flexible(
-                            child: AutoSizeText(
-                            "Start?",
-                            softWrap: false,
-                            overflow: TextOverflow.visible,
-                            maxLines: 1,
-                            minFontSize: Constants.small,
-                          ))
-                        : Flexible(
-                            child: AutoSizeText(
-                            startTime.format(context).toString(),
-                            softWrap: false,
-                            overflow: TextOverflow.visible,
-                            maxLines: 1,
-                            minFontSize: Constants.large,
-                          )),
-                    (null == dueTime)
-                        ? const Flexible(
-                            child: Padding(
-                              padding: EdgeInsets.symmetric(
-                                  horizontal: Constants.padding),
-                              child: FittedBox(
-                                  fit: BoxFit.fill,
-                                  child:
-                                      Icon(Icons.history_toggle_off_rounded)),
-                            ),
-                          )
-                        : const Flexible(
-                            child: Padding(
-                            padding: EdgeInsets.symmetric(
-                                horizontal: Constants.padding),
-                            child: FittedBox(
-                                fit: BoxFit.fill,
-                                child: Icon(Icons.schedule_rounded)),
-                          )),
-                    (null == dueTime)
-                        ? const Flexible(
-                            child: AutoSizeText(
-                              "Due?",
-                              softWrap: false,
-                              overflow: TextOverflow.visible,
-                              maxLines: 1,
-                              minFontSize: Constants.small,
-                            ),
-                          )
-                        : Flexible(
-                            child: AutoSizeText(
-                              dueTime.format(context).toString(),
-                              softWrap: false,
-                              overflow: TextOverflow.visible,
-                              maxLines: 1,
-                              minFontSize: Constants.small,
-                            ),
-                          ),
-                  ]),
-            // TODO: This should probably be refactored
+              (null == startTime)
+                  ? const Flexible(
+                  child: AutoSizeText(
+                    "Start?",
+                    softWrap: false,
+                    overflow: TextOverflow.visible,
+                    maxLines: 1,
+                    minFontSize: Constants.large,
+                  ))
+                  : Flexible(
+                  child: AutoSizeText(
+                    startTime.format(context).toString(),
+                    softWrap: false,
+                    overflow: TextOverflow.visible,
+                    maxLines: 1,
+                    minFontSize: Constants.large,
+                  )),
+              (null == dueTime)
+                  ? const Flexible(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                      horizontal: Constants.padding),
+                  child: Icon(Icons.history_toggle_off_rounded),
+                ),
+              )
+                  : const Flexible(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(
+                        horizontal: Constants.padding),
+                    child: Icon(Icons.schedule_rounded),
+                  )),
+              (null == dueTime)
+                  ? const Flexible(
+                child: AutoSizeText(
+                  "Due?",
+                  softWrap: false,
+                  overflow: TextOverflow.visible,
+                  maxLines: 1,
+                  minFontSize: Constants.large,
+                ),
+              )
+                  : Flexible(
+                child: AutoSizeText(
+                  dueTime.format(context).toString(),
+                  softWrap: false,
+                  overflow: TextOverflow.visible,
+                  maxLines: 1,
+                  minFontSize: Constants.large,
+                ),
+              ),
+            ]),
             onTap: () async {
-              await showDialog<void>(
+              await showDialog<List<TimeOfDay?>?>(
                   context: context,
                   builder: (BuildContext context) {
-                    TimeOfDay? tmpStart = startTime;
-                    TimeOfDay? tmpDue = dueTime;
-                    return StatefulBuilder(
-                        builder: (BuildContext context,
-                                void Function(void Function()) setState) =>
-                            Dialog(
-                                insetPadding: const EdgeInsets.all(
-                                    Constants.innerPadding),
-                                child: Padding(
-                                  padding: const EdgeInsets.all(
-                                      Constants.innerPadding),
-                                  child: Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        const Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.start,
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              Expanded(
-                                                child: AutoSizeText(
-                                                  "Select Times",
-                                                  style: Constants.headerStyle,
-                                                  softWrap: true,
-                                                  overflow:
-                                                      TextOverflow.visible,
-                                                  maxLines: 2,
-                                                  minFontSize: Constants.medium,
-                                                ),
-                                              )
-                                            ]),
-                                        const Flexible(
-                                          child: Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.spaceBetween,
-                                            mainAxisSize: MainAxisSize.max,
-                                            children: [
-                                              Flexible(
-                                                  child: AutoSizeText(
-                                                "Start | Due ",
-                                                style:
-                                                    Constants.largeHeaderStyle,
-                                                softWrap: true,
-                                                overflow: TextOverflow.visible,
-                                                maxLines: 1,
-                                                minFontSize: Constants.large,
-                                              )),
-                                              Flexible(
-                                                child: FittedBox(
-                                                    fit: BoxFit.fill,
-                                                    child: Icon(
-                                                        Icons.schedule_rounded,
-                                                        size: Constants
-                                                            .medIconSize)),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                        Padding(
-                                          padding: const EdgeInsets.symmetric(
-                                              vertical: Constants.innerPadding),
-                                          child: Row(
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment
-                                                      .spaceBetween,
-                                              mainAxisSize: MainAxisSize.max,
-                                              children: [
-                                                Expanded(
-                                                  flex: 10,
-                                                  child: Container(
-                                                    decoration: BoxDecoration(
-                                                      borderRadius: BorderRadius
-                                                          .circular(Constants
-                                                              .roundedCorners),
-                                                      border: Border.all(
-                                                          width: 2,
-                                                          color: Theme.of(
-                                                                  context)
-                                                              .colorScheme
-                                                              .outlineVariant,
-                                                          strokeAlign: BorderSide
-                                                              .strokeAlignOutside),
-                                                    ),
-                                                    child: Row(
-                                                      mainAxisAlignment:
-                                                          MainAxisAlignment
-                                                              .spaceBetween,
-                                                      mainAxisSize:
-                                                          MainAxisSize.max,
-                                                      children: [
-                                                        Expanded(
-                                                          child: TextButton(
-                                                              onPressed:
-                                                                  () async {
-                                                                final TimeOfDay?
-                                                                    picked =
-                                                                    await showTimePicker(
-                                                                        context:
-                                                                            context,
-                                                                        initialTime:
-                                                                            tmpStart ??
-                                                                                Constants.midnight);
-                                                                if (null !=
-                                                                    picked) {
-                                                                  setState(() =>
-                                                                      tmpStart =
-                                                                          picked);
-                                                                }
-                                                              },
-                                                              child: (null !=
-                                                                      tmpStart)
-                                                                  ? AutoSizeText(
-                                                                      tmpStart!
-                                                                          .format(
-                                                                              context)
-                                                                          .toString(),
-                                                                      softWrap:
-                                                                          false,
-                                                                      overflow:
-                                                                          TextOverflow
-                                                                              .visible,
-                                                                      maxLines:
-                                                                          1,
-                                                                      minFontSize:
-                                                                          Constants
-                                                                              .small,
-                                                                    )
-                                                                  : const AutoSizeText(
-                                                                      "Start Time",
-                                                                      softWrap:
-                                                                          true,
-                                                                      overflow:
-                                                                          TextOverflow
-                                                                              .visible,
-                                                                      maxLines:
-                                                                          1,
-                                                                      minFontSize:
-                                                                          Constants
-                                                                              .small)),
-                                                        ),
-                                                        (tmpStart != null)
-                                                            ? IconButton(
-                                                                icon: const Icon(
-                                                                    Icons
-                                                                        .clear_rounded),
-                                                                selectedIcon:
-                                                                    const Icon(Icons
-                                                                        .clear),
-                                                                onPressed: () =>
-                                                                    setState(
-                                                                        () {
-                                                                  tmpStart =
-                                                                      null;
-                                                                }),
-                                                              )
-                                                            : const SizedBox
-                                                                .shrink(),
-                                                      ],
-                                                    ),
-                                                  ),
-                                                ),
-                                                const Padding(
-                                                  padding: EdgeInsets.symmetric(
-                                                      horizontal: Constants
-                                                          .halfPadding),
-                                                  child: Text("|",
-                                                      style:
-                                                          Constants.timeColon),
-                                                ),
-                                                Expanded(
-                                                  flex: 10,
-                                                  child: Container(
-                                                    decoration: BoxDecoration(
-                                                      borderRadius: BorderRadius
-                                                          .circular(Constants
-                                                              .roundedCorners),
-                                                      border: Border.all(
-                                                          width: 2,
-                                                          color: Theme.of(
-                                                                  context)
-                                                              .colorScheme
-                                                              .outlineVariant,
-                                                          strokeAlign: BorderSide
-                                                              .strokeAlignOutside),
-                                                    ),
-                                                    child: Row(
-                                                      mainAxisAlignment:
-                                                          MainAxisAlignment
-                                                              .spaceBetween,
-                                                      mainAxisSize:
-                                                          MainAxisSize.max,
-                                                      children: [
-                                                        Expanded(
-                                                          child: TextButton(
-                                                              onPressed:
-                                                                  () async {
-                                                                final TimeOfDay?
-                                                                    picked =
-                                                                    await showTimePicker(
-                                                                        context:
-                                                                            context,
-                                                                        initialTime:
-                                                                            tmpDue ??
-                                                                                Constants.midnight);
-                                                                if (null !=
-                                                                    picked) {
-                                                                  setState(() =>
-                                                                      tmpDue =
-                                                                          picked);
-                                                                }
-                                                              },
-                                                              child: (null !=
-                                                                      tmpDue)
-                                                                  ? AutoSizeText(
-                                                                      tmpDue!
-                                                                          .format(
-                                                                              context)
-                                                                          .toString(),
-                                                                      softWrap:
-                                                                          false,
-                                                                      overflow:
-                                                                          TextOverflow
-                                                                              .visible,
-                                                                      maxLines:
-                                                                          1,
-                                                                      minFontSize:
-                                                                          Constants
-                                                                              .small,
-                                                                    )
-                                                                  : const AutoSizeText(
-                                                                      "Due Time",
-                                                                      softWrap:
-                                                                          true,
-                                                                      overflow:
-                                                                          TextOverflow
-                                                                              .visible,
-                                                                      maxLines:
-                                                                          1,
-                                                                      minFontSize:
-                                                                          Constants
-                                                                              .small)),
-                                                        ),
-                                                        (tmpDue != null)
-                                                            ? IconButton(
-                                                                icon: const Icon(
-                                                                    Icons
-                                                                        .clear_rounded),
-                                                                selectedIcon:
-                                                                    const Icon(Icons
-                                                                        .clear),
-                                                                onPressed: () =>
-                                                                    setState(
-                                                                        () {
-                                                                  tmpDue = null;
-                                                                }),
-                                                              )
-                                                            : const SizedBox
-                                                                .shrink(),
-                                                      ],
-                                                    ),
-                                                  ),
-                                                ),
-                                              ]),
-                                        ),
-                                        Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.spaceBetween,
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              Expanded(
-                                                child: Padding(
-                                                  padding:
-                                                      const EdgeInsets.only(
-                                                          right: Constants
-                                                              .padding),
-                                                  child: FilledButton.tonalIcon(
-                                                      icon: const Icon(
-                                                          Icons.close_rounded),
-                                                      onPressed: () {
-                                                        Navigator.pop(context);
-                                                        handleUpdate(
-                                                            newStart: startTime,
-                                                            newDue: dueTime);
-                                                      },
-                                                      label: const AutoSizeText(
-                                                          "Cancel",
-                                                          softWrap: false,
-                                                          overflow: TextOverflow
-                                                              .visible,
-                                                          maxLines: 1,
-                                                          minFontSize:
-                                                              Constants.small)),
-                                                ),
-                                              ),
-                                              Expanded(
-                                                child: Padding(
-                                                  padding:
-                                                      const EdgeInsets.only(
-                                                          left: Constants
-                                                              .padding),
-                                                  child: FilledButton.icon(
-                                                    icon: const Icon(
-                                                        Icons.done_rounded),
-                                                    onPressed: () {
-                                                      Navigator.pop(context);
-                                                      handleUpdate(
-                                                          checkClose: true,
-                                                          newStart: tmpStart,
-                                                          newDue: tmpDue);
-                                                    },
-                                                    label: const AutoSizeText(
-                                                        "Done",
-                                                        softWrap: false,
-                                                        overflow: TextOverflow
-                                                            .visible,
-                                                        maxLines: 1,
-                                                        minFontSize:
-                                                            Constants.small),
-                                                  ),
-                                                ),
-                                              )
-                                            ]),
-                                      ]),
-                                )));
-                  });
+                    return TimeDialog(startTime: startTime, dueTime: dueTime);
+                  }).then((newTimes) {
+                if (null == newTimes) {
+                  return handleUpdate(newStart: startTime, newDue: dueTime);
+                }
+                return handleUpdate(
+                    newStart: newTimes[0],
+                    newDue: newTimes[1],
+                    checkClose: true);
+              });
             },
             trailing: (startTime != null || dueTime != null)
                 ? IconButton(
-                    icon: const Icon(Icons.clear),
-                    onPressed: handleClear,
-                  )
+              icon: const Icon(Icons.clear),
+              onPressed: handleClear,
+            )
                 : null),
       );
 
@@ -1532,413 +871,131 @@ class Tiles {
     String dialogHeader = "",
     required void Function() handleClear,
     required void Function(
-            {bool? checkClose, DateTime? newDate, TimeOfDay? newTime})
-        handleUpdate,
+        {bool? checkClose, DateTime? newDate, TimeOfDay? newTime})
+    handleUpdate,
   }) =>
       Padding(
         padding: outerPadding,
         child: ListTile(
             contentPadding: const EdgeInsets.only(left: Constants.innerPadding),
             leading: (useAlertIcon)
-                ? alertIconButton(
-                    warn: showDate,
-                    onTap: () async {
-                      await innerDateTimeDialog(
+                ? LeadingWidgets.alertIconButton(
+                warn: showDate,
+                onTap: () async {
+                  await showDialog<Map<String, dynamic>?>(
+                      context: context,
+                      builder: (BuildContext context) {
+                        return DateTimeDialog(
+                          header: dialogHeader,
                           date: date,
                           time: time,
-                          context: context,
-                          dialogHeader: dialogHeader,
-                          handleUpdate: handleUpdate);
-                    })
+                        );
+                      }).then((newDateTime) {
+                    if (null == newDateTime) {
+                      return handleUpdate(newDate: date, newTime: time);
+                    }
+                    return handleUpdate(
+                        newDate: newDateTime["date"],
+                        newTime: newDateTime["time"],
+                        checkClose: true);
+                  });
+                })
                 : leading,
             shape: const RoundedRectangleBorder(
                 borderRadius: BorderRadius.all(
                     Radius.circular(Constants.roundedCorners))),
             title: (showDate && null != date)
                 ? Row(children: [
-                    Flexible(
-                      child: AutoSizeText(
-                        Jiffy.parseFromDateTime(date).format(pattern: "MMM d"),
-                        softWrap: false,
-                        overflow: TextOverflow.visible,
-                        maxLines: 1,
-                        minFontSize: Constants.huge,
-                      ),
-                    ),
-                    (null != time)
-                        ? const Flexible(
-                            child: Padding(
-                              padding: EdgeInsets.symmetric(
-                                  horizontal: Constants.padding),
-                              child: Icon(Icons.schedule_outlined),
-                            ),
-                          )
-                        : const Flexible(
-                            child: Padding(
-                            padding: EdgeInsets.symmetric(
-                                horizontal: Constants.padding),
-                            child: Icon(Icons.history_toggle_off_outlined),
-                          )),
-                    (null != time)
-                        ? Flexible(
-                            child: AutoSizeText(
-                              time.format(context).toString(),
-                              softWrap: false,
-                              overflow: TextOverflow.visible,
-                              maxLines: 1,
-                              minFontSize: Constants.huge,
-                            ),
-                          )
-                        : Flexible(
-                            child: AutoSizeText(
-                              unsetTimeText,
-                              overflow: TextOverflow.visible,
-                              softWrap: false,
-                              minFontSize: Constants.medium,
-                              maxLines: 1,
-                            ),
-                          ),
-                  ])
+              Flexible(
+                child: AutoSizeText(
+                  Jiffy.parseFromDateTime(date).format(pattern: "MMM d"),
+                  softWrap: false,
+                  overflow: TextOverflow.visible,
+                  maxLines: 1,
+                  minFontSize: Constants.huge,
+                ),
+              ),
+              (null != time)
+                  ? const Flexible(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                      horizontal: Constants.padding),
+                  child: Icon(Icons.schedule_outlined),
+                ),
+              )
+                  : const Flexible(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(
+                        horizontal: Constants.padding),
+                    child: Icon(Icons.history_toggle_off_outlined),
+                  )),
+              (null != time)
+                  ? Flexible(
+                child: AutoSizeText(
+                  time.format(context).toString(),
+                  softWrap: false,
+                  overflow: TextOverflow.visible,
+                  maxLines: 1,
+                  minFontSize: Constants.huge,
+                ),
+              )
+                  : Flexible(
+                child: AutoSizeText(
+                  unsetTimeText,
+                  overflow: TextOverflow.visible,
+                  softWrap: false,
+                  minFontSize: Constants.medium,
+                  maxLines: 1,
+                ),
+              ),
+            ])
                 : AutoSizeText(
-                    unsetDateText,
-                    overflow: TextOverflow.visible,
-                    softWrap: true,
-                    minFontSize: Constants.medium,
-                    maxLines: 2,
-                  ),
+              unsetDateText,
+              overflow: TextOverflow.visible,
+              softWrap: true,
+              minFontSize: Constants.medium,
+              maxLines: 2,
+            ),
             onTap: () async {
-              await innerDateTimeDialog(
-                  date: date,
-                  time: time,
+              await showDialog<Map<String, dynamic>?>(
                   context: context,
-                  dialogHeader: dialogHeader,
-                  handleUpdate: handleUpdate);
+                  builder: (BuildContext context) {
+                    return DateTimeDialog(
+                      header: dialogHeader,
+                      date: date,
+                      time: time,
+                    );
+                  }).then((newDateTime) {
+                if (null == newDateTime) {
+                  return handleUpdate(newDate: date, newTime: time);
+                }
+                return handleUpdate(
+                    newDate: newDateTime["date"],
+                    newTime: newDateTime["time"],
+                    checkClose: true);
+              });
             },
             trailing: (showDate && null != date)
                 ? IconButton(
-                    icon: const Icon(Icons.clear_rounded),
-                    onPressed: handleClear,
-                  )
+              icon: const Icon(Icons.clear_rounded),
+              onPressed: handleClear,
+            )
                 : null),
       );
 
-  static Future<void> innerDateTimeDialog({
-    DateTime? date,
-    TimeOfDay? time,
-    required BuildContext context,
-    String dialogHeader = "",
-    required void Function(
-            {bool? checkClose, DateTime? newDate, TimeOfDay? newTime})
-        handleUpdate,
-  }) async {
-    DateTime? tmpDate = date;
-    TimeOfDay? tmpTime = time;
-    await showDialog<bool?>(
-        context: context,
-        builder: (BuildContext context) {
-          return StatefulBuilder(
-              builder: (context, setState) => Dialog(
-                  insetPadding: const EdgeInsets.all(Constants.innerPadding),
-                  child: Padding(
-                      padding: const EdgeInsets.all(Constants.innerPadding),
-                      child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.start,
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Expanded(
-                                  child: AutoSizeText(
-                                    dialogHeader,
-                                    style: Constants.headerStyle,
-                                    softWrap: true,
-                                    overflow: TextOverflow.visible,
-                                    maxLines: 2,
-                                    minFontSize: Constants.medium,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const Flexible(
-                              child: Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                mainAxisSize: MainAxisSize.max,
-                                children: [
-                                  Flexible(
-                                      child: AutoSizeText(
-                                    "Date | Time ",
-                                    style: Constants.largeHeaderStyle,
-                                    softWrap: true,
-                                    overflow: TextOverflow.visible,
-                                    maxLines: 1,
-                                    minFontSize: Constants.large,
-                                  )),
-                                  Flexible(
-                                    child: FittedBox(
-                                        fit: BoxFit.fill,
-                                        child: Icon(Icons.alarm_outlined,
-                                            size: Constants.medIconSize)),
-                                  ),
-                                ],
-                              ),
-                            ),
-
-                            Padding(
-                              padding: const EdgeInsets.symmetric(
-                                  vertical: Constants.innerPadding),
-                              child: Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  mainAxisSize: MainAxisSize.max,
-                                  children: [
-                                    Expanded(
-                                      flex: 3,
-                                      child: Container(
-                                        decoration: BoxDecoration(
-                                          borderRadius: BorderRadius.circular(
-                                              Constants.roundedCorners),
-                                          border: Border.all(
-                                              strokeAlign: BorderSide
-                                                  .strokeAlignOutside),
-                                        ),
-                                        child: Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.spaceBetween,
-                                            mainAxisSize: MainAxisSize.max,
-                                            children: [
-                                              Expanded(
-                                                child: TextButton(
-                                                    onPressed: () {
-                                                      // Consider moving this to shifting focus to calendar
-                                                      // using focusNode.
-                                                      if (null == tmpDate) {
-                                                        setState(() => tmpDate =
-                                                            DateTime.now());
-                                                      }
-                                                    },
-                                                    child: (null != tmpDate)
-                                                        ? AutoSizeText(
-                                                            Jiffy.parseFromDateTime(
-                                                                    tmpDate!)
-                                                                .format(
-                                                                    pattern:
-                                                                        "MMM d, yyyy"),
-                                                            softWrap: false,
-                                                            overflow:
-                                                                TextOverflow
-                                                                    .visible,
-                                                            maxLines: 1,
-                                                            minFontSize:
-                                                                Constants.small,
-                                                          )
-                                                        : const AutoSizeText(
-                                                            "Date",
-                                                            softWrap: true,
-                                                            overflow:
-                                                                TextOverflow
-                                                                    .visible,
-                                                            maxLines: 1,
-                                                            minFontSize:
-                                                                Constants
-                                                                    .small)),
-                                              ),
-                                              (null != tmpDate)
-                                                  ? IconButton(
-                                                      icon: const Icon(
-                                                          Icons.clear_outlined),
-                                                      selectedIcon: const Icon(
-                                                          Icons.clear),
-                                                      onPressed: () =>
-                                                          setState(() {
-                                                        tmpDate = null;
-                                                      }),
-                                                    )
-                                                  : const SizedBox.shrink()
-                                            ]),
-                                      ),
-                                    ),
-                                    const Flexible(
-                                      child: Padding(
-                                        padding: EdgeInsets.symmetric(
-                                            horizontal: Constants.padding),
-                                        child: AutoSizeText("@",
-                                            style: Constants.hugeHeaderStyle,
-                                            softWrap: false,
-                                            overflow: TextOverflow.visible,
-                                            maxLines: 1,
-                                            minFontSize: Constants.small),
-                                      ),
-                                    ),
-                                    Expanded(
-                                      flex: 3,
-                                      child: Container(
-                                        decoration: BoxDecoration(
-                                          borderRadius: BorderRadius.circular(
-                                              Constants.roundedCorners),
-                                          border: Border.all(
-                                              strokeAlign: BorderSide
-                                                  .strokeAlignOutside),
-                                        ),
-                                        child: Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.spaceBetween,
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              Expanded(
-                                                child: TextButton(
-                                                    onPressed: () async {
-                                                      final TimeOfDay? picked =
-                                                          await showTimePicker(
-                                                        context: context,
-                                                        initialTime: tmpTime ??
-                                                            Constants.midnight,
-                                                      );
-                                                      if (null != picked) {
-                                                        setState(() =>
-                                                            tmpTime = picked);
-                                                      }
-                                                    },
-                                                    child: (null != tmpTime)
-                                                        ? AutoSizeText(
-                                                            tmpTime!
-                                                                .format(context)
-                                                                .toString(),
-                                                            softWrap: false,
-                                                            overflow:
-                                                                TextOverflow
-                                                                    .visible,
-                                                            maxLines: 1,
-                                                            minFontSize:
-                                                                Constants.small,
-                                                          )
-                                                        : const AutoSizeText(
-                                                            "Time",
-                                                            softWrap: true,
-                                                            overflow:
-                                                                TextOverflow
-                                                                    .visible,
-                                                            maxLines: 1,
-                                                            minFontSize:
-                                                                Constants
-                                                                    .small)),
-                                              ),
-                                              (null != tmpTime)
-                                                  ? IconButton(
-                                                      icon: const Icon(
-                                                          Icons.clear_outlined),
-                                                      selectedIcon: const Icon(
-                                                          Icons.clear),
-                                                      onPressed: () =>
-                                                          setState(() {
-                                                        tmpTime = null;
-                                                      }),
-                                                    )
-                                                  : const SizedBox.shrink(),
-                                            ]),
-                                      ),
-                                    ),
-                                  ]),
-                            ),
-
-                            // Calendar picker here.
-
-                            Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  CalendarDatePicker2(
-                                      config: CalendarDatePicker2Config(
-                                        calendarType:
-                                            CalendarDatePicker2Type.single,
-                                        firstDate: DateTime(1970),
-                                        lastDate: DateTime(3000),
-                                      ),
-                                      value: [tmpDate],
-                                      onValueChanged: (dates) {
-                                        setState(() {
-                                          tmpDate = dates.firstOrNull;
-                                        });
-                                      }),
-                                ]),
-
-                            Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Expanded(
-                                    child: Padding(
-                                      padding: const EdgeInsets.only(
-                                          right: Constants.padding),
-                                      child: FilledButton.tonalIcon(
-                                          icon:
-                                              const Icon(Icons.close_outlined),
-                                          onPressed: () {
-                                            Navigator.pop(context);
-                                            handleUpdate(
-                                                newDate: date, newTime: time);
-                                          },
-                                          label: const AutoSizeText("Cancel",
-                                              softWrap: false,
-                                              overflow: TextOverflow.visible,
-                                              maxLines: 1,
-                                              minFontSize: Constants.small)),
-                                    ),
-                                  ),
-                                  Expanded(
-                                    child: Padding(
-                                      padding: const EdgeInsets.only(
-                                          left: Constants.padding),
-                                      child: FilledButton.icon(
-                                        icon: const Icon(Icons.done_outlined),
-                                        onPressed: () {
-                                          Navigator.pop(context);
-                                          handleUpdate(
-                                              checkClose: true,
-                                              newDate: tmpDate,
-                                              newTime: tmpTime);
-                                        },
-                                        label: const AutoSizeText("Done",
-                                            softWrap: false,
-                                            overflow: TextOverflow.visible,
-                                            maxLines: 1,
-                                            minFontSize: Constants.small),
-                                      ),
-                                    ),
-                                  )
-                                ]),
-                          ]))));
-        });
-  }
-
-  // This is not ideal and fairly coupled. TODO: Figure out how to organize.
-  static Widget alertIconButton({bool warn = false, void Function()? onTap}) =>
-      (warn)
-          ? IconButton.filledTonal(
-              icon: const Icon(Icons.notifications_on_rounded),
-              onPressed: onTap,
-            )
-          : IconButton.outlined(
-              icon: const Icon(Icons.notifications_outlined), onPressed: onTap);
-
-  // REPEATABLE
   static Widget repeatableTile({
     required BuildContext context,
     EdgeInsetsGeometry outerPadding = EdgeInsets.zero,
     required Frequency frequency,
-    required Set<int> weekdayList,
+    required Set<int> weekdays,
     DateTime? startDate,
     required int repeatSkip,
     required void Function(
-            {bool? checkClose,
-            required Frequency newFreq,
-            required Set<int> newWeekdays,
-            required int newSkip})
-        handleUpdate,
+        {bool? checkClose,
+        required Frequency newFreq,
+        required Set<int> newWeekdays,
+        required int newSkip})
+    handleUpdate,
     required void Function() handleClear,
   }) {
     return Padding(
@@ -1948,349 +1005,47 @@ class Tiles {
           leading: const Icon(Icons.event_repeat_rounded),
           shape: const RoundedRectangleBorder(
               borderRadius:
-                  BorderRadius.all(Radius.circular(Constants.roundedCorners))),
+              BorderRadius.all(Radius.circular(Constants.roundedCorners))),
           title: (frequency == Frequency.once)
               ? const AutoSizeText("Set Recurring?",
-                  overflow: TextOverflow.visible,
-                  minFontSize: Constants.small,
-                  maxLines: 2,
-                  softWrap: true)
+              overflow: TextOverflow.visible,
+              minFontSize: Constants.small,
+              maxLines: 2,
+              softWrap: true)
               : AutoSizeText(toBeginningOfSentenceCase(frequency.name)!,
-                  overflow: TextOverflow.visible,
-                  minFontSize: Constants.small,
-                  maxLines: 1,
-                  softWrap: false),
-          // TODO: Consider refactoring into a helper dialog
+              overflow: TextOverflow.visible,
+              minFontSize: Constants.small,
+              maxLines: 1,
+              softWrap: false),
           onTap: () async {
-            await showDialog(
+            await showDialog<Map<String, dynamic>?>(
                 context: context,
                 builder: (BuildContext context) {
-                  Frequency cacheFreq = frequency;
-                  Set<int> cacheWeekdays = Set.from(weekdayList);
-                  if (cacheWeekdays.isEmpty) {
-                    int day = (null != startDate)
-                        ? max(startDate.weekday - 1, 0)
-                        : max(DateTime.now().weekday - 1, 0);
-                    cacheWeekdays.add(day);
-                  }
-
-                  int cacheSkip = repeatSkip;
-                  return StatefulBuilder(builder: (BuildContext context,
-                      void Function(void Function()) setState) {
-                    return Dialog(
-                        insetPadding:
-                            const EdgeInsets.all(Constants.innerPadding),
-                        child: Padding(
-                            padding:
-                                const EdgeInsets.all(Constants.innerPadding),
-                            child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  const Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.start,
-                                      children: [
-                                        Expanded(
-                                          child: AutoSizeText(
-                                            "Set Recurring",
-                                            softWrap: false,
-                                            maxLines: 1,
-                                            minFontSize: Constants.medium,
-                                            overflow: TextOverflow.visible,
-                                            style: Constants.headerStyle,
-                                          ),
-                                        )
-                                      ]),
-                                  const Row(
-                                    mainAxisSize: MainAxisSize.max,
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Flexible(
-                                        child: AutoSizeText(
-                                          "Repeat:",
-                                          softWrap: false,
-                                          maxLines: 1,
-                                          minFontSize: Constants.medium,
-                                          overflow: TextOverflow.visible,
-                                          style: Constants.largeHeaderStyle,
-                                        ),
-                                      ),
-                                      Flexible(
-                                        child: FittedBox(
-                                            fit: BoxFit.fill,
-                                            child: Icon(Icons.repeat_rounded,
-                                                size: Constants.medIconSize)),
-                                      ),
-                                    ],
-                                  ),
-                                  // This is a hacky override until m3 Has width-scaling for DropdownMenu
-                                  Padding(
-                                    padding: (cacheFreq != Frequency.once &&
-                                            cacheFreq != Frequency.daily)
-                                        ? const EdgeInsets.fromLTRB(
-                                            Constants.innerPadding,
-                                            Constants.innerPadding,
-                                            Constants.innerPadding,
-                                            Constants.halfPadding)
-                                        : const EdgeInsets.all(
-                                            Constants.innerPadding),
-                                    child: DecoratedBox(
-                                      decoration: BoxDecoration(
-                                        border: Border.all(
-                                          width: 2,
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .outlineVariant,
-                                          strokeAlign:
-                                              BorderSide.strokeAlignOutside,
-                                        ),
-                                        borderRadius: const BorderRadius.all(
-                                            Radius.circular(
-                                                Constants.circular)),
-                                      ),
-                                      child: Padding(
-                                        padding: const EdgeInsets.all(
-                                            Constants.innerPadding),
-                                        child: DropdownButtonHideUnderline(
-                                          child: DropdownButton<Frequency>(
-                                            focusColor: Colors.transparent,
-                                            padding: const EdgeInsets.symmetric(
-                                                horizontal: Constants.padding),
-                                            isDense: true,
-                                            isExpanded: true,
-                                            dropdownColor:
-                                                Constants.dialogColor(
-                                                    context: context),
-                                            borderRadius:
-                                                const BorderRadius.all(
-                                                    Radius.circular(Constants
-                                                        .roundedCorners)),
-                                            value: cacheFreq,
-                                            onChanged: (Frequency? value) =>
-                                                setState(() => cacheFreq =
-                                                    value ?? cacheFreq),
-                                            items: Frequency.values
-                                                .map((Frequency frequency) =>
-                                                    DropdownMenuItem<Frequency>(
-                                                      value: frequency,
-                                                      child: AutoSizeText(
-                                                        "${toBeginningOfSentenceCase(frequency.name)}",
-                                                        softWrap: false,
-                                                        maxLines: 1,
-                                                        minFontSize:
-                                                            Constants.small,
-                                                      ),
-                                                    ))
-                                                .toList(),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-
-                                  (cacheFreq == Frequency.custom)
-                                      ? Column(
-                                          children: [
-                                            // Days of the week - Wrap in padding and a container
-                                            Padding(
-                                              padding:
-                                                  const EdgeInsets.fromLTRB(
-                                                      Constants.innerPadding,
-                                                      Constants.innerPadding,
-                                                      Constants.innerPadding,
-                                                      0),
-                                              child: Wrap(
-                                                  spacing: 5,
-                                                  runSpacing: 5,
-                                                  alignment:
-                                                      WrapAlignment.center,
-                                                  runAlignment:
-                                                      WrapAlignment.center,
-                                                  children: Constants.weekDays
-                                                      .map(
-                                                          (weekDay) =>
-                                                              InputChip(
-                                                                  backgroundColor: Theme.of(
-                                                                          context)
-                                                                      .colorScheme
-                                                                      .surfaceVariant,
-                                                                  shape:
-                                                                      const RoundedRectangleBorder(
-                                                                    borderRadius:
-                                                                        BorderRadius.all(
-                                                                            Radius.circular(Constants.circular)),
-                                                                    side:
-                                                                        BorderSide(
-                                                                      strokeAlign:
-                                                                          BorderSide
-                                                                              .strokeAlignOutside,
-                                                                    ),
-                                                                  ),
-                                                                  label: AutoSizeText(
-                                                                      weekDay
-                                                                          .key,
-                                                                      minFontSize:
-                                                                          Constants
-                                                                              .small,
-                                                                      maxLines:
-                                                                          1,
-                                                                      softWrap:
-                                                                          false,
-                                                                      overflow: TextOverflow
-                                                                          .visible),
-                                                                  selected: cacheWeekdays
-                                                                      .contains(weekDay
-                                                                          .value),
-                                                                  onSelected:
-                                                                      (bool selected) =>
-                                                                          setState(
-                                                                              () {
-                                                                            if (selected) {
-                                                                              cacheWeekdays.add(weekDay.value);
-                                                                            } else {
-                                                                              cacheWeekdays.remove(weekDay.value);
-                                                                              if (cacheWeekdays.isEmpty) {
-                                                                                int day = (null != startDate) ? max(startDate.weekday - 1, 0) : max(DateTime.now().weekday - 1, 0);
-                                                                                cacheWeekdays.add(day);
-                                                                              }
-                                                                            }
-                                                                          })))
-                                                      .toList()),
-                                            ),
-                                          ],
-                                        )
-                                      : const SizedBox.shrink(),
-
-                                  // Repeat Skip
-                                  (cacheFreq != Frequency.once &&
-                                          cacheFreq != Frequency.daily)
-                                      ? Padding(
-                                          padding: const EdgeInsets.all(
-                                              Constants.innerPadding),
-                                          child: Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.center,
-                                            children: [
-                                              const Flexible(
-                                                  child: AutoSizeText(
-                                                "Every",
-                                                minFontSize: Constants.small,
-                                                style: Constants.headerStyle,
-                                                overflow: TextOverflow.visible,
-                                                softWrap: false,
-                                                maxLines: 1,
-                                              )),
-                                              Expanded(
-                                                  child: NumberPicker(
-                                                      itemCount: 1,
-                                                      textStyle: Constants
-                                                          .numberPickerSecondary(
-                                                              context: context),
-                                                      selectedTextStyle: Constants
-                                                          .numberPickerPrimary(
-                                                              context: context),
-                                                      minValue: 1,
-                                                      maxValue: 100,
-                                                      value: cacheSkip,
-                                                      haptics: true,
-                                                      onChanged: (value) {
-                                                        SemanticsService.announce(
-                                                            "Skip value: $value",
-                                                            Directionality.of(
-                                                                context));
-                                                        setState(() =>
-                                                            cacheSkip = value);
-                                                      })),
-                                              Flexible(
-                                                child: AutoSizeText(
-                                                  (cacheFreq ==
-                                                          Frequency.custom)
-                                                      ? "week${(cacheSkip > 1) ? "s." : "."}"
-                                                      : cacheFreq.name
-                                                          .replaceAll(
-                                                              "ly",
-                                                              (cacheSkip > 1)
-                                                                  ? "s."
-                                                                  : "."),
-                                                  minFontSize: Constants.small,
-                                                  style: Constants.headerStyle,
-                                                  overflow:
-                                                      TextOverflow.visible,
-                                                  softWrap: false,
-                                                  maxLines: 1,
-                                                  textAlign: TextAlign.end,
-                                                ),
-                                              )
-                                            ],
-                                          ),
-                                        )
-                                      : const SizedBox.shrink(),
-
-                                  Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Expanded(
-                                          child: Padding(
-                                            padding: const EdgeInsets.only(
-                                                right: Constants.padding),
-                                            child: FilledButton.tonalIcon(
-                                                icon: const Icon(
-                                                    Icons.close_rounded),
-                                                onPressed: () {
-                                                  Navigator.pop(context);
-                                                  handleUpdate(
-                                                      newFreq: frequency,
-                                                      newWeekdays: weekdayList,
-                                                      newSkip: repeatSkip);
-                                                },
-                                                label: const AutoSizeText(
-                                                    "Cancel",
-                                                    softWrap: false,
-                                                    overflow:
-                                                        TextOverflow.visible,
-                                                    maxLines: 1,
-                                                    minFontSize:
-                                                        Constants.small)),
-                                          ),
-                                        ),
-                                        Expanded(
-                                          child: Padding(
-                                            padding: const EdgeInsets.only(
-                                                left: Constants.padding),
-                                            child: FilledButton.icon(
-                                              icon: const Icon(
-                                                  Icons.done_rounded),
-                                              onPressed: () {
-                                                Navigator.pop(context);
-                                                handleUpdate(
-                                                    checkClose: true,
-                                                    newFreq: cacheFreq,
-                                                    newWeekdays: cacheWeekdays,
-                                                    newSkip: cacheSkip);
-                                              },
-                                              label: const AutoSizeText("Done",
-                                                  softWrap: false,
-                                                  overflow:
-                                                      TextOverflow.visible,
-                                                  maxLines: 1,
-                                                  minFontSize: Constants.small),
-                                            ),
-                                          ),
-                                        )
-                                      ])
-                                ])));
-                  });
-                });
+                  return FrequencyDialog(
+                    frequency: frequency,
+                    weekdays: weekdays,
+                    repeatSkip: repeatSkip,
+                    startDate: startDate,
+                  );
+                }).then((newFrequency) {
+              if (null == newFrequency) {
+                return handleUpdate(
+                  newFreq: frequency,
+                  newWeekdays: weekdays,
+                  newSkip: repeatSkip,
+                );
+              }
+              return handleUpdate(
+                newFreq: newFrequency["frequency"],
+                newWeekdays: newFrequency["weekdays"],
+                newSkip: newFrequency["repeatSkip"],
+                checkClose: true,
+              );
+            });
           },
           trailing: (frequency != Frequency.once)
               ? IconButton(
-                  icon: const Icon(Icons.clear), onPressed: handleClear)
+              icon: const Icon(Icons.clear), onPressed: handleClear)
               : null),
     );
   }
@@ -2301,6 +1056,7 @@ class Tiles {
     EdgeInsetsGeometry outerPadding = EdgeInsets.zero,
     required Priority priority,
     required void Function(Set<Priority> newSelection) onSelectionChanged,
+    bool mobile = false,
   }) =>
       Padding(
         padding: outerPadding,
@@ -2325,18 +1081,25 @@ class Tiles {
                     visualDensity: VisualDensity.adaptivePlatformDensity,
                     side: MaterialStatePropertyAll<BorderSide>(BorderSide(
                       width: 2,
-                      color: Theme.of(context).colorScheme.outlineVariant,
+                      color: Theme
+                          .of(context)
+                          .colorScheme
+                          .outlineVariant,
                     )),
                   ),
                   segments: Priority.values
-                      .map((Priority type) => ButtonSegment<Priority>(
+                      .map((Priority type) =>
+                      ButtonSegment<Priority>(
+                          tooltip: toBeginningOfSentenceCase(type.name),
                           icon: Constants.priorityIcon[type],
                           value: type,
-                          label: Text(
+                          label: (!mobile)
+                              ? Text(
                             "${toBeginningOfSentenceCase(type.name)}",
                             softWrap: false,
-                            overflow: TextOverflow.fade,
-                          )))
+                            overflow: TextOverflow.ellipsis,
+                          )
+                              : null))
                       .toList(growable: false),
                   selected: <Priority>{priority},
                   onSelectionChanged: onSelectionChanged)
@@ -2344,10 +1107,9 @@ class Tiles {
       );
 
   // MY DAY
-  static Widget myDayTile(
-      {required bool myDay,
-      required bool canAdd,
-      required void Function() toggleMyDay}) {
+  static Widget myDayTile({required bool myDay,
+    required bool canAdd,
+    required void Function() toggleMyDay}) {
     String title = "";
     Widget leading;
 
@@ -2369,7 +1131,7 @@ class Tiles {
         leading: leading,
         shape: const RoundedRectangleBorder(
             borderRadius:
-                BorderRadius.all(Radius.circular(Constants.roundedCorners))),
+            BorderRadius.all(Radius.circular(Constants.roundedCorners))),
         title: AutoSizeText(
           title,
           overflow: TextOverflow.visible,
@@ -2392,9 +1154,23 @@ class Tiles {
             maxLines: 1,
             overflow: TextOverflow.visible,
             softWrap: false,
-            minFontSize: Constants.small),
+            minFontSize: Constants.large),
         onTap: onTap,
       );
+
+  static Widget fetchTile({
+    required void Function() onTap,
+  }) =>
+      ListTile(
+          leading: const Icon(Icons.redo_rounded),
+          title: const AutoSizeText(
+            "Load more",
+            maxLines: 1,
+            overflow: TextOverflow.visible,
+            softWrap: false,
+            minFontSize: Constants.large,
+          ),
+          onTap: onTap);
 
   // Create Button
   static Widget createButton({

@@ -109,17 +109,6 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
     subScrollControllerLeft = ScrollController();
     subScrollControllerRight = ScrollController();
 
-    // TODO: refactor this -> should be a button.
-    toDosScrollController.addListener(() async {
-      if (toDosScrollController.offset >=
-              toDosScrollController.position.maxScrollExtent &&
-          !allData) {
-        if (!loading) {
-          await appendData();
-        }
-      }
-    });
-
     scrollPhysics =
         const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics());
     nameEditingController = TextEditingController(text: group.name);
@@ -228,8 +217,7 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
   Future<void> handleHistorySelection({
     required int id,
   }) async {
-    toDoProvider.curToDo =
-        await toDoProvider.getToDoByID(id: id).catchError((_) {
+    ToDo? toDo = await toDoProvider.getToDoByID(id: id).catchError((_) {
       Flushbar? error;
 
       error = Flushbars.createError(
@@ -241,16 +229,14 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
       error.show(context);
       return null;
     });
-    // TODO: refactor this more cleanly in provider.
-    if (null != toDoProvider.curToDo) {
-      toDoProvider.curToDo!.groupID = group.id;
-      await toDoProvider.updateToDo();
+    if (null != toDo) {
+      toDo.groupID = group.id;
+      await toDoProvider.updateToDo(toDo: toDo);
     }
   }
 
   Future<void> handleToDoSelection({required int id}) async {
-    toDoProvider.curToDo =
-        await toDoProvider.getToDoByID(id: id).catchError((_) {
+    ToDo? toDo = await toDoProvider.getToDoByID(id: id).catchError((_) {
       Flushbar? error;
 
       error = Flushbars.createError(
@@ -263,10 +249,9 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
       return null;
     });
 
-    // TODO: refactor this more cleanly in provider.
-    if (null != toDoProvider.curToDo) {
-      toDoProvider.curToDo!.groupID = group.id;
-      await toDoProvider.updateToDo();
+    if (null != toDo) {
+      toDo.groupID = group.id;
+      await toDoProvider.updateToDo(toDo: toDo);
     }
   }
 
@@ -341,27 +326,22 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
     setState(() {
       toDos[index].completed = value;
     });
-
-    // This feels pretty write-heavy.
-    //return await toDoProvider.updateToDo();
   }
 
-  // TODO: refactor once provider cleaned up
   Future<void> removeToDo({required int index}) async {
     checkClose = true;
 
     toDos[index].groupID = null;
-    toDoProvider.curToDo = toDos[index];
-    await toDoProvider.updateToDo();
+    await toDoProvider.updateToDo(toDo: toDos[index]);
   }
 
   Future<void> updateToDo({required int index}) async {
-    toDoProvider.curToDo = toDos[index];
     showDialog(
         barrierDismissible: false,
         useRootNavigator: false,
         context: context,
         builder: (BuildContext context) => UpdateToDoScreen(
+              initialToDo: toDos[index],
               initialGroup: MapEntry<String, int>(
                   (group.name.isNotEmpty) ? group.name : "New Group", group.id),
             )).catchError((e) {
@@ -377,8 +357,6 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
     },
         test: (e) =>
             e is FailureToCreateException || e is FailureToUploadException);
-    // TODO: this needs to be factored out once update ToDo refactored.
-    resetPagination();
   }
 
   Future<void> updateAndValidate() async {
@@ -447,7 +425,7 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
       insetPadding: const EdgeInsets.all(Constants.outerDialogPadding),
       child: ConstrainedBox(
         constraints:
-            const BoxConstraints(maxHeight: Constants.maxLandscapeDialogHeight),
+            const BoxConstraints(maxHeight: Constants.maxDesktopDialogSide),
         child: Padding(
           padding: const EdgeInsets.all(Constants.padding),
           child: Column(
@@ -511,6 +489,9 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
                                     horizontal: Constants.padding),
                                 children: [
                                   Tiles.descriptionTile(
+                                    minLines: Constants.desktopMinLines,
+                                    maxLines:
+                                        Constants.desktopMaxLinesBeforeScroll,
                                     controller: descriptionEditingController,
                                     outerPadding: const EdgeInsets.symmetric(
                                         horizontal: Constants.padding),
@@ -608,7 +589,7 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
   Widget buildToDosTile(
       {ScrollPhysics physics = const NeverScrollableScrollPhysics()}) {
     return ExpandedListTile(
-      padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
+      outerPadding: const EdgeInsets.symmetric(horizontal: Constants.padding),
       expanded: expanded,
       title: const AutoSizeText("Tasks",
           maxLines: 1,
@@ -631,7 +612,9 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
           handleRemove: removeToDo,
           onTap: updateToDo,
         ),
-        // TODO: refactor this to take a persistent history object.
+        (!allData)
+            ? Tiles.fetchTile(onTap: appendData)
+            : const SizedBox.shrink(),
         SearchRecentsBar<ToDo>(
           clearOnSelection: true,
           hintText: "Search Tasks",

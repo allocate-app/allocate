@@ -5,13 +5,13 @@ import '../../util/constants.dart';
 class ExpandedListTile extends StatefulWidget {
   const ExpandedListTile(
       {super.key,
-      this.padding = EdgeInsets.zero,
+      this.outerPadding = EdgeInsets.zero,
       this.children,
       this.expanded = false,
       required this.title,
       this.subtitle});
 
-  final EdgeInsetsGeometry padding;
+  final EdgeInsetsGeometry outerPadding;
   final List<Widget>? children;
   final bool expanded;
   final Widget title;
@@ -27,7 +27,7 @@ class _ExpandedListTile extends State<ExpandedListTile> {
   @override
   Widget build(context) {
     return Padding(
-      padding: widget.padding,
+      padding: widget.outerPadding,
       child: Card(
         clipBehavior: Clip.antiAlias,
         elevation: 0,

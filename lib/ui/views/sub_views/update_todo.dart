@@ -17,6 +17,7 @@ import "../../../util/enums.dart";
 import "../../../util/exceptions.dart";
 import "../../widgets/expanded_listtile.dart";
 import "../../widgets/flushbars.dart";
+import "../../widgets/leading_widgets.dart";
 import "../../widgets/listviews.dart";
 import "../../widgets/padded_divider.dart";
 import "../../widgets/search_recents_bar.dart";
@@ -25,8 +26,10 @@ import "../../widgets/title_bar.dart";
 
 class UpdateToDoScreen extends StatefulWidget {
   final MapEntry<String, int>? initialGroup;
+  final ToDo? initialToDo;
 
-  const UpdateToDoScreen({Key? key, this.initialGroup}) : super(key: key);
+  const UpdateToDoScreen({Key? key, this.initialGroup, this.initialToDo})
+      : super(key: key);
 
   @override
   State<UpdateToDoScreen> createState() => _UpdateToDoScreen();
@@ -48,9 +51,8 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
   late bool showDueTime;
 
   // Scrolling
-  late final ScrollController mainScrollController;
-  late final ScrollController subScrollControllerLeft;
-  late final ScrollController subScrollControllerRight;
+  late final ScrollController mobileScrollController;
+  late final ScrollController desktopScrollController;
   late final ScrollPhysics scrollPhysics;
 
   // Name
@@ -59,7 +61,6 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
 
   // Group
   late final SearchController groupEditingController;
-  late List<MapEntry<String, int>> searchHistory;
 
   // Description
   late final TextEditingController descriptionEditingController;
@@ -76,6 +77,11 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
   // Subtasks
   late List<SubTask> cacheSubTasks;
 
+  // Duration
+  late int hours;
+  late int minutes;
+  late int seconds;
+
   @override
   void initState() {
     super.initState();
@@ -89,6 +95,10 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
     userProvider = Provider.of<UserProvider>(context, listen: false);
     toDoProvider = Provider.of<ToDoProvider>(context, listen: false);
     groupProvider = Provider.of<GroupProvider>(context, listen: false);
+
+    if (null != widget.initialToDo) {
+      toDoProvider.curToDo = widget.initialToDo;
+    }
   }
 
   @override
@@ -97,6 +107,8 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
     groupEditingController.dispose();
     descriptionEditingController.dispose();
     repeatSkipEditingController.dispose();
+    mobileScrollController.dispose();
+    desktopScrollController.dispose();
 
     for (TextEditingController controller in subTaskEditingController) {
       controller.dispose();
@@ -120,13 +132,14 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
     showStartTime =
         Constants.midnight != TimeOfDay.fromDateTime(toDo.startDate);
     showDueTime = Constants.midnight != TimeOfDay.fromDateTime(toDo.dueDate);
-    searchHistory = List.empty(growable: true);
+    hours = 0;
+    minutes = 0;
+    seconds = 0;
   }
 
   Future<void> initializeControllers() async {
-    mainScrollController = ScrollController();
-    subScrollControllerLeft = ScrollController();
-    subScrollControllerRight = ScrollController();
+    mobileScrollController = ScrollController();
+    desktopScrollController = ScrollController();
     scrollPhysics =
         const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics());
 
@@ -237,37 +250,28 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
           showDragHandle: true,
           context: context,
           builder: (BuildContext context) {
-            return StatefulBuilder(
-                builder: (BuildContext context,
-                        void Function(void Function()) setState) =>
-                    Center(
-                        heightFactor: 1,
-                        child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Padding(
-                                padding:
-                                    const EdgeInsets.all(Constants.padding),
-                                child: FilledButton.icon(
-                                    onPressed: () =>
-                                        Navigator.pop(context, true),
-                                    label: const Text("This Event"),
-                                    icon:
-                                        const Icon(Icons.arrow_upward_rounded)),
-                              ),
-                              Padding(
-                                  padding:
-                                      const EdgeInsets.all(Constants.padding),
-                                  child: FilledButton.tonalIcon(
-                                    onPressed: () =>
-                                        Navigator.pop(context, false),
-                                    label: const Text("All Future Events"),
-                                    icon: const Icon(Icons.repeat_rounded),
-                                  ))
-                            ])));
+            return Center(
+                heightFactor: 1,
+                child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.all(Constants.padding),
+                        child: FilledButton.icon(
+                            onPressed: () => Navigator.pop(context, true),
+                            label: const Text("This Event"),
+                            icon: const Icon(Icons.arrow_upward_rounded)),
+                      ),
+                      Padding(
+                          padding: const EdgeInsets.all(Constants.padding),
+                          child: FilledButton.tonalIcon(
+                            onPressed: () => Navigator.pop(context, false),
+                            label: const Text("All Future Events"),
+                            icon: const Icon(Icons.repeat_rounded),
+                          ))
+                    ]));
           });
-      // If the modal is discarded.
       if (null == updateSingle) {
         return;
       }
@@ -288,8 +292,8 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
 
       if (updateSingle) {
         prevToDo.repeatable = true;
-        // Need to sever the connection to future repeating events.
-        toDo.repeatID = toDo.hashCode;
+        // To prevent getting deleted by editing another repeating event.
+        toDo.repeatID = Constants.generateID();
 
         await toDoProvider.nextRepeat(toDo: prevToDo).catchError((e) {
           Flushbar? error;
@@ -367,7 +371,6 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                                   ))
                             ])));
           });
-      // If the modal is discarded.
       if (null == updateSingle) {
         return;
       }
@@ -386,8 +389,9 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
 
       if (updateSingle) {
         prevToDo.repeatable = true;
-        // Need to sever the connection to future repeating events.
-        toDo.repeatID = toDo.hashCode;
+
+        // To prevent getting deleted by editing another repeating event.
+        toDo.repeatID = Constants.generateID();
 
         await toDoProvider.nextRepeat(toDo: prevToDo).catchError((e) {
           Flushbar? error;
@@ -422,8 +426,6 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
             e is FailureToCreateException || e is FailureToUploadException);
   }
 
-  // This should be an async method
-  // TODO: refactor once Update ToDo has parameters
   Future<void> handleClose({required bool willDiscard}) async {
     if (willDiscard) {
       await toDoProvider
@@ -441,6 +443,13 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
       checkClose = true;
       nameEditingController.clear();
       toDo.name = "";
+    });
+  }
+
+  void completeToDo(bool? value) {
+    setState(() {
+      checkClose = true;
+      toDo.completed = value!;
     });
   }
 
@@ -520,6 +529,12 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
       toDo.expectedDuration = value ?? toDo.expectedDuration;
       toDo.realDuration = toDoProvider.calculateRealDuration(
           weight: toDo.weight, duration: toDo.expectedDuration);
+      int time = toDo.expectedDuration;
+      hours = time ~/ 3600;
+      time %= 3600;
+      minutes = time ~/ 60;
+      time %= 60;
+      seconds = time;
     });
   }
 
@@ -528,6 +543,9 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
       checkClose = true;
       toDo.expectedDuration = 0;
       toDo.realDuration = 0;
+      hours = 0;
+      minutes = 0;
+      seconds = 0;
     });
   }
 
@@ -542,14 +560,17 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
   void updateDates({bool? checkClose, DateTime? newStart, DateTime? newDue}) {
     setState(() {
       this.checkClose = checkClose ?? this.checkClose;
-      toDo.startDate = newStart ?? Constants.nullDate;
-      toDo.dueDate = newDue ?? Constants.nullDate;
+      newStart = newStart ?? Constants.nullDate;
+      newDue = newDue ?? Constants.nullDate;
+      toDo.startDate = newStart!;
+      toDo.dueDate = newDue!;
 
       if (Constants.nullDate != toDo.startDate &&
           Constants.nullDate != toDo.dueDate &&
           toDo.startDate.isAfter(toDo.dueDate)) {
         toDo.startDate = toDo.dueDate;
       }
+      (Constants.nullDate != toDo.startDate) ? toDo.startDate : null;
     });
   }
 
@@ -654,228 +675,244 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
   }) {
     return Dialog(
       insetPadding: const EdgeInsets.all(Constants.outerDialogPadding),
-      child: ConstrainedBox(
-        constraints:
-            const BoxConstraints(maxHeight: Constants.maxLandscapeDialogHeight),
-        child: Padding(
-          padding: const EdgeInsets.all(Constants.padding),
-          child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Title && Close Button
-                TitleBar(
-                    currentContext: context,
-                    title: "Edit Task",
-                    centerWidget: (toDo.expectedDuration > 0)
-                        ? TitleBar.toDoCenterWidget(
-                            expectedDuration: toDo.expectedDuration,
-                            realDuration: toDo.realDuration)
-                        : null,
-                    checkClose: checkClose,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: Constants.padding),
-                    handleClose: handleClose),
-                const PaddedDivider(padding: Constants.padding),
-                Expanded(
-                  child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Flexible(
-                          child: ListView(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: Constants.padding),
-                              shrinkWrap: true,
-                              controller: subScrollControllerLeft,
-                              physics: scrollPhysics,
-                              children: [
-                                Tiles.nameTile(
+      child: Padding(
+        padding: const EdgeInsets.all(Constants.padding),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          // Title && Close Button
+          TitleBar(
+              currentContext: context,
+              title: "Edit Task",
+              centerWidget: (toDo.expectedDuration > 0)
+                  ? TitleBar.toDoCenterWidget(
+                      expectedDuration: toDo.expectedDuration,
+                      realDuration: toDo.realDuration)
+                  : null,
+              checkClose: checkClose,
+              padding:
+                  const EdgeInsets.symmetric(horizontal: Constants.padding),
+              handleClose: handleClose),
+          const PaddedDivider(padding: Constants.halfPadding),
+          Flexible(
+            child: Scrollbar(
+              thumbVisibility: true,
+              controller: desktopScrollController,
+              child: ListView(
+                  shrinkWrap: true,
+                  controller: desktopScrollController,
+                  children: [
+                    Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Flexible(
+                            child: ListView(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: Constants.padding),
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                children: [
+                                  Tiles.nameTile(
+                                      context: context,
+                                      leading: LeadingWidgets.toDoCheckbox(
+                                        scale: Constants.largeCheckboxScale,
+                                        completed: toDo.completed,
+                                        onChanged: completeToDo,
+                                      ),
+                                      hintText: "Task Name",
+                                      errorText: nameErrorText,
+                                      controller: nameEditingController,
+                                      outerPadding: const EdgeInsets.all(
+                                          Constants.padding),
+                                      textFieldPadding: const EdgeInsets.only(
+                                        left: Constants.halfPadding,
+                                      ),
+                                      handleClear: clearNameField),
+                                  Tiles.weightTile(
+                                    outerPadding: const EdgeInsets.all(
+                                        Constants.innerPadding),
+                                    batteryPadding: const EdgeInsets.symmetric(
+                                        horizontal: Constants.innerPadding),
+                                    constraints:
+                                        const BoxConstraints(maxWidth: 200),
+                                    weight: toDo.weight.toDouble(),
+                                    max: (toDo.taskType == TaskType.small)
+                                        ? Constants.maxTaskWeight.toDouble()
+                                        : Constants.maxWeight.toDouble(),
+                                    slider: (toDo.taskType == TaskType.small)
+                                        ? Tiles.weightSlider(
+                                            weight: toDo.weight.toDouble(),
+                                            handleWeightChange:
+                                                handleWeightChange,
+                                          )
+                                        : null,
+                                  ),
+                                  const PaddedDivider(
+                                      padding: Constants.padding),
+                                  // My Day
+                                  Tiles.myDayTile(
+                                      myDay: toDo.myDay,
+                                      canAdd: (userProvider.myDayTotal +
+                                              toDo.weight <=
+                                          (userProvider.curUser?.bandwidth ??
+                                              Constants.maxBandwidth)),
+                                      toggleMyDay: toggleMyDay),
+                                  const PaddedDivider(
+                                      padding: Constants.padding),
+                                  // Priority
+                                  Tiles.priorityTile(
                                     context: context,
-                                    leading: buildCheckbox(
-                                        scale: Constants.largeCheckboxScale),
-                                    hintText: "Task Name",
-                                    errorText: nameErrorText,
-                                    controller: nameEditingController,
                                     outerPadding: const EdgeInsets.symmetric(
                                         horizontal: Constants.padding),
-                                    textFieldPadding: const EdgeInsets.only(
-                                      left: Constants.halfPadding,
-                                    ),
-                                    handleClear: clearNameField),
-                                Tiles.weightTile(
-                                  outerPadding: const EdgeInsets.all(
-                                      Constants.innerPadding),
-                                  batteryPadding: const EdgeInsets.symmetric(
-                                      horizontal: Constants.innerPadding),
-                                  constraints:
-                                      const BoxConstraints(maxWidth: 200),
-                                  weight: toDo.weight.toDouble(),
-                                  max: (toDo.taskType == TaskType.small)
-                                      ? Constants.maxTaskWeight.toDouble()
-                                      : Constants.maxWeight.toDouble(),
-                                  slider: (toDo.taskType == TaskType.small)
-                                      ? Tiles.weightSlider(
-                                          weight: toDo.weight.toDouble(),
-                                          handleWeightChange:
-                                              handleWeightChange,
+                                    priority: toDo.priority,
+                                    onSelectionChanged: changePriority,
+                                  ),
+                                  const Padding(
+                                    padding: EdgeInsets.symmetric(
+                                        vertical: Constants.padding),
+                                    child: PaddedDivider(
+                                        padding: Constants.padding),
+                                  ),
+                                  // Expected Duration / RealDuration -> Show status, on click, open a dialog.
+                                  Tiles.durationTile(
+                                    hours: hours,
+                                    minutes: minutes,
+                                    seconds: seconds,
+                                    expectedDuration: toDo.expectedDuration,
+                                    context: context,
+                                    realDuration: toDo.realDuration,
+                                    outerPadding: const EdgeInsets.symmetric(
+                                        horizontal: Constants.padding),
+                                    handleClear: clearDuration,
+                                    handleUpdate: updateDuration,
+                                  ),
+
+                                  const PaddedDivider(
+                                      padding: Constants.padding),
+                                  // DateTime -> Show status, on click, open a dialog.
+                                  Tiles.dateRangeTile(
+                                    context: context,
+                                    outerPadding: const EdgeInsets.symmetric(
+                                        horizontal: Constants.padding),
+                                    startDate:
+                                        (Constants.nullDate != toDo.startDate)
+                                            ? toDo.startDate
+                                            : null,
+                                    dueDate:
+                                        (Constants.nullDate != toDo.dueDate)
+                                            ? toDo.dueDate
+                                            : null,
+                                    handleClear: clearDates,
+                                    handleUpdate: updateDates,
+                                  ),
+
+                                  const PaddedDivider(
+                                      padding: Constants.innerPadding),
+                                  // Time
+                                  (showTimeTile)
+                                      ? Tiles.timeTile(
+                                          outerPadding:
+                                              const EdgeInsets.symmetric(
+                                                  horizontal:
+                                                      Constants.padding),
+                                          startTime: (Constants.midnight !=
+                                                  TimeOfDay.fromDateTime(
+                                                      toDo.startDate))
+                                              ? TimeOfDay.fromDateTime(
+                                                  toDo.startDate)
+                                              : null,
+                                          dueTime: (Constants.midnight !=
+                                                  TimeOfDay.fromDateTime(
+                                                      toDo.dueDate))
+                                              ? TimeOfDay.fromDateTime(
+                                                  toDo.dueDate)
+                                              : null,
+                                          context: context,
+                                          handleClear: clearTimes,
+                                          handleUpdate: updateTimes,
                                         )
-                                      : null,
-                                ),
-                                const PaddedDivider(padding: Constants.padding),
-                                // My Day
-                                Tiles.myDayTile(
-                                    myDay: toDo.myDay,
-                                    canAdd: (userProvider.myDayTotal +
-                                            toDo.weight <=
-                                        (userProvider.curUser?.bandwidth ??
-                                            Constants.maxBandwidth)),
-                                    toggleMyDay: toggleMyDay),
-                                const PaddedDivider(padding: Constants.padding),
-                                // Priority
-                                Tiles.priorityTile(
-                                  context: context,
-                                  outerPadding: const EdgeInsets.symmetric(
-                                      horizontal: Constants.padding),
-                                  priority: toDo.priority,
-                                  onSelectionChanged: changePriority,
-                                ),
-                                const Padding(
-                                  padding: EdgeInsets.symmetric(
-                                      vertical: Constants.padding),
-                                  child:
-                                      PaddedDivider(padding: Constants.padding),
-                                ),
-                                // Expected Duration / RealDuration -> Show status, on click, open a dialog.
-                                Tiles.durationTile(
-                                  expectedDuration: toDo.expectedDuration,
-                                  context: context,
-                                  realDuration: toDo.realDuration,
-                                  outerPadding: const EdgeInsets.symmetric(
-                                      horizontal: Constants.padding),
-                                  handleClear: clearDuration,
-                                  handleUpdate: updateDuration,
-                                ),
-
-                                const PaddedDivider(padding: Constants.padding),
-                                // DateTime -> Show status, on click, open a dialog.
-                                Tiles.dateRangeTile(
-                                  context: context,
-                                  outerPadding: const EdgeInsets.symmetric(
-                                      horizontal: Constants.padding),
-                                  startDate:
-                                      (Constants.nullDate != toDo.startDate)
-                                          ? toDo.startDate
-                                          : null,
-                                  dueDate: (Constants.nullDate != toDo.dueDate)
-                                      ? toDo.dueDate
-                                      : null,
-                                  handleClear: clearDates,
-                                  handleUpdate: updateDates,
-                                ),
-
-                                const PaddedDivider(
-                                    padding: Constants.innerPadding),
-                                // Time
-                                (showTimeTile)
-                                    ? Tiles.timeTile(
-                                        outerPadding:
-                                            const EdgeInsets.symmetric(
-                                                horizontal: Constants.padding),
-                                        startTime: (Constants.midnight !=
-                                                TimeOfDay.fromDateTime(
-                                                    toDo.startDate))
-                                            ? TimeOfDay.fromDateTime(
-                                                toDo.startDate)
+                                      : const SizedBox.shrink(),
+                                  (showTimeTile)
+                                      ? const PaddedDivider(
+                                          padding: Constants.padding)
+                                      : const SizedBox.shrink(),
+                                  // Repeatable Stuff -> Show status, on click, open a dialog.
+                                  Tiles.repeatableTile(
+                                    context: context,
+                                    outerPadding: const EdgeInsets.symmetric(
+                                        horizontal: Constants.padding),
+                                    frequency: toDo.frequency,
+                                    weekdays: weekdayList,
+                                    repeatSkip: toDo.repeatSkip,
+                                    startDate:
+                                        (Constants.nullDate != toDo.startDate)
+                                            ? toDo.startDate
                                             : null,
-                                        dueTime: (Constants.midnight !=
-                                                TimeOfDay.fromDateTime(
-                                                    toDo.dueDate))
-                                            ? TimeOfDay.fromDateTime(
-                                                toDo.dueDate)
-                                            : null,
-                                        context: context,
-                                        handleClear: clearTimes,
-                                        handleUpdate: updateTimes,
-                                      )
-                                    : const SizedBox.shrink(),
-                                (showTimeTile)
-                                    ? const PaddedDivider(
-                                        padding: Constants.padding)
-                                    : const SizedBox.shrink(),
-                                // Repeatable Stuff -> Show status, on click, open a dialog.
-                                Tiles.repeatableTile(
-                                  context: context,
-                                  outerPadding: const EdgeInsets.symmetric(
-                                      horizontal: Constants.padding),
-                                  frequency: toDo.frequency,
-                                  weekdayList: weekdayList,
-                                  repeatSkip: toDo.repeatSkip,
-                                  startDate:
-                                      (Constants.nullDate != toDo.startDate)
-                                          ? toDo.startDate
-                                          : null,
-                                  handleUpdate: updateRepeatable,
-                                  handleClear: clearRepeatable,
-                                ),
-                              ]),
-                        ),
-                        Flexible(
-                          child: ListView(
-                              controller: subScrollControllerRight,
-                              physics: scrollPhysics,
-                              shrinkWrap: true,
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: Constants.padding),
-                              children: [
-                                SearchRecentsBar<Group>(
-                                  persistentEntry: widget.initialGroup,
-                                  hintText: "Search Groups",
-                                  padding:
-                                      const EdgeInsets.all(Constants.padding),
-                                  handleDataSelection: handleGroupSelection,
-                                  handleHistorySelection:
-                                      handleHistorySelection,
-                                  searchController: groupEditingController,
-                                  mostRecent: groupProvider.mostRecent,
-                                  search: groupProvider.searchGroups,
-                                ),
+                                    handleUpdate: updateRepeatable,
+                                    handleClear: clearRepeatable,
+                                  ),
+                                ]),
+                          ),
+                          Flexible(
+                            child: ListView(
+                                physics: const NeverScrollableScrollPhysics(),
+                                shrinkWrap: true,
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: Constants.padding),
+                                children: [
+                                  SearchRecentsBar<Group>(
+                                    persistentEntry: widget.initialGroup,
+                                    hintText: "Search Groups",
+                                    padding:
+                                        const EdgeInsets.all(Constants.padding),
+                                    handleDataSelection: handleGroupSelection,
+                                    handleHistorySelection:
+                                        handleHistorySelection,
+                                    searchController: groupEditingController,
+                                    mostRecent: groupProvider.mostRecent,
+                                    search: groupProvider.searchGroups,
+                                  ),
 
-                                (toDo.taskType != TaskType.small)
-                                    ? const PaddedDivider(
-                                        padding: Constants.padding)
-                                    : const SizedBox.shrink(),
-                                // Subtasks
-                                (toDo.taskType != TaskType.small)
-                                    ? buildSubTasksTile()
-                                    : const SizedBox.shrink(),
+                                  (toDo.taskType != TaskType.small)
+                                      ? const PaddedDivider(
+                                          padding: Constants.padding)
+                                      : const SizedBox.shrink(),
+                                  // Subtasks
+                                  (toDo.taskType != TaskType.small)
+                                      ? buildSubTasksTile()
+                                      : const SizedBox.shrink(),
 
-                                const PaddedDivider(padding: Constants.padding),
+                                  const PaddedDivider(
+                                      padding: Constants.padding),
 
-                                // Description
-                                Tiles.descriptionTile(
-                                  controller: descriptionEditingController,
-                                  outerPadding: const EdgeInsets.symmetric(
-                                      horizontal: Constants.padding),
-                                  context: context,
-                                ),
-                              ]),
-                        )
-                      ]),
-                ),
+                                  // Description
+                                  Tiles.descriptionTile(
+                                    hintText: "Notes",
+                                    minLines: Constants.desktopMinLines,
+                                    maxLines:
+                                        Constants.desktopMaxLinesBeforeScroll,
+                                    controller: descriptionEditingController,
+                                    outerPadding: const EdgeInsets.symmetric(
+                                        horizontal: Constants.padding),
+                                    context: context,
+                                  ),
+                                ]),
+                          )
+                        ])
+                  ]),
+            ),
+          ),
 
-                const PaddedDivider(padding: Constants.padding),
-                Tiles.updateAndDeleteButtons(
-                  handleDelete: handleDelete,
-                  handleUpdate: updateAndValidate,
-                  updateButtonPadding:
-                      const EdgeInsets.symmetric(horizontal: Constants.padding),
-                  deleteButtonPadding:
-                      const EdgeInsets.symmetric(horizontal: Constants.padding),
-                )
-              ]),
-        ),
+          const PaddedDivider(padding: Constants.halfPadding),
+          Tiles.updateAndDeleteButtons(
+            handleDelete: handleDelete,
+            handleUpdate: updateAndValidate,
+            updateButtonPadding:
+                const EdgeInsets.symmetric(horizontal: Constants.padding),
+            deleteButtonPadding:
+                const EdgeInsets.symmetric(horizontal: Constants.padding),
+          )
+        ]),
       ),
     );
   }
@@ -911,19 +948,21 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
               Flexible(
                 child: ListView(
                   shrinkWrap: true,
-                  controller: mainScrollController,
+                  controller: mobileScrollController,
                   physics: scrollPhysics,
                   children: [
                     // Title + status
                     Tiles.nameTile(
                         context: context,
-                        leading:
-                            buildCheckbox(scale: Constants.largeCheckboxScale),
+                        leading: LeadingWidgets.toDoCheckbox(
+                          scale: Constants.largeCheckboxScale,
+                          completed: toDo.completed,
+                          onChanged: completeToDo,
+                        ),
                         hintText: "Task Name",
                         errorText: nameErrorText,
                         controller: nameEditingController,
-                        outerPadding: const EdgeInsets.symmetric(
-                            horizontal: Constants.padding),
+                        outerPadding: const EdgeInsets.all(Constants.padding),
                         textFieldPadding: const EdgeInsets.only(
                           left: Constants.halfPadding,
                         ),
@@ -933,7 +972,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                       outerPadding:
                           const EdgeInsets.all(Constants.innerPadding),
                       batteryPadding: const EdgeInsets.symmetric(
-                          horizontal: Constants.innerPadding),
+                          horizontal: Constants.padding),
                       constraints: const BoxConstraints(maxWidth: 200),
                       weight: toDo.weight.toDouble(),
                       max: (toDo.taskType == TaskType.small)
@@ -965,6 +1004,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                     const PaddedDivider(padding: Constants.padding),
                     // Priority
                     Tiles.priorityTile(
+                      mobile: smallScreen,
                       context: context,
                       outerPadding: const EdgeInsets.symmetric(
                           horizontal: Constants.padding),
@@ -996,6 +1036,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
 
                     // Description
                     Tiles.descriptionTile(
+                      hintText: "Notes",
                       controller: descriptionEditingController,
                       outerPadding: const EdgeInsets.symmetric(
                           horizontal: Constants.padding),
@@ -1005,6 +1046,9 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                     const PaddedDivider(padding: Constants.innerPadding),
                     // Expected Duration / RealDuration -> Show status, on click, open a dialog.
                     Tiles.durationTile(
+                      hours: hours,
+                      minutes: minutes,
+                      seconds: seconds,
                       expectedDuration: toDo.expectedDuration,
                       context: context,
                       realDuration: toDo.realDuration,
@@ -1049,9 +1093,8 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                             handleUpdate: updateTimes,
                           )
                         : const SizedBox.shrink(),
-
                     (showTimeTile)
-                        ? const PaddedDivider(padding: Constants.innerPadding)
+                        ? const PaddedDivider(padding: Constants.padding)
                         : const SizedBox.shrink(),
                     // Repeatable Stuff -> Show status, on click, open a dialog.
                     Tiles.repeatableTile(
@@ -1059,7 +1102,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                       outerPadding: const EdgeInsets.symmetric(
                           horizontal: Constants.padding),
                       frequency: toDo.frequency,
-                      weekdayList: weekdayList,
+                      weekdays: weekdayList,
                       repeatSkip: toDo.repeatSkip,
                       startDate: (Constants.nullDate != toDo.startDate)
                           ? toDo.startDate
@@ -1071,7 +1114,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                 ),
               ),
 
-              const PaddedDivider(padding: Constants.padding),
+              const PaddedDivider(padding: Constants.halfPadding),
               Tiles.updateAndDeleteButtons(
                 handleDelete: handleDelete,
                 handleUpdate: updateAndValidate,
@@ -1118,18 +1161,5 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
             : const SizedBox.shrink(),
       ],
     );
-  }
-
-  Widget buildCheckbox({double scale = 1}) {
-    return Transform.scale(
-        scale: scale,
-        child: Checkbox(
-            splashRadius: 15,
-            value: toDo.completed,
-            onChanged: (bool? value) => setState(() {
-                  checkClose = true;
-                  toDo.completed = value!;
-                }),
-            shape: const CircleBorder()));
   }
 }

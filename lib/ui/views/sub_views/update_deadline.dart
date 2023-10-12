@@ -11,6 +11,7 @@ import '../../../util/constants.dart';
 import '../../../util/enums.dart';
 import '../../../util/exceptions.dart';
 import '../../widgets/flushbars.dart';
+import '../../widgets/leading_widgets.dart';
 import '../../widgets/padded_divider.dart';
 import '../../widgets/tiles.dart';
 import '../../widgets/title_bar.dart';
@@ -159,42 +160,33 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
     });
   }
 
-  // TODO: consider refactoring this dialog out.
   Future<void> handleUpdate() async {
     if (prevDeadline.frequency != Frequency.once && checkClose) {
       bool? updateSingle = await showModalBottomSheet<bool?>(
           showDragHandle: true,
           context: context,
           builder: (BuildContext context) {
-            return StatefulBuilder(
-                builder: (BuildContext context,
-                        void Function(void Function()) setState) =>
-                    Center(
-                        heightFactor: 1,
-                        child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Padding(
-                                padding:
-                                    const EdgeInsets.all(Constants.padding),
-                                child: FilledButton.icon(
-                                    onPressed: () =>
-                                        Navigator.pop(context, true),
-                                    label: const Text("This Event"),
-                                    icon: const Icon(
-                                        Icons.arrow_upward_outlined)),
-                              ),
-                              Padding(
-                                  padding:
-                                      const EdgeInsets.all(Constants.padding),
-                                  child: FilledButton.tonalIcon(
-                                    onPressed: () =>
-                                        Navigator.pop(context, false),
-                                    label: const Text("All Future Events"),
-                                    icon: const Icon(Icons.repeat_outlined),
-                                  ))
-                            ])));
+            return Center(
+                heightFactor: 1,
+                child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.all(Constants.padding),
+                        child: FilledButton.icon(
+                            onPressed: () => Navigator.pop(context, true),
+                            label: const Text("This Event"),
+                            icon: const Icon(Icons.arrow_upward_outlined)),
+                      ),
+                      Padding(
+                          padding: const EdgeInsets.all(Constants.padding),
+                          child: FilledButton.tonalIcon(
+                            onPressed: () => Navigator.pop(context, false),
+                            label: const Text("All Future Events"),
+                            icon: const Icon(Icons.repeat_outlined),
+                          ))
+                    ]));
           });
       // If the modal is discarded.
       if (null == updateSingle) {
@@ -507,7 +499,7 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
       insetPadding: const EdgeInsets.all(Constants.outerDialogPadding),
       child: ConstrainedBox(
         constraints:
-            const BoxConstraints(maxHeight: Constants.maxLandscapeDialogHeight),
+            const BoxConstraints(maxHeight: Constants.maxDesktopDialogSide),
         child: Padding(
           padding: const EdgeInsets.all(Constants.padding),
           child: Column(
@@ -538,6 +530,13 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                               children: [
                                 // Title
                                 Tiles.nameTile(
+                                    leading: LeadingWidgets.deadlineIcon(
+                                      currentContext: context,
+                                      iconPadding: const EdgeInsets.all(
+                                          Constants.padding),
+                                      outerPadding: const EdgeInsets.symmetric(
+                                          horizontal: Constants.halfPadding),
+                                    ),
                                     context: context,
                                     hintText: "Deadline Name",
                                     errorText: nameErrorText,
@@ -628,7 +627,7 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                                   outerPadding: const EdgeInsets.symmetric(
                                       horizontal: Constants.padding),
                                   frequency: deadline.frequency,
-                                  weekdayList: weekdayList,
+                                  weekdays: weekdayList,
                                   repeatSkip: deadline.repeatSkip,
                                   startDate: deadline.startDate,
                                   handleUpdate: updateRepeatable,
@@ -702,9 +701,13 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                   controller: mainScrollController,
                   physics: scrollPhysics,
                   children: [
-                    // Title + status
-                    // TODO: Some sort of leading widget.
                     Tiles.nameTile(
+                        leading: LeadingWidgets.deadlineIcon(
+                          currentContext: context,
+                          iconPadding: const EdgeInsets.all(Constants.padding),
+                          outerPadding: const EdgeInsets.symmetric(
+                              horizontal: Constants.halfPadding),
+                        ),
                         context: context,
                         hintText: "Deadline Name",
                         errorText: nameErrorText,
@@ -717,6 +720,7 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                         handleClear: clearNameField),
 
                     Tiles.priorityTile(
+                      mobile: smallScreen,
                       context: context,
                       outerPadding: const EdgeInsets.symmetric(
                           horizontal: Constants.padding,
@@ -797,7 +801,7 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                       outerPadding: const EdgeInsets.symmetric(
                           horizontal: Constants.padding),
                       frequency: deadline.frequency,
-                      weekdayList: weekdayList,
+                      weekdays: weekdayList,
                       repeatSkip: deadline.repeatSkip,
                       startDate: deadline.startDate,
                       handleUpdate: updateRepeatable,

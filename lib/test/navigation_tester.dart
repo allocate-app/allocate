@@ -30,17 +30,20 @@ void main() async {
     // This is for default sizing.
     await windowManager.ensureInitialized();
 
-    WindowManager.instance.setMinimumSize(Constants.minDesktopSize);
+    // NOTE: This is not currently working in Linux. Possibly macOS.
+    // Linux size issue is not resolved.
+    await WindowManager.instance.setResizable(true);
+    await WindowManager.instance.setMinimumSize(Constants.testDesktopSize);
 
     WindowOptions windowOptions = const WindowOptions(
-      minimumSize: Constants.minDesktopSize,
+      minimumSize: Constants.testDesktopSize,
       title: "TESTING",
     );
 
     windowManager.waitUntilReadyToShow(windowOptions, () async {
       await windowManager.show();
       await windowManager.focus();
-      await windowManager.setPreventClose(true);
+      await windowManager.setPreventClose(false);
     });
   }
 
@@ -164,6 +167,9 @@ class _NavigationTester extends State<NavigationTester> with WindowListener {
 
   @override
   Widget build(BuildContext context) {
+    Size size = MediaQuery.of(context).size;
+
+    print("MQ: $size");
     return MaterialApp(
       theme: ThemeData(useMaterial3: true),
       home: const HomeScreen(),

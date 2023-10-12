@@ -10,6 +10,7 @@ import '../../../util/constants.dart';
 import '../../../util/enums.dart';
 import '../../../util/exceptions.dart';
 import '../../widgets/flushbars.dart';
+import '../../widgets/leading_widgets.dart';
 import '../../widgets/padded_divider.dart';
 import '../../widgets/tiles.dart';
 import '../../widgets/title_bar.dart';
@@ -354,7 +355,7 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
       insetPadding: const EdgeInsets.all(Constants.outerDialogPadding),
       child: ConstrainedBox(
         constraints:
-            const BoxConstraints(maxHeight: Constants.maxLandscapeDialogHeight),
+            const BoxConstraints(maxHeight: Constants.maxDesktopDialogSide),
         child: Padding(
           padding: const EdgeInsets.all(Constants.padding),
           child: Column(
@@ -385,6 +386,13 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
                               children: [
                                 // Title
                                 Tiles.nameTile(
+                                    leading: LeadingWidgets.deadlineIcon(
+                                      currentContext: context,
+                                      iconPadding: const EdgeInsets.all(
+                                          Constants.padding),
+                                      outerPadding: const EdgeInsets.symmetric(
+                                          horizontal: Constants.halfPadding),
+                                    ),
                                     context: context,
                                     hintText: "Deadline Name",
                                     errorText: nameErrorText,
@@ -454,7 +462,7 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
                                   outerPadding: const EdgeInsets.symmetric(
                                       horizontal: Constants.padding),
                                   frequency: frequency,
-                                  weekdayList: weekdayList,
+                                  weekdays: weekdayList,
                                   repeatSkip: repeatSkip,
                                   startDate: startDate,
                                   handleUpdate: updateRepeatable,
@@ -528,6 +536,12 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
                     // Title + status
                     // TODO: Some sort of leading widget.
                     Tiles.nameTile(
+                        leading: LeadingWidgets.deadlineIcon(
+                          currentContext: context,
+                          iconPadding: const EdgeInsets.all(Constants.padding),
+                          outerPadding: const EdgeInsets.symmetric(
+                              horizontal: Constants.halfPadding),
+                        ),
                         context: context,
                         hintText: "Deadline Name",
                         errorText: nameErrorText,
@@ -540,6 +554,7 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
                         handleClear: clearNameField),
 
                     Tiles.priorityTile(
+                      mobile: smallScreen,
                       context: context,
                       outerPadding: const EdgeInsets.symmetric(
                           horizontal: Constants.padding,
@@ -605,7 +620,7 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
                       outerPadding: const EdgeInsets.symmetric(
                           horizontal: Constants.padding),
                       frequency: frequency,
-                      weekdayList: weekdayList,
+                      weekdays: weekdayList,
                       repeatSkip: repeatSkip,
                       startDate: startDate,
                       handleUpdate: updateRepeatable,

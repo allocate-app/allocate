@@ -13,6 +13,7 @@ import "../../../util/enums.dart";
 import "../../../util/exceptions.dart";
 import "../../widgets/expanded_listtile.dart";
 import "../../widgets/flushbars.dart";
+import "../../widgets/leading_widgets.dart";
 import "../../widgets/listviews.dart";
 import "../../widgets/padded_divider.dart";
 import "../../widgets/tiles.dart";
@@ -34,9 +35,8 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
   late final RoutineProvider routineProvider;
 
   // Scrolling
-  late final ScrollController mainScrollController;
-  late final ScrollController subScrollControllerLeft;
-  late final ScrollController subScrollControllerRight;
+  late final ScrollController mobileScrollController;
+  late final ScrollController desktopScrollController;
   late final ScrollPhysics scrollPhysics;
 
   late String name;
@@ -81,9 +81,8 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
   }
 
   void initializeControllers() {
-    mainScrollController = ScrollController();
-    subScrollControllerLeft = ScrollController();
-    subScrollControllerRight = ScrollController();
+    mobileScrollController = ScrollController();
+    desktopScrollController = ScrollController();
     scrollPhysics =
         const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics());
     nameEditingController = TextEditingController();
@@ -113,6 +112,8 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
   @override
   void dispose() {
     nameEditingController.dispose();
+    mobileScrollController.dispose();
+    desktopScrollController.dispose();
     for (TextEditingController controller in routineTaskEditingController) {
       controller.dispose();
     }
@@ -176,6 +177,16 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
       checkClose = true;
       nameEditingController.clear();
       name = "";
+    });
+  }
+
+  void changeRoutineTime({required RoutineTime? newRoutineTime}) {
+    if (null == newRoutineTime) {
+      return;
+    }
+    setState(() {
+      checkClose = true;
+      routineTime = newRoutineTime;
     });
   }
 
@@ -281,92 +292,107 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
       insetPadding: const EdgeInsets.all(Constants.outerDialogPadding),
       child: Padding(
         padding: const EdgeInsets.all(Constants.padding),
-        child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Title && Close Button
-              TitleBar(
-                currentContext: context,
-                title: "New Routine",
-                centerWidget: (expectedDuration > 0)
-                    ? TitleBar.toDoCenterWidget(
-                        expectedDuration: expectedDuration,
-                        realDuration: realDuration)
-                    : null,
-                checkClose: checkClose,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: Constants.padding),
-                handleClose: handleClose,
-              ),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          // Title && Close Button
+          TitleBar(
+            currentContext: context,
+            title: "New Routine",
+            centerWidget: (expectedDuration > 0)
+                ? TitleBar.toDoCenterWidget(
+                    expectedDuration: expectedDuration,
+                    realDuration: realDuration)
+                : null,
+            checkClose: checkClose,
+            padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
+            handleClose: handleClose,
+          ),
 
-              const PaddedDivider(padding: Constants.halfPadding),
-              Flexible(
-                child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Flexible(
-                          child: ListView(
-                              shrinkWrap: true,
-                              controller: subScrollControllerLeft,
-                              children: [
-                            // Title
+          const PaddedDivider(padding: Constants.halfPadding),
+          Flexible(
+            child: Scrollbar(
+              thumbVisibility: true,
+              controller: desktopScrollController,
+              child: ListView(
+                  shrinkWrap: true,
+                  controller: desktopScrollController,
+                  physics: scrollPhysics,
+                  children: [
+                    Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Flexible(
+                              child: ListView(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: Constants.halfPadding),
+                                  shrinkWrap: true,
+                                  children: [
+                                // Title
 
-                            Tiles.nameTile(
-                                context: context,
-                                leading: buildTimeOfDayIcon(context: context),
-                                hintText: "Routine Name",
-                                errorText: nameErrorText,
-                                controller: nameEditingController,
-                                outerPadding: const EdgeInsets.symmetric(
-                                    horizontal: Constants.padding),
-                                textFieldPadding: const EdgeInsets.only(
-                                  left: Constants.halfPadding,
+                                Tiles.nameTile(
+                                    context: context,
+                                    leading: LeadingWidgets.routineIcon(
+                                      currentContext: context,
+                                      scale: Constants.largeCheckboxMinScale,
+                                      routineTime: routineTime,
+                                      handleRoutineTimeChange:
+                                          changeRoutineTime,
+                                    ),
+                                    hintText: "Routine Name",
+                                    errorText: nameErrorText,
+                                    controller: nameEditingController,
+                                    outerPadding:
+                                        const EdgeInsets.all(Constants.padding),
+                                    textFieldPadding: const EdgeInsets.only(
+                                        left: Constants.halfPadding),
+                                    handleClear: clearNameField),
+                                Tiles.weightTile(
+                                  outerPadding: const EdgeInsets.all(
+                                      Constants.innerPadding),
+                                  batteryPadding: const EdgeInsets.symmetric(
+                                      horizontal: Constants.padding),
+                                  constraints:
+                                      const BoxConstraints(maxWidth: 200),
+                                  weight: weight.toDouble(),
+                                  max: Constants.maxWeight.toDouble(),
                                 ),
-                                handleClear: clearNameField),
-                            Tiles.weightTile(
-                              outerPadding:
-                                  const EdgeInsets.all(Constants.innerPadding),
-                              batteryPadding: const EdgeInsets.symmetric(
-                                  horizontal: Constants.padding),
-                              constraints: const BoxConstraints(maxWidth: 200),
-                              weight: weight.toDouble(),
-                              max: Constants.maxWeight.toDouble(),
-                            ),
-                            const PaddedDivider(padding: Constants.padding),
-                            Tiles.durationTile(
-                              expectedDuration: expectedDuration,
-                              context: context,
-                              realDuration: realDuration,
-                              outerPadding: const EdgeInsets.symmetric(
-                                  horizontal: Constants.padding),
-                              handleClear: clearDuration,
-                              handleUpdate: updateDuration,
-                            ),
-                          ])),
-                      Flexible(
-                          child: Scrollbar(
-                        controller: subScrollControllerRight,
-                        thumbVisibility: true,
-                        child: ListView(
-                            controller: subScrollControllerRight,
-                            physics: scrollPhysics,
-                            shrinkWrap: true,
-                            children: [buildRoutineTasksTile()]),
-                      ))
-                    ]),
-              ),
+                                const PaddedDivider(padding: Constants.padding),
+                                Tiles.durationTile(
+                                  expectedDuration: expectedDuration,
+                                  context: context,
+                                  realDuration: realDuration,
+                                  outerPadding: const EdgeInsets.symmetric(
+                                      horizontal: Constants.padding),
+                                  handleClear: clearDuration,
+                                  handleUpdate: updateDuration,
+                                ),
+                              ])),
+                          Flexible(
+                              child: ListView(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: Constants.halfPadding),
+                                  physics: const NeverScrollableScrollPhysics(),
+                                  shrinkWrap: true,
+                                  children: [
+                                buildRoutineTasksTile(
+                                  outerPadding: const EdgeInsets.all(
+                                    Constants.halfPadding,
+                                  ),
+                                )
+                              ]))
+                        ]),
+                  ]),
+            ),
+          ),
 
-              const PaddedDivider(padding: Constants.halfPadding),
-              Tiles.createButton(
-                outerPadding:
-                    const EdgeInsets.symmetric(horizontal: Constants.padding),
-                handleCreate: createAndValidate,
-              ),
-            ]),
+          const PaddedDivider(padding: Constants.halfPadding),
+          Tiles.createButton(
+            outerPadding:
+                const EdgeInsets.symmetric(horizontal: Constants.padding),
+            handleCreate: createAndValidate,
+          ),
+        ]),
       ),
     );
   }
@@ -401,26 +427,29 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
               Flexible(
                 child: ListView(
                   shrinkWrap: true,
-                  controller: mainScrollController,
+                  controller: mobileScrollController,
                   physics: scrollPhysics,
                   children: [
                     Tiles.nameTile(
                         context: context,
-                        leading: buildTimeOfDayIcon(context: context),
+                        leading: LeadingWidgets.routineIcon(
+                          currentContext: context,
+                          scale: Constants.largeCheckboxMinScale,
+                          routineTime: routineTime,
+                          handleRoutineTimeChange: changeRoutineTime,
+                        ),
                         hintText: "Routine Name",
                         errorText: nameErrorText,
                         controller: nameEditingController,
-                        outerPadding: const EdgeInsets.symmetric(
-                            horizontal: Constants.padding),
-                        textFieldPadding: const EdgeInsets.only(
-                          left: Constants.halfPadding,
-                        ),
+                        outerPadding: const EdgeInsets.all(Constants.padding),
+                        textFieldPadding:
+                            const EdgeInsets.only(left: Constants.halfPadding),
                         handleClear: clearNameField),
                     Tiles.weightTile(
                       outerPadding:
                           const EdgeInsets.all(Constants.innerPadding),
                       batteryPadding: const EdgeInsets.symmetric(
-                          horizontal: Constants.innerPadding),
+                          horizontal: Constants.padding),
                       constraints: const BoxConstraints(maxWidth: 200),
                       weight: weight.toDouble(),
                       max: Constants.maxWeight.toDouble(),
@@ -439,8 +468,7 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
 
                     const PaddedDivider(padding: Constants.padding),
 
-                    buildRoutineTasksTile(
-                        physics: const NeverScrollableScrollPhysics()),
+                    buildRoutineTasksTile(),
                   ],
                 ),
               ),
@@ -457,8 +485,10 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
   }
 
   Widget buildRoutineTasksTile(
-      {ScrollPhysics physics = const NeverScrollableScrollPhysics()}) {
+      {ScrollPhysics physics = const NeverScrollableScrollPhysics(),
+      EdgeInsetsGeometry outerPadding = EdgeInsets.zero}) {
     return ExpandedListTile(
+      outerPadding: outerPadding,
       title: const AutoSizeText("Steps",
           maxLines: 1,
           overflow: TextOverflow.visible,
@@ -489,177 +519,6 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
               )
             : const SizedBox.shrink(),
       ],
-    );
-  }
-
-  Widget buildTimeOfDayIcon({
-    required BuildContext context,
-  }) {
-    Icon? icon = switch (routineTime) {
-      RoutineTime.morning => const Icon(Icons.wb_twilight_rounded),
-      RoutineTime.afternoon => const Icon(Icons.lunch_dining_rounded),
-      RoutineTime.evening => const Icon(Icons.bed_rounded),
-      _ => const Icon(Icons.alarm_rounded),
-    };
-
-    return OutlinedButton(
-      style: OutlinedButton.styleFrom(
-        padding: const EdgeInsets.all(Constants.innerPadding),
-        shape: const CircleBorder(),
-        side: BorderSide(
-          color: Theme.of(context).colorScheme.outlineVariant,
-        ),
-      ),
-      onPressed: () async {
-        await showDialog<RoutineTime>(
-          context: context,
-          builder: (BuildContext context) {
-            return Dialog(
-                child: ConstrainedBox(
-              constraints: const BoxConstraints(
-                  maxWidth: Constants.smallLandscapeDialogWidth),
-              child: Padding(
-                padding: const EdgeInsets.all(Constants.innerPadding),
-                child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Row(
-                          mainAxisAlignment: MainAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Expanded(
-                              child: AutoSizeText(
-                                "Set Routine Time",
-                                style: Constants.headerStyle,
-                                softWrap: true,
-                                overflow: TextOverflow.visible,
-                                maxLines: 2,
-                                minFontSize: Constants.medium,
-                              ),
-                            )
-                          ]),
-                      const Flexible(
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          mainAxisSize: MainAxisSize.max,
-                          children: [
-                            Flexible(
-                                child: AutoSizeText(
-                              "Morning | Afternoon | Evening ",
-                              style: Constants.largeHeaderStyle,
-                              softWrap: true,
-                              overflow: TextOverflow.visible,
-                              maxLines: 1,
-                              minFontSize: Constants.large,
-                            )),
-                            Flexible(
-                              child: FittedBox(
-                                  fit: BoxFit.fill,
-                                  child: Icon(Icons.schedule_outlined,
-                                      size: Constants.medIconSize)),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          mainAxisSize: MainAxisSize.max,
-                          children: [
-                            Flexible(
-                                child: Padding(
-                              padding: const EdgeInsets.all(Constants.padding),
-                              child: FittedBox(
-                                fit: BoxFit.fill,
-                                child: (routineTime == RoutineTime.morning)
-                                    ? IconButton.filledTonal(
-                                        iconSize: Constants.lgIconSize,
-                                        icon: const Icon(
-                                            Icons.wb_twilight_rounded),
-                                        onPressed: () => Navigator.pop(
-                                            context, RoutineTime.none))
-                                    : IconButton.outlined(
-                                        iconSize: Constants.lgIconSize,
-                                        icon: const Icon(
-                                            Icons.wb_twilight_rounded),
-                                        onPressed: () => Navigator.pop(
-                                            context, RoutineTime.morning)),
-                              ),
-                            )),
-                            Flexible(
-                              child: Padding(
-                                padding:
-                                    const EdgeInsets.all(Constants.padding),
-                                child: FittedBox(
-                                  fit: BoxFit.fill,
-                                  child: (routineTime == RoutineTime.afternoon)
-                                      ? IconButton.filledTonal(
-                                          iconSize: Constants.lgIconSize,
-                                          icon: const Icon(
-                                              Icons.lunch_dining_rounded),
-                                          onPressed: () => Navigator.pop(
-                                              context, RoutineTime.none))
-                                      : IconButton.outlined(
-                                          iconSize: Constants.lgIconSize,
-                                          icon: const Icon(
-                                              Icons.lunch_dining_rounded),
-                                          onPressed: () => Navigator.pop(
-                                              context, RoutineTime.afternoon)),
-                                ),
-                              ),
-                            ),
-                            Flexible(
-                              child: Padding(
-                                padding:
-                                    const EdgeInsets.all(Constants.padding),
-                                child: FittedBox(
-                                  fit: BoxFit.fill,
-                                  child: (routineTime == RoutineTime.evening)
-                                      ? IconButton.filledTonal(
-                                          iconSize: Constants.lgIconSize,
-                                          icon: const Icon(Icons.bed_rounded),
-                                          onPressed: () => Navigator.pop(
-                                              context, RoutineTime.none))
-                                      : IconButton.outlined(
-                                          iconSize: Constants.lgIconSize,
-                                          icon: const Icon(Icons.bed_rounded),
-                                          onPressed: () => Navigator.pop(
-                                              context, RoutineTime.evening)),
-                                ),
-                              ),
-                            )
-                          ]),
-                      Flexible(
-                        child: Padding(
-                            padding: const EdgeInsets.all(Constants.padding),
-                            child: Tooltip(
-                              message: "Remove.",
-                              child: FittedBox(
-                                fit: BoxFit.fill,
-                                child: IconButton.outlined(
-                                  iconSize: Constants.medIconSize,
-                                  icon: const Icon(
-                                      Icons.remove_circle_outline_rounded),
-                                  onPressed: () =>
-                                      Navigator.pop(context, RoutineTime.none),
-                                ),
-                              ),
-                            )),
-                      )
-                    ]),
-              ),
-            ));
-          },
-        ).then((RoutineTime? time) {
-          if (time == null) {
-            return;
-          }
-          setState(() {
-            routineTime = time;
-          });
-        });
-      },
-      child: icon,
     );
   }
 }
