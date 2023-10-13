@@ -1,4 +1,4 @@
-enum ModelType { toDo, deadline, reminder, routine, group }
+enum ModelType { task, deadline, reminder, routine, group }
 
 enum Priority { low, medium, high }
 

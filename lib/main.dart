@@ -1,19 +1,19 @@
 import "dart:ui";
 
-import "package:allocate/providers/reminder_provider.dart";
-import "package:allocate/providers/routine_provider.dart";
-import "package:allocate/providers/todo_provider.dart";
-import "package:allocate/providers/user_provider.dart";
-import "package:allocate/services/isar_service.dart";
-import "package:allocate/services/supabase_service.dart";
-import "package:allocate/ui/app_router.dart";
-import "package:allocate/util/constants.dart";
 import 'package:flutter/material.dart';
 import "package:provider/provider.dart";
 import "package:supabase_flutter/supabase_flutter.dart" hide Provider;
 
 import "providers/deadline_provider.dart";
 import "providers/group_provider.dart";
+import "providers/reminder_provider.dart";
+import "providers/routine_provider.dart";
+import "providers/todo_provider.dart";
+import "providers/user_provider.dart";
+import "services/isar_service.dart";
+import "services/supabase_service.dart";
+import "ui/app_router.dart";
+import "util/constants.dart";
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();

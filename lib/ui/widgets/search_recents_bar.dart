@@ -1,12 +1,12 @@
-import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
 
 import '../../util/constants.dart';
 import '../../util/interfaces/i_model.dart';
+import 'tiles.dart';
 
 class SearchRecentsBar<T extends IModel> extends StatefulWidget {
   const SearchRecentsBar(
-      {super.key,
+      {Key? key,
       this.padding = EdgeInsets.zero,
       this.hintText = "",
       required this.searchController,
@@ -15,7 +15,8 @@ class SearchRecentsBar<T extends IModel> extends StatefulWidget {
       required this.search,
       this.clearOnSelection = false,
       this.persistentEntry,
-      required this.handleDataSelection});
+      required this.handleDataSelection})
+      : super(key: key);
 
   final MapEntry<String, int>? persistentEntry;
   final String hintText;
@@ -32,7 +33,6 @@ class SearchRecentsBar<T extends IModel> extends StatefulWidget {
 }
 
 class _SearchRecents<T extends IModel> extends State<SearchRecentsBar<T>> {
-  // TODO: Add a persistent item if it's here.
   late List<MapEntry<String, int>> searchHistory = List.empty(growable: true);
 
   void updateHistory({required MapEntry<String, int> data}) {
@@ -66,23 +66,13 @@ class _SearchRecents<T extends IModel> extends State<SearchRecentsBar<T>> {
               (BuildContext context, SearchController controller) {
             if (controller.text.isEmpty) {
               if (searchHistory.isNotEmpty) {
-                // TODO: Factor out into History Tile.
                 return searchHistory
-                    .map((MapEntry<String, int> data) => ListTile(
-                          leading: const Icon(Icons.history_rounded),
-                          title: AutoSizeText(
-                            data.key,
-                            maxLines: 1,
-                            softWrap: false,
-                            overflow: TextOverflow.visible,
-                          ),
+                    .map((MapEntry<String, int> data) => Tiles.historyTile(
+                          title: data.key,
                           onTap: () {
-                            controller.closeView(data.key);
+                            controller.closeView(
+                                (widget.clearOnSelection) ? "" : data.key);
                             widget.handleHistorySelection(id: data.value);
-                            if (widget.clearOnSelection) {
-                              controller.value =
-                                  controller.value.copyWith(text: "");
-                            }
                           },
                         ))
                     .toList();
@@ -118,11 +108,8 @@ class _SearchRecents<T extends IModel> extends State<SearchRecentsBar<T>> {
                   physics: const NeverScrollableScrollPhysics(),
                   itemCount: data.length,
                   itemBuilder: (BuildContext context, int index) {
-                    return ListTile(
-                        shape: const RoundedRectangleBorder(
-                            borderRadius: BorderRadius.all(
-                                Radius.circular(Constants.roundedCorners))),
-                        title: AutoSizeText(data[index].name),
+                    return Tiles.searchTile(
+                        title: data[index].name,
                         onTap: () {
                           controller.closeView((widget.clearOnSelection)
                               ? ""
@@ -130,21 +117,14 @@ class _SearchRecents<T extends IModel> extends State<SearchRecentsBar<T>> {
                           updateHistory(
                               data: MapEntry(data[index].name, data[index].id));
                           widget.handleDataSelection(id: data[index].id);
-                          if (widget.clearOnSelection) {
-                            controller.value =
-                                controller.value.copyWith(text: "");
-                          }
                         });
                   });
             }
-            // This is what to render if no data. -- PERSISTENT entry here -> Consider making a separate widget.
+            // Render peristent entry on an empty query
             return (null != widget.persistentEntry)
-                ? ListTile(
+                ? Tiles.searchTile(
                     leading: const Icon(Icons.manage_history_rounded),
-                    shape: const RoundedRectangleBorder(
-                        borderRadius: BorderRadius.all(
-                            Radius.circular(Constants.roundedCorners))),
-                    title: AutoSizeText(widget.persistentEntry!.key),
+                    title: widget.persistentEntry!.key,
                     onTap: () {
                       controller.closeView((widget.clearOnSelection)
                           ? ""

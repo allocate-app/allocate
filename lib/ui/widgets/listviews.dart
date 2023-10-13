@@ -1,8 +1,8 @@
-import 'package:allocate/ui/widgets/tiles.dart';
 import 'package:flutter/material.dart';
 
 import '../../model/task/subtask.dart';
 import '../../model/task/todo.dart';
+import 'tiles.dart';
 
 // TODO: Implement crossfade
 class ListViews {

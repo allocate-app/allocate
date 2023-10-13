@@ -29,9 +29,8 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
   late final DeadlineProvider deadlineProvider;
 
   // Scrolling
-  late final ScrollController mainScrollController;
-  late final ScrollController subScrollControllerLeft;
-  late final ScrollController subScrollControllerRight;
+  late final ScrollController mobileScrollController;
+  late final ScrollController desktopScrollController;
   late final ScrollPhysics scrollPhysics;
 
   // Name
@@ -76,6 +75,8 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
 
   @override
   void dispose() {
+    mobileScrollController.dispose();
+    desktopScrollController.dispose();
     nameEditingController.dispose();
     descriptionEditingController.dispose();
     repeatSkipEditingController.dispose();
@@ -102,9 +103,8 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
   }
 
   void initializeControllers() {
-    mainScrollController = ScrollController();
-    subScrollControllerLeft = ScrollController();
-    subScrollControllerRight = ScrollController();
+    mobileScrollController = ScrollController();
+    desktopScrollController = ScrollController();
     scrollPhysics =
         const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics());
     nameEditingController = TextEditingController();
@@ -374,121 +374,147 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
                 ),
                 const PaddedDivider(padding: Constants.padding),
                 Flexible(
-                  child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                  child: Scrollbar(
+                    thumbVisibility: true,
+                    controller: desktopScrollController,
+                    child: ListView(
+                      shrinkWrap: true,
+                      physics: scrollPhysics,
+                      controller: desktopScrollController,
                       children: [
-                        Flexible(
-                          child: ListView(
-                              shrinkWrap: true,
-                              controller: subScrollControllerLeft,
-                              children: [
-                                // Title
-                                Tiles.nameTile(
-                                    leading: LeadingWidgets.deadlineIcon(
-                                      currentContext: context,
-                                      iconPadding: const EdgeInsets.all(
-                                          Constants.padding),
-                                      outerPadding: const EdgeInsets.symmetric(
-                                          horizontal: Constants.halfPadding),
-                                    ),
-                                    context: context,
-                                    hintText: "Deadline Name",
-                                    errorText: nameErrorText,
-                                    controller: nameEditingController,
-                                    outerPadding: const EdgeInsets.symmetric(
-                                        horizontal: Constants.padding),
-                                    textFieldPadding:
-                                        const EdgeInsets.symmetric(
-                                      horizontal: Constants.halfPadding,
-                                    ),
-                                    handleClear: clearNameField),
+                        Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Flexible(
+                                child: ListView(
+                                    shrinkWrap: true,
+                                    physics:
+                                        const NeverScrollableScrollPhysics(),
+                                    children: [
+                                      // Title
+                                      Tiles.nameTile(
+                                          leading: LeadingWidgets.deadlineIcon(
+                                            currentContext: context,
+                                            iconPadding: const EdgeInsets.all(
+                                                Constants.padding),
+                                            outerPadding:
+                                                const EdgeInsets.symmetric(
+                                                    horizontal:
+                                                        Constants.halfPadding),
+                                          ),
+                                          context: context,
+                                          hintText: "Deadline Name",
+                                          errorText: nameErrorText,
+                                          controller: nameEditingController,
+                                          outerPadding:
+                                              const EdgeInsets.symmetric(
+                                                  horizontal:
+                                                      Constants.padding),
+                                          textFieldPadding:
+                                              const EdgeInsets.symmetric(
+                                            horizontal: Constants.halfPadding,
+                                          ),
+                                          handleClear: clearNameField),
 
-                                Tiles.priorityTile(
-                                  context: context,
-                                  outerPadding: const EdgeInsets.symmetric(
-                                      horizontal: Constants.padding,
-                                      vertical: Constants.innerPadding),
-                                  priority: priority,
-                                  onSelectionChanged: changePriority,
-                                ),
+                                      Tiles.priorityTile(
+                                        context: context,
+                                        outerPadding:
+                                            const EdgeInsets.symmetric(
+                                                horizontal: Constants.padding,
+                                                vertical:
+                                                    Constants.innerPadding),
+                                        priority: priority,
+                                        onSelectionChanged: changePriority,
+                                      ),
 
-                                const PaddedDivider(padding: Constants.padding),
-                                Tiles.singleDateTimeTile(
-                                  outerPadding: const EdgeInsets.symmetric(
-                                      horizontal: Constants.padding),
-                                  context: context,
-                                  date: warnDate,
-                                  time: warnTime,
-                                  useAlertIcon: true,
-                                  showDate: warnMe,
-                                  unsetDateText: "Warn me?",
-                                  unsetTimeText: "Warn Time",
-                                  dialogHeader: "Select Warning Date",
-                                  handleClear: clearWarnMe,
-                                  handleUpdate: updateWarnMe,
-                                ),
-                                const PaddedDivider(padding: Constants.padding),
-                                Tiles.dateRangeTile(
-                                  context: context,
-                                  outerPadding: const EdgeInsets.symmetric(
-                                      horizontal: Constants.padding),
-                                  startDate: startDate,
-                                  dueDate: dueDate,
-                                  handleClear: clearDates,
-                                  handleUpdate: updateDates,
-                                ),
-                                const PaddedDivider(padding: Constants.padding),
-
-                                (showTimeTile)
-                                    ? Tiles.timeTile(
+                                      const PaddedDivider(
+                                          padding: Constants.padding),
+                                      Tiles.singleDateTimeTile(
                                         outerPadding:
                                             const EdgeInsets.symmetric(
                                                 horizontal: Constants.padding),
-                                        startTime: startTime,
-                                        dueTime: dueTime,
                                         context: context,
-                                        handleClear: clearTimes,
-                                        handleUpdate: updateTimes,
-                                      )
-                                    : const SizedBox.shrink(),
-                                (showTimeTile)
-                                    ? const PaddedDivider(
-                                        padding: Constants.padding)
-                                    : const SizedBox.shrink(),
-                                Tiles.repeatableTile(
-                                  context: context,
-                                  outerPadding: const EdgeInsets.symmetric(
-                                      horizontal: Constants.padding),
-                                  frequency: frequency,
-                                  weekdays: weekdayList,
-                                  repeatSkip: repeatSkip,
-                                  startDate: startDate,
-                                  handleUpdate: updateRepeatable,
-                                  handleClear: clearRepeatable,
-                                ),
-                              ]),
-                        ),
-                        Flexible(
-                          child: Scrollbar(
-                            thumbVisibility: true,
-                            controller: subScrollControllerRight,
-                            child: ListView(
-                                controller: subScrollControllerRight,
-                                physics: scrollPhysics,
-                                shrinkWrap: true,
-                                children: [
-                                  Tiles.descriptionTile(
-                                    controller: descriptionEditingController,
-                                    outerPadding: const EdgeInsets.symmetric(
-                                        horizontal: Constants.padding),
-                                    context: context,
-                                  ),
-                                ]),
-                          ),
-                        )
-                      ]),
+                                        date: warnDate,
+                                        time: warnTime,
+                                        useAlertIcon: true,
+                                        showDate: warnMe,
+                                        unsetDateText: "Warn me?",
+                                        unsetTimeText: "Warn Time",
+                                        dialogHeader: "Select Warning Date",
+                                        handleClear: clearWarnMe,
+                                        handleUpdate: updateWarnMe,
+                                      ),
+                                      const PaddedDivider(
+                                          padding: Constants.padding),
+                                      Tiles.dateRangeTile(
+                                        context: context,
+                                        outerPadding:
+                                            const EdgeInsets.symmetric(
+                                                horizontal: Constants.padding),
+                                        startDate: startDate,
+                                        dueDate: dueDate,
+                                        handleClear: clearDates,
+                                        handleUpdate: updateDates,
+                                      ),
+                                      const PaddedDivider(
+                                          padding: Constants.padding),
+
+                                      (showTimeTile)
+                                          ? Tiles.timeTile(
+                                              outerPadding:
+                                                  const EdgeInsets.symmetric(
+                                                      horizontal:
+                                                          Constants.padding),
+                                              startTime: startTime,
+                                              dueTime: dueTime,
+                                              context: context,
+                                              handleClear: clearTimes,
+                                              handleUpdate: updateTimes,
+                                            )
+                                          : const SizedBox.shrink(),
+                                      (showTimeTile)
+                                          ? const PaddedDivider(
+                                              padding: Constants.padding)
+                                          : const SizedBox.shrink(),
+                                      Tiles.repeatableTile(
+                                        context: context,
+                                        outerPadding:
+                                            const EdgeInsets.symmetric(
+                                                horizontal: Constants.padding),
+                                        frequency: frequency,
+                                        weekdays: weekdayList,
+                                        repeatSkip: repeatSkip,
+                                        startDate: startDate,
+                                        handleUpdate: updateRepeatable,
+                                        handleClear: clearRepeatable,
+                                      ),
+                                    ]),
+                              ),
+                              Flexible(
+                                child: ListView(
+                                    physics:
+                                        const NeverScrollableScrollPhysics(),
+                                    shrinkWrap: true,
+                                    children: [
+                                      Tiles.descriptionTile(
+                                        minLines: Constants.desktopMinLines,
+                                        maxLines: Constants
+                                            .desktopMaxLinesBeforeScroll,
+                                        controller:
+                                            descriptionEditingController,
+                                        outerPadding:
+                                            const EdgeInsets.symmetric(
+                                                horizontal: Constants.padding),
+                                        context: context,
+                                      ),
+                                    ]),
+                              )
+                            ]),
+                      ],
+                    ),
+                  ),
                 ),
 
                 const PaddedDivider(padding: Constants.padding),
@@ -530,11 +556,10 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
               Flexible(
                 child: ListView(
                   shrinkWrap: true,
-                  controller: mainScrollController,
+                  controller: mobileScrollController,
                   physics: scrollPhysics,
                   children: [
                     // Title + status
-                    // TODO: Some sort of leading widget.
                     Tiles.nameTile(
                         leading: LeadingWidgets.deadlineIcon(
                           currentContext: context,

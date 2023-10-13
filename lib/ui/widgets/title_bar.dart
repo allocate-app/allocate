@@ -5,13 +5,14 @@ import '../../util/constants.dart';
 
 class TitleBar extends StatefulWidget {
   const TitleBar(
-      {super.key,
+      {Key? key,
       required this.currentContext,
       this.title = "",
       this.centerWidget,
       this.checkClose = false,
       this.padding = EdgeInsets.zero,
-      required this.handleClose});
+      required this.handleClose})
+      : super(key: key);
 
   final BuildContext currentContext;
   final String title;
@@ -23,7 +24,7 @@ class TitleBar extends StatefulWidget {
   @override
   State<TitleBar> createState() => _TitleBar();
 
-  static Widget toDoCenterWidget(
+  static Widget durationCenterWidget(
           {required int expectedDuration, required int realDuration}) =>
       Flexible(
         flex: 2,
@@ -113,9 +114,9 @@ class _TitleBar extends State<TitleBar> {
             widget.title,
             overflow: TextOverflow.visible,
             style: Constants.headerStyle,
-            minFontSize: Constants.medium,
+            minFontSize: Constants.large,
             softWrap: true,
-            maxLines: 1,
+            maxLines: 2,
           )),
           widget.centerWidget ?? const SizedBox.shrink(),
           IconButton(

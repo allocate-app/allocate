@@ -1,9 +1,9 @@
-import 'package:allocate/services/supabase_service.dart';
-import 'package:allocate/util/exceptions.dart';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../util/exceptions.dart';
 import '../util/interfaces/authenticator.dart';
+import 'supabase_service.dart';
 
 class AuthenticationService implements Authenticator {
   final SupabaseClient _supabaseClient =

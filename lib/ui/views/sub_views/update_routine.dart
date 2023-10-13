@@ -21,7 +21,9 @@ import "../../widgets/tiles.dart";
 import "../../widgets/title_bar.dart";
 
 class UpdateRoutineScreen extends StatefulWidget {
-  const UpdateRoutineScreen({Key? key}) : super(key: key);
+  final Routine? initialRoutine;
+
+  const UpdateRoutineScreen({Key? key, this.initialRoutine}) : super(key: key);
 
   @override
   State<UpdateRoutineScreen> createState() => _UpdateRoutineScreen();
@@ -108,6 +110,9 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
 
   void initializeProviders() {
     routineProvider = Provider.of<RoutineProvider>(context, listen: false);
+    if (null != widget.initialRoutine) {
+      routineProvider.curRoutine = widget.initialRoutine;
+    }
   }
 
   @override
@@ -309,7 +314,7 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
             currentContext: context,
             title: "Edit Routine",
             centerWidget: (routine.expectedDuration > 0)
-                ? TitleBar.toDoCenterWidget(
+                ? TitleBar.durationCenterWidget(
                     expectedDuration: routine.expectedDuration,
                     realDuration: routine.realDuration)
                 : null,
@@ -430,7 +435,7 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
                 currentContext: context,
                 title: "New Routine",
                 centerWidget: (routine.expectedDuration > 0)
-                    ? TitleBar.toDoCenterWidget(
+                    ? TitleBar.durationCenterWidget(
                         expectedDuration: routine.expectedDuration,
                         realDuration: routine.realDuration)
                     : null,

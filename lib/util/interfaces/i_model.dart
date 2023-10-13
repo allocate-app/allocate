@@ -5,4 +5,5 @@ abstract interface class IModel {
 
   int id = 0;
   late ModelType modelType;
+  late DateTime lastUpdated;
 }

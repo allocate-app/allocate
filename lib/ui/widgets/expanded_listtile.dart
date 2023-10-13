@@ -4,12 +4,13 @@ import '../../util/constants.dart';
 
 class ExpandedListTile extends StatefulWidget {
   const ExpandedListTile(
-      {super.key,
+      {Key? key,
       this.outerPadding = EdgeInsets.zero,
       this.children,
       this.expanded = false,
       required this.title,
-      this.subtitle});
+      this.subtitle})
+      : super(key: key);
 
   final EdgeInsetsGeometry outerPadding;
   final List<Widget>? children;

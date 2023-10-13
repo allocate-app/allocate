@@ -1,4 +1,3 @@
-import 'package:allocate/ui/views/sub_views.dart';
 import 'package:another_flushbar/flushbar.dart';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
@@ -16,6 +15,8 @@ import '../../../util/exceptions.dart';
 import '../../../util/numbers.dart';
 import '../../../util/sorting/todo_sorter.dart';
 import '../../widgets/flushbars.dart';
+import '../sub_views/create_todo.dart';
+import '../sub_views/update_todo.dart';
 
 class ToDosListScreen extends StatefulWidget {
   const ToDosListScreen({Key? key}) : super(key: key);

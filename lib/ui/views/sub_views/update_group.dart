@@ -1,13 +1,13 @@
 import 'dart:async';
 import 'dart:math';
 
-import 'package:allocate/providers/group_provider.dart';
 import 'package:another_flushbar/flushbar.dart';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:provider/provider.dart';
 
+import '../../../../providers/group_provider.dart';
 import '../../../model/task/group.dart';
 import '../../../model/task/todo.dart';
 import '../../../providers/todo_provider.dart';
@@ -15,6 +15,7 @@ import '../../../util/constants.dart';
 import '../../../util/exceptions.dart';
 import '../../widgets/expanded_listtile.dart';
 import '../../widgets/flushbars.dart';
+import '../../widgets/leading_widgets.dart';
 import '../../widgets/listviews.dart';
 import '../../widgets/padded_divider.dart';
 import '../../widgets/search_recents_bar.dart';
@@ -23,7 +24,9 @@ import '../../widgets/title_bar.dart';
 import '../sub_views.dart';
 
 class UpdateGroupScreen extends StatefulWidget {
-  const UpdateGroupScreen({Key? key}) : super(key: key);
+  final Group? initialGroup;
+
+  const UpdateGroupScreen({Key? key, this.initialGroup}) : super(key: key);
 
   @override
   State<UpdateGroupScreen> createState() => _UpdateGroupScreen();
@@ -45,11 +48,8 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
   late final ToDoProvider toDoProvider;
 
   // Scrolling
-  late final ScrollController toDosScrollController;
-
-  // TODO: remove these once page has been refactored properly
-  late final ScrollController subScrollControllerRight;
-  late final ScrollController subScrollControllerLeft;
+  late final ScrollController desktopScrollController;
+  late final ScrollController mobileScrollController;
   late final ScrollPhysics scrollPhysics;
 
   // For Task search.
@@ -90,6 +90,9 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
     groupProvider = Provider.of<GroupProvider>(context, listen: false);
     toDoProvider = Provider.of<ToDoProvider>(context, listen: false);
 
+    if (null != widget.initialGroup) {
+      groupProvider.curGroup = widget.initialGroup;
+    }
     toDoProvider.addListener(resetPagination);
   }
 
@@ -105,9 +108,8 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
   }
 
   void initializeControllers() {
-    toDosScrollController = ScrollController();
-    subScrollControllerLeft = ScrollController();
-    subScrollControllerRight = ScrollController();
+    mobileScrollController = ScrollController();
+    desktopScrollController = ScrollController();
 
     scrollPhysics =
         const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics());
@@ -138,9 +140,8 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
   void dispose() {
     nameEditingController.dispose();
     descriptionEditingController.dispose();
-    toDosScrollController.dispose();
-    subScrollControllerLeft.dispose();
-    subScrollControllerRight.dispose();
+    desktopScrollController.dispose();
+    mobileScrollController.dispose();
     toDoSearchController.dispose();
     toDoProvider.removeListener(resetPagination);
     super.dispose();
@@ -267,7 +268,6 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
         prevGroup.toDos.add(toDo);
       }
 
-      groupProvider.curGroup = prevGroup;
       await toDoProvider.updateBatch(toDos: toDos).catchError((e) {
         Flushbar? error;
 
@@ -282,7 +282,7 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
           test: (e) =>
               e is FailureToCreateException || e is FailureToUploadException);
       return await groupProvider
-          .updateGroup()
+          .updateGroup(group: prevGroup)
           .whenComplete(() => Navigator.pop(context));
     }
 
@@ -444,63 +444,77 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
                 ),
                 const PaddedDivider(padding: Constants.padding),
                 Flexible(
-                  child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                  child: Scrollbar(
+                    thumbVisibility: true,
+                    controller: desktopScrollController,
+                    child: ListView(
+                      shrinkWrap: true,
+                      controller: desktopScrollController,
+                      physics: scrollPhysics,
                       children: [
-                        Flexible(
-                            // Name And Description.
-                            child: ListView(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: Constants.padding),
-                                shrinkWrap: true,
-                                controller: subScrollControllerLeft,
-                                physics: scrollPhysics,
-                                children: [
-                              // Title
-
-                              Tiles.nameTile(
-                                  context: context,
-                                  // TODO: Leading widget?
-                                  leading: null,
-                                  hintText: "Group Name",
-                                  errorText: nameErrorText,
-                                  controller: nameEditingController,
-                                  outerPadding: const EdgeInsets.only(
-                                      left: Constants.padding,
-                                      right: Constants.padding,
-                                      bottom: Constants.padding),
-                                  textFieldPadding: const EdgeInsets.only(
-                                    left: Constants.halfPadding,
-                                  ),
-                                  handleClear: clearNameField),
-                              buildToDosTile(physics: scrollPhysics),
-                            ])),
-                        Flexible(
-                          child: Scrollbar(
-                            thumbVisibility: true,
-                            controller: subScrollControllerRight,
-                            child: ListView(
-                                controller: subScrollControllerRight,
-                                physics: scrollPhysics,
-                                shrinkWrap: true,
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: Constants.padding),
-                                children: [
-                                  Tiles.descriptionTile(
-                                    minLines: Constants.desktopMinLines,
-                                    maxLines:
-                                        Constants.desktopMaxLinesBeforeScroll,
-                                    controller: descriptionEditingController,
-                                    outerPadding: const EdgeInsets.symmetric(
+                        Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Flexible(
+                                  // Name And Description.
+                                  child: ListView(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: Constants.padding),
+                                      shrinkWrap: true,
+                                      physics:
+                                          const NeverScrollableScrollPhysics(),
+                                      children: [
+                                    // Title
+                                    Tiles.nameTile(
+                                        context: context,
+                                        leading: LeadingWidgets.groupIcon(
+                                            currentContext: context,
+                                            iconPadding: const EdgeInsets.all(
+                                                Constants.padding),
+                                            outerPadding:
+                                                const EdgeInsets.symmetric(
+                                              horizontal: Constants.halfPadding,
+                                            )),
+                                        hintText: "Group Name",
+                                        errorText: nameErrorText,
+                                        controller: nameEditingController,
+                                        outerPadding: const EdgeInsets.only(
+                                            left: Constants.padding,
+                                            right: Constants.padding,
+                                            bottom: Constants.padding),
+                                        textFieldPadding: const EdgeInsets.only(
+                                          left: Constants.halfPadding,
+                                        ),
+                                        handleClear: clearNameField),
+                                    buildToDosTile(),
+                                  ])),
+                              Flexible(
+                                child: ListView(
+                                    shrinkWrap: true,
+                                    padding: const EdgeInsets.symmetric(
                                         horizontal: Constants.padding),
-                                    context: context,
-                                  ),
-                                ]),
-                          ),
-                        )
-                      ]),
+                                    physics:
+                                        const NeverScrollableScrollPhysics(),
+                                    children: [
+                                      Tiles.descriptionTile(
+                                        minLines: Constants.desktopMinLines,
+                                        maxLines: Constants
+                                            .desktopMaxLinesBeforeScroll,
+                                        controller:
+                                            descriptionEditingController,
+                                        outerPadding:
+                                            const EdgeInsets.symmetric(
+                                                horizontal: Constants.padding),
+                                        context: context,
+                                      ),
+                                    ]),
+                              )
+                            ]),
+                      ],
+                    ),
+                  ),
                 ),
 
                 const PaddedDivider(padding: Constants.padding),
@@ -543,13 +557,18 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
               Flexible(
                 child: ListView(
                     shrinkWrap: true,
-                    controller: toDosScrollController,
+                    controller: mobileScrollController,
                     physics: scrollPhysics,
                     children: [
                       Tiles.nameTile(
                           context: context,
-                          // TODO: Leading widget?
-                          leading: null,
+                          leading: LeadingWidgets.groupIcon(
+                              currentContext: context,
+                              iconPadding:
+                                  const EdgeInsets.all(Constants.padding),
+                              outerPadding: const EdgeInsets.symmetric(
+                                horizontal: Constants.halfPadding,
+                              )),
                           hintText: "Group Name",
                           errorText: nameErrorText,
                           controller: nameEditingController,
@@ -561,7 +580,7 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
                             left: Constants.halfPadding,
                           ),
                           handleClear: clearNameField),
-                      buildToDosTile(physics: scrollPhysics),
+                      buildToDosTile(),
                       const PaddedDivider(padding: Constants.padding),
                       Tiles.descriptionTile(
                         controller: descriptionEditingController,

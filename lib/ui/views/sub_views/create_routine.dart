@@ -298,7 +298,7 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
             currentContext: context,
             title: "New Routine",
             centerWidget: (expectedDuration > 0)
-                ? TitleBar.toDoCenterWidget(
+                ? TitleBar.durationCenterWidget(
                     expectedDuration: expectedDuration,
                     realDuration: realDuration)
                 : null,
@@ -414,7 +414,7 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
                 currentContext: context,
                 title: "New Routine",
                 centerWidget: (expectedDuration > 0)
-                    ? TitleBar.toDoCenterWidget(
+                    ? TitleBar.durationCenterWidget(
                         expectedDuration: expectedDuration,
                         realDuration: realDuration)
                     : null,

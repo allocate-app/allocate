@@ -299,9 +299,13 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
             e is FailureToCreateException || e is FailureToUploadException);
   }
 
-  void handleClose({required bool willDiscard}) {
+  Future<void> handleClose({required bool willDiscard}) async {
     if (willDiscard) {
-      Navigator.pop(context, prevReminder);
+      await reminderProvider
+          .updateReminder(reminder: prevReminder)
+          .whenComplete(() {
+        Navigator.pop(context);
+      });
     }
 
     if (mounted) {

@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:math';
 
-import 'package:allocate/providers/group_provider.dart';
 import 'package:another_flushbar/flushbar.dart';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
@@ -9,11 +8,13 @@ import 'package:flutter/semantics.dart';
 import 'package:provider/provider.dart';
 
 import '../../../model/task/todo.dart';
+import '../../../providers/group_provider.dart';
 import '../../../providers/todo_provider.dart';
 import '../../../util/constants.dart';
 import '../../../util/exceptions.dart';
 import '../../widgets/expanded_listtile.dart';
 import '../../widgets/flushbars.dart';
+import '../../widgets/leading_widgets.dart';
 import '../../widgets/listviews.dart';
 import '../../widgets/padded_divider.dart';
 import '../../widgets/search_recents_bar.dart';
@@ -44,12 +45,8 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
   late final ToDoProvider toDoProvider;
 
   // Scrolling
-  late final ScrollController toDosScrollController;
-
-  // For linked todos.
-  // TODO: Remove this, it's ick.
-  late final ScrollController subScrollControllerLeft;
-  late final ScrollController subScrollControllerRight;
+  late final ScrollController mobileScrollController;
+  late final ScrollController desktopScrollController;
   late final ScrollPhysics scrollPhysics;
 
   // For Task search.
@@ -96,9 +93,8 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
   }
 
   void initializeControllers() {
-    toDosScrollController = ScrollController();
-    subScrollControllerLeft = ScrollController();
-    subScrollControllerRight = ScrollController();
+    desktopScrollController = ScrollController();
+    mobileScrollController = ScrollController();
 
     scrollPhysics =
         const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics());
@@ -129,10 +125,9 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
   void dispose() {
     nameEditingController.dispose();
     descriptionEditingController.dispose();
-    toDosScrollController.dispose();
+    mobileScrollController.dispose();
+    desktopScrollController.dispose();
     toDoSearchController.dispose();
-    subScrollControllerLeft.dispose();
-    subScrollControllerRight.dispose();
     toDoProvider.removeListener(resetPagination);
     super.dispose();
   }
@@ -424,60 +419,78 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
                 ),
                 const PaddedDivider(padding: Constants.padding),
                 Flexible(
-                  child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                  child: Scrollbar(
+                    thumbVisibility: true,
+                    controller: desktopScrollController,
+                    child: ListView(
+                      shrinkWrap: true,
+                      physics: scrollPhysics,
+                      controller: desktopScrollController,
                       children: [
-                        Flexible(
-                            // Name And Description.
-                            child: ListView(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: Constants.padding),
-                                shrinkWrap: true,
-                                controller: subScrollControllerLeft,
-                                physics: scrollPhysics,
-                                children: [
-                              // Title
+                        Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Flexible(
+                                  // Name And Description.
+                                  child: ListView(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: Constants.padding),
+                                      shrinkWrap: true,
+                                      physics:
+                                          const NeverScrollableScrollPhysics(),
+                                      children: [
+                                    // Title
 
-                              Tiles.nameTile(
-                                  context: context,
-                                  // TODO: Leading widget?
-                                  leading: null,
-                                  hintText: "Group Name",
-                                  errorText: nameErrorText,
-                                  controller: nameEditingController,
-                                  outerPadding: const EdgeInsets.only(
-                                      left: Constants.padding,
-                                      right: Constants.padding,
-                                      bottom: Constants.padding),
-                                  textFieldPadding: const EdgeInsets.only(
-                                    left: Constants.halfPadding,
-                                  ),
-                                  handleClear: clearNameField),
-                              buildToDosTile(physics: scrollPhysics),
-                            ])),
-                        Flexible(
-                          child: Scrollbar(
-                            thumbVisibility: true,
-                            controller: subScrollControllerRight,
-                            child: ListView(
-                                controller: subScrollControllerRight,
-                                physics: scrollPhysics,
-                                shrinkWrap: true,
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: Constants.padding),
-                                children: [
-                                  Tiles.descriptionTile(
-                                    controller: descriptionEditingController,
-                                    outerPadding: const EdgeInsets.symmetric(
+                                    Tiles.nameTile(
+                                        context: context,
+                                        leading: LeadingWidgets.groupIcon(
+                                            currentContext: context,
+                                            iconPadding: const EdgeInsets.all(
+                                                Constants.padding),
+                                            outerPadding:
+                                                const EdgeInsets.symmetric(
+                                              horizontal: Constants.halfPadding,
+                                            )),
+                                        hintText: "Group Name",
+                                        errorText: nameErrorText,
+                                        controller: nameEditingController,
+                                        outerPadding: const EdgeInsets.only(
+                                            left: Constants.padding,
+                                            right: Constants.padding,
+                                            bottom: Constants.padding),
+                                        textFieldPadding: const EdgeInsets.only(
+                                          left: Constants.halfPadding,
+                                        ),
+                                        handleClear: clearNameField),
+                                    buildToDosTile(),
+                                  ])),
+                              Flexible(
+                                child: ListView(
+                                    physics:
+                                        const NeverScrollableScrollPhysics(),
+                                    shrinkWrap: true,
+                                    padding: const EdgeInsets.symmetric(
                                         horizontal: Constants.padding),
-                                    context: context,
-                                  ),
-                                ]),
-                          ),
-                        )
-                      ]),
+                                    children: [
+                                      Tiles.descriptionTile(
+                                        minLines: Constants.desktopMinLines,
+                                        maxLines: Constants
+                                            .desktopMaxLinesBeforeScroll,
+                                        controller:
+                                            descriptionEditingController,
+                                        outerPadding:
+                                            const EdgeInsets.symmetric(
+                                                horizontal: Constants.padding),
+                                        context: context,
+                                      ),
+                                    ]),
+                              )
+                            ]),
+                      ],
+                    ),
+                  ),
                 ),
 
                 const PaddedDivider(padding: Constants.padding),
@@ -517,13 +530,18 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
               Flexible(
                 child: ListView(
                     shrinkWrap: true,
-                    controller: toDosScrollController,
+                    controller: mobileScrollController,
                     physics: scrollPhysics,
                     children: [
                       Tiles.nameTile(
                           context: context,
-                          // TODO: Leading widget?
-                          leading: null,
+                          leading: LeadingWidgets.groupIcon(
+                              currentContext: context,
+                              iconPadding:
+                                  const EdgeInsets.all(Constants.padding),
+                              outerPadding: const EdgeInsets.symmetric(
+                                horizontal: Constants.halfPadding,
+                              )),
                           hintText: "Group Name",
                           errorText: nameErrorText,
                           controller: nameEditingController,
@@ -535,11 +553,9 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
                             left: Constants.halfPadding,
                           ),
                           handleClear: clearNameField),
-                      buildToDosTile(physics: scrollPhysics),
+                      buildToDosTile(),
                       const PaddedDivider(padding: Constants.padding),
                       Tiles.descriptionTile(
-                        minLines: Constants.desktopMinLines,
-                        maxLines: Constants.desktopMaxLinesBeforeScroll,
                         controller: descriptionEditingController,
                         outerPadding: const EdgeInsets.symmetric(
                             horizontal: Constants.padding),
@@ -575,9 +591,7 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
           softWrap: false,
           minFontSize: Constants.small),
       children: [
-        (loading)
-            ? const CircularProgressIndicator.adaptive()
-            : const SizedBox.shrink(),
+        (loading) ? const CircularProgressIndicator() : const SizedBox.shrink(),
         ListViews.reorderableToDos(
           context: context,
           toDos: toDos,

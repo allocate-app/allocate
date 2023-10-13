@@ -1,8 +1,5 @@
 import 'dart:collection';
 
-import 'package:allocate/ui/views/sub_views/update_deadline.dart';
-import 'package:allocate/ui/views/sub_views/update_reminder.dart';
-import 'package:allocate/ui/views/sub_views/update_todo.dart';
 import 'package:another_flushbar/flushbar.dart';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:equatable/equatable.dart';
@@ -23,6 +20,9 @@ import '../../../util/constants.dart';
 import '../../../util/enums.dart';
 import '../../../util/exceptions.dart';
 import '../../widgets/flushbars.dart';
+import 'update_deadline.dart';
+import 'update_reminder.dart';
+import 'update_todo.dart';
 
 class CalendarScreen extends StatefulWidget {
   const CalendarScreen({Key? key}) : super(key: key);
@@ -180,7 +180,7 @@ class _CalendarScreen extends State<CalendarScreen> {
         title: toDo.name,
         id: toDo.id,
         pattern: "MMM d",
-        modelType: ModelType.toDo,
+        modelType: ModelType.task,
         dueDate: toDo.dueDate,
       );
 
@@ -282,7 +282,7 @@ class _CalendarScreen extends State<CalendarScreen> {
 
   Widget getModelIcon({required ModelType modelType}) {
     Icon icon = switch (modelType) {
-      ModelType.toDo => const Icon(Icons.task_rounded),
+      ModelType.task => const Icon(Icons.task_rounded),
       ModelType.deadline => const Icon(Icons.announcement_rounded),
       ModelType.reminder => const Icon(Icons.push_pin_rounded),
       _ => throw InvalidEventItemException("ModelType: $modelType"),
@@ -309,7 +309,7 @@ class _CalendarScreen extends State<CalendarScreen> {
       Reminder? reminder}) {
     // TODO: refactor this and parameterize.
     return switch (modelType) {
-      ModelType.toDo => (null != toDo)
+      ModelType.task => (null != toDo)
           ? Wrap(
               children: [
                 // Dates
@@ -531,7 +531,7 @@ class _CalendarScreen extends State<CalendarScreen> {
                       late Widget dialog;
                       late Future<void>? future;
                       switch (value[index].modelType) {
-                        case ModelType.toDo:
+                        case ModelType.task:
                           dialog = const UpdateToDoScreen();
                           future = Future.wait([
                             toDoProvider

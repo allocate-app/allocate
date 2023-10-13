@@ -1,4 +1,3 @@
-import 'package:another_flushbar/flushbar.dart';
 import "package:auto_route/auto_route.dart";
 import 'package:auto_size_text/auto_size_text.dart';
 import "package:flutter/material.dart";
@@ -13,8 +12,10 @@ import '../../../providers/todo_provider.dart';
 import '../../../providers/user_provider.dart';
 import '../../../services/supabase_service.dart';
 import '../../../util/constants.dart';
+import '../../../util/interfaces/i_model.dart';
+import '../../../util/strings.dart';
 import '../../widgets/desktop_drawer_wrapper.dart';
-import '../../widgets/flushbars.dart';
+import '../../widgets/global_model_search.dart';
 import '../../widgets/padded_divider.dart';
 import '../sub_views/create_group.dart';
 import '../sub_views/update_group.dart';
@@ -293,18 +294,53 @@ class _HomeScreen extends State<HomeScreen> {
                   Navigator.pop(context);
                 }
               },
-              // TODO: refactor this to search anchor
-              trailing: IconButton(
-                icon: const Icon(Icons.search_outlined),
-                selectedIcon: const Icon(Icons.search),
-                onPressed: () {
-                  Flushbar? alert;
-                  alert = Flushbars.createError(
-                    context: context,
-                    message: "Feature not implemented yet, coming soon!",
-                    dismissCallback: () => alert?.dismiss(),
-                  );
-                  alert.show(context);
+              trailing: GlobalModelSearch(
+                mostRecent: () async {
+                  List<IModel> modelCollection = [];
+                  await Future.wait([
+                    toDoProvider.mostRecent(),
+                    routineProvider.mostRecent(),
+                    reminderProvider.mostRecent(),
+                    deadlineProvider.mostRecent(),
+                    groupProvider.mostRecent(),
+                  ]).then((model) {
+                    for (List<IModel> list in model.cast<List<IModel>>()) {
+                      modelCollection.addAll(list);
+                    }
+                  });
+
+                  return modelCollection;
+                },
+                search: ({required String searchString}) async {
+                  List<IModel> modelCollection = [];
+                  await Future.wait([
+                    toDoProvider.searchToDos(searchString: searchString),
+                    routineProvider.searchRoutines(searchString: searchString),
+                    reminderProvider.searchReminders(
+                        searchString: searchString),
+                    deadlineProvider.searchDeadlines(
+                        searchString: searchString),
+                    groupProvider.searchGroups(searchString: searchString),
+                  ]).then((model) {
+                    for (List<IModel> list in model.cast<List<IModel>>()) {
+                      modelCollection.addAll(list);
+                    }
+                  });
+
+                  return modelCollection
+                    ..sort((m1, m2) =>
+                        levenshteinDistance(s1: m1.name, s2: searchString)
+                            .compareTo(levenshteinDistance(
+                                s1: m2.name, s2: searchString)));
+                  // For now, going with string distance.
+                  // ..sort((m1, m2) {
+                  //   if (m1.lastUpdated.isBefore(m2.lastUpdated)) {
+                  //     return -1;
+                  //   } else if (m1.lastUpdated.isAfter(m2.lastUpdated)) {
+                  //     return 1;
+                  //   }
+                  //   return 0;
+                  // });
                 },
               ),
             ),

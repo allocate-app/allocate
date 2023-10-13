@@ -2,25 +2,35 @@ import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 
+import '../../model/task/deadline.dart';
+import '../../model/task/group.dart';
+import '../../model/task/reminder.dart';
+import '../../model/task/routine.dart';
+import '../../model/task/todo.dart';
+import '../../providers/deadline_provider.dart';
+import '../../providers/group_provider.dart';
+import '../../providers/reminder_provider.dart';
+import '../../providers/routine_provider.dart';
+import '../../providers/todo_provider.dart';
 import '../../util/constants.dart';
 import '../../util/enums.dart';
 import '../../util/interfaces/i_model.dart';
+import '../views/sub_views/update_deadline.dart';
+import '../views/sub_views/update_group.dart';
+import '../views/sub_views/update_reminder.dart';
+import '../views/sub_views/update_routine.dart';
+import '../views/sub_views/update_todo.dart';
+import 'tiles.dart';
 
 class GlobalModelSearch extends StatefulWidget {
-  const GlobalModelSearch(
-      {super.key,
-      required this.handleHistorySelection,
-      required this.mostRecent,
-      required this.search,
-      required this.handleDataSelection});
+  const GlobalModelSearch({
+    Key? key,
+    required this.mostRecent,
+    required this.search,
+  }) : super(key: key);
 
-  // This may actually be best handled within this widget. -- see TODO;
-  final void Function({required int id, required ModelType modelType})
-      handleHistorySelection;
-
-  final void Function({required int id, required ModelType modelType})
-      handleDataSelection;
   final Future<List<IModel>> Function() mostRecent;
   final Future<List<IModel>> Function({required String searchString}) search;
 
@@ -29,11 +39,36 @@ class GlobalModelSearch extends StatefulWidget {
 }
 
 class _GlobalModelSearch extends State<GlobalModelSearch> {
+  late final ToDoProvider toDoProvider;
+  late final RoutineProvider routineProvider;
+  late final ReminderProvider reminderProvider;
+  late final DeadlineProvider deadlineProvider;
+  late final GroupProvider groupProvider;
+
   final SearchController searchController = SearchController();
   late List<MapEntry<String, MapEntry<int, ModelType>>> searchHistory =
       List.empty(growable: true);
 
-  // TODO: Implement an "on selected" method.
+  @override
+  initState() {
+    super.initState();
+    searchController.addListener(() {
+      String newText = searchController.text;
+      SemanticsService.announce(newText, Directionality.of(context));
+    });
+
+    toDoProvider = Provider.of<ToDoProvider>(context, listen: false);
+    routineProvider = Provider.of<RoutineProvider>(context, listen: false);
+    deadlineProvider = Provider.of<DeadlineProvider>(context, listen: false);
+    reminderProvider = Provider.of<ReminderProvider>(context, listen: false);
+    groupProvider = Provider.of<GroupProvider>(context, listen: false);
+  }
+
+  @override
+  dispose() {
+    searchController.dispose();
+    super.dispose();
+  }
 
   void updateHistory(
       {required MapEntry<String, MapEntry<int, ModelType>> data}) {
@@ -45,19 +80,69 @@ class _GlobalModelSearch extends State<GlobalModelSearch> {
     });
   }
 
-  @override
-  initState() {
-    super.initState();
-    searchController.addListener(() {
-      String newText = searchController.text;
-      SemanticsService.announce(newText, Directionality.of(context));
-    });
+  Future<void> updateIModel({required MapEntry<int, ModelType> data}) async {
+    switch (data.value) {
+      case ModelType.task:
+        await toDoProvider.getToDoByID(id: data.key).then((ToDo? toDo) async {
+          if (null == toDo) {
+            return;
+          }
+          return await openDialog(dialog: UpdateToDoScreen(initialToDo: toDo));
+        });
+        break;
+      case ModelType.deadline:
+        await deadlineProvider
+            .getDeadlineByID(id: data.key)
+            .then((Deadline? deadline) async {
+          if (null == deadline) {
+            return;
+          }
+          return await openDialog(
+              dialog: UpdateDeadlineScreen(initialDeadline: deadline));
+        });
+        break;
+      case ModelType.reminder:
+        await reminderProvider
+            .getReminderByID(id: data.key)
+            .then((Reminder? reminder) async {
+          if (null == reminder) {
+            return;
+          }
+          return await openDialog(
+              dialog: UpdateReminderScreen(initialReminder: reminder));
+        });
+        break;
+      case ModelType.routine:
+        await routineProvider
+            .getRoutineByID(id: data.key)
+            .then((Routine? routine) async {
+          if (null == routine) {
+            return;
+          }
+          return await openDialog(
+              dialog: UpdateRoutineScreen(initialRoutine: routine));
+        });
+        break;
+      case ModelType.group:
+        await groupProvider
+            .getGroupByID(id: data.key)
+            .then((Group? group) async {
+          if (null == group) {
+            return;
+          }
+          return await openDialog(
+              dialog: UpdateGroupScreen(initialGroup: group));
+        });
+        break;
+    }
   }
 
-  @override
-  dispose() {
-    searchController.dispose();
-    super.dispose();
+  Future<void> openDialog({required Widget dialog}) async {
+    await showDialog(
+        barrierDismissible: false,
+        useRootNavigator: false,
+        context: context,
+        builder: (BuildContext context) => dialog);
   }
 
   @override
@@ -73,43 +158,15 @@ class _GlobalModelSearch extends State<GlobalModelSearch> {
       suggestionsBuilder: (BuildContext context, SearchController controller) {
         if (controller.text.isEmpty) {
           if (searchHistory.isNotEmpty) {
-            // TODO: Refactor to use HistoryTile
             return searchHistory
                 .map((MapEntry<String, MapEntry<int, ModelType>> data) =>
-                    ListTile(
-                        leading: const Icon(Icons.history_rounded),
-                        title: AutoSizeText(
-                          data.key,
-                          maxLines: 1,
-                          softWrap: false,
-                          overflow: TextOverflow.visible,
-                        ),
-                        onTap: () {
+                    Tiles.historyTile(
+                        title: data.key,
+                        onTap: () async {
                           controller.closeView("");
+                          await updateIModel(data: data.value);
                         },
-                        trailing: DecoratedBox(
-                          decoration: BoxDecoration(
-                              shape: BoxShape.rectangle,
-                              borderRadius: const BorderRadius.all(
-                                  Radius.circular(Constants.roundedCorners)),
-                              border: Border.all(
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .outlineVariant,
-                                  strokeAlign: BorderSide.strokeAlignOutside)),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: Constants.padding),
-                            child: AutoSizeText(
-                              toBeginningOfSentenceCase(
-                                  data.value.value.toString())!,
-                              minFontSize: Constants.large,
-                              overflow: TextOverflow.visible,
-                              softWrap: false,
-                              maxLines: 1,
-                            ),
-                          ),
-                        )))
+                        trailing: modelType(modelType: data.value.value)))
                 .toList();
           }
           final searchFuture = widget.mostRecent();
@@ -144,10 +201,18 @@ class _GlobalModelSearch extends State<GlobalModelSearch> {
                           borderRadius: BorderRadius.all(
                               Radius.circular(Constants.roundedCorners))),
                       title: AutoSizeText(data[index].name),
-                      onTap: () {
-                        //TODO: implement
+                      onTap: () async {
                         controller.closeView("");
-                      });
+                        updateHistory(
+                            data: MapEntry(
+                                data[index].name,
+                                MapEntry(
+                                    data[index].id, data[index].modelType)));
+                        await updateIModel(
+                            data: MapEntry(
+                                data[index].id, data[index].modelType));
+                      },
+                      trailing: modelType(modelType: data[index].modelType));
                 });
           }
         }
@@ -155,4 +220,23 @@ class _GlobalModelSearch extends State<GlobalModelSearch> {
       },
     );
   }
+
+  Widget modelType({required ModelType modelType}) => DecoratedBox(
+      decoration: BoxDecoration(
+          shape: BoxShape.rectangle,
+          borderRadius:
+              const BorderRadius.all(Radius.circular(Constants.roundedCorners)),
+          border: Border.all(
+              color: Theme.of(context).colorScheme.outlineVariant,
+              strokeAlign: BorderSide.strokeAlignOutside)),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
+        child: AutoSizeText(
+          toBeginningOfSentenceCase(modelType.name.toString())!,
+          minFontSize: Constants.large,
+          overflow: TextOverflow.visible,
+          softWrap: false,
+          maxLines: 1,
+        ),
+      ));
 }

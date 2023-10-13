@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 
 class DebugPlaceholder extends StatelessWidget {
   const DebugPlaceholder({
-    super.key,
+    Key? key,
     required this.debugName,
-  });
+  }) : super(key: key);
 
   final String debugName;
 

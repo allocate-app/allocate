@@ -15,7 +15,7 @@ part "todo.g.dart";
 class ToDo with EquatableMixin implements Copyable<ToDo>, IModel {
   @override
   @ignore
-  ModelType modelType = ModelType.toDo;
+  ModelType modelType = ModelType.task;
 
   @override
   Id id = Constants.generateID();
@@ -72,27 +72,28 @@ class ToDo with EquatableMixin implements Copyable<ToDo>, IModel {
   @Index()
   DateTime lastUpdated;
 
-  ToDo({this.groupID,
-    this.repeatID,
-    this.groupIndex = -1,
-    this.customViewIndex = -1,
-    required this.taskType,
-    required this.name,
-    this.description = "",
-    this.weight = 0,
-    required this.expectedDuration,
-    required this.realDuration,
-    this.priority = Priority.low,
-    required this.startDate,
-    required this.dueDate,
-    this.myDay = false,
-    this.completed = false,
-    this.repeatable = false,
-    this.frequency = Frequency.once,
-    required this.repeatDays,
-    this.repeatSkip = 1,
-    required this.subTasks,
-    required this.lastUpdated});
+  ToDo(
+      {this.groupID,
+      this.repeatID,
+      this.groupIndex = -1,
+      this.customViewIndex = -1,
+      required this.taskType,
+      required this.name,
+      this.description = "",
+      this.weight = 0,
+      required this.expectedDuration,
+      required this.realDuration,
+      this.priority = Priority.low,
+      required this.startDate,
+      required this.dueDate,
+      this.myDay = false,
+      this.completed = false,
+      this.repeatable = false,
+      this.frequency = Frequency.once,
+      required this.repeatDays,
+      this.repeatSkip = 1,
+      required this.subTasks,
+      required this.lastUpdated});
 
   // -> From Entitiy.
   ToDo.fromEntity({required Map<String, dynamic> entity})
@@ -125,8 +126,7 @@ class ToDo with EquatableMixin implements Copyable<ToDo>, IModel {
         lastUpdated = DateTime.parse(entity["lastUpdated"]);
 
   // No id for syncing - assigned via autoincrement online.
-  Map<String, dynamic> toEntity() =>
-      {
+  Map<String, dynamic> toEntity() => {
         "id": id,
         "groupID": groupID,
         "repeatID": repeatID,
@@ -153,8 +153,7 @@ class ToDo with EquatableMixin implements Copyable<ToDo>, IModel {
       };
 
   @override
-  ToDo copy() =>
-      ToDo(
+  ToDo copy() => ToDo(
         groupID: groupID,
         repeatID: repeatID,
         taskType: taskType,
@@ -179,28 +178,29 @@ class ToDo with EquatableMixin implements Copyable<ToDo>, IModel {
       );
 
   @override
-  ToDo copyWith({int? groupID,
-    int? repeatID,
-    int? groupIndex,
-    int? customViewIndex,
-    TaskType? taskType,
-    String? name,
-    String? description,
-    int? weight,
-    int? expectedDuration,
-    int? realDuration,
-    Priority? priority,
-    DateTime? startDate,
-    DateTime? dueDate,
-    bool? myDay,
-    bool? completed,
-    bool? repeatable,
-    Frequency? frequency,
-    List<bool>? repeatDays,
-    int? repeatSkip,
-    List<SubTask>? subTasks,
-    DateTime? lastUpdated,
-    String? deviceID}) =>
+  ToDo copyWith(
+          {int? groupID,
+          int? repeatID,
+          int? groupIndex,
+          int? customViewIndex,
+          TaskType? taskType,
+          String? name,
+          String? description,
+          int? weight,
+          int? expectedDuration,
+          int? realDuration,
+          Priority? priority,
+          DateTime? startDate,
+          DateTime? dueDate,
+          bool? myDay,
+          bool? completed,
+          bool? repeatable,
+          Frequency? frequency,
+          List<bool>? repeatDays,
+          int? repeatSkip,
+          List<SubTask>? subTasks,
+          DateTime? lastUpdated,
+          String? deviceID}) =>
       ToDo(
         repeatID: repeatID ?? this.repeatID,
         groupID: groupID,
@@ -229,20 +229,16 @@ class ToDo with EquatableMixin implements Copyable<ToDo>, IModel {
 
   @ignore
   @override
-  List<Object?> get props =>
-      [
+  List<Object?> get props => [
         id,
       ];
 
   @override
   String toString() =>
-      "ToDo(id: $id, taskType: ${taskType
-          .name} repeatID: $repeatID customViewIndex: $customViewIndex, groupID: $groupID, groupIndex: $groupIndex,"
-          " name: $name, description: $description, weight: $weight, expectedDuration: $expectedDuration,"
-          " priority: ${priority
-          .name}, completed: $completed, startDate: $startDate, dueDate: $dueDate, myDay: $myDay,"
-          "repeatable: $repeatable, frequency: ${frequency
-          .name},  repeatDays: $repeatDays,"
-          "repeatSkip: $repeatSkip, isSynced: $isSynced, subTasks: $subTasks,"
-          "toDelete: $toDelete), lastUpdated: $lastUpdated";
+      "ToDo(id: $id, taskType: ${taskType.name} repeatID: $repeatID customViewIndex: $customViewIndex, groupID: $groupID, groupIndex: $groupIndex,"
+      " name: $name, description: $description, weight: $weight, expectedDuration: $expectedDuration,"
+      " priority: ${priority.name}, completed: $completed, startDate: $startDate, dueDate: $dueDate, myDay: $myDay,"
+      "repeatable: $repeatable, frequency: ${frequency.name},  repeatDays: $repeatDays,"
+      "repeatSkip: $repeatSkip, isSynced: $isSynced, subTasks: $subTasks,"
+      "toDelete: $toDelete), lastUpdated: $lastUpdated";
 }

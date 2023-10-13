@@ -77,11 +77,6 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
   // Subtasks
   late List<SubTask> cacheSubTasks;
 
-  // Duration
-  late int hours;
-  late int minutes;
-  late int seconds;
-
   @override
   void initState() {
     super.initState();
@@ -128,13 +123,10 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
 
     cacheSubTasks = List.from(toDo.subTasks);
 
-    // Midnight as a start/due time is ambiguous.
+    // Midnight as a start/due time is ambiguous treating as "null".
     showStartTime =
         Constants.midnight != TimeOfDay.fromDateTime(toDo.startDate);
     showDueTime = Constants.midnight != TimeOfDay.fromDateTime(toDo.dueDate);
-    hours = 0;
-    minutes = 0;
-    seconds = 0;
   }
 
   Future<void> initializeControllers() async {
@@ -530,11 +522,6 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
       toDo.realDuration = toDoProvider.calculateRealDuration(
           weight: toDo.weight, duration: toDo.expectedDuration);
       int time = toDo.expectedDuration;
-      hours = time ~/ 3600;
-      time %= 3600;
-      minutes = time ~/ 60;
-      time %= 60;
-      seconds = time;
     });
   }
 
@@ -543,9 +530,6 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
       checkClose = true;
       toDo.expectedDuration = 0;
       toDo.realDuration = 0;
-      hours = 0;
-      minutes = 0;
-      seconds = 0;
     });
   }
 
@@ -683,7 +667,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
               currentContext: context,
               title: "Edit Task",
               centerWidget: (toDo.expectedDuration > 0)
-                  ? TitleBar.toDoCenterWidget(
+                  ? TitleBar.durationCenterWidget(
                       expectedDuration: toDo.expectedDuration,
                       realDuration: toDo.realDuration)
                   : null,
@@ -775,9 +759,6 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                                   ),
                                   // Expected Duration / RealDuration -> Show status, on click, open a dialog.
                                   Tiles.durationTile(
-                                    hours: hours,
-                                    minutes: minutes,
-                                    seconds: seconds,
                                     expectedDuration: toDo.expectedDuration,
                                     context: context,
                                     realDuration: toDo.realDuration,
@@ -936,7 +917,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                   currentContext: context,
                   title: "Edit Task",
                   centerWidget: (toDo.expectedDuration > 0)
-                      ? TitleBar.toDoCenterWidget(
+                      ? TitleBar.durationCenterWidget(
                           expectedDuration: toDo.expectedDuration,
                           realDuration: toDo.realDuration)
                       : null,
@@ -1046,9 +1027,6 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                     const PaddedDivider(padding: Constants.innerPadding),
                     // Expected Duration / RealDuration -> Show status, on click, open a dialog.
                     Tiles.durationTile(
-                      hours: hours,
-                      minutes: minutes,
-                      seconds: seconds,
                       expectedDuration: toDo.expectedDuration,
                       context: context,
                       realDuration: toDo.realDuration,

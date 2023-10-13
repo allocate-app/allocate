@@ -6,7 +6,8 @@ import 'package:jiffy/jiffy.dart';
 import '../../util/constants.dart';
 
 class DateRangeDialog extends StatefulWidget {
-  const DateRangeDialog({super.key, this.startDate, this.dueDate});
+  const DateRangeDialog({Key? key, this.startDate, this.dueDate})
+      : super(key: key);
 
   final DateTime? startDate;
   final DateTime? dueDate;
@@ -220,6 +221,7 @@ class _DateRangeDialog extends State<DateRangeDialog> {
                 Flexible(
                   child: CalendarDatePicker2(
                       config: CalendarDatePicker2Config(
+                        centerAlignModePicker: true,
                         calendarType: CalendarDatePicker2Type.range,
                         firstDate: DateTime(1970),
                         lastDate: DateTime(3000),

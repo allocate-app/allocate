@@ -130,9 +130,6 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
     myDay = false;
     expectedDuration = 0;
     realDuration = 0;
-    hours = 0;
-    minutes = 0;
-    seconds = 0;
 
     searchHistory = List.empty(growable: true);
 
@@ -152,7 +149,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
     desktopScrollController = ScrollController();
 
     scrollPhysics =
-    const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics());
+        const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics());
     nameEditingController = TextEditingController();
     nameEditingController.addListener(() {
       nameErrorText = null;
@@ -249,9 +246,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
     if (frequency == Frequency.custom) {
       if (weekdayList.isEmpty) {
         weekdayList
-            .add(min(((startDate?.weekday ?? DateTime
-            .now()
-            .weekday) - 1), 0));
+            .add(min(((startDate?.weekday ?? DateTime.now().weekday) - 1), 0));
       }
     }
 
@@ -278,24 +273,24 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
 
     await toDoProvider
         .createToDo(
-      groupID: groupID,
-      taskType: taskType,
-      name: name,
-      description: description,
-      weight: (taskType == TaskType.small) ? weight : sumWeight,
-      expectedDuration: expectedDuration,
-      realDuration: realDuration,
-      priority: priority,
-      startDate: startDate,
-      dueDate: dueDate,
-      myDay: myDay,
-      completed: completed,
-      repeatable: frequency != Frequency.once,
-      frequency: frequency,
-      repeatDays: weekdays,
-      repeatSkip: repeatSkip,
-      subTasks: subTasks,
-    )
+          groupID: groupID,
+          taskType: taskType,
+          name: name,
+          description: description,
+          weight: (taskType == TaskType.small) ? weight : sumWeight,
+          expectedDuration: expectedDuration,
+          realDuration: realDuration,
+          priority: priority,
+          startDate: startDate,
+          dueDate: dueDate,
+          myDay: myDay,
+          completed: completed,
+          repeatable: frequency != Frequency.once,
+          frequency: frequency,
+          repeatDays: weekdays,
+          repeatSkip: repeatSkip,
+          subTasks: subTasks,
+        )
         .whenComplete(() => Navigator.pop(context, toDoProvider.curToDo))
         .catchError((e) {
       Flushbar? error;
@@ -308,8 +303,8 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
 
       error.show(context);
     },
-        test: (e) =>
-        e is FailureToCreateException || e is FailureToUploadException);
+            test: (e) =>
+                e is FailureToCreateException || e is FailureToUploadException);
   }
 
   void handleClose({required bool willDiscard}) {
@@ -337,8 +332,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
     });
   }
 
-  void handleWeightChange(double value) =>
-      setState(() {
+  void handleWeightChange(double value) => setState(() {
         checkClose = true;
         weight = value.toInt();
         realDuration = toDoProvider.calculateRealDuration(
@@ -423,13 +417,6 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
       realDuration = toDoProvider.calculateRealDuration(
           weight: (taskType == TaskType.small) ? weight : sumWeight,
           duration: expectedDuration);
-
-      int time = expectedDuration;
-      hours = time ~/ 3600;
-      time %= 3600;
-      minutes = time ~/ 60;
-      time %= 60;
-      seconds = time;
     });
   }
 
@@ -438,9 +425,6 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
       checkClose = true;
       expectedDuration = 0;
       realDuration = 0;
-      hours = 0;
-      minutes = 0;
-      seconds = 0;
     });
   }
 
@@ -491,10 +475,11 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
     });
   }
 
-  void updateRepeatable({bool? checkClose,
-    required Frequency newFreq,
-    required Set<int> newWeekdays,
-    required int newSkip}) {
+  void updateRepeatable(
+      {bool? checkClose,
+      required Frequency newFreq,
+      required Set<int> newWeekdays,
+      required int newSkip}) {
     setState(() {
       this.checkClose = checkClose ?? this.checkClose;
       frequency = newFreq;
@@ -512,10 +497,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
 
   @override
   Widget build(BuildContext context) {
-    double width = MediaQuery
-        .of(context)
-        .size
-        .width;
+    double width = MediaQuery.of(context).size.width;
     bool largeScreen = (width >= Constants.largeScreen);
     bool smallScreen = (width <= Constants.smallScreen);
     bool hugeScreen = (width >= Constants.hugeScreen);
@@ -523,13 +505,13 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
     bool showTimeTile = (null != startDate || null != dueDate);
     return (largeScreen)
         ? buildDesktopDialog(
-      context: context,
-      showTimeTile: showTimeTile,
-    )
+            context: context,
+            showTimeTile: showTimeTile,
+          )
         : buildMobileDialog(
-        context: context,
-        showTimeTile: showTimeTile,
-        smallScreen: smallScreen);
+            context: context,
+            showTimeTile: showTimeTile,
+            smallScreen: smallScreen);
   }
 
   Dialog buildDesktopDialog({
@@ -546,9 +528,9 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
             currentContext: context,
             title: "New Task",
             centerWidget: (expectedDuration > 0)
-                ? TitleBar.toDoCenterWidget(
-                expectedDuration: expectedDuration,
-                realDuration: realDuration)
+                ? TitleBar.durationCenterWidget(
+                    expectedDuration: expectedDuration,
+                    realDuration: realDuration)
                 : null,
             checkClose: checkClose,
             padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
@@ -598,7 +580,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                                     batteryPadding: const EdgeInsets.symmetric(
                                         horizontal: Constants.innerPadding),
                                     constraints:
-                                    const BoxConstraints(maxWidth: 200),
+                                        const BoxConstraints(maxWidth: 200),
                                     weight: (taskType == TaskType.small)
                                         ? weight.toDouble()
                                         : sumWeight.toDouble(),
@@ -607,12 +589,12 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                                         : Constants.maxWeight.toDouble(),
                                     slider: (taskType == TaskType.small)
                                         ? Tiles.weightSlider(
-                                      weight: (taskType == TaskType.small)
-                                          ? weight.toDouble()
-                                          : sumWeight.toDouble(),
-                                      handleWeightChange:
-                                      handleWeightChange,
-                                    )
+                                            weight: (taskType == TaskType.small)
+                                                ? weight.toDouble()
+                                                : sumWeight.toDouble(),
+                                            handleWeightChange:
+                                                handleWeightChange,
+                                          )
                                         : null,
                                   ),
 
@@ -622,7 +604,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                                   Tiles.myDayTile(
                                       myDay: myDay,
                                       canAdd: (userProvider.myDayTotal +
-                                          weight <=
+                                              weight <=
                                           (userProvider.curUser?.bandwidth ??
                                               Constants.maxBandwidth)),
                                       toggleMyDay: toggleMyDay),
@@ -645,9 +627,6 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                                   ),
                                   // Expected Duration / RealDuration -> Show status, on click, open a dialog.
                                   Tiles.durationTile(
-                                    hours: hours,
-                                    minutes: minutes,
-                                    seconds: seconds,
                                     expectedDuration: expectedDuration,
                                     context: context,
                                     realDuration: realDuration,
@@ -676,20 +655,20 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
 
                                   (showTimeTile)
                                       ? Tiles.timeTile(
-                                    outerPadding:
-                                    const EdgeInsets.symmetric(
-                                        horizontal:
-                                        Constants.padding),
-                                    startTime: startTime,
-                                    dueTime: dueTime,
-                                    context: context,
-                                    handleClear: clearTimes,
-                                    handleUpdate: updateTimes,
-                                  )
+                                          outerPadding:
+                                              const EdgeInsets.symmetric(
+                                                  horizontal:
+                                                      Constants.padding),
+                                          startTime: startTime,
+                                          dueTime: dueTime,
+                                          context: context,
+                                          handleClear: clearTimes,
+                                          handleUpdate: updateTimes,
+                                        )
                                       : const SizedBox.shrink(),
                                   (showTimeTile)
                                       ? const PaddedDivider(
-                                      padding: Constants.padding)
+                                          padding: Constants.padding)
                                       : const SizedBox.shrink(),
 
                                   // Repeatable Stuff -> Show status, on click, open a dialog.
@@ -717,10 +696,10 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                                     persistentEntry: widget.initialGroup,
                                     hintText: "Search Groups",
                                     padding:
-                                    const EdgeInsets.all(Constants.padding),
+                                        const EdgeInsets.all(Constants.padding),
                                     handleDataSelection: handleGroupSelection,
                                     handleHistorySelection:
-                                    handleHistorySelection,
+                                        handleHistorySelection,
                                     searchController: groupEditingController,
                                     mostRecent: groupProvider.mostRecent,
                                     search: groupProvider.searchGroups,
@@ -752,7 +731,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                                     hintText: "Notes",
                                     minLines: Constants.desktopMinLines,
                                     maxLines:
-                                    Constants.desktopMaxLinesBeforeScroll,
+                                        Constants.desktopMaxLinesBeforeScroll,
                                     controller: descriptionEditingController,
                                     outerPadding: const EdgeInsets.symmetric(
                                         horizontal: Constants.padding),
@@ -768,7 +747,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
           const PaddedDivider(padding: Constants.halfPadding),
           Tiles.createButton(
             outerPadding:
-            const EdgeInsets.symmetric(horizontal: Constants.padding),
+                const EdgeInsets.symmetric(horizontal: Constants.padding),
             handleCreate: createAndValidate,
           ),
         ]),
@@ -776,9 +755,10 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
     );
   }
 
-  Dialog buildMobileDialog({required BuildContext context,
-    bool smallScreen = false,
-    showTimeTile = false}) {
+  Dialog buildMobileDialog(
+      {required BuildContext context,
+      bool smallScreen = false,
+      showTimeTile = false}) {
     return Dialog(
       insetPadding: EdgeInsets.all((smallScreen)
           ? Constants.mobileDialogPadding
@@ -794,13 +774,13 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                 currentContext: context,
                 title: "New Task",
                 centerWidget: (expectedDuration > 0)
-                    ? TitleBar.toDoCenterWidget(
-                    expectedDuration: expectedDuration,
-                    realDuration: realDuration)
+                    ? TitleBar.durationCenterWidget(
+                        expectedDuration: expectedDuration,
+                        realDuration: realDuration)
                     : null,
                 checkClose: checkClose,
                 padding:
-                const EdgeInsets.symmetric(horizontal: Constants.padding),
+                    const EdgeInsets.symmetric(horizontal: Constants.padding),
                 handleClose: handleClose,
               ),
               const PaddedDivider(padding: Constants.halfPadding),
@@ -828,7 +808,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
 
                     Tiles.weightTile(
                       outerPadding:
-                      const EdgeInsets.all(Constants.innerPadding),
+                          const EdgeInsets.all(Constants.innerPadding),
                       batteryPadding: const EdgeInsets.symmetric(
                           horizontal: Constants.padding),
                       constraints: const BoxConstraints(maxWidth: 200),
@@ -840,11 +820,11 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                           : Constants.maxWeight.toDouble(),
                       slider: (taskType == TaskType.small)
                           ? Tiles.weightSlider(
-                        weight: (taskType == TaskType.small)
-                            ? weight.toDouble()
-                            : sumWeight.toDouble(),
-                        handleWeightChange: handleWeightChange,
-                      )
+                              weight: (taskType == TaskType.small)
+                                  ? weight.toDouble()
+                                  : sumWeight.toDouble(),
+                              handleWeightChange: handleWeightChange,
+                            )
                           : null,
                     ),
                     const PaddedDivider(padding: Constants.padding),
@@ -864,7 +844,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                     // Subtasks
                     (taskType != TaskType.small)
                         ? buildSubTasksTile(
-                        physics: const NeverScrollableScrollPhysics())
+                            physics: const NeverScrollableScrollPhysics())
                         : const SizedBox.shrink(),
 
                     const PaddedDivider(padding: Constants.padding),
@@ -889,7 +869,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
 
                     const Padding(
                       padding:
-                      EdgeInsets.symmetric(vertical: Constants.padding),
+                          EdgeInsets.symmetric(vertical: Constants.padding),
                       child: PaddedDivider(padding: Constants.padding),
                     ),
 
@@ -907,7 +887,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
 
                     const Padding(
                       padding:
-                      EdgeInsets.symmetric(vertical: Constants.padding),
+                          EdgeInsets.symmetric(vertical: Constants.padding),
                       child: PaddedDivider(padding: Constants.padding),
                     ),
 
@@ -925,9 +905,6 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                     // Expected Duration / RealDuration -> Show status, on click, open a dialog.
                     Tiles.durationTile(
                       expectedDuration: expectedDuration,
-                      hours: hours,
-                      minutes: minutes,
-                      seconds: seconds,
                       context: context,
                       realDuration: realDuration,
                       outerPadding: const EdgeInsets.symmetric(
@@ -953,14 +930,14 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                     // Time
                     (showTimeTile)
                         ? Tiles.timeTile(
-                      outerPadding: const EdgeInsets.symmetric(
-                          horizontal: Constants.padding),
-                      startTime: startTime,
-                      dueTime: dueTime,
-                      context: context,
-                      handleClear: clearTimes,
-                      handleUpdate: updateTimes,
-                    )
+                            outerPadding: const EdgeInsets.symmetric(
+                                horizontal: Constants.padding),
+                            startTime: startTime,
+                            dueTime: dueTime,
+                            context: context,
+                            handleClear: clearTimes,
+                            handleUpdate: updateTimes,
+                          )
                         : const SizedBox.shrink(),
                     (showTimeTile)
                         ? const PaddedDivider(padding: Constants.innerPadding)
@@ -984,7 +961,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
               const PaddedDivider(padding: Constants.halfPadding),
               Tiles.createButton(
                 outerPadding:
-                const EdgeInsets.symmetric(horizontal: Constants.padding),
+                    const EdgeInsets.symmetric(horizontal: Constants.padding),
                 handleCreate: createAndValidate,
               ),
             ]),
@@ -1000,8 +977,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
           softWrap: false,
           minFontSize: Constants.small),
       subtitle: AutoSizeText(
-          "${min(shownTasks, Constants.numTasks[taskType]!)}/${Constants
-              .numTasks[taskType]!} Steps",
+          "${min(shownTasks, Constants.numTasks[taskType]!)}/${Constants.numTasks[taskType]!} Steps",
           maxLines: 1,
           overflow: TextOverflow.visible,
           softWrap: false,
@@ -1020,9 +996,9 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
             showHandle: (shownTasks > 1)),
         (shownTasks < Constants.numTasks[taskType]!)
             ? Tiles.addTile(
-          title: "Add a step",
-          onTap: addSubTask,
-        )
+                title: "Add a step",
+                onTap: addSubTask,
+              )
             : const SizedBox.shrink(),
       ],
     );
@@ -1037,15 +1013,11 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
             visualDensity: VisualDensity.adaptivePlatformDensity,
             side: MaterialStatePropertyAll<BorderSide>(BorderSide(
               width: 2,
-              color: Theme
-                  .of(context)
-                  .colorScheme
-                  .outlineVariant,
+              color: Theme.of(context).colorScheme.outlineVariant,
             )),
           ),
           segments: TaskType.values
-              .map((TaskType type) =>
-              ButtonSegment<TaskType>(
+              .map((TaskType type) => ButtonSegment<TaskType>(
                   value: type,
                   label: Text(
                     "${toBeginningOfSentenceCase(type.name)}",

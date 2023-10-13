@@ -1,4 +1,3 @@
-import 'package:allocate/ui/views/sub_views/update_todo.dart';
 import 'package:another_flushbar/flushbar.dart';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:auto_size_text_field/auto_size_text_field.dart';
@@ -18,6 +17,7 @@ import '../../../util/enums.dart';
 import '../../../util/exceptions.dart';
 import '../../../util/numbers.dart';
 import '../../../util/sorting/todo_sorter.dart';
+import '../../views/sub_views/update_todo.dart';
 import '../../widgets/flushbars.dart';
 import '../../widgets/padded_divider.dart';
 

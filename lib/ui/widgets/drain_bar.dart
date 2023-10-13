@@ -5,11 +5,11 @@ import "../../util/constants.dart";
 
 class DrainBar extends StatefulWidget {
   const DrainBar({
-    super.key,
+    Key? key,
     this.weight = 0,
     this.max = Constants.maxDoubleBandwidth,
     this.constraints = const BoxConstraints(),
-  });
+  }) : super(key: key);
 
   final double weight;
   final double max;
@@ -35,7 +35,6 @@ class _DrainBar extends State<DrainBar> {
                     width: 3,
                     strokeAlign: BorderSide.strokeAlignCenter),
                 shape: BoxShape.rectangle,
-                // TODO: This should probably move to constants class.
                 borderRadius: const BorderRadius.all(Radius.circular(10))),
             child: Padding(
               padding: const EdgeInsets.all(Constants.halfPadding),
@@ -51,7 +50,7 @@ class _DrainBar extends State<DrainBar> {
         Align(
             alignment: Alignment.centerRight,
             child: Container(
-                height: 40,
+                height: 30,
                 width: 8,
                 decoration: BoxDecoration(
                   borderRadius: const BorderRadius.all(Radius.circular(2)),
