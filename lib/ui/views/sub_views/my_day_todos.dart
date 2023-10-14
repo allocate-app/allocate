@@ -16,7 +16,6 @@ import '../../../util/constants.dart';
 import '../../../util/enums.dart';
 import '../../../util/exceptions.dart';
 import '../../../util/numbers.dart';
-import '../../../util/sorting/todo_sorter.dart';
 import '../../views/sub_views/update_todo.dart';
 import '../../widgets/flushbars.dart';
 import '../../widgets/padded_divider.dart';
@@ -240,7 +239,7 @@ class _MyDayToDos extends State<MyDayToDos> {
                                     });
                                   }
                                 },
-                                items: ToDoSorter.sortMethods
+                                items: toDoProvider.sorter.sortMethods
                                     .map<DropdownMenuItem<SortMethod>>(
                                         (method) =>
                                             DropdownMenuItem<SortMethod>(

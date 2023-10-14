@@ -135,7 +135,7 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
   Future<void> resetPagination() async {
     offset = 0;
     limit = max(toDos.length, Constants.minLimitPerQuery);
-    await overwriteData();
+    return await overwriteData();
   }
 
   Future<void> overwriteData() async {
@@ -341,10 +341,10 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
             e is FailureToCreateException || e is FailureToUploadException);
   }
 
-  Future<void> reorderToDos(int oldIndex, int newIndex) async {
-    await groupProvider.reorderGroupToDos(
-        oldIndex: oldIndex, newIndex: newIndex, toDos: toDos);
-  }
+  // Future<void> reorderToDos(int oldIndex, int newIndex) async {
+  //   await groupProvider.reorderGroupToDos(
+  //       oldIndex: oldIndex, newIndex: newIndex, toDos: toDos);
+  // }
 
   // Write at the end.
   Future<void> completeToDo({required int index, bool value = false}) async {
@@ -592,11 +592,10 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
           minFontSize: Constants.small),
       children: [
         (loading) ? const CircularProgressIndicator() : const SizedBox.shrink(),
-        ListViews.reorderableToDos(
+        ListViews.reorderableGroupToDos(
           context: context,
           toDos: toDos,
           physics: physics,
-          onReorder: reorderToDos,
           onChanged: completeToDo,
           handleRemove: removeToDo,
           onTap: updateToDo,

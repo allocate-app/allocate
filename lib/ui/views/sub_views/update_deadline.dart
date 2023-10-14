@@ -11,6 +11,7 @@ import '../../../util/constants.dart';
 import '../../../util/enums.dart';
 import '../../../util/exceptions.dart';
 import '../../widgets/flushbars.dart';
+import '../../widgets/handle_repeatable_modal.dart';
 import '../../widgets/leading_widgets.dart';
 import '../../widgets/padded_divider.dart';
 import '../../widgets/tiles.dart';
@@ -98,7 +99,9 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
       checkClose = true;
       String newText = nameEditingController.text;
       SemanticsService.announce(newText, Directionality.of(context));
-      setState(() => deadline.name = newText);
+      if (mounted) {
+        return setState(() => deadline.name = newText);
+      }
     });
 
     descriptionEditingController =
@@ -125,7 +128,9 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
     bool valid = true;
     if (nameEditingController.text.isEmpty) {
       valid = false;
-      setState(() => nameErrorText = "Enter Task Name");
+      if (mounted) {
+        setState(() => nameErrorText = "Enter Task Name");
+      }
     }
 
     // Newly set warnMe = validate
@@ -159,11 +164,13 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
   }
 
   void clearNameField() {
-    setState(() {
-      checkClose = true;
-      nameEditingController.clear();
-      deadline.name = "";
-    });
+    if (mounted) {
+      return setState(() {
+        checkClose = true;
+        nameEditingController.clear();
+        deadline.name = "";
+      });
+    }
   }
 
   Future<void> handleUpdate() async {
@@ -172,27 +179,9 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
           showDragHandle: true,
           context: context,
           builder: (BuildContext context) {
-            return Center(
-                heightFactor: 1,
-                child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.all(Constants.padding),
-                        child: FilledButton.icon(
-                            onPressed: () => Navigator.pop(context, true),
-                            label: const Text("This Event"),
-                            icon: const Icon(Icons.arrow_upward_outlined)),
-                      ),
-                      Padding(
-                          padding: const EdgeInsets.all(Constants.padding),
-                          child: FilledButton.tonalIcon(
-                            onPressed: () => Navigator.pop(context, false),
-                            label: const Text("All Future Events"),
-                            icon: const Icon(Icons.repeat_outlined),
-                          ))
-                    ]));
+            return const HandleRepeatableModal(
+              action: "Update",
+            );
           });
       // If the modal is discarded.
       if (null == updateSingle) {
@@ -260,42 +249,14 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
 
   Future<void> handleDelete() async {
     if (prevDeadline.frequency != Frequency.once) {
-      bool? updateSingle = await showModalBottomSheet<bool?>(
+      bool? deleteSingle = await showModalBottomSheet<bool?>(
           showDragHandle: true,
           context: context,
           builder: (BuildContext context) {
-            return StatefulBuilder(
-                builder: (BuildContext context,
-                        void Function(void Function()) setState) =>
-                    Center(
-                        heightFactor: 1,
-                        child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Padding(
-                                padding:
-                                    const EdgeInsets.all(Constants.padding),
-                                child: FilledButton.icon(
-                                    onPressed: () =>
-                                        Navigator.pop(context, true),
-                                    label: const Text("Delete This Event"),
-                                    icon: const Icon(
-                                        Icons.arrow_upward_outlined)),
-                              ),
-                              Padding(
-                                  padding:
-                                      const EdgeInsets.all(Constants.padding),
-                                  child: FilledButton.tonalIcon(
-                                    onPressed: () =>
-                                        Navigator.pop(context, false),
-                                    label: const Text("Delete All"),
-                                    icon: const Icon(Icons.repeat_outlined),
-                                  ))
-                            ])));
+            return const HandleRepeatableModal(action: "Delete");
           });
       // If the modal is discarded.
-      if (null == updateSingle) {
+      if (null == deleteSingle) {
         return;
       }
 
@@ -313,7 +274,7 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
         error.show(context);
       }, test: (e) => e is FailureToDeleteException);
 
-      if (updateSingle) {
+      if (deleteSingle) {
         prevDeadline.repeatable = true;
         // Need to sever the connection to future repeating events.
         deadline.repeatID = deadline.hashCode;
@@ -362,90 +323,106 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
     }
 
     if (mounted) {
-      setState(() => checkClose = false);
+      return setState(() => checkClose = false);
     }
   }
 
   void changePriority(Set<Priority> newSelection) {
-    setState(() {
-      checkClose = true;
-      deadline.priority = newSelection.first;
-    });
+    if (mounted) {
+      return setState(() {
+        checkClose = true;
+        deadline.priority = newSelection.first;
+      });
+    }
   }
 
   void clearWarnMe() {
-    setState(() {
-      checkClose = true;
-      deadline.warnDate = Constants.nullDate.copyWith(
-          hour: Constants.midnight.hour, minute: Constants.midnight.minute);
-      deadline.warnMe = false;
-    });
+    if (mounted) {
+      return setState(() {
+        checkClose = true;
+        deadline.warnDate = Constants.nullDate.copyWith(
+            hour: Constants.midnight.hour, minute: Constants.midnight.minute);
+        deadline.warnMe = false;
+      });
+    }
   }
 
   void updateWarnMe({bool? checkClose, DateTime? newDate, TimeOfDay? newTime}) {
-    setState(() {
-      this.checkClose = checkClose ?? this.checkClose;
-      newDate = newDate ?? Constants.nullDate;
-      newTime = newTime ?? Constants.midnight;
-      deadline.warnDate = deadline.warnDate
-          .copyWith(hour: newTime!.hour, minute: newTime!.minute);
-      deadline.warnMe = (Constants.nullDate != deadline.warnDate);
-    });
+    if (mounted) {
+      return setState(() {
+        this.checkClose = checkClose ?? this.checkClose;
+        newDate = newDate ?? Constants.nullDate;
+        newTime = newTime ?? Constants.midnight;
+        deadline.warnDate = deadline.warnDate
+            .copyWith(hour: newTime!.hour, minute: newTime!.minute);
+        deadline.warnMe = (Constants.nullDate != deadline.warnDate);
+      });
+    }
   }
 
   void clearDates() {
-    setState(() {
-      checkClose = true;
-      deadline.startDate = Constants.nullDate;
-      deadline.dueDate = Constants.nullDate;
-    });
+    if (mounted) {
+      return setState(() {
+        checkClose = true;
+        deadline.startDate = Constants.nullDate;
+        deadline.dueDate = Constants.nullDate;
+      });
+    }
   }
 
   void updateDates({bool? checkClose, DateTime? newStart, DateTime? newDue}) {
-    setState(() {
-      this.checkClose = checkClose ?? this.checkClose;
-      deadline.startDate = newStart ?? Constants.nullDate;
-      deadline.dueDate = newDue ?? Constants.nullDate;
+    if (mounted) {
+      return setState(() {
+        this.checkClose = checkClose ?? this.checkClose;
+        deadline.startDate = newStart ?? Constants.nullDate;
+        deadline.dueDate = newDue ?? Constants.nullDate;
 
-      if (Constants.nullDate != deadline.startDate &&
-          Constants.nullDate != deadline.dueDate &&
-          deadline.startDate.isAfter(deadline.dueDate)) {
-        deadline.startDate = deadline.dueDate;
-      }
-    });
+        if (Constants.nullDate != deadline.startDate &&
+            Constants.nullDate != deadline.dueDate &&
+            deadline.startDate.isAfter(deadline.dueDate)) {
+          deadline.startDate = deadline.dueDate;
+        }
+      });
+    }
   }
 
   void clearTimes() {
-    setState(() {
-      checkClose = true;
+    if (mounted) {
+      return setState(() {
+        checkClose = true;
 
-      deadline.startDate = deadline.startDate.copyWith(
-          hour: Constants.midnight.hour, minute: Constants.midnight.minute);
-      deadline.dueDate = deadline.dueDate.copyWith(
-          hour: Constants.midnight.hour, minute: Constants.midnight.minute);
-    });
+        deadline.startDate = deadline.startDate.copyWith(
+            hour: Constants.midnight.hour, minute: Constants.midnight.minute);
+        deadline.dueDate = deadline.dueDate.copyWith(
+            hour: Constants.midnight.hour, minute: Constants.midnight.minute);
+      });
+    }
   }
 
   void updateTimes({bool? checkClose, TimeOfDay? newStart, TimeOfDay? newDue}) {
-    setState(() {
-      this.checkClose = checkClose ?? this.checkClose;
-      newStart = newStart ?? Constants.midnight;
-      newDue = newDue ?? Constants.midnight;
-      deadline.startDate = deadline.startDate
-          .copyWith(hour: newStart!.hour, minute: newStart!.minute);
-      deadline.dueDate =
-          deadline.dueDate.copyWith(hour: newDue!.hour, minute: newDue!.minute);
-    });
+    if (mounted) {
+      return setState(() {
+        this.checkClose = checkClose ?? this.checkClose;
+        newStart = newStart ?? Constants.midnight;
+        newDue = newDue ?? Constants.midnight;
+        deadline.startDate = deadline.startDate
+            .copyWith(hour: newStart!.hour, minute: newStart!.minute);
+        deadline.dueDate = deadline.dueDate
+            .copyWith(hour: newDue!.hour, minute: newDue!.minute);
+      });
+    }
   }
 
   void clearRepeatable() {
-    setState(() {
-      checkClose = true;
-      deadline.frequency = Frequency.once;
+    if (mounted) {
+      return setState(() {
+        checkClose = true;
+        deadline.frequency = Frequency.once;
 
-      deadline.repeatDays.fillRange(0, deadline.repeatDays.length, false);
-      deadline.repeatSkip = 1;
-    });
+        deadline.repeatDays.fillRange(0, deadline.repeatDays.length, false);
+        deadline.repeatSkip = 1;
+      });
+    }
   }
 
   void updateRepeatable(
@@ -453,18 +430,20 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
       required Frequency newFreq,
       required Set<int> newWeekdays,
       required int newSkip}) {
-    setState(() {
-      this.checkClose = checkClose ?? this.checkClose;
-      deadline.frequency = newFreq;
-      deadline.repeatSkip = newSkip;
+    if (mounted) {
+      return setState(() {
+        this.checkClose = checkClose ?? this.checkClose;
+        deadline.frequency = newFreq;
+        deadline.repeatSkip = newSkip;
 
-      if (newWeekdays.isEmpty) {
-        newWeekdays.add(deadline.startDate.weekday - 1);
-      }
-      for (int i = 0; i < deadline.repeatDays.length; i++) {
-        deadline.repeatDays[i] = newWeekdays.contains(i);
-      }
-    });
+        if (newWeekdays.isEmpty) {
+          newWeekdays.add(deadline.startDate.weekday - 1);
+        }
+        for (int i = 0; i < deadline.repeatDays.length; i++) {
+          deadline.repeatDays[i] = newWeekdays.contains(i);
+        }
+      });
+    }
   }
 
   Set<int> get weekdayList {

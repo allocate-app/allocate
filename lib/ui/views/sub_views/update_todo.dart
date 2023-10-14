@@ -17,6 +17,7 @@ import "../../../util/enums.dart";
 import "../../../util/exceptions.dart";
 import "../../widgets/expanded_listtile.dart";
 import "../../widgets/flushbars.dart";
+import "../../widgets/handle_repeatable_modal.dart";
 import "../../widgets/leading_widgets.dart";
 import "../../widgets/listviews.dart";
 import "../../widgets/padded_divider.dart";
@@ -242,27 +243,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
           showDragHandle: true,
           context: context,
           builder: (BuildContext context) {
-            return Center(
-                heightFactor: 1,
-                child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.all(Constants.padding),
-                        child: FilledButton.icon(
-                            onPressed: () => Navigator.pop(context, true),
-                            label: const Text("This Event"),
-                            icon: const Icon(Icons.arrow_upward_rounded)),
-                      ),
-                      Padding(
-                          padding: const EdgeInsets.all(Constants.padding),
-                          child: FilledButton.tonalIcon(
-                            onPressed: () => Navigator.pop(context, false),
-                            label: const Text("All Future Events"),
-                            icon: const Icon(Icons.repeat_rounded),
-                          ))
-                    ]));
+            return const HandleRepeatableModal(action: "Update");
           });
       if (null == updateSingle) {
         return;
@@ -329,41 +310,15 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
 
   Future<void> handleDelete() async {
     if (prevToDo.frequency != Frequency.once) {
-      bool? updateSingle = await showModalBottomSheet<bool?>(
+      bool? deleteSingle = await showModalBottomSheet<bool?>(
           showDragHandle: true,
           context: context,
           builder: (BuildContext context) {
-            return StatefulBuilder(
-                builder: (BuildContext context,
-                        void Function(void Function()) setState) =>
-                    Center(
-                        heightFactor: 1,
-                        child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Padding(
-                                padding:
-                                    const EdgeInsets.all(Constants.padding),
-                                child: FilledButton.icon(
-                                    onPressed: () =>
-                                        Navigator.pop(context, true),
-                                    label: const Text("Delete This Event"),
-                                    icon:
-                                        const Icon(Icons.arrow_upward_rounded)),
-                              ),
-                              Padding(
-                                  padding:
-                                      const EdgeInsets.all(Constants.padding),
-                                  child: FilledButton.tonalIcon(
-                                    onPressed: () =>
-                                        Navigator.pop(context, false),
-                                    label: const Text("Delete All"),
-                                    icon: const Icon(Icons.repeat_rounded),
-                                  ))
-                            ])));
+            return const HandleRepeatableModal(
+              action: "Delete",
+            );
           });
-      if (null == updateSingle) {
+      if (null == deleteSingle) {
         return;
       }
 
@@ -379,7 +334,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
         error.show(context);
       }, test: (e) => e is FailureToDeleteException);
 
-      if (updateSingle) {
+      if (deleteSingle) {
         prevToDo.repeatable = true;
 
         // To prevent getting deleted by editing another repeating event.
@@ -401,21 +356,9 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
       }
     }
 
-    return await toDoProvider.deleteToDo().whenComplete(() {
-      Navigator.pop(context);
-    }).catchError((e) {
-      Flushbar? error;
-
-      error = Flushbars.createError(
-        message: e.cause,
-        context: context,
-        dismissCallback: () => error?.dismiss(),
-      );
-
-      error.show(context);
-    },
-        test: (e) =>
-            e is FailureToCreateException || e is FailureToUploadException);
+    await toDoProvider
+        .deleteToDo(toDo: toDo)
+        .whenComplete(() => Navigator.pop(context));
   }
 
   Future<void> handleClose({required bool willDiscard}) async {
@@ -431,165 +374,198 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
   }
 
   void clearNameField() {
-    setState(() {
-      checkClose = true;
-      nameEditingController.clear();
-      toDo.name = "";
-    });
+    if (mounted) {
+      setState(() {
+        checkClose = true;
+        nameEditingController.clear();
+        toDo.name = "";
+      });
+    }
   }
 
   void completeToDo(bool? value) {
-    setState(() {
-      checkClose = true;
-      toDo.completed = value!;
-    });
+    if (mounted) {
+      return setState(() {
+        checkClose = true;
+        toDo.completed = value!;
+      });
+    }
   }
 
-  void handleWeightChange(double value) => setState(() {
+  void handleWeightChange(double value) {
+    if (mounted) {
+      return setState(() {
         checkClose = true;
         toDo.weight = value.toInt();
         toDo.realDuration = toDoProvider.calculateRealDuration(
             weight: toDo.weight, duration: toDo.expectedDuration);
       });
+    }
+  }
 
   void reorderSubtasks(int oldIndex, int newIndex) {
-    setState(() {
-      checkClose = true;
-      if (oldIndex < newIndex) {
-        newIndex--;
-      }
-      SubTask st = cacheSubTasks.removeAt(oldIndex);
-      cacheSubTasks.insert(newIndex, st);
-      TextEditingController ct = subTaskEditingController.removeAt(oldIndex);
-      subTaskEditingController.insert(newIndex, ct);
-    });
+    if (mounted) {
+      return setState(() {
+        checkClose = true;
+        if (oldIndex < newIndex) {
+          newIndex--;
+        }
+        SubTask st = cacheSubTasks.removeAt(oldIndex);
+        cacheSubTasks.insert(newIndex, st);
+        TextEditingController ct = subTaskEditingController.removeAt(oldIndex);
+        subTaskEditingController.insert(newIndex, ct);
+      });
+    }
   }
 
   void onSubtaskWeightChanged() {
-    return setState(() {
-      checkClose = true;
-      toDo.weight = toDoProvider.calculateWeight(
-          subTasks: List.generate(Constants.numTasks[toDo.taskType]!,
-              (index) => toDo.subTasks[index]));
-      toDo.realDuration = toDoProvider.calculateRealDuration(
-          weight: toDo.weight, duration: toDo.expectedDuration);
-    });
+    if (mounted) {
+      return setState(() {
+        checkClose = true;
+        toDo.weight = toDoProvider.calculateWeight(
+            subTasks: List.generate(Constants.numTasks[toDo.taskType]!,
+                (index) => toDo.subTasks[index]));
+        toDo.realDuration = toDoProvider.calculateRealDuration(
+            weight: toDo.weight, duration: toDo.expectedDuration);
+      });
+    }
   }
 
   void removeSubtask({required int index}) {
-    setState(() {
-      checkClose = true;
-      SubTask st = cacheSubTasks.removeAt(index);
-      st = SubTask();
-      cacheSubTasks.add(st);
-      TextEditingController ct = subTaskEditingController.removeAt(index);
-      ct.value = ct.value.copyWith(text: st.name);
-      subTaskEditingController.add(ct);
+    if (mounted) {
+      return setState(() {
+        checkClose = true;
+        SubTask st = cacheSubTasks.removeAt(index);
+        st = SubTask();
+        cacheSubTasks.add(st);
+        TextEditingController ct = subTaskEditingController.removeAt(index);
+        ct.value = ct.value.copyWith(text: st.name);
+        subTaskEditingController.add(ct);
 
-      shownTasks--;
-      shownTasks = max(shownTasks, 0);
-      toDo.weight = toDoProvider.calculateWeight(subTasks: cacheSubTasks);
-      toDo.realDuration = toDoProvider.calculateRealDuration(
-          weight: toDo.weight, duration: toDo.expectedDuration);
-    });
+        shownTasks--;
+        shownTasks = max(shownTasks, 0);
+        toDo.weight = toDoProvider.calculateWeight(subTasks: cacheSubTasks);
+        toDo.realDuration = toDoProvider.calculateRealDuration(
+            weight: toDo.weight, duration: toDo.expectedDuration);
+      });
+    }
   }
 
   void addSubTask() {
-    return setState(() {
-      shownTasks++;
-      shownTasks = min(shownTasks, Constants.maxNumTasks);
-    });
+    if (mounted) {
+      return setState(() {
+        shownTasks++;
+        shownTasks = min(shownTasks, Constants.maxNumTasks);
+      });
+    }
   }
 
   void toggleMyDay() {
-    return setState(() {
-      checkClose = true;
-      toDo.myDay = !toDo.myDay;
-    });
+    if (mounted) {
+      return setState(() {
+        checkClose = true;
+        toDo.myDay = !toDo.myDay;
+      });
+    }
   }
 
   void changePriority(Set<Priority> newSelection) {
-    return setState(() {
-      checkClose = true;
-      toDo.priority = newSelection.first;
-    });
+    if (mounted) {
+      return setState(() {
+        checkClose = true;
+        toDo.priority = newSelection.first;
+      });
+    }
   }
 
   void updateDuration(int? value) {
-    setState(() {
-      checkClose = true;
-      toDo.expectedDuration = value ?? toDo.expectedDuration;
-      toDo.realDuration = toDoProvider.calculateRealDuration(
-          weight: toDo.weight, duration: toDo.expectedDuration);
-      int time = toDo.expectedDuration;
-    });
+    if (mounted) {
+      return setState(() {
+        checkClose = true;
+        toDo.expectedDuration = value ?? toDo.expectedDuration;
+        toDo.realDuration = toDoProvider.calculateRealDuration(
+            weight: toDo.weight, duration: toDo.expectedDuration);
+      });
+    }
   }
 
   void clearDuration() {
-    return setState(() {
-      checkClose = true;
-      toDo.expectedDuration = 0;
-      toDo.realDuration = 0;
-    });
+    if (mounted) {
+      return setState(() {
+        checkClose = true;
+        toDo.expectedDuration = 0;
+        toDo.realDuration = 0;
+      });
+    }
   }
 
   void clearDates() {
-    return setState(() {
-      checkClose = true;
-      toDo.startDate = Constants.nullDate;
-      toDo.dueDate = Constants.nullDate;
-    });
+    if (mounted) {
+      return setState(() {
+        checkClose = true;
+        toDo.startDate = Constants.nullDate;
+        toDo.dueDate = Constants.nullDate;
+      });
+    }
   }
 
   void updateDates({bool? checkClose, DateTime? newStart, DateTime? newDue}) {
-    setState(() {
-      this.checkClose = checkClose ?? this.checkClose;
-      newStart = newStart ?? Constants.nullDate;
-      newDue = newDue ?? Constants.nullDate;
-      toDo.startDate = newStart!;
-      toDo.dueDate = newDue!;
+    if (mounted) {
+      setState(() {
+        this.checkClose = checkClose ?? this.checkClose;
+        newStart = newStart ?? Constants.nullDate;
+        newDue = newDue ?? Constants.nullDate;
+        toDo.startDate = newStart!;
+        toDo.dueDate = newDue!;
 
-      if (Constants.nullDate != toDo.startDate &&
-          Constants.nullDate != toDo.dueDate &&
-          toDo.startDate.isAfter(toDo.dueDate)) {
-        toDo.startDate = toDo.dueDate;
-      }
-      (Constants.nullDate != toDo.startDate) ? toDo.startDate : null;
-    });
+        if (Constants.nullDate != toDo.startDate &&
+            Constants.nullDate != toDo.dueDate &&
+            toDo.startDate.isAfter(toDo.dueDate)) {
+          toDo.startDate = toDo.dueDate;
+        }
+        (Constants.nullDate != toDo.startDate) ? toDo.startDate : null;
+      });
+    }
   }
 
   void clearTimes() {
-    setState(() {
-      checkClose = true;
+    if (mounted) {
+      setState(() {
+        checkClose = true;
 
-      toDo.startDate = toDo.startDate.copyWith(
-          hour: Constants.midnight.hour, minute: Constants.midnight.minute);
-      toDo.dueDate = toDo.dueDate.copyWith(
-          hour: Constants.midnight.hour, minute: Constants.midnight.minute);
-    });
+        toDo.startDate = toDo.startDate.copyWith(
+            hour: Constants.midnight.hour, minute: Constants.midnight.minute);
+        toDo.dueDate = toDo.dueDate.copyWith(
+            hour: Constants.midnight.hour, minute: Constants.midnight.minute);
+      });
+    }
   }
 
   void updateTimes({bool? checkClose, TimeOfDay? newStart, TimeOfDay? newDue}) {
-    setState(() {
-      this.checkClose = checkClose ?? this.checkClose;
-      newStart = newStart ?? Constants.midnight;
-      newDue = newDue ?? Constants.midnight;
-      toDo.startDate = toDo.startDate
-          .copyWith(hour: newStart!.hour, minute: newStart!.minute);
-      toDo.dueDate =
-          toDo.dueDate.copyWith(hour: newDue!.hour, minute: newDue!.minute);
-    });
+    if (mounted) {
+      return setState(() {
+        this.checkClose = checkClose ?? this.checkClose;
+        newStart = newStart ?? Constants.midnight;
+        newDue = newDue ?? Constants.midnight;
+        toDo.startDate = toDo.startDate
+            .copyWith(hour: newStart!.hour, minute: newStart!.minute);
+        toDo.dueDate =
+            toDo.dueDate.copyWith(hour: newDue!.hour, minute: newDue!.minute);
+      });
+    }
   }
 
   void clearRepeatable() {
-    setState(() {
-      checkClose = true;
-      toDo.frequency = Frequency.once;
+    if (mounted) {
+      return setState(() {
+        checkClose = true;
+        toDo.frequency = Frequency.once;
 
-      toDo.repeatDays.fillRange(0, toDo.repeatDays.length, false);
+        toDo.repeatDays.fillRange(0, toDo.repeatDays.length, false);
 
-      toDo.repeatSkip = 1;
-    });
+        toDo.repeatSkip = 1;
+      });
+    }
   }
 
   void updateRepeatable(
@@ -597,24 +573,28 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
       required Frequency newFreq,
       required Set<int> newWeekdays,
       required int newSkip}) {
-    setState(() {
-      this.checkClose = checkClose ?? this.checkClose;
-      toDo.frequency = newFreq;
-      toDo.repeatSkip = newSkip;
+    if (mounted) {
+      return setState(() {
+        this.checkClose = checkClose ?? this.checkClose;
+        toDo.frequency = newFreq;
+        toDo.repeatSkip = newSkip;
 
-      if (newWeekdays.isEmpty) {
-        newWeekdays.add(toDo.startDate.weekday - 1);
-      }
-      for (int i = 0; i < toDo.repeatDays.length; i++) {
-        toDo.repeatDays[i] = newWeekdays.contains(i);
-      }
-    });
+        if (newWeekdays.isEmpty) {
+          newWeekdays.add(toDo.startDate.weekday - 1);
+        }
+        for (int i = 0; i < toDo.repeatDays.length; i++) {
+          toDo.repeatDays[i] = newWeekdays.contains(i);
+        }
+      });
+    }
   }
 
   void onDataChange() {
-    return setState(() {
-      checkClose = true;
-    });
+    if (mounted) {
+      return setState(() {
+        checkClose = true;
+      });
+    }
   }
 
   Set<int> get weekdayList {

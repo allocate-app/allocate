@@ -27,5 +27,13 @@ void main() {
           levenshteinDistance(s1: "Google", s2: "google", caseSensitive: true),
           1);
     });
+
+    test("ab, abcd", () {
+      expect(levenshteinDistance(s1: "ab", s2: "abcd"), 2);
+    });
+
+    test("abcd, ab", () {
+      expect(levenshteinDistance(s1: "abcd", s2: "ab",), 2);
+    });
   });
 }

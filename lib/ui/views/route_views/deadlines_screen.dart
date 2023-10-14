@@ -10,7 +10,6 @@ import '../../../providers/deadline_provider.dart';
 import '../../../util/constants.dart';
 import '../../../util/enums.dart';
 import '../../../util/exceptions.dart';
-import '../../../util/sorting/deadline_sorter.dart';
 import '../../widgets/flushbars.dart';
 import '../sub_views/create_deadline.dart';
 import '../sub_views/update_deadline.dart';
@@ -197,7 +196,7 @@ class _DeadlinesListScreen extends State<DeadlinesListScreen> {
                         });
                       }
                     },
-                    items: DeadlineSorter.sortMethods
+                    items: deadlineProvider.sorter.sortMethods
                         .map<DropdownMenuItem<SortMethod>>(
                             (method) => DropdownMenuItem<SortMethod>(
                                   value: method,

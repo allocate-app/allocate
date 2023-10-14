@@ -68,7 +68,7 @@ class ReminderProvider extends ChangeNotifier {
 
   bool get descending => sorter.descending;
 
-  List<SortMethod> get sortMethods => ReminderSorter.sortMethods;
+  List<SortMethod> get sortMethods => sorter.sortMethods;
 
   Future<void> _syncRepo() async {
     // Not quite sure how to handle this outside of gui warning.

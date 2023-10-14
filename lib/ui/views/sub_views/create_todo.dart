@@ -156,7 +156,9 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
       checkClose = true;
       String newText = nameEditingController.text;
       SemanticsService.announce(newText, Directionality.of(context));
-      setState(() => name = newText);
+      if (mounted) {
+        return setState(() => name = newText);
+      }
     });
 
     groupEditingController = SearchController();
@@ -219,19 +221,23 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
   }
 
   void handleGroupSelection({required int id}) {
-    setState(() {
-      checkClose = true;
-      groupID = id;
-    });
+    if (mounted) {
+      return setState(() {
+        checkClose = true;
+        groupID = id;
+      });
+    }
   }
 
   void handleHistorySelection({
     required int id,
   }) {
-    setState(() {
-      checkClose = true;
-      groupID = id;
-    });
+    if (mounted) {
+      return setState(() {
+        checkClose = true;
+        groupID = id;
+      });
+    }
   }
 
   bool validateData() {
@@ -241,7 +247,9 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
     }
     if (nameEditingController.text.isEmpty) {
       valid = false;
-      setState(() => nameErrorText = "Enter Task Name");
+      if (mounted) {
+        setState(() => nameErrorText = "Enter Task Name");
+      }
     }
     if (frequency == Frequency.custom) {
       if (weekdayList.isEmpty) {
@@ -313,166 +321,202 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
     }
 
     if (mounted) {
-      setState(() => checkClose = false);
+      return setState(() => checkClose = false);
     }
   }
 
   void clearNameField() {
-    setState(() {
-      checkClose = true;
-      nameEditingController.clear();
-      name = "";
-    });
+    if (mounted) {
+      return setState(() {
+        checkClose = true;
+        nameEditingController.clear();
+        name = "";
+      });
+    }
   }
 
   void completeToDo(bool? value) {
-    setState(() {
-      checkClose = true;
-      completed = value!;
-    });
+    if (mounted) {
+      return setState(() {
+        checkClose = true;
+        completed = value!;
+      });
+    }
   }
 
-  void handleWeightChange(double value) => setState(() {
+  void handleWeightChange(double value) {
+    if (mounted) {
+      return setState(() {
         checkClose = true;
         weight = value.toInt();
         realDuration = toDoProvider.calculateRealDuration(
             weight: weight, duration: expectedDuration);
       });
+    }
+  }
 
   void removeSubtask({required int index}) {
-    setState(() {
-      checkClose = true;
-      SubTask st = subTasks.removeAt(index);
-      st = SubTask();
-      subTasks.add(st);
-      TextEditingController ct = subTaskEditingController.removeAt(index);
-      ct.value = ct.value.copyWith(text: st.name);
-      subTaskEditingController.add(ct);
+    if (mounted) {
+      return setState(() {
+        checkClose = true;
+        SubTask st = subTasks.removeAt(index);
+        st = SubTask();
+        subTasks.add(st);
+        TextEditingController ct = subTaskEditingController.removeAt(index);
+        ct.value = ct.value.copyWith(text: st.name);
+        subTaskEditingController.add(ct);
 
-      shownTasks--;
-      shownTasks = max(shownTasks, 0);
-      sumWeight = toDoProvider.calculateWeight(
-          subTasks: List.generate(
-              Constants.numTasks[taskType]!, (index) => subTasks[index]));
-      realDuration = toDoProvider.calculateRealDuration(
-          weight: sumWeight, duration: expectedDuration);
-    });
+        shownTasks--;
+        shownTasks = max(shownTasks, 0);
+        sumWeight = toDoProvider.calculateWeight(
+            subTasks: List.generate(
+                Constants.numTasks[taskType]!, (index) => subTasks[index]));
+        realDuration = toDoProvider.calculateRealDuration(
+            weight: sumWeight, duration: expectedDuration);
+      });
+    }
   }
 
   void reorderSubtasks(int oldIndex, int newIndex) {
-    setState(() {
-      checkClose = true;
-      if (oldIndex < newIndex) {
-        newIndex--;
-      }
-      SubTask st = subTasks.removeAt(oldIndex);
-      subTasks.insert(newIndex, st);
-      TextEditingController ct = subTaskEditingController.removeAt(oldIndex);
-      subTaskEditingController.insert(newIndex, ct);
-    });
+    if (mounted) {
+      return setState(() {
+        checkClose = true;
+        if (oldIndex < newIndex) {
+          newIndex--;
+        }
+        SubTask st = subTasks.removeAt(oldIndex);
+        subTasks.insert(newIndex, st);
+        TextEditingController ct = subTaskEditingController.removeAt(oldIndex);
+        subTaskEditingController.insert(newIndex, ct);
+      });
+    }
   }
 
   void onDataChange() {
-    setState(() {
-      checkClose = true;
-    });
+    if (mounted) {
+      return setState(() {
+        checkClose = true;
+      });
+    }
   }
 
   void onSubtaskWeightChanged() {
-    setState(() {
-      checkClose = true;
-      sumWeight = toDoProvider.calculateWeight(
-          subTasks: List.generate(
-              Constants.numTasks[taskType]!, (index) => subTasks[index]));
-      realDuration = toDoProvider.calculateRealDuration(
-          weight: sumWeight, duration: expectedDuration);
-    });
+    if (mounted) {
+      return setState(() {
+        checkClose = true;
+        sumWeight = toDoProvider.calculateWeight(
+            subTasks: List.generate(
+                Constants.numTasks[taskType]!, (index) => subTasks[index]));
+        realDuration = toDoProvider.calculateRealDuration(
+            weight: sumWeight, duration: expectedDuration);
+      });
+    }
   }
 
   void addSubTask() {
-    setState(() {
-      shownTasks++;
-      shownTasks = min(shownTasks, Constants.maxNumTasks);
-    });
+    if (mounted) {
+      return setState(() {
+        shownTasks++;
+        shownTasks = min(shownTasks, Constants.maxNumTasks);
+      });
+    }
   }
 
   void toggleMyDay() {
-    setState(() {
-      checkClose = true;
-      myDay = !myDay;
-    });
+    if (mounted) {
+      return setState(() {
+        checkClose = true;
+        myDay = !myDay;
+      });
+    }
   }
 
   void changePriority(Set<Priority> newSelection) {
-    setState(() {
-      checkClose = true;
-      priority = newSelection.first;
-    });
+    if (mounted) {
+      return setState(() {
+        checkClose = true;
+        priority = newSelection.first;
+      });
+    }
   }
 
   void updateDuration(int? value) {
-    setState(() {
-      checkClose = true;
-      expectedDuration = value ?? expectedDuration;
-      realDuration = toDoProvider.calculateRealDuration(
-          weight: (taskType == TaskType.small) ? weight : sumWeight,
-          duration: expectedDuration);
-    });
+    if (mounted) {
+      return setState(() {
+        checkClose = true;
+        expectedDuration = value ?? expectedDuration;
+        realDuration = toDoProvider.calculateRealDuration(
+            weight: (taskType == TaskType.small) ? weight : sumWeight,
+            duration: expectedDuration);
+      });
+    }
   }
 
   void clearDuration() {
-    setState(() {
-      checkClose = true;
-      expectedDuration = 0;
-      realDuration = 0;
-    });
+    if (mounted) {
+      return setState(() {
+        checkClose = true;
+        expectedDuration = 0;
+        realDuration = 0;
+      });
+    }
   }
 
   void clearDates() {
-    setState(() {
-      checkClose = true;
-      startDate = null;
-      dueDate = null;
-    });
+    if (mounted) {
+      return setState(() {
+        checkClose = true;
+        startDate = null;
+        dueDate = null;
+      });
+    }
   }
 
   void updateDates({bool? checkClose, DateTime? newStart, DateTime? newDue}) {
-    setState(() {
-      this.checkClose = checkClose ?? this.checkClose;
-      startDate = newStart;
-      dueDate = newDue;
+    if (mounted) {
+      return setState(() {
+        this.checkClose = checkClose ?? this.checkClose;
+        startDate = newStart;
+        dueDate = newDue;
 
-      if (null != startDate &&
-          null != dueDate &&
-          startDate!.isAfter(dueDate!)) {
-        startDate = dueDate;
-      }
-    });
+        if (null != startDate &&
+            null != dueDate &&
+            startDate!.isAfter(dueDate!)) {
+          startDate = dueDate;
+        }
+      });
+    }
   }
 
   void clearTimes() {
-    setState(() {
-      checkClose = true;
-      startTime = null;
-      dueTime = null;
-    });
+    if (mounted) {
+      return setState(() {
+        checkClose = true;
+        startTime = null;
+        dueTime = null;
+      });
+    }
   }
 
   void updateTimes({bool? checkClose, TimeOfDay? newStart, TimeOfDay? newDue}) {
-    setState(() {
-      this.checkClose = checkClose ?? this.checkClose;
-      startTime = newStart;
-      dueTime = newDue;
-    });
+    if (mounted) {
+      return setState(() {
+        this.checkClose = checkClose ?? this.checkClose;
+        startTime = newStart;
+        dueTime = newDue;
+      });
+    }
   }
 
   void clearRepeatable() {
-    setState(() {
-      checkClose = true;
-      frequency = Frequency.once;
-      weekdayList.clear();
-      repeatSkip = 1;
-    });
+    if (mounted) {
+      return setState(() {
+        checkClose = true;
+        frequency = Frequency.once;
+        weekdayList.clear();
+        repeatSkip = 1;
+      });
+    }
   }
 
   void updateRepeatable(
@@ -480,12 +524,14 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
       required Frequency newFreq,
       required Set<int> newWeekdays,
       required int newSkip}) {
-    setState(() {
-      this.checkClose = checkClose ?? this.checkClose;
-      frequency = newFreq;
-      weekdayList = newWeekdays;
-      repeatSkip = newSkip;
-    });
+    if (mounted) {
+      return setState(() {
+        this.checkClose = checkClose ?? this.checkClose;
+        frequency = newFreq;
+        weekdayList = newWeekdays;
+        repeatSkip = newSkip;
+      });
+    }
   }
 
   Future<void> createAndValidate() async {
@@ -1029,13 +1075,15 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
           onSelectionChanged: (Set<TaskType> newSelection) {
             TaskType newType = newSelection.first;
             if (taskType != newType) {
-              setState(() {
-                checkClose = true;
-                taskType = newSelection.first;
-                realDuration = toDoProvider.calculateRealDuration(
-                    weight: (taskType == TaskType.small) ? weight : sumWeight,
-                    duration: expectedDuration);
-              });
+              if (mounted) {
+                return setState(() {
+                  checkClose = true;
+                  taskType = newSelection.first;
+                  realDuration = toDoProvider.calculateRealDuration(
+                      weight: (taskType == TaskType.small) ? weight : sumWeight,
+                      duration: expectedDuration);
+                });
+              }
             }
           }),
     );

@@ -113,7 +113,9 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
       checkClose = true;
       String newText = nameEditingController.text;
       SemanticsService.announce(newText, Directionality.of(context));
-      setState(() => name = newText);
+      if (mounted) {
+        return setState(() => name = newText);
+      }
     });
 
     descriptionEditingController = TextEditingController();
@@ -138,7 +140,9 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
     bool valid = true;
     if (nameEditingController.text.isEmpty) {
       valid = false;
-      setState(() => nameErrorText = "Enter Task Name");
+      if (mounted) {
+        setState(() => nameErrorText = "Enter Task Name");
+      }
     }
 
     if (warnMe && !deadlineProvider.validateWarnDate(warnDate: warnDate)) {
@@ -224,88 +228,106 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
     }
 
     if (mounted) {
-      setState(() => checkClose = false);
+      return setState(() => checkClose = false);
     }
   }
 
   void clearNameField() {
-    setState(() {
-      checkClose = true;
-      nameEditingController.clear();
-      name = "";
-    });
+    if (mounted) {
+      return setState(() {
+        checkClose = true;
+        nameEditingController.clear();
+        name = "";
+      });
+    }
   }
 
   void changePriority(Set<Priority> newSelection) {
-    setState(() {
-      checkClose = true;
-      priority = newSelection.first;
-    });
+    if (mounted) {
+      return setState(() {
+        checkClose = true;
+        priority = newSelection.first;
+      });
+    }
   }
 
   void clearDates() {
-    setState(() {
-      checkClose = true;
-      startDate = null;
-      dueDate = null;
-    });
+    if (mounted) {
+      return setState(() {
+        checkClose = true;
+        startDate = null;
+        dueDate = null;
+      });
+    }
   }
 
   void clearWarnMe() {
-    setState(() {
-      checkClose = true;
-      warnDate = null;
-      warnTime = null;
-      warnMe = false;
-    });
+    if (mounted) {
+      return setState(() {
+        checkClose = true;
+        warnDate = null;
+        warnTime = null;
+        warnMe = false;
+      });
+    }
   }
 
   void updateWarnMe({bool? checkClose, DateTime? newDate, TimeOfDay? newTime}) {
-    setState(() {
-      this.checkClose = checkClose ?? this.checkClose;
-      warnDate = newDate;
-      warnTime = newTime;
-      warnMe = (null != warnDate);
-    });
+    if (mounted) {
+      return setState(() {
+        this.checkClose = checkClose ?? this.checkClose;
+        warnDate = newDate;
+        warnTime = newTime;
+        warnMe = (null != warnDate);
+      });
+    }
   }
 
   void updateDates({bool? checkClose, DateTime? newStart, DateTime? newDue}) {
-    setState(() {
-      this.checkClose = checkClose ?? this.checkClose;
-      startDate = newStart;
-      dueDate = newDue;
+    if (mounted) {
+      return setState(() {
+        this.checkClose = checkClose ?? this.checkClose;
+        startDate = newStart;
+        dueDate = newDue;
 
-      if (null != startDate &&
-          null != dueDate &&
-          startDate!.isAfter(dueDate!)) {
-        startDate = dueDate;
-      }
-    });
+        if (null != startDate &&
+            null != dueDate &&
+            startDate!.isAfter(dueDate!)) {
+          startDate = dueDate;
+        }
+      });
+    }
   }
 
   void clearTimes() {
-    setState(() {
-      checkClose = true;
-      startTime = null;
-      dueTime = null;
-    });
+    if (mounted) {
+      return setState(() {
+        checkClose = true;
+        startTime = null;
+        dueTime = null;
+      });
+    }
   }
 
   void updateTimes({bool? checkClose, TimeOfDay? newStart, TimeOfDay? newDue}) {
-    setState(() {
-      this.checkClose = checkClose ?? this.checkClose;
-      startTime = newStart;
-      dueTime = newDue;
-    });
+    if (mounted) {
+      return setState(() {
+        this.checkClose = checkClose ?? this.checkClose;
+        startTime = newStart;
+        dueTime = newDue;
+      });
+    }
   }
 
   void clearRepeatable() {
-    setState(() {
-      checkClose = true;
-      frequency = Frequency.once;
-      weekdayList.clear();
-      repeatSkip = 1;
-    });
+    if (mounted) {
+      return setState(() {
+        checkClose = true;
+        frequency = Frequency.once;
+        weekdayList.clear();
+        repeatSkip = 1;
+      });
+    }
   }
 
   void updateRepeatable(
@@ -313,12 +335,14 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
       required Frequency newFreq,
       required Set<int> newWeekdays,
       required int newSkip}) {
-    setState(() {
-      this.checkClose = checkClose ?? this.checkClose;
-      frequency = newFreq;
-      weekdayList = newWeekdays;
-      repeatSkip = newSkip;
-    });
+    if (mounted) {
+      return setState(() {
+        this.checkClose = checkClose ?? this.checkClose;
+        frequency = newFreq;
+        weekdayList = newWeekdays;
+        repeatSkip = newSkip;
+      });
+    }
   }
 
   Future<void> createAndValidate() async {

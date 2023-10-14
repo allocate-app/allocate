@@ -10,7 +10,6 @@ import '../../../util/constants.dart';
 import '../../../util/enums.dart';
 import '../../../util/exceptions.dart';
 import '../../../util/numbers.dart';
-import '../../../util/sorting/routine_sorter.dart';
 import '../../widgets/flushbars.dart';
 import '../sub_views/create_routine.dart';
 import '../sub_views/update_routine.dart';
@@ -367,7 +366,7 @@ class _RoutinesListScreen extends State<RoutinesListScreen> {
                         });
                       }
                     },
-                    items: RoutineSorter.sortMethods
+                    items: routineProvider.sorter.sortMethods
                         .map<DropdownMenuItem<SortMethod>>(
                             (method) => DropdownMenuItem<SortMethod>(
                                   value: method,

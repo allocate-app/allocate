@@ -24,7 +24,8 @@ class DeadlineSorter implements SortableView<Deadline> {
   Map<String, dynamic> toEntity() =>
       {"descending": descending, "sortMethod": sortMethod.index};
 
-  static final List<SortMethod> sortMethods = [
+  @override
+  final List<SortMethod> sortMethods = [
     SortMethod.none,
     SortMethod.name,
     SortMethod.due_date,

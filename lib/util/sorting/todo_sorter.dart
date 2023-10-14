@@ -25,5 +25,5 @@ class ToDoSorter implements SortableView<ToDo> {
       {"descending": descending, "sortMethod": sortMethod.index};
 
   @override
-  static final List<SortMethod> sortMethods = List.from(SortMethod.values);
+  final List<SortMethod> sortMethods = List.from(SortMethod.values);
 }

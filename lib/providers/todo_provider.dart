@@ -12,8 +12,6 @@ import '../util/enums.dart';
 import '../util/exceptions.dart';
 import '../util/sorting/todo_sorter.dart';
 
-// NOTE: Use futurebuilder for UI.
-
 class ToDoProvider extends ChangeNotifier {
   bool rebuild = true;
   late Timer syncTimer;
@@ -81,7 +79,7 @@ class ToDoProvider extends ChangeNotifier {
   int calculateWeight({List<SubTask>? subTasks}) =>
       _toDoService.calculateWeight(subTasks: subTasks);
 
-  List<SortMethod> get sortMethods => ToDoSorter.sortMethods;
+  List<SortMethod> get sortMethods => sorter.sortMethods;
 
   Future<int> getMyDayWeight() async => await _toDoService.getMyDayWeight();
 
@@ -290,6 +288,7 @@ class ToDoProvider extends ChangeNotifier {
     }
   }
 
+  @override
   Future<void> deleteFutures({ToDo? toDo}) async {
     try {
       await _toDoService.deleteFutures(toDo: toDo ?? curToDo!);
@@ -302,6 +301,7 @@ class ToDoProvider extends ChangeNotifier {
     }
   }
 
+  @override
   Future<void> populateCalendar({DateTime? limit}) async {
     try {
       return await _toDoService.populateCalendar(

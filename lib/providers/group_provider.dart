@@ -8,6 +8,7 @@ import '../model/task/todo.dart';
 import '../model/user/user.dart';
 import '../services/group_service.dart';
 import '../services/todo_service.dart';
+import '../util/constants.dart';
 import '../util/enums.dart';
 import '../util/exceptions.dart';
 import '../util/sorting/group_sorter.dart';
@@ -22,6 +23,8 @@ class GroupProvider extends ChangeNotifier {
 
   List<Group> groups = [];
   List<Group> recentGroups = [];
+
+  final Map<int, String> groupNames = {};
 
   late GroupSorter sorter;
 
@@ -66,7 +69,25 @@ class GroupProvider extends ChangeNotifier {
 
   bool get descending => sorter.descending;
 
-  List<SortMethod> get sortMethods => GroupSorter.sortMethods;
+  List<SortMethod> get sortMethods => sorter.sortMethods;
+
+  Future<String> getGroupName({required int id}) async {
+    if (id == Constants.initialGroupID) {
+      return "New Group";
+    }
+    if (groupNames.containsKey(id)) {
+      return groupNames[id]!;
+    }
+
+    Group? group = await getGroupByID(id: id);
+    if (group == null) {
+      return Future.error(
+          GroupNotFoundException("Group $id: not found in storage"));
+    }
+
+    groupNames[id] = group.name;
+    return group.name;
+  }
 
   Future<void> _syncRepo() async {
     // Not quite sure how to handle this outside of gui warning.

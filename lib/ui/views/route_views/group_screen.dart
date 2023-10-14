@@ -12,7 +12,6 @@ import '../../../util/constants.dart';
 import '../../../util/enums.dart';
 import '../../../util/exceptions.dart';
 import '../../../util/numbers.dart';
-import '../../../util/sorting/group_sorter.dart';
 import '../../widgets/flushbars.dart';
 import '../../widgets/padded_divider.dart';
 import '../sub_views/create_group.dart';
@@ -219,7 +218,7 @@ class _GroupsListScreen extends State<GroupsListScreen> {
                         });
                       }
                     },
-                    items: GroupSorter.sortMethods
+                    items: groupProvider.sorter.sortMethods
                         .map<DropdownMenuItem<SortMethod>>(
                             (method) => DropdownMenuItem<SortMethod>(
                                   value: method,

@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../../model/task/subtask.dart';
 import '../../model/task/todo.dart';
+import '../../providers/group_provider.dart';
+import '../../providers/todo_provider.dart';
 import 'tiles.dart';
 
 // TODO: Implement crossfade
@@ -9,8 +12,51 @@ class ListViews {
   static reorderableToDos({
     required BuildContext context,
     required List<ToDo> toDos,
+    bool checkDelete = false,
     ScrollPhysics physics = const NeverScrollableScrollPhysics(),
-    required void Function(int oldIndex, int newIndex) onReorder,
+  }) =>
+      ReorderableListView.builder(
+          buildDefaultDragHandles: false,
+          physics: physics,
+          shrinkWrap: true,
+          onReorder: (int oldIndex, int newIndex) async =>
+              await Provider.of<ToDoProvider>(context, listen: false)
+                  .reorderToDos(oldIndex: oldIndex, newIndex: newIndex),
+          itemCount: toDos.length,
+          itemBuilder: (BuildContext context, int index) {
+            return Tiles.toDoListTile(
+              context: context,
+              index: index,
+              toDo: toDos[index],
+              showHandle: toDos.length > 1,
+              checkDelete: checkDelete,
+            );
+          });
+
+  static immutableToDos({
+    required BuildContext context,
+    required List<ToDo> toDos,
+    bool checkDelete = false,
+    ScrollPhysics physics = const NeverScrollableScrollPhysics(),
+  }) =>
+      ListView.builder(
+          physics: physics,
+          shrinkWrap: true,
+          itemCount: toDos.length,
+          itemBuilder: (BuildContext context, int index) {
+            return Tiles.toDoListTile(
+              context: context,
+              index: index,
+              toDo: toDos[index],
+              showHandle: false,
+              checkDelete: checkDelete,
+            );
+          });
+
+  static reorderableGroupToDos({
+    required BuildContext context,
+    required List<ToDo> toDos,
+    ScrollPhysics physics = const NeverScrollableScrollPhysics(),
     required Future<void> Function({required int index, bool value}) onChanged,
     required Future<void> Function({required int index}) onTap,
     required void Function({required int index}) handleRemove,
@@ -19,7 +65,10 @@ class ListViews {
         buildDefaultDragHandles: false,
         physics: physics,
         shrinkWrap: true,
-        onReorder: onReorder,
+        onReorder: (int oldIndex, int newIndex) async =>
+            await Provider.of<GroupProvider>(context, listen: false)
+                .reorderGroupToDos(
+                    oldIndex: oldIndex, newIndex: newIndex, toDos: toDos),
         onReorderStart: (_) {
           FocusScope.of(context).unfocus();
         },

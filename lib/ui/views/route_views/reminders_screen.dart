@@ -10,7 +10,6 @@ import '../../../providers/reminder_provider.dart';
 import '../../../util/constants.dart';
 import '../../../util/enums.dart';
 import '../../../util/exceptions.dart';
-import '../../../util/sorting/reminder_sorter.dart';
 import '../../widgets/flushbars.dart';
 import '../sub_views/create_reminder.dart';
 import '../sub_views/update_reminder.dart';
@@ -219,7 +218,7 @@ class _RemindersListScreen extends State<RemindersListScreen> {
                         });
                       }
                     },
-                    items: ReminderSorter.sortMethods
+                    items: reminderProvider.sorter.sortMethods
                         .map<DropdownMenuItem<SortMethod>>(
                             (method) => DropdownMenuItem<SortMethod>(
                                   value: method,

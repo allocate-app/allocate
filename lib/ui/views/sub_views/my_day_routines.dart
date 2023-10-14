@@ -95,7 +95,9 @@ class _MyDayRoutines extends State<MyDayRoutines> {
         .getRoutineByID(id: routineData.value)
         .then((routine) async {
       await setRoutine(routine: routine, timeOfDay: timeOfDay).whenComplete(() {
-        setState(() {});
+        if (mounted) {
+          return setState(() {});
+        }
       });
     }).catchError((_) {
       Flushbar? error;
@@ -114,11 +116,13 @@ class _MyDayRoutines extends State<MyDayRoutines> {
       required BuildContext context,
       required RoutineTime timeOfDay}) async {
     controller.closeView("");
-    setState(() {
-      if (searchHistory.length >= Constants.historyLength) {
-        searchHistory.removeLast();
-      }
-    });
+    if (mounted) {
+      setState(() {
+        if (searchHistory.length >= Constants.historyLength) {
+          searchHistory.removeLast();
+        }
+      });
+    }
     await setRoutine(routine: routine, timeOfDay: timeOfDay).whenComplete(() {
       setState(() {
         searchHistory.insert(0, MapEntry(routine.name, routine.id));

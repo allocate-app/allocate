@@ -71,14 +71,16 @@ class _CreateReminderScreen extends State<CreateReminderScreen> {
   void initializeControllers() {
     mainScrollController = ScrollController();
     scrollPhysics =
-    const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics());
+        const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics());
     nameEditingController = TextEditingController();
     nameEditingController.addListener(() {
       nameErrorText = null;
       checkClose = true;
       String newText = nameEditingController.text;
       SemanticsService.announce(newText, Directionality.of(context));
-      setState(() => name = newText);
+      if (mounted) {
+        return setState(() => name = newText);
+      }
     });
   }
 
@@ -93,7 +95,9 @@ class _CreateReminderScreen extends State<CreateReminderScreen> {
     bool valid = true;
     if (nameEditingController.text.isEmpty) {
       valid = false;
-      setState(() => nameErrorText = "Enter Reminder Name");
+      if (mounted) {
+        setState(() => nameErrorText = "Enter Reminder Name");
+      }
     }
 
     DateTime testDate = dueDate ?? DateTime.now();
@@ -132,12 +136,12 @@ class _CreateReminderScreen extends State<CreateReminderScreen> {
     }
     await reminderProvider
         .createReminder(
-        name: name,
-        dueDate: dueDate,
-        repeatable: frequency != Frequency.once,
-        frequency: frequency,
-        repeatDays: weekdays,
-        repeatSkip: repeatSkip)
+            name: name,
+            dueDate: dueDate,
+            repeatable: frequency != Frequency.once,
+            frequency: frequency,
+            repeatDays: weekdays,
+            repeatSkip: repeatSkip)
         .whenComplete(() => Navigator.pop(context))
         .catchError((e) {
       Flushbar? error;
@@ -150,8 +154,8 @@ class _CreateReminderScreen extends State<CreateReminderScreen> {
 
       error.show(context);
     },
-        test: (e) =>
-        e is FailureToCreateException || e is FailureToUploadException);
+            test: (e) =>
+                e is FailureToCreateException || e is FailureToUploadException);
   }
 
   void handleClose({required bool willDiscard}) {
@@ -160,53 +164,64 @@ class _CreateReminderScreen extends State<CreateReminderScreen> {
     }
 
     if (mounted) {
-      setState(() => checkClose = false);
+      return setState(() => checkClose = false);
     }
   }
 
   void clearNameField() {
-    setState(() {
-      checkClose = true;
-      nameEditingController.clear();
-      name = "";
-    });
+    if (mounted) {
+      return setState(() {
+        checkClose = true;
+        nameEditingController.clear();
+        name = "";
+      });
+    }
   }
 
   void clearDue() {
-    setState(() {
-      checkClose = true;
-      dueDate = null;
-      dueTime = null;
-    });
+    if (mounted) {
+      return setState(() {
+        checkClose = true;
+        dueDate = null;
+        dueTime = null;
+      });
+    }
   }
 
   void updateDue({bool? checkClose, DateTime? newDate, TimeOfDay? newTime}) {
-    setState(() {
-      this.checkClose = checkClose ?? this.checkClose;
-      dueDate = newDate;
-      dueTime = newTime;
-    });
+    if (mounted) {
+      return setState(() {
+        this.checkClose = checkClose ?? this.checkClose;
+        dueDate = newDate;
+        dueTime = newTime;
+      });
+    }
   }
 
   void clearRepeatable() {
-    setState(() {
-      checkClose = true;
-      frequency = Frequency.once;
-      weekdayList.clear();
-      repeatSkip = 1;
-    });
+    if (mounted) {
+      return setState(() {
+        checkClose = true;
+        frequency = Frequency.once;
+        weekdayList.clear();
+        repeatSkip = 1;
+      });
+    }
   }
 
-  void updateRepeatable({bool? checkClose,
-    required Frequency newFreq,
-    required Set<int> newWeekdays,
-    required int newSkip}) {
-    setState(() {
-      this.checkClose = checkClose ?? this.checkClose;
-      frequency = newFreq;
-      weekdayList = newWeekdays;
-      repeatSkip = newSkip;
-    });
+  void updateRepeatable(
+      {bool? checkClose,
+      required Frequency newFreq,
+      required Set<int> newWeekdays,
+      required int newSkip}) {
+    if (mounted) {
+      return setState(() {
+        this.checkClose = checkClose ?? this.checkClose;
+        frequency = newFreq;
+        weekdayList = newWeekdays;
+        repeatSkip = newSkip;
+      });
+    }
   }
 
   Future<void> createAndValidate() async {
@@ -218,10 +233,7 @@ class _CreateReminderScreen extends State<CreateReminderScreen> {
 
   @override
   Widget build(BuildContext context) {
-    double width = MediaQuery
-        .of(context)
-        .size
-        .width;
+    double width = MediaQuery.of(context).size.width;
     bool largeScreen = (width >= Constants.largeScreen);
     bool smallScreen = (width <= Constants.smallScreen);
     bool hugeScreen = (width >= Constants.hugeScreen);
@@ -268,9 +280,9 @@ class _CreateReminderScreen extends State<CreateReminderScreen> {
                                         iconPadding: const EdgeInsets.all(
                                             Constants.padding),
                                         outerPadding:
-                                        const EdgeInsets.symmetric(
-                                            horizontal:
-                                            Constants.halfPadding),
+                                            const EdgeInsets.symmetric(
+                                                horizontal:
+                                                    Constants.halfPadding),
                                       ),
                                       context: context,
                                       hintText: "Reminder Name",
@@ -280,7 +292,7 @@ class _CreateReminderScreen extends State<CreateReminderScreen> {
                                         Constants.padding,
                                       ),
                                       textFieldPadding:
-                                      const EdgeInsets.symmetric(
+                                          const EdgeInsets.symmetric(
                                         horizontal: Constants.halfPadding,
                                       ),
                                       handleClear: clearNameField),

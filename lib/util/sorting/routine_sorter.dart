@@ -14,6 +14,7 @@ class RoutineSorter implements SortableView<Routine> {
   @override
   @Enumerated(EnumType.ordinal)
   SortMethod sortMethod = SortMethod.none;
+
   RoutineSorter({this.descending = false, this.sortMethod = SortMethod.none});
 
   RoutineSorter.fromEntity({required Map<String, dynamic> entity})
@@ -23,7 +24,8 @@ class RoutineSorter implements SortableView<Routine> {
   Map<String, dynamic> toEntity() =>
       {"descending": descending, "sortMethod": sortMethod.index};
 
-  static final List<SortMethod> sortMethods = [
+  @override
+  final List<SortMethod> sortMethods = [
     SortMethod.none,
     SortMethod.name,
     SortMethod.weight,

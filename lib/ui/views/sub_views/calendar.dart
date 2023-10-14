@@ -280,6 +280,7 @@ class _CalendarScreen extends State<CalendarScreen> {
     super.dispose();
   }
 
+  // TODO: Factor into leadingWidgets
   Widget getModelIcon({required ModelType modelType}) {
     Icon icon = switch (modelType) {
       ModelType.task => const Icon(Icons.task_rounded),
@@ -467,6 +468,7 @@ class _CalendarScreen extends State<CalendarScreen> {
     );
   }
 
+  // TODO: refactor: this requires a listview.
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -504,6 +506,7 @@ class _CalendarScreen extends State<CalendarScreen> {
     );
   }
 
+  // TODO: factor out into listview/tile class.
   Widget buildEventTile() {
     return ValueListenableBuilder<List<CalendarEvent>>(
       valueListenable: _selectedEvents,

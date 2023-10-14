@@ -119,7 +119,9 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
       checkClose = true;
       String newText = nameEditingController.text;
       SemanticsService.announce(newText, Directionality.of(context));
-      setState(() => group.name = newText);
+      if (mounted) {
+        return setState(() => group.name = newText);
+      }
     });
     descriptionEditingController =
         TextEditingController(text: group.description);
@@ -150,34 +152,38 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
   Future<void> resetPagination() async {
     offset = 0;
     limit = max(toDos.length, Constants.minLimitPerQuery);
-    await overwriteData();
+    return await overwriteData();
   }
 
   Future<void> overwriteData() async {
-    setState(() => loading = true);
     List<ToDo> newToDos = await fetchData();
-    setState(() {
-      offset += newToDos.length;
-      toDos = newToDos;
-      loading = false;
-      allData = toDos.length <= limit;
-      limit = Constants.minLimitPerQuery;
-    });
+    if (mounted) {
+      return setState(() {
+        offset += newToDos.length;
+        toDos = newToDos;
+        loading = false;
+        allData = toDos.length <= limit;
+        limit = Constants.minLimitPerQuery;
+      });
+    }
   }
 
   Future<void> appendData() async {
-    setState(() => loading = true);
     List<ToDo> newToDos = await fetchData();
-    setState(() {
-      offset += newToDos.length;
-      toDos.addAll(newToDos);
-      loading = false;
-      allData = newToDos.length < limit;
-    });
+    if (mounted) {
+      return setState(() {
+        offset += newToDos.length;
+        toDos.addAll(newToDos);
+        loading = false;
+        allData = newToDos.length < limit;
+      });
+    }
   }
 
   Future<List<ToDo>> fetchData() async {
-    setState(() => loading = true);
+    if (mounted) {
+      setState(() => loading = true);
+    }
     return await groupProvider
         .getToDosByGroupID(id: group.id, limit: limit, offset: offset)
         .catchError(
@@ -201,18 +207,22 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
 
     if (nameEditingController.text.isEmpty) {
       valid = false;
-      setState(() => nameErrorText = "Enter Group Name");
+      if (mounted) {
+        setState(() => nameErrorText = "Enter Group Name");
+      }
     }
 
     return valid;
   }
 
   void clearNameField() {
-    setState(() {
-      checkClose = true;
-      nameEditingController.clear();
-      group.name = "";
-    });
+    if (mounted) {
+      return setState(() {
+        checkClose = true;
+        nameEditingController.clear();
+        group.name = "";
+      });
+    }
   }
 
   Future<void> handleHistorySelection({
@@ -287,7 +297,7 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
     }
 
     if (mounted) {
-      setState(() => checkClose = false);
+      return setState(() => checkClose = false);
     }
   }
 
@@ -316,16 +326,18 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
             e is FailureToCreateException || e is FailureToUploadException);
   }
 
-  Future<void> reorderToDos(int oldIndex, int newIndex) async {
-    await groupProvider.reorderGroupToDos(
-        oldIndex: oldIndex, newIndex: newIndex, toDos: toDos);
-  }
+  // Future<void> reorderToDos(int oldIndex, int newIndex) async {
+  //   await groupProvider.reorderGroupToDos(
+  //       oldIndex: oldIndex, newIndex: newIndex, toDos: toDos);
+  // }
 
   // Write at the end
   Future<void> completeToDo({required int index, bool value = false}) async {
-    setState(() {
-      toDos[index].completed = value;
-    });
+    if (mounted) {
+      return setState(() {
+        toDos[index].completed = value;
+      });
+    }
   }
 
   Future<void> removeToDo({required int index}) async {
@@ -622,11 +634,10 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
           minFontSize: Constants.small),
       children: [
         (loading) ? const CircularProgressIndicator() : const SizedBox.shrink(),
-        ListViews.reorderableToDos(
+        ListViews.reorderableGroupToDos(
           context: context,
           toDos: toDos,
           physics: physics,
-          onReorder: reorderToDos,
           onChanged: completeToDo,
           handleRemove: removeToDo,
           onTap: updateToDo,

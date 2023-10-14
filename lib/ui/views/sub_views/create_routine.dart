@@ -91,7 +91,9 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
       checkClose = true;
       String newText = nameEditingController.text;
       SemanticsService.announce(newText, Directionality.of(context));
-      setState(() => name = newText);
+      if (mounted) {
+        return setState(() => name = newText);
+      }
     });
 
     routineTaskEditingController =
@@ -125,7 +127,9 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
 
     if (nameEditingController.text.isEmpty) {
       valid = false;
-      setState(() => nameErrorText = "Enter Routine Name");
+      if (mounted) {
+        setState(() => nameErrorText = "Enter Routine Name");
+      }
     }
 
     return valid;
@@ -168,102 +172,124 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
     }
 
     if (mounted) {
-      setState(() => checkClose = false);
+      return setState(() => checkClose = false);
     }
   }
 
   void clearNameField() {
-    setState(() {
-      checkClose = true;
-      nameEditingController.clear();
-      name = "";
-    });
+    if (mounted) {
+      return setState(() {
+        checkClose = true;
+        nameEditingController.clear();
+        name = "";
+      });
+    }
   }
 
   void changeRoutineTime({required RoutineTime? newRoutineTime}) {
     if (null == newRoutineTime) {
       return;
     }
-    setState(() {
-      checkClose = true;
-      routineTime = newRoutineTime;
-    });
+    if (mounted) {
+      return setState(() {
+        checkClose = true;
+        routineTime = newRoutineTime;
+      });
+    }
   }
 
-  void handleWeightChange(double value) => setState(() {
+  void handleWeightChange(double value) {
+    if (mounted) {
+      return setState(() {
         checkClose = true;
         weight = value.toInt();
         realDuration = routineProvider.calculateRealDuration(
             weight: weight, duration: expectedDuration);
       });
+    }
+  }
 
   void removeRoutineTask({required int index}) {
-    setState(() {
-      checkClose = true;
-      SubTask st = routineTasks.removeAt(index);
-      st = SubTask();
-      routineTasks.add(st);
-      TextEditingController ct = routineTaskEditingController.removeAt(index);
-      ct.value = ct.value.copyWith(text: st.name);
-      routineTaskEditingController.add(ct);
+    if (mounted) {
+      return setState(() {
+        checkClose = true;
+        SubTask st = routineTasks.removeAt(index);
+        st = SubTask();
+        routineTasks.add(st);
+        TextEditingController ct = routineTaskEditingController.removeAt(index);
+        ct.value = ct.value.copyWith(text: st.name);
+        routineTaskEditingController.add(ct);
 
-      shownTasks--;
-      shownTasks = max(shownTasks, 0);
-      weight = routineProvider.calculateWeight(routineTasks: routineTasks);
-    });
+        shownTasks--;
+        shownTasks = max(shownTasks, 0);
+        weight = routineProvider.calculateWeight(routineTasks: routineTasks);
+      });
+    }
   }
 
   void reorderRoutineTasks(int oldIndex, int newIndex) {
-    setState(() {
-      checkClose = true;
-      if (oldIndex < newIndex) {
-        newIndex--;
-      }
-      SubTask st = routineTasks.removeAt(oldIndex);
-      routineTasks.insert(newIndex, st);
-      TextEditingController ct =
-          routineTaskEditingController.removeAt(oldIndex);
-      routineTaskEditingController.insert(newIndex, ct);
-    });
+    if (mounted) {
+      return setState(() {
+        checkClose = true;
+        if (oldIndex < newIndex) {
+          newIndex--;
+        }
+        SubTask st = routineTasks.removeAt(oldIndex);
+        routineTasks.insert(newIndex, st);
+        TextEditingController ct =
+            routineTaskEditingController.removeAt(oldIndex);
+        routineTaskEditingController.insert(newIndex, ct);
+      });
+    }
   }
 
   void onDataChange() {
-    setState(() {
-      checkClose = true;
-    });
+    if (mounted) {
+      return setState(() {
+        checkClose = true;
+      });
+    }
   }
 
   void onRoutineTaskWeightChanged() {
-    setState(() {
-      checkClose = true;
-      weight = routineProvider.calculateWeight(routineTasks: routineTasks);
-      realDuration = routineProvider.calculateRealDuration(
-          weight: weight, duration: expectedDuration);
-    });
+    if (mounted) {
+      return setState(() {
+        checkClose = true;
+        weight = routineProvider.calculateWeight(routineTasks: routineTasks);
+        realDuration = routineProvider.calculateRealDuration(
+            weight: weight, duration: expectedDuration);
+      });
+    }
   }
 
   void addRoutineTask() {
-    setState(() {
-      shownTasks++;
-      shownTasks = min(shownTasks, Constants.maxNumTasks);
-    });
+    if (mounted) {
+      return setState(() {
+        shownTasks++;
+        shownTasks = min(shownTasks, Constants.maxNumTasks);
+      });
+    }
   }
 
   void updateDuration(int? value) {
-    setState(() {
-      checkClose = true;
-      expectedDuration = value ?? expectedDuration;
-      realDuration = routineProvider.calculateRealDuration(
-          weight: weight, duration: expectedDuration);
-    });
+    if (mounted) {
+      return setState(() {
+        checkClose = true;
+        expectedDuration = value ?? expectedDuration;
+        realDuration = routineProvider.calculateRealDuration(
+            weight: weight, duration: expectedDuration);
+      });
+    }
   }
 
   void clearDuration() {
-    setState(() {
-      checkClose = true;
-      expectedDuration = 0;
-      realDuration = 0;
-    });
+    if (mounted) {
+      return setState(() {
+        checkClose = true;
+        expectedDuration = 0;
+        realDuration = 0;
+      });
+    }
   }
 
   Future<void> createAndValidate() async {

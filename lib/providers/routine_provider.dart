@@ -157,7 +157,7 @@ class RoutineProvider extends ChangeNotifier {
 
   bool get descending => sorter.descending;
 
-  List<SortMethod> get sortMethods => RoutineSorter.sortMethods;
+  List<SortMethod> get sortMethods => sorter.sortMethods;
 
   Future<void> recalculateWeight() async {
     _routineService.recalculateWeight(routine: curRoutine!);

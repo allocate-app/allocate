@@ -9,6 +9,7 @@ import '../../../util/constants.dart';
 import '../../../util/enums.dart';
 import '../../../util/exceptions.dart';
 import '../../widgets/flushbars.dart';
+import '../../widgets/handle_repeatable_modal.dart';
 import '../../widgets/leading_widgets.dart';
 import '../../widgets/padded_divider.dart';
 import '../../widgets/tiles.dart';
@@ -70,7 +71,9 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
       checkClose = true;
       String newText = nameEditingController.text;
       SemanticsService.announce(newText, Directionality.of(context));
-      setState(() => reminder.name = newText);
+      if (mounted) {
+        return setState(() => reminder.name = newText);
+      }
     });
   }
 
@@ -85,7 +88,9 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
     bool valid = true;
     if (nameEditingController.text.isEmpty) {
       valid = false;
-      setState(() => nameErrorText = "Enter Reminder Name");
+      if (mounted) {
+        setState(() => nameErrorText = "Enter Reminder Name");
+      }
     }
 
     if (Constants.nullDate == reminder.dueDate) {
@@ -110,27 +115,7 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
           showDragHandle: true,
           context: context,
           builder: (BuildContext context) {
-            return Center(
-                heightFactor: 1,
-                child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.all(Constants.padding),
-                        child: FilledButton.icon(
-                            onPressed: () => Navigator.pop(context, true),
-                            label: const Text("This Event"),
-                            icon: const Icon(Icons.arrow_upward_outlined)),
-                      ),
-                      Padding(
-                          padding: const EdgeInsets.all(Constants.padding),
-                          child: FilledButton.tonalIcon(
-                            onPressed: () => Navigator.pop(context, false),
-                            label: const Text("All Future Events"),
-                            icon: const Icon(Icons.repeat_outlined),
-                          ))
-                    ]));
+            return const HandleRepeatableModal(action: "Update");
           });
       // If the modal is discarded.
       if (null == updateSingle) {
@@ -206,42 +191,16 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
 
   Future<void> handleDelete() async {
     if (prevReminder.frequency != Frequency.once) {
-      bool? updateSingle = await showModalBottomSheet<bool?>(
+      bool? deleteSingle = await showModalBottomSheet<bool?>(
           showDragHandle: true,
           context: context,
           builder: (BuildContext context) {
-            return StatefulBuilder(
-                builder: (BuildContext context,
-                        void Function(void Function()) setState) =>
-                    Center(
-                        heightFactor: 1,
-                        child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Padding(
-                                padding:
-                                    const EdgeInsets.all(Constants.padding),
-                                child: FilledButton.icon(
-                                    onPressed: () =>
-                                        Navigator.pop(context, true),
-                                    label: const Text("Delete This Event"),
-                                    icon: const Icon(
-                                        Icons.arrow_upward_outlined)),
-                              ),
-                              Padding(
-                                  padding:
-                                      const EdgeInsets.all(Constants.padding),
-                                  child: FilledButton.tonalIcon(
-                                    onPressed: () =>
-                                        Navigator.pop(context, false),
-                                    label: const Text("Delete All"),
-                                    icon: const Icon(Icons.repeat_outlined),
-                                  ))
-                            ])));
+            return const HandleRepeatableModal(
+              action: "Delete",
+            );
           });
       // If the modal is discarded.
-      if (null == updateSingle) {
+      if (null == deleteSingle) {
         return;
       }
 
@@ -259,7 +218,7 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
         error.show(context);
       }, test: (e) => e is FailureToDeleteException);
 
-      if (updateSingle) {
+      if (deleteSingle) {
         prevReminder.repeatable = true;
 
         // To prevent getting deleted by editing another repeating event.
@@ -309,43 +268,51 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
     }
 
     if (mounted) {
-      setState(() => checkClose = false);
+      return setState(() => checkClose = false);
     }
   }
 
   void clearNameField() {
-    setState(() {
-      checkClose = true;
-      nameEditingController.clear();
-      reminder.name = "";
-    });
+    if (mounted) {
+      return setState(() {
+        checkClose = true;
+        nameEditingController.clear();
+        reminder.name = "";
+      });
+    }
   }
 
   void clearDue() {
-    setState(() {
-      checkClose = true;
-      reminder.dueDate = Constants.nullDate.copyWith(
-          hour: Constants.midnight.hour, minute: Constants.midnight.minute);
-    });
+    if (mounted) {
+      return setState(() {
+        checkClose = true;
+        reminder.dueDate = Constants.nullDate.copyWith(
+            hour: Constants.midnight.hour, minute: Constants.midnight.minute);
+      });
+    }
   }
 
   void updateDue({bool? checkClose, DateTime? newDate, TimeOfDay? newTime}) {
-    setState(() {
-      this.checkClose = checkClose ?? this.checkClose;
-      newDate = newDate ?? Constants.nullDate;
-      newTime = newTime ?? Constants.midnight;
-      reminder.dueDate = reminder.dueDate
-          .copyWith(hour: newTime!.hour, minute: newTime!.minute);
-    });
+    if (mounted) {
+      return setState(() {
+        this.checkClose = checkClose ?? this.checkClose;
+        newDate = newDate ?? Constants.nullDate;
+        newTime = newTime ?? Constants.midnight;
+        reminder.dueDate = reminder.dueDate
+            .copyWith(hour: newTime!.hour, minute: newTime!.minute);
+      });
+    }
   }
 
   void clearRepeatable() {
-    setState(() {
-      checkClose = true;
-      reminder.frequency = Frequency.once;
-      reminder.repeatDays.fillRange(0, reminder.repeatDays.length, false);
-      reminder.repeatSkip = 1;
-    });
+    if (mounted) {
+      return setState(() {
+        checkClose = true;
+        reminder.frequency = Frequency.once;
+        reminder.repeatDays.fillRange(0, reminder.repeatDays.length, false);
+        reminder.repeatSkip = 1;
+      });
+    }
   }
 
   void updateRepeatable(
@@ -353,17 +320,19 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
       required Frequency newFreq,
       required Set<int> newWeekdays,
       required int newSkip}) {
-    setState(() {
-      this.checkClose = checkClose ?? this.checkClose;
-      reminder.frequency = newFreq;
-      reminder.repeatSkip = newSkip;
-      if (newWeekdays.isEmpty) {
-        newWeekdays.add(reminder.dueDate.weekday - 1);
-      }
-      for (int i = 0; i < reminder.repeatDays.length; i++) {
-        reminder.repeatDays[i] = newWeekdays.contains(i);
-      }
-    });
+    if (mounted) {
+      return setState(() {
+        this.checkClose = checkClose ?? this.checkClose;
+        reminder.frequency = newFreq;
+        reminder.repeatSkip = newSkip;
+        if (newWeekdays.isEmpty) {
+          newWeekdays.add(reminder.dueDate.weekday - 1);
+        }
+        for (int i = 0; i < reminder.repeatDays.length; i++) {
+          reminder.repeatDays[i] = newWeekdays.contains(i);
+        }
+      });
+    }
   }
 
   Set<int> get weekdayList {

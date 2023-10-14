@@ -29,6 +29,12 @@ class ListLimitExceededException implements Exception {
   ListLimitExceededException(this.cause);
 }
 
+class GroupNotFoundException implements Exception {
+  String cause;
+
+  GroupNotFoundException(this.cause);
+}
+
 class InvalidEventItemException implements Exception {
   String cause;
 

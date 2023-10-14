@@ -13,7 +13,6 @@ import '../../../util/constants.dart';
 import '../../../util/enums.dart';
 import '../../../util/exceptions.dart';
 import '../../../util/numbers.dart';
-import '../../../util/sorting/todo_sorter.dart';
 import '../../widgets/flushbars.dart';
 import '../sub_views/update_todo.dart';
 
@@ -220,7 +219,7 @@ class _CompletedListScreen extends State<CompletedListScreen> {
                         });
                       }
                     },
-                    items: ToDoSorter.sortMethods
+                    items: toDoProvider.sorter.sortMethods
                         .map<DropdownMenuItem<SortMethod>>(
                             (method) => DropdownMenuItem<SortMethod>(
                                   value: method,

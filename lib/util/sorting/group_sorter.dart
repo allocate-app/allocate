@@ -25,7 +25,7 @@ class GroupSorter implements SortableView<Group> {
       {"descending": descending, "sortMethod": sortMethod.index};
 
   @override
-  static final List<SortMethod> sortMethods = [
+  final List<SortMethod> sortMethods = [
     SortMethod.none,
     SortMethod.name,
   ];

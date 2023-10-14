@@ -94,7 +94,9 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
       checkClose = true;
       String newText = nameEditingController.text;
       SemanticsService.announce(newText, Directionality.of(context));
-      setState(() => routine.name = newText);
+      if (mounted) {
+        return setState(() => routine.name = newText);
+      }
     });
 
     routineTaskEditingController = List.generate(cacheRoutineTasks.length,
@@ -131,7 +133,9 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
 
     if (nameEditingController.text.isEmpty) {
       valid = false;
-      setState(() => nameErrorText = "Enter Routine Name");
+      if (mounted) {
+        setState(() => nameErrorText = "Enter Routine Name");
+      }
     }
 
     return valid;
@@ -166,104 +170,126 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
     }
 
     if (mounted) {
-      setState(() => checkClose = false);
+      return setState(() => checkClose = false);
     }
   }
 
   void clearNameField() {
-    setState(() {
-      checkClose = true;
-      nameEditingController.clear();
-      routine.name = "";
-    });
+    if (mounted) {
+      return setState(() {
+        checkClose = true;
+        nameEditingController.clear();
+        routine.name = "";
+      });
+    }
   }
 
   void changeRoutineTime({required RoutineTime? newRoutineTime}) {
     if (null == newRoutineTime) {
       return;
     }
-    setState(() {
-      checkClose = true;
-      routineTime = newRoutineTime;
-    });
+    if (mounted) {
+      return setState(() {
+        checkClose = true;
+        routineTime = newRoutineTime;
+      });
+    }
   }
 
-  void handleWeightChange(double value) => setState(() {
+  void handleWeightChange(double value) {
+    if (mounted) {
+      return setState(() {
         checkClose = true;
         routine.weight = value.toInt();
         routine.realDuration = routineProvider.calculateRealDuration(
             weight: routine.weight, duration: routine.expectedDuration);
       });
+    }
+  }
 
   void removeRoutineTask({required int index}) {
-    setState(() {
-      checkClose = true;
-      SubTask st = routine.routineTasks.removeAt(index);
-      st = SubTask();
-      routine.routineTasks.add(st);
-      TextEditingController ct = routineTaskEditingController.removeAt(index);
-      ct.value = ct.value.copyWith(text: st.name);
-      routineTaskEditingController.add(ct);
+    if (mounted) {
+      return setState(() {
+        checkClose = true;
+        SubTask st = routine.routineTasks.removeAt(index);
+        st = SubTask();
+        routine.routineTasks.add(st);
+        TextEditingController ct = routineTaskEditingController.removeAt(index);
+        ct.value = ct.value.copyWith(text: st.name);
+        routineTaskEditingController.add(ct);
 
-      shownTasks--;
-      shownTasks = max(shownTasks, 0);
-      routine.weight =
-          routineProvider.calculateWeight(routineTasks: routine.routineTasks);
-    });
+        shownTasks--;
+        shownTasks = max(shownTasks, 0);
+        routine.weight =
+            routineProvider.calculateWeight(routineTasks: routine.routineTasks);
+      });
+    }
   }
 
   void reorderRoutineTasks(int oldIndex, int newIndex) {
-    setState(() {
-      checkClose = true;
-      if (oldIndex < newIndex) {
-        newIndex--;
-      }
-      SubTask st = cacheRoutineTasks.removeAt(oldIndex);
-      cacheRoutineTasks.insert(newIndex, st);
-      TextEditingController ct =
-          routineTaskEditingController.removeAt(oldIndex);
-      routineTaskEditingController.insert(newIndex, ct);
-    });
+    if (mounted) {
+      return setState(() {
+        checkClose = true;
+        if (oldIndex < newIndex) {
+          newIndex--;
+        }
+        SubTask st = cacheRoutineTasks.removeAt(oldIndex);
+        cacheRoutineTasks.insert(newIndex, st);
+        TextEditingController ct =
+            routineTaskEditingController.removeAt(oldIndex);
+        routineTaskEditingController.insert(newIndex, ct);
+      });
+    }
   }
 
   void onDataChange() {
-    setState(() {
-      checkClose = true;
-    });
+    if (mounted) {
+      return setState(() {
+        checkClose = true;
+      });
+    }
   }
 
   void onRoutineTaskWeightChanged() {
-    setState(() {
-      checkClose = true;
-      routine.weight =
-          routineProvider.calculateWeight(routineTasks: routine.routineTasks);
-      routine.realDuration = routineProvider.calculateRealDuration(
-          weight: routine.weight, duration: routine.expectedDuration);
-    });
+    if (mounted) {
+      return setState(() {
+        checkClose = true;
+        routine.weight =
+            routineProvider.calculateWeight(routineTasks: routine.routineTasks);
+        routine.realDuration = routineProvider.calculateRealDuration(
+            weight: routine.weight, duration: routine.expectedDuration);
+      });
+    }
   }
 
   void addRoutineTask() {
-    setState(() {
-      shownTasks++;
-      shownTasks = min(shownTasks, Constants.maxNumTasks);
-    });
+    if (mounted) {
+      return setState(() {
+        shownTasks++;
+        shownTasks = min(shownTasks, Constants.maxNumTasks);
+      });
+    }
   }
 
   void updateDuration(int? value) {
-    setState(() {
-      checkClose = true;
-      routine.expectedDuration = value ?? routine.expectedDuration;
-      routine.realDuration = routineProvider.calculateRealDuration(
-          weight: routine.weight, duration: routine.expectedDuration);
-    });
+    if (mounted) {
+      return setState(() {
+        checkClose = true;
+        routine.expectedDuration = value ?? routine.expectedDuration;
+        routine.realDuration = routineProvider.calculateRealDuration(
+            weight: routine.weight, duration: routine.expectedDuration);
+      });
+    }
   }
 
   void clearDuration() {
-    setState(() {
-      checkClose = true;
-      routine.expectedDuration = 0;
-      routine.realDuration = 0;
-    });
+    if (mounted) {
+      return setState(() {
+        checkClose = true;
+        routine.expectedDuration = 0;
+        routine.realDuration = 0;
+      });
+    }
   }
 
   Future<void> updateAndValidate() async {
