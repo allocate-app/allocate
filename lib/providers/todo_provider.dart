@@ -357,7 +357,7 @@ class ToDoProvider extends ChangeNotifier {
         toDoSorter: sorter, limit: limit, offset: offset);
   }
 
-  Future<List<ToDo>> getToDosCompleted(
+  Future<List<ToDo>> getCompletedToDos(
           {int limit = 50, int offset = 0}) async =>
       await _toDoService.getCompleted(
           toDoSorter: sorter, limit: limit, offset: offset);

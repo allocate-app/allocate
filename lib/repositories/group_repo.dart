@@ -119,7 +119,7 @@ class GroupRepo implements GroupRepository {
   Future<void> delete(Group group) async {
     if (null == _supabaseClient.auth.currentSession) {
       group.toDelete = true;
-      update(group);
+      await update(group);
       return;
     }
 

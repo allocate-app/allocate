@@ -92,161 +92,170 @@ class LeadingWidgets {
 
     return Transform.scale(
       scale: scale,
-      child: OutlinedButton(
-        style: OutlinedButton.styleFrom(
-          padding: const EdgeInsets.all(Constants.innerPadding),
-          shape: const CircleBorder(),
-          side: BorderSide(
-            color: Theme.of(currentContext).colorScheme.outlineVariant,
+      child: Padding(
+        padding: EdgeInsets.zero,
+        child: OutlinedButton(
+          style: OutlinedButton.styleFrom(
+            padding: const EdgeInsets.all(Constants.innerPadding),
+            shape: const CircleBorder(),
+            side: BorderSide(
+              color: Theme.of(currentContext).colorScheme.outlineVariant,
+            ),
           ),
-        ),
-        onPressed: () async {
-          await showDialog<RoutineTime>(
-            context: currentContext,
-            builder: (BuildContext context) {
-              return Dialog(
-                  child: ConstrainedBox(
-                constraints: const BoxConstraints(
-                    maxWidth: Constants.smallLandscapeDialogWidth),
-                child: Padding(
-                  padding: const EdgeInsets.all(Constants.innerPadding),
-                  child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Row(
-                            mainAxisAlignment: MainAxisAlignment.start,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Expanded(
-                                child: AutoSizeText(
-                                  "Set Routine Time",
-                                  style: Constants.headerStyle,
+          onPressed: () async {
+            await showDialog<RoutineTime?>(
+              context: currentContext,
+              builder: (BuildContext context) {
+                return Dialog(
+                    child: ConstrainedBox(
+                  constraints: const BoxConstraints(
+                      maxWidth: Constants.smallLandscapeDialogWidth),
+                  child: Padding(
+                    padding: const EdgeInsets.all(Constants.innerPadding),
+                    child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Row(
+                              mainAxisAlignment: MainAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Expanded(
+                                  child: AutoSizeText(
+                                    "Set Routine Time",
+                                    style: Constants.headerStyle,
+                                    softWrap: true,
+                                    overflow: TextOverflow.visible,
+                                    maxLines: 2,
+                                    minFontSize: Constants.medium,
+                                  ),
+                                )
+                              ]),
+                          const Flexible(
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              mainAxisSize: MainAxisSize.max,
+                              children: [
+                                Flexible(
+                                    child: AutoSizeText(
+                                  "Morning | Afternoon | Evening ",
+                                  style: Constants.largeHeaderStyle,
                                   softWrap: true,
                                   overflow: TextOverflow.visible,
-                                  maxLines: 2,
-                                  minFontSize: Constants.medium,
+                                  maxLines: 1,
+                                  minFontSize: Constants.large,
+                                )),
+                                Flexible(
+                                  child: FittedBox(
+                                      fit: BoxFit.fill,
+                                      child: Icon(Icons.schedule_outlined,
+                                          size: Constants.medIconSize)),
                                 ),
-                              )
-                            ]),
-                        const Flexible(
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            mainAxisSize: MainAxisSize.max,
-                            children: [
-                              Flexible(
-                                  child: AutoSizeText(
-                                "Morning | Afternoon | Evening ",
-                                style: Constants.largeHeaderStyle,
-                                softWrap: true,
-                                overflow: TextOverflow.visible,
-                                maxLines: 1,
-                                minFontSize: Constants.large,
-                              )),
-                              Flexible(
-                                child: FittedBox(
-                                    fit: BoxFit.fill,
-                                    child: Icon(Icons.schedule_outlined,
-                                        size: Constants.medIconSize)),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
-                        ),
-                        Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                            mainAxisSize: MainAxisSize.max,
-                            children: [
-                              Flexible(
+                          Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              mainAxisSize: MainAxisSize.max,
+                              children: [
+                                Flexible(
+                                    child: Padding(
+                                  padding:
+                                      const EdgeInsets.all(Constants.padding),
+                                  child: FittedBox(
+                                    fit: BoxFit.fill,
+                                    child: (routineTime == RoutineTime.morning)
+                                        ? IconButton.filledTonal(
+                                            iconSize: Constants.lgIconSize,
+                                            icon: const Icon(
+                                                Icons.wb_twilight_rounded),
+                                            onPressed: () => Navigator.pop(
+                                                context, RoutineTime.morning))
+                                        : IconButton.outlined(
+                                            iconSize: Constants.lgIconSize,
+                                            icon: const Icon(
+                                                Icons.wb_twilight_rounded),
+                                            onPressed: () => Navigator.pop(
+                                                context, RoutineTime.morning)),
+                                  ),
+                                )),
+                                Flexible(
                                   child: Padding(
+                                    padding:
+                                        const EdgeInsets.all(Constants.padding),
+                                    child: FittedBox(
+                                      fit: BoxFit.fill,
+                                      child: (routineTime ==
+                                              RoutineTime.afternoon)
+                                          ? IconButton.filledTonal(
+                                              iconSize: Constants.lgIconSize,
+                                              icon: const Icon(
+                                                  Icons.lunch_dining_rounded),
+                                              onPressed: () => Navigator.pop(
+                                                  context,
+                                                  RoutineTime.afternoon))
+                                          : IconButton.outlined(
+                                              iconSize: Constants.lgIconSize,
+                                              icon: const Icon(
+                                                  Icons.lunch_dining_rounded),
+                                              onPressed: () => Navigator.pop(
+                                                  context,
+                                                  RoutineTime.afternoon)),
+                                    ),
+                                  ),
+                                ),
+                                Flexible(
+                                  child: Padding(
+                                    padding:
+                                        const EdgeInsets.all(Constants.padding),
+                                    child: FittedBox(
+                                      fit: BoxFit.fill,
+                                      child: (routineTime ==
+                                              RoutineTime.evening)
+                                          ? IconButton.filledTonal(
+                                              iconSize: Constants.lgIconSize,
+                                              icon:
+                                                  const Icon(Icons.bed_rounded),
+                                              onPressed: () => Navigator.pop(
+                                                  context, RoutineTime.evening))
+                                          : IconButton.outlined(
+                                              iconSize: Constants.lgIconSize,
+                                              icon:
+                                                  const Icon(Icons.bed_rounded),
+                                              onPressed: () => Navigator.pop(
+                                                  context,
+                                                  RoutineTime.evening)),
+                                    ),
+                                  ),
+                                )
+                              ]),
+                          Flexible(
+                            child: Padding(
                                 padding:
                                     const EdgeInsets.all(Constants.padding),
-                                child: FittedBox(
-                                  fit: BoxFit.fill,
-                                  child: (routineTime == RoutineTime.morning)
-                                      ? IconButton.filledTonal(
-                                          iconSize: Constants.lgIconSize,
-                                          icon: const Icon(
-                                              Icons.wb_twilight_rounded),
-                                          onPressed: () => Navigator.pop(
-                                              context, RoutineTime.morning))
-                                      : IconButton.outlined(
-                                          iconSize: Constants.lgIconSize,
-                                          icon: const Icon(
-                                              Icons.wb_twilight_rounded),
-                                          onPressed: () => Navigator.pop(
-                                              context, RoutineTime.morning)),
-                                ),
-                              )),
-                              Flexible(
-                                child: Padding(
-                                  padding:
-                                      const EdgeInsets.all(Constants.padding),
+                                child: Tooltip(
+                                  message: "Remove.",
                                   child: FittedBox(
                                     fit: BoxFit.fill,
-                                    child: (routineTime ==
-                                            RoutineTime.afternoon)
-                                        ? IconButton.filledTonal(
-                                            iconSize: Constants.lgIconSize,
-                                            icon: const Icon(
-                                                Icons.lunch_dining_rounded),
-                                            onPressed: () => Navigator.pop(
-                                                context, RoutineTime.afternoon))
-                                        : IconButton.outlined(
-                                            iconSize: Constants.lgIconSize,
-                                            icon: const Icon(
-                                                Icons.lunch_dining_rounded),
-                                            onPressed: () => Navigator.pop(
-                                                context,
-                                                RoutineTime.afternoon)),
+                                    child: IconButton.outlined(
+                                      iconSize: Constants.medIconSize,
+                                      icon: const Icon(
+                                          Icons.remove_circle_outline_rounded),
+                                      onPressed: () => Navigator.pop(
+                                          context, RoutineTime.none),
+                                    ),
                                   ),
-                                ),
-                              ),
-                              Flexible(
-                                child: Padding(
-                                  padding:
-                                      const EdgeInsets.all(Constants.padding),
-                                  child: FittedBox(
-                                    fit: BoxFit.fill,
-                                    child: (routineTime == RoutineTime.evening)
-                                        ? IconButton.filledTonal(
-                                            iconSize: Constants.lgIconSize,
-                                            icon: const Icon(Icons.bed_rounded),
-                                            onPressed: () => Navigator.pop(
-                                                context, RoutineTime.evening))
-                                        : IconButton.outlined(
-                                            iconSize: Constants.lgIconSize,
-                                            icon: const Icon(Icons.bed_rounded),
-                                            onPressed: () => Navigator.pop(
-                                                context, RoutineTime.evening)),
-                                  ),
-                                ),
-                              )
-                            ]),
-                        Flexible(
-                          child: Padding(
-                              padding: const EdgeInsets.all(Constants.padding),
-                              child: Tooltip(
-                                message: "Remove.",
-                                child: FittedBox(
-                                  fit: BoxFit.fill,
-                                  child: IconButton.outlined(
-                                    iconSize: Constants.medIconSize,
-                                    icon: const Icon(
-                                        Icons.remove_circle_outline_rounded),
-                                    onPressed: () => Navigator.pop(
-                                        context, RoutineTime.none),
-                                  ),
-                                ),
-                              )),
-                        )
-                      ]),
-                ),
-              ));
-            },
-          ).then((RoutineTime? time) =>
-              handleRoutineTimeChange(newRoutineTime: time));
-        },
-        child: icon,
+                                )),
+                          )
+                        ]),
+                  ),
+                ));
+              },
+            ).then((RoutineTime? time) =>
+                handleRoutineTimeChange(newRoutineTime: time));
+          },
+          child: icon,
+        ),
       ),
     );
   }

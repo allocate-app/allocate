@@ -138,7 +138,7 @@ class _DeadlinesListScreen extends State<DeadlinesListScreen> {
 
   Widget getDeadlineIcon({required Deadline deadline}) {
     Widget icon = (deadline.warnMe)
-        ? const Icon(Icons.notifications_rounded)
+        ? const Icon(Icons.notifications_on_rounded)
         : const Icon(null);
     return DecoratedBox(
       decoration: BoxDecoration(

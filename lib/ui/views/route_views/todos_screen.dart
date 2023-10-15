@@ -5,11 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../model/task/todo.dart';
-import '../../../providers/group_provider.dart';
 import '../../../providers/todo_provider.dart';
 import '../../../util/constants.dart';
 import '../../../util/enums.dart';
-import '../../../util/numbers.dart';
 import '../../widgets/flushbars.dart';
 import '../../widgets/listview_header.dart';
 import '../../widgets/listviews.dart';
@@ -26,21 +24,16 @@ class ToDosListScreen extends StatefulWidget {
 class _ToDosListScreen extends State<ToDosListScreen> {
   late bool checkDelete;
   late bool allData;
-  late bool showTopLoading;
+
+  // late bool showTopLoading;
   late bool loading;
   late int limit;
   late int offset;
 
   late final ToDoProvider toDoProvider;
-  late final GroupProvider groupProvider;
 
-  // For linked todos.
   late final ScrollController mainScrollController;
   late final ScrollPhysics scrollPhysics;
-
-  // For Task search. -- Factor out.
-  late final SearchController searchController;
-  late List<MapEntry<String, int>> searchHistory;
 
   @override
   void initState() {
@@ -57,14 +50,13 @@ class _ToDosListScreen extends State<ToDosListScreen> {
 
   void initializeProviders() {
     toDoProvider = Provider.of<ToDoProvider>(context, listen: false);
-    groupProvider = Provider.of<GroupProvider>(context, listen: false);
 
     toDoProvider.addListener(resetPagination);
   }
 
   void initializeParameters() {
     loading = toDoProvider.rebuild;
-    showTopLoading = toDoProvider.rebuild;
+    // showTopLoading = toDoProvider.rebuild;
     allData = false;
     checkDelete = true;
     offset = (toDoProvider.rebuild) ? 0 : toDoProvider.toDos.length;
@@ -112,18 +104,18 @@ class _ToDosListScreen extends State<ToDosListScreen> {
   }
 
   Future<void> overwriteData() async {
-    if (mounted) {
-      setState(() {
-        showTopLoading = true;
-      });
-    }
+    // if (mounted) {
+    //   setState(() {
+    //     showTopLoading = true;
+    //   });
+    // }
     List<ToDo> newToDos = await fetchData();
     if (mounted) {
       return setState(() {
         offset += newToDos.length;
         toDos = newToDos;
         loading = false;
-        showTopLoading = false;
+        // showTopLoading = false;
         allData = toDos.length <= limit;
         limit = Constants.minLimitPerQuery;
       });
@@ -164,38 +156,21 @@ class _ToDosListScreen extends State<ToDosListScreen> {
     );
   }
 
-  // Factor this out completely pls.
-  Widget getArrowDirection({required SortMethod method}) {
-    if (toDoProvider.sortMethod == SortMethod.none) {
-      return const SizedBox.shrink();
+  Future<void> checkboxAnimateBeforeUpdate(
+      {required ToDo toDo, required int index}) async {
+    if (mounted) {
+      setState(() {
+        toDos[index] = toDo;
+      });
     }
-
-    if (toDoProvider.sortMethod == method && !toDoProvider.descending) {
-      return const Icon(Icons.arrow_downward_rounded);
-    }
-
-    return const Icon(Icons.arrow_upward_rounded);
+    return await Future.delayed(
+        const Duration(milliseconds: Constants.checkboxAnimationTime));
   }
 
   // Convenience accessors.
   List<ToDo> get toDos => toDoProvider.toDos;
 
   set toDos(List<ToDo> newToDos) => toDoProvider.toDos = newToDos;
-
-  Icon getBatteryIcon({required ToDo toDo}) {
-    // Icon is scaled for sum-weight.
-    int weight = (toDo.taskType == TaskType.small)
-        ? toDo.weight
-        : remap(
-                x: toDo.weight,
-                inMin: 0,
-                inMax: Constants.maxWeight,
-                outMin: 0,
-                outMax: 5)
-            .toInt();
-
-    return Constants.batteryIcons[weight]!;
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -242,10 +217,14 @@ class _ToDosListScreen extends State<ToDosListScreen> {
                   //     : const SizedBox.shrink(),
                   (toDoProvider.sortMethod == SortMethod.none)
                       ? ListViews.reorderableToDos(
+                          checkboxAnimateBeforeUpdate:
+                              checkboxAnimateBeforeUpdate,
                           context: context,
                           toDos: toDos,
                           checkDelete: checkDelete)
                       : ListViews.immutableToDos(
+                          checkboxAnimateBeforeUpdate:
+                              checkboxAnimateBeforeUpdate,
                           context: context,
                           toDos: toDos,
                           checkDelete: checkDelete)

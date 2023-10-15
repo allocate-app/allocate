@@ -95,6 +95,7 @@ class RoutineProvider extends ChangeNotifier {
       default:
         break;
     }
+    notifyListeners();
   }
 
   void _unsetRoutine({Routine? routine}) {
@@ -261,6 +262,8 @@ class RoutineProvider extends ChangeNotifier {
       curRoutine = null;
     }
     notifyListeners();
+    print("I should be calling");
+    print(routines);
   }
 
   Future<List<Routine>> reorderRoutines(

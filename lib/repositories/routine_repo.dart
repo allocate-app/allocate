@@ -136,7 +136,7 @@ class RoutineRepo implements RoutineRepository {
   Future<void> delete(Routine routine) async {
     if (null == _supabaseClient.auth.currentSession) {
       routine.toDelete = true;
-      update(routine);
+      await update(routine);
       return;
     }
 
