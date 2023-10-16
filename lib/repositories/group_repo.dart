@@ -267,7 +267,7 @@ class GroupRepo implements GroupRepository {
           return _isarClient.groups
               .where()
               .toDeleteEqualTo(false)
-              .sortByNameDesc()
+              .sortByName()
               .thenByLastUpdated()
               .offset(offset)
               .limit(limit)

@@ -75,6 +75,11 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
   // This is just a convenience method to avoid extra typing
   ToDo get toDo => toDoProvider.curToDo!;
 
+  bool get canAdd =>
+      prevToDo.myDay ||
+      (userProvider.myDayTotal + toDo.weight <=
+          (userProvider.curUser?.bandwidth ?? Constants.maxBandwidth));
+
   // Subtasks
   late List<SubTask> cacheSubTasks;
 
@@ -192,13 +197,6 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
 
     subTaskEditingController = List.generate(toDo.subTasks.length,
         (i) => TextEditingController(text: toDo.subTasks[i].name));
-    for (int i = 0; i < subTaskEditingController.length; i++) {
-      subTaskEditingController[i].addListener(() {
-        checkClose = true;
-        String newText = subTaskEditingController[i].text;
-        SemanticsService.announce(newText, Directionality.of(context));
-      });
-    }
   }
 
   void handleGroupSelection({required int id}) {
@@ -465,6 +463,9 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
       return setState(() {
         checkClose = true;
         toDo.myDay = !toDo.myDay;
+        print(toDo.myDay);
+        print(prevToDo.myDay);
+        print(canAdd);
       });
     }
   }
@@ -716,10 +717,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                                   // My Day
                                   Tiles.myDayTile(
                                       myDay: toDo.myDay,
-                                      canAdd: (userProvider.myDayTotal +
-                                              toDo.weight <=
-                                          (userProvider.curUser?.bandwidth ??
-                                              Constants.maxBandwidth)),
+                                      canAdd: canAdd,
                                       toggleMyDay: toggleMyDay),
                                   const PaddedDivider(
                                       padding: Constants.padding),
@@ -958,9 +956,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                     // My Day
                     Tiles.myDayTile(
                         myDay: toDo.myDay,
-                        canAdd: (userProvider.myDayTotal + toDo.weight <=
-                            (userProvider.curUser?.bandwidth ??
-                                Constants.maxBandwidth)),
+                        canAdd: canAdd,
                         toggleMyDay: toggleMyDay),
                     const PaddedDivider(padding: Constants.padding),
                     // Priority
@@ -1101,16 +1097,17 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
           minFontSize: Constants.small),
       children: [
         ListViews.reorderableSubtasks(
-            physics: physics,
-            context: context,
-            subTasks: cacheSubTasks,
-            itemCount: min(Constants.numTasks[toDo.taskType]!, shownTasks),
-            controllers: subTaskEditingController,
-            onRemoved: removeSubtask,
-            onReorder: reorderSubtasks,
-            onChanged: onDataChange,
-            onSubtaskWeightChanged: onSubtaskWeightChanged,
-            showHandle: (shownTasks > 1)),
+          physics: physics,
+          context: context,
+          subTasks: cacheSubTasks,
+          itemCount: min(Constants.numTasks[toDo.taskType]!, shownTasks),
+          controllers: subTaskEditingController,
+          onRemoved: removeSubtask,
+          onReorder: reorderSubtasks,
+          onChanged: onDataChange,
+          onSubtaskWeightChanged: onSubtaskWeightChanged,
+          showHandle: shownTasks > 1,
+        ),
         (shownTasks < Constants.numTasks[toDo.taskType]!)
             ? Tiles.addTile(
                 title: "Add a step",

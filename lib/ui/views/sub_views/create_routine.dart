@@ -98,13 +98,6 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
 
     routineTaskEditingController =
         List.generate(routineTasks.length, (_) => TextEditingController());
-    for (int i = 0; i < routineTaskEditingController.length; i++) {
-      routineTaskEditingController[i].addListener(() {
-        checkClose = true;
-        String newText = routineTaskEditingController[i].text;
-        SemanticsService.announce(newText, Directionality.of(context));
-      });
-    }
   }
 
   void initializeProviders() {
@@ -528,16 +521,17 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
           minFontSize: Constants.small),
       children: [
         ListViews.reorderableSubtasks(
-            physics: physics,
-            context: context,
-            subTasks: routineTasks,
-            itemCount: min(Constants.maxNumTasks, shownTasks),
-            controllers: routineTaskEditingController,
-            onRemoved: removeRoutineTask,
-            onReorder: reorderRoutineTasks,
-            onChanged: onDataChange,
-            onSubtaskWeightChanged: onRoutineTaskWeightChanged,
-            showHandle: (shownTasks > 1)),
+          physics: physics,
+          context: context,
+          subTasks: routineTasks,
+          itemCount: min(Constants.maxNumTasks, shownTasks),
+          controllers: routineTaskEditingController,
+          onRemoved: removeRoutineTask,
+          onReorder: reorderRoutineTasks,
+          onChanged: onDataChange,
+          onSubtaskWeightChanged: onRoutineTaskWeightChanged,
+          showHandle: shownTasks > 1,
+        ),
         (shownTasks < Constants.maxNumTasks)
             ? Tiles.addTile(
                 title: "Add a step",

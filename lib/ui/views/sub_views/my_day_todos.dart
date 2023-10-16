@@ -156,12 +156,15 @@ class _MyDayToDos extends State<MyDayToDos> {
   Icon getBatteryIcon({required ToDo toDo}) {
     int weight = (toDo.taskType == TaskType.small)
         ? toDo.weight
-        : remap(
-                x: toDo.weight,
-                inMin: 0,
-                inMax: Constants.maxWeight,
-                outMin: 0,
-                outMax: 5)
+        : clamp(
+                x: remap(
+                    x: toDo.weight,
+                    inMin: 0,
+                    inMax: Constants.maxWeight,
+                    outMin: 0,
+                    outMax: 5),
+                ll: 0,
+                ul: 5)
             .toInt();
 
     return Constants.batteryIcons[weight]!;
@@ -212,7 +215,7 @@ class _MyDayToDos extends State<MyDayToDos> {
                         child: FittedBox(
                           fit: BoxFit.contain,
                           child: Icon(Icons.swap_vert_rounded,
-                              size: Constants.smIconSize),
+                              size: Constants.medIconSize),
                         ),
                       ),
                       Flexible(

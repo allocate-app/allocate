@@ -62,18 +62,18 @@ class _DateTimeDialog extends State<DateTimeDialog> {
                       children: [
                         Flexible(
                             child: AutoSizeText(
-                          "Date | Time ",
-                          style: Constants.largeHeaderStyle,
-                          softWrap: true,
-                          overflow: TextOverflow.visible,
-                          maxLines: 1,
-                          minFontSize: Constants.large,
-                        )),
+                              "Date | Time ",
+                              style: Constants.largeHeaderStyle,
+                              softWrap: true,
+                              overflow: TextOverflow.visible,
+                              maxLines: 1,
+                              minFontSize: Constants.large,
+                            )),
                         Flexible(
                           child: FittedBox(
                               fit: BoxFit.fill,
                               child: Icon(Icons.alarm_outlined,
-                                  size: Constants.medIconSize)),
+                                  size: Constants.lgIconSize)),
                         ),
                       ],
                     ),
@@ -96,11 +96,11 @@ class _DateTimeDialog extends State<DateTimeDialog> {
                                       Constants.roundedCorners),
                                   border: Border.all(
                                       strokeAlign:
-                                          BorderSide.strokeAlignOutside),
+                                      BorderSide.strokeAlignOutside),
                                 ),
                                 child: Row(
                                     mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
+                                    MainAxisAlignment.spaceBetween,
                                     mainAxisSize: MainAxisSize.max,
                                     children: [
                                       Expanded(
@@ -110,39 +110,40 @@ class _DateTimeDialog extends State<DateTimeDialog> {
                                               // using focusNode.
                                               if (null == date) {
                                                 setState(() =>
-                                                    date = DateTime.now());
+                                                date = DateTime.now());
                                               }
                                             },
                                             child: (null != date)
                                                 ? AutoSizeText(
-                                                    Jiffy.parseFromDateTime(
-                                                            date!)
-                                                        .format(
-                                                            pattern:
-                                                                "MMM d, yy"),
-                                                    softWrap: false,
-                                                    overflow:
-                                                        TextOverflow.visible,
-                                                    maxLines: 1,
-                                                    minFontSize:
-                                                        Constants.large,
-                                                  )
+                                              Jiffy.parseFromDateTime(
+                                                  date!)
+                                                  .format(
+                                                  pattern:
+                                                  "MMM d, yy"),
+                                              softWrap: false,
+                                              overflow:
+                                              TextOverflow.visible,
+                                              maxLines: 1,
+                                              minFontSize:
+                                              Constants.large,
+                                            )
                                                 : const AutoSizeText("Date",
-                                                    softWrap: true,
-                                                    overflow:
-                                                        TextOverflow.visible,
-                                                    maxLines: 1,
-                                                    minFontSize:
-                                                        Constants.huge)),
+                                                softWrap: true,
+                                                overflow:
+                                                TextOverflow.visible,
+                                                maxLines: 1,
+                                                minFontSize:
+                                                Constants.huge)),
                                       ),
                                       (null != date)
                                           ? IconButton(
-                                              icon: const Icon(
-                                                  Icons.clear_rounded),
-                                              onPressed: () => setState(() {
-                                                date = null;
-                                              }),
-                                            )
+                                        icon: const Icon(
+                                            Icons.clear_rounded),
+                                        onPressed: () =>
+                                            setState(() {
+                                              date = null;
+                                            }),
+                                      )
                                           : const SizedBox.shrink()
                                     ]),
                               ),
@@ -158,21 +159,21 @@ class _DateTimeDialog extends State<DateTimeDialog> {
                                       Constants.roundedCorners),
                                   border: Border.all(
                                       strokeAlign:
-                                          BorderSide.strokeAlignOutside),
+                                      BorderSide.strokeAlignOutside),
                                 ),
                                 child: Row(
                                     mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
+                                    MainAxisAlignment.spaceBetween,
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       Expanded(
                                         child: TextButton(
                                             onPressed: () async {
                                               final TimeOfDay? picked =
-                                                  await showTimePicker(
+                                              await showTimePicker(
                                                 context: context,
                                                 initialTime:
-                                                    time ?? Constants.midnight,
+                                                time ?? Constants.midnight,
                                               );
                                               if (null != picked) {
                                                 setState(() => time = picked);
@@ -180,32 +181,33 @@ class _DateTimeDialog extends State<DateTimeDialog> {
                                             },
                                             child: (null != time)
                                                 ? AutoSizeText(
-                                                    time!
-                                                        .format(context)
-                                                        .toString(),
-                                                    softWrap: false,
-                                                    overflow:
-                                                        TextOverflow.visible,
-                                                    maxLines: 1,
-                                                    minFontSize:
-                                                        Constants.large,
-                                                  )
+                                              time!
+                                                  .format(context)
+                                                  .toString(),
+                                              softWrap: false,
+                                              overflow:
+                                              TextOverflow.visible,
+                                              maxLines: 1,
+                                              minFontSize:
+                                              Constants.large,
+                                            )
                                                 : const AutoSizeText("Time",
-                                                    softWrap: true,
-                                                    overflow:
-                                                        TextOverflow.visible,
-                                                    maxLines: 1,
-                                                    minFontSize:
-                                                        Constants.huge)),
+                                                softWrap: true,
+                                                overflow:
+                                                TextOverflow.visible,
+                                                maxLines: 1,
+                                                minFontSize:
+                                                Constants.huge)),
                                       ),
                                       (null != time)
                                           ? IconButton(
-                                              icon: const Icon(
-                                                  Icons.clear_rounded),
-                                              onPressed: () => setState(() {
-                                                time = null;
-                                              }),
-                                            )
+                                        icon: const Icon(
+                                            Icons.clear_rounded),
+                                        onPressed: () =>
+                                            setState(() {
+                                              time = null;
+                                            }),
+                                      )
                                           : const SizedBox.shrink(),
                                     ]),
                               ),
@@ -238,7 +240,7 @@ class _DateTimeDialog extends State<DateTimeDialog> {
                         Expanded(
                           child: Padding(
                             padding:
-                                const EdgeInsets.only(right: Constants.padding),
+                            const EdgeInsets.only(right: Constants.padding),
                             child: FilledButton.tonalIcon(
                                 icon: const Icon(Icons.close_rounded),
                                 onPressed: () {
@@ -254,7 +256,7 @@ class _DateTimeDialog extends State<DateTimeDialog> {
                         Expanded(
                           child: Padding(
                             padding:
-                                const EdgeInsets.only(left: Constants.padding),
+                            const EdgeInsets.only(left: Constants.padding),
                             child: FilledButton.icon(
                               icon: const Icon(Icons.done_rounded),
                               onPressed: () {

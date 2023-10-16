@@ -19,6 +19,7 @@ import '../../widgets/leading_widgets.dart';
 import '../../widgets/listviews.dart';
 import '../../widgets/padded_divider.dart';
 import '../../widgets/search_recents_bar.dart';
+import '../../widgets/subtitles.dart';
 import '../../widgets/tiles.dart';
 import '../../widgets/title_bar.dart';
 import '../sub_views.dart';
@@ -225,6 +226,7 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
     }
   }
 
+  // These are the same method, TODO: consolidate.
   Future<void> handleHistorySelection({
     required int id,
   }) async {
@@ -348,7 +350,7 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
   }
 
   Future<void> updateToDo({required int index}) async {
-    showDialog(
+    await showDialog(
         barrierDismissible: false,
         useRootNavigator: false,
         context: context,
@@ -626,14 +628,11 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
           maxLines: 1,
           overflow: TextOverflow.visible,
           softWrap: false,
-          minFontSize: Constants.small),
-      subtitle: AutoSizeText("${toDos.length} Tasks",
-          maxLines: 1,
-          overflow: TextOverflow.visible,
-          softWrap: false,
-          minFontSize: Constants.small),
+          minFontSize: Constants.large),
+      subtitle: Subtitles.groupSubtitle(numTasks: toDos.length),
       children: [
-        (loading) ? const CircularProgressIndicator() : const SizedBox.shrink(),
+        // This is too jarring. The database is too fast.
+        // (loading) ? const CircularProgressIndicator() : const SizedBox.shrink(),
         ListViews.reorderableGroupToDos(
           context: context,
           toDos: toDos,

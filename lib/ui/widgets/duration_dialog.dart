@@ -78,7 +78,7 @@ class _DurationDialog extends State<DurationDialog> {
                           child: FittedBox(
                               fit: BoxFit.fill,
                               child: Icon(Icons.timer_outlined,
-                                  size: Constants.medIconSize)),
+                                  size: Constants.lgIconSize)),
                         ),
                       ],
                     ),
@@ -94,7 +94,7 @@ class _DurationDialog extends State<DurationDialog> {
                             textStyle: Constants.numberPickerSecondary(
                                 context: context),
                             selectedTextStyle:
-                                Constants.numberPickerPrimary(context: context),
+                            Constants.numberPickerPrimary(context: context),
                             minValue: 0,
                             maxValue: 100,
                             value: hours,
@@ -116,7 +116,7 @@ class _DurationDialog extends State<DurationDialog> {
                             textStyle: Constants.numberPickerSecondary(
                                 context: context),
                             selectedTextStyle:
-                                Constants.numberPickerPrimary(context: context),
+                            Constants.numberPickerPrimary(context: context),
                             minValue: 0,
                             maxValue: 59,
                             value: minutes,
@@ -138,7 +138,7 @@ class _DurationDialog extends State<DurationDialog> {
                             textStyle: Constants.numberPickerSecondary(
                                 context: context),
                             selectedTextStyle:
-                                Constants.numberPickerPrimary(context: context),
+                            Constants.numberPickerPrimary(context: context),
                             minValue: 0,
                             maxValue: 59,
                             value: seconds,
@@ -160,7 +160,7 @@ class _DurationDialog extends State<DurationDialog> {
                         Expanded(
                           child: Padding(
                             padding:
-                                const EdgeInsets.only(right: Constants.padding),
+                            const EdgeInsets.only(right: Constants.padding),
                             child: FilledButton.tonalIcon(
                                 icon: const Icon(Icons.close_rounded),
                                 onPressed: () => Navigator.pop(context, null),
@@ -174,7 +174,7 @@ class _DurationDialog extends State<DurationDialog> {
                         Expanded(
                           child: Padding(
                             padding:
-                                const EdgeInsets.only(left: Constants.padding),
+                            const EdgeInsets.only(left: Constants.padding),
                             child: FilledButton.icon(
                               icon: const Icon(Icons.done_rounded),
                               onPressed: () {

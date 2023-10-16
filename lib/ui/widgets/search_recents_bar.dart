@@ -35,6 +35,14 @@ class SearchRecentsBar<T extends IModel> extends StatefulWidget {
 class _SearchRecents<T extends IModel> extends State<SearchRecentsBar<T>> {
   late List<MapEntry<String, int>> searchHistory = List.empty(growable: true);
 
+  late SearchController searchController;
+
+  @override
+  void initState() {
+    super.initState();
+    searchController = widget.searchController;
+  }
+
   void updateHistory({required MapEntry<String, int> data}) {
     setState(() {
       if (searchHistory.length >= Constants.historyLength) {
@@ -61,7 +69,7 @@ class _SearchRecents<T extends IModel> extends State<SearchRecentsBar<T>> {
           viewConstraints: const BoxConstraints(
               maxHeight: Constants.maxSearchSideBeforeScroll),
           barHintText: widget.hintText,
-          searchController: widget.searchController,
+          searchController: searchController,
           suggestionsBuilder:
               (BuildContext context, SearchController controller) {
             if (controller.text.isEmpty) {

@@ -189,14 +189,6 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
 
     subTaskEditingController =
         List.generate(subTasks.length, (_) => TextEditingController());
-
-    for (int i = 0; i < subTaskEditingController.length; i++) {
-      subTaskEditingController[i].addListener(() {
-        checkClose = true;
-        String newText = subTaskEditingController[i].text;
-        SemanticsService.announce(newText, Directionality.of(context));
-      });
-    }
   }
 
   void initializeProviders() {
@@ -1030,16 +1022,17 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
           minFontSize: Constants.small),
       children: [
         ListViews.reorderableSubtasks(
-            physics: physics,
-            context: context,
-            subTasks: subTasks,
-            itemCount: min(Constants.numTasks[taskType]!, shownTasks),
-            controllers: subTaskEditingController,
-            onRemoved: removeSubtask,
-            onReorder: reorderSubtasks,
-            onChanged: onDataChange,
-            onSubtaskWeightChanged: onSubtaskWeightChanged,
-            showHandle: (shownTasks > 1)),
+          physics: physics,
+          context: context,
+          subTasks: subTasks,
+          itemCount: min(Constants.numTasks[taskType]!, shownTasks),
+          controllers: subTaskEditingController,
+          onRemoved: removeSubtask,
+          onReorder: reorderSubtasks,
+          onChanged: onDataChange,
+          onSubtaskWeightChanged: onSubtaskWeightChanged,
+          showHandle: shownTasks > 1,
+        ),
         (shownTasks < Constants.numTasks[taskType]!)
             ? Tiles.addTile(
                 title: "Add a step",

@@ -116,7 +116,7 @@ class _ToDosListScreen extends State<ToDosListScreen> {
         toDos = newToDos;
         loading = false;
         // showTopLoading = false;
-        allData = toDos.length <= limit;
+        allData = toDos.length < limit;
         limit = Constants.minLimitPerQuery;
       });
     }
@@ -181,7 +181,7 @@ class _ToDosListScreen extends State<ToDosListScreen> {
     return Padding(
       padding: const EdgeInsets.all(Constants.innerPadding),
       child: Column(mainAxisSize: MainAxisSize.min, children: [
-        ListViewHeader(
+        ListViewHeader<ToDo>(
             header: "Tasks",
             sorter: toDoProvider.sorter,
             onChanged: (SortMethod? method) {
@@ -217,12 +217,14 @@ class _ToDosListScreen extends State<ToDosListScreen> {
                   //     : const SizedBox.shrink(),
                   (toDoProvider.sortMethod == SortMethod.none)
                       ? ListViews.reorderableToDos(
+                          smallScreen: smallScreen,
                           checkboxAnimateBeforeUpdate:
                               checkboxAnimateBeforeUpdate,
                           context: context,
                           toDos: toDos,
                           checkDelete: checkDelete)
                       : ListViews.immutableToDos(
+                          smallScreen: smallScreen,
                           checkboxAnimateBeforeUpdate:
                               checkboxAnimateBeforeUpdate,
                           context: context,

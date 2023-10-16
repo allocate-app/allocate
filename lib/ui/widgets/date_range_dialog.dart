@@ -31,7 +31,9 @@ class _DateRangeDialog extends State<DateRangeDialog> {
     startDate = widget.startDate;
     dueDate = widget.dueDate;
     initDate = startDate ?? dueDate ?? DateTime.now();
-    numDays = (dueDate?.difference(initDate).inDays ?? 0) + 1;
+    numDays = (dueDate
+        ?.difference(initDate)
+        .inDays ?? 0) + 1;
     showDates =
         List.generate(numDays, (i) => initDate.copyWith(day: initDate.day + i));
     super.initState();
@@ -69,18 +71,18 @@ class _DateRangeDialog extends State<DateRangeDialog> {
                     children: [
                       Flexible(
                           child: AutoSizeText(
-                        "Start | Due ",
-                        style: Constants.largeHeaderStyle,
-                        softWrap: true,
-                        overflow: TextOverflow.visible,
-                        maxLines: 1,
-                        minFontSize: Constants.large,
-                      )),
+                            "Start | Due ",
+                            style: Constants.largeHeaderStyle,
+                            softWrap: true,
+                            overflow: TextOverflow.visible,
+                            maxLines: 1,
+                            minFontSize: Constants.large,
+                          )),
                       Flexible(
                         child: FittedBox(
                             fit: BoxFit.fill,
                             child: Icon(Icons.date_range_rounded,
-                                size: Constants.medIconSize)),
+                                size: Constants.lgIconSize)),
                       ),
                     ],
                   ),
@@ -95,59 +97,62 @@ class _DateRangeDialog extends State<DateRangeDialog> {
                         Expanded(
                           child: Padding(
                             padding:
-                                const EdgeInsets.only(right: Constants.padding),
+                            const EdgeInsets.only(right: Constants.padding),
                             child: DecoratedBox(
                               decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(
                                     Constants.roundedCorners),
                                 border: Border.all(
                                     width: 2,
-                                    color: Theme.of(context)
+                                    color: Theme
+                                        .of(context)
                                         .colorScheme
                                         .outlineVariant,
                                     strokeAlign: BorderSide.strokeAlignOutside),
                               ),
                               child: Row(
                                   mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
+                                  MainAxisAlignment.spaceBetween,
                                   mainAxisSize: MainAxisSize.max,
                                   children: [
                                     Expanded(
                                       child: TextButton(
-                                          onPressed: () => setState(() {
+                                          onPressed: () =>
+                                              setState(() {
                                                 setStart = true;
                                                 startDate =
                                                     startDate ?? DateTime.now();
                                               }),
                                           child: (null != startDate)
                                               ? AutoSizeText(
-                                                  Jiffy.parseFromDateTime(
-                                                          startDate!)
-                                                      .toLocal()
-                                                      .format(
-                                                          pattern: "MMM d, yy"),
-                                                  softWrap: false,
-                                                  overflow:
-                                                      TextOverflow.visible,
-                                                  maxLines: 1,
-                                                  minFontSize: Constants.large,
-                                                )
+                                            Jiffy.parseFromDateTime(
+                                                startDate!)
+                                                .toLocal()
+                                                .format(
+                                                pattern: "MMM d, yy"),
+                                            softWrap: false,
+                                            overflow:
+                                            TextOverflow.visible,
+                                            maxLines: 1,
+                                            minFontSize: Constants.large,
+                                          )
                                               : const AutoSizeText("Start Date",
-                                                  softWrap: true,
-                                                  overflow:
-                                                      TextOverflow.visible,
-                                                  maxLines: 1,
-                                                  minFontSize: Constants.huge)),
+                                              softWrap: true,
+                                              overflow:
+                                              TextOverflow.visible,
+                                              maxLines: 1,
+                                              minFontSize: Constants.huge)),
                                     ),
                                     (startDate != null)
                                         ? IconButton(
-                                            icon:
-                                                const Icon(Icons.clear_rounded),
-                                            onPressed: () => setState(() {
-                                              showDates.remove(startDate);
-                                              startDate = null;
-                                            }),
-                                          )
+                                      icon:
+                                      const Icon(Icons.clear_rounded),
+                                      onPressed: () =>
+                                          setState(() {
+                                            showDates.remove(startDate);
+                                            startDate = null;
+                                          }),
+                                    )
                                         : const SizedBox.shrink(),
                                   ]),
                             ),
@@ -156,59 +161,62 @@ class _DateRangeDialog extends State<DateRangeDialog> {
                         Expanded(
                           child: Padding(
                             padding:
-                                const EdgeInsets.only(left: Constants.padding),
+                            const EdgeInsets.only(left: Constants.padding),
                             child: DecoratedBox(
                               decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(
                                     Constants.roundedCorners),
                                 border: Border.all(
                                     width: 2,
-                                    color: Theme.of(context)
+                                    color: Theme
+                                        .of(context)
                                         .colorScheme
                                         .outlineVariant,
                                     strokeAlign: BorderSide.strokeAlignOutside),
                               ),
                               child: Row(
                                   mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
+                                  MainAxisAlignment.spaceBetween,
                                   mainAxisSize: MainAxisSize.max,
                                   children: [
                                     Expanded(
                                       child: TextButton(
-                                          onPressed: () => setState(() {
+                                          onPressed: () =>
+                                              setState(() {
                                                 setStart = false;
                                                 dueDate =
                                                     dueDate ?? DateTime.now();
                                               }),
                                           child: (null != dueDate)
                                               ? AutoSizeText(
-                                                  Jiffy.parseFromDateTime(
-                                                          dueDate!)
-                                                      .toLocal()
-                                                      .format(
-                                                          pattern: "MMM d, yy"),
-                                                  softWrap: false,
-                                                  overflow:
-                                                      TextOverflow.visible,
-                                                  maxLines: 1,
-                                                  minFontSize: Constants.large,
-                                                )
+                                            Jiffy.parseFromDateTime(
+                                                dueDate!)
+                                                .toLocal()
+                                                .format(
+                                                pattern: "MMM d, yy"),
+                                            softWrap: false,
+                                            overflow:
+                                            TextOverflow.visible,
+                                            maxLines: 1,
+                                            minFontSize: Constants.large,
+                                          )
                                               : const AutoSizeText("Due Date",
-                                                  softWrap: true,
-                                                  overflow:
-                                                      TextOverflow.visible,
-                                                  maxLines: 1,
-                                                  minFontSize: Constants.huge)),
+                                              softWrap: true,
+                                              overflow:
+                                              TextOverflow.visible,
+                                              maxLines: 1,
+                                              minFontSize: Constants.huge)),
                                     ),
                                     (dueDate != null)
                                         ? IconButton(
-                                            icon:
-                                                const Icon(Icons.clear_rounded),
-                                            onPressed: () => setState(() {
-                                              showDates.remove(dueDate);
-                                              dueDate = null;
-                                            }),
-                                          )
+                                      icon:
+                                      const Icon(Icons.clear_rounded),
+                                      onPressed: () =>
+                                          setState(() {
+                                            showDates.remove(dueDate);
+                                            dueDate = null;
+                                          }),
+                                    )
                                         : const SizedBox.shrink(),
                                   ]),
                             ),
@@ -249,7 +257,7 @@ class _DateRangeDialog extends State<DateRangeDialog> {
                       Expanded(
                         child: Padding(
                           padding:
-                              const EdgeInsets.only(right: Constants.padding),
+                          const EdgeInsets.only(right: Constants.padding),
                           child: FilledButton.tonalIcon(
                               icon: const Icon(Icons.close_rounded),
                               onPressed: () {
@@ -265,7 +273,7 @@ class _DateRangeDialog extends State<DateRangeDialog> {
                       Expanded(
                         child: Padding(
                           padding:
-                              const EdgeInsets.only(left: Constants.padding),
+                          const EdgeInsets.only(left: Constants.padding),
                           child: FilledButton.icon(
                             icon: const Icon(Icons.done_rounded),
                             // This needs to change.

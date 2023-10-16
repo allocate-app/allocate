@@ -99,15 +99,10 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
       }
     });
 
-    routineTaskEditingController = List.generate(cacheRoutineTasks.length,
+    // Subtask listening is handled in the widget. Adding listeners here
+    // will throw.
+    routineTaskEditingController = List.generate(routine.routineTasks.length,
         (i) => TextEditingController(text: routine.routineTasks[i].name));
-    for (int i = 0; i < routineTaskEditingController.length; i++) {
-      routineTaskEditingController[i].addListener(() {
-        checkClose = true;
-        String newText = routineTaskEditingController[i].text;
-        SemanticsService.announce(newText, Directionality.of(context));
-      });
-    }
   }
 
   void initializeProviders() {
@@ -142,6 +137,7 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
   }
 
   Future<void> handleUpdate() async {
+    routine.routineTasks.setAll(0, cacheRoutineTasks);
     await routineProvider.updateRoutine().whenComplete(() async {
       // Handle setting the routine.
       await routineProvider
@@ -211,9 +207,9 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
     if (mounted) {
       return setState(() {
         checkClose = true;
-        SubTask st = routine.routineTasks.removeAt(index);
+        SubTask st = cacheRoutineTasks.removeAt(index);
         st = SubTask();
-        routine.routineTasks.add(st);
+        cacheRoutineTasks.add(st);
         TextEditingController ct = routineTaskEditingController.removeAt(index);
         ct.value = ct.value.copyWith(text: st.name);
         routineTaskEditingController.add(ct);
@@ -221,7 +217,9 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
         shownTasks--;
         shownTasks = max(shownTasks, 0);
         routine.weight =
-            routineProvider.calculateWeight(routineTasks: routine.routineTasks);
+            routineProvider.calculateWeight(routineTasks: cacheRoutineTasks);
+        routine.realDuration = routineProvider.calculateRealDuration(
+            weight: routine.weight, duration: routine.expectedDuration);
       });
     }
   }
@@ -459,7 +457,7 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
               // Title && Close Button
               TitleBar(
                 currentContext: context,
-                title: "New Routine",
+                title: "Edit Routine",
                 centerWidget: (routine.expectedDuration > 0)
                     ? TitleBar.durationCenterWidget(
                         expectedDuration: routine.expectedDuration,
@@ -522,10 +520,13 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
               ),
 
               const PaddedDivider(padding: Constants.halfPadding),
-              Tiles.createButton(
-                outerPadding:
+              Tiles.updateAndDeleteButtons(
+                handleDelete: handleDelete,
+                updateButtonPadding:
                     const EdgeInsets.symmetric(horizontal: Constants.padding),
-                handleCreate: updateAndValidate,
+                deleteButtonPadding:
+                    const EdgeInsets.symmetric(horizontal: Constants.padding),
+                handleUpdate: updateAndValidate,
               ),
             ]),
       ),
@@ -550,16 +551,17 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
           minFontSize: Constants.small),
       children: [
         ListViews.reorderableSubtasks(
-            physics: physics,
-            context: context,
-            subTasks: cacheRoutineTasks,
-            itemCount: min(Constants.maxNumTasks, shownTasks),
-            controllers: routineTaskEditingController,
-            onRemoved: removeRoutineTask,
-            onReorder: reorderRoutineTasks,
-            onChanged: onDataChange,
-            onSubtaskWeightChanged: onRoutineTaskWeightChanged,
-            showHandle: (shownTasks > 1)),
+          physics: physics,
+          context: context,
+          subTasks: cacheRoutineTasks,
+          itemCount: min(Constants.maxNumTasks, shownTasks),
+          controllers: routineTaskEditingController,
+          onRemoved: removeRoutineTask,
+          onReorder: reorderRoutineTasks,
+          onChanged: onDataChange,
+          onSubtaskWeightChanged: onRoutineTaskWeightChanged,
+          showHandle: shownTasks > 1,
+        ),
         (shownTasks < Constants.maxNumTasks)
             ? Tiles.addTile(
                 title: "Add a step",

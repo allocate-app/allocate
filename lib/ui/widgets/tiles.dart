@@ -4,15 +4,20 @@ import 'package:another_flushbar/flushbar.dart';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:auto_size_text_field/auto_size_text_field.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:intl/intl.dart';
 import 'package:jiffy/jiffy.dart';
 import 'package:provider/provider.dart';
 
 import '../../model/task/deadline.dart';
+import '../../model/task/group.dart';
+import '../../model/task/reminder.dart';
 import '../../model/task/routine.dart';
 import '../../model/task/subtask.dart';
 import '../../model/task/todo.dart';
 import '../../providers/deadline_provider.dart';
+import '../../providers/group_provider.dart';
+import '../../providers/reminder_provider.dart';
 import '../../providers/routine_provider.dart';
 import '../../providers/todo_provider.dart';
 import '../../providers/user_provider.dart';
@@ -21,7 +26,10 @@ import '../../util/constants.dart';
 import '../../util/enums.dart';
 import '../../util/exceptions.dart';
 import '../../util/numbers.dart';
+import '../views/sub_views/create_todo.dart';
 import '../views/sub_views/update_deadline.dart';
+import '../views/sub_views/update_group.dart';
+import '../views/sub_views/update_reminder.dart';
 import '../views/sub_views/update_routine.dart';
 import '../views/sub_views/update_todo.dart';
 import 'check_delete_dialog.dart';
@@ -30,9 +38,12 @@ import 'date_time_dialog.dart';
 import 'drain_bar.dart';
 import 'duration_dialog.dart';
 import 'energy_modal.dart';
+import 'expanded_listtile.dart';
 import 'flushbars.dart';
 import 'frequency_dialog.dart';
 import 'leading_widgets.dart';
+import 'listviews.dart';
+import 'search_recents_bar.dart';
 
 class Tiles {
   /// ListView Tiles
@@ -41,6 +52,7 @@ class Tiles {
           {required BuildContext context,
           required int index,
           required ToDo toDo,
+          bool smallScreen = false,
           Future<void> Function({required ToDo toDo, required int index})?
               checkboxAnimateBeforeUpdate,
           bool showHandle = false,
@@ -48,11 +60,13 @@ class Tiles {
       ListTile(
           contentPadding:
               const EdgeInsets.symmetric(horizontal: Constants.padding),
-          key: ValueKey(index),
+          key: ValueKey(toDo.id),
           shape: const RoundedRectangleBorder(
               borderRadius:
                   BorderRadius.all(Radius.circular(Constants.roundedCorners))),
           leading: LeadingWidgets.toDoCheckbox(
+              outerPadding:
+                  const EdgeInsets.symmetric(horizontal: Constants.halfPadding),
               scale: 1.1,
               completed: toDo.completed,
               onChanged: (bool? value) async {
@@ -71,7 +85,8 @@ class Tiles {
               minFontSize: Constants.large,
               softWrap: false,
               maxLines: 2),
-          subtitle: Subtitles.toDoSubTitle(
+          subtitle: Subtitles.toDoSubtitle(
+              smallScreen: smallScreen,
               context: context,
               id: toDo.groupID,
               dueDate: toDo.dueDate,
@@ -93,17 +108,20 @@ class Tiles {
             Row(mainAxisSize: MainAxisSize.min, children: [
               Constants.batteryIcons[(toDo.taskType == TaskType.small)
                   ? toDo.weight
-                  : remap(
-                          x: toDo.weight,
-                          inMin: 0,
-                          inMax: Constants.maxWeight,
-                          outMin: 0,
-                          outMax: 5)
+                  : clamp(
+                          x: remap(
+                              x: toDo.weight,
+                              inMin: 0,
+                              inMax: Constants.maxWeight,
+                              outMin: 0,
+                              outMax: 5),
+                          ll: 0,
+                          ul: 5)
                       .toInt()]!,
               AutoSizeText(
                 "${toDo.weight}",
                 overflow: TextOverflow.visible,
-                minFontSize: Constants.large,
+                minFontSize: Constants.medium,
                 softWrap: false,
                 maxLines: 1,
               ),
@@ -138,8 +156,7 @@ class Tiles {
                   },
                 )),
             (showHandle)
-                ? ReorderableDragStartListener(
-                    index: index, child: const Icon(Icons.drag_handle_rounded))
+                ? const Icon(Icons.drag_handle_rounded)
                 : const SizedBox.shrink(),
           ]));
 
@@ -215,7 +232,7 @@ class Tiles {
           bool checkDelete = false}) =>
       ListTile(
           contentPadding: const EdgeInsets.only(right: Constants.padding),
-          key: ValueKey(index),
+          key: ValueKey(routine.id),
           shape: const RoundedRectangleBorder(
               borderRadius:
                   BorderRadius.all(Radius.circular(Constants.roundedCorners))),
@@ -237,7 +254,8 @@ class Tiles {
               minFontSize: Constants.large,
               softWrap: false,
               maxLines: 2),
-          // No Subtitle atm.
+          subtitle: Subtitles.routineSubtitle(
+              numTasks: routine.routineTasks.indexOf(SubTask())),
           onTap: () async {
             await showDialog(
                 barrierDismissible: false,
@@ -319,8 +337,7 @@ class Tiles {
                   },
                 )),
             (showHandle)
-                ? ReorderableDragStartListener(
-                    index: index, child: const Icon(Icons.drag_handle_rounded))
+                ? const Icon(Icons.drag_handle_rounded)
                 : const SizedBox.shrink(),
           ]));
 
@@ -328,28 +345,40 @@ class Tiles {
           {required BuildContext context,
           required int index,
           required Deadline deadline,
+          bool smallScreen = false,
           bool showHandle = false,
           bool checkDelete = false}) =>
       ListTile(
           contentPadding:
               // Check the padding.
               const EdgeInsets.symmetric(horizontal: Constants.padding),
-          key: ValueKey(index),
+          key: ValueKey(deadline.id),
           shape: const RoundedRectangleBorder(
               borderRadius:
                   BorderRadius.all(Radius.circular(Constants.roundedCorners))),
-          // TODO: Leading Widget needed.  Just a ternary between alert and non icons.
-          leading: null,
+          leading: (deadline.warnMe)
+              ? LeadingWidgets.deadlineWarnMeIcon(
+                  currentContext: context,
+                  outerPadding: const EdgeInsets.symmetric(
+                      horizontal: Constants.halfPadding),
+                  iconPadding: const EdgeInsets.all(Constants.halfPadding))
+              : LeadingWidgets.deadlineIcon(
+                  currentContext: context,
+                  outerPadding: const EdgeInsets.symmetric(
+                      horizontal: Constants.halfPadding),
+                  iconPadding: const EdgeInsets.all(Constants.halfPadding)),
           title: AutoSizeText(deadline.name,
               overflow: TextOverflow.ellipsis,
               minFontSize: Constants.large,
               softWrap: false,
               maxLines: 2),
-          // TODO: Deadline subtitle.
-          // subtitle: Subtitles.deadlineSubTitle(
-          //     context: context,
-          //     dueDate: deadline.dueDate,
-          //     priority: deadline.priority,
+          subtitle: Subtitles.deadlineSubtitle(
+            context: context,
+            smallScreen: smallScreen,
+            dueDate: deadline.dueDate,
+            warnDate: (deadline.warnMe) ? deadline.warnDate : null,
+            priority: deadline.priority,
+          ),
           onTap: () async {
             await showDialog(
                 barrierDismissible: false,
@@ -358,7 +387,6 @@ class Tiles {
                 builder: (BuildContext context) =>
                     UpdateDeadlineScreen(initialDeadline: deadline));
           },
-          // TODO: Trailing.
           trailing: Row(mainAxisSize: MainAxisSize.min, children: [
             Padding(
                 padding: EdgeInsets.zero,
@@ -392,8 +420,7 @@ class Tiles {
                   },
                 )),
             (showHandle)
-                ? ReorderableDragStartListener(
-                    index: index, child: const Icon(Icons.drag_handle_rounded))
+                ? const Icon(Icons.drag_handle_rounded)
                 : const SizedBox.shrink(),
           ]));
 
@@ -464,30 +491,334 @@ class Tiles {
     }, test: (e) => e is FailureToDeleteException);
   }
 
-  /// Checkboxes
-  static Widget checkboxListTile({
-    Key? key,
-    EdgeInsetsGeometry contentPadding = EdgeInsets.zero,
-    Widget? title,
-    required void Function(bool? value) onChanged,
-    bool value = false,
-    Widget? trailing,
-  }) =>
+  static Widget reminderListTile(
+          {required BuildContext context,
+          required int index,
+          required Reminder reminder,
+          bool smallScreen = false,
+          bool showHandle = false,
+          bool checkDelete = false}) =>
       ListTile(
-          leading: LeadingWidgets.toDoCheckbox(
-            completed: value,
-            onChanged: onChanged,
-          ),
-          contentPadding: contentPadding,
-          key: key,
+          contentPadding:
+              // Check the padding.
+              const EdgeInsets.symmetric(horizontal: Constants.padding),
+          key: ValueKey(reminder.id),
           shape: const RoundedRectangleBorder(
               borderRadius:
                   BorderRadius.all(Radius.circular(Constants.roundedCorners))),
-          title: title,
-          trailing: trailing);
+          leading: (Frequency.once != reminder.frequency)
+              ? LeadingWidgets.reminderRepeatingIcon(
+                  currentContext: context,
+                  outerPadding: const EdgeInsets.symmetric(
+                      horizontal: Constants.halfPadding),
+                  iconPadding: const EdgeInsets.all(Constants.halfPadding))
+              : LeadingWidgets.reminderIcon(
+                  currentContext: context,
+                  outerPadding: const EdgeInsets.symmetric(
+                      horizontal: Constants.halfPadding),
+                  iconPadding: const EdgeInsets.all(Constants.halfPadding)),
+          title: AutoSizeText(reminder.name,
+              overflow: TextOverflow.ellipsis,
+              minFontSize: Constants.large,
+              softWrap: false,
+              maxLines: 2),
+          subtitle: Subtitles.reminderSubtitle(
+            smallScreen: smallScreen,
+            context: context,
+            dueDate: reminder.dueDate,
+          ),
+          onTap: () async {
+            await showDialog(
+                barrierDismissible: false,
+                useRootNavigator: false,
+                context: context,
+                builder: (BuildContext context) =>
+                    UpdateReminderScreen(initialReminder: reminder));
+          },
+          trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+            Padding(
+                padding: EdgeInsets.zero,
+                child: IconButton(
+                  icon: const Icon(Icons.delete_forever_rounded),
+                  onPressed: () async {
+                    if (!checkDelete) {
+                      return await deleteReminder(
+                          reminder: reminder, context: context);
+                    }
+                    return await showDialog<List<bool>?>(
+                        barrierDismissible: true,
+                        context: context,
+                        builder: (BuildContext context) {
+                          return CheckDeleteDialog(
+                              dontAsk: !checkDelete, type: "Reminder");
+                          // Dialog function.
+                        }).then((results) async {
+                      if (null == results) {
+                        return;
+                      }
+                      Provider.of<UserProvider>(context, listen: false)
+                          .curUser
+                          ?.checkDelete = results[1];
+                      if (!results[0]) {
+                        return;
+                      }
+                      await deleteReminder(
+                          reminder: reminder, context: context);
+                    });
+                  },
+                )),
+            (showHandle)
+                ? const Icon(Icons.drag_handle_rounded)
+                : const SizedBox.shrink(),
+          ]));
 
+  // Helper function to delete deadlines ->
+  static Future<void> deleteReminder({
+    required Reminder reminder,
+    required BuildContext context,
+  }) async {
+    ReminderProvider reminderProvider =
+        Provider.of<ReminderProvider>(context, listen: false);
+    // For repeating deadlines.
+    if (reminder.frequency != Frequency.once) {
+      await showModalBottomSheet<bool?>(
+          showDragHandle: true,
+          context: context,
+          builder: (BuildContext context) {
+            return const HandleRepeatableModal(action: "Delete");
+          }).then((deleteSingle) async {
+        if (null == deleteSingle) {
+          return;
+        }
+
+        // If delete all.
+        if (!deleteSingle) {
+          return await reminderProvider
+              .deleteAndCancelFutures(reminder: reminder)
+              .catchError((e) {
+            Flushbar? error;
+
+            error = Flushbars.createError(
+              message: e.cause,
+              context: context,
+              dismissCallback: () => error?.dismiss(),
+            );
+
+            error.show(context);
+          }, test: (e) => e is FailureToDeleteException);
+        }
+
+        // If delete one.
+        await reminderProvider.nextRepeat(reminder: reminder).catchError((e) {
+          Flushbar? error;
+
+          error = Flushbars.createError(
+            message: e.cause,
+            context: context,
+            dismissCallback: () => error?.dismiss(),
+          );
+
+          error.show(context);
+        },
+            test: (e) =>
+                e is FailureToCreateException || e is FailureToUploadException);
+      });
+    }
+
+    return await reminderProvider.deleteReminder(reminder: reminder).catchError(
+        (e) {
+      Flushbar? error;
+
+      error = Flushbars.createError(
+        message: e.cause,
+        context: context,
+        dismissCallback: () => error?.dismiss(),
+      );
+
+      error.show(context);
+    }, test: (e) => e is FailureToDeleteException);
+  }
+
+  // TBD Migrate to a paginating listtile?.
+  static Widget groupListTile(
+          {required int index,
+          required Group group,
+          required BuildContext context,
+          bool showHandle = false,
+          bool checkDelete = false,
+          ScrollPhysics physics = const NeverScrollableScrollPhysics()}) =>
+      ExpandedListTile(
+          key: ValueKey(group.id),
+          outerPadding:
+              const EdgeInsets.symmetric(horizontal: Constants.padding),
+          expanded: group.toDos.isNotEmpty,
+          leading: LeadingWidgets.groupListViewIcon(onPressed: () async {
+            await showDialog(
+                barrierDismissible: false,
+                useRootNavigator: false,
+                context: context,
+                builder: (BuildContext context) =>
+                    UpdateGroupScreen(initialGroup: group));
+          }),
+          trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+            Padding(
+                padding: EdgeInsets.zero,
+                child: IconButton(
+                  icon: const Icon(Icons.delete_forever_rounded),
+                  onPressed: () async {
+                    GroupProvider groupProvider =
+                        Provider.of<GroupProvider>(context, listen: false);
+                    if (!checkDelete) {
+                      return await groupProvider.deleteGroup(group: group);
+                    }
+                    return await showDialog<List<bool>?>(
+                        barrierDismissible: true,
+                        context: context,
+                        builder: (BuildContext context) {
+                          return CheckDeleteDialog(
+                              dontAsk: !checkDelete, type: "Group");
+                          // Dialog function.
+                        }).then((results) async {
+                      if (null == results) {
+                        return;
+                      }
+                      Provider.of<UserProvider>(context, listen: false)
+                          .curUser
+                          ?.checkDelete = results[1];
+                      if (!results[0]) {
+                        return;
+                      }
+                      await groupProvider.deleteGroup(group: group);
+                    });
+                  },
+                )),
+            (showHandle)
+                ? const Icon(Icons.drag_handle_rounded)
+                : const SizedBox.shrink(),
+          ]),
+          title: AutoSizeText(
+            group.name,
+            maxLines: 1,
+            overflow: TextOverflow.visible,
+            softWrap: false,
+            minFontSize: Constants.large,
+          ),
+          subtitle: Subtitles.groupSubtitle(numTasks: group.toDos.length),
+          children: [
+            ListViews.reorderableGroupToDos(
+                context: context,
+                toDos: group.toDos,
+                physics: physics,
+                onChanged: ({required int index, bool value = false}) async {
+                  group.toDos[index].completed = value;
+                  await Provider.of<ToDoProvider>(context, listen: false)
+                      .updateToDo(toDo: group.toDos[index]);
+                },
+                onTap: ({required int index}) async {
+                  await showDialog(
+                      barrierDismissible: false,
+                      useRootNavigator: false,
+                      context: context,
+                      builder: (BuildContext context) => UpdateToDoScreen(
+                            initialToDo: group.toDos[index],
+                            initialGroup:
+                                MapEntry<String, int>(group.name, group.id),
+                          )).catchError((e) {
+                    Flushbar? error;
+
+                    error = Flushbars.createError(
+                      message: e.cause,
+                      context: context,
+                      dismissCallback: () => error?.dismiss(),
+                    );
+
+                    error.show(context);
+                  },
+                      test: (e) =>
+                          e is FailureToCreateException ||
+                          e is FailureToUploadException);
+                },
+                handleRemove: ({required int index}) async {
+                  group.toDos[index].groupID = null;
+                  await Provider.of<ToDoProvider>(context, listen: false)
+                      .updateToDo(toDo: group.toDos[index]);
+                }),
+            // alldata -> fetchTile.
+            SearchRecentsBar<ToDo>(
+              clearOnSelection: true,
+              hintText: "Search Tasks",
+              padding: const EdgeInsets.all(Constants.padding),
+              handleDataSelection: ({required int id}) =>
+                  groupToDoDataSelection(
+                      toDoID: id, groupID: group.id, context: context),
+              handleHistorySelection: ({required int id}) =>
+                  groupToDoDataSelection(
+                      toDoID: id, groupID: group.id, context: context),
+              // TODO: Figure out a way to implement a listener -> May be best to
+              // factor out into ListView class, or add the listener in the expanded tile class.
+              searchController: SearchController(),
+              mostRecent:
+                  Provider.of<ToDoProvider>(context, listen: false).mostRecent,
+              search:
+                  Provider.of<ToDoProvider>(context, listen: false).searchToDos,
+            ),
+            Tiles.addTile(
+                title: "Add Task",
+                onTap: () async {
+                  await showDialog(
+                      barrierDismissible: false,
+                      useRootNavigator: false,
+                      context: context,
+                      builder: (BuildContext context) => CreateToDoScreen(
+                            initialGroup:
+                                MapEntry<String, int>(group.name, group.id),
+                          )).catchError((e) {
+                    Flushbar? error;
+
+                    error = Flushbars.createError(
+                      message: e.cause,
+                      context: context,
+                      dismissCallback: () => error?.dismiss(),
+                    );
+
+                    error.show(context);
+                  },
+                      test: (e) =>
+                          e is FailureToCreateException ||
+                          e is FailureToUploadException);
+                })
+          ]);
+
+  // Helper method for groupListTile.
+  static Future<void> groupToDoDataSelection(
+      {required int toDoID,
+      required int groupID,
+      required BuildContext context}) async {
+    ToDoProvider toDoProvider =
+        Provider.of<ToDoProvider>(context, listen: false);
+    ToDo? toDo = await toDoProvider.getToDoByID(id: toDoID).catchError((_) {
+      Flushbar? error;
+
+      error = Flushbars.createError(
+        message: "Error with Task Retrieval",
+        context: context,
+        dismissCallback: () => error?.dismiss(),
+      );
+
+      error.show(context);
+      return null;
+    });
+    if (null != toDo) {
+      toDo.groupID = groupID;
+      await toDoProvider.updateToDo(toDo: toDo);
+    }
+  }
+
+  // NOTE: Reorderable + text-input is not a good combo.
+  // This needs to have the icon reorderable to slow the paint down.
   static Widget subtaskCheckboxTile(
           {required BuildContext context,
+          EdgeInsetsGeometry textFieldPadding = EdgeInsets.zero,
           required int index,
           required SubTask subTask,
           required void Function() onChanged,
@@ -498,13 +829,13 @@ class Tiles {
       Tiles.checkboxListTile(
           key: ValueKey(index),
           contentPadding:
-              const EdgeInsets.symmetric(horizontal: Constants.innerPadding),
+              const EdgeInsets.symmetric(horizontal: Constants.padding),
           onChanged: (bool? value) {
             subTask.completed = value!;
             onChanged();
           },
           title: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
+            padding: textFieldPadding,
             child: AutoSizeTextField(
                 controller: controller,
                 minLines: 1,
@@ -514,6 +845,7 @@ class Tiles {
                   hintText: "Step name",
                 ),
                 onChanged: (value) {
+                  SemanticsService.announce(value, Directionality.of(context));
                   subTask.name = value;
                   controller.value = controller.value.copyWith(
                     text: value,
@@ -555,6 +887,28 @@ class Tiles {
             ],
           ));
 
+  /// Checkboxes
+  static Widget checkboxListTile({
+    Key? key,
+    EdgeInsetsGeometry contentPadding = EdgeInsets.zero,
+    Widget? title,
+    required void Function(bool? value) onChanged,
+    bool value = false,
+    Widget? trailing,
+  }) =>
+      ListTile(
+          leading: LeadingWidgets.toDoCheckbox(
+            completed: value,
+            onChanged: onChanged,
+          ),
+          contentPadding: contentPadding,
+          key: key,
+          shape: const RoundedRectangleBorder(
+              borderRadius:
+                  BorderRadius.all(Radius.circular(Constants.roundedCorners))),
+          title: title,
+          trailing: trailing);
+
   static Widget toDoCheckTile({
     required int index,
     required ToDo toDo,
@@ -566,7 +920,7 @@ class Tiles {
     return ListTile(
         contentPadding:
             const EdgeInsets.symmetric(horizontal: Constants.innerPadding),
-        key: ValueKey(index),
+        key: ValueKey(toDo.id),
         shape: const RoundedRectangleBorder(
             borderRadius:
                 BorderRadius.all(Radius.circular(Constants.roundedCorners))),
@@ -605,8 +959,7 @@ class Tiles {
                 onPressed: () => handleRemove(index: index),
               )),
           (showHandle)
-              ? ReorderableDragStartListener(
-                  index: index, child: const Icon(Icons.drag_handle_rounded))
+              ? const Icon(Icons.drag_handle_rounded)
               : const SizedBox.shrink(),
         ]));
   }
@@ -1307,6 +1660,7 @@ class Tiles {
       required void Function() toggleMyDay}) {
     String title = "";
     Widget leading;
+    print("canAdd: $canAdd");
 
     if (myDay) {
       title = "Added to my Day";
@@ -1319,7 +1673,7 @@ class Tiles {
       leading = IconButton.outlined(
           icon: const Icon(Icons.wb_sunny_outlined), onPressed: toggleMyDay);
     } else {
-      "Don't overload yourself, you deserve a rest.";
+      title = "Don't overload yourself, you deserve a rest.";
       leading = const Icon(Icons.block_rounded);
     }
     return ListTile(
@@ -1334,7 +1688,7 @@ class Tiles {
           minFontSize: Constants.medium,
           maxLines: 2,
         ),
-        onTap: toggleMyDay);
+        onTap: (canAdd || myDay) ? toggleMyDay : null);
   }
 
   /// SEARCH

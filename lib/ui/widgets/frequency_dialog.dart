@@ -108,7 +108,7 @@ class _FrequencyDialog extends State<FrequencyDialog> {
                         child: FittedBox(
                             fit: BoxFit.fill,
                             child: Icon(Icons.repeat_rounded,
-                                size: Constants.medIconSize)),
+                                size: Constants.lgIconSize)),
                       ),
                     ],
                   ),

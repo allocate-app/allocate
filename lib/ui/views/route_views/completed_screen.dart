@@ -107,7 +107,7 @@ class _CompletedListScreen extends State<CompletedListScreen> {
         toDos = newToDos;
         loading = false;
         // showTopLoading = false;
-        allData = toDos.length <= limit;
+        allData = toDos.length < limit;
         limit = Constants.minLimitPerQuery;
       });
     }
@@ -172,7 +172,7 @@ class _CompletedListScreen extends State<CompletedListScreen> {
     return Padding(
       padding: const EdgeInsets.all(Constants.innerPadding),
       child: Column(mainAxisSize: MainAxisSize.min, children: [
-        ListViewHeader(
+        ListViewHeader<ToDo>(
             header: "Completed",
             sorter: toDoProvider.sorter,
             onChanged: (SortMethod? method) {
@@ -202,6 +202,7 @@ class _CompletedListScreen extends State<CompletedListScreen> {
                       ? ListViews.reorderableToDos(
                           checkboxAnimateBeforeUpdate:
                               checkboxAnimateBeforeUpdate,
+                          smallScreen: smallScreen,
                           context: context,
                           toDos: toDos,
                           checkDelete: checkDelete)
@@ -209,6 +210,7 @@ class _CompletedListScreen extends State<CompletedListScreen> {
                           checkboxAnimateBeforeUpdate:
                               checkboxAnimateBeforeUpdate,
                           context: context,
+                          smallScreen: smallScreen,
                           toDos: toDos,
                           checkDelete: checkDelete)
                 ]),

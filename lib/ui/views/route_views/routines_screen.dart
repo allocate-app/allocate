@@ -67,8 +67,8 @@ class _RoutinesListScreen extends State<RoutinesListScreen> {
     mainScrollController.addListener(() async {
       // Bottom: Run the query and append data.
       if (mainScrollController.offset >=
-          mainScrollController.position.maxScrollExtent -
-              Constants.loadOffset &&
+              mainScrollController.position.maxScrollExtent -
+                  Constants.loadOffset &&
           !allData) {
         if (!loading && mounted) {
           return await appendData();
@@ -85,7 +85,7 @@ class _RoutinesListScreen extends State<RoutinesListScreen> {
     });
 
     scrollPhysics =
-    const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics());
+        const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics());
   }
 
   @override
@@ -111,7 +111,7 @@ class _RoutinesListScreen extends State<RoutinesListScreen> {
         routines = newRoutines;
         loading = false;
         // showTopLoading = false;
-        allData = routines.length <= limit;
+        allData = routines.length < limit;
         limit = Constants.minLimitPerQuery;
       });
     }
@@ -136,7 +136,7 @@ class _RoutinesListScreen extends State<RoutinesListScreen> {
     return await routineProvider
         .getRoutinesBy(limit: limit, offset: offset)
         .catchError(
-          (e) {
+      (e) {
         Flushbar? error;
 
         error = Flushbars.createError(
@@ -159,17 +159,14 @@ class _RoutinesListScreen extends State<RoutinesListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    double width = MediaQuery
-        .of(context)
-        .size
-        .width;
+    double width = MediaQuery.of(context).size.width;
     bool largeScreen = (width >= Constants.largeScreen);
     bool smallScreen = (width <= Constants.smallScreen);
 
     return Padding(
       padding: const EdgeInsets.all(Constants.innerPadding),
       child: Column(mainAxisSize: MainAxisSize.min, children: [
-        ListViewHeader(
+        ListViewHeader<Routine>(
             header: "Routines",
             sorter: routineProvider.sorter,
             onChanged: (SortMethod? method) {
@@ -184,8 +181,7 @@ class _RoutinesListScreen extends State<RoutinesListScreen> {
             }),
         Tiles.createNew(
           context: context,
-          onTap: () async =>
-          await showDialog(
+          onTap: () async => await showDialog(
             barrierDismissible: false,
             context: context,
             builder: (BuildContext context) => const CreateRoutineScreen(),
@@ -206,13 +202,13 @@ class _RoutinesListScreen extends State<RoutinesListScreen> {
                   //     : const SizedBox.shrink(),
                   (routineProvider.sortMethod == SortMethod.none)
                       ? ListViews.reorderableRoutines(
-                      context: context,
-                      routines: routines,
-                      checkDelete: checkDelete)
+                          context: context,
+                          routines: routines,
+                          checkDelete: checkDelete)
                       : ListViews.immutableRoutines(
-                      context: context,
-                      routines: routines,
-                      checkDelete: checkDelete)
+                          context: context,
+                          routines: routines,
+                          checkDelete: checkDelete)
                 ]),
           ),
         )

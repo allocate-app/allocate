@@ -56,18 +56,18 @@ class _TimeDialog extends State<TimeDialog> {
                     children: [
                       Flexible(
                           child: AutoSizeText(
-                        "Start | Due ",
-                        style: Constants.largeHeaderStyle,
-                        softWrap: true,
-                        overflow: TextOverflow.visible,
-                        maxLines: 1,
-                        minFontSize: Constants.large,
-                      )),
+                            "Start | Due ",
+                            style: Constants.largeHeaderStyle,
+                            softWrap: true,
+                            overflow: TextOverflow.visible,
+                            maxLines: 1,
+                            minFontSize: Constants.large,
+                          )),
                       Flexible(
                         child: FittedBox(
                             fit: BoxFit.fill,
                             child: Icon(Icons.schedule_rounded,
-                                size: Constants.medIconSize)),
+                                size: Constants.lgIconSize)),
                       ),
                     ],
                   ),
@@ -82,59 +82,61 @@ class _TimeDialog extends State<TimeDialog> {
                         Expanded(
                           child: Padding(
                             padding:
-                                const EdgeInsets.only(right: Constants.padding),
+                            const EdgeInsets.only(right: Constants.padding),
                             child: DecoratedBox(
                               decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(
                                     Constants.roundedCorners),
                                 border: Border.all(
                                     width: 2,
-                                    color: Theme.of(context)
+                                    color: Theme
+                                        .of(context)
                                         .colorScheme
                                         .outlineVariant,
                                     strokeAlign: BorderSide.strokeAlignOutside),
                               ),
                               child: Row(
                                 mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
+                                MainAxisAlignment.spaceBetween,
                                 mainAxisSize: MainAxisSize.max,
                                 children: [
                                   Expanded(
                                     child: TextButton(
                                         onPressed: () async {
                                           final TimeOfDay? picked =
-                                              await showTimePicker(
-                                                  context: context,
-                                                  initialTime: startTime ??
-                                                      Constants.midnight);
+                                          await showTimePicker(
+                                              context: context,
+                                              initialTime: startTime ??
+                                                  Constants.midnight);
                                           if (null != picked) {
                                             setState(() => startTime = picked);
                                           }
                                         },
                                         child: (null != startTime)
                                             ? AutoSizeText(
-                                                startTime!
-                                                    .format(context)
-                                                    .toString(),
-                                                softWrap: false,
-                                                overflow: TextOverflow.visible,
-                                                maxLines: 1,
-                                                minFontSize: Constants.huge,
-                                              )
+                                          startTime!
+                                              .format(context)
+                                              .toString(),
+                                          softWrap: false,
+                                          overflow: TextOverflow.visible,
+                                          maxLines: 1,
+                                          minFontSize: Constants.huge,
+                                        )
                                             : const AutoSizeText("Start Time",
-                                                softWrap: true,
-                                                overflow: TextOverflow.visible,
-                                                maxLines: 1,
-                                                minFontSize: Constants.huge)),
+                                            softWrap: true,
+                                            overflow: TextOverflow.visible,
+                                            maxLines: 1,
+                                            minFontSize: Constants.huge)),
                                   ),
                                   (startTime != null)
                                       ? IconButton(
-                                          icon: const Icon(Icons.clear_rounded),
-                                          selectedIcon: const Icon(Icons.clear),
-                                          onPressed: () => setState(() {
-                                            startTime = null;
-                                          }),
-                                        )
+                                    icon: const Icon(Icons.clear_rounded),
+                                    selectedIcon: const Icon(Icons.clear),
+                                    onPressed: () =>
+                                        setState(() {
+                                          startTime = null;
+                                        }),
+                                  )
                                       : const SizedBox.shrink(),
                                 ],
                               ),
@@ -144,59 +146,61 @@ class _TimeDialog extends State<TimeDialog> {
                         Expanded(
                           child: Padding(
                             padding:
-                                const EdgeInsets.only(left: Constants.padding),
+                            const EdgeInsets.only(left: Constants.padding),
                             child: DecoratedBox(
                               decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(
                                     Constants.roundedCorners),
                                 border: Border.all(
                                     width: 2,
-                                    color: Theme.of(context)
+                                    color: Theme
+                                        .of(context)
                                         .colorScheme
                                         .outlineVariant,
                                     strokeAlign: BorderSide.strokeAlignOutside),
                               ),
                               child: Row(
                                 mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
+                                MainAxisAlignment.spaceBetween,
                                 mainAxisSize: MainAxisSize.max,
                                 children: [
                                   Expanded(
                                     child: TextButton(
                                         onPressed: () async {
                                           final TimeOfDay? picked =
-                                              await showTimePicker(
-                                                  context: context,
-                                                  initialTime: dueTime ??
-                                                      Constants.midnight);
+                                          await showTimePicker(
+                                              context: context,
+                                              initialTime: dueTime ??
+                                                  Constants.midnight);
                                           if (null != picked) {
                                             setState(() => dueTime = picked);
                                           }
                                         },
                                         child: (null != dueTime)
                                             ? AutoSizeText(
-                                                dueTime!
-                                                    .format(context)
-                                                    .toString(),
-                                                softWrap: false,
-                                                overflow: TextOverflow.visible,
-                                                maxLines: 1,
-                                                minFontSize: Constants.huge,
-                                              )
+                                          dueTime!
+                                              .format(context)
+                                              .toString(),
+                                          softWrap: false,
+                                          overflow: TextOverflow.visible,
+                                          maxLines: 1,
+                                          minFontSize: Constants.huge,
+                                        )
                                             : const AutoSizeText("Due Time",
-                                                softWrap: true,
-                                                overflow: TextOverflow.visible,
-                                                maxLines: 1,
-                                                minFontSize: Constants.huge)),
+                                            softWrap: true,
+                                            overflow: TextOverflow.visible,
+                                            maxLines: 1,
+                                            minFontSize: Constants.huge)),
                                   ),
                                   (dueTime != null)
                                       ? IconButton(
-                                          icon: const Icon(Icons.clear_rounded),
-                                          selectedIcon: const Icon(Icons.clear),
-                                          onPressed: () => setState(() {
-                                            dueTime = null;
-                                          }),
-                                        )
+                                    icon: const Icon(Icons.clear_rounded),
+                                    selectedIcon: const Icon(Icons.clear),
+                                    onPressed: () =>
+                                        setState(() {
+                                          dueTime = null;
+                                        }),
+                                  )
                                       : const SizedBox.shrink(),
                                 ],
                               ),
@@ -212,7 +216,7 @@ class _TimeDialog extends State<TimeDialog> {
                       Expanded(
                         child: Padding(
                           padding:
-                              const EdgeInsets.only(right: Constants.padding),
+                          const EdgeInsets.only(right: Constants.padding),
                           child: FilledButton.tonalIcon(
                               icon: const Icon(Icons.close_rounded),
                               onPressed: () {
@@ -228,7 +232,7 @@ class _TimeDialog extends State<TimeDialog> {
                       Expanded(
                         child: Padding(
                           padding:
-                              const EdgeInsets.only(left: Constants.padding),
+                          const EdgeInsets.only(left: Constants.padding),
                           child: FilledButton.icon(
                             icon: const Icon(Icons.done_rounded),
                             onPressed: () {
