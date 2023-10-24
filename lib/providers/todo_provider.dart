@@ -22,8 +22,7 @@ class ToDoProvider extends ChangeNotifier {
 
   List<ToDo> toDos = [];
 
-  // This is for search list
-  List<ToDo> recentToDos = [];
+  List<ToDo> secondaryToDos = [];
 
   late ToDoSorter sorter;
 
@@ -244,9 +243,6 @@ class ToDoProvider extends ChangeNotifier {
       return Future.error(e);
     }
 
-    if (curToDo == toDo) {
-      curToDo = null;
-    }
     notifyListeners();
   }
 
@@ -288,7 +284,6 @@ class ToDoProvider extends ChangeNotifier {
     }
   }
 
-  @override
   Future<void> deleteFutures({ToDo? toDo}) async {
     try {
       await _toDoService.deleteFutures(toDo: toDo ?? curToDo!);
@@ -301,7 +296,6 @@ class ToDoProvider extends ChangeNotifier {
     }
   }
 
-  @override
   Future<void> populateCalendar({DateTime? limit}) async {
     try {
       return await _toDoService.populateCalendar(

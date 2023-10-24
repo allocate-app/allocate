@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math';
 
 import 'package:another_flushbar/flushbar.dart';
 import 'package:auto_size_text/auto_size_text.dart';
@@ -18,6 +17,7 @@ import '../../widgets/flushbars.dart';
 import '../../widgets/leading_widgets.dart';
 import '../../widgets/listviews.dart';
 import '../../widgets/padded_divider.dart';
+import '../../widgets/paginating_listview.dart';
 import '../../widgets/search_recents_bar.dart';
 import '../../widgets/subtitles.dart';
 import '../../widgets/tiles.dart';
@@ -63,16 +63,8 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
   // Description
   late final TextEditingController descriptionEditingController;
 
-  // Discarded todos
-  late final List<ToDo> discards;
-
   Group get group => groupProvider.curGroup!;
   late Group prevGroup;
-
-  // Convenience getter.
-  List<ToDo> get toDos => groupProvider.curGroup!.toDos;
-
-  set toDos(List<ToDo> newToDos) => groupProvider.curGroup!.toDos = newToDos;
 
   @override
   void initState() {
@@ -80,9 +72,6 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
     initializeProviders();
     initializeParameters();
     initializeControllers();
-    resetPagination().whenComplete(() {
-      prevGroup.toDos = List.from(group.toDos);
-    });
     prevGroup = group.copy();
     prevGroup.id = group.id;
   }
@@ -94,7 +83,7 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
     if (null != widget.initialGroup) {
       groupProvider.curGroup = widget.initialGroup;
     }
-    toDoProvider.addListener(resetPagination);
+    // toDoProvider.addListener(resetPagination);
   }
 
   void initializeParameters() {
@@ -104,8 +93,6 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
     expanded = true;
     offset = (toDoProvider.rebuild) ? 0 : toDoProvider.toDos.length;
     limit = Constants.minLimitPerQuery;
-    discards = [];
-    toDos = List.empty(growable: true);
   }
 
   void initializeControllers() {
@@ -133,10 +120,6 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
       group.description = newText;
     });
     toDoSearchController = SearchController();
-    toDoSearchController.addListener(() {
-      String newText = toDoSearchController.text;
-      SemanticsService.announce(newText, Directionality.of(context));
-    });
   }
 
   @override
@@ -145,62 +128,8 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
     descriptionEditingController.dispose();
     desktopScrollController.dispose();
     mobileScrollController.dispose();
-    toDoSearchController.dispose();
-    toDoProvider.removeListener(resetPagination);
+
     super.dispose();
-  }
-
-  Future<void> resetPagination() async {
-    offset = 0;
-    limit = max(toDos.length, Constants.minLimitPerQuery);
-    return await overwriteData();
-  }
-
-  Future<void> overwriteData() async {
-    List<ToDo> newToDos = await fetchData();
-    if (mounted) {
-      return setState(() {
-        offset += newToDos.length;
-        toDos = newToDos;
-        loading = false;
-        allData = toDos.length <= limit;
-        limit = Constants.minLimitPerQuery;
-      });
-    }
-  }
-
-  Future<void> appendData() async {
-    List<ToDo> newToDos = await fetchData();
-    if (mounted) {
-      return setState(() {
-        offset += newToDos.length;
-        toDos.addAll(newToDos);
-        loading = false;
-        allData = newToDos.length < limit;
-      });
-    }
-  }
-
-  Future<List<ToDo>> fetchData() async {
-    if (mounted) {
-      setState(() => loading = true);
-    }
-    return await groupProvider
-        .getToDosByGroupID(id: group.id, limit: limit, offset: offset)
-        .catchError(
-      (e) {
-        Flushbar? error;
-
-        error = Flushbars.createError(
-          message: e.cause ?? "Query Error",
-          context: context,
-          dismissCallback: () => error?.dismiss(),
-        );
-
-        error.show(context);
-        return List<ToDo>.empty(growable: true);
-      },
-    );
   }
 
   bool validateData() {
@@ -226,29 +155,7 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
     }
   }
 
-  // These are the same method, TODO: consolidate.
-  Future<void> handleHistorySelection({
-    required int id,
-  }) async {
-    ToDo? toDo = await toDoProvider.getToDoByID(id: id).catchError((_) {
-      Flushbar? error;
-
-      error = Flushbars.createError(
-        message: "Error with Task Retrieval",
-        context: context,
-        dismissCallback: () => error?.dismiss(),
-      );
-
-      error.show(context);
-      return null;
-    });
-    if (null != toDo) {
-      toDo.groupID = group.id;
-      await toDoProvider.updateToDo(toDo: toDo);
-    }
-  }
-
-  Future<void> handleToDoSelection({required int id}) async {
+  Future<void> handleSelection({required int id}) async {
     ToDo? toDo = await toDoProvider.getToDoByID(id: id).catchError((_) {
       Flushbar? error;
 
@@ -270,29 +177,6 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
 
   Future<void> handleClose({required bool willDiscard}) async {
     if (willDiscard) {
-      for (ToDo toDo in prevGroup.toDos) {
-        toDos.remove(toDo);
-        toDo.groupID = prevGroup.id;
-      }
-
-      for (ToDo toDo in toDos) {
-        toDo.groupID = null;
-        prevGroup.toDos.add(toDo);
-      }
-
-      await toDoProvider.updateBatch(toDos: toDos).catchError((e) {
-        Flushbar? error;
-
-        error = Flushbars.createError(
-          message: e.cause,
-          context: context,
-          dismissCallback: () => error?.dismiss(),
-        );
-
-        error.show(context);
-      },
-          test: (e) =>
-              e is FailureToCreateException || e is FailureToUploadException);
       return await groupProvider
           .updateGroup(group: prevGroup)
           .whenComplete(() => Navigator.pop(context));
@@ -328,51 +212,6 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
             e is FailureToCreateException || e is FailureToUploadException);
   }
 
-  // Future<void> reorderToDos(int oldIndex, int newIndex) async {
-  //   await groupProvider.reorderGroupToDos(
-  //       oldIndex: oldIndex, newIndex: newIndex, toDos: toDos);
-  // }
-
-  // Write at the end
-  Future<void> completeToDo({required int index, bool value = false}) async {
-    if (mounted) {
-      return setState(() {
-        toDos[index].completed = value;
-      });
-    }
-  }
-
-  Future<void> removeToDo({required int index}) async {
-    checkClose = true;
-
-    toDos[index].groupID = null;
-    await toDoProvider.updateToDo(toDo: toDos[index]);
-  }
-
-  Future<void> updateToDo({required int index}) async {
-    await showDialog(
-        barrierDismissible: false,
-        useRootNavigator: false,
-        context: context,
-        builder: (BuildContext context) => UpdateToDoScreen(
-              initialToDo: toDos[index],
-              initialGroup: MapEntry<String, int>(
-                  (group.name.isNotEmpty) ? group.name : "New Group", group.id),
-            )).catchError((e) {
-      Flushbar? error;
-
-      error = Flushbars.createError(
-        message: e.cause,
-        context: context,
-        dismissCallback: () => error?.dismiss(),
-      );
-
-      error.show(context);
-    },
-        test: (e) =>
-            e is FailureToCreateException || e is FailureToUploadException);
-  }
-
   Future<void> updateAndValidate() async {
     if (validateData()) {
       await handleUpdate();
@@ -380,29 +219,8 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
   }
 
   Future<void> handleUpdate() async {
-    await groupProvider.updateGroup().whenComplete(() async {
-      int? groupID = groupProvider.curGroup!.id;
-
-      for (int i = 0; i < toDos.length; i++) {
-        toDos[i].groupID = groupID;
-        toDos[i].groupIndex = i;
-      }
-
-      await toDoProvider
-          .updateBatch(toDos: toDos)
-          .whenComplete(() => Navigator.pop(context))
-          .catchError((e) {
-        Flushbar? error;
-
-        error = Flushbars.createError(
-          message: e.cause,
-          context: context,
-          dismissCallback: () => error?.dismiss(),
-        );
-      },
-              test: (e) =>
-                  e is FailureToCreateException ||
-                  e is FailureToUpdateException);
+    await groupProvider.updateGroup().whenComplete(() {
+      Navigator.pop(context);
     }).catchError((e) {
       Flushbar? error;
 
@@ -417,9 +235,19 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
   }
 
   Future<void> handleDelete() async {
-    return await groupProvider.deleteGroup().whenComplete(() {
+    await groupProvider.deleteGroup().whenComplete(() {
       Navigator.pop(context);
-    });
+    }).catchError((e) {
+      Flushbar? error;
+
+      error = Flushbars.createError(
+        message: e.cause,
+        context: context,
+        dismissCallback: () => error?.dismiss(),
+      );
+
+      error.show(context);
+    }, test: (e) => e is FailureToDeleteException);
   }
 
   @override
@@ -428,6 +256,7 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
     bool largeScreen = (width >= Constants.largeScreen);
     bool smallScreen = (width <= Constants.smallScreen);
     bool hugeScreen = (width >= Constants.hugeScreen);
+
     return (largeScreen)
         ? buildDesktopDialog(context: context, smallScreen: smallScreen)
         : buildMobileDialog(context: context, smallScreen: smallScreen);
@@ -629,34 +458,100 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
           overflow: TextOverflow.visible,
           softWrap: false,
           minFontSize: Constants.large),
-      subtitle: Subtitles.groupSubtitle(numTasks: toDos.length),
+      subtitle: Subtitles.groupSubtitle(
+          toDoCount: groupProvider.getToDoCount(id: group.id)),
       children: [
-        // This is too jarring. The database is too fast.
-        // (loading) ? const CircularProgressIndicator() : const SizedBox.shrink(),
-        ListViews.reorderableGroupToDos(
-          context: context,
-          toDos: toDos,
-          physics: physics,
-          onChanged: completeToDo,
-          handleRemove: removeToDo,
-          onTap: updateToDo,
-        ),
-        (!allData)
-            ? Tiles.fetchTile(onTap: appendData)
-            : const SizedBox.shrink(),
         SearchRecentsBar<ToDo>(
           clearOnSelection: true,
           hintText: "Search Tasks",
           padding: const EdgeInsets.all(Constants.padding),
-          handleDataSelection: handleToDoSelection,
-          handleHistorySelection: handleHistorySelection,
+          handleDataSelection: handleSelection,
+          handleHistorySelection: handleSelection,
           searchController: toDoSearchController,
           mostRecent: toDoProvider.mostRecent,
           search: toDoProvider.searchToDos,
         ),
+        // This is too jarring. The database is too fast.
+        // (loading) ? const CircularProgressIndicator() : const SizedBox.shrink(),
+        PaginatingListview<ToDo>(
+            items: group.toDos,
+            query: (
+                    {int limit = Constants.minLimitPerQuery,
+                    int offset = 0}) async =>
+                await groupProvider.getToDosByGroupID(
+                    id: group.id, limit: limit, offset: offset),
+            offset: group.toDos.length,
+            paginateButton: true,
+            rebuildNotifiers: [toDoProvider],
+            rebuildCallback: ({required List<ToDo> items}) {
+              group.toDos = items;
+              groupProvider.setToDoCount(id: group.id);
+            },
+            listviewBuilder: (
+                {required BuildContext context, required List<ToDo> items}) {
+              return ListViews.reorderableGroupToDos(
+                context: context,
+                toDos: items,
+                physics: physics,
+                onChanged: ({required int index, bool value = false}) async {
+                  items[index].completed = value;
+                  await toDoProvider.updateToDo(toDo: items[index]);
+                },
+                handleRemove: ({required int index}) async {
+                  items[index].groupID = null;
+                  await toDoProvider.updateToDo(toDo: items[index]);
+                },
+                onTap: ({required int index}) async => await showDialog(
+                    barrierDismissible: false,
+                    useRootNavigator: false,
+                    context: context,
+                    builder: (BuildContext context) => UpdateToDoScreen(
+                          initialToDo: items[index],
+                          initialGroup: MapEntry<String, int>(
+                              (group.name.isNotEmpty)
+                                  ? group.name
+                                  : "New Group",
+                              group.id),
+                        )).catchError((e) {
+                  Flushbar? error;
+
+                  error = Flushbars.createError(
+                    message: e.cause,
+                    context: context,
+                    dismissCallback: () => error?.dismiss(),
+                  );
+
+                  error.show(context);
+                },
+                    test: (e) =>
+                        e is FailureToCreateException ||
+                        e is FailureToUploadException),
+              );
+            }),
         Tiles.addTile(
           title: "Add Task",
-          onTap: () async => await createToDo(),
+          onTap: () async => await showDialog(
+              barrierDismissible: false,
+              useRootNavigator: false,
+              context: context,
+              builder: (BuildContext context) => CreateToDoScreen(
+                    initialGroup: MapEntry<String, int>(
+                        (group.name.isNotEmpty) ? group.name : "New Group",
+                        group.id),
+                  )).catchError((e) {
+            Flushbar? error;
+
+            error = Flushbars.createError(
+              message: e.cause,
+              context: context,
+              dismissCallback: () => error?.dismiss(),
+            );
+
+            error.show(context);
+          },
+              test: (e) =>
+                  e is FailureToCreateException ||
+                  e is FailureToUploadException),
         )
       ],
     );

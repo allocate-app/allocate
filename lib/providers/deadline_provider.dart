@@ -25,7 +25,7 @@ class DeadlineProvider extends ChangeNotifier {
   Deadline? curDeadline;
 
   List<Deadline> deadlines = [];
-  List<Deadline> recentDeadlines = [];
+  List<Deadline> secondaryDeadlines = [];
 
   late DeadlineSorter sorter;
 
@@ -203,9 +203,6 @@ class DeadlineProvider extends ChangeNotifier {
       log(e.cause);
       return Future.error(e);
     }
-    if (deadline == curDeadline) {
-      curDeadline = null;
-    }
     notifyListeners();
   }
 
@@ -287,7 +284,7 @@ class DeadlineProvider extends ChangeNotifier {
   }
 
   Future<List<Deadline>> getDeadlines(
-          {required int limit, required int offset}) async =>
+          {int limit = Constants.minLimitPerQuery, int offset = 0}) async =>
       await _deadlineService.getDeadlinesBy(
           sorter: sorter, limit: limit, offset: offset);
 
@@ -295,7 +292,7 @@ class DeadlineProvider extends ChangeNotifier {
       deadlines = await _deadlineService.getDeadlines();
 
   Future<List<Deadline>> getDeadlinesBy(
-          {required int limit, required int offset}) async =>
+          {int limit = Constants.minLimitPerQuery, int offset = 0}) async =>
       await _deadlineService.getDeadlinesBy(
           sorter: sorter, limit: limit, offset: offset);
 

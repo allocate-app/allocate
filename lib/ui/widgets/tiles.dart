@@ -1,4 +1,5 @@
 import 'package:allocate/ui/widgets/handle_repeatable_modal.dart';
+import 'package:allocate/ui/widgets/paginating_listview.dart';
 import 'package:allocate/ui/widgets/subtitles.dart';
 import 'package:another_flushbar/flushbar.dart';
 import 'package:auto_size_text/auto_size_text.dart';
@@ -49,124 +50,132 @@ class Tiles {
   /// ListView Tiles
 
   static Widget toDoListTile(
-          {required BuildContext context,
-          required int index,
-          required ToDo toDo,
-          bool smallScreen = false,
-          Future<void> Function({required ToDo toDo, required int index})?
-              checkboxAnimateBeforeUpdate,
-          bool showHandle = false,
-          bool checkDelete = false}) =>
-      ListTile(
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: Constants.padding),
-          key: ValueKey(toDo.id),
-          shape: const RoundedRectangleBorder(
-              borderRadius:
-                  BorderRadius.all(Radius.circular(Constants.roundedCorners))),
-          leading: LeadingWidgets.toDoCheckbox(
-              outerPadding:
-                  const EdgeInsets.symmetric(horizontal: Constants.halfPadding),
-              scale: 1.1,
-              completed: toDo.completed,
-              onChanged: (bool? value) async {
-                toDo.completed = value!;
-                ToDoProvider toDoProvider =
-                    Provider.of<ToDoProvider>(context, listen: false);
+      {required BuildContext context,
+      required int index,
+      required ToDo toDo,
+      bool smallScreen = false,
+      Future<void> Function({required ToDo toDo, required int index})?
+          checkboxAnimateBeforeUpdate,
+      bool showHandle = false,
+      bool checkDelete = false}) {
+    UserProvider userProvider = Provider.of(context, listen: false);
+    ToDoProvider toDoProvider = Provider.of(context, listen: false);
+    return ListTile(
+        tileColor: (toDo.myDay)
+            ? Theme.of(context)
+                .colorScheme
+                .primaryContainer
+                .withOpacity(Constants.myDayOpacity)
+            : null,
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: Constants.padding),
+        key: ValueKey(toDo.id),
+        shape: const RoundedRectangleBorder(
+            borderRadius:
+                BorderRadius.all(Radius.circular(Constants.roundedCorners))),
+        leading: LeadingWidgets.toDoCheckbox(
+            outerPadding:
+                const EdgeInsets.symmetric(horizontal: Constants.halfPadding),
+            scale: 1.1,
+            completed: toDo.completed,
+            onChanged: (bool? value) async {
+              toDo.completed = value!;
 
-                if (null != checkboxAnimateBeforeUpdate) {
-                  await checkboxAnimateBeforeUpdate(toDo: toDo, index: index);
-                }
+              if (null != checkboxAnimateBeforeUpdate) {
+                await checkboxAnimateBeforeUpdate(toDo: toDo, index: index);
+              }
 
-                await toDoProvider.updateToDo(toDo: toDo);
-              }),
-          title: AutoSizeText(toDo.name,
-              overflow: TextOverflow.ellipsis,
-              minFontSize: Constants.large,
-              softWrap: false,
-              maxLines: 2),
-          subtitle: Subtitles.toDoSubtitle(
-              smallScreen: smallScreen,
+              await toDoProvider.updateToDo(toDo: toDo);
+            }),
+        title: AutoSizeText(toDo.name,
+            overflow: TextOverflow.ellipsis,
+            minFontSize: Constants.large,
+            softWrap: false,
+            maxLines: 2),
+        subtitle: Subtitles.toDoSubtitle(
+            smallScreen: smallScreen,
+            context: context,
+            id: toDo.groupID,
+            dueDate: toDo.dueDate,
+            priority: toDo.priority,
+            onError: () async {
+              toDo.groupID = null;
+              await toDoProvider.updateToDo(toDo: toDo);
+            }),
+        onTap: () async {
+          await showDialog(
+              barrierDismissible: false,
+              useRootNavigator: false,
               context: context,
-              id: toDo.groupID,
-              dueDate: toDo.dueDate,
-              priority: toDo.priority,
-              onError: () async {
-                toDo.groupID = null;
-                await Provider.of<ToDoProvider>(context, listen: false)
-                    .updateToDo(toDo: toDo);
-              }),
-          onTap: () async {
-            await showDialog(
-                barrierDismissible: false,
-                useRootNavigator: false,
-                context: context,
-                builder: (BuildContext context) =>
-                    UpdateToDoScreen(initialToDo: toDo));
-          },
-          trailing: Row(mainAxisSize: MainAxisSize.min, children: [
-            Row(mainAxisSize: MainAxisSize.min, children: [
-              Constants.batteryIcons[(toDo.taskType == TaskType.small)
-                  ? toDo.weight
-                  : clamp(
-                          x: remap(
-                              x: toDo.weight,
-                              inMin: 0,
-                              inMax: Constants.maxWeight,
-                              outMin: 0,
-                              outMax: 5),
-                          ll: 0,
-                          ul: 5)
-                      .toInt()]!,
-              AutoSizeText(
-                "${toDo.weight}",
-                overflow: TextOverflow.visible,
-                minFontSize: Constants.medium,
-                softWrap: false,
-                maxLines: 1,
-              ),
-            ]),
-            Padding(
-                padding: EdgeInsets.zero,
-                child: IconButton(
-                  icon: const Icon(Icons.delete_forever_rounded),
-                  onPressed: () async {
-                    if (!checkDelete) {
-                      return await deleteToDo(toDo: toDo, context: context);
+              builder: (BuildContext context) =>
+                  UpdateToDoScreen(initialToDo: toDo));
+        },
+        trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+          Row(mainAxisSize: MainAxisSize.min, children: [
+            Constants.batteryIcons[(toDo.taskType == TaskType.small)
+                ? toDo.weight
+                : clamp(
+                        x: remap(
+                            x: toDo.weight,
+                            inMin: 0,
+                            inMax: Constants.maxWeight,
+                            outMin: 0,
+                            outMax: 5),
+                        ll: 0,
+                        ul: 5)
+                    .toInt()]!,
+            AutoSizeText(
+              "${toDo.weight}",
+              overflow: TextOverflow.visible,
+              minFontSize: Constants.medium,
+              softWrap: false,
+              maxLines: 1,
+            ),
+          ]),
+          Padding(
+              padding: EdgeInsets.zero,
+              child: IconButton(
+                icon: const Icon(Icons.delete_forever_rounded),
+                onPressed: () async {
+                  if (!checkDelete) {
+                    return await deleteToDo(toDo: toDo, context: context);
+                  }
+                  return await showDialog<List<bool>?>(
+                      barrierDismissible: true,
+                      context: context,
+                      builder: (BuildContext context) {
+                        return CheckDeleteDialog(
+                            dontAsk: !checkDelete, type: "Task");
+                        // Dialog function.
+                      }).then((results) async {
+                    if (null == results) {
+                      return;
                     }
-                    return await showDialog<List<bool>?>(
-                        barrierDismissible: true,
+                    userProvider.curUser?.checkDelete = results[1];
+                    if (!results[0]) {
+                      return;
+                    }
+                    await deleteToDo(
+                        toDo: toDo,
                         context: context,
-                        builder: (BuildContext context) {
-                          return CheckDeleteDialog(
-                              dontAsk: !checkDelete, type: "Task");
-                          // Dialog function.
-                        }).then((results) async {
-                      if (null == results) {
-                        return;
-                      }
-                      Provider.of<UserProvider>(context, listen: false)
-                          .curUser
-                          ?.checkDelete = results[1];
-                      if (!results[0]) {
-                        return;
-                      }
-                      await deleteToDo(toDo: toDo, context: context);
-                    });
-                  },
-                )),
-            (showHandle)
-                ? const Icon(Icons.drag_handle_rounded)
-                : const SizedBox.shrink(),
-          ]));
+                        toDoProvider: toDoProvider);
+                  });
+                },
+              )),
+          (showHandle)
+              ? ReorderableDragStartListener(
+                  index: index, child: const Icon(Icons.drag_handle_rounded))
+              : const SizedBox.shrink(),
+        ]));
+  }
 
   // Helper function to delete ToDos ->
-  static Future<void> deleteToDo({
-    required ToDo toDo,
-    required BuildContext context,
-  }) async {
-    ToDoProvider toDoProvider =
-        Provider.of<ToDoProvider>(context, listen: false);
+  static Future<void> deleteToDo(
+      {required ToDo toDo,
+      required BuildContext context,
+      ToDoProvider? toDoProvider}) async {
+    toDoProvider =
+        toDoProvider ?? Provider.of<ToDoProvider>(context, listen: false);
     // For repeating ToDos.
     if (toDo.frequency != Frequency.once) {
       await showModalBottomSheet<bool?>(
@@ -181,7 +190,7 @@ class Tiles {
 
         // If delete all.
         if (!deleteSingle) {
-          return await toDoProvider.deleteFutures(toDo: toDo).catchError((e) {
+          return await toDoProvider!.deleteFutures(toDo: toDo).catchError((e) {
             Flushbar? error;
 
             error = Flushbars.createError(
@@ -195,7 +204,7 @@ class Tiles {
         }
 
         // If delete one.
-        await toDoProvider.nextRepeat(toDo: toDo).catchError((e) {
+        await toDoProvider!.nextRepeat(toDo: toDo).catchError((e) {
           Flushbar? error;
 
           error = Flushbars.createError(
@@ -224,212 +233,311 @@ class Tiles {
     }, test: (e) => e is FailureToDeleteException);
   }
 
+  static Widget toDoMyDayTile({
+    required BuildContext context,
+    required int index,
+    required ToDo toDo,
+    bool smallScreen = false,
+    Future<void> Function({required ToDo toDo, required int index})?
+        checkboxAnimateBeforeUpdate,
+    bool showHandle = false,
+  }) {
+    ToDoProvider toDoProvider = Provider.of(context, listen: false);
+    return ListTile(
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: Constants.padding),
+        key: ValueKey(toDo.id ^ index),
+        shape: const RoundedRectangleBorder(
+            borderRadius:
+                BorderRadius.all(Radius.circular(Constants.roundedCorners))),
+        leading: LeadingWidgets.toDoCheckbox(
+            outerPadding:
+                const EdgeInsets.symmetric(horizontal: Constants.halfPadding),
+            scale: 1.1,
+            completed: toDo.completed,
+            onChanged: (bool? value) async {
+              toDo.completed = value!;
+
+              if (null != checkboxAnimateBeforeUpdate) {
+                await checkboxAnimateBeforeUpdate(toDo: toDo, index: index);
+              }
+
+              await toDoProvider.updateToDo(toDo: toDo);
+            }),
+        title: AutoSizeText(toDo.name,
+            overflow: TextOverflow.ellipsis,
+            minFontSize: Constants.large,
+            softWrap: false,
+            maxLines: 2),
+        subtitle: Subtitles.toDoSubtitle(
+            smallScreen: smallScreen,
+            context: context,
+            id: toDo.groupID,
+            dueDate: toDo.dueDate,
+            priority: toDo.priority,
+            onError: () async {
+              toDo.groupID = null;
+              await toDoProvider.updateToDo(toDo: toDo);
+            }),
+        onTap: () async {
+          await showDialog(
+              barrierDismissible: false,
+              useRootNavigator: false,
+              context: context,
+              builder: (BuildContext context) =>
+                  UpdateToDoScreen(initialToDo: toDo));
+        },
+        trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+          Row(mainAxisSize: MainAxisSize.min, children: [
+            Constants.batteryIcons[(toDo.taskType == TaskType.small)
+                ? toDo.weight
+                : clamp(
+                        x: remap(
+                            x: toDo.weight,
+                            inMin: 0,
+                            inMax: Constants.maxWeight,
+                            outMin: 0,
+                            outMax: 5),
+                        ll: 0,
+                        ul: 5)
+                    .toInt()]!,
+            AutoSizeText(
+              "${toDo.weight}",
+              overflow: TextOverflow.visible,
+              minFontSize: Constants.medium,
+              softWrap: false,
+              maxLines: 1,
+            ),
+          ]),
+          Padding(
+              padding: EdgeInsets.zero,
+              child: IconButton(
+                icon: const Icon(Icons.cloud_off_rounded),
+                onPressed: () async {
+                  toDo.myDay = false;
+                  await toDoProvider.updateToDo(toDo: toDo);
+                },
+              )),
+          (showHandle)
+              ? ReorderableDragStartListener(
+                  index: index, child: const Icon(Icons.drag_handle_rounded))
+              : const SizedBox.shrink(),
+        ]));
+  }
+
   static Widget routineListTile(
-          {required BuildContext context,
-          required int index,
-          required Routine routine,
-          bool showHandle = false,
-          bool checkDelete = false}) =>
-      ListTile(
-          contentPadding: const EdgeInsets.only(right: Constants.padding),
-          key: ValueKey(routine.id),
-          shape: const RoundedRectangleBorder(
-              borderRadius:
-                  BorderRadius.all(Radius.circular(Constants.roundedCorners))),
-          leading: LeadingWidgets.routineIcon(
-              currentContext: context,
-              scale: 1,
-              routineTime: Provider.of<RoutineProvider>(context, listen: false)
-                  .getRoutineTime(routine: routine),
-              handleRoutineTimeChange: (
-                  {required RoutineTime? newRoutineTime}) async {
-                if (null == newRoutineTime) {
-                  return;
-                }
-                await Provider.of<RoutineProvider>(context, listen: false)
-                    .handleRoutineTime(time: newRoutineTime, routine: routine);
-              }),
-          title: AutoSizeText(routine.name,
-              overflow: TextOverflow.ellipsis,
+      {required BuildContext context,
+      required int index,
+      required Routine routine,
+      bool showHandle = false,
+      bool checkDelete = false}) {
+    RoutineProvider routineProvider =
+        Provider.of<RoutineProvider>(context, listen: false);
+    UserProvider userProvider =
+        Provider.of<UserProvider>(context, listen: false);
+    return ListTile(
+        contentPadding: const EdgeInsets.only(right: Constants.padding),
+        key: ValueKey(routine.id),
+        shape: const RoundedRectangleBorder(
+            borderRadius:
+                BorderRadius.all(Radius.circular(Constants.roundedCorners))),
+        leading: LeadingWidgets.routineIcon(
+            currentContext: context,
+            scale: 1,
+            routineTime: routineProvider.getRoutineTime(routine: routine),
+            handleRoutineTimeChange: (
+                {required RoutineTime? newRoutineTime}) async {
+              if (null == newRoutineTime) {
+                return;
+              }
+              await routineProvider.handleRoutineTime(
+                  time: newRoutineTime, routine: routine);
+            }),
+        title: AutoSizeText(routine.name,
+            overflow: TextOverflow.ellipsis,
+            minFontSize: Constants.large,
+            softWrap: false,
+            maxLines: 2),
+        subtitle: Subtitles.routineSubtitle(
+            numTasks: routine.routineTasks.indexOf(SubTask())),
+        onTap: () async {
+          await showDialog(
+              barrierDismissible: false,
+              useRootNavigator: false,
+              context: context,
+              builder: (BuildContext context) =>
+                  UpdateRoutineScreen(initialRoutine: routine));
+        },
+        trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+          Row(mainAxisSize: MainAxisSize.min, children: [
+            Constants.batteryIcons[remap(
+                    x: routine.weight,
+                    inMin: 0,
+                    inMax: Constants.maxWeight,
+                    outMin: 0,
+                    outMax: 5)
+                .toInt()]!,
+            AutoSizeText(
+              "${routine.weight}",
+              overflow: TextOverflow.visible,
               minFontSize: Constants.large,
               softWrap: false,
-              maxLines: 2),
-          subtitle: Subtitles.routineSubtitle(
-              numTasks: routine.routineTasks.indexOf(SubTask())),
-          onTap: () async {
-            await showDialog(
-                barrierDismissible: false,
-                useRootNavigator: false,
-                context: context,
-                builder: (BuildContext context) =>
-                    UpdateRoutineScreen(initialRoutine: routine));
-          },
-          trailing: Row(mainAxisSize: MainAxisSize.min, children: [
-            Row(mainAxisSize: MainAxisSize.min, children: [
-              Constants.batteryIcons[remap(
-                      x: routine.weight,
-                      inMin: 0,
-                      inMax: Constants.maxWeight,
-                      outMin: 0,
-                      outMax: 5)
-                  .toInt()]!,
-              AutoSizeText(
-                "${routine.weight}",
-                overflow: TextOverflow.visible,
-                minFontSize: Constants.large,
-                softWrap: false,
-                maxLines: 1,
-              ),
-            ]),
-            Padding(
-                padding: EdgeInsets.zero,
-                child: IconButton(
-                  icon: const Icon(Icons.delete_forever_rounded),
-                  onPressed: () async {
-                    RoutineProvider routineProvider =
-                        Provider.of(context, listen: false);
-                    if (!checkDelete) {
-                      return await routineProvider
-                          .deleteRoutine(routine: routine)
-                          .catchError((e) {
-                        Flushbar? error;
+              maxLines: 1,
+            ),
+          ]),
+          Padding(
+              padding: EdgeInsets.zero,
+              child: IconButton(
+                icon: const Icon(Icons.delete_forever_rounded),
+                onPressed: () async {
+                  if (!checkDelete) {
+                    return await routineProvider
+                        .deleteRoutine(routine: routine)
+                        .catchError((e) {
+                      Flushbar? error;
 
-                        error = Flushbars.createError(
-                          message: e.cause,
-                          context: context,
-                          dismissCallback: () => error?.dismiss(),
-                        );
-
-                        error.show(context);
-                      }, test: (e) => e is FailureToDeleteException);
-                    }
-                    return await showDialog<List<bool>?>(
-                        barrierDismissible: true,
+                      error = Flushbars.createError(
+                        message: e.cause,
                         context: context,
-                        builder: (BuildContext context) {
-                          return CheckDeleteDialog(
-                              dontAsk: !checkDelete, type: "Routine");
-                          // Dialog function.
-                        }).then((results) async {
-                      if (null == results) {
-                        return;
-                      }
-                      Provider.of<UserProvider>(context, listen: false)
-                          .curUser
-                          ?.checkDelete = results[1];
-                      if (!results[0]) {
-                        return;
-                      }
-                      await routineProvider
-                          .deleteRoutine(routine: routine)
-                          .catchError((e) {
-                        Flushbar? error;
+                        dismissCallback: () => error?.dismiss(),
+                      );
 
-                        error = Flushbars.createError(
-                          message: e.cause,
-                          context: context,
-                          dismissCallback: () => error?.dismiss(),
-                        );
+                      error.show(context);
+                    }, test: (e) => e is FailureToDeleteException);
+                  }
+                  return await showDialog<List<bool>?>(
+                      barrierDismissible: true,
+                      context: context,
+                      builder: (BuildContext context) {
+                        return CheckDeleteDialog(
+                            dontAsk: !checkDelete, type: "Routine");
+                        // Dialog function.
+                      }).then((results) async {
+                    if (null == results) {
+                      return;
+                    }
+                    userProvider.curUser?.checkDelete = results[1];
+                    if (!results[0]) {
+                      return;
+                    }
+                    await routineProvider
+                        .deleteRoutine(routine: routine)
+                        .catchError((e) {
+                      Flushbar? error;
 
-                        error.show(context);
-                      }, test: (e) => e is FailureToDeleteException);
-                    });
-                  },
-                )),
-            (showHandle)
-                ? const Icon(Icons.drag_handle_rounded)
-                : const SizedBox.shrink(),
-          ]));
+                      error = Flushbars.createError(
+                        message: e.cause,
+                        context: context,
+                        dismissCallback: () => error?.dismiss(),
+                      );
+
+                      error.show(context);
+                    }, test: (e) => e is FailureToDeleteException);
+                  });
+                },
+              )),
+          (showHandle)
+              ? ReorderableDragStartListener(
+                  index: index, child: const Icon(Icons.drag_handle_rounded))
+              : const SizedBox.shrink(),
+        ]));
+  }
 
   static Widget deadlineListTile(
-          {required BuildContext context,
-          required int index,
-          required Deadline deadline,
-          bool smallScreen = false,
-          bool showHandle = false,
-          bool checkDelete = false}) =>
-      ListTile(
-          contentPadding:
-              // Check the padding.
-              const EdgeInsets.symmetric(horizontal: Constants.padding),
-          key: ValueKey(deadline.id),
-          shape: const RoundedRectangleBorder(
-              borderRadius:
-                  BorderRadius.all(Radius.circular(Constants.roundedCorners))),
-          leading: (deadline.warnMe)
-              ? LeadingWidgets.deadlineWarnMeIcon(
-                  currentContext: context,
-                  outerPadding: const EdgeInsets.symmetric(
-                      horizontal: Constants.halfPadding),
-                  iconPadding: const EdgeInsets.all(Constants.halfPadding))
-              : LeadingWidgets.deadlineIcon(
-                  currentContext: context,
-                  outerPadding: const EdgeInsets.symmetric(
-                      horizontal: Constants.halfPadding),
-                  iconPadding: const EdgeInsets.all(Constants.halfPadding)),
-          title: AutoSizeText(deadline.name,
-              overflow: TextOverflow.ellipsis,
-              minFontSize: Constants.large,
-              softWrap: false,
-              maxLines: 2),
-          subtitle: Subtitles.deadlineSubtitle(
-            context: context,
-            smallScreen: smallScreen,
-            dueDate: deadline.dueDate,
-            warnDate: (deadline.warnMe) ? deadline.warnDate : null,
-            priority: deadline.priority,
-          ),
-          onTap: () async {
-            await showDialog(
-                barrierDismissible: false,
-                useRootNavigator: false,
-                context: context,
-                builder: (BuildContext context) =>
-                    UpdateDeadlineScreen(initialDeadline: deadline));
-          },
-          trailing: Row(mainAxisSize: MainAxisSize.min, children: [
-            Padding(
-                padding: EdgeInsets.zero,
-                child: IconButton(
-                  icon: const Icon(Icons.delete_forever_rounded),
-                  onPressed: () async {
-                    if (!checkDelete) {
-                      return await deleteDeadline(
-                          deadline: deadline, context: context);
+      {required BuildContext context,
+      required int index,
+      required Deadline deadline,
+      bool smallScreen = false,
+      bool showHandle = false,
+      bool checkDelete = false}) {
+    DeadlineProvider deadlineProvider =
+        Provider.of<DeadlineProvider>(context, listen: false);
+    UserProvider userProvider = Provider.of(context, listen: false);
+    return ListTile(
+        contentPadding:
+            // Check the padding.
+            const EdgeInsets.symmetric(horizontal: Constants.padding),
+        key: ValueKey(deadline.id),
+        shape: const RoundedRectangleBorder(
+            borderRadius:
+                BorderRadius.all(Radius.circular(Constants.roundedCorners))),
+        leading: (deadline.warnMe)
+            ? LeadingWidgets.deadlineWarnMeIcon(
+                currentContext: context,
+                outerPadding: const EdgeInsets.symmetric(
+                    horizontal: Constants.halfPadding),
+                iconPadding: const EdgeInsets.all(Constants.halfPadding))
+            : LeadingWidgets.deadlineIcon(
+                currentContext: context,
+                outerPadding: const EdgeInsets.symmetric(
+                    horizontal: Constants.halfPadding),
+                iconPadding: const EdgeInsets.all(Constants.halfPadding)),
+        title: AutoSizeText(deadline.name,
+            overflow: TextOverflow.ellipsis,
+            minFontSize: Constants.large,
+            softWrap: false,
+            maxLines: 2),
+        subtitle: Subtitles.deadlineSubtitle(
+          context: context,
+          smallScreen: smallScreen,
+          dueDate: deadline.dueDate,
+          warnDate: (deadline.warnMe) ? deadline.warnDate : null,
+          priority: deadline.priority,
+        ),
+        onTap: () async {
+          await showDialog(
+              barrierDismissible: false,
+              useRootNavigator: false,
+              context: context,
+              builder: (BuildContext context) =>
+                  UpdateDeadlineScreen(initialDeadline: deadline));
+        },
+        trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+          Padding(
+              padding: EdgeInsets.zero,
+              child: IconButton(
+                icon: const Icon(Icons.delete_forever_rounded),
+                onPressed: () async {
+                  if (!checkDelete) {
+                    return await deleteDeadline(
+                        deadline: deadline, context: context);
+                  }
+                  return await showDialog<List<bool>?>(
+                      barrierDismissible: true,
+                      context: context,
+                      builder: (BuildContext context) {
+                        return CheckDeleteDialog(
+                            dontAsk: !checkDelete, type: "Deadline");
+                        // Dialog function.
+                      }).then((results) async {
+                    if (null == results) {
+                      return;
                     }
-                    return await showDialog<List<bool>?>(
-                        barrierDismissible: true,
+                    userProvider.curUser?.checkDelete = results[1];
+                    if (!results[0]) {
+                      return;
+                    }
+                    await deleteDeadline(
+                        deadline: deadline,
                         context: context,
-                        builder: (BuildContext context) {
-                          return CheckDeleteDialog(
-                              dontAsk: !checkDelete, type: "Deadline");
-                          // Dialog function.
-                        }).then((results) async {
-                      if (null == results) {
-                        return;
-                      }
-                      Provider.of<UserProvider>(context, listen: false)
-                          .curUser
-                          ?.checkDelete = results[1];
-                      if (!results[0]) {
-                        return;
-                      }
-                      await deleteDeadline(
-                          deadline: deadline, context: context);
-                    });
-                  },
-                )),
-            (showHandle)
-                ? const Icon(Icons.drag_handle_rounded)
-                : const SizedBox.shrink(),
-          ]));
+                        deadlineProvider: deadlineProvider);
+                  });
+                },
+              )),
+          (showHandle)
+              ? ReorderableDragStartListener(
+                  index: index, child: const Icon(Icons.drag_handle_rounded))
+              : const SizedBox.shrink(),
+        ]));
+  }
 
   // Helper function to delete deadlines ->
   static Future<void> deleteDeadline({
     required Deadline deadline,
     required BuildContext context,
+    DeadlineProvider? deadlineProvider,
   }) async {
-    DeadlineProvider deadlineProvider =
+    deadlineProvider = deadlineProvider ??
         Provider.of<DeadlineProvider>(context, listen: false);
     // For repeating deadlines.
     if (deadline.frequency != Frequency.once) {
@@ -445,7 +553,7 @@ class Tiles {
 
         // If delete all.
         if (!deleteSingle) {
-          return await deadlineProvider
+          return await deadlineProvider!
               .deleteAndCancelFutures(deadline: deadline)
               .catchError((e) {
             Flushbar? error;
@@ -461,7 +569,7 @@ class Tiles {
         }
 
         // If delete one.
-        await deadlineProvider.nextRepeat(deadline: deadline).catchError((e) {
+        await deadlineProvider!.nextRepeat(deadline: deadline).catchError((e) {
           Flushbar? error;
 
           error = Flushbars.createError(
@@ -492,92 +600,95 @@ class Tiles {
   }
 
   static Widget reminderListTile(
-          {required BuildContext context,
-          required int index,
-          required Reminder reminder,
-          bool smallScreen = false,
-          bool showHandle = false,
-          bool checkDelete = false}) =>
-      ListTile(
-          contentPadding:
-              // Check the padding.
-              const EdgeInsets.symmetric(horizontal: Constants.padding),
-          key: ValueKey(reminder.id),
-          shape: const RoundedRectangleBorder(
-              borderRadius:
-                  BorderRadius.all(Radius.circular(Constants.roundedCorners))),
-          leading: (Frequency.once != reminder.frequency)
-              ? LeadingWidgets.reminderRepeatingIcon(
-                  currentContext: context,
-                  outerPadding: const EdgeInsets.symmetric(
-                      horizontal: Constants.halfPadding),
-                  iconPadding: const EdgeInsets.all(Constants.halfPadding))
-              : LeadingWidgets.reminderIcon(
-                  currentContext: context,
-                  outerPadding: const EdgeInsets.symmetric(
-                      horizontal: Constants.halfPadding),
-                  iconPadding: const EdgeInsets.all(Constants.halfPadding)),
-          title: AutoSizeText(reminder.name,
-              overflow: TextOverflow.ellipsis,
-              minFontSize: Constants.large,
-              softWrap: false,
-              maxLines: 2),
-          subtitle: Subtitles.reminderSubtitle(
-            smallScreen: smallScreen,
-            context: context,
-            dueDate: reminder.dueDate,
-          ),
-          onTap: () async {
-            await showDialog(
-                barrierDismissible: false,
-                useRootNavigator: false,
-                context: context,
-                builder: (BuildContext context) =>
-                    UpdateReminderScreen(initialReminder: reminder));
-          },
-          trailing: Row(mainAxisSize: MainAxisSize.min, children: [
-            Padding(
-                padding: EdgeInsets.zero,
-                child: IconButton(
-                  icon: const Icon(Icons.delete_forever_rounded),
-                  onPressed: () async {
-                    if (!checkDelete) {
-                      return await deleteReminder(
-                          reminder: reminder, context: context);
-                    }
-                    return await showDialog<List<bool>?>(
-                        barrierDismissible: true,
+      {required BuildContext context,
+      required int index,
+      required Reminder reminder,
+      bool smallScreen = false,
+      bool showHandle = false,
+      bool checkDelete = false}) {
+    ReminderProvider reminderProvider =
+        Provider.of<ReminderProvider>(context, listen: false);
+    UserProvider userProvider = Provider.of(context, listen: false);
+    return ListTile(
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: Constants.padding),
+        key: ValueKey(reminder.id),
+        shape: const RoundedRectangleBorder(
+            borderRadius:
+                BorderRadius.all(Radius.circular(Constants.roundedCorners))),
+        leading: (Frequency.once != reminder.frequency)
+            ? LeadingWidgets.reminderRepeatingIcon(
+                currentContext: context,
+                outerPadding: const EdgeInsets.symmetric(
+                    horizontal: Constants.halfPadding),
+                iconPadding: const EdgeInsets.all(Constants.halfPadding))
+            : LeadingWidgets.reminderIcon(
+                currentContext: context,
+                outerPadding: const EdgeInsets.symmetric(
+                    horizontal: Constants.halfPadding),
+                iconPadding: const EdgeInsets.all(Constants.halfPadding)),
+        title: AutoSizeText(reminder.name,
+            overflow: TextOverflow.ellipsis,
+            minFontSize: Constants.large,
+            softWrap: false,
+            maxLines: 2),
+        subtitle: Subtitles.reminderSubtitle(
+          smallScreen: smallScreen,
+          context: context,
+          dueDate: reminder.dueDate,
+        ),
+        onTap: () async {
+          await showDialog(
+              barrierDismissible: false,
+              useRootNavigator: false,
+              context: context,
+              builder: (BuildContext context) =>
+                  UpdateReminderScreen(initialReminder: reminder));
+        },
+        trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+          Padding(
+              padding: EdgeInsets.zero,
+              child: IconButton(
+                icon: const Icon(Icons.delete_forever_rounded),
+                onPressed: () async {
+                  if (!checkDelete) {
+                    return await deleteReminder(
+                        reminder: reminder,
                         context: context,
-                        builder: (BuildContext context) {
-                          return CheckDeleteDialog(
-                              dontAsk: !checkDelete, type: "Reminder");
-                          // Dialog function.
-                        }).then((results) async {
-                      if (null == results) {
-                        return;
-                      }
-                      Provider.of<UserProvider>(context, listen: false)
-                          .curUser
-                          ?.checkDelete = results[1];
-                      if (!results[0]) {
-                        return;
-                      }
-                      await deleteReminder(
-                          reminder: reminder, context: context);
-                    });
-                  },
-                )),
-            (showHandle)
-                ? const Icon(Icons.drag_handle_rounded)
-                : const SizedBox.shrink(),
-          ]));
+                        reminderProvider: reminderProvider);
+                  }
+                  return await showDialog<List<bool>?>(
+                      barrierDismissible: true,
+                      context: context,
+                      builder: (BuildContext context) {
+                        return CheckDeleteDialog(
+                            dontAsk: !checkDelete, type: "Reminder");
+                        // Dialog function.
+                      }).then((results) async {
+                    if (null == results) {
+                      return;
+                    }
+                    userProvider.curUser?.checkDelete = results[1];
+                    if (!results[0]) {
+                      return;
+                    }
+                    await deleteReminder(reminder: reminder, context: context);
+                  });
+                },
+              )),
+          (showHandle)
+              ? ReorderableDragStartListener(
+                  index: index, child: const Icon(Icons.drag_handle_rounded))
+              : const SizedBox.shrink(),
+        ]));
+  }
 
   // Helper function to delete deadlines ->
-  static Future<void> deleteReminder({
-    required Reminder reminder,
-    required BuildContext context,
-  }) async {
-    ReminderProvider reminderProvider =
+  static Future<void> deleteReminder(
+      {required Reminder reminder,
+      required BuildContext context,
+      ReminderProvider? reminderProvider}) async {
+    reminderProvider = reminderProvider ??
         Provider.of<ReminderProvider>(context, listen: false);
     // For repeating deadlines.
     if (reminder.frequency != Frequency.once) {
@@ -593,7 +704,7 @@ class Tiles {
 
         // If delete all.
         if (!deleteSingle) {
-          return await reminderProvider
+          return await reminderProvider!
               .deleteAndCancelFutures(reminder: reminder)
               .catchError((e) {
             Flushbar? error;
@@ -609,7 +720,7 @@ class Tiles {
         }
 
         // If delete one.
-        await reminderProvider.nextRepeat(reminder: reminder).catchError((e) {
+        await reminderProvider!.nextRepeat(reminder: reminder).catchError((e) {
           Flushbar? error;
 
           error = Flushbars.createError(
@@ -639,163 +750,199 @@ class Tiles {
     }, test: (e) => e is FailureToDeleteException);
   }
 
-  // TBD Migrate to a paginating listtile?.
+  // TODO: Figure out some way to update the number of toDos.
   static Widget groupListTile(
-          {required int index,
-          required Group group,
-          required BuildContext context,
-          bool showHandle = false,
-          bool checkDelete = false,
-          ScrollPhysics physics = const NeverScrollableScrollPhysics()}) =>
-      ExpandedListTile(
-          key: ValueKey(group.id),
-          outerPadding:
-              const EdgeInsets.symmetric(horizontal: Constants.padding),
-          expanded: group.toDos.isNotEmpty,
-          leading: LeadingWidgets.groupListViewIcon(onPressed: () async {
-            await showDialog(
-                barrierDismissible: false,
-                useRootNavigator: false,
-                context: context,
-                builder: (BuildContext context) =>
-                    UpdateGroupScreen(initialGroup: group));
-          }),
-          trailing: Row(mainAxisSize: MainAxisSize.min, children: [
-            Padding(
-                padding: EdgeInsets.zero,
-                child: IconButton(
-                  icon: const Icon(Icons.delete_forever_rounded),
-                  onPressed: () async {
-                    GroupProvider groupProvider =
-                        Provider.of<GroupProvider>(context, listen: false);
-                    if (!checkDelete) {
-                      return await groupProvider.deleteGroup(group: group);
+      {required int index,
+      required Group group,
+      required BuildContext context,
+      bool showHandle = false,
+      bool checkDelete = false,
+      ScrollPhysics physics = const NeverScrollableScrollPhysics()}) {
+    GroupProvider groupProvider =
+        Provider.of<GroupProvider>(context, listen: false);
+    ToDoProvider toDoProvider =
+        Provider.of<ToDoProvider>(context, listen: false);
+    UserProvider userProvider =
+        Provider.of<UserProvider>(context, listen: false);
+
+    return ExpandedListTile(
+        key: ValueKey(group.id),
+        outerPadding: const EdgeInsets.symmetric(horizontal: Constants.padding),
+        expanded: true,
+        leading: LeadingWidgets.groupListViewIcon(onPressed: () async {
+          await showDialog(
+              barrierDismissible: false,
+              useRootNavigator: false,
+              context: context,
+              builder: (BuildContext context) {
+                return UpdateGroupScreen(initialGroup: group);
+              });
+        }),
+        trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+          Padding(
+              padding: EdgeInsets.zero,
+              child: IconButton(
+                icon: const Icon(Icons.delete_forever_rounded),
+                onPressed: () async {
+                  if (!checkDelete) {
+                    return await groupProvider.deleteGroup(group: group);
+                  }
+                  return await showDialog<List<bool>?>(
+                      barrierDismissible: true,
+                      context: context,
+                      builder: (BuildContext context) {
+                        return CheckDeleteDialog(
+                            dontAsk: !checkDelete, type: "Group");
+                        // Dialog function.
+                      }).then((results) async {
+                    if (null == results) {
+                      return;
                     }
-                    return await showDialog<List<bool>?>(
-                        barrierDismissible: true,
+                    userProvider.curUser?.checkDelete = results[1];
+                    if (!results[0]) {
+                      return;
+                    }
+                    await groupProvider.deleteGroup(group: group);
+                  });
+                },
+              )),
+          (showHandle)
+              ? ReorderableDragStartListener(
+                  index: index, child: const Icon(Icons.drag_handle_rounded))
+              : const SizedBox.shrink(),
+        ]),
+        title: AutoSizeText(
+          group.name,
+          maxLines: 1,
+          overflow: TextOverflow.visible,
+          softWrap: false,
+          minFontSize: Constants.large,
+        ),
+        subtitle: Subtitles.groupSubtitle(
+            toDoCount: groupProvider.getToDoCount(id: group.id)),
+        children: [
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Expanded(
+                child: SearchRecentsBar<ToDo>(
+                  clearOnSelection: true,
+                  hintText: "Search Tasks",
+                  padding: const EdgeInsets.all(Constants.padding),
+                  handleDataSelection: ({required int id}) async {
+                    await groupToDoDataSelection(
+                        toDoID: id,
+                        groupID: group.id,
                         context: context,
-                        builder: (BuildContext context) {
-                          return CheckDeleteDialog(
-                              dontAsk: !checkDelete, type: "Group");
-                          // Dialog function.
-                        }).then((results) async {
-                      if (null == results) {
-                        return;
-                      }
-                      Provider.of<UserProvider>(context, listen: false)
-                          .curUser
-                          ?.checkDelete = results[1];
-                      if (!results[0]) {
-                        return;
-                      }
-                      await groupProvider.deleteGroup(group: group);
-                    });
+                        toDoProvider: toDoProvider);
                   },
-                )),
-            (showHandle)
-                ? const Icon(Icons.drag_handle_rounded)
-                : const SizedBox.shrink(),
-          ]),
-          title: AutoSizeText(
-            group.name,
-            maxLines: 1,
-            overflow: TextOverflow.visible,
-            softWrap: false,
-            minFontSize: Constants.large,
+                  handleHistorySelection: ({required int id}) async {
+                    await groupToDoDataSelection(
+                        toDoID: id,
+                        groupID: group.id,
+                        context: context,
+                        toDoProvider: toDoProvider);
+                  },
+                  // TODO: Figure out a way to implement a text listener -> May be best to
+                  // factor out into ListView class, or add the listener in the expanded tile class.
+                  // TODO: refactor searchrecents to add the listener in itself
+                  searchController: SearchController(),
+                  mostRecent: toDoProvider.mostRecent,
+                  search: toDoProvider.searchToDos,
+                ),
+              ),
+            ],
           ),
-          subtitle: Subtitles.groupSubtitle(numTasks: group.toDos.length),
-          children: [
-            ListViews.reorderableGroupToDos(
-                context: context,
-                toDos: group.toDos,
-                physics: physics,
-                onChanged: ({required int index, bool value = false}) async {
-                  group.toDos[index].completed = value;
-                  await Provider.of<ToDoProvider>(context, listen: false)
-                      .updateToDo(toDo: group.toDos[index]);
-                },
-                onTap: ({required int index}) async {
-                  await showDialog(
-                      barrierDismissible: false,
-                      useRootNavigator: false,
-                      context: context,
-                      builder: (BuildContext context) => UpdateToDoScreen(
-                            initialToDo: group.toDos[index],
-                            initialGroup:
-                                MapEntry<String, int>(group.name, group.id),
-                          )).catchError((e) {
-                    Flushbar? error;
-
-                    error = Flushbars.createError(
-                      message: e.cause,
-                      context: context,
-                      dismissCallback: () => error?.dismiss(),
-                    );
-
-                    error.show(context);
+          PaginatingListview<ToDo>(
+            items: group.toDos,
+            query: (
+                    {int limit = Constants.minLimitPerQuery,
+                    int offset = 0}) async =>
+                await groupProvider.getToDosByGroupID(
+                    id: group.id, limit: limit, offset: offset),
+            offset: group.toDos.length,
+            paginateButton: true,
+            pullToRefresh: false,
+            rebuildNotifiers: [toDoProvider],
+            rebuildCallback: ({required List<ToDo> items}) {
+              groupProvider.setToDoCount(id: group.id);
+            },
+            listviewBuilder: (
+                {required BuildContext context, required List<ToDo> items}) {
+              return ListViews.reorderableGroupToDos(
+                  context: context,
+                  toDos: items,
+                  physics: physics,
+                  onChanged: ({required int index, bool value = false}) async {
+                    items[index].completed = value;
+                    await toDoProvider.updateToDo(toDo: items[index]);
                   },
-                      test: (e) =>
-                          e is FailureToCreateException ||
-                          e is FailureToUploadException);
-                },
-                handleRemove: ({required int index}) async {
-                  group.toDos[index].groupID = null;
-                  await Provider.of<ToDoProvider>(context, listen: false)
-                      .updateToDo(toDo: group.toDos[index]);
-                }),
-            // alldata -> fetchTile.
-            SearchRecentsBar<ToDo>(
-              clearOnSelection: true,
-              hintText: "Search Tasks",
-              padding: const EdgeInsets.all(Constants.padding),
-              handleDataSelection: ({required int id}) =>
-                  groupToDoDataSelection(
-                      toDoID: id, groupID: group.id, context: context),
-              handleHistorySelection: ({required int id}) =>
-                  groupToDoDataSelection(
-                      toDoID: id, groupID: group.id, context: context),
-              // TODO: Figure out a way to implement a listener -> May be best to
-              // factor out into ListView class, or add the listener in the expanded tile class.
-              searchController: SearchController(),
-              mostRecent:
-                  Provider.of<ToDoProvider>(context, listen: false).mostRecent,
-              search:
-                  Provider.of<ToDoProvider>(context, listen: false).searchToDos,
-            ),
-            Tiles.addTile(
-                title: "Add Task",
-                onTap: () async {
-                  await showDialog(
-                      barrierDismissible: false,
-                      useRootNavigator: false,
-                      context: context,
-                      builder: (BuildContext context) => CreateToDoScreen(
-                            initialGroup:
-                                MapEntry<String, int>(group.name, group.id),
-                          )).catchError((e) {
-                    Flushbar? error;
+                  onTap: ({required int index}) async {
+                    await showDialog(
+                        barrierDismissible: false,
+                        useRootNavigator: false,
+                        context: context,
+                        builder: (BuildContext context) => UpdateToDoScreen(
+                              initialToDo: items[index],
+                              initialGroup:
+                                  MapEntry<String, int>(group.name, group.id),
+                            )).catchError((e) {
+                      Flushbar? error;
 
-                    error = Flushbars.createError(
-                      message: e.cause,
-                      context: context,
-                      dismissCallback: () => error?.dismiss(),
-                    );
+                      error = Flushbars.createError(
+                        message: e.cause,
+                        context: context,
+                        dismissCallback: () => error?.dismiss(),
+                      );
 
-                    error.show(context);
+                      error.show(context);
+                    },
+                        test: (e) =>
+                            e is FailureToCreateException ||
+                            e is FailureToUploadException);
                   },
-                      test: (e) =>
-                          e is FailureToCreateException ||
-                          e is FailureToUploadException);
-                })
-          ]);
+                  handleRemove: ({required int index}) async {
+                    items[index].groupID = null;
+                    await toDoProvider.updateToDo(toDo: items[index]);
+                  });
+            },
+          ),
+          Tiles.addTile(
+              title: "Add Task",
+              onTap: () async {
+                await showDialog(
+                    barrierDismissible: false,
+                    useRootNavigator: false,
+                    context: context,
+                    builder: (BuildContext context) => CreateToDoScreen(
+                          initialGroup:
+                              MapEntry<String, int>(group.name, group.id),
+                        )).catchError((e) {
+                  Flushbar? error;
+
+                  error = Flushbars.createError(
+                    message: e.cause,
+                    context: context,
+                    dismissCallback: () => error?.dismiss(),
+                  );
+
+                  error.show(context);
+                },
+                    test: (e) =>
+                        e is FailureToCreateException ||
+                        e is FailureToUploadException);
+              })
+        ]);
+  }
 
   // Helper method for groupListTile.
   static Future<void> groupToDoDataSelection(
       {required int toDoID,
       required int groupID,
-      required BuildContext context}) async {
-    ToDoProvider toDoProvider =
-        Provider.of<ToDoProvider>(context, listen: false);
+      required BuildContext context,
+      ToDoProvider? toDoProvider}) async {
+    toDoProvider =
+        toDoProvider ?? Provider.of<ToDoProvider>(context, listen: false);
     ToDo? toDo = await toDoProvider.getToDoByID(id: toDoID).catchError((_) {
       Flushbar? error;
 
@@ -814,8 +961,6 @@ class Tiles {
     }
   }
 
-  // NOTE: Reorderable + text-input is not a good combo.
-  // This needs to have the icon reorderable to slow the paint down.
   static Widget subtaskCheckboxTile(
           {required BuildContext context,
           EdgeInsetsGeometry textFieldPadding = EdgeInsets.zero,
@@ -959,7 +1104,8 @@ class Tiles {
                 onPressed: () => handleRemove(index: index),
               )),
           (showHandle)
-              ? const Icon(Icons.drag_handle_rounded)
+              ? ReorderableDragStartListener(
+                  index: index, child: const Icon(Icons.drag_handle_rounded))
               : const SizedBox.shrink(),
         ]));
   }
@@ -1660,7 +1806,6 @@ class Tiles {
       required void Function() toggleMyDay}) {
     String title = "";
     Widget leading;
-    print("canAdd: $canAdd");
 
     if (myDay) {
       title = "Added to my Day";
@@ -1789,6 +1934,23 @@ class Tiles {
           leading: const Icon(Icons.redo_rounded),
           title: const AutoSizeText(
             "Load more",
+            maxLines: 1,
+            overflow: TextOverflow.visible,
+            softWrap: false,
+            minFontSize: Constants.large,
+          ),
+          onTap: onTap);
+
+  static Widget resetTile({
+    required void Function() onTap,
+  }) =>
+      ListTile(
+          shape: const RoundedRectangleBorder(
+              borderRadius:
+                  BorderRadius.all(Radius.circular(Constants.roundedCorners))),
+          leading: const Icon(Icons.refresh_rounded),
+          title: const AutoSizeText(
+            "Reset",
             maxLines: 1,
             overflow: TextOverflow.visible,
             softWrap: false,

@@ -1,4 +1,5 @@
 import 'dart:collection';
+import 'dart:io';
 
 import 'package:another_flushbar/flushbar.dart';
 import 'package:auto_size_text/auto_size_text.dart';
@@ -9,7 +10,6 @@ import 'package:provider/provider.dart';
 import 'package:table_calendar/table_calendar.dart';
 
 import '../../../model/task/deadline.dart';
-import '../../../model/task/group.dart';
 import '../../../model/task/reminder.dart';
 import '../../../model/task/todo.dart';
 import '../../../providers/deadline_provider.dart';
@@ -31,7 +31,6 @@ class CalendarScreen extends StatefulWidget {
   State<CalendarScreen> createState() => _CalendarScreen();
 }
 
-// TODO: Make calendar population more efficient -> Add an optional start date to method in service classes.
 class _CalendarScreen extends State<CalendarScreen> {
   late final ValueNotifier<List<CalendarEvent>> _selectedEvents;
   late final LinkedHashMap<DateTime, Set<CalendarEvent>> _events;
@@ -43,7 +42,9 @@ class _CalendarScreen extends State<CalendarScreen> {
   late DateTime latest;
 
   late final HeaderStyle headerStyle = const HeaderStyle(
-      formatButtonVisible: false, titleTextStyle: Constants.headerStyle);
+      titleCentered: true,
+      formatButtonVisible: false,
+      titleTextStyle: Constants.headerStyle);
 
   late final CalendarStyle calendarStyle = CalendarStyle(
       selectedDecoration: BoxDecoration(
@@ -63,12 +64,25 @@ class _CalendarScreen extends State<CalendarScreen> {
   late DeadlineProvider deadlineProvider;
   late GroupProvider groupProvider;
 
+  late ScrollController mainScrollController;
+  late ScrollPhysics scrollPhysics;
+
   @override
   void initState() {
     super.initState();
     initializeProviders();
     initializeParameters();
+    initializeControllers();
     resetEvents();
+  }
+
+  @override
+  void dispose() {
+    toDoProvider.removeListener(resetEvents);
+    reminderProvider.removeListener(resetEvents);
+    deadlineProvider.removeListener(resetEvents);
+    mainScrollController.dispose();
+    super.dispose();
   }
 
   void initializeProviders() {
@@ -93,6 +107,13 @@ class _CalendarScreen extends State<CalendarScreen> {
     );
 
     _selectedEvents = ValueNotifier(getEventsForDay(_selectedDay));
+  }
+
+  void initializeControllers() {
+    mainScrollController = ScrollController();
+    scrollPhysics = (Platform.isIOS || Platform.isMacOS)
+        ? const BouncingScrollPhysics()
+        : const ClampingScrollPhysics();
   }
 
   Future<void> initializeEvents() async {
@@ -272,14 +293,6 @@ class _CalendarScreen extends State<CalendarScreen> {
     _selectedEvents.value = getEventsForDay(selectedDay);
   }
 
-  @override
-  void dispose() {
-    toDoProvider.removeListener(resetEvents);
-    reminderProvider.removeListener(resetEvents);
-    deadlineProvider.removeListener(resetEvents);
-    super.dispose();
-  }
-
   // TODO: Factor into leadingWidgets
   Widget getModelIcon({required ModelType modelType}) {
     Icon icon = switch (modelType) {
@@ -302,158 +315,7 @@ class _CalendarScreen extends State<CalendarScreen> {
     );
   }
 
-  // This is not called at the moment. Ignore the todo and remove.
-  Widget? getSubtitle(
-      {required ModelType modelType,
-      ToDo? toDo,
-      Deadline? deadline,
-      Reminder? reminder}) {
-    // TODO: refactor this and parameterize.
-    return switch (modelType) {
-      ModelType.task => (null != toDo)
-          ? Wrap(
-              children: [
-                // Dates
-                buildDateRow(startDate: toDo.startDate, dueDate: toDo.dueDate),
-              ],
-            )
-          : null,
-      ModelType.deadline => (null != deadline)
-          ? Wrap(children: [
-              buildDateRow(
-                  startDate: deadline.startDate, dueDate: deadline.dueDate),
-              (deadline.warnMe)
-                  ? Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: Constants.padding),
-                      child: buildAlertRow(alertDate: deadline.warnDate),
-                    )
-                  : const SizedBox.shrink()
-            ])
-          : null,
-      ModelType.reminder =>
-        (null != reminder) ? buildAlertRow(alertDate: reminder.dueDate) : null,
-      _ => throw InvalidEventItemException("ModelType: $modelType"),
-    };
-  }
-
-  Widget buildDateRow(
-      {required DateTime startDate, required DateTime dueDate}) {
-    return Row(mainAxisSize: MainAxisSize.min, children: [
-      const Flexible(
-        child: Icon(Icons.today_rounded),
-      ),
-      Flexible(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
-          child: AutoSizeText(
-              Jiffy.parseFromDateTime(startDate)
-                  .toLocal()
-                  .format(pattern: "MMM d, hh:mm a"),
-              softWrap: false,
-              overflow: TextOverflow.visible,
-              maxLines: 2,
-              minFontSize: Constants.large),
-        ),
-      ),
-      const Flexible(
-        child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: Constants.padding),
-          child: AutoSizeText(
-            "-",
-            softWrap: false,
-            overflow: TextOverflow.visible,
-            maxLines: 1,
-            minFontSize: Constants.large,
-          ),
-        ),
-      ),
-      const Flexible(
-        child: Icon(Icons.event_rounded),
-      ),
-      Flexible(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
-          child: AutoSizeText(
-              Jiffy.parseFromDateTime(dueDate)
-                  .toLocal()
-                  .format(pattern: "MMM d, hh:mm a"),
-              softWrap: false,
-              overflow: TextOverflow.visible,
-              maxLines: 2,
-              minFontSize: Constants.large),
-        ),
-      ),
-    ]);
-  }
-
-  Widget buildAlertRow({required DateTime alertDate}) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        const Flexible(child: Icon(Icons.notifications_on_rounded)),
-        Flexible(
-            child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
-          child: AutoSizeText(
-            Jiffy.parseFromDateTime(alertDate)
-                .toLocal()
-                .format(pattern: "MMM d, hh:mm a"),
-            softWrap: false,
-            overflow: TextOverflow.visible,
-            maxLines: 2,
-            minFontSize: Constants.large,
-          ),
-        ))
-      ],
-    );
-  }
-
-  Widget? buildGroupName({int? id}) {
-    if (null == id) {
-      return null;
-    }
-    return FutureBuilder(
-      future: groupProvider.getGroupByID(id: id),
-      builder: (BuildContext context, AsyncSnapshot<Group?> snapshot) {
-        if (snapshot.connectionState == ConnectionState.done) {
-          Group? group = snapshot.data;
-          if (null != group) {
-            return DecoratedBox(
-              decoration: BoxDecoration(
-                  shape: BoxShape.rectangle,
-                  borderRadius: const BorderRadius.all(
-                      Radius.circular(Constants.roundedCorners)),
-                  border: Border.all(
-                      color: Theme.of(context).colorScheme.outlineVariant,
-                      strokeAlign: BorderSide.strokeAlignOutside)),
-              child: Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: Constants.padding),
-                child: AutoSizeText(
-                  group.name,
-                  minFontSize: Constants.large,
-                  overflow: TextOverflow.visible,
-                  softWrap: false,
-                  maxLines: 1,
-                ),
-              ),
-            );
-          }
-          return const SizedBox.shrink();
-        }
-        return ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 50),
-          child: const LinearProgressIndicator(
-            minHeight: Constants.minIconSize,
-            borderRadius:
-                BorderRadius.all(Radius.circular(Constants.roundedCorners)),
-          ),
-        );
-      },
-    );
-  }
-
+  // TODO: REMOVE, THIS IS TAKEN CARE OF BY THE SUBTITLE WIDGET.
   Widget buildDueDate({required CalendarEvent event}) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
@@ -468,40 +330,51 @@ class _CalendarScreen extends State<CalendarScreen> {
     );
   }
 
-  // TODO: refactor: this requires a listview.
   @override
   Widget build(BuildContext context) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        TableCalendar(
-            firstDay: DateTime(1970),
-            lastDay: DateTime(3000),
-            focusedDay: _focusedDay,
-            headerStyle: headerStyle,
-            calendarStyle: calendarStyle,
-            calendarFormat: calendarFormat,
-            eventLoader: getEventsForDay,
-            selectedDayPredicate: (day) {
-              return isSameDay(_selectedDay, day);
-            },
-            onDaySelected: (selectedDay, focusedDay) {
-              handleDaySelected(
-                  selectedDay: selectedDay, focusedDay: focusedDay);
-            },
-            onPageChanged: (focusedDay) async {
-              _focusedDay = focusedDay;
-              DateTime testDay =
-                  focusedDay.copyWith(month: focusedDay.month + 1);
-              if (testDay.isAfter(latest)) {
-                // Populate new data if existing -- grabs events afterward.
-                await populateCalendars(startDay: focusedDay);
-              } else {
-                // Just grab events.
-                getEvents(day: focusedDay, end: latest);
-              }
-            }),
-        Expanded(child: buildEventTile())
+        Flexible(
+            child: Scrollbar(
+          thumbVisibility: true,
+          controller: mainScrollController,
+          child: ListView(
+              shrinkWrap: true,
+              physics: AlwaysScrollableScrollPhysics(parent: scrollPhysics),
+              controller: mainScrollController,
+              children: [
+                TableCalendar(
+                    firstDay: DateTime(1970),
+                    lastDay: DateTime(3000),
+                    focusedDay: _focusedDay,
+                    headerStyle: headerStyle,
+                    calendarStyle: calendarStyle,
+                    calendarFormat: calendarFormat,
+                    eventLoader: getEventsForDay,
+                    selectedDayPredicate: (day) {
+                      return isSameDay(_selectedDay, day);
+                    },
+                    onDaySelected: (selectedDay, focusedDay) {
+                      handleDaySelected(
+                          selectedDay: selectedDay, focusedDay: focusedDay);
+                    },
+                    onPageChanged: (focusedDay) async {
+                      _focusedDay = focusedDay;
+                      DateTime testDay =
+                          focusedDay.copyWith(month: focusedDay.month + 1);
+                      if (testDay.isAfter(latest)) {
+                        // Populate new data if existing -- grabs events afterward.
+                        await populateCalendars(startDay: focusedDay);
+                      } else {
+                        // Just grab events.
+                        getEvents(day: focusedDay, end: latest);
+                      }
+                    }),
+                buildEventTile(),
+              ]),
+        )),
+        // Expanded(child: buildEventTile())
       ],
     );
   }
@@ -513,6 +386,8 @@ class _CalendarScreen extends State<CalendarScreen> {
       builder:
           (BuildContext context, List<CalendarEvent> value, Widget? child) {
         return ListView.builder(
+            physics: const NeverScrollableScrollPhysics(),
+            shrinkWrap: true,
             itemCount: value.length,
             itemBuilder: (BuildContext context, int index) {
               return Padding(

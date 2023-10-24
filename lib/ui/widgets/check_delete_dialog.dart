@@ -86,7 +86,7 @@ class _CheckDeleteDialog extends State<CheckDeleteDialog> {
                                     softWrap: false,
                                     overflow: TextOverflow.visible,
                                     maxLines: 1,
-                                    minFontSize: Constants.small)),
+                                    minFontSize: Constants.large)),
                           ),
                         ),
                         Expanded(

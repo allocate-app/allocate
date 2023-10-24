@@ -258,9 +258,6 @@ class RoutineProvider extends ChangeNotifier {
       log(e.cause);
       return Future.error(e);
     }
-    if (routine == curRoutine) {
-      curRoutine = null;
-    }
     notifyListeners();
   }
 

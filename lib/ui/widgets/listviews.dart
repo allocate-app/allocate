@@ -12,11 +12,31 @@ import '../../providers/deadline_provider.dart';
 import '../../providers/group_provider.dart';
 import '../../providers/routine_provider.dart';
 import '../../providers/todo_provider.dart';
+import '../../util/constants.dart';
+import 'custom_drag_start.dart';
 import 'tiles.dart';
 
-// TODO: Implement crossfade
+// TODO: Implement crossfading between lists?
 class ListViews {
-  static reorderableToDos({
+  static Widget proxyDecorator(
+          Widget child, int index, Animation<double> animation) =>
+      AnimatedBuilder(
+          animation: animation,
+          child: child,
+          builder: (BuildContext context, Widget? child) {
+            final ColorScheme colorScheme = Theme.of(context).colorScheme;
+            final Color draggableColor = colorScheme.primaryContainer;
+            final Color shadowColor = colorScheme.shadow;
+            return Material(
+              borderRadius: const BorderRadius.all(
+                  Radius.circular(Constants.roundedCorners)),
+              color: draggableColor,
+              shadowColor: shadowColor,
+              child: child,
+            );
+          });
+
+  static Widget reorderableToDos({
     required BuildContext context,
     required List<ToDo> toDos,
     bool checkDelete = false,
@@ -26,16 +46,19 @@ class ListViews {
     ScrollPhysics physics = const NeverScrollableScrollPhysics(),
   }) =>
       ReorderableListView.builder(
+          proxyDecorator: proxyDecorator,
           buildDefaultDragHandles: false,
           physics: physics,
           shrinkWrap: true,
           onReorder: (int oldIndex, int newIndex) async =>
               await Provider.of<ToDoProvider>(context, listen: false)
-                  .reorderToDos(oldIndex: oldIndex, newIndex: newIndex),
+                  .reorderToDos(
+                      oldIndex: oldIndex, newIndex: newIndex, toDos: toDos),
           itemCount: toDos.length,
           itemBuilder: (BuildContext context, int index) {
             if (toDos.length > 1) {
-              return ReorderableDragStartListener(
+              return CustomDragStartListener(
+                delay: Constants.delayTime,
                 index: index,
                 key: ValueKey(toDos[index].id),
                 child: Tiles.toDoListTile(
@@ -60,7 +83,7 @@ class ListViews {
             );
           });
 
-  static immutableToDos({
+  static Widget immutableToDos({
     required BuildContext context,
     required List<ToDo> toDos,
     bool checkDelete = false,
@@ -85,13 +108,82 @@ class ListViews {
             );
           });
 
-  static reorderableRoutines({
+  static Widget reorderableMyDay({
+    required BuildContext context,
+    required List<ToDo> toDos,
+    bool checkDelete = false,
+    bool smallScreen = false,
+    Future<void> Function({required ToDo toDo, required int index})?
+        checkboxAnimateBeforeUpdate,
+    ScrollPhysics physics = const NeverScrollableScrollPhysics(),
+  }) =>
+      ReorderableListView.builder(
+          proxyDecorator: proxyDecorator,
+          buildDefaultDragHandles: false,
+          physics: physics,
+          shrinkWrap: true,
+          onReorder: (int oldIndex, int newIndex) async =>
+              await Provider.of<ToDoProvider>(context, listen: false)
+                  .reorderToDos(
+                      oldIndex: oldIndex, newIndex: newIndex, toDos: toDos),
+          itemCount: toDos.length,
+          itemBuilder: (BuildContext context, int index) {
+            if (toDos.length > 1) {
+              return CustomDragStartListener(
+                delay: Constants.delayTime,
+                index: index,
+                key: ValueKey(toDos[index].id ^ index),
+                child: Tiles.toDoMyDayTile(
+                  checkboxAnimateBeforeUpdate: checkboxAnimateBeforeUpdate,
+                  smallScreen: smallScreen,
+                  context: context,
+                  index: index,
+                  toDo: toDos[index],
+                  showHandle: true,
+                ),
+              );
+            }
+            return Tiles.toDoMyDayTile(
+              checkboxAnimateBeforeUpdate: checkboxAnimateBeforeUpdate,
+              smallScreen: smallScreen,
+              context: context,
+              index: index,
+              toDo: toDos[index],
+              showHandle: false,
+            );
+          });
+
+  static Widget immutableMyDay({
+    required BuildContext context,
+    required List<ToDo> toDos,
+    bool smallScreen = false,
+    Future<void> Function({required ToDo toDo, required int index})?
+        checkboxAnimateBeforeUpdate,
+    ScrollPhysics physics = const NeverScrollableScrollPhysics(),
+  }) =>
+      ListView.builder(
+          physics: physics,
+          shrinkWrap: true,
+          itemCount: toDos.length,
+          itemBuilder: (BuildContext context, int index) {
+            return Tiles.toDoMyDayTile(
+              checkboxAnimateBeforeUpdate: checkboxAnimateBeforeUpdate,
+              smallScreen: smallScreen,
+              context: context,
+              index: index,
+              toDo: toDos[index],
+              showHandle: false,
+            );
+          });
+
+  static Widget reorderableRoutines({
     required BuildContext context,
     required List<Routine> routines,
     bool checkDelete = false,
     ScrollPhysics physics = const NeverScrollableScrollPhysics(),
   }) =>
       ReorderableListView.builder(
+          proxyDecorator: proxyDecorator,
           buildDefaultDragHandles: false,
           physics: physics,
           shrinkWrap: true,
@@ -101,7 +193,8 @@ class ListViews {
           itemCount: routines.length,
           itemBuilder: (BuildContext context, int index) {
             if (routines.length > 1) {
-              return ReorderableDragStartListener(
+              return CustomDragStartListener(
+                delay: Constants.delayTime,
                 index: index,
                 key: ValueKey(routines[index].id),
                 child: Tiles.routineListTile(
@@ -122,7 +215,7 @@ class ListViews {
             );
           });
 
-  static immutableRoutines({
+  static Widget immutableRoutines({
     required BuildContext context,
     required List<Routine> routines,
     bool checkDelete = false,
@@ -142,7 +235,7 @@ class ListViews {
             );
           });
 
-  static reorderableDeadlines({
+  static Widget reorderableDeadlines({
     required BuildContext context,
     required List<Deadline> deadlines,
     bool checkDelete = false,
@@ -150,6 +243,7 @@ class ListViews {
     ScrollPhysics physics = const NeverScrollableScrollPhysics(),
   }) =>
       ReorderableListView.builder(
+          proxyDecorator: proxyDecorator,
           buildDefaultDragHandles: false,
           physics: physics,
           shrinkWrap: true,
@@ -159,7 +253,8 @@ class ListViews {
           itemCount: deadlines.length,
           itemBuilder: (BuildContext context, int index) {
             if (deadlines.length > 1) {
-              return ReorderableDragStartListener(
+              return CustomDragStartListener(
+                delay: Constants.delayTime,
                 index: index,
                 key: ValueKey(deadlines[index].id),
                 child: Tiles.deadlineListTile(
@@ -182,7 +277,7 @@ class ListViews {
             );
           });
 
-  static immutableDeadlines({
+  static Widget immutableDeadlines({
     required BuildContext context,
     required List<Deadline> deadlines,
     bool checkDelete = false,
@@ -204,7 +299,7 @@ class ListViews {
             );
           });
 
-  static reorderableReminders({
+  static Widget reorderableReminders({
     required BuildContext context,
     required List<Reminder> reminders,
     bool checkDelete = false,
@@ -212,6 +307,7 @@ class ListViews {
     ScrollPhysics physics = const NeverScrollableScrollPhysics(),
   }) =>
       ReorderableListView.builder(
+          proxyDecorator: proxyDecorator,
           buildDefaultDragHandles: false,
           physics: physics,
           shrinkWrap: true,
@@ -221,7 +317,8 @@ class ListViews {
           itemCount: reminders.length,
           itemBuilder: (BuildContext context, int index) {
             if (reminders.length > 1) {
-              return ReorderableDragStartListener(
+              return CustomDragStartListener(
+                delay: Constants.delayTime,
                 index: index,
                 key: ValueKey(reminders[index].id),
                 child: Tiles.reminderListTile(
@@ -244,7 +341,7 @@ class ListViews {
             );
           });
 
-  static immutableReminders({
+  static Widget immutableReminders({
     required BuildContext context,
     required List<Reminder> reminders,
     bool checkDelete = false,
@@ -266,13 +363,14 @@ class ListViews {
             );
           });
 
-  static reorderableGroups({
+  static Widget reorderableGroups({
     required BuildContext context,
     required List<Group> groups,
     bool checkDelete = false,
     ScrollPhysics physics = const NeverScrollableScrollPhysics(),
   }) =>
       ReorderableListView.builder(
+          proxyDecorator: proxyDecorator,
           buildDefaultDragHandles: false,
           physics: physics,
           shrinkWrap: true,
@@ -282,7 +380,8 @@ class ListViews {
           itemCount: groups.length,
           itemBuilder: (BuildContext context, int index) {
             if (groups.length > 1) {
-              return ReorderableDragStartListener(
+              return CustomDragStartListener(
+                  delay: Constants.delayTime,
                   key: ValueKey(groups[index].id),
                   index: index,
                   child: Tiles.groupListTile(
@@ -302,7 +401,7 @@ class ListViews {
             );
           });
 
-  static immutableGroups({
+  static Widget immutableGroups({
     required BuildContext context,
     required List<Group> groups,
     bool checkDelete = false,
@@ -321,7 +420,7 @@ class ListViews {
             );
           });
 
-  static reorderableGroupToDos({
+  static Widget reorderableGroupToDos({
     required BuildContext context,
     required List<ToDo> toDos,
     ScrollPhysics physics = const NeverScrollableScrollPhysics(),
@@ -330,6 +429,7 @@ class ListViews {
     required void Function({required int index}) handleRemove,
   }) =>
       ReorderableListView.builder(
+        proxyDecorator: proxyDecorator,
         buildDefaultDragHandles: false,
         physics: physics,
         shrinkWrap: true,
@@ -343,7 +443,8 @@ class ListViews {
         itemCount: toDos.length,
         itemBuilder: (BuildContext context, int index) {
           if (toDos.length > 1) {
-            return ReorderableDragStartListener(
+            return CustomDragStartListener(
+              delay: Constants.delayTime,
               index: index,
               key: ValueKey(toDos[index].id),
               child: Tiles.toDoCheckTile(
@@ -367,7 +468,7 @@ class ListViews {
         },
       );
 
-  static reorderableSubtasks({
+  static Widget reorderableSubtasks({
     required BuildContext context,
     required List<SubTask> subTasks,
     required List<TextEditingController> controllers,
@@ -381,6 +482,7 @@ class ListViews {
     EdgeInsetsGeometry contentPadding = EdgeInsets.zero,
   }) =>
       ReorderableListView.builder(
+          proxyDecorator: proxyDecorator,
           buildDefaultDragHandles: false,
           physics: physics,
           shrinkWrap: true,
@@ -390,15 +492,20 @@ class ListViews {
           },
           onReorder: onReorder,
           itemBuilder: (BuildContext context, int index) {
-            return Tiles.subtaskCheckboxTile(
-              context: context,
+            return CustomDragStartListener(
+              delay: Constants.delayTime,
               index: index,
-              subTask: subTasks[index],
-              onChanged: onChanged,
-              onSubtaskWeightChanged: onSubtaskWeightChanged,
-              controller: controllers[index],
-              onRemoved: onRemoved,
-              showHandle: showHandle,
+              key: ValueKey(index),
+              child: Tiles.subtaskCheckboxTile(
+                context: context,
+                index: index,
+                subTask: subTasks[index],
+                onChanged: onChanged,
+                onSubtaskWeightChanged: onSubtaskWeightChanged,
+                controller: controllers[index],
+                onRemoved: onRemoved,
+                showHandle: showHandle,
+              ),
             );
           });
 }

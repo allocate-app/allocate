@@ -632,4 +632,13 @@ class ToDoRepo implements ToDoRepository {
           .offset(offset)
           .limit(limit)
           .findAll();
+
+  @override
+  Future<int> getGroupToDoCount({required int groupID}) async =>
+      await _isarClient.toDos
+          .where()
+          .groupIDEqualTo(groupID)
+          .filter()
+          .toDeleteEqualTo(false)
+          .count();
 }

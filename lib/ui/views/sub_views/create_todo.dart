@@ -54,7 +54,6 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
   late final TextEditingController nameEditingController;
   String? nameErrorText;
 
-  // Group -> Tbh, not super sure what to do with this.
   late final SearchController groupEditingController;
   late List<MapEntry<String, int>> searchHistory;
   int? groupID;
@@ -165,11 +164,6 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
     groupEditingController.value = groupEditingController.value
         .copyWith(text: widget.initialGroup?.key ?? "");
 
-    groupEditingController.addListener(() {
-      String newText = groupEditingController.text;
-      SemanticsService.announce(newText, Directionality.of(context));
-    });
-
     descriptionEditingController = TextEditingController();
     descriptionEditingController.addListener(() {
       checkClose = true;
@@ -200,7 +194,6 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
   @override
   void dispose() {
     nameEditingController.dispose();
-    groupEditingController.dispose();
     descriptionEditingController.dispose();
     repeatSkipEditingController.dispose();
     mobileScrollController.dispose();

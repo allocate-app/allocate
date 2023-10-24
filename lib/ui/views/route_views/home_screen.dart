@@ -17,6 +17,7 @@ import '../../../util/strings.dart';
 import '../../widgets/desktop_drawer_wrapper.dart';
 import '../../widgets/global_model_search.dart';
 import '../../widgets/padded_divider.dart';
+import '../../widgets/subtitles.dart';
 import '../sub_views/create_group.dart';
 import '../sub_views/update_group.dart';
 
@@ -124,6 +125,7 @@ class _HomeScreen extends State<HomeScreen> {
         const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics());
   }
 
+  // TODO: OI, PAGINATE PLS.
   Future<void> resetNavGroups() async {
     setState(() {
       navLoading = true;
@@ -134,7 +136,7 @@ class _HomeScreen extends State<HomeScreen> {
         () async => await groupProvider
             .mostRecent(grabToDos: true)
             .then((groups) => setState(() {
-                  groupProvider.recentGroups = groups;
+                  groupProvider.secondaryGroups = groups;
                   navLoading = false;
                 })));
   }
@@ -219,6 +221,7 @@ class _HomeScreen extends State<HomeScreen> {
     return Row(children: [
       // This is a workaround for a standard navigation drawer
       // until m3 spec is fully implemented in flutter.
+      // TODO: implement animatedSwitcher.
       DesktopDrawerWrapper(
           drawer: buildNavigationDrawer(
               context: context, largeScreen: largeScreen)),
@@ -243,10 +246,12 @@ class _HomeScreen extends State<HomeScreen> {
         body: SafeArea(child: Constants.viewRoutes[selectedPageIndex].view));
   }
 
+  // TODO: this needs an iconbutton with custom functionality for desktop.
   AppBar buildAppBar({required BuildContext context}) {
     return AppBar(
       title: buildDrainBar(context: context),
       centerTitle: true,
+      scrolledUnderElevation: 0,
     );
   }
 
@@ -442,7 +447,7 @@ class _HomeScreen extends State<HomeScreen> {
             return ListView.builder(
                 padding: EdgeInsets.zero,
                 shrinkWrap: true,
-                itemCount: value.recentGroups.length,
+                itemCount: value.secondaryGroups.length,
                 itemBuilder: (BuildContext context, int index) {
                   return ListTile(
                       contentPadding: const EdgeInsets.symmetric(
@@ -453,13 +458,13 @@ class _HomeScreen extends State<HomeScreen> {
                               Radius.circular(Constants.roundedCorners))),
                       leading:
                           const Icon(Icons.playlist_add_check_circle_outlined),
-                      title: AutoSizeText(value.recentGroups[index].name,
+                      title: AutoSizeText(value.secondaryGroups[index].name,
                           maxLines: 1,
                           overflow: TextOverflow.visible,
                           softWrap: false,
                           minFontSize: Constants.small),
                       onTap: () async {
-                        value.curGroup = value.recentGroups[index];
+                        value.curGroup = value.secondaryGroups[index];
                         return await showDialog(
                             barrierDismissible: false,
                             useRootNavigator: false,
@@ -467,14 +472,9 @@ class _HomeScreen extends State<HomeScreen> {
                             builder: (BuildContext context) =>
                                 const UpdateGroupScreen());
                       },
-                      trailing: (value.recentGroups[index].toDos.isNotEmpty)
-                          ? AutoSizeText(
-                              "${value.recentGroups[index].toDos.length}",
-                              maxLines: 1,
-                              overflow: TextOverflow.visible,
-                              softWrap: false,
-                              minFontSize: Constants.small)
-                          : null);
+                      trailing: Subtitles.groupSubtitle(
+                          toDoCount: groupProvider.getToDoCount(
+                              id: value.secondaryGroups[index].id)));
                 });
           }),
           (navLoading)

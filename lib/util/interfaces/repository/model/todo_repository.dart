@@ -18,6 +18,8 @@ abstract interface class ToDoRepository
   Future<List<ToDo>> getRepoByGroupID(
       {required int groupID, int limit, int offset});
 
+  Future<int> getGroupToDoCount({required int groupID});
+
   Future<List<ToDo>> getMyDay(
       {int limit, int offset, required SortableView<ToDo> sorter});
 

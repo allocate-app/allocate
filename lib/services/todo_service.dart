@@ -71,6 +71,9 @@ class ToDoService {
 
   Future<int> getMyDayWeight() async => await _repository.getMyDayWeight();
 
+  Future<int> getGroupToDoCount({required int groupID}) async =>
+      await _repository.getGroupToDoCount(groupID: groupID);
+
   Future<void> nextRepeatable({required ToDo toDo}) async {
     DateTime? nextRepeatDate = getRepeatDate(toDo: toDo);
 

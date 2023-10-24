@@ -25,7 +25,7 @@ class ReminderProvider extends ChangeNotifier {
   Reminder? curReminder;
 
   List<Reminder> reminders = [];
-  List<Reminder> recentReminders = [];
+  List<Reminder> secondaryReminders = [];
 
   late ReminderSorter sorter;
 
@@ -176,9 +176,6 @@ class ReminderProvider extends ChangeNotifier {
     } on FailureToDeleteException catch (e) {
       log(e.cause);
       return Future.error(e);
-    }
-    if (reminder == curReminder) {
-      curReminder = null;
     }
     notifyListeners();
   }

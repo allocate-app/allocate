@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math';
 
 import 'package:another_flushbar/flushbar.dart';
 import 'package:auto_size_text/auto_size_text.dart';
@@ -17,6 +16,7 @@ import '../../widgets/flushbars.dart';
 import '../../widgets/leading_widgets.dart';
 import '../../widgets/listviews.dart';
 import '../../widgets/padded_divider.dart';
+import '../../widgets/paginating_listview.dart';
 import '../../widgets/search_recents_bar.dart';
 import '../../widgets/subtitles.dart';
 import '../../widgets/tiles.dart';
@@ -71,14 +71,11 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
     initializeProviders();
     initializeParameters();
     initializeControllers();
-    resetPagination();
   }
 
   void initializeProviders() {
     groupProvider = Provider.of<GroupProvider>(context, listen: false);
     toDoProvider = Provider.of<ToDoProvider>(context, listen: false);
-
-    toDoProvider.addListener(resetPagination);
   }
 
   void initializeParameters() {
@@ -116,10 +113,6 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
     });
 
     toDoSearchController = SearchController();
-    toDoSearchController.addListener(() {
-      String newText = toDoSearchController.text;
-      SemanticsService.announce(newText, Directionality.of(context));
-    });
   }
 
   @override
@@ -128,58 +121,7 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
     descriptionEditingController.dispose();
     mobileScrollController.dispose();
     desktopScrollController.dispose();
-    toDoSearchController.dispose();
-    toDoProvider.removeListener(resetPagination);
     super.dispose();
-  }
-
-  Future<void> resetPagination() async {
-    offset = 0;
-    limit = max(toDos.length, Constants.minLimitPerQuery);
-    return await overwriteData();
-  }
-
-  Future<void> overwriteData() async {
-    setState(() => loading = true);
-    List<ToDo> newToDos = await fetchData();
-    setState(() {
-      offset += newToDos.length;
-      toDos = newToDos;
-      loading = false;
-      allData = toDos.length < limit;
-      limit = Constants.minLimitPerQuery;
-    });
-  }
-
-  Future<void> appendData() async {
-    setState(() => loading = true);
-    List<ToDo> newToDos = await fetchData();
-    setState(() {
-      offset += newToDos.length;
-      toDos.addAll(newToDos);
-      loading = false;
-      allData = newToDos.length < limit;
-    });
-  }
-
-  Future<List<ToDo>> fetchData() async {
-    return await groupProvider
-        .getToDosByGroupID(
-            id: Constants.initialGroupID, limit: limit, offset: offset)
-        .catchError(
-      (e) {
-        Flushbar? error;
-
-        error = Flushbars.createError(
-          message: e.cause ?? "Query Error",
-          context: context,
-          dismissCallback: () => error?.dismiss(),
-        );
-
-        error.show(context);
-        return List<ToDo>.empty(growable: true);
-      },
-    );
   }
 
   bool validateData() {
@@ -204,10 +146,9 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
         toDos[i].groupIndex = i;
       }
 
-      await toDoProvider
-          .updateBatch(toDos: toDos)
-          .whenComplete(() => Navigator.pop(context))
-          .catchError((e) {
+      await toDoProvider.updateBatch(toDos: toDos).whenComplete(() {
+        Navigator.pop(context);
+      }).catchError((e) {
         Flushbar? error;
 
         error = Flushbars.createError(
@@ -216,9 +157,8 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
           dismissCallback: () => error?.dismiss(),
         );
       },
-              test: (e) =>
-                  e is FailureToCreateException ||
-                  e is FailureToUpdateException);
+          test: (e) =>
+              e is FailureToCreateException || e is FailureToUpdateException);
     }).catchError((e) {
       Flushbar? error;
 
@@ -232,7 +172,7 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
                 e is FailureToCreateException || e is FailureToUpdateException);
   }
 
-  Future<void> handleHistorySelection({
+  Future<void> handleSelection({
     required int id,
   }) async {
     ToDo? toDo = await toDoProvider.getToDoByID(id: id).catchError((_) {
@@ -247,27 +187,6 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
       error.show(context);
       return null;
     });
-    if (null != toDo) {
-      toDo.groupID = Constants.initialGroupID;
-      await toDoProvider.updateToDo(toDo: toDo);
-    }
-  }
-
-  Future<void> handleToDoSelection({required int id}) async {
-    ToDo? toDo = await toDoProvider.getToDoByID(id: id).catchError((_) {
-      Flushbar? error;
-
-      error = Flushbars.createError(
-        message: "Error with Task Retrieval",
-        context: context,
-        dismissCallback: () => error?.dismiss(),
-      );
-
-      error.show(context);
-      return null;
-    });
-
-    // TODO: refactor this more cleanly in provider.
     if (null != toDo) {
       toDo.groupID = Constants.initialGroupID;
       await toDoProvider.updateToDo(toDo: toDo);
@@ -315,68 +234,6 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
     if (validateData()) {
       await handleCreate();
     }
-  }
-
-  // This should just reset pagination
-  Future<void> createToDo() async {
-    await showDialog(
-        barrierDismissible: false,
-        useRootNavigator: false,
-        context: context,
-        builder: (BuildContext context) => CreateToDoScreen(
-              initialGroup: MapEntry<String, int>(
-                  (name.isNotEmpty) ? name : "New Group",
-                  Constants.initialGroupID),
-            )).catchError((e) {
-      Flushbar? error;
-
-      error = Flushbars.createError(
-        message: e.cause,
-        context: context,
-        dismissCallback: () => error?.dismiss(),
-      );
-
-      error.show(context);
-    },
-        test: (e) =>
-            e is FailureToCreateException || e is FailureToUploadException);
-  }
-
-  // Write at the end.
-  Future<void> completeToDo({required int index, bool value = false}) async {
-    setState(() {
-      toDos[index].completed = value;
-    });
-  }
-
-  Future<void> removeToDo({required int index}) async {
-    toDos[index].groupID = null;
-    await toDoProvider.updateToDo(toDo: toDos[index]);
-  }
-
-  Future<void> updateToDo({required int index}) async {
-    await showDialog(
-        barrierDismissible: false,
-        useRootNavigator: false,
-        context: context,
-        builder: (BuildContext context) => UpdateToDoScreen(
-              initialToDo: toDos[index],
-              initialGroup: MapEntry<String, int>(
-                  (name.isNotEmpty) ? name : "New Group",
-                  Constants.initialGroupID),
-            )).catchError((e) {
-      Flushbar? error;
-
-      error = Flushbars.createError(
-        message: e.cause,
-        context: context,
-        dismissCallback: () => error?.dismiss(),
-      );
-
-      error.show(context);
-    },
-        test: (e) =>
-            e is FailureToCreateException || e is FailureToUploadException);
   }
 
   @override
@@ -581,34 +438,96 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
           overflow: TextOverflow.visible,
           softWrap: false,
           minFontSize: Constants.large),
-      subtitle: Subtitles.groupSubtitle(numTasks: toDos.length),
+      subtitle: Subtitles.groupSubtitle(
+          toDoCount: groupProvider.getToDoCount(id: Constants.initialGroupID)),
       children: [
-        // This is too jarring, the database is too fast.
-        // (loading) ? const CircularProgressIndicator() : const SizedBox.shrink(),
-        ListViews.reorderableGroupToDos(
-          context: context,
-          toDos: toDos,
-          physics: physics,
-          onChanged: completeToDo,
-          handleRemove: removeToDo,
-          onTap: updateToDo,
-        ),
-        (!allData)
-            ? Tiles.fetchTile(onTap: appendData)
-            : const SizedBox.shrink(),
         SearchRecentsBar<ToDo>(
           clearOnSelection: true,
           hintText: "Search Tasks",
           padding: const EdgeInsets.all(Constants.padding),
-          handleDataSelection: handleToDoSelection,
-          handleHistorySelection: handleHistorySelection,
+          handleDataSelection: handleSelection,
+          handleHistorySelection: handleSelection,
           searchController: toDoSearchController,
           mostRecent: toDoProvider.mostRecent,
           search: toDoProvider.searchToDos,
         ),
+        PaginatingListview<ToDo>(
+            items: toDos,
+            query: (
+                    {int limit = Constants.minLimitPerQuery,
+                    int offset = 0}) async =>
+                await groupProvider.getToDosByGroupID(
+                    id: Constants.initialGroupID, limit: limit, offset: offset),
+            offset: toDos.length,
+            paginateButton: true,
+            rebuildNotifiers: [toDoProvider],
+            rebuildCallback: ({required List<ToDo> items}) {
+              toDos = items;
+              groupProvider.setToDoCount(id: Constants.initialGroupID);
+            },
+            listviewBuilder: (
+                {required BuildContext context, required List<ToDo> items}) {
+              return ListViews.reorderableGroupToDos(
+                context: context,
+                toDos: toDos,
+                physics: physics,
+                onChanged: ({required int index, bool value = false}) async {
+                  items[index].completed = value;
+                  await toDoProvider.updateToDo(toDo: items[index]);
+                },
+                handleRemove: ({required int index}) async {
+                  items[index].groupID = null;
+                  await toDoProvider.updateToDo(toDo: items[index]);
+                },
+                onTap: ({required int index}) async => await showDialog(
+                    barrierDismissible: false,
+                    useRootNavigator: false,
+                    context: context,
+                    builder: (BuildContext context) => UpdateToDoScreen(
+                          initialToDo: items[index],
+                          initialGroup: MapEntry<String, int>(
+                              (name.isNotEmpty) ? name : "New Group",
+                              Constants.initialGroupID),
+                        )).catchError((e) {
+                  Flushbar? error;
+
+                  error = Flushbars.createError(
+                    message: e.cause,
+                    context: context,
+                    dismissCallback: () => error?.dismiss(),
+                  );
+
+                  error.show(context);
+                },
+                    test: (e) =>
+                        e is FailureToCreateException ||
+                        e is FailureToUploadException),
+              );
+            }),
         Tiles.addTile(
           title: "Add Task",
-          onTap: () async => await createToDo(),
+          onTap: () async => await showDialog(
+              barrierDismissible: false,
+              useRootNavigator: false,
+              context: context,
+              builder: (BuildContext context) => CreateToDoScreen(
+                    initialGroup: MapEntry<String, int>(
+                        (name.isNotEmpty) ? name : "New Group",
+                        Constants.initialGroupID),
+                  )).catchError((e) {
+            Flushbar? error;
+
+            error = Flushbars.createError(
+              message: e.cause,
+              context: context,
+              dismissCallback: () => error?.dismiss(),
+            );
+
+            error.show(context);
+          },
+              test: (e) =>
+                  e is FailureToCreateException ||
+                  e is FailureToUploadException),
         )
       ],
     );

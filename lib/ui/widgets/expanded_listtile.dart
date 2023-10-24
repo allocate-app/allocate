@@ -11,6 +11,7 @@ class ExpandedListTile extends StatefulWidget {
       required this.title,
       this.subtitle,
       this.leading,
+      this.border,
       this.trailing})
       : super(key: key);
 
@@ -21,6 +22,7 @@ class ExpandedListTile extends StatefulWidget {
   final Widget? subtitle;
   final Widget? leading;
   final Widget? trailing;
+  final BorderSide? border;
 
   @override
   State<ExpandedListTile> createState() => _ExpandedListTile();
@@ -44,10 +46,11 @@ class _ExpandedListTile extends State<ExpandedListTile> {
         elevation: 0,
         color: Colors.transparent,
         shape: RoundedRectangleBorder(
-            side: BorderSide(
-                width: 2,
-                color: Theme.of(context).colorScheme.outlineVariant,
-                strokeAlign: BorderSide.strokeAlignInside),
+            side: widget.border ??
+                BorderSide(
+                    width: 2,
+                    color: Theme.of(context).colorScheme.outlineVariant,
+                    strokeAlign: BorderSide.strokeAlignInside),
             borderRadius: const BorderRadius.all(
                 Radius.circular(Constants.roundedCorners))),
         child: ExpansionTile(

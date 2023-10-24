@@ -232,8 +232,12 @@ class GroupRepo implements GroupRepository {
           .findAll();
 
   @override
-  Future<Group?> getByID({required int id}) async =>
-      await _isarClient.groups.where().idEqualTo(id).findFirst();
+  Future<Group?> getByID({required int id}) async => await _isarClient.groups
+      .where()
+      .idEqualTo(id)
+      .filter()
+      .toDeleteEqualTo(false)
+      .findFirst();
 
   // Basic query logic.
   @override

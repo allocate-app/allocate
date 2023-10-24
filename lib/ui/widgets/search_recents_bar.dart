@@ -1,21 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 
 import '../../util/constants.dart';
 import '../../util/interfaces/i_model.dart';
 import 'tiles.dart';
 
 class SearchRecentsBar<T extends IModel> extends StatefulWidget {
-  const SearchRecentsBar(
-      {Key? key,
-      this.padding = EdgeInsets.zero,
-      this.hintText = "",
-      required this.searchController,
-      required this.handleHistorySelection,
-      required this.mostRecent,
-      required this.search,
-      this.clearOnSelection = false,
-      this.persistentEntry,
-      required this.handleDataSelection})
+  const SearchRecentsBar({Key? key,
+    this.padding = EdgeInsets.zero,
+    this.hintText = "",
+    required this.searchController,
+    required this.handleHistorySelection,
+    required this.mostRecent,
+    required this.search,
+    this.clearOnSelection = false,
+    this.persistentEntry,
+    required this.handleDataSelection})
       : super(key: key);
 
   final MapEntry<String, int>? persistentEntry;
@@ -41,6 +41,16 @@ class _SearchRecents<T extends IModel> extends State<SearchRecentsBar<T>> {
   void initState() {
     super.initState();
     searchController = widget.searchController;
+    searchController.addListener(() {
+      String newText = searchController.text;
+      SemanticsService.announce(newText, Directionality.of(context));
+    });
+  }
+
+  @override
+  void dispose() {
+    searchController.dispose();
+    super.dispose();
   }
 
   void updateHistory({required MapEntry<String, int> data}) {
@@ -53,6 +63,7 @@ class _SearchRecents<T extends IModel> extends State<SearchRecentsBar<T>> {
     });
   }
 
+
   @override
   Widget build(context) {
     return Padding(
@@ -62,9 +73,12 @@ class _SearchRecents<T extends IModel> extends State<SearchRecentsBar<T>> {
           barSide: MaterialStatePropertyAll(BorderSide(
               width: 2,
               strokeAlign: BorderSide.strokeAlignOutside,
-              color: Theme.of(context).colorScheme.outlineVariant)),
+              color: Theme
+                  .of(context)
+                  .colorScheme
+                  .outlineVariant)),
           barBackgroundColor:
-              const MaterialStatePropertyAll(Colors.transparent),
+          const MaterialStatePropertyAll(Colors.transparent),
           barElevation: const MaterialStatePropertyAll(0),
           viewConstraints: const BoxConstraints(
               maxHeight: Constants.maxSearchSideBeforeScroll),
@@ -75,14 +89,15 @@ class _SearchRecents<T extends IModel> extends State<SearchRecentsBar<T>> {
             if (controller.text.isEmpty) {
               if (searchHistory.isNotEmpty) {
                 return searchHistory
-                    .map((MapEntry<String, int> data) => Tiles.historyTile(
-                          title: data.key,
-                          onTap: () {
-                            controller.closeView(
-                                (widget.clearOnSelection) ? "" : data.key);
-                            widget.handleHistorySelection(id: data.value);
-                          },
-                        ))
+                    .map((MapEntry<String, int> data) =>
+                    Tiles.historyTile(
+                      title: data.key,
+                      onTap: () {
+                        controller.closeView(
+                            (widget.clearOnSelection) ? "" : data.key);
+                        widget.handleHistorySelection(id: data.value);
+                      },
+                    ))
                     .toList();
                 // Consider appending the map entry here?
               }
@@ -102,9 +117,8 @@ class _SearchRecents<T extends IModel> extends State<SearchRecentsBar<T>> {
     );
   }
 
-  FutureBuilder<List<T>> buildFutureList(
-      {required Future<List<T>> searchFuture,
-      required SearchController controller}) {
+  FutureBuilder<List<T>> buildFutureList({required Future<List<T>> searchFuture,
+    required SearchController controller}) {
     return FutureBuilder(
         future: searchFuture,
         builder: (BuildContext context, AsyncSnapshot<List<T>> snapshot) {
@@ -131,16 +145,16 @@ class _SearchRecents<T extends IModel> extends State<SearchRecentsBar<T>> {
             // Render peristent entry on an empty query
             return (null != widget.persistentEntry)
                 ? Tiles.searchTile(
-                    leading: const Icon(Icons.manage_history_rounded),
-                    title: widget.persistentEntry!.key,
-                    onTap: () {
-                      controller.closeView((widget.clearOnSelection)
-                          ? ""
-                          : widget.persistentEntry!.key);
-                      updateHistory(data: widget.persistentEntry!);
-                      widget.handleDataSelection(
-                          id: widget.persistentEntry!.value);
-                    })
+                leading: const Icon(Icons.manage_history_rounded),
+                title: widget.persistentEntry!.key,
+                onTap: () {
+                  controller.closeView((widget.clearOnSelection)
+                      ? ""
+                      : widget.persistentEntry!.key);
+                  updateHistory(data: widget.persistentEntry!);
+                  widget.handleDataSelection(
+                      id: widget.persistentEntry!.value);
+                })
                 : const SizedBox.shrink();
           }
           return const SizedBox.shrink();

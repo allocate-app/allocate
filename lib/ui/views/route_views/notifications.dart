@@ -150,7 +150,7 @@ class _NotificationsScreen extends State<NotificationsScreen> {
     setState(() {
       toDoOffset = 0;
       toDoProvider.toDos.clear();
-      toDoProvider.recentToDos.clear();
+      toDoProvider.secondaryToDos.clear();
     });
     fetchUpcomingToDos();
     fetchOverdueToDos();
@@ -179,7 +179,7 @@ class _NotificationsScreen extends State<NotificationsScreen> {
     return Future.delayed(
         const Duration(seconds: 1),
         () async => await toDoProvider.getUpcoming().then((newToDos) {
-              toDoProvider.recentToDos = newToDos;
+              toDoProvider.secondaryToDos = newToDos;
               if (mounted) {
                 setState(() => upcomingToDoLoading = false);
               }
@@ -223,7 +223,7 @@ class _NotificationsScreen extends State<NotificationsScreen> {
     return Future.delayed(
         const Duration(seconds: 1),
         () async => await reminderProvider.getUpcoming().then((newReminders) {
-              reminderProvider.recentReminders = newReminders;
+              reminderProvider.secondaryReminders = newReminders;
               if (mounted) {
                 setState(() => upcomingReminderLoading = false);
               }
@@ -265,7 +265,7 @@ class _NotificationsScreen extends State<NotificationsScreen> {
     return Future.delayed(
         const Duration(seconds: 1),
         () async => await deadlineProvider.getUpcoming().then((newDeadlines) {
-              deadlineProvider.recentDeadlines = newDeadlines;
+              deadlineProvider.secondaryDeadlines = newDeadlines;
               if (mounted) {
                 setState(() => upcomingDeadlineLoading = false);
               }
@@ -507,10 +507,11 @@ class _NotificationsScreen extends State<NotificationsScreen> {
             return ListView.builder(
               physics: const NeverScrollableScrollPhysics(),
               shrinkWrap: true,
-              itemCount: value.recentToDos.length,
+              itemCount: value.secondaryToDos.length,
               itemBuilder: (BuildContext context, int index) {
                 return buildToDoListTile(
-                    toDo: value.recentToDos[index], smallScreen: smallScreen);
+                    toDo: value.secondaryToDos[index],
+                    smallScreen: smallScreen);
               },
             );
           }),
@@ -636,10 +637,10 @@ class _NotificationsScreen extends State<NotificationsScreen> {
             return ListView.builder(
               physics: const NeverScrollableScrollPhysics(),
               shrinkWrap: true,
-              itemCount: value.recentReminders.length,
+              itemCount: value.secondaryReminders.length,
               itemBuilder: (BuildContext context, int index) {
                 return buildReminderListTile(
-                    reminder: value.recentReminders[index]);
+                    reminder: value.secondaryReminders[index]);
               },
             );
           }),
@@ -722,10 +723,10 @@ class _NotificationsScreen extends State<NotificationsScreen> {
             return ListView.builder(
               physics: const NeverScrollableScrollPhysics(),
               shrinkWrap: true,
-              itemCount: value.recentDeadlines.length,
+              itemCount: value.secondaryDeadlines.length,
               itemBuilder: (BuildContext context, int index) {
                 return buildDeadlineListTile(
-                    deadline: value.recentDeadlines[index]);
+                    deadline: value.secondaryDeadlines[index]);
               },
             );
           }),

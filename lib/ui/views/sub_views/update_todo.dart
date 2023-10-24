@@ -105,7 +105,6 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
   @override
   void dispose() {
     nameEditingController.dispose();
-    groupEditingController.dispose();
     descriptionEditingController.dispose();
     repeatSkipEditingController.dispose();
     mobileScrollController.dispose();
@@ -171,10 +170,6 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
         error.show(context);
       });
     }
-    groupEditingController.addListener(() {
-      String newText = groupEditingController.text;
-      SemanticsService.announce(newText, Directionality.of(context));
-    });
 
     descriptionEditingController =
         TextEditingController(text: toDo.description);
@@ -354,9 +349,19 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
       }
     }
 
-    await toDoProvider
-        .deleteToDo(toDo: toDo)
-        .whenComplete(() => Navigator.pop(context));
+    await toDoProvider.deleteToDo(toDo: toDo).whenComplete(() {
+      Navigator.pop(context);
+    }).catchError((e) {
+      Flushbar? error;
+
+      error = Flushbars.createError(
+        message: e.cause,
+        context: context,
+        dismissCallback: () => error?.dismiss(),
+      );
+
+      error.show(context);
+    }, test: (e) => e is FailureToDeleteException);
   }
 
   Future<void> handleClose({required bool willDiscard}) async {
@@ -463,9 +468,6 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
       return setState(() {
         checkClose = true;
         toDo.myDay = !toDo.myDay;
-        print(toDo.myDay);
-        print(prevToDo.myDay);
-        print(canAdd);
       });
     }
   }

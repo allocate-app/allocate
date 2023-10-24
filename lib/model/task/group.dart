@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:flutter/foundation.dart';
 import 'package:isar/isar.dart';
 
 import '../../util/constants.dart';
@@ -29,11 +30,15 @@ class Group with EquatableMixin implements Copyable<Group>, IModel {
   bool isSynced = false;
   @Index()
   bool toDelete = false;
+  @override
   @Index()
   DateTime lastUpdated;
 
   @ignore
   List<ToDo> toDos = [];
+
+  @ignore
+  late ValueNotifier<int> toDoCount = ValueNotifier<int>(toDos.length);
 
   Group({
     required this.name,
@@ -62,11 +67,11 @@ class Group with EquatableMixin implements Copyable<Group>, IModel {
       );
 
   @override
-  Group copyWith(
-          {String? name,
-          String? description,
-          DateTime? lastUpdated,
-          List<ToDo>? toDos}) =>
+  Group copyWith({
+    String? name,
+    String? description,
+    DateTime? lastUpdated,
+  }) =>
       Group(
         name: name ?? this.name,
         description: description ?? this.description,

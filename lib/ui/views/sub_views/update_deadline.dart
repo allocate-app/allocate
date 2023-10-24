@@ -129,7 +129,7 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
     if (nameEditingController.text.isEmpty) {
       valid = false;
       if (mounted) {
-        setState(() => nameErrorText = "Enter Task Name");
+        setState(() => nameErrorText = "Enter Deadline Name");
       }
     }
 
