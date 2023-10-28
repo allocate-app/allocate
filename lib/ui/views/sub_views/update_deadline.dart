@@ -353,8 +353,8 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
         this.checkClose = checkClose ?? this.checkClose;
         newDate = newDate ?? Constants.nullDate;
         newTime = newTime ?? Constants.midnight;
-        deadline.warnDate = deadline.warnDate
-            .copyWith(hour: newTime!.hour, minute: newTime!.minute);
+        deadline.warnDate =
+            newDate!.copyWith(hour: newTime!.hour, minute: newTime!.minute);
         deadline.warnMe = (Constants.nullDate != deadline.warnDate);
       });
     }

@@ -10,6 +10,7 @@ import 'package:intl/intl.dart';
 import 'package:jiffy/jiffy.dart';
 import 'package:provider/provider.dart';
 
+import '../../model/calendar_event.dart';
 import '../../model/task/deadline.dart';
 import '../../model/task/group.dart';
 import '../../model/task/reminder.dart';
@@ -1834,6 +1835,63 @@ class Tiles {
           maxLines: 2,
         ),
         onTap: (canAdd || myDay) ? toggleMyDay : null);
+  }
+
+  // EVENTS
+  static Widget eventTile(
+      {required CalendarEvent event,
+      required BuildContext context,
+      // Add padding later if needed
+      bool smallScreen = false}) {
+    return ListTile(
+      leading: LeadingWidgets.eventIcon(
+          type: event.repeatableType,
+          currentContext: context,
+          outerPadding:
+              const EdgeInsets.symmetric(horizontal: Constants.halfPadding),
+          iconPadding: const EdgeInsets.all(Constants.halfPadding)),
+      shape: const RoundedRectangleBorder(
+          borderRadius:
+              BorderRadius.all(Radius.circular(Constants.roundedCorners))),
+      title: AutoSizeText(
+        event.model.name,
+        minFontSize: Constants.large,
+        maxLines: 1,
+        overflow: TextOverflow.visible,
+        softWrap: false,
+      ),
+      onTap: () async {
+        late Widget dialog;
+        switch (event.repeatableType) {
+          case RepeatableType.task:
+            dialog = UpdateToDoScreen(initialToDo: event.model as ToDo);
+            break;
+          case RepeatableType.deadline:
+            dialog =
+                UpdateDeadlineScreen(initialDeadline: event.model as Deadline);
+            break;
+          case RepeatableType.reminder:
+            dialog =
+                UpdateReminderScreen(initialReminder: event.model as Reminder);
+            break;
+        }
+
+        await showDialog(
+            barrierDismissible: false,
+            useRootNavigator: false,
+            context: context,
+            builder: (BuildContext context) => dialog);
+      },
+      subtitle: Subtitles.eventSubtitle(
+        context: context,
+        model: event.model,
+        type: event.repeatableType,
+        smallScreen: smallScreen,
+      ),
+      trailing: (Frequency.once != event.model.frequency)
+          ? const Icon(Icons.restart_alt_rounded)
+          : const SizedBox.shrink(),
+    );
   }
 
   /// SEARCH

@@ -4,7 +4,7 @@ import 'package:isar/isar.dart';
 import '../../util/constants.dart';
 import '../../util/enums.dart';
 import '../../util/interfaces/copyable.dart';
-import '../../util/interfaces/i_model.dart';
+import '../../util/interfaces/i_repeatable.dart';
 
 /// DeadLines are meant for large-projects that have a due-date. They are just the project description
 /// and that alone, so as to not overwhelm with the temptation of overloading subtasks.
@@ -12,10 +12,14 @@ import '../../util/interfaces/i_model.dart';
 part "deadline.g.dart";
 
 @Collection(inheritance: false)
-class Deadline with EquatableMixin implements Copyable<Deadline>, IModel {
+class Deadline with EquatableMixin implements Copyable<Deadline>, IRepeatable {
   @override
   @ignore
   ModelType modelType = ModelType.deadline;
+
+  @override
+  @ignore
+  RepeatableType repeatableType = RepeatableType.deadline;
 
   @override
   @Index()
@@ -31,8 +35,10 @@ class Deadline with EquatableMixin implements Copyable<Deadline>, IModel {
   String name;
   String description;
 
+  @override
   DateTime startDate;
   @Index()
+  @override
   DateTime dueDate;
   DateTime warnDate;
   @Index()
@@ -43,6 +49,7 @@ class Deadline with EquatableMixin implements Copyable<Deadline>, IModel {
 
   @Index()
   bool repeatable;
+  @override
   @Enumerated(EnumType.ordinal)
   Frequency frequency;
   List<bool> repeatDays;
@@ -53,6 +60,7 @@ class Deadline with EquatableMixin implements Copyable<Deadline>, IModel {
   @Index()
   bool toDelete = false;
 
+  @override
   @Index()
   DateTime lastUpdated;
 

@@ -121,6 +121,7 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
     descriptionEditingController.dispose();
     mobileScrollController.dispose();
     desktopScrollController.dispose();
+    toDoSearchController.dispose();
     super.dispose();
   }
 
@@ -448,6 +449,7 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
           handleDataSelection: handleSelection,
           handleHistorySelection: handleSelection,
           searchController: toDoSearchController,
+          dispose: false,
           mostRecent: toDoProvider.mostRecent,
           search: toDoProvider.searchToDos,
         ),

@@ -128,7 +128,7 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
     descriptionEditingController.dispose();
     desktopScrollController.dispose();
     mobileScrollController.dispose();
-
+    toDoSearchController.dispose();
     super.dispose();
   }
 
@@ -468,6 +468,7 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
           handleDataSelection: handleSelection,
           handleHistorySelection: handleSelection,
           searchController: toDoSearchController,
+          dispose: false,
           mostRecent: toDoProvider.mostRecent,
           search: toDoProvider.searchToDos,
         ),

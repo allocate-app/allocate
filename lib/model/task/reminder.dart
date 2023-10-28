@@ -4,17 +4,20 @@ import "package:isar/isar.dart";
 import "../../util/constants.dart";
 import "../../util/enums.dart";
 import "../../util/interfaces/copyable.dart";
-import "../../util/interfaces/i_model.dart";
+import "../../util/interfaces/i_repeatable.dart";
 
 part "reminder.g.dart";
 
 /// This is a simple reminder object for things that aren't a "task"
 /// so much as they are a thing to remember.
 @Collection(inheritance: false)
-class Reminder with EquatableMixin implements Copyable<Reminder>, IModel {
+class Reminder with EquatableMixin implements Copyable<Reminder>, IRepeatable {
   @override
   @ignore
   ModelType modelType = ModelType.reminder;
+  @override
+  @ignore
+  RepeatableType repeatableType = RepeatableType.reminder;
 
   @override
   @Index()
@@ -30,10 +33,19 @@ class Reminder with EquatableMixin implements Copyable<Reminder>, IModel {
   @Index()
   String name;
 
+  @Ignore()
+  @override
+  DateTime get startDate => dueDate;
+
+  @override
+  set startDate(DateTime newDate) => dueDate = newDate;
+
   @Index()
+  @override
   DateTime dueDate;
   @Index()
   bool repeatable;
+  @override
   @Enumerated(EnumType.ordinal)
   Frequency frequency;
   List<bool> repeatDays;
@@ -42,42 +54,45 @@ class Reminder with EquatableMixin implements Copyable<Reminder>, IModel {
   bool isSynced = false;
   @Index()
   bool toDelete = false;
+
+  @override
   @Index()
   DateTime lastUpdated;
 
-  Reminder({this.repeatID,
-    this.notificationID,
-    required this.name,
-    this.repeatable = false,
-    required this.dueDate,
-    required this.repeatDays,
-    this.repeatSkip = 1,
-    this.frequency = Frequency.once,
-    required this.lastUpdated});
+  Reminder(
+      {this.repeatID,
+      this.notificationID,
+      required this.name,
+      this.repeatable = false,
+      required this.dueDate,
+      required this.repeatDays,
+      this.repeatSkip = 1,
+      this.frequency = Frequency.once,
+      required this.lastUpdated});
 
   @override
-  Reminder copy() =>
-      Reminder(
-          repeatID: repeatID,
-          notificationID: notificationID,
-          name: name,
-          dueDate: dueDate,
-          repeatable: repeatable,
-          repeatDays: List.from(repeatDays),
-          repeatSkip: repeatSkip,
-          frequency: frequency,
-          lastUpdated: lastUpdated);
+  Reminder copy() => Reminder(
+      repeatID: repeatID,
+      notificationID: notificationID,
+      name: name,
+      dueDate: dueDate,
+      repeatable: repeatable,
+      repeatDays: List.from(repeatDays),
+      repeatSkip: repeatSkip,
+      frequency: frequency,
+      lastUpdated: lastUpdated);
 
   @override
-  Reminder copyWith({int? repeatID,
-    int? notificationID,
-    String? name,
-    DateTime? dueDate,
-    bool? repeatable,
-    List<bool>? repeatDays,
-    int? repeatSkip,
-    Frequency? frequency,
-    DateTime? lastUpdated}) =>
+  Reminder copyWith(
+          {int? repeatID,
+          int? notificationID,
+          String? name,
+          DateTime? dueDate,
+          bool? repeatable,
+          List<bool>? repeatDays,
+          int? repeatSkip,
+          Frequency? frequency,
+          DateTime? lastUpdated}) =>
       Reminder(
           repeatID: repeatID ?? this.repeatID,
           notificationID: notificationID ?? this.notificationID,
@@ -104,8 +119,7 @@ class Reminder with EquatableMixin implements Copyable<Reminder>, IModel {
         toDelete = false,
         lastUpdated = DateTime.parse(entity["lastUpdated"]);
 
-  Map<String, dynamic> toEntity() =>
-      {
+  Map<String, dynamic> toEntity() => {
         "id": id,
         "customViewIndex": customViewIndex,
         "repeatID": repeatID,

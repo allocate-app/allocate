@@ -178,6 +178,7 @@ class ToDoProvider extends ChangeNotifier {
 
     if (repeatable ?? false) {
       curToDo!.repeatID = Constants.generateID();
+      nextRepeat(toDo: curToDo);
     }
 
     try {
@@ -204,6 +205,7 @@ class ToDoProvider extends ChangeNotifier {
     toDo.lastUpdated = DateTime.now();
     if (toDo.repeatable && null == toDo.repeatID) {
       toDo.repeatID = Constants.generateID();
+      nextRepeat(toDo: toDo);
     }
 
     try {

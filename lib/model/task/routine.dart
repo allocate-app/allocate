@@ -44,6 +44,7 @@ class Routine with EquatableMixin implements Copyable<Routine>, IModel {
   @Index()
   bool toDelete = false;
 
+  @override
   @Index()
   DateTime lastUpdated;
 

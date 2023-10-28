@@ -6,16 +6,20 @@ import "package:isar/isar.dart";
 import "../../util/constants.dart";
 import "../../util/enums.dart";
 import "../../util/interfaces/copyable.dart";
-import "../../util/interfaces/i_model.dart";
+import "../../util/interfaces/i_repeatable.dart";
 import "subtask.dart";
 
 part "todo.g.dart";
 
 @Collection(inheritance: false)
-class ToDo with EquatableMixin implements Copyable<ToDo>, IModel {
+class ToDo with EquatableMixin implements Copyable<ToDo>, IRepeatable {
   @override
   @ignore
   ModelType modelType = ModelType.task;
+
+  @override
+  @ignore
+  RepeatableType repeatableType = RepeatableType.task;
 
   @override
   Id id = Constants.generateID();
@@ -48,8 +52,10 @@ class ToDo with EquatableMixin implements Copyable<ToDo>, IModel {
   Priority priority;
   @Index()
   bool completed;
+  @override
   DateTime startDate;
   @Index()
+  @override
   DateTime dueDate;
 
   @Index()
@@ -62,6 +68,7 @@ class ToDo with EquatableMixin implements Copyable<ToDo>, IModel {
   int? repeatID;
 
   @Enumerated(EnumType.ordinal)
+  @override
   Frequency frequency;
   final List<bool> repeatDays;
   int repeatSkip;
@@ -69,6 +76,8 @@ class ToDo with EquatableMixin implements Copyable<ToDo>, IModel {
   bool isSynced = false;
   @Index()
   bool toDelete = false;
+
+  @override
   @Index()
   DateTime lastUpdated;
 

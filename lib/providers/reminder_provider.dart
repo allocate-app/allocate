@@ -117,11 +117,12 @@ class ReminderProvider extends ChangeNotifier {
       lastUpdated: DateTime.now(),
     );
 
+    curReminder!.notificationID = Constants.generateID();
+
     if (curReminder!.repeatable) {
       curReminder!.repeatID = Constants.generateID();
+      nextRepeat(reminder: curReminder!);
     }
-
-    curReminder!.notificationID = Constants.generateID();
 
     try {
       curReminder =
@@ -149,6 +150,7 @@ class ReminderProvider extends ChangeNotifier {
     reminder.lastUpdated = DateTime.now();
     if (reminder.repeatable && null == reminder.repeatID) {
       reminder.repeatID = Constants.generateID();
+      nextRepeat(reminder: reminder);
     }
 
     try {

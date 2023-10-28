@@ -202,6 +202,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
     for (TextEditingController controller in subTaskEditingController) {
       controller.dispose();
     }
+    groupEditingController.dispose();
     super.dispose();
   }
 
@@ -732,6 +733,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                                     handleHistorySelection:
                                         handleHistorySelection,
                                     searchController: groupEditingController,
+                                    dispose: false,
                                     mostRecent: groupProvider.mostRecent,
                                     search: groupProvider.searchGroups,
                                   ),
@@ -910,6 +912,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                       padding: const EdgeInsets.symmetric(
                           horizontal: Constants.padding),
                       searchController: groupEditingController,
+                      dispose: false,
                       handleHistorySelection: handleHistorySelection,
                       mostRecent: groupProvider.mostRecent,
                       search: groupProvider.searchGroups,

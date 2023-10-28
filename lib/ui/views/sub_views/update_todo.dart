@@ -113,7 +113,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
     for (TextEditingController controller in subTaskEditingController) {
       controller.dispose();
     }
-
+    groupEditingController.dispose();
     super.dispose();
   }
 
@@ -830,6 +830,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                                     handleHistorySelection:
                                         handleHistorySelection,
                                     searchController: groupEditingController,
+                                    dispose: false,
                                     mostRecent: groupProvider.mostRecent,
                                     search: groupProvider.searchGroups,
                                   ),
@@ -983,6 +984,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                       handleDataSelection: handleGroupSelection,
                       handleHistorySelection: handleHistorySelection,
                       searchController: groupEditingController,
+                      dispose: false,
                       mostRecent: groupProvider.mostRecent,
                       search: groupProvider.searchGroups,
                     ),

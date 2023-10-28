@@ -24,6 +24,29 @@ class LeadingWidgets {
             ),
           ));
 
+  // This might eventually require different definitions if reminder/deadline
+  // buttons are implemented with functionality.
+  static Widget eventIcon(
+          {required RepeatableType type,
+          required BuildContext currentContext,
+          EdgeInsetsGeometry iconPadding = EdgeInsets.zero,
+          EdgeInsetsGeometry outerPadding = EdgeInsets.zero}) =>
+      switch (type) {
+        RepeatableType.task => outlinedIcon(
+            currentContext: currentContext,
+            iconPadding: iconPadding,
+            outerPadding: outerPadding,
+            icon: const Icon(Icons.task_rounded)),
+        RepeatableType.deadline => deadlineIcon(
+            currentContext: currentContext,
+            iconPadding: iconPadding,
+            outerPadding: outerPadding),
+        RepeatableType.reminder => reminderIcon(
+            currentContext: currentContext,
+            iconPadding: iconPadding,
+            outerPadding: outerPadding),
+      };
+
   // This has no functionality at the moment. If a feature is added,
   // this will become a button.
   static Widget deadlineIcon({
@@ -73,7 +96,7 @@ class LeadingWidgets {
         currentContext: currentContext,
         iconPadding: iconPadding,
         outerPadding: outerPadding,
-        icon: const Icon(Icons.restart_alt_outlined),
+        icon: const Icon(Icons.restart_alt_rounded),
       );
 
   // This has no functionality at the moment. If a feature is added,

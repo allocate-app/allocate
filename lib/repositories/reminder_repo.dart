@@ -357,7 +357,6 @@ class ReminderRepo implements ReminderRepository {
   Future<List<Reminder>> getRange({DateTime? start, DateTime? end}) async {
     start = start ?? DateTime.now().copyWith(day: 1);
     end = end ?? start.copyWith(month: start.month + 1);
-    // TODO: Possibly sort this.
     return await _isarClient.reminders
         .where()
         .dueDateBetween(start, end)

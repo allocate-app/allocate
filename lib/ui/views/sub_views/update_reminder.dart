@@ -298,8 +298,8 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
         this.checkClose = checkClose ?? this.checkClose;
         newDate = newDate ?? Constants.nullDate;
         newTime = newTime ?? Constants.midnight;
-        reminder.dueDate = reminder.dueDate
-            .copyWith(hour: newTime!.hour, minute: newTime!.minute);
+        reminder.dueDate =
+            newDate!.copyWith(hour: newTime!.hour, minute: newTime!.minute);
       });
     }
   }

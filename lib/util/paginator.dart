@@ -9,6 +9,7 @@ class Paginator<T> extends ChangeNotifier {
   bool _disposed = false;
   late List<T>? items;
   late int limit;
+  late int initialLimit;
   late int offset;
   late bool allData;
   late bool loading;
@@ -30,6 +31,7 @@ class Paginator<T> extends ChangeNotifier {
     this.resetNotifiers,
     // this.appendNotifier
   }) {
+    this.initialLimit = this.limit;
     if (null != resetNotifiers) {
       for (ChangeNotifier notifier in resetNotifiers!) {
         notifier.addListener(resetPagination);
@@ -45,7 +47,7 @@ class Paginator<T> extends ChangeNotifier {
 
   Future<void> resetPagination() async {
     offset = 0;
-    limit = max(items?.length ?? 0, Constants.minLimitPerQuery);
+    limit = max(items?.length ?? 0, limit);
 
     return await overwriteData();
   }
@@ -56,7 +58,7 @@ class Paginator<T> extends ChangeNotifier {
     items = newItems;
     loading = false;
     allData = (items?.length ?? 0) < limit;
-    limit = Constants.minLimitPerQuery;
+    limit = initialLimit;
 
     if (_disposed) {
       return;

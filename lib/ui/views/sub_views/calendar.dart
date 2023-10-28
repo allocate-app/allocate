@@ -2,16 +2,11 @@ import 'dart:collection';
 import 'dart:io';
 
 import 'package:another_flushbar/flushbar.dart';
-import 'package:auto_size_text/auto_size_text.dart';
-import 'package:equatable/equatable.dart';
 import "package:flutter/material.dart";
-import 'package:jiffy/jiffy.dart';
 import 'package:provider/provider.dart';
 import 'package:table_calendar/table_calendar.dart';
 
-import '../../../model/task/deadline.dart';
-import '../../../model/task/reminder.dart';
-import '../../../model/task/todo.dart';
+import '../../../model/calendar_event.dart';
 import '../../../providers/deadline_provider.dart';
 import '../../../providers/group_provider.dart';
 import '../../../providers/reminder_provider.dart';
@@ -19,10 +14,9 @@ import '../../../providers/todo_provider.dart';
 import '../../../util/constants.dart';
 import '../../../util/enums.dart';
 import '../../../util/exceptions.dart';
+import '../../../util/interfaces/i_repeatable.dart';
 import '../../widgets/flushbars.dart';
-import 'update_deadline.dart';
-import 'update_reminder.dart';
-import 'update_todo.dart';
+import '../../widgets/listviews.dart';
 
 class CalendarScreen extends StatefulWidget {
   const CalendarScreen({Key? key}) : super(key: key);
@@ -171,107 +165,42 @@ class _CalendarScreen extends State<CalendarScreen> {
             e is FailureToUploadException || e is FailureToUpdateException);
   }
 
+  // TODO: Factor this into an EventProvider class?
   Future<void> getEvents({DateTime? day, DateTime? end}) async {
     day = day ?? Constants.today.copyWith(day: 1);
-
     end = end ?? day.copyWith(month: day.month + 1);
+
     await Future.wait([
-      getToDoEvents(start: day, end: end),
-      getDeadlineEvents(start: day, end: end),
-      getReminderEvents(start: day, end: end),
-    ]);
-  }
+      toDoProvider.getToDosBetween(
+        start: day,
+        end: end,
+      ),
+      deadlineProvider.getDeadlinesBetween(start: day, end: end),
+      reminderProvider.getRemindersBetween(start: day, end: end),
+    ]).then((data) {
+      for (int i = 0; i < data.length; i++) {
+        for (IRepeatable eventModel in data[i]) {
+          DateTime startDay = eventModel.startDate.copyWith(
+              hour: Constants.midnight.hour, minute: Constants.midnight.minute);
+          DateTime dueDay = eventModel.dueDate.copyWith(
+              hour: Constants.midnight.hour, minute: Constants.midnight.minute);
 
-  // Events with same due/start date will be one event in the set.
-  Future<void> getToDoEvents({DateTime? start, DateTime? end}) async {
-    start = start ?? Constants.today.copyWith(day: 1);
+          CalendarEvent event = CalendarEvent(
+              model: eventModel, repeatableType: RepeatableType.values[i]);
+          if (_events.containsKey(startDay)) {
+            _events[startDay]!.add(event);
+          } else {
+            _events[startDay] = {event};
+          }
 
-    end = end ?? start.copyWith(month: start.month + 1);
-
-    List<ToDo> toDos =
-        await toDoProvider.getToDosBetween(start: start, end: end);
-
-    for (ToDo toDo in toDos) {
-      DateTime startDay = toDo.startDate.copyWith(
-          hour: Constants.midnight.hour, minute: Constants.midnight.minute);
-      DateTime dueDay = toDo.dueDate.copyWith(
-          hour: Constants.midnight.hour, minute: Constants.midnight.minute);
-
-      CalendarEvent event = CalendarEvent(
-        title: toDo.name,
-        id: toDo.id,
-        pattern: "MMM d",
-        modelType: ModelType.task,
-        dueDate: toDo.dueDate,
-      );
-
-      if (_events.containsKey(startDay)) {
-        _events[startDay]!.add(event);
-      } else {
-        _events[startDay] = {event};
+          if (_events.containsKey(dueDay)) {
+            _events[dueDay]!.add(event);
+          } else {
+            _events[dueDay] = {event};
+          }
+        }
       }
-
-      if (_events.containsKey(dueDay)) {
-        _events[dueDay]!.add(event);
-      } else {
-        _events[dueDay] = {event};
-      }
-    }
-  }
-
-  Future<void> getDeadlineEvents({DateTime? start, DateTime? end}) async {
-    start = start ?? Constants.today.copyWith(day: 1);
-    end = end ?? start.copyWith(month: start.month + 1);
-
-    List<Deadline> deadlines =
-        await deadlineProvider.getDeadlinesBetween(start: start, end: end);
-
-    for (Deadline deadline in deadlines) {
-      DateTime startDay = deadline.dueDate.copyWith(
-          hour: Constants.midnight.hour, minute: Constants.midnight.minute);
-      DateTime dueDay = deadline.dueDate.copyWith(
-          hour: Constants.midnight.hour, minute: Constants.midnight.minute);
-      CalendarEvent event = CalendarEvent(
-          title: deadline.name,
-          id: deadline.id,
-          pattern: "MMM d",
-          modelType: ModelType.deadline,
-          dueDate: deadline.dueDate);
-      if (_events.containsKey(startDay)) {
-        _events[startDay]!.add(event);
-      } else {
-        _events[startDay] = {event};
-      }
-      if (_events.containsKey(dueDay)) {
-        _events[dueDay]!.add(event);
-      } else {
-        _events[dueDay] = {event};
-      }
-    }
-  }
-
-  Future<void> getReminderEvents({DateTime? start, DateTime? end}) async {
-    start = start ?? Constants.today.copyWith(day: 1);
-    end = end ?? start.copyWith(month: start.month + 1);
-
-    List<Reminder> reminders =
-        await reminderProvider.getRemindersBetween(start: start, end: end);
-
-    for (Reminder reminder in reminders) {
-      DateTime day = reminder.dueDate.copyWith(
-          hour: Constants.midnight.hour, minute: Constants.midnight.minute);
-      CalendarEvent event = CalendarEvent(
-          title: reminder.name,
-          pattern: "hh:mm a",
-          id: reminder.id,
-          modelType: ModelType.reminder,
-          dueDate: reminder.dueDate);
-      if (_events.containsKey(day)) {
-        _events[day]!.add(event);
-      } else {
-        _events[day] = {event};
-      }
-    }
+    });
   }
 
   List<CalendarEvent> getEventsForDay(DateTime? day) {
@@ -293,45 +222,12 @@ class _CalendarScreen extends State<CalendarScreen> {
     _selectedEvents.value = getEventsForDay(selectedDay);
   }
 
-  // TODO: Factor into leadingWidgets
-  Widget getModelIcon({required ModelType modelType}) {
-    Icon icon = switch (modelType) {
-      ModelType.task => const Icon(Icons.task_rounded),
-      ModelType.deadline => const Icon(Icons.announcement_rounded),
-      ModelType.reminder => const Icon(Icons.push_pin_rounded),
-      _ => throw InvalidEventItemException("ModelType: $modelType"),
-    };
-
-    return DecoratedBox(
-      decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          border: Border.all(
-              color: Theme.of(context).colorScheme.outline,
-              strokeAlign: BorderSide.strokeAlignOutside)),
-      child: Padding(
-        padding: const EdgeInsets.all(Constants.padding),
-        child: icon,
-      ),
-    );
-  }
-
-  // TODO: REMOVE, THIS IS TAKEN CARE OF BY THE SUBTITLE WIDGET.
-  Widget buildDueDate({required CalendarEvent event}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
-      child: AutoSizeText(
-          Jiffy.parseFromDateTime(event.dueDate)
-              .toLocal()
-              .format(pattern: event.pattern),
-          softWrap: false,
-          overflow: TextOverflow.visible,
-          maxLines: 2,
-          minFontSize: Constants.large),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
+    double width = MediaQuery.of(context).size.width;
+    bool largeScreen = (width >= Constants.largeScreen);
+    bool smallScreen = (width <= Constants.smallScreen);
+    bool hugeScreen = (width >= Constants.hugeScreen);
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -371,123 +267,11 @@ class _CalendarScreen extends State<CalendarScreen> {
                         getEvents(day: focusedDay, end: latest);
                       }
                     }),
-                buildEventTile(),
+                ListViews.eventList(
+                    selectedEvents: _selectedEvents, smallScreen: smallScreen)
               ]),
         )),
-        // Expanded(child: buildEventTile())
       ],
     );
   }
-
-  // TODO: factor out into listview/tile class.
-  Widget buildEventTile() {
-    return ValueListenableBuilder<List<CalendarEvent>>(
-      valueListenable: _selectedEvents,
-      builder:
-          (BuildContext context, List<CalendarEvent> value, Widget? child) {
-        return ListView.builder(
-            physics: const NeverScrollableScrollPhysics(),
-            shrinkWrap: true,
-            itemCount: value.length,
-            itemBuilder: (BuildContext context, int index) {
-              return Padding(
-                  padding: const EdgeInsets.all(Constants.halfPadding),
-                  child: ListTile(
-                    shape: const RoundedRectangleBorder(
-                        borderRadius: BorderRadius.all(
-                            Radius.circular(Constants.roundedCorners))),
-                    leading: getModelIcon(modelType: value[index].modelType),
-                    title: AutoSizeText(
-                      value[index].title,
-                      minFontSize: Constants.large,
-                      maxLines: 1,
-                      overflow: TextOverflow.visible,
-                      softWrap: false,
-                    ),
-                    // TODO: Factor this out into a method for Tiles class.
-                    onTap: () async {
-                      late Widget dialog;
-                      late Future<void>? future;
-                      switch (value[index].modelType) {
-                        case ModelType.task:
-                          dialog = const UpdateToDoScreen();
-                          future = Future.wait([
-                            toDoProvider
-                                .getToDoByID(id: value[index].id)
-                                .then((toDo) {
-                              if (null == toDo) {
-                                throw InvalidEventItemException(
-                                    "Event: ${value[index].toString()}");
-                              }
-                              return toDoProvider.curToDo = toDo;
-                            })
-                          ]);
-                          break;
-                        case ModelType.deadline:
-                          dialog = const UpdateDeadlineScreen();
-                          future = Future.wait([
-                            deadlineProvider
-                                .getDeadlineByID(id: value[index].id)
-                                .then((deadline) {
-                              if (null == deadline) {
-                                throw InvalidEventItemException(
-                                    "Event: ${value[index].toString()}");
-                              }
-                              return deadlineProvider.curDeadline = deadline;
-                            })
-                          ]);
-                          break;
-                        case ModelType.reminder:
-                          dialog = const UpdateReminderScreen();
-                          future = Future.wait([
-                            reminderProvider
-                                .getReminderByID(id: value[index].id)
-                                .then((reminder) {
-                              if (null == reminder) {
-                                throw InvalidEventItemException(
-                                    "Event: ${value[index].toString()}");
-                              }
-                              return reminderProvider.curReminder = reminder;
-                            })
-                          ]);
-                          break;
-                        default:
-                          throw InvalidEventItemException(
-                              "Event: ${value[index].toString()}");
-                      }
-
-                      await future.whenComplete(() async => await showDialog(
-                          barrierDismissible: false,
-                          useRootNavigator: false,
-                          context: context,
-                          builder: (BuildContext context) => dialog));
-                    },
-                    trailing: buildDueDate(event: value[index]),
-                  ));
-            });
-      },
-    );
-  }
-}
-
-class CalendarEvent with EquatableMixin {
-  final String title;
-  final String pattern;
-  final ModelType modelType;
-  final DateTime dueDate;
-  final int id;
-
-  const CalendarEvent(
-      {required this.title,
-      required this.pattern,
-      required this.id,
-      required this.modelType,
-      required this.dueDate});
-
-  @override
-  String toString() =>
-      "id: $id, Title: $title, Type: $modelType, pattern: $pattern, dueDate: $dueDate";
-
-  @override
-  List<Object?> get props => [id, title, pattern, modelType, dueDate];
 }

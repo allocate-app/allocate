@@ -1,7 +1,9 @@
 import 'package:allocate/providers/reminder_provider.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../model/calendar_event.dart';
 import '../../model/task/deadline.dart';
 import '../../model/task/group.dart';
 import '../../model/task/reminder.dart';
@@ -507,5 +509,25 @@ class ListViews {
                 showHandle: showHandle,
               ),
             );
+          });
+
+  static Widget eventList(
+          {required ValueListenable<List<CalendarEvent>> selectedEvents,
+          bool smallScreen = false}) =>
+      ValueListenableBuilder<List<CalendarEvent>>(
+          valueListenable: selectedEvents,
+          builder:
+              (BuildContext context, List<CalendarEvent> value, Widget? child) {
+            return ListView.builder(
+                physics: const NeverScrollableScrollPhysics(),
+                shrinkWrap: true,
+                itemCount: value.length,
+                itemBuilder: (BuildContext context, int index) {
+                  return Tiles.eventTile(
+                    event: value[index],
+                    context: context,
+                    smallScreen: smallScreen,
+                  );
+                });
           });
 }

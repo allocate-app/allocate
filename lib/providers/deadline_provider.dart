@@ -140,16 +140,17 @@ class DeadlineProvider extends ChangeNotifier {
         repeatSkip: repeatSkip ?? 1,
         lastUpdated: DateTime.now());
 
-    if (repeatable ?? false) {
-      curDeadline!.repeatID = Constants.generateID();
-    }
     if (warnMe) {
       curDeadline!.notificationID = Constants.generateID();
+    }
+    if (repeatable ?? false) {
+      curDeadline!.repeatID = Constants.generateID();
+      nextRepeat(deadline: curDeadline);
     }
 
     try {
       curDeadline =
-          await _deadlineService.createDeadline(deadline: curDeadline!);
+      await _deadlineService.createDeadline(deadline: curDeadline!);
 
       if (curDeadline!.warnMe) {
         await scheduleNotification();
@@ -175,9 +176,14 @@ class DeadlineProvider extends ChangeNotifier {
     deadline = deadline ?? curDeadline!;
     deadline.lastUpdated = DateTime.now();
 
+    if (deadline.repeatable && null == deadline.repeatID) {
+      deadline.repeatID = Constants.generateID();
+      nextRepeat(deadline: deadline);
+    }
+
     try {
       curDeadline =
-          await _deadlineService.updateDeadline(deadline: curDeadline!);
+      await _deadlineService.updateDeadline(deadline: curDeadline!);
       await cancelNotification();
       if (deadline.warnMe && validateWarnDate()) {
         deadline.notificationID =
@@ -206,10 +212,9 @@ class DeadlineProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<List<Deadline>> reorderDeadlines(
-      {List<Deadline>? deadlines,
-      required int oldIndex,
-      required int newIndex}) async {
+  Future<List<Deadline>> reorderDeadlines({List<Deadline>? deadlines,
+    required int oldIndex,
+    required int newIndex}) async {
     try {
       return await _deadlineService.reorderDeadlines(
           deadlines: deadlines ?? this.deadlines,
@@ -265,7 +270,7 @@ class DeadlineProvider extends ChangeNotifier {
   Future<void> deleteAndCancelFutures({Deadline? deadline}) async {
     await deleteFutures(deadline: deadline).then((toDelete) async {
       List<int?> cancelIDs =
-          toDelete.map((deadline) => deadline.notificationID).toList();
+      toDelete.map((deadline) => deadline.notificationID).toList();
       return await _notificationService.cancelFutures(ids: cancelIDs);
     });
   }
@@ -284,7 +289,7 @@ class DeadlineProvider extends ChangeNotifier {
   }
 
   Future<List<Deadline>> getDeadlines(
-          {int limit = Constants.minLimitPerQuery, int offset = 0}) async =>
+      {int limit = Constants.minLimitPerQuery, int offset = 0}) async =>
       await _deadlineService.getDeadlinesBy(
           sorter: sorter, limit: limit, offset: offset);
 
@@ -292,7 +297,7 @@ class DeadlineProvider extends ChangeNotifier {
       deadlines = await _deadlineService.getDeadlines();
 
   Future<List<Deadline>> getDeadlinesBy(
-          {int limit = Constants.minLimitPerQuery, int offset = 0}) async =>
+      {int limit = Constants.minLimitPerQuery, int offset = 0}) async =>
       await _deadlineService.getDeadlinesBy(
           sorter: sorter, limit: limit, offset: offset);
 
@@ -306,7 +311,7 @@ class DeadlineProvider extends ChangeNotifier {
       await _deadlineService.getUpcoming(limit: limit, offset: offset);
 
   Future<List<Deadline>> searchDeadlines(
-          {required String searchString}) async =>
+      {required String searchString}) async =>
       await _deadlineService.searchDeadlines(searchString: searchString);
 
   Future<List<Deadline>> mostRecent({int limit = 5}) async =>
@@ -336,7 +341,7 @@ class DeadlineProvider extends ChangeNotifier {
         id: deadline.notificationID!,
         warnDate: deadline.warnDate,
         message:
-            "${deadline.name} is due on: $newDue\n It's okay to ask for more time.",
+        "${deadline.name} is due on: $newDue\n It's okay to ask for more time.",
         payload: "DEADLINE\n${deadline.id}");
   }
 
@@ -353,6 +358,6 @@ class DeadlineProvider extends ChangeNotifier {
           notificationDate: warnDate ?? curDeadline!.warnDate);
 
   Future<List<Deadline>> getDeadlinesBetween(
-          {DateTime? start, DateTime? end}) async =>
+      {DateTime? start, DateTime? end}) async =>
       await _deadlineService.getRange(start: start, end: end);
 }

@@ -3,10 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:jiffy/jiffy.dart';
 import 'package:provider/provider.dart';
 
+import '../../model/task/deadline.dart';
+import '../../model/task/todo.dart';
 import '../../providers/group_provider.dart';
+import '../../providers/todo_provider.dart';
 import '../../util/constants.dart';
 import '../../util/enums.dart';
 import '../../util/exceptions.dart';
+import '../../util/interfaces/i_repeatable.dart';
 
 class Subtitles {
   static Widget toDoSubtitle({required BuildContext context,
@@ -211,17 +215,6 @@ class Subtitles {
     )
         : FutureBuilder<String>(
         future: groupProvider.getGroupName(id: id).catchError((e) {
-          // Flushbar? error;
-          //
-          // error = Flushbars.createError(
-          //   message: e.cause ?? "Error with retrieval",
-          //   context: context,
-          //   dismissCallback: () => error?.dismiss(),
-          // );
-          //
-          // error.show(context);
-
-          // When a group is deleted, catch the error and reset the toDo group id to null.
           onError();
           return "";
         }, test: (e) => e is GroupNotFoundException),
@@ -316,5 +309,38 @@ class Subtitles {
         ]);
       },
     );
+  }
+
+
+  static Widget eventSubtitle({required RepeatableType type,
+    required BuildContext context,
+    required IRepeatable model,
+    bool smallScreen = false}) {
+    switch (type) {
+      case RepeatableType.task:
+        return toDoSubtitle(
+            context: context,
+            id: (model as ToDo).groupID,
+            dueDate: model.dueDate,
+            priority: model.priority,
+            smallScreen: smallScreen,
+            onError: () async {
+              ToDoProvider toDoProvider =
+              Provider.of<ToDoProvider>(context, listen: false);
+              (model).groupID = null;
+              await toDoProvider.updateToDo(toDo: model);
+            });
+      case RepeatableType.deadline:
+        return deadlineSubtitle(
+          context: context,
+          dueDate: model.dueDate,
+          priority: (model as Deadline).priority,
+          smallScreen: smallScreen,
+          warnDate: (model.warnMe) ? model.warnDate : null,
+        );
+      case RepeatableType.reminder:
+        return reminderSubtitle(
+            context: context, dueDate: model.dueDate, smallScreen: smallScreen);
+    }
   }
 }
