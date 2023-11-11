@@ -844,9 +844,6 @@ class Tiles {
                         context: context,
                         toDoProvider: toDoProvider);
                   },
-                  // TODO: Figure out a way to implement a text listener -> May be best to
-                  // factor out into ListView class, or add the listener in the expanded tile class.
-                  // TODO: refactor searchrecents to add the listener in itself
                   searchController: SearchController(),
                   mostRecent: toDoProvider.mostRecent,
                   search: toDoProvider.searchToDos,
@@ -1109,6 +1106,142 @@ class Tiles {
                   index: index, child: const Icon(Icons.drag_handle_rounded))
               : const SizedBox.shrink(),
         ]));
+  }
+
+  // ROUTINE EXPANSION TILES
+
+  // TODO: REVISIT ONCE SUBTASKS REFACTORED
+  // Possibly refactor -> Icon being a search widget?
+  // Or just an icon.
+  static Widget emptyRoutineTile({
+    required BuildContext context,
+    RoutineTime timeOfDay = RoutineTime.morning,
+  }) {
+    RoutineProvider routineProvider =
+        Provider.of<RoutineProvider>(context, listen: false);
+    return ExpandedListTile(
+      leading: LeadingWidgets.myDayRoutineIcon(
+          timeOfDay: timeOfDay, onPressed: () {}),
+      title: AutoSizeText(
+          "${toBeginningOfSentenceCase(timeOfDay.name)} Routine",
+          maxLines: 1,
+          overflow: TextOverflow.visible,
+          softWrap: false,
+          minFontSize: Constants.large),
+      children: [
+        SearchRecentsBar<Routine>(
+          handleDataSelection: ({required int id}) async {
+            Routine? routine = await routineProvider.getRoutineByID(id: id);
+            if (null == routine) {
+              return;
+            }
+            routineProvider.handleRoutineTime(
+                time: timeOfDay, routine: routine);
+          },
+          handleHistorySelection: ({required int id}) async {
+            Routine? routine = await routineProvider.getRoutineByID(id: id);
+            if (null == routine) {
+              return;
+            }
+            routineProvider.handleRoutineTime(
+                time: timeOfDay, routine: routine);
+          },
+          mostRecent: routineProvider.mostRecent,
+          search: routineProvider.searchRoutines,
+          hintText: "Search Routines",
+        ),
+      ],
+    );
+  }
+
+  // FIGURE THIS OUT PLS.
+  static Widget filledRoutineTile({
+    required BuildContext context,
+    required Routine routine,
+    RoutineTime timeOfDay = RoutineTime.morning,
+  }) {
+    int numTasks = routine.routineTasks.indexOf(SubTask());
+    if (numTasks < 0) {
+      numTasks = Constants.maxNumTasks;
+    }
+    return ExpandedListTile(
+        leading: LeadingWidgets.myDayRoutineIcon(
+          timeOfDay: timeOfDay,
+          routine: routine,
+          onPressed: () async {
+            await showDialog(
+              barrierDismissible: false,
+              useRootNavigator: false,
+              context: context,
+              builder: (BuildContext context) => UpdateRoutineScreen(
+                initialRoutine: routine,
+              ),
+            );
+          },
+        ),
+        title: AutoSizeText(routine.name,
+            maxLines: 1,
+            overflow: TextOverflow.visible,
+            softWrap: false,
+            minFontSize: Constants.large),
+        subtitle: Subtitles.routineSubtitle(numTasks: numTasks),
+        trailing: IconButton(
+          icon: const Icon(Icons.remove_circle_outline),
+          onPressed: () async {
+            await Provider.of<RoutineProvider>(context, listen: false)
+                .handleRoutineTime(routine: routine, time: RoutineTime.none);
+          },
+        ),
+        children: [
+          // TODO: Reimplement subtasks - This is so inefficient.
+          ListViews.reorderableSubtasks(
+            context: context,
+            itemCount: numTasks,
+            subTasks: routine.routineTasks,
+            onChanged: () async {
+              await Provider.of<RoutineProvider>(context, listen: false)
+                  .updateRoutine(routine: routine);
+            },
+            onRemoved: ({required int index}) {},
+            onReorder: (int oldIndex, int newIndex) {
+              if (oldIndex < newIndex) {
+                newIndex--;
+              }
+              List<SubTask> routineTasks = List.from(routine.routineTasks);
+              SubTask rt = routineTasks.removeAt(oldIndex);
+              routineTasks.insert(newIndex, rt);
+
+              routine.routineTasks
+                  .replaceRange(0, Constants.maxNumTasks, routineTasks);
+            },
+            controllers: List.generate(
+                Constants.maxNumTasks,
+                (int i) =>
+                    TextEditingController(text: routine.routineTasks[i].name)),
+            onSubtaskWeightChanged: () {
+              RoutineProvider routineProvider =
+                  Provider.of<RoutineProvider>(context, listen: false);
+
+              routine.weight = routineProvider.calculateWeight(
+                  routineTasks: routine.routineTasks);
+              routine.realDuration = routineProvider.calculateRealDuration(
+                  weight: routine.weight, duration: routine.expectedDuration);
+              routineProvider.updateRoutine(routine: routine);
+            },
+            showHandle: numTasks > 1,
+          ),
+          (numTasks < Constants.maxNumTasks)
+              ? addTile(
+                  // This is not ideal, TODO: fix.
+                  onTap: () async {
+                    routine.routineTasks[numTasks] = SubTask(name: "New task");
+                    await Provider.of<RoutineProvider>(context, listen: false)
+                        .updateRoutine(routine: routine);
+                  },
+                  title: "Add a step",
+                )
+              : const SizedBox.shrink(),
+        ]);
   }
 
   /// Model Parameter Tiles

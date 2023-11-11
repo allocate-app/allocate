@@ -253,7 +253,7 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
       return setState(() {
         checkClose = true;
         routine.weight =
-            routineProvider.calculateWeight(routineTasks: routine.routineTasks);
+            routineProvider.calculateWeight(routineTasks: cacheRoutineTasks);
         routine.realDuration = routineProvider.calculateRealDuration(
             weight: routine.weight, duration: routine.expectedDuration);
       });

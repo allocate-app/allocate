@@ -1,6 +1,7 @@
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
 
+import '../../model/task/routine.dart';
 import '../../util/constants.dart';
 import '../../util/enums.dart';
 
@@ -136,6 +137,26 @@ class LeadingWidgets {
         icon: const Icon(Icons.edit_rounded),
         onPressed: onPressed,
       );
+
+  static Widget myDayRoutineIcon(
+      {Routine? routine,
+      RoutineTime timeOfDay = RoutineTime.morning,
+      required void Function() onPressed}) {
+    Icon? icon = switch (timeOfDay) {
+      RoutineTime.morning => const Icon(Icons.wb_twilight_rounded),
+      RoutineTime.afternoon => const Icon(Icons.lunch_dining_rounded),
+      RoutineTime.evening => const Icon(Icons.bed_rounded),
+      _ => const Icon(null),
+    };
+
+    if (null == routine) {
+      return IconButton.outlined(
+        icon: icon,
+        onPressed: onPressed,
+      );
+    }
+    return IconButton.filledTonal(icon: icon, onPressed: onPressed);
+  }
 
   static Widget routineIcon({
     required BuildContext currentContext,
