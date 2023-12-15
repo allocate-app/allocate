@@ -261,7 +261,7 @@ class ToDoRepo implements ToDoRepository {
   @override
   Future<List<ToDo>> getRepoList(
           {int limit = 50, int offset = 0, bool completed = false}) async =>
-      _isarClient.toDos
+      await _isarClient.toDos
           .where()
           .completedEqualTo(completed)
           .filter()
@@ -554,7 +554,7 @@ class ToDoRepo implements ToDoRepository {
   }
 
   @override
-  Future<int> getMyDayWeight({int limit = 50}) async => _isarClient.toDos
+  Future<int> getMyDayWeight({int limit = 50}) async => await _isarClient.toDos
       .where()
       .myDayEqualTo(true)
       .filter()
@@ -567,7 +567,7 @@ class ToDoRepo implements ToDoRepository {
   @override
   Future<List<ToDo>> getRepoByGroupID(
           {required int groupID, int limit = 50, int offset = 0}) async =>
-      _isarClient.toDos
+      await _isarClient.toDos
           .where()
           .groupIDEqualTo(groupID)
           .filter()
@@ -581,19 +581,23 @@ class ToDoRepo implements ToDoRepository {
           .findAll();
 
   @override
-  Future<List<ToDo>> getRepeatables({DateTime? now}) async => _isarClient.toDos
+  Future<List<ToDo>> getRepeatables({DateTime? now}) async =>
+      await _isarClient.toDos
+          .where()
+          .repeatableEqualTo(true)
+          .filter()
+          .toDeleteEqualTo(false)
+          .dueDateLessThan(now ?? Constants.today)
+          .findAll();
+
+  Future<List<int>> getDeleteIds() async => await _isarClient.toDos
       .where()
-      .repeatableEqualTo(true)
-      .filter()
-      .toDeleteEqualTo(false)
-      .dueDateLessThan(now ?? Constants.today)
+      .toDeleteEqualTo(true)
+      .idProperty()
       .findAll();
 
-  Future<List<int>> getDeleteIds() async =>
-      _isarClient.toDos.where().toDeleteEqualTo(true).idProperty().findAll();
-
   Future<List<ToDo>> getUnsynced() async =>
-      _isarClient.toDos.where().isSyncedEqualTo(false).findAll();
+      await _isarClient.toDos.where().isSyncedEqualTo(false).findAll();
 
   @override
   Future<List<ToDo>> getRange({DateTime? start, DateTime? end}) async {

@@ -114,25 +114,19 @@ const ToDoSchema = CollectionSchema(
       name: r'startDate',
       type: IsarType.dateTime,
     ),
-    r'subTasks': PropertySchema(
-      id: 19,
-      name: r'subTasks',
-      type: IsarType.objectList,
-      target: r'SubTask',
-    ),
     r'taskType': PropertySchema(
-      id: 20,
+      id: 19,
       name: r'taskType',
       type: IsarType.byte,
       enumMap: _ToDotaskTypeEnumValueMap,
     ),
     r'toDelete': PropertySchema(
-      id: 21,
+      id: 20,
       name: r'toDelete',
       type: IsarType.bool,
     ),
     r'weight': PropertySchema(
-      id: 22,
+      id: 21,
       name: r'weight',
       type: IsarType.long,
     )
@@ -327,7 +321,7 @@ const ToDoSchema = CollectionSchema(
     )
   },
   links: {},
-  embeddedSchemas: {r'SubTask': SubTaskSchema},
+  embeddedSchemas: {},
   getId: _toDoGetId,
   getLinks: _toDoGetLinks,
   attach: _toDoAttach,
@@ -343,14 +337,6 @@ int _toDoEstimateSize(
   bytesCount += 3 + object.description.length * 3;
   bytesCount += 3 + object.name.length * 3;
   bytesCount += 3 + object.repeatDays.length;
-  bytesCount += 3 + object.subTasks.length * 3;
-  {
-    final offsets = allOffsets[SubTask]!;
-    for (var i = 0; i < object.subTasks.length; i++) {
-      final value = object.subTasks[i];
-      bytesCount += SubTaskSchema.estimateSize(value, offsets, allOffsets);
-    }
-  }
   return bytesCount;
 }
 
@@ -379,15 +365,9 @@ void _toDoSerialize(
   writer.writeLong(offsets[16], object.repeatSkip);
   writer.writeBool(offsets[17], object.repeatable);
   writer.writeDateTime(offsets[18], object.startDate);
-  writer.writeObjectList<SubTask>(
-    offsets[19],
-    allOffsets,
-    SubTaskSchema.serialize,
-    object.subTasks,
-  );
-  writer.writeByte(offsets[20], object.taskType.index);
-  writer.writeBool(offsets[21], object.toDelete);
-  writer.writeLong(offsets[22], object.weight);
+  writer.writeByte(offsets[19], object.taskType.index);
+  writer.writeBool(offsets[20], object.toDelete);
+  writer.writeLong(offsets[21], object.weight);
 }
 
 ToDo _toDoDeserialize(
@@ -417,20 +397,13 @@ ToDo _toDoDeserialize(
     repeatSkip: reader.readLongOrNull(offsets[16]) ?? 1,
     repeatable: reader.readBoolOrNull(offsets[17]) ?? false,
     startDate: reader.readDateTime(offsets[18]),
-    subTasks: reader.readObjectList<SubTask>(
-          offsets[19],
-          SubTaskSchema.deserialize,
-          allOffsets,
-          SubTask(),
-        ) ??
-        [],
-    taskType: _ToDotaskTypeValueEnumMap[reader.readByteOrNull(offsets[20])] ??
+    taskType: _ToDotaskTypeValueEnumMap[reader.readByteOrNull(offsets[19])] ??
         TaskType.small,
-    weight: reader.readLongOrNull(offsets[22]) ?? 0,
+    weight: reader.readLongOrNull(offsets[21]) ?? 0,
   );
   object.id = id;
   object.isSynced = reader.readBool(offsets[8]);
-  object.toDelete = reader.readBool(offsets[21]);
+  object.toDelete = reader.readBool(offsets[20]);
   return object;
 }
 
@@ -482,19 +455,11 @@ P _toDoDeserializeProp<P>(
     case 18:
       return (reader.readDateTime(offset)) as P;
     case 19:
-      return (reader.readObjectList<SubTask>(
-            offset,
-            SubTaskSchema.deserialize,
-            allOffsets,
-            SubTask(),
-          ) ??
-          []) as P;
-    case 20:
       return (_ToDotaskTypeValueEnumMap[reader.readByteOrNull(offset)] ??
           TaskType.small) as P;
-    case 21:
+    case 20:
       return (reader.readBool(offset)) as P;
-    case 22:
+    case 21:
       return (reader.readLongOrNull(offset) ?? 0) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -2852,90 +2817,6 @@ extension ToDoQueryFilter on QueryBuilder<ToDo, ToDo, QFilterCondition> {
     });
   }
 
-  QueryBuilder<ToDo, ToDo, QAfterFilterCondition> subTasksLengthEqualTo(
-      int length) {
-    return QueryBuilder.apply(this, (query) {
-      return query.listLength(
-        r'subTasks',
-        length,
-        true,
-        length,
-        true,
-      );
-    });
-  }
-
-  QueryBuilder<ToDo, ToDo, QAfterFilterCondition> subTasksIsEmpty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.listLength(
-        r'subTasks',
-        0,
-        true,
-        0,
-        true,
-      );
-    });
-  }
-
-  QueryBuilder<ToDo, ToDo, QAfterFilterCondition> subTasksIsNotEmpty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.listLength(
-        r'subTasks',
-        0,
-        false,
-        999999,
-        true,
-      );
-    });
-  }
-
-  QueryBuilder<ToDo, ToDo, QAfterFilterCondition> subTasksLengthLessThan(
-    int length, {
-    bool include = false,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.listLength(
-        r'subTasks',
-        0,
-        true,
-        length,
-        include,
-      );
-    });
-  }
-
-  QueryBuilder<ToDo, ToDo, QAfterFilterCondition> subTasksLengthGreaterThan(
-    int length, {
-    bool include = false,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.listLength(
-        r'subTasks',
-        length,
-        include,
-        999999,
-        true,
-      );
-    });
-  }
-
-  QueryBuilder<ToDo, ToDo, QAfterFilterCondition> subTasksLengthBetween(
-    int lower,
-    int upper, {
-    bool includeLower = true,
-    bool includeUpper = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.listLength(
-        r'subTasks',
-        lower,
-        includeLower,
-        upper,
-        includeUpper,
-      );
-    });
-  }
-
   QueryBuilder<ToDo, ToDo, QAfterFilterCondition> taskTypeEqualTo(
       TaskType value) {
     return QueryBuilder.apply(this, (query) {
@@ -3051,14 +2932,7 @@ extension ToDoQueryFilter on QueryBuilder<ToDo, ToDo, QFilterCondition> {
   }
 }
 
-extension ToDoQueryObject on QueryBuilder<ToDo, ToDo, QFilterCondition> {
-  QueryBuilder<ToDo, ToDo, QAfterFilterCondition> subTasksElement(
-      FilterQuery<SubTask> q) {
-    return QueryBuilder.apply(this, (query) {
-      return query.object(q, r'subTasks');
-    });
-  }
-}
+extension ToDoQueryObject on QueryBuilder<ToDo, ToDo, QFilterCondition> {}
 
 extension ToDoQueryLinks on QueryBuilder<ToDo, ToDo, QFilterCondition> {}
 
@@ -3836,12 +3710,6 @@ extension ToDoQueryProperty on QueryBuilder<ToDo, ToDo, QQueryProperty> {
   QueryBuilder<ToDo, DateTime, QQueryOperations> startDateProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'startDate');
-    });
-  }
-
-  QueryBuilder<ToDo, List<SubTask>, QQueryOperations> subTasksProperty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addPropertyName(r'subTasks');
     });
   }
 

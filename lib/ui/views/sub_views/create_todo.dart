@@ -15,10 +15,8 @@ import "../../../providers/user_provider.dart";
 import "../../../util/constants.dart";
 import "../../../util/enums.dart";
 import "../../../util/exceptions.dart";
-import "../../widgets/expanded_listtile.dart";
 import "../../widgets/flushbars.dart";
 import "../../widgets/leading_widgets.dart";
-import "../../widgets/listviews.dart";
 import "../../widgets/padded_divider.dart";
 import "../../widgets/search_recents_bar.dart";
 import "../../widgets/tiles.dart";
@@ -97,8 +95,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
   late Set<int> weekdayList;
   late List<bool> weekdays;
 
-  late final List<TextEditingController> subTaskEditingController;
-  late final List<SubTask> subTasks;
+  late List<Subtask> subtasks;
   late int shownTasks;
 
   @override
@@ -136,11 +133,11 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
 
     repeatSkip = 1;
 
-    subTasks = List.generate(Constants.maxNumTasks, (_) => SubTask());
     shownTasks = 0;
     weekdayList = {};
     weekdays = List.generate(7, (_) => false);
     groupID = widget.initialGroup?.value;
+    subtasks = List.empty();
   }
 
   void initializeControllers() async {
@@ -180,15 +177,14 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
       repeatSkip = int.tryParse(newText) ?? repeatSkip;
       repeatSkip = max(repeatSkip, 1);
     });
-
-    subTaskEditingController =
-        List.generate(subTasks.length, (_) => TextEditingController());
   }
 
   void initializeProviders() {
     userProvider = Provider.of<UserProvider>(context, listen: false);
     toDoProvider = Provider.of<ToDoProvider>(context, listen: false);
     groupProvider = Provider.of<GroupProvider>(context, listen: false);
+
+    toDoProvider.addListener(resetSubtasks);
   }
 
   @override
@@ -198,12 +194,22 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
     repeatSkipEditingController.dispose();
     mobileScrollController.dispose();
     desktopScrollController.dispose();
-
-    for (TextEditingController controller in subTaskEditingController) {
-      controller.dispose();
-    }
     groupEditingController.dispose();
+    toDoProvider.removeListener(resetSubtasks);
     super.dispose();
+  }
+
+  Future<void> resetSubtasks() async {
+    subtasks = await toDoProvider.getSubtasks(
+        id: Constants.intMax, limit: Constants.numTasks[taskType]!);
+    toDoProvider.toDoSubtaskCounts[Constants.intMax]!.value = subtasks.length;
+    sumWeight = await toDoProvider.getWeight(
+        taskID: Constants.intMax, limit: Constants.numTasks[taskType]!);
+    realDuration = toDoProvider.calculateRealDuration(
+        weight: sumWeight, duration: expectedDuration);
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   void handleGroupSelection({required int id}) {
@@ -283,9 +289,9 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
           frequency: frequency,
           repeatDays: weekdays,
           repeatSkip: repeatSkip,
-          subTasks: subTasks,
+          subtasks: subtasks,
         )
-        .whenComplete(() => Navigator.pop(context, toDoProvider.curToDo))
+        .whenComplete(() => Navigator.pop(context))
         .catchError((e) {
       Flushbar? error;
 
@@ -341,72 +347,70 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
     }
   }
 
-  void removeSubtask({required int index}) {
-    if (mounted) {
-      return setState(() {
-        checkClose = true;
-        SubTask st = subTasks.removeAt(index);
-        st = SubTask();
-        subTasks.add(st);
-        TextEditingController ct = subTaskEditingController.removeAt(index);
-        ct.value = ct.value.copyWith(text: st.name);
-        subTaskEditingController.add(ct);
-
-        shownTasks--;
-        shownTasks = max(shownTasks, 0);
-        sumWeight = toDoProvider.calculateWeight(
-            subTasks: List.generate(
-                Constants.numTasks[taskType]!, (index) => subTasks[index]));
-        realDuration = toDoProvider.calculateRealDuration(
-            weight: sumWeight, duration: expectedDuration);
-      });
-    }
-  }
-
-  void reorderSubtasks(int oldIndex, int newIndex) {
-    if (mounted) {
-      return setState(() {
-        checkClose = true;
-        if (oldIndex < newIndex) {
-          newIndex--;
-        }
-        SubTask st = subTasks.removeAt(oldIndex);
-        subTasks.insert(newIndex, st);
-        TextEditingController ct = subTaskEditingController.removeAt(oldIndex);
-        subTaskEditingController.insert(newIndex, ct);
-      });
-    }
-  }
-
-  void onDataChange() {
-    if (mounted) {
-      return setState(() {
-        checkClose = true;
-      });
-    }
-  }
-
-  void onSubtaskWeightChanged() {
-    if (mounted) {
-      return setState(() {
-        checkClose = true;
-        sumWeight = toDoProvider.calculateWeight(
-            subTasks: List.generate(
-                Constants.numTasks[taskType]!, (index) => subTasks[index]));
-        realDuration = toDoProvider.calculateRealDuration(
-            weight: sumWeight, duration: expectedDuration);
-      });
-    }
-  }
-
-  void addSubTask() {
-    if (mounted) {
-      return setState(() {
-        shownTasks++;
-        shownTasks = min(shownTasks, Constants.maxNumTasks);
-      });
-    }
-  }
+  // void removeSubtask({required int index}) {
+  //   if (mounted) {
+  //     return setState(() {
+  //       checkClose = true;
+  //       Subtask st = subtasks.removeAt(index);
+  //       subtasks.add(st);
+  //       ct.value = ct.value.copyWith(text: st.name);
+  //       subTaskEditingController.add(ct);
+  //
+  //       shownTasks--;
+  //       shownTasks = max(shownTasks, 0);
+  //       sumWeight = toDoProvider.calculateWeight(
+  //           subtasks: List.generate(
+  //               Constants.numTasks[taskType]!, (index) => subtasks[index]));
+  //       realDuration = toDoProvider.calculateRealDuration(
+  //           weight: sumWeight, duration: expectedDuration);
+  //     });
+  //   }
+  // }
+  //
+  // void reorderSubtasks(int oldIndex, int newIndex) {
+  //   if (mounted) {
+  //     return setState(() {
+  //       checkClose = true;
+  //       if (oldIndex < newIndex) {
+  //         newIndex--;
+  //       }
+  //       Subtask st = subtasks.removeAt(oldIndex);
+  //       subtasks.insert(newIndex, st);
+  //       TextEditingController ct = subTaskEditingController.removeAt(oldIndex);
+  //       subTaskEditingController.insert(newIndex, ct);
+  //     });
+  //   }
+  // }
+  //
+  // void onDataChange() {
+  //   if (mounted) {
+  //     return setState(() {
+  //       checkClose = true;
+  //     });
+  //   }
+  // }
+  //
+  // void onSubtaskWeightChanged() {
+  //   if (mounted) {
+  //     return setState(() {
+  //       checkClose = true;
+  //       sumWeight = toDoProvider.calculateWeight(
+  //           subtasks: List.generate(
+  //               Constants.numTasks[taskType]!, (index) => subtasks[index]));
+  //       realDuration = toDoProvider.calculateRealDuration(
+  //           weight: sumWeight, duration: expectedDuration);
+  //     });
+  //   }
+  // }
+  //
+  // void addSubTask() {
+  //   if (mounted) {
+  //     return setState(() {
+  //       shownTasks++;
+  //       shownTasks = min(shownTasks, Constants.maxNumTasks);
+  //     });
+  //   }
+  // }
 
   void toggleMyDay() {
     if (mounted) {
@@ -754,7 +758,15 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                                   buildTaskTypeButton(),
                                   // Subtasks -- Factory Widget. == UH, why does this have padding?
                                   (taskType != TaskType.small)
-                                      ? buildSubTasksTile()
+                                      ? Tiles.subtasksTile(
+                                          context: context,
+                                          id: Constants.intMax,
+                                          subtasks: subtasks,
+                                          subtaskCount:
+                                              toDoProvider.getSubtaskCount(
+                                                  id: Constants.intMax,
+                                                  limit: Constants
+                                                      .numTasks[taskType]!))
                                       : const SizedBox.shrink(),
 
                                   const PaddedDivider(
@@ -876,8 +888,14 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
 
                     // Subtasks
                     (taskType != TaskType.small)
-                        ? buildSubTasksTile(
-                            physics: const NeverScrollableScrollPhysics())
+                        ? Tiles.subtasksTile(
+                            context: context,
+                            limit: Constants.numTasks[taskType]!,
+                            subtasks: subtasks,
+                            subtaskCount: toDoProvider.getSubtaskCount(
+                                id: Constants.intMax,
+                                limit: Constants.numTasks[taskType]!),
+                            id: Constants.intMax)
                         : const SizedBox.shrink(),
 
                     const PaddedDivider(padding: Constants.padding),
@@ -1003,42 +1021,42 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
     );
   }
 
-  Widget buildSubTasksTile({physics = const NeverScrollableScrollPhysics()}) {
-    return ExpandedListTile(
-      title: const AutoSizeText("Steps",
-          maxLines: 1,
-          overflow: TextOverflow.visible,
-          softWrap: false,
-          minFontSize: Constants.small),
-      subtitle: AutoSizeText(
-          "${min(shownTasks, Constants.numTasks[taskType]!)}/${Constants.numTasks[taskType]!} Steps",
-          maxLines: 1,
-          overflow: TextOverflow.visible,
-          softWrap: false,
-          minFontSize: Constants.small),
-      children: [
-        ListViews.reorderableSubtasks(
-          physics: physics,
-          context: context,
-          subTasks: subTasks,
-          itemCount: min(Constants.numTasks[taskType]!, shownTasks),
-          controllers: subTaskEditingController,
-          onRemoved: removeSubtask,
-          onReorder: reorderSubtasks,
-          onChanged: onDataChange,
-          onSubtaskWeightChanged: onSubtaskWeightChanged,
-          showHandle: shownTasks > 1,
-        ),
-        (shownTasks < Constants.numTasks[taskType]!)
-            ? Tiles.addTile(
-                title: "Add a step",
-                onTap: addSubTask,
-              )
-            : const SizedBox.shrink(),
-      ],
-    );
-  }
+  // TODO: refactor this out into tiles class.
+  // Widget buildSubTasksTile({physics = const NeverScrollableScrollPhysics()}) {
+  //   return ExpandedListTile(
+  //     title: const AutoSizeText("Steps",
+  //         maxLines: 1,
+  //         overflow: TextOverflow.visible,
+  //         softWrap: false,
+  //         minFontSize: Constants.small),
+  //     subtitle: AutoSizeText(
+  //         "${min(shownTasks, Constants.numTasks[taskType]!)}/${Constants.numTasks[taskType]!} Steps",
+  //         maxLines: 1,
+  //         overflow: TextOverflow.visible,
+  //         softWrap: false,
+  //         minFontSize: Constants.small),
+  //     children: [
+  //       ListViews.reorderableSubtasks(
+  //         physics: physics,
+  //         context: context,
+  //         subtasks: subtasks,
+  //         itemCount: min(Constants.numTasks[taskType]!, shownTasks),
+  //         onRemoved: removeSubtask,
+  //         onReorder: reorderSubtasks,
+  //         updateSubtask: onDataChange,
+  //         showHandle: shownTasks > 1,
+  //       ),
+  //       (shownTasks < Constants.numTasks[taskType]!)
+  //           ? Tiles.addTile(
+  //               title: "Add a step",
+  //               onTap: addSubTask,
+  //             )
+  //           : const SizedBox.shrink(),
+  //     ],
+  //   );
+  // }
 
+  // TODO: refactor this into tiles class once taskType is mutable in model.
   Widget buildTaskTypeButton() {
     return Padding(
       padding: const EdgeInsets.all(Constants.padding),

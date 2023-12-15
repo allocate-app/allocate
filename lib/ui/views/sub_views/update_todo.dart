@@ -1,13 +1,11 @@
 import "dart:math";
 
 import "package:another_flushbar/flushbar.dart";
-import "package:auto_size_text/auto_size_text.dart";
 import "package:flutter/material.dart";
 import "package:flutter/semantics.dart";
 import "package:provider/provider.dart";
 
 import "../../../model/task/group.dart";
-import "../../../model/task/subtask.dart";
 import "../../../model/task/todo.dart";
 import "../../../providers/group_provider.dart";
 import "../../../providers/todo_provider.dart";
@@ -15,11 +13,9 @@ import "../../../providers/user_provider.dart";
 import "../../../util/constants.dart";
 import "../../../util/enums.dart";
 import "../../../util/exceptions.dart";
-import "../../widgets/expanded_listtile.dart";
 import "../../widgets/flushbars.dart";
 import "../../widgets/handle_repeatable_modal.dart";
 import "../../widgets/leading_widgets.dart";
-import "../../widgets/listviews.dart";
 import "../../widgets/padded_divider.dart";
 import "../../widgets/search_recents_bar.dart";
 import "../../widgets/tiles.dart";
@@ -69,9 +65,6 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
   // Repeat
   late TextEditingController repeatSkipEditingController;
 
-  late final List<TextEditingController> subTaskEditingController;
-  late int shownTasks;
-
   // This is just a convenience method to avoid extra typing
   ToDo get toDo => toDoProvider.curToDo!;
 
@@ -79,9 +72,6 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
       prevToDo.myDay ||
       (userProvider.myDayTotal + toDo.weight <=
           (userProvider.curUser?.bandwidth ?? Constants.maxBandwidth));
-
-  // Subtasks
-  late List<SubTask> cacheSubTasks;
 
   @override
   void initState() {
@@ -100,6 +90,8 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
     if (null != widget.initialToDo) {
       toDoProvider.curToDo = widget.initialToDo;
     }
+
+    toDoProvider.addListener(resetSubtasks);
   }
 
   @override
@@ -109,24 +101,28 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
     repeatSkipEditingController.dispose();
     mobileScrollController.dispose();
     desktopScrollController.dispose();
-
-    for (TextEditingController controller in subTaskEditingController) {
-      controller.dispose();
-    }
     groupEditingController.dispose();
+    toDoProvider.removeListener(resetSubtasks);
     super.dispose();
+  }
+
+  Future<void> resetSubtasks() async {
+    toDo.subtasks = await toDoProvider.getSubtasks(
+        id: toDo.id, limit: Constants.numTasks[toDo.taskType]!);
+    toDoProvider.toDoSubtaskCounts[toDo.id]!.value = toDo.subtasks.length;
+    toDo.weight = await toDoProvider.getWeight(
+        taskID: Constants.intMax, limit: Constants.numTasks[toDo.taskType]!);
+    toDo.realDuration = toDoProvider.calculateRealDuration(
+        weight: toDo.weight, duration: toDo.expectedDuration);
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   void initializeParams() {
     checkClose = false;
     prevToDo = toDo.copy();
     prevToDo.id = toDo.id;
-    shownTasks = toDo.subTasks.indexOf(SubTask());
-    if (shownTasks < 0) {
-      shownTasks = toDo.subTasks.length;
-    }
-
-    cacheSubTasks = List.from(toDo.subTasks);
 
     // Midnight as a start/due time is ambiguous treating as "null".
     showStartTime =
@@ -189,9 +185,6 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
       toDo.repeatSkip = int.tryParse(newText) ?? toDo.repeatSkip;
       toDo.repeatSkip = max(toDo.repeatSkip, 1);
     });
-
-    subTaskEditingController = List.generate(toDo.subTasks.length,
-        (i) => TextEditingController(text: toDo.subTasks[i].name));
   }
 
   void handleGroupSelection({required int id}) {
@@ -283,7 +276,6 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
       toDo.repeatable = (toDo.frequency != Frequency.once);
     }
 
-    toDo.subTasks.setAll(0, cacheSubTasks);
     return await toDoProvider.updateToDo().whenComplete(() {
       Navigator.pop(context);
     }).catchError((e) {
@@ -406,62 +398,62 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
     }
   }
 
-  void reorderSubtasks(int oldIndex, int newIndex) {
-    if (mounted) {
-      return setState(() {
-        checkClose = true;
-        if (oldIndex < newIndex) {
-          newIndex--;
-        }
-        SubTask st = cacheSubTasks.removeAt(oldIndex);
-        cacheSubTasks.insert(newIndex, st);
-        TextEditingController ct = subTaskEditingController.removeAt(oldIndex);
-        subTaskEditingController.insert(newIndex, ct);
-      });
-    }
-  }
-
-  void onSubtaskWeightChanged() {
-    if (mounted) {
-      return setState(() {
-        checkClose = true;
-        toDo.weight = toDoProvider.calculateWeight(
-            subTasks: List.generate(Constants.numTasks[toDo.taskType]!,
-                (index) => toDo.subTasks[index]));
-        toDo.realDuration = toDoProvider.calculateRealDuration(
-            weight: toDo.weight, duration: toDo.expectedDuration);
-      });
-    }
-  }
-
-  void removeSubtask({required int index}) {
-    if (mounted) {
-      return setState(() {
-        checkClose = true;
-        SubTask st = cacheSubTasks.removeAt(index);
-        st = SubTask();
-        cacheSubTasks.add(st);
-        TextEditingController ct = subTaskEditingController.removeAt(index);
-        ct.value = ct.value.copyWith(text: st.name);
-        subTaskEditingController.add(ct);
-
-        shownTasks--;
-        shownTasks = max(shownTasks, 0);
-        toDo.weight = toDoProvider.calculateWeight(subTasks: cacheSubTasks);
-        toDo.realDuration = toDoProvider.calculateRealDuration(
-            weight: toDo.weight, duration: toDo.expectedDuration);
-      });
-    }
-  }
-
-  void addSubTask() {
-    if (mounted) {
-      return setState(() {
-        shownTasks++;
-        shownTasks = min(shownTasks, Constants.maxNumTasks);
-      });
-    }
-  }
+  // void reorderSubtasks(int oldIndex, int newIndex) {
+  //   if (mounted) {
+  //     return setState(() {
+  //       checkClose = true;
+  //       if (oldIndex < newIndex) {
+  //         newIndex--;
+  //       }
+  //       Subtask st = cacheSubTasks.removeAt(oldIndex);
+  //       cacheSubTasks.insert(newIndex, st);
+  //       TextEditingController ct = subTaskEditingController.removeAt(oldIndex);
+  //       subTaskEditingController.insert(newIndex, ct);
+  //     });
+  //   }
+  // }
+  //
+  // void onSubtaskWeightChanged() {
+  //   if (mounted) {
+  //     return setState(() {
+  //       checkClose = true;
+  //       toDo.weight = toDoProvider.calculateWeight(
+  //           subTasks: List.generate(Constants.numTasks[toDo.taskType]!,
+  //               (index) => toDo.subTasks[index]));
+  //       toDo.realDuration = toDoProvider.calculateRealDuration(
+  //           weight: toDo.weight, duration: toDo.expectedDuration);
+  //     });
+  //   }
+  // }
+  //
+  // void removeSubtask({required int index}) {
+  //   if (mounted) {
+  //     return setState(() {
+  //       checkClose = true;
+  //       Subtask st = cacheSubTasks.removeAt(index);
+  //       st = Subtask();
+  //       cacheSubTasks.add(st);
+  //       TextEditingController ct = subTaskEditingController.removeAt(index);
+  //       ct.value = ct.value.copyWith(text: st.name);
+  //       subTaskEditingController.add(ct);
+  //
+  //       shownTasks--;
+  //       shownTasks = max(shownTasks, 0);
+  //       toDo.weight = toDoProvider.calculateWeight(subTasks: cacheSubTasks);
+  //       toDo.realDuration = toDoProvider.calculateRealDuration(
+  //           weight: toDo.weight, duration: toDo.expectedDuration);
+  //     });
+  //   }
+  // }
+  //
+  // void addSubTask() {
+  //   if (mounted) {
+  //     return setState(() {
+  //       shownTasks++;
+  //       shownTasks = min(shownTasks, Constants.maxNumTasks);
+  //     });
+  //   }
+  // }
 
   void toggleMyDay() {
     if (mounted) {
@@ -592,13 +584,13 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
     }
   }
 
-  void onDataChange() {
-    if (mounted) {
-      return setState(() {
-        checkClose = true;
-      });
-    }
-  }
+  // void onDataChange() {
+  //   if (mounted) {
+  //     return setState(() {
+  //       checkClose = true;
+  //     });
+  //   }
+  // }
 
   Set<int> get weekdayList {
     Set<int> weekdays = {};
@@ -841,7 +833,18 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                                       : const SizedBox.shrink(),
                                   // Subtasks
                                   (toDo.taskType != TaskType.small)
-                                      ? buildSubTasksTile()
+                                      ? Tiles.subtasksTile(
+                                          context: context,
+                                          id: toDo.id,
+                                          limit: Constants
+                                              .numTasks[toDo.taskType]!,
+                                          subtasks: toDo.subtasks,
+                                          subtaskCount:
+                                              toDoProvider.getSubtaskCount(
+                                                  id: toDo.id,
+                                                  limit: Constants.numTasks[
+                                                      toDo.taskType]!),
+                                        )
                                       : const SizedBox.shrink(),
 
                                   const PaddedDivider(
@@ -952,7 +955,14 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
 
                     // Subtasks
                     (toDo.taskType != TaskType.small)
-                        ? buildSubTasksTile()
+                        ? Tiles.subtasksTile(
+                            context: context,
+                            limit: Constants.numTasks[toDo.taskType]!,
+                            subtasks: toDo.subtasks,
+                            subtaskCount: toDoProvider.getSubtaskCount(
+                                id: toDo.id,
+                                limit: Constants.numTasks[toDo.taskType]!),
+                            id: toDo.id)
                         : const SizedBox.shrink(),
 
                     const PaddedDivider(padding: Constants.padding),
@@ -1086,39 +1096,39 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
     );
   }
 
-  Widget buildSubTasksTile({physics = const NeverScrollableScrollPhysics()}) {
-    return ExpandedListTile(
-      title: const AutoSizeText("Steps",
-          maxLines: 1,
-          overflow: TextOverflow.visible,
-          softWrap: false,
-          minFontSize: Constants.small),
-      subtitle: AutoSizeText(
-          "${min(shownTasks, Constants.numTasks[toDo.taskType]!)}/${Constants.numTasks[toDo.taskType]!} Steps",
-          maxLines: 1,
-          overflow: TextOverflow.visible,
-          softWrap: false,
-          minFontSize: Constants.small),
-      children: [
-        ListViews.reorderableSubtasks(
-          physics: physics,
-          context: context,
-          subTasks: cacheSubTasks,
-          itemCount: min(Constants.numTasks[toDo.taskType]!, shownTasks),
-          controllers: subTaskEditingController,
-          onRemoved: removeSubtask,
-          onReorder: reorderSubtasks,
-          onChanged: onDataChange,
-          onSubtaskWeightChanged: onSubtaskWeightChanged,
-          showHandle: shownTasks > 1,
-        ),
-        (shownTasks < Constants.numTasks[toDo.taskType]!)
-            ? Tiles.addTile(
-                title: "Add a step",
-                onTap: addSubTask,
-              )
-            : const SizedBox.shrink(),
-      ],
-    );
-  }
+// Widget buildSubTasksTile({physics = const NeverScrollableScrollPhysics()}) {
+//   return ExpandedListTile(
+//     title: const AutoSizeText("Steps",
+//         maxLines: 1,
+//         overflow: TextOverflow.visible,
+//         softWrap: false,
+//         minFontSize: Constants.small),
+//     subtitle: AutoSizeText(
+//         "${min(shownTasks, Constants.numTasks[toDo.taskType]!)}/${Constants.numTasks[toDo.taskType]!} Steps",
+//         maxLines: 1,
+//         overflow: TextOverflow.visible,
+//         softWrap: false,
+//         minFontSize: Constants.small),
+//     children: [
+//       ListViews.reorderableSubtasks(
+//         physics: physics,
+//         context: context,
+//         subtasks: cacheSubTasks,
+//         itemCount: min(Constants.numTasks[toDo.taskType]!, shownTasks),
+//         controllers: subTaskEditingController,
+//         onRemoved: removeSubtask,
+//         onReorder: reorderSubtasks,
+//         updateSubTask: onDataChange,
+//         onSubtaskWeightChanged: onSubtaskWeightChanged,
+//         showHandle: shownTasks > 1,
+//       ),
+//       (shownTasks < Constants.numTasks[toDo.taskType]!)
+//           ? Tiles.addTile(
+//               title: "Add a step",
+//               onTap: addSubTask,
+//             )
+//           : const SizedBox.shrink(),
+//     ],
+//   );
+// }
 }

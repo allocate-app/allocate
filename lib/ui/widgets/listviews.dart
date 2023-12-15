@@ -472,15 +472,13 @@ class ListViews {
 
   static Widget reorderableSubtasks({
     required BuildContext context,
-    required List<SubTask> subTasks,
-    required List<TextEditingController> controllers,
+    required List<Subtask> subtasks,
     int? itemCount,
     showHandle = false,
     ScrollPhysics physics = const NeverScrollableScrollPhysics(),
-    required void Function() onChanged,
-    required void Function() onSubtaskWeightChanged,
+    required Future<void> Function({required Subtask subtask}) updateSubtask,
     required void Function(int oldIndex, int newIndex) onReorder,
-    required void Function({required int index}) onRemoved,
+    required Future<void> Function({required Subtask subtask}) onRemoved,
     EdgeInsetsGeometry contentPadding = EdgeInsets.zero,
   }) =>
       ReorderableListView.builder(
@@ -488,7 +486,7 @@ class ListViews {
           buildDefaultDragHandles: false,
           physics: physics,
           shrinkWrap: true,
-          itemCount: itemCount ?? subTasks.length,
+          itemCount: itemCount ?? subtasks.length,
           onReorderStart: (_) {
             FocusScope.of(context).unfocus();
           },
@@ -501,10 +499,8 @@ class ListViews {
               child: Tiles.subtaskCheckboxTile(
                 context: context,
                 index: index,
-                subTask: subTasks[index],
-                onChanged: onChanged,
-                onSubtaskWeightChanged: onSubtaskWeightChanged,
-                controller: controllers[index],
+                subtask: subtasks[index],
+                updateSubtask: updateSubtask,
                 onRemoved: onRemoved,
                 showHandle: showHandle,
               ),

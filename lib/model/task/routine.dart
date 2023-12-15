@@ -1,5 +1,3 @@
-import "dart:convert";
-
 import "package:equatable/equatable.dart";
 import "package:isar/isar.dart";
 
@@ -33,7 +31,8 @@ class Routine with EquatableMixin implements Copyable<Routine>, IModel {
   @Index()
   int realDuration;
 
-  final List<SubTask> routineTasks;
+  @ignore
+  late List<Subtask> subtasks;
 
   @Index()
   int customViewIndex = -1;
@@ -48,13 +47,14 @@ class Routine with EquatableMixin implements Copyable<Routine>, IModel {
   @Index()
   DateTime lastUpdated;
 
-  Routine(
-      {required this.name,
-      this.weight = 0,
-      required this.expectedDuration,
-      required this.realDuration,
-      required this.routineTasks,
-      required this.lastUpdated});
+  Routine({
+    required this.name,
+    this.weight = 0,
+    required this.expectedDuration,
+    required this.realDuration,
+    this.subtasks = const <Subtask>[],
+    required this.lastUpdated,
+  });
 
   Routine.fromEntity({required Map<String, dynamic> entity})
       : id = entity["id"] as Id,
@@ -62,13 +62,10 @@ class Routine with EquatableMixin implements Copyable<Routine>, IModel {
         weight = entity["weight"] as int,
         expectedDuration = entity["expectedDuration"],
         realDuration = entity["realDuration"],
-        routineTasks = List.from(
-            (jsonDecode(entity["routineTasks"]) as List)
-                .map((rt) => SubTask.fromEntity(entity: rt)),
-            growable: false),
         customViewIndex = entity["customViewIndex"] as int,
         isSynced = true,
         toDelete = false,
+        subtasks = List.empty(growable: true),
         lastUpdated = DateTime.parse(entity["lastUpdated"]);
 
   Map<String, dynamic> toEntity() => {
@@ -78,8 +75,6 @@ class Routine with EquatableMixin implements Copyable<Routine>, IModel {
         "weight": weight,
         "expectedDuration": expectedDuration,
         "realDuration": realDuration,
-        "routineTasks": jsonEncode(
-            routineTasks.map((rt) => rt.toEntity()).toList(growable: false)),
         "lastUpdated": lastUpdated.toIso8601String(),
       };
 
@@ -89,7 +84,7 @@ class Routine with EquatableMixin implements Copyable<Routine>, IModel {
       weight: weight,
       expectedDuration: expectedDuration,
       realDuration: realDuration,
-      routineTasks: List.from(routineTasks),
+      subtasks: List.generate(subtasks.length, (i) => subtasks[i].copy()),
       lastUpdated: lastUpdated);
 
   @override
@@ -98,14 +93,15 @@ class Routine with EquatableMixin implements Copyable<Routine>, IModel {
           int? weight,
           int? expectedDuration,
           int? realDuration,
-          List<SubTask>? routineTasks,
+          List<Subtask>? routineTasks,
           DateTime? lastUpdated}) =>
       Routine(
           name: name ?? this.name,
           weight: weight ?? this.weight,
           expectedDuration: expectedDuration ?? this.expectedDuration,
           realDuration: realDuration ?? this.realDuration,
-          routineTasks: List.from(routineTasks ?? this.routineTasks),
+          subtasks: List.generate((routineTasks ?? subtasks).length,
+              (i) => (routineTasks ?? subtasks)[i].copy()),
           lastUpdated: lastUpdated ?? this.lastUpdated);
 
   @ignore
@@ -117,5 +113,5 @@ class Routine with EquatableMixin implements Copyable<Routine>, IModel {
   @override
   String toString() => "Routine(id: $id,  customViewIndex: $customViewIndex, "
       "name: $name, weight: $weight, expectedDuration: $expectedDuration,"
-      "routineTasks: $routineTasks, isSynced: $isSynced, toDelete: $toDelete, lastUpdated: $lastUpdated)";
+      "routineTasks: $subtasks, isSynced: $isSynced, toDelete: $toDelete, lastUpdated: $lastUpdated)";
 }

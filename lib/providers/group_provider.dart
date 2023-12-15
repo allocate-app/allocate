@@ -25,10 +25,10 @@ class GroupProvider extends ChangeNotifier {
   List<Group> secondaryGroups = [];
 
   final Map<int, String> groupNames = {
-    Constants.initialGroupID: "New Group",
+    Constants.intMax: "New Group",
   };
   final Map<int, ValueNotifier<int>> groupToDoCounts = {
-    Constants.initialGroupID: ValueNotifier<int>(0),
+    Constants.intMax: ValueNotifier<int>(0),
   };
 
   late GroupSorter sorter;
@@ -97,11 +97,7 @@ class GroupProvider extends ChangeNotifier {
     return groupToDoCounts[id]!;
   }
 
-  Future<void> setToDoCount({required int? id}) async {
-    if (null == id) {
-      return;
-    }
-
+  Future<void> setToDoCount({required int id}) async {
     int count = await _toDoService.getGroupToDoCount(groupID: id);
     if (groupToDoCounts.containsKey(id)) {
       groupToDoCounts[id]?.value = count;
@@ -141,7 +137,7 @@ class GroupProvider extends ChangeNotifier {
     }
 
     groupNames[curGroup!.id] = curGroup!.name;
-    groupToDoCounts[Constants.initialGroupID]!.value = 0;
+    groupToDoCounts[Constants.intMax]!.value = 0;
 
     notifyListeners();
   }

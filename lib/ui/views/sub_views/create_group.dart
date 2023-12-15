@@ -189,7 +189,7 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
       return null;
     });
     if (null != toDo) {
-      toDo.groupID = Constants.initialGroupID;
+      toDo.groupID = Constants.intMax;
       await toDoProvider.updateToDo(toDo: toDo);
     }
   }
@@ -440,7 +440,7 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
           softWrap: false,
           minFontSize: Constants.large),
       subtitle: Subtitles.groupSubtitle(
-          toDoCount: groupProvider.getToDoCount(id: Constants.initialGroupID)),
+          toDoCount: groupProvider.getToDoCount(id: Constants.intMax)),
       children: [
         SearchRecentsBar<ToDo>(
           clearOnSelection: true,
@@ -459,13 +459,13 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
                     {int limit = Constants.minLimitPerQuery,
                     int offset = 0}) async =>
                 await groupProvider.getToDosByGroupID(
-                    id: Constants.initialGroupID, limit: limit, offset: offset),
+                    id: Constants.intMax, limit: limit, offset: offset),
             offset: toDos.length,
             paginateButton: true,
             rebuildNotifiers: [toDoProvider],
             rebuildCallback: ({required List<ToDo> items}) {
               toDos = items;
-              groupProvider.setToDoCount(id: Constants.initialGroupID);
+              groupProvider.setToDoCount(id: Constants.intMax);
             },
             listviewBuilder: (
                 {required BuildContext context, required List<ToDo> items}) {
@@ -489,7 +489,7 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
                           initialToDo: items[index],
                           initialGroup: MapEntry<String, int>(
                               (name.isNotEmpty) ? name : "New Group",
-                              Constants.initialGroupID),
+                              Constants.intMax),
                         )).catchError((e) {
                   Flushbar? error;
 
@@ -515,7 +515,7 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
               builder: (BuildContext context) => CreateToDoScreen(
                     initialGroup: MapEntry<String, int>(
                         (name.isNotEmpty) ? name : "New Group",
-                        Constants.initialGroupID),
+                        Constants.intMax),
                   )).catchError((e) {
             Flushbar? error;
 

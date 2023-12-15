@@ -1,4 +1,3 @@
-import 'dart:convert';
 
 import 'package:equatable/equatable.dart';
 import 'package:isar/isar.dart';
@@ -43,10 +42,16 @@ class User with EquatableMixin implements Copyable<User> {
   int? eveHour;
 
   // Sorting preferences
+  @ignore
   GroupSorter? groupSorter;
+
+  @ignore
   DeadlineSorter? deadlineSorter;
+  @ignore
   ReminderSorter? reminderSorter;
+  @ignore
   RoutineSorter? routineSorter;
+  @ignore
   ToDoSorter? toDoSorter;
 
   // Last login.
@@ -69,6 +74,7 @@ class User with EquatableMixin implements Copyable<User> {
       this.toDoSorter,
       required this.lastOpened});
 
+  // This needs refactoring.
   User.fromEntity({required Map<String, dynamic> entity})
       : localID = entity["localID"] as int,
         userName = entity["userName"] as String,
@@ -80,20 +86,32 @@ class User with EquatableMixin implements Copyable<User> {
         curMornID = entity["curMornID"] as int?,
         curAftID = entity["curAftID"] as int?,
         curEveID = entity["curEveID"] as int?,
-        groupSorter = (null != jsonDecode(entity["groupSorter"]))
-            ? GroupSorter.fromEntity(entity: entity["groupSorter"])
+        groupSorter = (null != entity["groupSort"])
+            ? GroupSorter(
+                descending: entity["groupDesc"],
+                sortMethod: entity["groupSort"])
             : null,
-        deadlineSorter = (null != jsonDecode(entity["deadlineSorter"]))
-            ? DeadlineSorter.fromEntity(entity: entity["deadlineSorter"])
+        deadlineSorter = (null != entity["deadlineSort"])
+            ? DeadlineSorter(
+                descending: entity["deadlineDesc"],
+                sortMethod: entity["deadlineSort"])
             : null,
-        reminderSorter = (null != jsonDecode(entity["reminderSorter"]))
-            ? ReminderSorter.fromEntity(entity: entity["reminderSorter"])
+        reminderSorter = (null != entity["reminderSort"])
+            ? ReminderSorter(
+                descending: entity["reminderDesc"],
+                sortMethod: entity["reminderSort"])
             : null,
-        routineSorter = (null != jsonDecode(entity["routineSorter"]))
-            ? RoutineSorter.fromEntity(entity: entity["routineSorter"])
+        routineSorter = (null != entity["routineSort"])
+            ? RoutineSorter(
+                descending: entity["routineDesc"],
+                sortMethod: entity["routineSort"],
+              )
             : null,
-        toDoSorter = (null != jsonDecode(entity["toDoSorter "]))
-            ? ToDoSorter.fromEntity(entity: entity["toDoSorter"])
+        toDoSorter = (null != entity["toDoSort"])
+            ? ToDoSorter(
+                descending: entity["toDoDesc"],
+                sortMethod: entity["toDoSort"],
+              )
             : null,
         lastOpened = DateTime.parse(entity["lastOpened"]);
 
@@ -106,12 +124,16 @@ class User with EquatableMixin implements Copyable<User> {
         "curMornID": curMornID,
         "curAftID": curAftID,
         "curEveID": curEveID,
-        "groupSorter": (null != groupSorter) ? groupSorter!.toEntity() : null,
-        "reminderSorter":
-            (null != reminderSorter) ? reminderSorter!.toEntity() : null,
-        "routineSorter":
-            (null != routineSorter) ? routineSorter!.toEntity() : null,
-        "toDoSorter": (null != toDoSorter) ? toDoSorter!.toEntity() : null,
+        "groupSort": groupSorter?.sortMethod,
+        "groupDesc": groupSorter?.descending,
+        "deadlineSort": deadlineSorter?.sortMethod,
+        "deadlineDesc": deadlineSorter?.descending,
+        "routineSort": routineSorter?.sortMethod,
+        "routineDesc": routineSorter?.descending,
+        "reminderSort": reminderSorter?.sortMethod,
+        "reminderDesc": reminderSorter?.descending,
+        "toDoSorter": toDoSorter?.sortMethod,
+        "toDoDesc": toDoSorter?.descending,
         "lastOpened": lastOpened.toIso8601String()
       };
 

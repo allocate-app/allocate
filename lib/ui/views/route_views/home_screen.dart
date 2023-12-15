@@ -358,6 +358,7 @@ class _HomeScreen extends State<HomeScreen> {
           // Drop down menu for Groups.
           // Future TODO: Factor rounded rectangle shape to constants class.
           // This Card is a workaround until The ExpansionTile inkwell bug is fixed.
+          // TODO: refactor this to use the pre-built expansiontile.
           Card(
             clipBehavior: Clip.hardEdge,
             elevation: 0,

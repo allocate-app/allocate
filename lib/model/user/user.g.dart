@@ -53,63 +53,33 @@ const UserSchema = CollectionSchema(
       type: IsarType.byte,
       enumMap: _UsercurThemeEnumValueMap,
     ),
-    r'deadlineSorter': PropertySchema(
-      id: 7,
-      name: r'deadlineSorter',
-      type: IsarType.object,
-      target: r'DeadlineSorter',
-    ),
     r'eveHour': PropertySchema(
-      id: 8,
+      id: 7,
       name: r'eveHour',
       type: IsarType.long,
     ),
-    r'groupSorter': PropertySchema(
-      id: 9,
-      name: r'groupSorter',
-      type: IsarType.object,
-      target: r'GroupSorter',
-    ),
     r'isSynced': PropertySchema(
-      id: 10,
+      id: 8,
       name: r'isSynced',
       type: IsarType.bool,
     ),
     r'lastOpened': PropertySchema(
-      id: 11,
+      id: 9,
       name: r'lastOpened',
       type: IsarType.dateTime,
     ),
     r'mornHour': PropertySchema(
-      id: 12,
+      id: 10,
       name: r'mornHour',
       type: IsarType.long,
     ),
-    r'reminderSorter': PropertySchema(
-      id: 13,
-      name: r'reminderSorter',
-      type: IsarType.object,
-      target: r'ReminderSorter',
-    ),
-    r'routineSorter': PropertySchema(
-      id: 14,
-      name: r'routineSorter',
-      type: IsarType.object,
-      target: r'RoutineSorter',
-    ),
     r'syncOnline': PropertySchema(
-      id: 15,
+      id: 11,
       name: r'syncOnline',
       type: IsarType.bool,
     ),
-    r'toDoSorter': PropertySchema(
-      id: 16,
-      name: r'toDoSorter',
-      type: IsarType.object,
-      target: r'ToDoSorter',
-    ),
     r'userName': PropertySchema(
-      id: 17,
+      id: 12,
       name: r'userName',
       type: IsarType.string,
     )
@@ -135,13 +105,7 @@ const UserSchema = CollectionSchema(
     )
   },
   links: {},
-  embeddedSchemas: {
-    r'GroupSorter': GroupSorterSchema,
-    r'DeadlineSorter': DeadlineSorterSchema,
-    r'ReminderSorter': ReminderSorterSchema,
-    r'RoutineSorter': RoutineSorterSchema,
-    r'ToDoSorter': ToDoSorterSchema
-  },
+  embeddedSchemas: {},
   getId: _userGetId,
   getLinks: _userGetLinks,
   attach: _userAttach,
@@ -154,46 +118,6 @@ int _userEstimateSize(
   Map<Type, List<int>> allOffsets,
 ) {
   var bytesCount = offsets.last;
-  {
-    final value = object.deadlineSorter;
-    if (value != null) {
-      bytesCount += 3 +
-          DeadlineSorterSchema.estimateSize(
-              value, allOffsets[DeadlineSorter]!, allOffsets);
-    }
-  }
-  {
-    final value = object.groupSorter;
-    if (value != null) {
-      bytesCount += 3 +
-          GroupSorterSchema.estimateSize(
-              value, allOffsets[GroupSorter]!, allOffsets);
-    }
-  }
-  {
-    final value = object.reminderSorter;
-    if (value != null) {
-      bytesCount += 3 +
-          ReminderSorterSchema.estimateSize(
-              value, allOffsets[ReminderSorter]!, allOffsets);
-    }
-  }
-  {
-    final value = object.routineSorter;
-    if (value != null) {
-      bytesCount += 3 +
-          RoutineSorterSchema.estimateSize(
-              value, allOffsets[RoutineSorter]!, allOffsets);
-    }
-  }
-  {
-    final value = object.toDoSorter;
-    if (value != null) {
-      bytesCount += 3 +
-          ToDoSorterSchema.estimateSize(
-              value, allOffsets[ToDoSorter]!, allOffsets);
-    }
-  }
   bytesCount += 3 + object.userName.length * 3;
   return bytesCount;
 }
@@ -211,42 +135,12 @@ void _userSerialize(
   writer.writeLong(offsets[4], object.curEveID);
   writer.writeLong(offsets[5], object.curMornID);
   writer.writeByte(offsets[6], object.curTheme.index);
-  writer.writeObject<DeadlineSorter>(
-    offsets[7],
-    allOffsets,
-    DeadlineSorterSchema.serialize,
-    object.deadlineSorter,
-  );
-  writer.writeLong(offsets[8], object.eveHour);
-  writer.writeObject<GroupSorter>(
-    offsets[9],
-    allOffsets,
-    GroupSorterSchema.serialize,
-    object.groupSorter,
-  );
-  writer.writeBool(offsets[10], object.isSynced);
-  writer.writeDateTime(offsets[11], object.lastOpened);
-  writer.writeLong(offsets[12], object.mornHour);
-  writer.writeObject<ReminderSorter>(
-    offsets[13],
-    allOffsets,
-    ReminderSorterSchema.serialize,
-    object.reminderSorter,
-  );
-  writer.writeObject<RoutineSorter>(
-    offsets[14],
-    allOffsets,
-    RoutineSorterSchema.serialize,
-    object.routineSorter,
-  );
-  writer.writeBool(offsets[15], object.syncOnline);
-  writer.writeObject<ToDoSorter>(
-    offsets[16],
-    allOffsets,
-    ToDoSorterSchema.serialize,
-    object.toDoSorter,
-  );
-  writer.writeString(offsets[17], object.userName);
+  writer.writeLong(offsets[7], object.eveHour);
+  writer.writeBool(offsets[8], object.isSynced);
+  writer.writeDateTime(offsets[9], object.lastOpened);
+  writer.writeLong(offsets[10], object.mornHour);
+  writer.writeBool(offsets[11], object.syncOnline);
+  writer.writeString(offsets[12], object.userName);
 }
 
 User _userDeserialize(
@@ -263,40 +157,15 @@ User _userDeserialize(
     curMornID: reader.readLongOrNull(offsets[5]),
     curTheme: _UsercurThemeValueEnumMap[reader.readByteOrNull(offsets[6])] ??
         UserThemeData.dark,
-    deadlineSorter: reader.readObjectOrNull<DeadlineSorter>(
-      offsets[7],
-      DeadlineSorterSchema.deserialize,
-      allOffsets,
-    ),
-    groupSorter: reader.readObjectOrNull<GroupSorter>(
-      offsets[9],
-      GroupSorterSchema.deserialize,
-      allOffsets,
-    ),
-    isSynced: reader.readBoolOrNull(offsets[10]) ?? false,
-    lastOpened: reader.readDateTime(offsets[11]),
-    reminderSorter: reader.readObjectOrNull<ReminderSorter>(
-      offsets[13],
-      ReminderSorterSchema.deserialize,
-      allOffsets,
-    ),
-    routineSorter: reader.readObjectOrNull<RoutineSorter>(
-      offsets[14],
-      RoutineSorterSchema.deserialize,
-      allOffsets,
-    ),
-    syncOnline: reader.readBool(offsets[15]),
-    toDoSorter: reader.readObjectOrNull<ToDoSorter>(
-      offsets[16],
-      ToDoSorterSchema.deserialize,
-      allOffsets,
-    ),
-    userName: reader.readString(offsets[17]),
+    isSynced: reader.readBoolOrNull(offsets[8]) ?? false,
+    lastOpened: reader.readDateTime(offsets[9]),
+    syncOnline: reader.readBool(offsets[11]),
+    userName: reader.readString(offsets[12]),
   );
   object.aftHour = reader.readLongOrNull(offsets[0]);
-  object.eveHour = reader.readLongOrNull(offsets[8]);
+  object.eveHour = reader.readLongOrNull(offsets[7]);
   object.localID = id;
-  object.mornHour = reader.readLongOrNull(offsets[12]);
+  object.mornHour = reader.readLongOrNull(offsets[10]);
   return object;
 }
 
@@ -323,46 +192,16 @@ P _userDeserializeProp<P>(
       return (_UsercurThemeValueEnumMap[reader.readByteOrNull(offset)] ??
           UserThemeData.dark) as P;
     case 7:
-      return (reader.readObjectOrNull<DeadlineSorter>(
-        offset,
-        DeadlineSorterSchema.deserialize,
-        allOffsets,
-      )) as P;
+      return (reader.readLongOrNull(offset)) as P;
     case 8:
-      return (reader.readLongOrNull(offset)) as P;
-    case 9:
-      return (reader.readObjectOrNull<GroupSorter>(
-        offset,
-        GroupSorterSchema.deserialize,
-        allOffsets,
-      )) as P;
-    case 10:
       return (reader.readBoolOrNull(offset) ?? false) as P;
-    case 11:
+    case 9:
       return (reader.readDateTime(offset)) as P;
-    case 12:
+    case 10:
       return (reader.readLongOrNull(offset)) as P;
-    case 13:
-      return (reader.readObjectOrNull<ReminderSorter>(
-        offset,
-        ReminderSorterSchema.deserialize,
-        allOffsets,
-      )) as P;
-    case 14:
-      return (reader.readObjectOrNull<RoutineSorter>(
-        offset,
-        RoutineSorterSchema.deserialize,
-        allOffsets,
-      )) as P;
-    case 15:
+    case 11:
       return (reader.readBool(offset)) as P;
-    case 16:
-      return (reader.readObjectOrNull<ToDoSorter>(
-        offset,
-        ToDoSorterSchema.deserialize,
-        allOffsets,
-      )) as P;
-    case 17:
+    case 12:
       return (reader.readString(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -953,22 +792,6 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> deadlineSorterIsNull() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(const FilterCondition.isNull(
-        property: r'deadlineSorter',
-      ));
-    });
-  }
-
-  QueryBuilder<User, User, QAfterFilterCondition> deadlineSorterIsNotNull() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(const FilterCondition.isNotNull(
-        property: r'deadlineSorter',
-      ));
-    });
-  }
-
   QueryBuilder<User, User, QAfterFilterCondition> eveHourIsNull() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(const FilterCondition.isNull(
@@ -1033,22 +856,6 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
         includeLower: includeLower,
         upper: upper,
         includeUpper: includeUpper,
-      ));
-    });
-  }
-
-  QueryBuilder<User, User, QAfterFilterCondition> groupSorterIsNull() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(const FilterCondition.isNull(
-        property: r'groupSorter',
-      ));
-    });
-  }
-
-  QueryBuilder<User, User, QAfterFilterCondition> groupSorterIsNotNull() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(const FilterCondition.isNotNull(
-        property: r'groupSorter',
       ));
     });
   }
@@ -1235,60 +1042,12 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> reminderSorterIsNull() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(const FilterCondition.isNull(
-        property: r'reminderSorter',
-      ));
-    });
-  }
-
-  QueryBuilder<User, User, QAfterFilterCondition> reminderSorterIsNotNull() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(const FilterCondition.isNotNull(
-        property: r'reminderSorter',
-      ));
-    });
-  }
-
-  QueryBuilder<User, User, QAfterFilterCondition> routineSorterIsNull() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(const FilterCondition.isNull(
-        property: r'routineSorter',
-      ));
-    });
-  }
-
-  QueryBuilder<User, User, QAfterFilterCondition> routineSorterIsNotNull() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(const FilterCondition.isNotNull(
-        property: r'routineSorter',
-      ));
-    });
-  }
-
   QueryBuilder<User, User, QAfterFilterCondition> syncOnlineEqualTo(
       bool value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
         property: r'syncOnline',
         value: value,
-      ));
-    });
-  }
-
-  QueryBuilder<User, User, QAfterFilterCondition> toDoSorterIsNull() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(const FilterCondition.isNull(
-        property: r'toDoSorter',
-      ));
-    });
-  }
-
-  QueryBuilder<User, User, QAfterFilterCondition> toDoSorterIsNotNull() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(const FilterCondition.isNotNull(
-        property: r'toDoSorter',
       ));
     });
   }
@@ -1423,42 +1182,7 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
   }
 }
 
-extension UserQueryObject on QueryBuilder<User, User, QFilterCondition> {
-  QueryBuilder<User, User, QAfterFilterCondition> deadlineSorter(
-      FilterQuery<DeadlineSorter> q) {
-    return QueryBuilder.apply(this, (query) {
-      return query.object(q, r'deadlineSorter');
-    });
-  }
-
-  QueryBuilder<User, User, QAfterFilterCondition> groupSorter(
-      FilterQuery<GroupSorter> q) {
-    return QueryBuilder.apply(this, (query) {
-      return query.object(q, r'groupSorter');
-    });
-  }
-
-  QueryBuilder<User, User, QAfterFilterCondition> reminderSorter(
-      FilterQuery<ReminderSorter> q) {
-    return QueryBuilder.apply(this, (query) {
-      return query.object(q, r'reminderSorter');
-    });
-  }
-
-  QueryBuilder<User, User, QAfterFilterCondition> routineSorter(
-      FilterQuery<RoutineSorter> q) {
-    return QueryBuilder.apply(this, (query) {
-      return query.object(q, r'routineSorter');
-    });
-  }
-
-  QueryBuilder<User, User, QAfterFilterCondition> toDoSorter(
-      FilterQuery<ToDoSorter> q) {
-    return QueryBuilder.apply(this, (query) {
-      return query.object(q, r'toDoSorter');
-    });
-  }
-}
+extension UserQueryObject on QueryBuilder<User, User, QFilterCondition> {}
 
 extension UserQueryLinks on QueryBuilder<User, User, QFilterCondition> {}
 
@@ -1920,22 +1644,9 @@ extension UserQueryProperty on QueryBuilder<User, User, QQueryProperty> {
     });
   }
 
-  QueryBuilder<User, DeadlineSorter?, QQueryOperations>
-      deadlineSorterProperty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addPropertyName(r'deadlineSorter');
-    });
-  }
-
   QueryBuilder<User, int?, QQueryOperations> eveHourProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'eveHour');
-    });
-  }
-
-  QueryBuilder<User, GroupSorter?, QQueryOperations> groupSorterProperty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addPropertyName(r'groupSorter');
     });
   }
 
@@ -1957,28 +1668,9 @@ extension UserQueryProperty on QueryBuilder<User, User, QQueryProperty> {
     });
   }
 
-  QueryBuilder<User, ReminderSorter?, QQueryOperations>
-      reminderSorterProperty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addPropertyName(r'reminderSorter');
-    });
-  }
-
-  QueryBuilder<User, RoutineSorter?, QQueryOperations> routineSorterProperty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addPropertyName(r'routineSorter');
-    });
-  }
-
   QueryBuilder<User, bool, QQueryOperations> syncOnlineProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'syncOnline');
-    });
-  }
-
-  QueryBuilder<User, ToDoSorter?, QQueryOperations> toDoSorterProperty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addPropertyName(r'toDoSorter');
     });
   }
 

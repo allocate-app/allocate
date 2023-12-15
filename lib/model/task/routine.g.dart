@@ -47,19 +47,13 @@ const RoutineSchema = CollectionSchema(
       name: r'realDuration',
       type: IsarType.long,
     ),
-    r'routineTasks': PropertySchema(
-      id: 6,
-      name: r'routineTasks',
-      type: IsarType.objectList,
-      target: r'SubTask',
-    ),
     r'toDelete': PropertySchema(
-      id: 7,
+      id: 6,
       name: r'toDelete',
       type: IsarType.bool,
     ),
     r'weight': PropertySchema(
-      id: 8,
+      id: 7,
       name: r'weight',
       type: IsarType.long,
     )
@@ -163,7 +157,7 @@ const RoutineSchema = CollectionSchema(
     )
   },
   links: {},
-  embeddedSchemas: {r'SubTask': SubTaskSchema},
+  embeddedSchemas: {},
   getId: _routineGetId,
   getLinks: _routineGetLinks,
   attach: _routineAttach,
@@ -177,14 +171,6 @@ int _routineEstimateSize(
 ) {
   var bytesCount = offsets.last;
   bytesCount += 3 + object.name.length * 3;
-  bytesCount += 3 + object.routineTasks.length * 3;
-  {
-    final offsets = allOffsets[SubTask]!;
-    for (var i = 0; i < object.routineTasks.length; i++) {
-      final value = object.routineTasks[i];
-      bytesCount += SubTaskSchema.estimateSize(value, offsets, allOffsets);
-    }
-  }
   return bytesCount;
 }
 
@@ -200,14 +186,8 @@ void _routineSerialize(
   writer.writeDateTime(offsets[3], object.lastUpdated);
   writer.writeString(offsets[4], object.name);
   writer.writeLong(offsets[5], object.realDuration);
-  writer.writeObjectList<SubTask>(
-    offsets[6],
-    allOffsets,
-    SubTaskSchema.serialize,
-    object.routineTasks,
-  );
-  writer.writeBool(offsets[7], object.toDelete);
-  writer.writeLong(offsets[8], object.weight);
+  writer.writeBool(offsets[6], object.toDelete);
+  writer.writeLong(offsets[7], object.weight);
 }
 
 Routine _routineDeserialize(
@@ -221,19 +201,12 @@ Routine _routineDeserialize(
     lastUpdated: reader.readDateTime(offsets[3]),
     name: reader.readString(offsets[4]),
     realDuration: reader.readLong(offsets[5]),
-    routineTasks: reader.readObjectList<SubTask>(
-          offsets[6],
-          SubTaskSchema.deserialize,
-          allOffsets,
-          SubTask(),
-        ) ??
-        [],
-    weight: reader.readLongOrNull(offsets[8]) ?? 0,
+    weight: reader.readLongOrNull(offsets[7]) ?? 0,
   );
   object.customViewIndex = reader.readLong(offsets[0]);
   object.id = id;
   object.isSynced = reader.readBool(offsets[2]);
-  object.toDelete = reader.readBool(offsets[7]);
+  object.toDelete = reader.readBool(offsets[6]);
   return object;
 }
 
@@ -257,16 +230,8 @@ P _routineDeserializeProp<P>(
     case 5:
       return (reader.readLong(offset)) as P;
     case 6:
-      return (reader.readObjectList<SubTask>(
-            offset,
-            SubTaskSchema.deserialize,
-            allOffsets,
-            SubTask(),
-          ) ??
-          []) as P;
-    case 7:
       return (reader.readBool(offset)) as P;
-    case 8:
+    case 7:
       return (reader.readLongOrNull(offset) ?? 0) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -1310,94 +1275,6 @@ extension RoutineQueryFilter
     });
   }
 
-  QueryBuilder<Routine, Routine, QAfterFilterCondition>
-      routineTasksLengthEqualTo(int length) {
-    return QueryBuilder.apply(this, (query) {
-      return query.listLength(
-        r'routineTasks',
-        length,
-        true,
-        length,
-        true,
-      );
-    });
-  }
-
-  QueryBuilder<Routine, Routine, QAfterFilterCondition> routineTasksIsEmpty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.listLength(
-        r'routineTasks',
-        0,
-        true,
-        0,
-        true,
-      );
-    });
-  }
-
-  QueryBuilder<Routine, Routine, QAfterFilterCondition>
-      routineTasksIsNotEmpty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.listLength(
-        r'routineTasks',
-        0,
-        false,
-        999999,
-        true,
-      );
-    });
-  }
-
-  QueryBuilder<Routine, Routine, QAfterFilterCondition>
-      routineTasksLengthLessThan(
-    int length, {
-    bool include = false,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.listLength(
-        r'routineTasks',
-        0,
-        true,
-        length,
-        include,
-      );
-    });
-  }
-
-  QueryBuilder<Routine, Routine, QAfterFilterCondition>
-      routineTasksLengthGreaterThan(
-    int length, {
-    bool include = false,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.listLength(
-        r'routineTasks',
-        length,
-        include,
-        999999,
-        true,
-      );
-    });
-  }
-
-  QueryBuilder<Routine, Routine, QAfterFilterCondition>
-      routineTasksLengthBetween(
-    int lower,
-    int upper, {
-    bool includeLower = true,
-    bool includeUpper = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.listLength(
-        r'routineTasks',
-        lower,
-        includeLower,
-        upper,
-        includeUpper,
-      );
-    });
-  }
-
   QueryBuilder<Routine, Routine, QAfterFilterCondition> toDeleteEqualTo(
       bool value) {
     return QueryBuilder.apply(this, (query) {
@@ -1463,14 +1340,7 @@ extension RoutineQueryFilter
 }
 
 extension RoutineQueryObject
-    on QueryBuilder<Routine, Routine, QFilterCondition> {
-  QueryBuilder<Routine, Routine, QAfterFilterCondition> routineTasksElement(
-      FilterQuery<SubTask> q) {
-    return QueryBuilder.apply(this, (query) {
-      return query.object(q, r'routineTasks');
-    });
-  }
-}
+    on QueryBuilder<Routine, Routine, QFilterCondition> {}
 
 extension RoutineQueryLinks
     on QueryBuilder<Routine, Routine, QFilterCondition> {}
@@ -1777,13 +1647,6 @@ extension RoutineQueryProperty
   QueryBuilder<Routine, int, QQueryOperations> realDurationProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'realDuration');
-    });
-  }
-
-  QueryBuilder<Routine, List<SubTask>, QQueryOperations>
-      routineTasksProperty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addPropertyName(r'routineTasks');
     });
   }
 

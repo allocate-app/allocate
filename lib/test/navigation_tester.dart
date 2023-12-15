@@ -59,19 +59,20 @@ void main() async {
         ChangeNotifierProxyProvider<UserProvider, ToDoProvider>(
             create: (BuildContext context) => ToDoProvider(
                 user: Provider.of<UserProvider>(context, listen: false).curUser,
-                service: null),
+                toDoService: null),
             update: (BuildContext context, UserProvider up, ToDoProvider? tp) {
               tp?.setUser(user: up.curUser);
-              return tp ?? ToDoProvider(user: up.curUser, service: null);
+              return tp ?? ToDoProvider(user: up.curUser, toDoService: null);
             }),
         ChangeNotifierProxyProvider<UserProvider, RoutineProvider>(
             create: (BuildContext context) => RoutineProvider(
                 user: Provider.of<UserProvider>(context, listen: false).curUser,
-                service: null),
+                routineService: null),
             update:
                 (BuildContext context, UserProvider up, RoutineProvider? rp) {
               rp?.setUser(user: up.curUser);
-              return rp ?? RoutineProvider(user: up.curUser, service: null);
+              return rp ??
+                  RoutineProvider(user: up.curUser, routineService: null);
             }),
         ChangeNotifierProxyProvider<UserProvider, ReminderProvider>(
             create: (BuildContext context) => ReminderProvider(
@@ -154,7 +155,6 @@ class _NavigationTester extends State<NavigationTester> with WindowListener {
               startDate: DateTime.now().subtract(const Duration(days: 1)),
               dueDate: DateTime.now().subtract(const Duration(days: 1)),
               repeatDays: List.filled(7, false),
-              subTasks: [],
               lastUpdated: DateTime.now(),
             ));
     Isar isarClient = IsarService.instance.isarClient;

@@ -13,12 +13,12 @@ class RoutineService {
 
   set repository(RoutineRepository repo) => _repository = repo;
 
-  int calculateWeight({List<SubTask>? routineTasks}) =>
+  int calculateWeight({List<Subtask>? routineTasks}) =>
       (routineTasks ?? List.empty(growable: false))
           .fold(0, (p, c) => p + c.weight);
 
   void recalculateWeight({required Routine routine}) {
-    routine.weight = routine.routineTasks.fold(0, (p, c) => p + c.weight);
+    routine.weight = routine.subtasks.fold(0, (p, c) => p + c.weight);
   }
 
   int calculateRealDuration({int? weight, int? duration}) => (remap(
@@ -89,21 +89,5 @@ class RoutineService {
     }
     await _repository.updateBatch(routines);
     return routines;
-  }
-
-  Future<void> resetRoutine({required Routine routine}) async {
-    routine.routineTasks.map((rt) => rt.completed = false);
-    await _repository.update(routine);
-  }
-
-  Future<void> resetRoutines({required List<Routine?> routines}) async {
-    List<Routine> toUpdate = List.empty(growable: true);
-    for (Routine? routine in routines) {
-      if (null != routine) {
-        routine.routineTasks.map((rt) => rt.completed = false);
-        toUpdate.add(routine);
-      }
-    }
-    await _repository.updateBatch(toUpdate);
   }
 }

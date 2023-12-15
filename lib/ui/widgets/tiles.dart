@@ -49,7 +49,7 @@ import 'search_recents_bar.dart';
 
 class Tiles {
   /// ListView Tiles
-
+  // TODO: fix these once subtasks are implemented.
   static Widget toDoListTile(
       {required BuildContext context,
       required int index,
@@ -345,22 +345,18 @@ class Tiles {
         leading: LeadingWidgets.routineIcon(
             currentContext: context,
             scale: 1,
-            routineTime: routineProvider.getRoutineTime(routine: routine),
-            handleRoutineTimeChange: (
-                {required RoutineTime? newRoutineTime}) async {
-              if (null == newRoutineTime) {
-                return;
-              }
-              await routineProvider.handleRoutineTime(
-                  time: newRoutineTime, routine: routine);
+            times: routineProvider.getRoutineTime(routine: routine),
+            handleRoutineTimeChange: ({required int newRoutineTimes}) {
+              routineProvider.setDailyRoutine(
+                  timeOfDay: newRoutineTimes, routine: routine);
             }),
         title: AutoSizeText(routine.name,
             overflow: TextOverflow.ellipsis,
             minFontSize: Constants.large,
             softWrap: false,
             maxLines: 2),
-        subtitle: Subtitles.routineSubtitle(
-            numTasks: routine.routineTasks.indexOf(SubTask())),
+        subtitle: Subtitles.subtaskSubtitle(
+            subtaskCount: routineProvider.getSubtaskCount(id: routine.id)),
         onTap: () async {
           await showDialog(
               barrierDismissible: false,
@@ -751,7 +747,6 @@ class Tiles {
     }, test: (e) => e is FailureToDeleteException);
   }
 
-  // TODO: Figure out some way to update the number of toDos.
   static Widget groupListTile(
       {required int index,
       required Group group,
@@ -905,7 +900,7 @@ class Tiles {
                   });
             },
           ),
-          Tiles.addTile(
+          addTile(
               title: "Add Task",
               onTap: () async {
                 await showDialog(
@@ -959,69 +954,68 @@ class Tiles {
     }
   }
 
+  // TODO: Refactor this -> should bring up a dialog instead, text is causing issues.
+  // and the modal is gross.
   static Widget subtaskCheckboxTile(
           {required BuildContext context,
           EdgeInsetsGeometry textFieldPadding = EdgeInsets.zero,
           required int index,
-          required SubTask subTask,
-          required void Function() onChanged,
-          required void Function() onSubtaskWeightChanged,
-          required void Function({required int index}) onRemoved,
-          required TextEditingController controller,
+          required Subtask subtask,
+          required Future<void> Function({required Subtask subtask})
+              updateSubtask,
+          required Future<void> Function({required Subtask subtask}) onRemoved,
           bool showHandle = false}) =>
-      Tiles.checkboxListTile(
+      checkboxListTile(
           key: ValueKey(index),
           contentPadding:
               const EdgeInsets.symmetric(horizontal: Constants.padding),
           onChanged: (bool? value) {
-            subTask.completed = value!;
-            onChanged();
+            subtask.completed = value!;
+            updateSubtask(subtask: subtask);
           },
           title: Padding(
             padding: textFieldPadding,
             child: AutoSizeTextField(
-                controller: controller,
+                controller: TextEditingController(text: subtask.name),
                 minLines: 1,
-                maxLines: 2,
+                maxLines: 1,
                 minFontSize: Constants.large,
                 decoration: const InputDecoration.collapsed(
                   hintText: "Step name",
                 ),
+                onEditingComplete: () async {
+                  await updateSubtask(subtask: subtask);
+                },
                 onChanged: (value) {
                   SemanticsService.announce(value, Directionality.of(context));
-                  subTask.name = value;
-                  controller.value = controller.value.copyWith(
-                    text: value,
-                    selection: TextSelection.collapsed(offset: value.length),
-                  );
-                  onChanged();
+                  subtask.name = value;
                 }),
           ),
-          value: subTask.completed,
+          value: subtask.completed,
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               IconButton(
                 visualDensity: VisualDensity.adaptivePlatformDensity,
-                icon: Constants.batteryIcons[subTask.weight]!,
-                selectedIcon: Constants.selectedBatteryIcons[subTask.weight]!,
+                icon: Constants.batteryIcons[subtask.weight]!,
+                selectedIcon: Constants.selectedBatteryIcons[subtask.weight]!,
                 onPressed: () async {
                   await showModalBottomSheet<int?>(
                       useSafeArea: true,
                       showDragHandle: true,
                       context: context,
                       builder: (BuildContext context) {
-                        return EnergyModal(initialWeight: subTask.weight);
-                      }).then((newWeight) {
-                    subTask.weight = newWeight ?? subTask.weight;
-                    onSubtaskWeightChanged();
+                        return EnergyModal(initialWeight: subtask.weight);
+                      }).then((newWeight) async {
+                    subtask.weight = newWeight ?? subtask.weight;
+                    await updateSubtask(subtask: subtask);
                   });
                 },
               ),
               IconButton(
                   visualDensity: VisualDensity.adaptivePlatformDensity,
                   icon: const Icon(Icons.remove_circle_outline_rounded),
-                  onPressed: () => onRemoved(index: index)),
+                  onPressed: () => onRemoved(subtask: subtask)),
               (showHandle)
                   ? ReorderableDragStartListener(
                       index: index,
@@ -1108,22 +1102,114 @@ class Tiles {
         ]));
   }
 
-  // ROUTINE EXPANSION TILES
+  // SUBTASK EXPANSION TILES
+  // TODO: refactor subtasks into their own provider class.
+  // issue with single-listener -> code should be shared
+  static Widget subtasksTile({
+    required BuildContext context,
+    required int id,
+    int limit = Constants.maxNumTasks,
+    required List<Subtask> subtasks,
+    required ValueNotifier<int> subtaskCount,
+    ScrollPhysics physics = const NeverScrollableScrollPhysics(),
+    EdgeInsetsGeometry outerPadding = EdgeInsets.zero,
+  }) {
+    ToDoProvider provider = Provider.of<ToDoProvider>(context, listen: false);
+    return ExpandedListTile(
+        outerPadding: outerPadding,
+        title: const AutoSizeText("Steps",
+            maxLines: 1,
+            overflow: TextOverflow.visible,
+            softWrap: false,
+            minFontSize: Constants.small),
+        subtitle: Subtitles.subtaskSubtitle(subtaskCount: subtaskCount),
+        children: [
+          ListViews.reorderableSubtasks(
+              showHandle: subtasks.length > 1,
+              physics: physics,
+              context: context,
+              subtasks: subtasks,
+              itemCount: subtasks.length,
+              updateSubtask: ({required Subtask subtask}) async {
+                await provider.updateSubtask(subtask: subtask).catchError((e) {
+                  Flushbar? error;
+                  error = Flushbars.createError(
+                      message: e.cause,
+                      context: context,
+                      dismissCallback: () => error?.dismiss());
+                },
+                    test: (e) =>
+                        e is FailureToUpdateException ||
+                        e is FailureToUploadException);
+              },
+              onRemoved: ({required Subtask subtask}) async {
+                await provider.deleteSubtask(subtask: subtask).catchError((e) {
+                  Flushbar? error;
+                  error = Flushbars.createError(
+                      message: e.cause,
+                      context: context,
+                      dismissCallback: () => error?.dismiss());
+                }, test: (e) => e is FailureToDeleteException);
+              },
+              onReorder: (int oldIndex, int newIndex) async {
+                await provider
+                    .reorderSubtasks(
+                        subtasks: subtasks,
+                        oldIndex: oldIndex,
+                        newIndex: newIndex)
+                    .catchError((e) {
+                  Flushbar? error;
+                  error = Flushbars.createError(
+                      message: e.cause,
+                      context: context,
+                      dismissCallback: () => error?.dismiss());
+                  return List<Subtask>.empty(growable: false);
+                },
+                        test: (e) =>
+                            e is FailureToUpdateException ||
+                            e is FailureToUploadException);
+              }),
+          (subtasks.length < limit)
+              ? addTile(
+                  title: "Add a step",
+                  onTap: () async {
+                    await provider
+                        .createSubtask(taskID: id, index: subtasks.length)
+                        .catchError((e) {
+                      Flushbar? error;
+                      error = Flushbars.createError(
+                          message: e.cause,
+                          context: context,
+                          dismissCallback: () => error?.dismiss());
+                    },
+                            test: (e) =>
+                                e is FailureToCreateException ||
+                                e is FailureToUploadException);
+                  })
+              : const SizedBox.shrink()
+        ]);
+  }
 
-  // TODO: REVISIT ONCE SUBTASKS REFACTORED
-  // Possibly refactor -> Icon being a search widget?
-  // Or just an icon.
+  // MYDAY ROUTINE EXPANSION TILES
+
   static Widget emptyRoutineTile({
     required BuildContext context,
-    RoutineTime timeOfDay = RoutineTime.morning,
+    int times = 0,
   }) {
     RoutineProvider routineProvider =
         Provider.of<RoutineProvider>(context, listen: false);
+
+    String type = switch (times) {
+      1 => "Morning",
+      2 => "Afternoon",
+      4 => "Evening",
+      _ => "",
+    };
+
+    // TODO: onpressed should create a new routine.
     return ExpandedListTile(
-      leading: LeadingWidgets.myDayRoutineIcon(
-          timeOfDay: timeOfDay, onPressed: () {}),
-      title: AutoSizeText(
-          "${toBeginningOfSentenceCase(timeOfDay.name)} Routine",
+      leading: LeadingWidgets.myDayRoutineIcon(times: times, onPressed: () {}),
+      title: AutoSizeText("$type Routine",
           maxLines: 1,
           overflow: TextOverflow.visible,
           softWrap: false,
@@ -1135,16 +1221,14 @@ class Tiles {
             if (null == routine) {
               return;
             }
-            routineProvider.handleRoutineTime(
-                time: timeOfDay, routine: routine);
+            routineProvider.setDailyRoutine(timeOfDay: times, routine: routine);
           },
           handleHistorySelection: ({required int id}) async {
             Routine? routine = await routineProvider.getRoutineByID(id: id);
             if (null == routine) {
               return;
             }
-            routineProvider.handleRoutineTime(
-                time: timeOfDay, routine: routine);
+            routineProvider.setDailyRoutine(timeOfDay: times, routine: routine);
           },
           mostRecent: routineProvider.mostRecent,
           search: routineProvider.searchRoutines,
@@ -1154,19 +1238,17 @@ class Tiles {
     );
   }
 
-  // FIGURE THIS OUT PLS.
   static Widget filledRoutineTile({
     required BuildContext context,
     required Routine routine,
-    RoutineTime timeOfDay = RoutineTime.morning,
+    ScrollPhysics physics = const NeverScrollableScrollPhysics(),
+    int times = 0,
   }) {
-    int numTasks = routine.routineTasks.indexOf(SubTask());
-    if (numTasks < 0) {
-      numTasks = Constants.maxNumTasks;
-    }
+    RoutineProvider routineProvider =
+        Provider.of<RoutineProvider>(context, listen: false);
     return ExpandedListTile(
         leading: LeadingWidgets.myDayRoutineIcon(
-          timeOfDay: timeOfDay,
+          times: times,
           routine: routine,
           onPressed: () async {
             await showDialog(
@@ -1184,59 +1266,77 @@ class Tiles {
             overflow: TextOverflow.visible,
             softWrap: false,
             minFontSize: Constants.large),
-        subtitle: Subtitles.routineSubtitle(numTasks: numTasks),
+        subtitle: Subtitles.subtaskSubtitle(
+            subtaskCount: routineProvider.getSubtaskCount(id: routine.id)),
         trailing: IconButton(
           icon: const Icon(Icons.remove_circle_outline),
-          onPressed: () async {
-            await Provider.of<RoutineProvider>(context, listen: false)
-                .handleRoutineTime(routine: routine, time: RoutineTime.none);
-          },
+          onPressed: () => routineProvider.unsetDailyRoutine(id: routine.id),
         ),
         children: [
-          // TODO: Reimplement subtasks - This is so inefficient.
           ListViews.reorderableSubtasks(
             context: context,
-            itemCount: numTasks,
-            subTasks: routine.routineTasks,
-            onChanged: () async {
-              await Provider.of<RoutineProvider>(context, listen: false)
-                  .updateRoutine(routine: routine);
+            physics: physics,
+            itemCount: routine.subtasks.length,
+            subtasks: routine.subtasks,
+            updateSubtask: ({required Subtask subtask}) async {
+              await routineProvider.updateSubtask(subtask: subtask).catchError(
+                  (e) {
+                Flushbar? error;
+                error = Flushbars.createError(
+                    message: e.cause,
+                    context: context,
+                    dismissCallback: () => error?.dismiss());
+              },
+                  test: (e) =>
+                      e is FailureToUpdateException ||
+                      e is FailureToUploadException);
             },
-            onRemoved: ({required int index}) {},
-            onReorder: (int oldIndex, int newIndex) {
-              if (oldIndex < newIndex) {
-                newIndex--;
-              }
-              List<SubTask> routineTasks = List.from(routine.routineTasks);
-              SubTask rt = routineTasks.removeAt(oldIndex);
-              routineTasks.insert(newIndex, rt);
-
-              routine.routineTasks
-                  .replaceRange(0, Constants.maxNumTasks, routineTasks);
+            onRemoved: ({required Subtask subtask}) async {
+              await routineProvider.deleteSubtask(subtask: subtask).catchError(
+                  (e) {
+                Flushbar? error;
+                error = Flushbars.createError(
+                    message: e.cause,
+                    context: context,
+                    dismissCallback: () => error?.dismiss());
+              }, test: (e) => e is FailureToDeleteException);
             },
-            controllers: List.generate(
-                Constants.maxNumTasks,
-                (int i) =>
-                    TextEditingController(text: routine.routineTasks[i].name)),
-            onSubtaskWeightChanged: () {
-              RoutineProvider routineProvider =
-                  Provider.of<RoutineProvider>(context, listen: false);
-
-              routine.weight = routineProvider.calculateWeight(
-                  routineTasks: routine.routineTasks);
-              routine.realDuration = routineProvider.calculateRealDuration(
-                  weight: routine.weight, duration: routine.expectedDuration);
-              routineProvider.updateRoutine(routine: routine);
+            onReorder: (int oldIndex, int newIndex) async {
+              await routineProvider
+                  .reorderSubtasks(
+                      subtasks: routine.subtasks,
+                      oldIndex: oldIndex,
+                      newIndex: newIndex)
+                  .catchError((e) {
+                Flushbar? error;
+                error = Flushbars.createError(
+                    message: e.cause,
+                    context: context,
+                    dismissCallback: () => error?.dismiss());
+                return List<Subtask>.empty(growable: false);
+              },
+                      test: (e) =>
+                          e is FailureToUpdateException ||
+                          e is FailureToUploadException);
             },
-            showHandle: numTasks > 1,
+            showHandle: routine.subtasks.length > 1,
           ),
-          (numTasks < Constants.maxNumTasks)
+          (routine.subtasks.length < Constants.maxNumTasks)
               ? addTile(
-                  // This is not ideal, TODO: fix.
                   onTap: () async {
-                    routine.routineTasks[numTasks] = SubTask(name: "New task");
-                    await Provider.of<RoutineProvider>(context, listen: false)
-                        .updateRoutine(routine: routine);
+                    await routineProvider
+                        .createSubtask(
+                            taskID: routine.id, index: routine.subtasks.length)
+                        .catchError((e) {
+                      Flushbar? error;
+                      error = Flushbars.createError(
+                          message: e.cause,
+                          context: context,
+                          dismissCallback: () => error?.dismiss());
+                    },
+                            test: (e) =>
+                                e is FailureToCreateException ||
+                                e is FailureToUploadException);
                   },
                   title: "Add a step",
                 )
@@ -2192,10 +2292,10 @@ class Tiles {
             mainAxisAlignment: MainAxisAlignment.end,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Tiles.deleteButton(
+              deleteButton(
                   outerPadding: deleteButtonPadding,
                   handleDelete: handleDelete),
-              Tiles.createButton(
+              createButton(
                   label: "Update",
                   outerPadding: updateButtonPadding,
                   handleCreate: handleUpdate)

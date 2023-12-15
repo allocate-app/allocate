@@ -8,6 +8,7 @@ import "../model/task/deadline.dart";
 import "../model/task/group.dart";
 import "../model/task/reminder.dart";
 import "../model/task/routine.dart";
+import "../model/task/subtask.dart";
 import "../model/task/todo.dart";
 import "../model/user/user.dart";
 
@@ -17,6 +18,7 @@ import "../model/user/user.dart";
 class IsarService {
   // Future TODO -> Refactor to DI.
   static final IsarService _instance = IsarService._internal();
+
   static IsarService get instance => _instance;
 
   // This will eventually should be refactored using DI.
@@ -33,9 +35,15 @@ class IsarService {
     }
 
     final Directory dbStorageDir = await getApplicationDocumentsDirectory();
-    _isarClient = await Isar.open(
-        [ToDoSchema, RoutineSchema, ReminderSchema, GroupSchema, UserSchema, DeadlineSchema],
-        directory: dbStorageDir.path);
+    _isarClient = await Isar.open([
+      ToDoSchema,
+      RoutineSchema,
+      ReminderSchema,
+      GroupSchema,
+      SubtaskSchema,
+      UserSchema,
+      DeadlineSchema
+    ], directory: dbStorageDir.path);
   }
 
   Future<void> dispose() async {

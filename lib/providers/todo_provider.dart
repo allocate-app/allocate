@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import '../model/task/subtask.dart';
 import '../model/task/todo.dart';
 import '../model/user/user.dart';
+import '../services/subtask_service.dart';
 import '../services/todo_service.dart';
 import '../util/constants.dart';
 import '../util/enums.dart';
@@ -14,9 +15,12 @@ import '../util/sorting/todo_sorter.dart';
 
 class ToDoProvider extends ChangeNotifier {
   bool rebuild = true;
+
+  // TODO: change timer.
   late Timer syncTimer;
 
   final ToDoService _toDoService;
+  final SubtaskService _subtaskService;
 
   ToDo? curToDo;
 
@@ -30,8 +34,14 @@ class ToDoProvider extends ChangeNotifier {
 
   int myDayWeight = 0;
 
-  ToDoProvider({this.user, ToDoService? service})
-      : _toDoService = service ?? ToDoService() {
+  final Map<int, ValueNotifier<int>> toDoSubtaskCounts = {
+    Constants.intMax: ValueNotifier<int>(0),
+  };
+
+  ToDoProvider(
+      {this.user, ToDoService? toDoService, SubtaskService? subtaskService})
+      : _toDoService = toDoService ?? ToDoService(),
+        _subtaskService = subtaskService ?? SubtaskService() {
     sorter = user?.toDoSorter ?? ToDoSorter();
     init();
   }
@@ -75,8 +85,12 @@ class ToDoProvider extends ChangeNotifier {
   int calculateRealDuration({int? weight, int? duration}) =>
       _toDoService.calculateRealDuration(weight: weight, duration: duration);
 
-  int calculateWeight({List<SubTask>? subTasks}) =>
-      _toDoService.calculateWeight(subTasks: subTasks);
+  Future<int> getWeight(
+          {required int taskID, int limit = Constants.maxNumTasks}) async =>
+      await _subtaskService.getTaskSubtaskWeight(taskID: taskID, limit: limit);
+
+  // int calculateWeight({List<Subtask>? subtasks}) =>
+  //     _toDoService.calculateWeight(subtasks: subtasks);
 
   List<SortMethod> get sortMethods => sorter.sortMethods;
 
@@ -94,6 +108,28 @@ class ToDoProvider extends ChangeNotifier {
     await updateToDo();
   }
 
+  ValueNotifier<int> getSubtaskCount(
+      {required int id, int limit = Constants.maxNumTasks}) {
+    if (toDoSubtaskCounts.containsKey(id)) {
+      return toDoSubtaskCounts[id]!;
+    }
+
+    toDoSubtaskCounts[id] = ValueNotifier<int>(0);
+    setSubtaskCount(id: id, limit: limit);
+    return toDoSubtaskCounts[id]!;
+  }
+
+  Future<void> setSubtaskCount(
+      {required int id, int limit = Constants.maxNumTasks}) async {
+    int count =
+        await _subtaskService.getTaskSubtasksCount(taskID: id, limit: limit);
+    if (toDoSubtaskCounts.containsKey(id)) {
+      toDoSubtaskCounts[id]?.value = count;
+    } else {
+      toDoSubtaskCounts[id] = ValueNotifier<int>(count);
+    }
+  }
+
   Future<void> _syncRepo() async {
     try {
       _toDoService.syncRepo();
@@ -107,7 +143,6 @@ class ToDoProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Subtasks are fixed length.
   Future<void> createToDo({
     required TaskType taskType,
     required String name,
@@ -125,22 +160,17 @@ class ToDoProvider extends ChangeNotifier {
     Frequency? frequency,
     List<bool>? repeatDays,
     int? repeatSkip,
-    List<SubTask>? subTasks,
+    List<Subtask>? subtasks,
   }) async {
-    List<SubTask> buffer =
-        List.generate(Constants.numTasks[taskType]!, (index) => SubTask());
-
-    if (null != subTasks && buffer.isNotEmpty) {
-      List.copyRange(buffer, 0, subTasks, 0, Constants.numTasks[taskType]!);
-    }
-
-    subTasks = buffer;
-
-    weight = weight ?? _toDoService.calculateWeight(subTasks: subTasks);
+    weight = weight ??
+        await getWeight(
+            taskID: Constants.intMax, limit: Constants.numTasks[taskType]!);
     expectedDuration = expectedDuration ?? (const Duration(hours: 1)).inSeconds;
     realDuration = realDuration ??
         _toDoService.calculateRealDuration(
             weight: weight, duration: expectedDuration);
+    subtasks =
+        subtasks ?? await _subtaskService.getTaskSubtasks(id: Constants.intMax);
     startDate =
         startDate?.copyWith(second: 0, microsecond: 0, millisecond: 0) ??
             DateTime.now().copyWith(
@@ -173,7 +203,7 @@ class ToDoProvider extends ChangeNotifier {
         frequency: frequency ?? Frequency.once,
         repeatDays: repeatDays ?? List.filled(7, false, growable: false),
         repeatSkip: repeatSkip ?? 1,
-        subTasks: subTasks,
+        subtasks: subtasks,
         lastUpdated: DateTime.now());
 
     if (repeatable ?? false) {
@@ -192,6 +222,32 @@ class ToDoProvider extends ChangeNotifier {
       return await updateToDo();
     }
 
+    for (int i = 0; i < subtasks.length; i++) {
+      subtasks[i].taskID = curToDo!.id;
+      subtasks[i].customViewIndex = i;
+    }
+
+    await updateSubtasks(subtasks: subtasks);
+    toDoSubtaskCounts[Constants.intMax]!.value = 0;
+
+    notifyListeners();
+  }
+
+  Future<void> createSubtask({required int taskID, int? index}) async {
+    Subtask subtask = Subtask(taskID: taskID, lastUpdated: DateTime.now());
+    if (null != index) {
+      subtask.customViewIndex = index;
+    }
+    try {
+      subtask = await _subtaskService.createSubtask(
+          subtask: Subtask(taskID: taskID, lastUpdated: DateTime.now()));
+    } on FailureToUploadException catch (e) {
+      log(e.cause);
+      return Future.error(e);
+    } on FailureToUpdateException catch (e) {
+      log(e.cause);
+      return Future.error(e);
+    }
     notifyListeners();
   }
 
@@ -218,6 +274,25 @@ class ToDoProvider extends ChangeNotifier {
       return Future.error(e);
     }
   }
+
+  Future<void> updateSubtask({required Subtask subtask}) async {
+    subtask.lastUpdated = DateTime.now();
+    try {
+      subtask = await _subtaskService.updateSubtask(subtask: subtask);
+    } on FailureToUploadException catch (e) {
+      log(e.cause);
+      return Future.error(e);
+    } on FailureToUpdateException catch (e) {
+      log(e.cause);
+      return Future.error(e);
+    }
+    notifyListeners();
+  }
+
+  // TODO: this needs error handling.
+  Future<void> updateSubtasks({List<Subtask>? subtasks}) async =>
+      await _subtaskService.updateBatch(
+          subtasks: subtasks ?? curToDo!.subtasks);
 
   Future<void> updateBatch({List<ToDo>? toDos}) async {
     toDos = toDos ?? this.toDos;
@@ -248,6 +323,16 @@ class ToDoProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> deleteSubtask({required Subtask subtask}) async {
+    try {
+      await _subtaskService.deleteSubtask(subtask: subtask);
+    } on FailureToDeleteException catch (e) {
+      log(e.cause);
+      return Future.error(e);
+    }
+    notifyListeners();
+  }
+
   Future<List<ToDo>> reorderToDos(
       {required int oldIndex, required int newIndex, List<ToDo>? toDos}) async {
     try {
@@ -265,6 +350,22 @@ class ToDoProvider extends ChangeNotifier {
   Future<void> checkRepeating({DateTime? now}) async {
     try {
       await _toDoService.checkRepeating(now: now ?? DateTime.now());
+    } on FailureToUpdateException catch (e) {
+      log(e.cause);
+      return Future.error(e);
+    } on FailureToUploadException catch (e) {
+      log(e.cause);
+      return Future.error(e);
+    }
+  }
+
+  Future<List<Subtask>> reorderSubtasks(
+      {required List<Subtask> subtasks,
+      required int oldIndex,
+      required int newIndex}) async {
+    try {
+      return await _subtaskService.reorderSubtasks(
+          subtasks: subtasks, oldIndex: oldIndex, newIndex: newIndex);
     } on FailureToUpdateException catch (e) {
       log(e.cause);
       return Future.error(e);
@@ -365,4 +466,12 @@ class ToDoProvider extends ChangeNotifier {
 
   Future<List<ToDo>> getToDosBetween({DateTime? start, DateTime? end}) async =>
       await _toDoService.getRange(start: start, end: end);
+
+  Future<List<Subtask>> getSubtasks({
+    required int id,
+    int limit = Constants.maxNumTasks,
+    ToDo? toDo,
+  }) async {
+    return await _subtaskService.getTaskSubtasks(id: id, limit: limit);
+  }
 }

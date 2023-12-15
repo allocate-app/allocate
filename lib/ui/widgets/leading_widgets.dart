@@ -139,39 +139,38 @@ class LeadingWidgets {
       );
 
   static Widget myDayRoutineIcon(
-      {Routine? routine,
-      RoutineTime timeOfDay = RoutineTime.morning,
-      required void Function() onPressed}) {
-    Icon? icon = switch (timeOfDay) {
-      RoutineTime.morning => const Icon(Icons.wb_twilight_rounded),
-      RoutineTime.afternoon => const Icon(Icons.lunch_dining_rounded),
-      RoutineTime.evening => const Icon(Icons.bed_rounded),
-      _ => const Icon(null),
-    };
-
+      {Routine? routine, int times = 0, required void Function() onPressed}) {
     if (null == routine) {
       return IconButton.outlined(
-        icon: icon,
+        icon: routineGlyph(times: times),
         onPressed: onPressed,
       );
     }
-    return IconButton.filledTonal(icon: icon, onPressed: onPressed);
+    return IconButton.filledTonal(
+        icon: routineGlyph(times: times), onPressed: onPressed);
+  }
+
+  // Uses an octal bitmask for times:
+  // 1 = morning
+  // 2 = aft
+  // 4 = eve
+  static Icon routineGlyph({int times = 0}) {
+    return switch (times) {
+      0 => const Icon(null),
+      1 => const Icon(Icons.wb_twilight_rounded),
+      2 => const Icon(Icons.lunch_dining_rounded),
+      4 => const Icon(Icons.bed_rounded),
+      _ => const Icon(Icons.queue_outlined),
+    };
   }
 
   static Widget routineIcon({
     required BuildContext currentContext,
     double scale = 1,
-    RoutineTime routineTime = RoutineTime.none,
-    required void Function({required RoutineTime? newRoutineTime})
+    int times = 0,
+    required void Function({required int newRoutineTimes})
         handleRoutineTimeChange,
   }) {
-    Icon? icon = switch (routineTime) {
-      RoutineTime.morning => const Icon(Icons.wb_twilight_rounded),
-      RoutineTime.afternoon => const Icon(Icons.lunch_dining_rounded),
-      RoutineTime.evening => const Icon(Icons.bed_rounded),
-      _ => const Icon(Icons.alarm_rounded),
-    };
-
     return Transform.scale(
       scale: scale,
       child: OutlinedButton(
@@ -183,7 +182,7 @@ class LeadingWidgets {
           ),
         ),
         onPressed: () async {
-          await showDialog<RoutineTime?>(
+          await showDialog<void>(
             context: currentContext,
             builder: (BuildContext context) {
               return Dialog(
@@ -243,44 +242,48 @@ class LeadingWidgets {
                                 padding:
                                     const EdgeInsets.all(Constants.padding),
                                 child: FittedBox(
-                                  fit: BoxFit.fill,
-                                  child: (routineTime == RoutineTime.morning)
-                                      ? IconButton.filledTonal(
-                                          iconSize: Constants.hugeIconSize,
-                                          icon: const Icon(
-                                              Icons.wb_twilight_rounded),
-                                          onPressed: () => Navigator.pop(
-                                              context, RoutineTime.morning))
-                                      : IconButton.outlined(
-                                          iconSize: Constants.hugeIconSize,
-                                          icon: const Icon(
-                                              Icons.wb_twilight_rounded),
-                                          onPressed: () => Navigator.pop(
-                                              context, RoutineTime.morning)),
-                                ),
+                                    fit: BoxFit.fill,
+                                    child: (times & 1 == 1)
+                                        ? IconButton.filledTonal(
+                                            iconSize: Constants.hugeIconSize,
+                                            icon: const Icon(
+                                                Icons.wb_twilight_rounded),
+                                            onPressed: () {
+                                              times |= 1;
+                                              Navigator.pop(context);
+                                            })
+                                        : IconButton.outlined(
+                                            iconSize: Constants.hugeIconSize,
+                                            icon: const Icon(
+                                                Icons.wb_twilight_rounded),
+                                            onPressed: () {
+                                              times |= 1;
+                                              Navigator.pop(context);
+                                            })),
                               )),
                               Flexible(
                                 child: Padding(
                                   padding:
                                       const EdgeInsets.all(Constants.padding),
                                   child: FittedBox(
-                                    fit: BoxFit.fill,
-                                    child: (routineTime ==
-                                            RoutineTime.afternoon)
-                                        ? IconButton.filledTonal(
-                                            iconSize: Constants.hugeIconSize,
-                                            icon: const Icon(
-                                                Icons.lunch_dining_rounded),
-                                            onPressed: () => Navigator.pop(
-                                                context, RoutineTime.afternoon))
-                                        : IconButton.outlined(
-                                            iconSize: Constants.hugeIconSize,
-                                            icon: const Icon(
-                                                Icons.lunch_dining_rounded),
-                                            onPressed: () => Navigator.pop(
-                                                context,
-                                                RoutineTime.afternoon)),
-                                  ),
+                                      fit: BoxFit.fill,
+                                      child: (times & 2 == 2)
+                                          ? IconButton.filledTonal(
+                                              iconSize: Constants.hugeIconSize,
+                                              icon: const Icon(
+                                                  Icons.lunch_dining_rounded),
+                                              onPressed: () {
+                                                times |= 2;
+                                                Navigator.pop(context);
+                                              })
+                                          : IconButton.outlined(
+                                              iconSize: Constants.hugeIconSize,
+                                              icon: const Icon(
+                                                  Icons.lunch_dining_rounded),
+                                              onPressed: () {
+                                                times |= 2;
+                                                Navigator.pop(context);
+                                              })),
                                 ),
                               ),
                               Flexible(
@@ -288,47 +291,51 @@ class LeadingWidgets {
                                   padding:
                                       const EdgeInsets.all(Constants.padding),
                                   child: FittedBox(
-                                    fit: BoxFit.fill,
-                                    child: (routineTime == RoutineTime.evening)
-                                        ? IconButton.filledTonal(
-                                            iconSize: Constants.hugeIconSize,
-                                            icon: const Icon(Icons.bed_rounded),
-                                            onPressed: () => Navigator.pop(
-                                                context, RoutineTime.evening))
-                                        : IconButton.outlined(
-                                            iconSize: Constants.hugeIconSize,
-                                            icon: const Icon(Icons.bed_rounded),
-                                            onPressed: () => Navigator.pop(
-                                                context, RoutineTime.evening)),
-                                  ),
+                                      fit: BoxFit.fill,
+                                      child: (times & 4 == 4)
+                                          ? IconButton.filledTonal(
+                                              iconSize: Constants.hugeIconSize,
+                                              icon:
+                                                  const Icon(Icons.bed_rounded),
+                                              onPressed: () {
+                                                times |= 4;
+                                                Navigator.pop(context);
+                                              })
+                                          : IconButton.outlined(
+                                              iconSize: Constants.hugeIconSize,
+                                              icon:
+                                                  const Icon(Icons.bed_rounded),
+                                              onPressed: () {
+                                                times |= 4;
+                                                Navigator.pop(context);
+                                              })),
                                 ),
                               )
                             ]),
                         Flexible(
-                          child: Padding(
-                              padding: const EdgeInsets.all(Constants.padding),
-                              child: Tooltip(
-                                message: "Remove.",
-                                child: FittedBox(
-                                  fit: BoxFit.fill,
-                                  child: IconButton.outlined(
+                            child: Padding(
+                          padding: const EdgeInsets.all(Constants.padding),
+                          child: Tooltip(
+                            message: "Remove.",
+                            child: FittedBox(
+                                fit: BoxFit.fill,
+                                child: IconButton.outlined(
                                     iconSize: Constants.lgIconSize,
                                     icon: const Icon(
                                         Icons.remove_circle_outline_rounded),
-                                    onPressed: () => Navigator.pop(
-                                        context, RoutineTime.none),
-                                  ),
-                                ),
-                              )),
-                        )
+                                    onPressed: () {
+                                      times = 0;
+                                      Navigator.pop(context);
+                                    })),
+                          ),
+                        )),
                       ]),
                 ),
               ));
             },
-          ).then((RoutineTime? time) =>
-              handleRoutineTimeChange(newRoutineTime: time));
+          ).then((_) => handleRoutineTimeChange(newRoutineTimes: times));
         },
-        child: icon,
+        child: routineGlyph(times: times),
       ),
     );
   }

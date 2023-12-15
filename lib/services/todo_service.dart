@@ -12,11 +12,11 @@ class ToDoService {
 
   set repository(ToDoRepository repo) => _repository = repo;
 
-  int calculateWeight({List<SubTask>? subTasks}) =>
-      (subTasks ?? List.empty(growable: false)).fold(0, (p, c) => p + c.weight);
+  int calculateWeight({List<Subtask>? subtasks}) =>
+      (subtasks ?? List.empty(growable: false)).fold(0, (p, c) => p + c.weight);
 
   void recalculateWeight({required ToDo toDo}) {
-    toDo.weight = toDo.subTasks.fold(0, (p, c) => p + c.weight);
+    toDo.weight = toDo.subtasks.fold(0, (p, c) => p + c.weight);
   }
 
   int calculateRealDuration({int? weight, int? duration}) => (remap(

@@ -1,7 +1,4 @@
-import "dart:math";
-
 import "package:another_flushbar/flushbar.dart";
-import "package:auto_size_text/auto_size_text.dart";
 import "package:flutter/material.dart";
 import "package:flutter/semantics.dart";
 import "package:provider/provider.dart";
@@ -9,19 +6,18 @@ import "package:provider/provider.dart";
 import "../../../model/task/subtask.dart";
 import "../../../providers/routine_provider.dart";
 import "../../../util/constants.dart";
-import "../../../util/enums.dart";
 import "../../../util/exceptions.dart";
-import "../../widgets/expanded_listtile.dart";
 import "../../widgets/flushbars.dart";
 import "../../widgets/leading_widgets.dart";
-import "../../widgets/listviews.dart";
 import "../../widgets/padded_divider.dart";
 import "../../widgets/tiles.dart";
 import "../../widgets/title_bar.dart";
 
 class CreateRoutineScreen extends StatefulWidget {
-  const CreateRoutineScreen({Key? key, this.routineTime}) : super(key: key);
-  final RoutineTime? routineTime;
+  const CreateRoutineScreen({Key? key, this.times}) : super(key: key);
+
+  // TODO: finish functionality -> creating from MyDayRoutineScreen.
+  final int? times;
 
   @override
   State<CreateRoutineScreen> createState() => _CreateRoutineScreen();
@@ -50,12 +46,10 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
   late int expectedDuration;
   late int realDuration;
 
-  late final List<TextEditingController> routineTaskEditingController;
-  late final List<SubTask> routineTasks;
-  late int shownTasks;
+  late List<Subtask> subtasks;
 
   // If setting the routine for the home screen.
-  late RoutineTime routineTime;
+  int? times;
 
   @override
   void initState() {
@@ -74,10 +68,8 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
     weight = 0;
     expectedDuration = 0;
     realDuration = 0;
-
-    routineTasks = List.generate(Constants.maxNumTasks, (_) => SubTask());
-    shownTasks = 0;
-    routineTime = widget.routineTime ?? RoutineTime.none;
+    times = widget.times;
+    subtasks = List.empty();
   }
 
   void initializeControllers() {
@@ -95,13 +87,14 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
         return setState(() => name = newText);
       }
     });
-
-    routineTaskEditingController =
-        List.generate(routineTasks.length, (_) => TextEditingController());
   }
 
   void initializeProviders() {
     routineProvider = Provider.of<RoutineProvider>(context, listen: false);
+    routineProvider.addListener(resetSubtasks);
+    routineProvider.addListener(() {
+      "I should be calling";
+    });
   }
 
   @override
@@ -109,10 +102,22 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
     nameEditingController.dispose();
     mobileScrollController.dispose();
     desktopScrollController.dispose();
-    for (TextEditingController controller in routineTaskEditingController) {
-      controller.dispose();
-    }
+    routineProvider.removeListener(resetSubtasks);
     super.dispose();
+  }
+
+  Future<void> resetSubtasks() async {
+    subtasks = await routineProvider.getSubtasks(
+      id: Constants.intMax,
+    );
+    routineProvider.routineSubtaskCounts[Constants.intMax]!.value =
+        subtasks.length;
+    weight = await routineProvider.getWeight(taskID: Constants.intMax);
+    realDuration = routineProvider.calculateRealDuration(
+        weight: weight, duration: expectedDuration);
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   bool validateData() {
@@ -131,19 +136,14 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
   Future<void> handleCreate() async {
     await routineProvider
         .createRoutine(
-      name: name,
-      weight: weight,
-      expectedDuration: expectedDuration,
-      realDuration: realDuration,
-      routineTasks: routineTasks,
-    )
-        .whenComplete(() async {
-      // Handle setting the routine.
-      await routineProvider
-          .handleRoutineTime(time: routineTime)
-          .whenComplete(() {
-        Navigator.pop(context);
-      });
+            name: name,
+            weight: weight,
+            expectedDuration: expectedDuration,
+            realDuration: realDuration,
+            subtasks: subtasks,
+            times: times)
+        .whenComplete(() {
+      Navigator.pop(context);
     }).catchError((e) {
       Flushbar? error;
 
@@ -179,90 +179,86 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
     }
   }
 
-  void changeRoutineTime({required RoutineTime? newRoutineTime}) {
-    if (null == newRoutineTime) {
-      return;
-    }
+  void changeRoutineTime({required int newRoutineTimes}) {
     if (mounted) {
       return setState(() {
         checkClose = true;
-        routineTime = newRoutineTime;
+        times = newRoutineTimes;
       });
     }
   }
 
-  void handleWeightChange(double value) {
-    if (mounted) {
-      return setState(() {
-        checkClose = true;
-        weight = value.toInt();
-        realDuration = routineProvider.calculateRealDuration(
-            weight: weight, duration: expectedDuration);
-      });
-    }
-  }
+  // void handleWeightChange(double value) {
+  //   if (mounted) {
+  //     return setState(() {
+  //       checkClose = true;
+  //       weight = value.toInt();
+  //       realDuration = routineProvider.calculateRealDuration(
+  //           weight: weight, duration: expectedDuration);
+  //     });
+  //   }
+  // }
 
-  void removeRoutineTask({required int index}) {
-    if (mounted) {
-      return setState(() {
-        checkClose = true;
-        SubTask st = routineTasks.removeAt(index);
-        st = SubTask();
-        routineTasks.add(st);
-        TextEditingController ct = routineTaskEditingController.removeAt(index);
-        ct.value = ct.value.copyWith(text: st.name);
-        routineTaskEditingController.add(ct);
+  // void removeRoutineTask({required int index}) {
+  //   if (mounted) {
+  //     return setState(() {
+  //       checkClose = true;
+  //       Subtask st = subtasks.removeAt(index);
+  //       subtasks.add(st);
+  //       TextEditingController ct = routineTaskEditingController.removeAt(index);
+  //       ct.value = ct.value.copyWith(text: st.name);
+  //       routineTaskEditingController.add(ct);
+  //
+  //       shownTasks--;
+  //       shownTasks = max(shownTasks, 0);
+  //       weight = routineProvider.calculateWeight(subtasks: subtasks);
+  //     });
+  //   }
+  // }
 
-        shownTasks--;
-        shownTasks = max(shownTasks, 0);
-        weight = routineProvider.calculateWeight(routineTasks: routineTasks);
-      });
-    }
-  }
+  // void reorderRoutineTasks(int oldIndex, int newIndex) {
+  //   if (mounted) {
+  //     return setState(() {
+  //       checkClose = true;
+  //       if (oldIndex < newIndex) {
+  //         newIndex--;
+  //       }
+  //       Subtask st = subtasks.removeAt(oldIndex);
+  //       subtasks.insert(newIndex, st);
+  //       TextEditingController ct =
+  //           routineTaskEditingController.removeAt(oldIndex);
+  //       routineTaskEditingController.insert(newIndex, ct);
+  //     });
+  //   }
+  // }
 
-  void reorderRoutineTasks(int oldIndex, int newIndex) {
-    if (mounted) {
-      return setState(() {
-        checkClose = true;
-        if (oldIndex < newIndex) {
-          newIndex--;
-        }
-        SubTask st = routineTasks.removeAt(oldIndex);
-        routineTasks.insert(newIndex, st);
-        TextEditingController ct =
-            routineTaskEditingController.removeAt(oldIndex);
-        routineTaskEditingController.insert(newIndex, ct);
-      });
-    }
-  }
+  // void onDataChange() {
+  //   if (mounted) {
+  //     return setState(() {
+  //       checkClose = true;
+  //     });
+  //   }
+  // }
+  //
+  // void onRoutineTaskWeightChanged() {
+  //   if (mounted) {
+  //     return setState(() {
+  //       checkClose = true;
+  //       weight = routineProvider.calculateWeight(subtasks: subtasks);
+  //       realDuration = routineProvider.calculateRealDuration(
+  //           weight: weight, duration: expectedDuration);
+  //     });
+  //   }
+  // }
 
-  void onDataChange() {
-    if (mounted) {
-      return setState(() {
-        checkClose = true;
-      });
-    }
-  }
-
-  void onRoutineTaskWeightChanged() {
-    if (mounted) {
-      return setState(() {
-        checkClose = true;
-        weight = routineProvider.calculateWeight(routineTasks: routineTasks);
-        realDuration = routineProvider.calculateRealDuration(
-            weight: weight, duration: expectedDuration);
-      });
-    }
-  }
-
-  void addRoutineTask() {
-    if (mounted) {
-      return setState(() {
-        shownTasks++;
-        shownTasks = min(shownTasks, Constants.maxNumTasks);
-      });
-    }
-  }
+  // void addRoutineTask() {
+  //   if (mounted) {
+  //     return setState(() {
+  //       shownTasks++;
+  //       shownTasks = min(shownTasks, Constants.maxNumTasks);
+  //     });
+  //   }
+  // }
 
   void updateDuration(int? value) {
     if (mounted) {
@@ -354,7 +350,7 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
                                     leading: LeadingWidgets.routineIcon(
                                       currentContext: context,
                                       scale: Constants.largeCheckboxMinScale,
-                                      routineTime: routineTime,
+                                      times: times ?? 0,
                                       handleRoutineTimeChange:
                                           changeRoutineTime,
                                     ),
@@ -394,10 +390,14 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
                                   physics: const NeverScrollableScrollPhysics(),
                                   shrinkWrap: true,
                                   children: [
-                                buildRoutineTasksTile(
+                                Tiles.subtasksTile(
+                                  context: context,
                                   outerPadding: const EdgeInsets.all(
-                                    Constants.halfPadding,
-                                  ),
+                                      Constants.halfPadding),
+                                  id: Constants.intMax,
+                                  subtasks: subtasks,
+                                  subtaskCount: routineProvider.getSubtaskCount(
+                                      id: Constants.intMax),
                                 )
                               ]))
                         ]),
@@ -454,7 +454,7 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
                         leading: LeadingWidgets.routineIcon(
                           currentContext: context,
                           scale: Constants.largeCheckboxMinScale,
-                          routineTime: routineTime,
+                          times: times ?? 0,
                           handleRoutineTimeChange: changeRoutineTime,
                         ),
                         hintText: "Routine Name",
@@ -487,7 +487,12 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
 
                     const PaddedDivider(padding: Constants.padding),
 
-                    buildRoutineTasksTile(),
+                    Tiles.subtasksTile(
+                        context: context,
+                        id: Constants.intMax,
+                        subtasks: subtasks,
+                        subtaskCount: routineProvider.getSubtaskCount(
+                            id: Constants.intMax)),
                   ],
                 ),
               ),
@@ -503,42 +508,41 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
     );
   }
 
-  Widget buildRoutineTasksTile(
-      {ScrollPhysics physics = const NeverScrollableScrollPhysics(),
-      EdgeInsetsGeometry outerPadding = EdgeInsets.zero}) {
-    return ExpandedListTile(
-      outerPadding: outerPadding,
-      title: const AutoSizeText("Steps",
-          maxLines: 1,
-          overflow: TextOverflow.visible,
-          softWrap: false,
-          minFontSize: Constants.small),
-      subtitle: AutoSizeText(
-          "${min(shownTasks, Constants.maxNumTasks)}/${Constants.maxNumTasks} Steps",
-          maxLines: 1,
-          overflow: TextOverflow.visible,
-          softWrap: false,
-          minFontSize: Constants.small),
-      children: [
-        ListViews.reorderableSubtasks(
-          physics: physics,
-          context: context,
-          subTasks: routineTasks,
-          itemCount: min(Constants.maxNumTasks, shownTasks),
-          controllers: routineTaskEditingController,
-          onRemoved: removeRoutineTask,
-          onReorder: reorderRoutineTasks,
-          onChanged: onDataChange,
-          onSubtaskWeightChanged: onRoutineTaskWeightChanged,
-          showHandle: shownTasks > 1,
-        ),
-        (shownTasks < Constants.maxNumTasks)
-            ? Tiles.addTile(
-                title: "Add a step",
-                onTap: addRoutineTask,
-              )
-            : const SizedBox.shrink(),
-      ],
-    );
-  }
+// Widget buildRoutineTasksTile(
+//     {ScrollPhysics physics = const NeverScrollableScrollPhysics(),
+//     EdgeInsetsGeometry outerPadding = EdgeInsets.zero}) {
+//   return ExpandedListTile(
+//     outerPadding: outerPadding,
+//     title: const AutoSizeText("Steps",
+//         maxLines: 1,
+//         overflow: TextOverflow.visible,
+//         softWrap: false,
+//         minFontSize: Constants.small),
+//     subtitle: AutoSizeText(
+//         "${min(shownTasks, Constants.maxNumTasks)}/${Constants.maxNumTasks} Steps",
+//         maxLines: 1,
+//         overflow: TextOverflow.visible,
+//         softWrap: false,
+//         minFontSize: Constants.small),
+//     children: [
+//       ListViews.reorderableSubtasks(
+//         physics: physics,
+//         context: context,
+//         subtasks: subtasks,
+//         itemCount: min(Constants.maxNumTasks, shownTasks),
+//         onRemoved: removeRoutineTask,
+//         onReorder: reorderRoutineTasks,
+//         updateSubTask: onDataChange,
+//         onSubtaskWeightChanged: onRoutineTaskWeightChanged,
+//         showHandle: shownTasks > 1,
+//       ),
+//       (shownTasks < Constants.maxNumTasks)
+//           ? Tiles.addTile(
+//               title: "Add a step",
+//               onTap: addRoutineTask,
+//             )
+//           : const SizedBox.shrink(),
+//     ],
+//   );
+// }
 }
