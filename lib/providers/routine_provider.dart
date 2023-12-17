@@ -279,34 +279,29 @@ class RoutineProvider extends ChangeNotifier {
       return updateRoutine();
     }
 
-    for (int i = 0; i < subtasks.length; i++) {
-      subtasks[i].taskID = curRoutine!.id;
-      subtasks[i].customViewIndex = i;
-    }
-
-    await updateSubtasks(subtasks: subtasks);
+    await _updateSubtasks(subtasks: subtasks, taskID: curRoutine!.id);
     routineSubtaskCounts[Constants.intMax]!.value = 0;
     setDailyRoutine(timeOfDay: times, routine: curRoutine);
     notifyListeners();
   }
 
-  Future<void> createSubtask({required int taskID, int? index}) async {
-    Subtask subtask = Subtask(taskID: taskID, lastUpdated: DateTime.now());
-    if (null != index) {
-      subtask.customViewIndex = index;
-    }
-    try {
-      subtask = await _subtaskService.createSubtask(
-          subtask: Subtask(taskID: taskID, lastUpdated: DateTime.now()));
-    } on FailureToUploadException catch (e) {
-      log(e.cause);
-      return Future.error(e);
-    } on FailureToUpdateException catch (e) {
-      log(e.cause);
-      return Future.error(e);
-    }
-    notifyListeners();
-  }
+  // Future<void> createSubtask({required int taskID, int? index}) async {
+  //   Subtask subtask = Subtask(taskID: taskID, lastUpdated: DateTime.now());
+  //   if (null != index) {
+  //     subtask.customViewIndex = index;
+  //   }
+  //   try {
+  //     subtask = await _subtaskService.createSubtask(
+  //         subtask: Subtask(taskID: taskID, lastUpdated: DateTime.now()));
+  //   } on FailureToUploadException catch (e) {
+  //     log(e.cause);
+  //     return Future.error(e);
+  //   } on FailureToUpdateException catch (e) {
+  //     log(e.cause);
+  //     return Future.error(e);
+  //   }
+  //   notifyListeners();
+  // }
 
   Future<void> updateRoutine({Routine? routine, int? times}) async {
     routine = routine ?? curRoutine;
@@ -332,10 +327,13 @@ class RoutineProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> updateSubtask({required Subtask subtask}) async {
-    subtask.lastUpdated = DateTime.now();
+  Future<void> updateBatch({List<Routine>? routines}) async {
+    routines = routines ?? this.routines;
+    for (Routine routine in routines) {
+      routine.lastUpdated = DateTime.now();
+    }
     try {
-      subtask = await _subtaskService.updateSubtask(subtask: subtask);
+      await _routineService.updateBatch(routines: routines);
     } on FailureToUploadException catch (e) {
       log(e.cause);
       return Future.error(e);
@@ -346,10 +344,49 @@ class RoutineProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // TODO: this needs error handling.
-  Future<void> updateSubtasks({List<Subtask>? subtasks}) async =>
-      await _subtaskService.updateBatch(
-          subtasks: subtasks ?? curRoutine!.subtasks);
+  // Future<void> updateSubtask({required Subtask subtask}) async {
+  //   subtask.lastUpdated = DateTime.now();
+  //   try {
+  //     subtask = await _subtaskService.updateSubtask(subtask: subtask);
+  //   } on FailureToUploadException catch (e) {
+  //     log(e.cause);
+  //     return Future.error(e);
+  //   } on FailureToUpdateException catch (e) {
+  //     log(e.cause);
+  //     return Future.error(e);
+  //   }
+  //   notifyListeners();
+  // }
+
+  Future<void> _updateSubtasks(
+      {required List<Subtask> subtasks, required int taskID}) async {
+    int i = 0;
+
+    // This eliminates empty subtasks.
+    for (Subtask st in subtasks) {
+      if (st.name != "") {
+        st.taskID = taskID;
+        st.customViewIndex = i++;
+        st.lastUpdated = DateTime.now();
+      } else {
+        st.toDelete = true;
+      }
+    }
+    // for (int i = 0; i < subtasks.length; i++) {
+    //   subtasks[i].taskID = taskID;
+    //   subtasks[i].customViewIndex = i;
+    //   subtasks[i].lastUpdated = DateTime.now();
+    // }
+    try {
+      await _subtaskService.updateBatch(subtasks: subtasks);
+    } on FailureToUploadException catch (e) {
+      log(e.cause);
+      return Future.error(e);
+    } on FailureToUpdateException catch (e) {
+      log(e.cause);
+      return Future.error(e);
+    }
+  }
 
   Future<void> deleteRoutine({Routine? routine}) async {
     routine = routine ?? curRoutine!;
@@ -362,15 +399,15 @@ class RoutineProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> deleteSubtask({required Subtask subtask}) async {
-    try {
-      await _subtaskService.deleteSubtask(subtask: subtask);
-    } on FailureToDeleteException catch (e) {
-      log(e.cause);
-      return Future.error(e);
-    }
-    notifyListeners();
-  }
+  // Future<void> deleteSubtask({required Subtask subtask}) async {
+  //   try {
+  //     await _subtaskService.deleteSubtask(subtask: subtask);
+  //   } on FailureToDeleteException catch (e) {
+  //     log(e.cause);
+  //     return Future.error(e);
+  //   }
+  //   notifyListeners();
+  // }
 
   Future<List<Routine>> reorderRoutines(
       {List<Routine>? routines,
@@ -390,21 +427,21 @@ class RoutineProvider extends ChangeNotifier {
     }
   }
 
-  Future<List<Subtask>> reorderSubtasks(
-      {required List<Subtask> subtasks,
-      required int oldIndex,
-      required int newIndex}) async {
-    try {
-      return await _subtaskService.reorderSubtasks(
-          subtasks: subtasks, oldIndex: oldIndex, newIndex: newIndex);
-    } on FailureToUpdateException catch (e) {
-      log(e.cause);
-      return Future.error(e);
-    } on FailureToUploadException catch (e) {
-      log(e.cause);
-      return Future.error(e);
-    }
-  }
+  // Future<List<Subtask>> reorderSubtasks(
+  //     {required List<Subtask> subtasks,
+  //     required int oldIndex,
+  //     required int newIndex}) async {
+  //   try {
+  //     return await _subtaskService.reorderSubtasks(
+  //         subtasks: subtasks, oldIndex: oldIndex, newIndex: newIndex);
+  //   } on FailureToUpdateException catch (e) {
+  //     log(e.cause);
+  //     return Future.error(e);
+  //   } on FailureToUploadException catch (e) {
+  //     log(e.cause);
+  //     return Future.error(e);
+  //   }
+  // }
 
   Future<void> resetRoutineSubtasks({Routine? routine}) async {
     routine = routine ?? curRoutine;

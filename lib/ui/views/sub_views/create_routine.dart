@@ -5,6 +5,7 @@ import "package:provider/provider.dart";
 
 import "../../../model/task/subtask.dart";
 import "../../../providers/routine_provider.dart";
+import "../../../providers/subtask_provider.dart";
 import "../../../util/constants.dart";
 import "../../../util/exceptions.dart";
 import "../../widgets/flushbars.dart";
@@ -29,6 +30,7 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
 
   // Provider (Needs user values) -> Refactor to DI for testing. One day.
   late final RoutineProvider routineProvider;
+  late final SubtaskProvider subtaskProvider;
 
   // Scrolling
   late final ScrollController mobileScrollController;
@@ -91,10 +93,8 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
 
   void initializeProviders() {
     routineProvider = Provider.of<RoutineProvider>(context, listen: false);
-    routineProvider.addListener(resetSubtasks);
-    routineProvider.addListener(() {
-      "I should be calling";
-    });
+    subtaskProvider = Provider.of<SubtaskProvider>(context, listen: false);
+    subtaskProvider.addListener(resetSubtasks);
   }
 
   @override
@@ -102,7 +102,7 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
     nameEditingController.dispose();
     mobileScrollController.dispose();
     desktopScrollController.dispose();
-    routineProvider.removeListener(resetSubtasks);
+    subtaskProvider.removeListener(resetSubtasks);
     super.dispose();
   }
 
@@ -159,9 +159,14 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
                 e is FailureToCreateException || e is FailureToUploadException);
   }
 
-  void handleClose({required bool willDiscard}) {
+  Future<void> handleClose({required bool willDiscard}) async {
     if (willDiscard) {
-      Navigator.pop(context);
+      for (Subtask st in subtasks) {
+        st.toDelete = true;
+      }
+      await subtaskProvider.updateBatch(subtasks: subtasks).whenComplete(() {
+        Navigator.pop(context);
+      });
     }
 
     if (mounted) {
@@ -488,6 +493,7 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
                     const PaddedDivider(padding: Constants.padding),
 
                     Tiles.subtasksTile(
+                        isDense: smallScreen,
                         context: context,
                         id: Constants.intMax,
                         subtasks: subtasks,

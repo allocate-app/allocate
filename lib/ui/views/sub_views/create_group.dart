@@ -140,26 +140,7 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
     await groupProvider
         .createGroup(name: name, description: description)
         .whenComplete(() async {
-      int? groupID = groupProvider.curGroup!.id;
-
-      for (int i = 0; i < toDos.length; i++) {
-        toDos[i].groupID = groupID;
-        toDos[i].groupIndex = i;
-      }
-
-      await toDoProvider.updateBatch(toDos: toDos).whenComplete(() {
-        Navigator.pop(context);
-      }).catchError((e) {
-        Flushbar? error;
-
-        error = Flushbars.createError(
-          message: e.cause,
-          context: context,
-          dismissCallback: () => error?.dismiss(),
-        );
-      },
-          test: (e) =>
-              e is FailureToCreateException || e is FailureToUpdateException);
+      Navigator.pop(context);
     }).catchError((e) {
       Flushbar? error;
 
@@ -443,6 +424,7 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
           toDoCount: groupProvider.getToDoCount(id: Constants.intMax)),
       children: [
         SearchRecentsBar<ToDo>(
+          border: BorderSide.none,
           clearOnSelection: true,
           hintText: "Search Tasks",
           padding: const EdgeInsets.all(Constants.padding),

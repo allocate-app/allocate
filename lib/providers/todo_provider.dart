@@ -222,34 +222,30 @@ class ToDoProvider extends ChangeNotifier {
       return await updateToDo();
     }
 
-    for (int i = 0; i < subtasks.length; i++) {
-      subtasks[i].taskID = curToDo!.id;
-      subtasks[i].customViewIndex = i;
-    }
-
-    await updateSubtasks(subtasks: subtasks);
+    // TODO: migrate this to groupprovider to get logic out of gui.
+    await _updateSubtasks(subtasks: subtasks, taskID: curToDo!.id);
     toDoSubtaskCounts[Constants.intMax]!.value = 0;
 
     notifyListeners();
   }
 
-  Future<void> createSubtask({required int taskID, int? index}) async {
-    Subtask subtask = Subtask(taskID: taskID, lastUpdated: DateTime.now());
-    if (null != index) {
-      subtask.customViewIndex = index;
-    }
-    try {
-      subtask = await _subtaskService.createSubtask(
-          subtask: Subtask(taskID: taskID, lastUpdated: DateTime.now()));
-    } on FailureToUploadException catch (e) {
-      log(e.cause);
-      return Future.error(e);
-    } on FailureToUpdateException catch (e) {
-      log(e.cause);
-      return Future.error(e);
-    }
-    notifyListeners();
-  }
+  // Future<void> createSubtask({required int taskID, int? index}) async {
+  //   Subtask subtask = Subtask(taskID: taskID, lastUpdated: DateTime.now());
+  //   if (null != index) {
+  //     subtask.customViewIndex = index;
+  //   }
+  //   try {
+  //     subtask = await _subtaskService.createSubtask(
+  //         subtask: Subtask(taskID: taskID, lastUpdated: DateTime.now()));
+  //   } on FailureToUploadException catch (e) {
+  //     log(e.cause);
+  //     return Future.error(e);
+  //   } on FailureToUpdateException catch (e) {
+  //     log(e.cause);
+  //     return Future.error(e);
+  //   }
+  //   notifyListeners();
+  // }
 
   Future<void> updateToDo({ToDo? toDo}) async {
     await updateToDoAsync(toDo: toDo ?? curToDo!);
@@ -275,10 +271,40 @@ class ToDoProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> updateSubtask({required Subtask subtask}) async {
-    subtask.lastUpdated = DateTime.now();
+  // Future<void> updateSubtask({required Subtask subtask}) async {
+  //   subtask.lastUpdated = DateTime.now();
+  //   try {
+  //     subtask = await _subtaskService.updateSubtask(subtask: subtask);
+  //   } on FailureToUploadException catch (e) {
+  //     log(e.cause);
+  //     return Future.error(e);
+  //   } on FailureToUpdateException catch (e) {
+  //     log(e.cause);
+  //     return Future.error(e);
+  //   }
+  //   notifyListeners();
+  // }
+
+  Future<void> _updateSubtasks(
+      {required List<Subtask> subtasks, required int taskID}) async {
+    int i = 0;
+    // This eliminates empty subtasks and maintains proper order.
+    for (Subtask st in subtasks) {
+      if (st.name != "") {
+        st.taskID = taskID;
+        st.customViewIndex = i++;
+        st.lastUpdated = DateTime.now();
+      } else {
+        st.toDelete = true;
+      }
+    }
+    // for (int i = 0; i < subtasks.length; i++) {
+    //   subtasks[i].taskID = taskID;
+    //   subtasks[i].customViewIndex = i;
+    //   subtasks[i].lastUpdated = DateTime.now();
+    // }
     try {
-      subtask = await _subtaskService.updateSubtask(subtask: subtask);
+      await _subtaskService.updateBatch(subtasks: subtasks);
     } on FailureToUploadException catch (e) {
       log(e.cause);
       return Future.error(e);
@@ -286,13 +312,7 @@ class ToDoProvider extends ChangeNotifier {
       log(e.cause);
       return Future.error(e);
     }
-    notifyListeners();
   }
-
-  // TODO: this needs error handling.
-  Future<void> updateSubtasks({List<Subtask>? subtasks}) async =>
-      await _subtaskService.updateBatch(
-          subtasks: subtasks ?? curToDo!.subtasks);
 
   Future<void> updateBatch({List<ToDo>? toDos}) async {
     toDos = toDos ?? this.toDos;
@@ -323,15 +343,15 @@ class ToDoProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> deleteSubtask({required Subtask subtask}) async {
-    try {
-      await _subtaskService.deleteSubtask(subtask: subtask);
-    } on FailureToDeleteException catch (e) {
-      log(e.cause);
-      return Future.error(e);
-    }
-    notifyListeners();
-  }
+  // Future<void> deleteSubtask({required Subtask subtask}) async {
+  //   try {
+  //     await _subtaskService.deleteSubtask(subtask: subtask);
+  //   } on FailureToDeleteException catch (e) {
+  //     log(e.cause);
+  //     return Future.error(e);
+  //   }
+  //   notifyListeners();
+  // }
 
   Future<List<ToDo>> reorderToDos(
       {required int oldIndex, required int newIndex, List<ToDo>? toDos}) async {
@@ -359,21 +379,21 @@ class ToDoProvider extends ChangeNotifier {
     }
   }
 
-  Future<List<Subtask>> reorderSubtasks(
-      {required List<Subtask> subtasks,
-      required int oldIndex,
-      required int newIndex}) async {
-    try {
-      return await _subtaskService.reorderSubtasks(
-          subtasks: subtasks, oldIndex: oldIndex, newIndex: newIndex);
-    } on FailureToUpdateException catch (e) {
-      log(e.cause);
-      return Future.error(e);
-    } on FailureToUploadException catch (e) {
-      log(e.cause);
-      return Future.error(e);
-    }
-  }
+  // Future<List<Subtask>> reorderSubtasks(
+  //     {required List<Subtask> subtasks,
+  //     required int oldIndex,
+  //     required int newIndex}) async {
+  //   try {
+  //     return await _subtaskService.reorderSubtasks(
+  //         subtasks: subtasks, oldIndex: oldIndex, newIndex: newIndex);
+  //   } on FailureToUpdateException catch (e) {
+  //     log(e.cause);
+  //     return Future.error(e);
+  //   } on FailureToUploadException catch (e) {
+  //     log(e.cause);
+  //     return Future.error(e);
+  //   }
+  // }
 
   Future<void> nextRepeat({ToDo? toDo}) async {
     try {

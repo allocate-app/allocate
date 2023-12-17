@@ -120,7 +120,10 @@ class GroupProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> createGroup({required String name, String? description}) async {
+  Future<void> createGroup(
+      {required String name, String? description, List<ToDo>? toDos}) async {
+    // The likelihood of adding more than 50 tasks at creation is incredibly slim.
+    toDos = toDos ?? await _toDoService.getByGroup(groupID: Constants.intMax);
     curGroup = Group(
         name: name,
         description: description ?? "",
@@ -136,6 +139,7 @@ class GroupProvider extends ChangeNotifier {
       return await updateGroup();
     }
 
+    await _updateToDos(toDos: toDos, groupID: curGroup!.id);
     groupNames[curGroup!.id] = curGroup!.name;
     groupToDoCounts[Constants.intMax]!.value = 0;
 
@@ -160,6 +164,24 @@ class GroupProvider extends ChangeNotifier {
       return Future.error(e);
     }
     groupNames[curGroup!.id] = curGroup!.name;
+  }
+
+  Future<void> _updateToDos(
+      {required List<ToDo> toDos, required int groupID}) async {
+    int i = 0;
+    for (ToDo toDo in toDos) {
+      toDo.groupID = groupID;
+      toDo.customViewIndex = i++;
+    }
+    try {
+      await _toDoService.updateBatch(toDos: toDos);
+    } on FailureToUploadException catch (e) {
+      log(e.cause);
+      return Future.error(e);
+    } on FailureToUpdateException catch (e) {
+      log(e.cause);
+      return Future.error(e);
+    }
   }
 
   Future<void> deleteGroup({Group? group}) async {

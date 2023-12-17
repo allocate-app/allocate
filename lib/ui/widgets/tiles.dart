@@ -1,5 +1,6 @@
 import 'package:allocate/ui/widgets/handle_repeatable_modal.dart';
 import 'package:allocate/ui/widgets/paginating_listview.dart';
+import 'package:allocate/ui/widgets/subtask_quick_entry.dart';
 import 'package:allocate/ui/widgets/subtitles.dart';
 import 'package:another_flushbar/flushbar.dart';
 import 'package:auto_size_text/auto_size_text.dart';
@@ -21,6 +22,7 @@ import '../../providers/deadline_provider.dart';
 import '../../providers/group_provider.dart';
 import '../../providers/reminder_provider.dart';
 import '../../providers/routine_provider.dart';
+import '../../providers/subtask_provider.dart';
 import '../../providers/todo_provider.dart';
 import '../../providers/user_provider.dart';
 import '../../ui/widgets/time_dialog.dart';
@@ -763,7 +765,6 @@ class Tiles {
 
     return ExpandedListTile(
         key: ValueKey(group.id),
-        outerPadding: const EdgeInsets.symmetric(horizontal: Constants.padding),
         expanded: true,
         leading: LeadingWidgets.groupListViewIcon(onPressed: () async {
           await showDialog(
@@ -822,6 +823,7 @@ class Tiles {
             children: [
               Expanded(
                 child: SearchRecentsBar<ToDo>(
+                  border: BorderSide.none,
                   clearOnSelection: true,
                   hintText: "Search Tasks",
                   padding: const EdgeInsets.all(Constants.padding),
@@ -956,6 +958,7 @@ class Tiles {
 
   // TODO: Refactor this -> should bring up a dialog instead, text is causing issues.
   // and the modal is gross.
+  // Right now, using a focus node to check when focus is lost to update.
   static Widget subtaskCheckboxTile(
           {required BuildContext context,
           EdgeInsetsGeometry textFieldPadding = EdgeInsets.zero,
@@ -975,21 +978,30 @@ class Tiles {
           },
           title: Padding(
             padding: textFieldPadding,
-            child: AutoSizeTextField(
-                controller: TextEditingController(text: subtask.name),
-                minLines: 1,
-                maxLines: 1,
-                minFontSize: Constants.large,
-                decoration: const InputDecoration.collapsed(
-                  hintText: "Step name",
-                ),
-                onEditingComplete: () async {
+            child: Focus(
+              onFocusChange: (bool hasFocus) async {
+                if (!hasFocus) {
                   await updateSubtask(subtask: subtask);
-                },
-                onChanged: (value) {
-                  SemanticsService.announce(value, Directionality.of(context));
-                  subtask.name = value;
-                }),
+                }
+              },
+              child: AutoSizeTextField(
+                  // TODO: get rid of this widget entirely. NEEDS to be its own statefulwidget.
+                  controller: TextEditingController(text: subtask.name),
+                  minLines: 1,
+                  maxLines: 1,
+                  minFontSize: Constants.large,
+                  decoration: const InputDecoration.collapsed(
+                    hintText: "Step name",
+                  ),
+                  onEditingComplete: () async {
+                    await updateSubtask(subtask: subtask);
+                  },
+                  onChanged: (value) {
+                    SemanticsService.announce(
+                        value, Directionality.of(context));
+                    subtask.name = value;
+                  }),
+            ),
           ),
           value: subtask.completed,
           trailing: Row(
@@ -1108,13 +1120,15 @@ class Tiles {
   static Widget subtasksTile({
     required BuildContext context,
     required int id,
+    bool isDense = false,
     int limit = Constants.maxNumTasks,
     required List<Subtask> subtasks,
     required ValueNotifier<int> subtaskCount,
     ScrollPhysics physics = const NeverScrollableScrollPhysics(),
     EdgeInsetsGeometry outerPadding = EdgeInsets.zero,
   }) {
-    ToDoProvider provider = Provider.of<ToDoProvider>(context, listen: false);
+    SubtaskProvider subtaskProvider =
+        Provider.of<SubtaskProvider>(context, listen: false);
     return ExpandedListTile(
         outerPadding: outerPadding,
         title: const AutoSizeText("Steps",
@@ -1131,19 +1145,23 @@ class Tiles {
               subtasks: subtasks,
               itemCount: subtasks.length,
               updateSubtask: ({required Subtask subtask}) async {
-                await provider.updateSubtask(subtask: subtask).catchError((e) {
+                await subtaskProvider
+                    .updateSubtask(subtask: subtask)
+                    .catchError((e) {
                   Flushbar? error;
                   error = Flushbars.createError(
                       message: e.cause,
                       context: context,
                       dismissCallback: () => error?.dismiss());
                 },
-                    test: (e) =>
-                        e is FailureToUpdateException ||
-                        e is FailureToUploadException);
+                        test: (e) =>
+                            e is FailureToUpdateException ||
+                            e is FailureToUploadException);
               },
               onRemoved: ({required Subtask subtask}) async {
-                await provider.deleteSubtask(subtask: subtask).catchError((e) {
+                await subtaskProvider
+                    .deleteSubtask(subtask: subtask)
+                    .catchError((e) {
                   Flushbar? error;
                   error = Flushbars.createError(
                       message: e.cause,
@@ -1152,7 +1170,7 @@ class Tiles {
                 }, test: (e) => e is FailureToDeleteException);
               },
               onReorder: (int oldIndex, int newIndex) async {
-                await provider
+                await subtaskProvider
                     .reorderSubtasks(
                         subtasks: subtasks,
                         oldIndex: oldIndex,
@@ -1170,22 +1188,31 @@ class Tiles {
                             e is FailureToUploadException);
               }),
           (subtasks.length < limit)
-              ? addTile(
-                  title: "Add a step",
-                  onTap: () async {
-                    await provider
-                        .createSubtask(taskID: id, index: subtasks.length)
-                        .catchError((e) {
-                      Flushbar? error;
-                      error = Flushbars.createError(
-                          message: e.cause,
-                          context: context,
-                          dismissCallback: () => error?.dismiss());
-                    },
-                            test: (e) =>
-                                e is FailureToCreateException ||
-                                e is FailureToUploadException);
-                  })
+              ? SubtaskQuickEntry(
+                  taskID: id,
+                  taskIndex: subtasks.length,
+                  outerPadding: const EdgeInsets.all(Constants.padding),
+                  innerPadding: const EdgeInsets.symmetric(
+                      horizontal: Constants.innerPadding),
+                  hintText: "Add step",
+                )
+
+              // addTile(
+              //         title: "Add a step",
+              //         onTap: () async {
+              //           await subtaskProvider
+              //               .createSubtask(taskID: id, index: subtasks.length)
+              //               .catchError((e) {
+              //             Flushbar? error;
+              //             error = Flushbars.createError(
+              //                 message: e.cause,
+              //                 context: context,
+              //                 dismissCallback: () => error?.dismiss());
+              //           },
+              //                   test: (e) =>
+              //                       e is FailureToCreateException ||
+              //                       e is FailureToUploadException);
+              //         })
               : const SizedBox.shrink()
         ]);
   }
@@ -1207,15 +1234,21 @@ class Tiles {
     };
 
     // TODO: onpressed should create a new routine.
+    // OR -> Use a decorated box?
+    // Also: add an add tile.
     return ExpandedListTile(
       leading: LeadingWidgets.myDayRoutineIcon(times: times, onPressed: () {}),
-      title: AutoSizeText("$type Routine",
-          maxLines: 1,
-          overflow: TextOverflow.visible,
-          softWrap: false,
-          minFontSize: Constants.large),
+      title: Padding(
+        padding: const EdgeInsets.symmetric(vertical: Constants.padding),
+        child: AutoSizeText("$type Routine",
+            maxLines: 1,
+            overflow: TextOverflow.visible,
+            softWrap: false,
+            minFontSize: Constants.large),
+      ),
       children: [
         SearchRecentsBar<Routine>(
+          border: BorderSide.none,
           handleDataSelection: ({required int id}) async {
             Routine? routine = await routineProvider.getRoutineByID(id: id);
             if (null == routine) {
@@ -1234,10 +1267,13 @@ class Tiles {
           search: routineProvider.searchRoutines,
           hintText: "Search Routines",
         ),
+        // TODO: add tile -> Create routine with initial time set.
       ],
     );
   }
 
+  // This doesn't really differ much from the subtasks tile.
+  // TODO: try to make one widget
   static Widget filledRoutineTile({
     required BuildContext context,
     required Routine routine,
@@ -1246,6 +1282,8 @@ class Tiles {
   }) {
     RoutineProvider routineProvider =
         Provider.of<RoutineProvider>(context, listen: false);
+    SubtaskProvider subtaskProvider =
+        Provider.of<SubtaskProvider>(context, listen: false);
     return ExpandedListTile(
         leading: LeadingWidgets.myDayRoutineIcon(
           times: times,
@@ -1279,7 +1317,7 @@ class Tiles {
             itemCount: routine.subtasks.length,
             subtasks: routine.subtasks,
             updateSubtask: ({required Subtask subtask}) async {
-              await routineProvider.updateSubtask(subtask: subtask).catchError(
+              await subtaskProvider.updateSubtask(subtask: subtask).catchError(
                   (e) {
                 Flushbar? error;
                 error = Flushbars.createError(
@@ -1292,7 +1330,7 @@ class Tiles {
                       e is FailureToUploadException);
             },
             onRemoved: ({required Subtask subtask}) async {
-              await routineProvider.deleteSubtask(subtask: subtask).catchError(
+              await subtaskProvider.deleteSubtask(subtask: subtask).catchError(
                   (e) {
                 Flushbar? error;
                 error = Flushbars.createError(
@@ -1302,7 +1340,7 @@ class Tiles {
               }, test: (e) => e is FailureToDeleteException);
             },
             onReorder: (int oldIndex, int newIndex) async {
-              await routineProvider
+              await subtaskProvider
                   .reorderSubtasks(
                       subtasks: routine.subtasks,
                       oldIndex: oldIndex,
@@ -1324,7 +1362,7 @@ class Tiles {
           (routine.subtasks.length < Constants.maxNumTasks)
               ? addTile(
                   onTap: () async {
-                    await routineProvider
+                    await subtaskProvider
                         .createSubtask(
                             taskID: routine.id, index: routine.subtasks.length)
                         .catchError((e) {
@@ -1439,26 +1477,65 @@ class Tiles {
         slider ?? const SizedBox.shrink(),
       ]);
 
-  // WEIGHT SLIDER
+  // WEIGHT SLIDERS
   static Widget weightSlider(
           {required double weight,
-          required void Function(double value)? handleWeightChange}) =>
+          void Function(double? value)? handleWeightChange,
+          void Function(double? value)? onChangeEnd}) =>
       Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
           const Icon(Icons.battery_full),
           Expanded(
             child: Slider(
-                value: weight,
-                max: Constants.maxTaskWeight.toDouble(),
-                label:
-                    "$weight ${(weight > (Constants.maxTaskWeight / 2).floor()) ? Constants.lowBattery : Constants.fullBattery}",
-                divisions: Constants.maxTaskWeight,
-                onChanged: handleWeightChange),
+              value: weight,
+              max: Constants.maxTaskWeight.toDouble(),
+              label:
+                  "$weight ${(weight > (Constants.maxTaskWeight / 2).floor()) ? Constants.lowBattery : Constants.fullBattery}",
+              divisions: Constants.maxTaskWeight,
+              onChanged: handleWeightChange,
+              onChangeEnd: onChangeEnd,
+            ),
           ),
           const Icon(Icons.battery_1_bar),
         ],
       );
+
+  // TODO: on focus, number key might be a good shortcut?
+  static Widget weightAnchor(
+      {required double weight,
+      void Function(double? value)? handleWeightChange}) {
+    MenuController controller = MenuController();
+    return MenuAnchor(
+        style: const MenuStyle(
+            alignment: AlignmentDirectional(-10, 1.1),
+            shape: MaterialStatePropertyAll(RoundedRectangleBorder(
+                borderRadius: BorderRadius.all(
+                    Radius.circular(Constants.roundedCorners))))),
+        anchorTapClosesMenu: true,
+        controller: controller,
+        menuChildren: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
+            child: weightSlider(
+                weight: weight,
+                handleWeightChange: handleWeightChange,
+                onChangeEnd: (value) => controller.close()),
+          )
+        ],
+        builder:
+            (BuildContext context, MenuController controller, Widget? child) {
+          return IconButton(
+              icon: Constants.batteryIcons[weight.toInt()]!,
+              onPressed: () {
+                if (controller.isOpen) {
+                  controller.close();
+                } else {
+                  controller.open();
+                }
+              });
+        });
+  }
 
   // DESCRIPTION
   static Widget descriptionTile(

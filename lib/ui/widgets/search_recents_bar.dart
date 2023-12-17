@@ -17,9 +17,11 @@ class SearchRecentsBar<T extends IModel> extends StatefulWidget {
       this.clearOnSelection = false,
       this.dispose = true,
       this.persistentEntry,
+      this.border,
       required this.handleDataSelection})
       : super(key: key);
 
+  final BorderSide? border;
   final MapEntry<String, int>? persistentEntry;
   final String hintText;
   final EdgeInsetsGeometry padding;
@@ -74,10 +76,12 @@ class _SearchRecents<T extends IModel> extends State<SearchRecentsBar<T>> {
       padding: widget.padding,
       child: SearchAnchor.bar(
           isFullScreen: false,
-          barSide: MaterialStatePropertyAll(BorderSide(
-              width: 2,
-              strokeAlign: BorderSide.strokeAlignOutside,
-              color: Theme.of(context).colorScheme.outlineVariant)),
+          // TODO: factor this out into the widget pls.
+          barSide: MaterialStatePropertyAll(widget.border ??
+              BorderSide(
+                  width: 2,
+                  strokeAlign: BorderSide.strokeAlignOutside,
+                  color: Theme.of(context).colorScheme.outlineVariant)),
           barBackgroundColor:
               const MaterialStatePropertyAll(Colors.transparent),
           barElevation: const MaterialStatePropertyAll(0),

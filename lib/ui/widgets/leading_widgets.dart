@@ -164,6 +164,7 @@ class LeadingWidgets {
     };
   }
 
+  // TODO: still bugged, fix pls.
   static Widget routineIcon({
     required BuildContext currentContext,
     double scale = 1,
@@ -215,15 +216,16 @@ class LeadingWidgets {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             mainAxisSize: MainAxisSize.max,
                             children: [
-                              Flexible(
+                              Expanded(
+                                  flex: 4,
                                   child: AutoSizeText(
-                                "Morning | Afternoon | Evening ",
-                                style: Constants.largeHeaderStyle,
-                                softWrap: true,
-                                overflow: TextOverflow.visible,
-                                maxLines: 1,
-                                minFontSize: Constants.large,
-                              )),
+                                    "Morning | Afternoon | Evening ",
+                                    style: Constants.largeHeaderStyle,
+                                    softWrap: true,
+                                    overflow: TextOverflow.visible,
+                                    maxLines: 1,
+                                    minFontSize: Constants.medium,
+                                  )),
                               Flexible(
                                 child: FittedBox(
                                     fit: BoxFit.fill,
@@ -249,7 +251,7 @@ class LeadingWidgets {
                                             icon: const Icon(
                                                 Icons.wb_twilight_rounded),
                                             onPressed: () {
-                                              times |= 1;
+                                              times ^= 1;
                                               Navigator.pop(context);
                                             })
                                         : IconButton.outlined(
@@ -257,7 +259,7 @@ class LeadingWidgets {
                                             icon: const Icon(
                                                 Icons.wb_twilight_rounded),
                                             onPressed: () {
-                                              times |= 1;
+                                              times ^= 1;
                                               Navigator.pop(context);
                                             })),
                               )),
@@ -273,7 +275,7 @@ class LeadingWidgets {
                                               icon: const Icon(
                                                   Icons.lunch_dining_rounded),
                                               onPressed: () {
-                                                times |= 2;
+                                                times ^= 2;
                                                 Navigator.pop(context);
                                               })
                                           : IconButton.outlined(
@@ -281,7 +283,7 @@ class LeadingWidgets {
                                               icon: const Icon(
                                                   Icons.lunch_dining_rounded),
                                               onPressed: () {
-                                                times |= 2;
+                                                times ^= 2;
                                                 Navigator.pop(context);
                                               })),
                                 ),
@@ -298,7 +300,7 @@ class LeadingWidgets {
                                               icon:
                                                   const Icon(Icons.bed_rounded),
                                               onPressed: () {
-                                                times |= 4;
+                                                times ^= 4;
                                                 Navigator.pop(context);
                                               })
                                           : IconButton.outlined(
@@ -306,7 +308,7 @@ class LeadingWidgets {
                                               icon:
                                                   const Icon(Icons.bed_rounded),
                                               onPressed: () {
-                                                times |= 4;
+                                                times ^= 4;
                                                 Navigator.pop(context);
                                               })),
                                 ),
@@ -316,11 +318,11 @@ class LeadingWidgets {
                             child: Padding(
                           padding: const EdgeInsets.all(Constants.padding),
                           child: Tooltip(
-                            message: "Remove.",
+                            message: "Clear all",
                             child: FittedBox(
                                 fit: BoxFit.fill,
                                 child: IconButton.outlined(
-                                    iconSize: Constants.lgIconSize,
+                                    iconSize: Constants.medIconSize,
                                     icon: const Icon(
                                         Icons.remove_circle_outline_rounded),
                                     onPressed: () {

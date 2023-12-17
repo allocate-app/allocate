@@ -10,6 +10,7 @@ import "package:provider/provider.dart";
 import "../../../model/task/group.dart";
 import "../../../model/task/subtask.dart";
 import "../../../providers/group_provider.dart";
+import "../../../providers/subtask_provider.dart";
 import "../../../providers/todo_provider.dart";
 import "../../../providers/user_provider.dart";
 import "../../../util/constants.dart";
@@ -38,6 +39,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
   // Provider (Needs user values) -> Refactor to DI for testing.
   late final UserProvider userProvider;
   late final ToDoProvider toDoProvider;
+  late final SubtaskProvider subtaskProvider;
   late final GroupProvider groupProvider;
 
   // Scrolling
@@ -182,9 +184,10 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
   void initializeProviders() {
     userProvider = Provider.of<UserProvider>(context, listen: false);
     toDoProvider = Provider.of<ToDoProvider>(context, listen: false);
+    subtaskProvider = Provider.of<SubtaskProvider>(context, listen: false);
     groupProvider = Provider.of<GroupProvider>(context, listen: false);
 
-    toDoProvider.addListener(resetSubtasks);
+    subtaskProvider.addListener(resetSubtasks);
   }
 
   @override
@@ -195,7 +198,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
     mobileScrollController.dispose();
     desktopScrollController.dispose();
     groupEditingController.dispose();
-    toDoProvider.removeListener(resetSubtasks);
+    subtaskProvider.removeListener(resetSubtasks);
     super.dispose();
   }
 
@@ -207,6 +210,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
         taskID: Constants.intMax, limit: Constants.numTasks[taskType]!);
     realDuration = toDoProvider.calculateRealDuration(
         weight: sumWeight, duration: expectedDuration);
+
     if (mounted) {
       setState(() {});
     }
@@ -307,9 +311,14 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                 e is FailureToCreateException || e is FailureToUploadException);
   }
 
-  void handleClose({required bool willDiscard}) {
+  Future<void> handleClose({required bool willDiscard}) async {
     if (willDiscard) {
-      Navigator.pop(context);
+      for (Subtask st in subtasks) {
+        st.toDelete = true;
+      }
+      await subtaskProvider.updateBatch(subtasks: subtasks).whenComplete(() {
+        Navigator.pop(context);
+      });
     }
 
     if (mounted) {
@@ -336,7 +345,10 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
     }
   }
 
-  void handleWeightChange(double value) {
+  void handleWeightChange(double? value) {
+    if (null == value) {
+      return;
+    }
     if (mounted) {
       return setState(() {
         checkClose = true;
@@ -761,6 +773,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                                       ? Tiles.subtasksTile(
                                           context: context,
                                           id: Constants.intMax,
+                                          limit: Constants.numTasks[taskType]!,
                                           subtasks: subtasks,
                                           subtaskCount:
                                               toDoProvider.getSubtaskCount(
@@ -889,6 +902,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                     // Subtasks
                     (taskType != TaskType.small)
                         ? Tiles.subtasksTile(
+                            isDense: smallScreen,
                             context: context,
                             limit: Constants.numTasks[taskType]!,
                             subtasks: subtasks,

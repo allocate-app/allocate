@@ -448,6 +448,7 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
     );
   }
 
+  // This could be factored into the tiles class.
   Widget buildToDosTile(
       {ScrollPhysics physics = const NeverScrollableScrollPhysics()}) {
     return ExpandedListTile(
@@ -462,6 +463,7 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
           toDoCount: groupProvider.getToDoCount(id: group.id)),
       children: [
         SearchRecentsBar<ToDo>(
+          border: BorderSide.none,
           clearOnSelection: true,
           hintText: "Search Tasks",
           padding: const EdgeInsets.all(Constants.padding),

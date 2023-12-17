@@ -68,10 +68,7 @@ class _NotificationsScreen extends State<NotificationsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    double width = MediaQuery
-        .of(context)
-        .size
-        .width;
+    double width = MediaQuery.of(context).size.width;
     bool largeScreen = (width >= Constants.largeScreen);
     bool smallScreen = (width <= Constants.smallScreen);
 
@@ -89,8 +86,6 @@ class _NotificationsScreen extends State<NotificationsScreen> {
               thumbVisibility: true,
               controller: mainScrollController,
               child: ListView(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: Constants.innerPadding),
                   shrinkWrap: true,
                   controller: mainScrollController,
                   physics: parentScrollPhysics,
@@ -98,12 +93,16 @@ class _NotificationsScreen extends State<NotificationsScreen> {
                     ExpandedListTile(
                       expanded: true,
                       leading: const Icon(Icons.upcoming_rounded),
-                      title: const AutoSizeText(
-                        "Upcoming",
-                        maxLines: 1,
-                        overflow: TextOverflow.visible,
-                        softWrap: false,
-                        minFontSize: Constants.large,
+                      title: const Padding(
+                        padding:
+                            EdgeInsets.symmetric(vertical: Constants.padding),
+                        child: AutoSizeText(
+                          "Upcoming",
+                          maxLines: 1,
+                          overflow: TextOverflow.visible,
+                          softWrap: false,
+                          minFontSize: Constants.large,
+                        ),
                       ),
                       children: [
                         // Deadlines
@@ -126,8 +125,8 @@ class _NotificationsScreen extends State<NotificationsScreen> {
                                       ? 0
                                       : deadlineProvider.deadlines.length,
                                   listviewBuilder: (
-                                      {required BuildContext context,
-                                        required List<Deadline> items}) =>
+                                          {required BuildContext context,
+                                          required List<Deadline> items}) =>
                                       ListViews.immutableDeadlines(
                                         context: context,
                                         deadlines: items,
@@ -137,8 +136,8 @@ class _NotificationsScreen extends State<NotificationsScreen> {
                                   query: deadlineProvider.getUpcoming,
                                   paginateButton: true,
                                   rebuildNotifiers: [deadlineProvider],
-                                  rebuildCallback: ({required List<
-                                      Deadline> items}) {
+                                  rebuildCallback: (
+                                      {required List<Deadline> items}) {
                                     deadlineProvider.deadlines = items;
                                     deadlineProvider.rebuild = false;
                                   }),
@@ -163,8 +162,8 @@ class _NotificationsScreen extends State<NotificationsScreen> {
                                       ? 0
                                       : reminderProvider.reminders.length,
                                   listviewBuilder: (
-                                      {required BuildContext context,
-                                        required List<Reminder> items}) =>
+                                          {required BuildContext context,
+                                          required List<Reminder> items}) =>
                                       ListViews.immutableReminders(
                                         context: context,
                                         reminders: items,
@@ -174,8 +173,8 @@ class _NotificationsScreen extends State<NotificationsScreen> {
                                   query: reminderProvider.getUpcoming,
                                   paginateButton: true,
                                   rebuildNotifiers: [reminderProvider],
-                                  rebuildCallback: ({required List<
-                                      Reminder> items}) {
+                                  rebuildCallback: (
+                                      {required List<Reminder> items}) {
                                     reminderProvider.reminders = items;
                                     reminderProvider.rebuild = false;
                                   }),
@@ -200,8 +199,8 @@ class _NotificationsScreen extends State<NotificationsScreen> {
                                       ? 0
                                       : toDoProvider.toDos.length,
                                   listviewBuilder: (
-                                      {required BuildContext context,
-                                        required List<ToDo> items}) =>
+                                          {required BuildContext context,
+                                          required List<ToDo> items}) =>
                                       ListViews.immutableToDos(
                                         context: context,
                                         toDos: items,
@@ -209,7 +208,7 @@ class _NotificationsScreen extends State<NotificationsScreen> {
                                         smallScreen: smallScreen,
                                         checkboxAnimateBeforeUpdate: (
                                             {required int index,
-                                              required ToDo toDo}) async {
+                                            required ToDo toDo}) async {
                                           if (mounted) {
                                             setState(() {
                                               items[index] = toDo;
@@ -224,8 +223,8 @@ class _NotificationsScreen extends State<NotificationsScreen> {
                                   query: toDoProvider.getUpcoming,
                                   paginateButton: true,
                                   rebuildNotifiers: [toDoProvider],
-                                  rebuildCallback: ({required List<
-                                      ToDo> items}) {
+                                  rebuildCallback: (
+                                      {required List<ToDo> items}) {
                                     toDoProvider.toDos = items;
                                     toDoProvider.rebuild = false;
                                   }),
@@ -235,13 +234,17 @@ class _NotificationsScreen extends State<NotificationsScreen> {
                     ExpandedListTile(
                         expanded: true,
                         leading:
-                        const Icon(Icons.notification_important_rounded),
-                        title: const AutoSizeText(
-                          "Overdue",
-                          maxLines: 1,
-                          overflow: TextOverflow.visible,
-                          softWrap: false,
-                          minFontSize: Constants.large,
+                            const Icon(Icons.notification_important_rounded),
+                        title: const Padding(
+                          padding:
+                              EdgeInsets.symmetric(vertical: Constants.padding),
+                          child: AutoSizeText(
+                            "Overdue",
+                            maxLines: 1,
+                            overflow: TextOverflow.visible,
+                            softWrap: false,
+                            minFontSize: Constants.large,
+                          ),
                         ),
                         children: [
                           // Deadlines
@@ -263,10 +266,10 @@ class _NotificationsScreen extends State<NotificationsScreen> {
                                     offset: (deadlineProvider.rebuild)
                                         ? 0
                                         : deadlineProvider
-                                        .secondaryDeadlines.length,
+                                            .secondaryDeadlines.length,
                                     listviewBuilder: (
-                                        {required BuildContext context,
-                                          required List<Deadline> items}) =>
+                                            {required BuildContext context,
+                                            required List<Deadline> items}) =>
                                         ListViews.immutableDeadlines(
                                           context: context,
                                           deadlines: items,
@@ -276,8 +279,8 @@ class _NotificationsScreen extends State<NotificationsScreen> {
                                     query: deadlineProvider.getOverdues,
                                     paginateButton: true,
                                     rebuildNotifiers: [deadlineProvider],
-                                    rebuildCallback: ({required List<
-                                        Deadline> items}) {
+                                    rebuildCallback: (
+                                        {required List<Deadline> items}) {
                                       deadlineProvider.secondaryDeadlines =
                                           items;
                                       deadlineProvider.rebuild = false;
@@ -302,10 +305,10 @@ class _NotificationsScreen extends State<NotificationsScreen> {
                                     offset: (reminderProvider.rebuild)
                                         ? 0
                                         : reminderProvider
-                                        .secondaryReminders.length,
+                                            .secondaryReminders.length,
                                     listviewBuilder: (
-                                        {required BuildContext context,
-                                          required List<Reminder> items}) =>
+                                            {required BuildContext context,
+                                            required List<Reminder> items}) =>
                                         ListViews.immutableReminders(
                                           context: context,
                                           reminders: items,
@@ -315,8 +318,8 @@ class _NotificationsScreen extends State<NotificationsScreen> {
                                     query: reminderProvider.getOverdues,
                                     paginateButton: true,
                                     rebuildNotifiers: [reminderProvider],
-                                    rebuildCallback: ({required List<
-                                        Reminder> items}) {
+                                    rebuildCallback: (
+                                        {required List<Reminder> items}) {
                                       reminderProvider.secondaryReminders =
                                           items;
                                       reminderProvider.rebuild = false;
@@ -342,8 +345,8 @@ class _NotificationsScreen extends State<NotificationsScreen> {
                                         ? 0
                                         : toDoProvider.secondaryToDos.length,
                                     listviewBuilder: (
-                                        {required BuildContext context,
-                                          required List<ToDo> items}) =>
+                                            {required BuildContext context,
+                                            required List<ToDo> items}) =>
                                         ListViews.immutableToDos(
                                           context: context,
                                           toDos: items,
@@ -351,7 +354,7 @@ class _NotificationsScreen extends State<NotificationsScreen> {
                                           smallScreen: smallScreen,
                                           checkboxAnimateBeforeUpdate: (
                                               {required int index,
-                                                required ToDo toDo}) async {
+                                              required ToDo toDo}) async {
                                             if (mounted) {
                                               setState(() {
                                                 items[index] = toDo;
@@ -366,8 +369,8 @@ class _NotificationsScreen extends State<NotificationsScreen> {
                                     query: toDoProvider.getOverdues,
                                     paginateButton: true,
                                     rebuildNotifiers: [toDoProvider],
-                                    rebuildCallback: ({required List<
-                                        ToDo> items}) {
+                                    rebuildCallback: (
+                                        {required List<ToDo> items}) {
                                       toDoProvider.secondaryToDos = items;
                                       toDoProvider.rebuild = false;
                                     }),

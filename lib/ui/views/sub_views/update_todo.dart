@@ -8,6 +8,7 @@ import "package:provider/provider.dart";
 import "../../../model/task/group.dart";
 import "../../../model/task/todo.dart";
 import "../../../providers/group_provider.dart";
+import "../../../providers/subtask_provider.dart";
 import "../../../providers/todo_provider.dart";
 import "../../../providers/user_provider.dart";
 import "../../../util/constants.dart";
@@ -38,6 +39,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
 
   late final UserProvider userProvider;
   late final ToDoProvider toDoProvider;
+  late final SubtaskProvider subtaskProvider;
   late final GroupProvider groupProvider;
 
   // Cache for repeating events & discard
@@ -78,20 +80,22 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
     super.initState();
     initializeProviders();
     initializeParams();
-    initializeControllers().whenComplete(() {});
+    initializeControllers();
+    resetSubtasks();
     expanded = false;
   }
 
   void initializeProviders() {
     userProvider = Provider.of<UserProvider>(context, listen: false);
     toDoProvider = Provider.of<ToDoProvider>(context, listen: false);
+    subtaskProvider = Provider.of<SubtaskProvider>(context, listen: false);
     groupProvider = Provider.of<GroupProvider>(context, listen: false);
 
     if (null != widget.initialToDo) {
       toDoProvider.curToDo = widget.initialToDo;
     }
 
-    toDoProvider.addListener(resetSubtasks);
+    subtaskProvider.addListener(resetSubtasks);
   }
 
   @override
@@ -102,11 +106,14 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
     mobileScrollController.dispose();
     desktopScrollController.dispose();
     groupEditingController.dispose();
-    toDoProvider.removeListener(resetSubtasks);
+    subtaskProvider.removeListener(resetSubtasks);
     super.dispose();
   }
 
   Future<void> resetSubtasks() async {
+    if (toDo.taskType == TaskType.small) {
+      return;
+    }
     toDo.subtasks = await toDoProvider.getSubtasks(
         id: toDo.id, limit: Constants.numTasks[toDo.taskType]!);
     toDoProvider.toDoSubtaskCounts[toDo.id]!.value = toDo.subtasks.length;
@@ -387,7 +394,10 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
     }
   }
 
-  void handleWeightChange(double value) {
+  void handleWeightChange(double? value) {
+    if (null == value) {
+      return;
+    }
     if (mounted) {
       return setState(() {
         checkClose = true;
@@ -956,6 +966,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                     // Subtasks
                     (toDo.taskType != TaskType.small)
                         ? Tiles.subtasksTile(
+                            isDense: smallScreen,
                             context: context,
                             limit: Constants.numTasks[toDo.taskType]!,
                             subtasks: toDo.subtasks,

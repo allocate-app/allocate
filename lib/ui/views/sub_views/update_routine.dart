@@ -6,6 +6,7 @@ import "package:provider/provider.dart";
 import "../../../model/task/routine.dart";
 import "../../../model/task/subtask.dart";
 import "../../../providers/routine_provider.dart";
+import "../../../providers/subtask_provider.dart";
 import "../../../util/constants.dart";
 import "../../../util/exceptions.dart";
 import "../../widgets/flushbars.dart";
@@ -27,8 +28,8 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
   late bool checkClose;
   late bool expanded;
 
-  // Provider (Needs user values) -> Refactor to DI for testing. One day.
   late final RoutineProvider routineProvider;
+  late final SubtaskProvider subtaskProvider;
 
   late final Routine prevRoutine;
 
@@ -58,6 +59,7 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
     initializeParameters();
 
     initializeControllers();
+    resetSubtasks();
   }
 
   void initializeParameters() {
@@ -88,6 +90,9 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
     if (null != widget.initialRoutine) {
       routineProvider.curRoutine = widget.initialRoutine;
     }
+    subtaskProvider = Provider.of<SubtaskProvider>(context, listen: false);
+
+    subtaskProvider.addListener(resetSubtasks);
   }
 
   @override
@@ -95,6 +100,7 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
     nameEditingController.dispose();
     mobileScrollController.dispose();
     desktopScrollController.dispose();
+    subtaskProvider.removeListener(resetSubtasks);
     super.dispose();
   }
 
@@ -499,6 +505,7 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
                     const PaddedDivider(padding: Constants.padding),
 
                     Tiles.subtasksTile(
+                        isDense: smallScreen,
                         context: context,
                         id: routine.id,
                         subtasks: routine.subtasks,

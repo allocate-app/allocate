@@ -136,6 +136,7 @@ class SubtaskRepo implements SubtaskRepository {
           .where()
           .taskIDEqualTo(taskID)
           .filter()
+          .toDeleteEqualTo(false)
           .completedEqualTo(false)
           .sortByCustomViewIndex()
           .thenByLastUpdated()

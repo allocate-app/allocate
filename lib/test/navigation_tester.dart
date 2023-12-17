@@ -11,6 +11,7 @@ import '../providers/deadline_provider.dart';
 import '../providers/group_provider.dart';
 import '../providers/reminder_provider.dart';
 import '../providers/routine_provider.dart';
+import '../providers/subtask_provider.dart';
 import '../providers/todo_provider.dart';
 import '../providers/user_provider.dart';
 import '../services/isar_service.dart';
@@ -74,6 +75,9 @@ void main() async {
               return rp ??
                   RoutineProvider(user: up.curUser, routineService: null);
             }),
+        ChangeNotifierProvider<SubtaskProvider>(
+          create: (BuildContext context) => SubtaskProvider(),
+        ),
         ChangeNotifierProxyProvider<UserProvider, ReminderProvider>(
             create: (BuildContext context) => ReminderProvider(
                 user: Provider.of<UserProvider>(context, listen: false).curUser,

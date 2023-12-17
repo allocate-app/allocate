@@ -1,10 +1,14 @@
+import 'package:allocate/util/enums.dart';
+
 import '../model/task/subtask.dart';
 import '../repositories/subtask_repo.dart';
 import '../util/constants.dart';
 import '../util/interfaces/repository/model/subtask_repository.dart';
+import '../util/interfaces/sortable.dart';
 
 class SubtaskService {
   SubtaskRepository _repository = SubtaskRepo();
+  SubtaskSorter sorter = SubtaskSorter();
 
   set repository(SubtaskRepository repo) => _repository = repo;
 
@@ -58,4 +62,23 @@ class SubtaskService {
   Future<List<Subtask>> getTaskSubtasks(
           {required int id, limit = Constants.maxNumTasks}) async =>
       await _repository.getRepoByTaskID(id: id, limit: limit);
+
+  Future<List<Subtask>> getSubtasksBy() async =>
+      await _repository.getRepoListBy(
+        sorter: sorter,
+      );
+}
+
+// This is just a partial class for the interface.
+// For now, is going unused.
+class SubtaskSorter implements SortableView<Subtask> {
+  @override
+  bool descending = false;
+
+  @override
+  SortMethod sortMethod = SortMethod.none;
+
+  @override
+  List<SortMethod> get sortMethods =>
+      [SortMethod.none, SortMethod.name, SortMethod.weight];
 }
