@@ -198,7 +198,7 @@ Subtask _subtaskDeserialize(
 ) {
   final object = Subtask(
     completed: reader.readBoolOrNull(offsets[0]) ?? false,
-    customViewIndex: reader.readLongOrNull(offsets[1]) ?? Constants.intMax,
+    customViewIndex: reader.readLongOrNull(offsets[1]) ?? -1,
     lastUpdated: reader.readDateTime(offsets[3]),
     name: reader.readStringOrNull(offsets[4]) ?? "",
     taskID: reader.readLongOrNull(offsets[5]),
@@ -220,7 +220,7 @@ P _subtaskDeserializeProp<P>(
     case 0:
       return (reader.readBoolOrNull(offset) ?? false) as P;
     case 1:
-      return (reader.readLongOrNull(offset) ?? Constants.intMax) as P;
+      return (reader.readLongOrNull(offset) ?? -1) as P;
     case 2:
       return (reader.readBool(offset)) as P;
     case 3:

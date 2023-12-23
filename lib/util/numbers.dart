@@ -36,3 +36,16 @@ int fastHash(String string) {
 
   return hash;
 }
+
+int fast32Hash(String string) {
+  int hash = 0xcbf29ce484222325;
+  int i = 0;
+  while (i < string.length) {
+    final codeUnit = string.codeUnitAt(i++);
+    hash = (hash ^ (codeUnit >> 8)).toSigned(32);
+    hash = (hash * 0x100000001b3).toSigned(32);
+    hash = (hash ^ (codeUnit & 0xFF)).toSigned(32);
+    hash = (hash * 0x100000001b3).toSigned(32);
+  }
+  return hash & 0x7FFFFFFF;
+}

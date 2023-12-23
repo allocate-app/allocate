@@ -35,7 +35,11 @@ class Subtask
       this.weight = 0,
       this.completed = false,
       this.taskID,
-      required this.lastUpdated});
+      required this.lastUpdated}) {
+    while (Constants.intMax == id) {
+      id = Constants.generateID();
+    }
+  }
 
   Subtask.fromEntity({required Map<String, dynamic> entity})
       : id = entity["id"] as int,

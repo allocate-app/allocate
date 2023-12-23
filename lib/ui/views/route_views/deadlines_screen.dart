@@ -56,13 +56,13 @@ class _DeadlinesListScreen extends State<DeadlinesListScreen> {
             header: "Deadlines",
             sorter: deadlineProvider.sorter,
             leadingIcon: const Icon(Icons.announcement_outlined),
-            onChanged: (SortMethod? method) {
-              if (null == method) {
+            onChanged: ({SortMethod? sortMethod}) {
+              if (null == sortMethod) {
                 return;
               }
               if (mounted) {
                 setState(() {
-                  deadlineProvider.sortMethod = method;
+                  deadlineProvider.sortMethod = sortMethod;
                 });
               }
             }),
@@ -89,10 +89,12 @@ class _DeadlinesListScreen extends State<DeadlinesListScreen> {
               },
               paginateButton: false,
               listviewBuilder: (
-                  {required BuildContext context,
+                  {Key? key,
+                  required BuildContext context,
                   required List<Deadline> items}) {
                 if (deadlineProvider.sortMethod == SortMethod.none) {
                   return ListViews.reorderableDeadlines(
+                    key: key,
                     context: context,
                     deadlines: items,
                     checkDelete: checkDelete,
@@ -100,6 +102,7 @@ class _DeadlinesListScreen extends State<DeadlinesListScreen> {
                   );
                 }
                 return ListViews.immutableDeadlines(
+                  key: key,
                   context: context,
                   deadlines: items,
                   checkDelete: checkDelete,

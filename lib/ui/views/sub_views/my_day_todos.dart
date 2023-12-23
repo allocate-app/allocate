@@ -62,12 +62,16 @@ class _MyDayToDos extends State<MyDayToDos> {
               rebuildCallback: ({required List<ToDo> items}) {
                 toDoProvider.toDos = items;
                 toDoProvider.rebuild = false;
+                groupProvider.rebuild = false;
               },
               paginateButton: false,
               listviewBuilder: (
-                  {required BuildContext context, required List<ToDo> items}) {
+                  {Key? key,
+                  required BuildContext context,
+                  required List<ToDo> items}) {
                 if (toDoProvider.sortMethod == SortMethod.none) {
                   return ListViews.reorderableMyDay(
+                    key: key,
                     context: context,
                     toDos: items,
                     checkboxAnimateBeforeUpdate: (
@@ -84,6 +88,7 @@ class _MyDayToDos extends State<MyDayToDos> {
                   );
                 }
                 return ListViews.immutableMyDay(
+                  key: key,
                   context: context,
                   toDos: items,
                   checkboxAnimateBeforeUpdate: (

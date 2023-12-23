@@ -14,7 +14,8 @@ import '../util/exceptions.dart';
 import '../util/sorting/group_sorter.dart';
 
 class GroupProvider extends ChangeNotifier {
-  bool rebuild = false;
+  bool rebuild = true;
+
   late Timer syncTimer;
   final GroupService _groupService;
   final ToDoService _toDoService;
@@ -87,7 +88,10 @@ class GroupProvider extends ChangeNotifier {
     return group.name;
   }
 
-  ValueNotifier<int> getToDoCount({required int id}) {
+  ValueNotifier<int>? getToDoCount({int? id}) {
+    if (null == id) {
+      return null;
+    }
     if (groupToDoCounts.containsKey(id)) {
       return groupToDoCounts[id]!;
     }
@@ -97,8 +101,8 @@ class GroupProvider extends ChangeNotifier {
     return groupToDoCounts[id]!;
   }
 
-  Future<void> setToDoCount({required int id}) async {
-    int count = await _toDoService.getGroupToDoCount(groupID: id);
+  Future<void> setToDoCount({required int id, int? count}) async {
+    count = count ?? await _toDoService.getGroupToDoCount(groupID: id);
     if (groupToDoCounts.containsKey(id)) {
       groupToDoCounts[id]?.value = count;
     } else {
@@ -141,7 +145,7 @@ class GroupProvider extends ChangeNotifier {
 
     await _updateToDos(toDos: toDos, groupID: curGroup!.id);
     groupNames[curGroup!.id] = curGroup!.name;
-    groupToDoCounts[Constants.intMax]!.value = 0;
+    setToDoCount(id: Constants.intMax, count: 0);
 
     notifyListeners();
   }

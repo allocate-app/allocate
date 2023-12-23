@@ -17,7 +17,7 @@ class Subtitles {
           {required BuildContext context,
           int? id,
           required void Function() onError,
-          required DateTime dueDate,
+          DateTime? dueDate,
           bool smallScreen = false,
           required Priority priority}) =>
       Wrap(
@@ -34,22 +34,24 @@ class Subtitles {
                 : const SizedBox.shrink(),
 
             // Due Date - Fix accordingly
-            Wrap(spacing: Constants.halfPadding, children: [
-              Icon(Icons.event_rounded,
-                  size: (smallScreen)
-                      ? Constants.minIconSize
-                      : Constants.smIconSize),
-              AutoSizeText(
-                Jiffy.parseFromDateTime(dueDate)
-                    .toLocal()
-                    .format(pattern: "MMM d"),
-                softWrap: false,
-                overflow: TextOverflow.visible,
-                maxLines: 2,
-                maxFontSize: Constants.large,
-                minFontSize: Constants.medium,
-              )
-            ]),
+            (null != dueDate)
+                ? Wrap(spacing: Constants.halfPadding, children: [
+                    Icon(Icons.event_rounded,
+                        size: (smallScreen)
+                            ? Constants.minIconSize
+                            : Constants.smIconSize),
+                    AutoSizeText(
+                      Jiffy.parseFromDateTime(dueDate)
+                          .toLocal()
+                          .format(pattern: "MMM d"),
+                      softWrap: false,
+                      overflow: TextOverflow.visible,
+                      maxLines: 2,
+                      maxFontSize: Constants.large,
+                      minFontSize: Constants.medium,
+                    )
+                  ])
+                : const SizedBox.shrink(),
 
             // Priority Icon.
             (!smallScreen || null == id)
@@ -72,7 +74,7 @@ class Subtitles {
 
   static Widget deadlineSubtitle(
           {required BuildContext context,
-          required DateTime dueDate,
+          DateTime? dueDate,
           bool smallScreen = false,
           DateTime? warnDate,
           required Priority priority}) =>
@@ -81,22 +83,24 @@ class Subtitles {
           runSpacing: Constants.halfPadding,
           children: [
             // Due-Date
-            Wrap(spacing: Constants.halfPadding, children: [
-              Icon(Icons.event_rounded,
-                  size: (smallScreen)
-                      ? Constants.minIconSize
-                      : Constants.smIconSize),
-              AutoSizeText(
-                Jiffy.parseFromDateTime(dueDate)
-                    .toLocal()
-                    .format(pattern: "MMM d"),
-                softWrap: false,
-                overflow: TextOverflow.visible,
-                maxLines: 2,
-                maxFontSize: Constants.large,
-                minFontSize: Constants.medium,
-              )
-            ]),
+            (null != dueDate)
+                ? Wrap(spacing: Constants.halfPadding, children: [
+                    Icon(Icons.event_rounded,
+                        size: (smallScreen)
+                            ? Constants.minIconSize
+                            : Constants.smIconSize),
+                    AutoSizeText(
+                      Jiffy.parseFromDateTime(dueDate)
+                          .toLocal()
+                          .format(pattern: "MMM d"),
+                      softWrap: false,
+                      overflow: TextOverflow.visible,
+                      maxLines: 2,
+                      maxFontSize: Constants.large,
+                      minFontSize: Constants.medium,
+                    )
+                  ])
+                : const SizedBox.shrink(),
 
             (null != warnDate)
                 ? Wrap(spacing: Constants.halfPadding, children: [
@@ -135,7 +139,7 @@ class Subtitles {
 
   static Widget reminderSubtitle({
     required BuildContext context,
-    required DateTime dueDate,
+    DateTime? dueDate,
     bool smallScreen = false,
   }) =>
       Wrap(
@@ -143,39 +147,44 @@ class Subtitles {
           runSpacing: Constants.halfPadding,
           children: [
             // Due-Date
-            Wrap(spacing: Constants.halfPadding, children: [
-              Icon(Icons.event_rounded,
-                  size: (smallScreen)
-                      ? Constants.minIconSize
-                      : Constants.smIconSize),
-              AutoSizeText(
-                Jiffy.parseFromDateTime(dueDate)
-                    .toLocal()
-                    .format(pattern: "MMM d"),
-                softWrap: false,
-                overflow: TextOverflow.visible,
-                maxLines: 2,
-                maxFontSize: Constants.large,
-                minFontSize: Constants.medium,
-              )
-            ]),
+            (null != dueDate)
+                ? Wrap(spacing: Constants.halfPadding, children: [
+                    Icon(Icons.event_rounded,
+                        size: (smallScreen)
+                            ? Constants.minIconSize
+                            : Constants.smIconSize),
+                    AutoSizeText(
+                      Jiffy.parseFromDateTime(dueDate)
+                          .toLocal()
+                          .format(pattern: "MMM d"),
+                      softWrap: false,
+                      overflow: TextOverflow.visible,
+                      maxLines: 2,
+                      maxFontSize: Constants.large,
+                      minFontSize: Constants.medium,
+                    )
+                  ])
+                : const SizedBox.shrink(),
+
             // Due-Time
-            Wrap(spacing: Constants.halfPadding, children: [
-              Icon(Icons.access_time_rounded,
-                  size: (smallScreen)
-                      ? Constants.minIconSize
-                      : Constants.smIconSize),
-              AutoSizeText(
-                Jiffy.parseFromDateTime(dueDate)
-                    .toLocal()
-                    .format(pattern: "hh:mm a"),
-                softWrap: false,
-                overflow: TextOverflow.visible,
-                maxLines: 2,
-                maxFontSize: Constants.large,
-                minFontSize: Constants.medium,
-              )
-            ]),
+            (null != dueDate)
+                ? Wrap(spacing: Constants.halfPadding, children: [
+                    Icon(Icons.access_time_rounded,
+                        size: (smallScreen)
+                            ? Constants.minIconSize
+                            : Constants.smIconSize),
+                    AutoSizeText(
+                      Jiffy.parseFromDateTime(dueDate)
+                          .toLocal()
+                          .format(pattern: "hh:mm a"),
+                      softWrap: false,
+                      overflow: TextOverflow.visible,
+                      maxLines: 2,
+                      maxFontSize: Constants.large,
+                      minFontSize: Constants.medium,
+                    )
+                  ])
+                : const SizedBox.shrink(),
           ]);
 
   static Widget groupNameIcon(
@@ -189,7 +198,7 @@ class Subtitles {
             decoration: BoxDecoration(
                 shape: BoxShape.rectangle,
                 borderRadius: const BorderRadius.all(
-                    Radius.circular(Constants.roundedCorners)),
+                    Radius.circular(Constants.semiCircular)),
                 border: Border.all(
                     color: Theme.of(context).colorScheme.outlineVariant,
                     strokeAlign: BorderSide.strokeAlignOutside)),
@@ -220,7 +229,7 @@ class Subtitles {
                     decoration: BoxDecoration(
                         shape: BoxShape.rectangle,
                         borderRadius: const BorderRadius.all(
-                            Radius.circular(Constants.roundedCorners)),
+                            Radius.circular(Constants.semiCircular)),
                         border: Border.all(
                             color: Theme.of(context).colorScheme.outlineVariant,
                             strokeAlign: BorderSide.strokeAlignOutside)),
@@ -244,8 +253,8 @@ class Subtitles {
                 constraints: const BoxConstraints(maxWidth: 50),
                 child: const LinearProgressIndicator(
                   minHeight: Constants.minIconSize,
-                  borderRadius: BorderRadius.all(
-                      Radius.circular(Constants.roundedCorners)),
+                  borderRadius:
+                      BorderRadius.all(Radius.circular(Constants.semiCircular)),
                 ),
               );
             });
@@ -268,23 +277,6 @@ class Subtitles {
         });
   }
 
-// // Group subtitle should have number of toDos.
-  // TODO: resolve bug. Pagination prevents updating count.
-  // Possibly use a futurebuilder that returns the same widget.
-  //
-  // static Widget groupSubtitle({int? toDoCount = 0}) {
-  //   return Row(mainAxisSize: MainAxisSize.min, children: [
-  //     AutoSizeText(
-  //       "$toDoCount Task${(toDoCount == 1) ? "" : "s"}",
-  //       maxFontSize: Constants.large,
-  //       minFontSize: Constants.medium,
-  //       overflow: TextOverflow.ellipsis,
-  //       softWrap: false,
-  //       maxLines: 1,
-  //     ),
-  //   ]);
-  // }
-//
   static Widget groupSubtitle({required ValueNotifier<int> toDoCount}) {
     return ValueListenableBuilder<int>(
       valueListenable: toDoCount,
@@ -304,12 +296,11 @@ class Subtitles {
   }
 
   static Widget eventSubtitle(
-      {required RepeatableType type,
-      required BuildContext context,
+      {required BuildContext context,
       required IRepeatable model,
       bool smallScreen = false}) {
-    switch (type) {
-      case RepeatableType.task:
+    switch (model.repeatableType) {
+      case ModelType.task:
         return toDoSubtitle(
             context: context,
             id: (model as ToDo).groupID,
@@ -322,7 +313,7 @@ class Subtitles {
               (model).groupID = null;
               await toDoProvider.updateToDo(toDo: model);
             });
-      case RepeatableType.deadline:
+      case ModelType.deadline:
         return deadlineSubtitle(
           context: context,
           dueDate: model.dueDate,
@@ -330,9 +321,11 @@ class Subtitles {
           smallScreen: smallScreen,
           warnDate: (model.warnMe) ? model.warnDate : null,
         );
-      case RepeatableType.reminder:
+      case ModelType.reminder:
         return reminderSubtitle(
             context: context, dueDate: model.dueDate, smallScreen: smallScreen);
+      default:
+        return const SizedBox.shrink();
     }
   }
 }

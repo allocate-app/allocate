@@ -1,5 +1,3 @@
-import "dart:convert";
-
 import "package:equatable/equatable.dart";
 import "package:isar/isar.dart";
 
@@ -19,7 +17,7 @@ class ToDo with EquatableMixin implements Copyable<ToDo>, IRepeatable {
 
   @override
   @ignore
-  RepeatableType repeatableType = RepeatableType.task;
+  ModelType get repeatableType => modelType;
 
   @override
   Id id = Constants.generateID();
@@ -31,7 +29,6 @@ class ToDo with EquatableMixin implements Copyable<ToDo>, IRepeatable {
   @Index()
   int customViewIndex;
 
-  // TODO: don't make this final anymore.
   @Enumerated(EnumType.ordinal)
   final TaskType taskType;
 
@@ -54,10 +51,10 @@ class ToDo with EquatableMixin implements Copyable<ToDo>, IRepeatable {
   @Index()
   bool completed;
   @override
-  DateTime startDate;
+  DateTime? startDate;
   @Index()
   @override
-  DateTime dueDate;
+  DateTime? dueDate;
   @Index()
   bool myDay;
 
@@ -93,8 +90,8 @@ class ToDo with EquatableMixin implements Copyable<ToDo>, IRepeatable {
       required this.expectedDuration,
       required this.realDuration,
       this.priority = Priority.low,
-      required this.startDate,
-      required this.dueDate,
+      this.startDate,
+      this.dueDate,
       this.myDay = false,
       this.completed = false,
       this.repeatable = false,
@@ -102,7 +99,12 @@ class ToDo with EquatableMixin implements Copyable<ToDo>, IRepeatable {
       required this.repeatDays,
       this.repeatSkip = 1,
       this.subtasks = const [],
-      required this.lastUpdated});
+      required this.lastUpdated}) {
+    // Constants.intMax is reserved, generate until the id is different.
+    while (Constants.intMax == id) {
+      id = Constants.generateID();
+    }
+  }
 
   // -> From Entitiy.
   ToDo.fromEntity({required Map<String, dynamic> entity})
@@ -118,8 +120,8 @@ class ToDo with EquatableMixin implements Copyable<ToDo>, IRepeatable {
         expectedDuration = entity["expectedDuration"] as int,
         realDuration = entity["realDuration"] as int,
         priority = Priority.values[entity["priority"]],
-        startDate = DateTime.parse(entity["startDate"]),
-        dueDate = DateTime.parse(entity["dueDate"]),
+        startDate = DateTime.tryParse(entity["startDate"]),
+        dueDate = DateTime.tryParse(entity["dueDate"]),
         myDay = entity["myDay"] as bool,
         completed = entity["completed"] as bool,
         repeatable = entity["repeatable"] as bool,
@@ -128,7 +130,6 @@ class ToDo with EquatableMixin implements Copyable<ToDo>, IRepeatable {
         repeatSkip = entity["repeatSkip"] as int,
         isSynced = true,
         toDelete = false,
-        subtasks = List.empty(growable: true),
         lastUpdated = DateTime.parse(entity["lastUpdated"]);
 
   // No id for syncing - assigned via autoincrement online.
@@ -145,16 +146,15 @@ class ToDo with EquatableMixin implements Copyable<ToDo>, IRepeatable {
         "expectedDuration": expectedDuration,
         "realDuration": realDuration,
         "priority": priority.index,
-        "startDate": startDate.toIso8601String(),
-        "dueDate": dueDate.toIso8601String(),
+        "startDate":
+            (null != startDate) ? startDate?.toIso8601String() : startDate,
+        "dueDate": (null != dueDate) ? dueDate?.toIso8601String() : dueDate,
         "myDay": myDay,
         "completed": completed,
         "repeatable": repeatable,
         "frequency": frequency.index,
         "repeatDays": repeatDays,
         "repeatSkip": repeatSkip,
-        "subtasks": jsonEncode(
-            subtasks.map((st) => st.toEntity()).toList(growable: false)),
         "lastUpdated": lastUpdated.toIso8601String(),
       };
 
@@ -179,34 +179,32 @@ class ToDo with EquatableMixin implements Copyable<ToDo>, IRepeatable {
         frequency: frequency,
         repeatDays: List.from(repeatDays),
         repeatSkip: repeatSkip,
-        subtasks: List.generate(subtasks.length, (i) => subtasks[i].copy()),
         lastUpdated: lastUpdated,
       );
 
   @override
-  ToDo copyWith(
-          {int? groupID,
-          int? repeatID,
-          int? groupIndex,
-          int? customViewIndex,
-          TaskType? taskType,
-          String? name,
-          String? description,
-          int? weight,
-          int? expectedDuration,
-          int? realDuration,
-          Priority? priority,
-          DateTime? startDate,
-          DateTime? dueDate,
-          bool? myDay,
-          bool? completed,
-          bool? repeatable,
-          Frequency? frequency,
-          List<bool>? repeatDays,
-          int? repeatSkip,
-          List<Subtask>? subtasks,
-          DateTime? lastUpdated,
-          String? deviceID}) =>
+  ToDo copyWith({
+    int? groupID,
+    int? repeatID,
+    int? groupIndex,
+    int? customViewIndex,
+    TaskType? taskType,
+    String? name,
+    String? description,
+    int? weight,
+    int? expectedDuration,
+    int? realDuration,
+    Priority? priority,
+    DateTime? startDate,
+    DateTime? dueDate,
+    bool? myDay,
+    bool? completed,
+    bool? repeatable,
+    Frequency? frequency,
+    List<bool>? repeatDays,
+    int? repeatSkip,
+    DateTime? lastUpdated,
+  }) =>
       ToDo(
         repeatID: repeatID ?? this.repeatID,
         groupID: groupID,
@@ -227,8 +225,6 @@ class ToDo with EquatableMixin implements Copyable<ToDo>, IRepeatable {
         frequency: frequency ?? this.frequency,
         repeatDays: List.from(repeatDays ?? this.repeatDays),
         repeatSkip: repeatSkip ?? this.repeatSkip,
-        subtasks: List.generate((subtasks ?? this.subtasks).length,
-            (i) => (subtasks ?? this.subtasks)[i].copy()),
         lastUpdated: lastUpdated ?? this.lastUpdated,
       );
 

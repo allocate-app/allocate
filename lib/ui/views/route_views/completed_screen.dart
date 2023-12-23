@@ -61,13 +61,13 @@ class _CompletedListScreen extends State<CompletedListScreen> {
             sorter: toDoProvider.sorter,
             leadingIcon: const Icon(Icons.check_circle_outline_rounded),
             outerPadding: const EdgeInsets.only(bottom: Constants.padding),
-            onChanged: (SortMethod? method) {
-              if (null == method) {
+            onChanged: ({SortMethod? sortMethod}) {
+              if (null == sortMethod) {
                 return;
               }
               if (mounted) {
                 setState(() {
-                  toDoProvider.sortMethod = method;
+                  toDoProvider.sortMethod = sortMethod;
                 });
               }
             }),
@@ -81,12 +81,16 @@ class _CompletedListScreen extends State<CompletedListScreen> {
               rebuildCallback: ({required List<ToDo> items}) {
                 toDoProvider.toDos = items;
                 toDoProvider.rebuild = false;
+                groupProvider.rebuild = false;
               },
               paginateButton: false,
               listviewBuilder: (
-                  {required BuildContext context, required List<ToDo> items}) {
+                  {Key? key,
+                  required BuildContext context,
+                  required List<ToDo> items}) {
                 if (toDoProvider.sortMethod == SortMethod.none) {
                   return ListViews.reorderableToDos(
+                    key: key,
                     context: context,
                     toDos: items,
                     checkDelete: checkDelete,
@@ -104,6 +108,7 @@ class _CompletedListScreen extends State<CompletedListScreen> {
                   );
                 }
                 return ListViews.immutableToDos(
+                  key: key,
                   context: context,
                   toDos: items,
                   checkDelete: checkDelete,

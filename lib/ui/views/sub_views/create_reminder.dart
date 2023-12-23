@@ -74,13 +74,13 @@ class _CreateReminderScreen extends State<CreateReminderScreen> {
         const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics());
     nameEditingController = TextEditingController();
     nameEditingController.addListener(() {
-      nameErrorText = null;
-      checkClose = true;
-      String newText = nameEditingController.text;
-      SemanticsService.announce(newText, Directionality.of(context));
-      if (mounted) {
-        return setState(() => name = newText);
+      if (null != nameErrorText && mounted) {
+        setState(() {
+          nameErrorText = null;
+        });
       }
+      SemanticsService.announce(
+          nameEditingController.text, Directionality.of(context));
     });
   }
 
@@ -100,12 +100,7 @@ class _CreateReminderScreen extends State<CreateReminderScreen> {
       }
     }
 
-    DateTime testDate = dueDate ?? DateTime.now();
-    testDate = testDate.copyWith(
-        hour: dueTime?.hour ?? Constants.midnight.hour,
-        minute: dueTime?.minute ?? Constants.midnight.minute);
-
-    if (!reminderProvider.validateDueDate(dueDate: testDate)) {
+    if (!reminderProvider.validateDueDate(dueDate: dueDate)) {
       valid = false;
 
       Flushbar? error;
@@ -134,6 +129,10 @@ class _CreateReminderScreen extends State<CreateReminderScreen> {
     for (int index in weekdayList) {
       weekdays[index] = true;
     }
+
+    // in case the usr doesn't submit to the textfields
+    name = nameEditingController.text;
+
     await reminderProvider
         .createReminder(
             name: name,
@@ -174,6 +173,15 @@ class _CreateReminderScreen extends State<CreateReminderScreen> {
         checkClose = true;
         nameEditingController.clear();
         name = "";
+      });
+    }
+  }
+
+  void updateName() {
+    if (mounted) {
+      setState(() {
+        checkClose = true;
+        name = nameEditingController.text;
       });
     }
   }
@@ -295,7 +303,8 @@ class _CreateReminderScreen extends State<CreateReminderScreen> {
                                           const EdgeInsets.symmetric(
                                         horizontal: Constants.halfPadding,
                                       ),
-                                      handleClear: clearNameField),
+                                      handleClear: clearNameField,
+                                      onEditingComplete: updateName),
                                   const PaddedDivider(
                                       padding: Constants.padding),
                                   Tiles.singleDateTimeTile(
@@ -318,17 +327,21 @@ class _CreateReminderScreen extends State<CreateReminderScreen> {
                                       padding: Constants.padding),
 
                                   // Repeatable Stuff -> Show status, on click, open a dialog.
-                                  Tiles.repeatableTile(
-                                    context: context,
-                                    outerPadding: const EdgeInsets.symmetric(
-                                        horizontal: Constants.padding),
-                                    frequency: frequency,
-                                    weekdays: weekdayList,
-                                    repeatSkip: repeatSkip,
-                                    startDate: dueDate,
-                                    handleUpdate: updateRepeatable,
-                                    handleClear: clearRepeatable,
-                                  ),
+                                  (null != dueDate)
+                                      ? Tiles.repeatableTile(
+                                          context: context,
+                                          outerPadding:
+                                              const EdgeInsets.symmetric(
+                                                  horizontal:
+                                                      Constants.padding),
+                                          frequency: frequency,
+                                          weekdays: weekdayList,
+                                          repeatSkip: repeatSkip,
+                                          startDate: dueDate,
+                                          handleUpdate: updateRepeatable,
+                                          handleClear: clearRepeatable,
+                                        )
+                                      : const SizedBox.shrink(),
                                 ]))),
                     const PaddedDivider(padding: Constants.halfPadding),
                     Tiles.createButton(

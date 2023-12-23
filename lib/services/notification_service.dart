@@ -274,9 +274,10 @@ class NotificationService {
     }
   }
 
-  bool validateNotificationDate({required DateTime notificationDate}) {
-    return tz.TZDateTime.from(notificationDate, tz.local)
-        .isAfter(tz.TZDateTime.now(tz.local));
+  bool validateNotificationDate({DateTime? notificationDate}) {
+    return null != notificationDate &&
+        tz.TZDateTime.from(notificationDate, tz.local)
+            .isAfter(tz.TZDateTime.now(tz.local));
   }
 
   Future<void> handleAppLaunch() async {

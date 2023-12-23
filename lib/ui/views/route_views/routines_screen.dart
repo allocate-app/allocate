@@ -56,13 +56,13 @@ class _RoutinesListScreen extends State<RoutinesListScreen> {
             header: "Routines",
             sorter: routineProvider.sorter,
             leadingIcon: const Icon(Icons.repeat_rounded),
-            onChanged: (SortMethod? method) {
-              if (null == method) {
+            onChanged: ({SortMethod? sortMethod}) {
+              if (null == sortMethod) {
                 return;
               }
               if (mounted) {
                 setState(() {
-                  routineProvider.sortMethod = method;
+                  routineProvider.sortMethod = sortMethod;
                 });
               }
             }),
@@ -89,16 +89,19 @@ class _RoutinesListScreen extends State<RoutinesListScreen> {
               },
               paginateButton: false,
               listviewBuilder: (
-                  {required BuildContext context,
+                  {Key? key,
+                  required BuildContext context,
                   required List<Routine> items}) {
                 if (routineProvider.sortMethod == SortMethod.none) {
                   return ListViews.reorderableRoutines(
+                    key: key,
                     context: context,
                     routines: items,
                     checkDelete: checkDelete,
                   );
                 }
                 return ListViews.immutableRoutines(
+                  key: key,
                   context: context,
                   routines: items,
                   checkDelete: checkDelete,

@@ -20,20 +20,20 @@ class DeadlineService {
 
   DateTime? getRepeatDate({required Deadline deadline}) =>
       switch (deadline.frequency) {
-        (Frequency.daily) => deadline.startDate
-            .copyWith(day: deadline.startDate.day + deadline.repeatSkip),
-        (Frequency.weekly) => deadline.startDate.copyWith(
-            day: deadline.startDate.day + (deadline.repeatSkip * 7),
-            hour: deadline.startDate.hour,
-            minute: deadline.startDate.minute),
-        (Frequency.monthly) => deadline.startDate.copyWith(
-            month: deadline.startDate.month + deadline.repeatSkip,
-            hour: deadline.startDate.hour,
-            minute: deadline.startDate.minute),
-        (Frequency.yearly) => deadline.startDate.copyWith(
-            year: deadline.startDate.year + deadline.repeatSkip,
-            hour: deadline.startDate.hour,
-            minute: deadline.startDate.minute),
+        (Frequency.daily) => deadline.startDate!
+            .copyWith(day: deadline.startDate!.day + deadline.repeatSkip),
+        (Frequency.weekly) => deadline.startDate!.copyWith(
+            day: deadline.startDate!.day + (deadline.repeatSkip * 7),
+            hour: deadline.startDate!.hour,
+            minute: deadline.startDate!.minute),
+        (Frequency.monthly) => deadline.startDate!.copyWith(
+            month: deadline.startDate!.month + deadline.repeatSkip,
+            hour: deadline.startDate!.hour,
+            minute: deadline.startDate!.minute),
+        (Frequency.yearly) => deadline.startDate!.copyWith(
+            year: deadline.startDate!.year + deadline.repeatSkip,
+            hour: deadline.startDate!.hour,
+            minute: deadline.startDate!.minute),
         (Frequency.custom) => getCustom(deadline: deadline),
         //Once should never repeat -> fixing asynchronously in case validation fails.
         (Frequency.once) => null,
@@ -46,22 +46,22 @@ class DeadlineService {
       return;
     }
 
-    int dueOffset =
-        getDateTimeDayOffset(start: deadline.startDate, end: deadline.dueDate);
+    int dueOffset = getDateTimeDayOffset(
+        start: deadline.startDate!, end: deadline.dueDate!);
 
-    int warnOffset =
-        getDateTimeDayOffset(start: deadline.startDate, end: deadline.warnDate);
+    int warnOffset = getDateTimeDayOffset(
+        start: deadline.startDate!, end: deadline.warnDate!);
 
     Deadline newDeadline = deadline.copyWith(
       startDate: nextRepeatDate,
       dueDate: nextRepeatDate.copyWith(
           day: nextRepeatDate.day + dueOffset,
-          hour: deadline.dueDate.hour,
-          minute: deadline.dueDate.minute),
+          hour: deadline.dueDate!.hour,
+          minute: deadline.dueDate!.minute),
       warnDate: nextRepeatDate.copyWith(
           day: nextRepeatDate.day + warnOffset,
-          hour: deadline.warnDate.hour,
-          minute: deadline.warnDate.minute),
+          hour: deadline.warnDate!.hour,
+          minute: deadline.warnDate!.minute),
     );
 
     newDeadline.notificationID = Constants.generateID();
@@ -99,21 +99,21 @@ class DeadlineService {
       }
 
       int dueOffset = getDateTimeDayOffset(
-          start: deadline.startDate, end: deadline.dueDate);
+          start: deadline.startDate!, end: deadline.dueDate!);
 
       int warnOffset = getDateTimeDayOffset(
-          start: deadline.startDate, end: deadline.warnDate);
+          start: deadline.startDate!, end: deadline.warnDate!);
 
       Deadline newDeadline = deadline.copyWith(
           startDate: nextRepeatDate,
           dueDate: nextRepeatDate.copyWith(
               day: nextRepeatDate.day + dueOffset,
-              hour: deadline.dueDate.hour,
-              minute: deadline.dueDate.minute),
+              hour: deadline.dueDate!.hour,
+              minute: deadline.dueDate!.minute),
           warnDate: nextRepeatDate.copyWith(
               day: nextRepeatDate.day + warnOffset,
-              hour: deadline.warnDate.hour,
-              minute: deadline.warnDate.minute));
+              hour: deadline.warnDate!.hour,
+              minute: deadline.warnDate!.minute));
 
       newDeadline.notificationID = Constants.generateID();
 
@@ -125,26 +125,26 @@ class DeadlineService {
   }
 
   DateTime? getCustom({required Deadline deadline}) {
-    int start = deadline.startDate.weekday - 1;
+    int start = deadline.startDate!.weekday - 1;
     int end = 0;
     if (start + 1 != 7) {
       end = deadline.repeatDays.indexOf(true, start + 1);
       if (end > 0) {
-        return deadline.startDate.copyWith(
-            day: deadline.startDate.day + (end - start),
-            hour: deadline.startDate.hour,
-            minute: deadline.startDate.minute);
+        return deadline.startDate!.copyWith(
+            day: deadline.startDate!.day + (end - start),
+            hour: deadline.startDate!.hour,
+            minute: deadline.startDate!.minute);
       }
     }
     end = deadline.repeatDays.indexOf(true);
     int offset = end - start;
     DateTime nextDate =
-        deadline.startDate.copyWith(day: deadline.startDate.day + offset);
+        deadline.startDate!.copyWith(day: deadline.startDate!.day + offset);
 
     nextDate = nextDate.copyWith(
         day: nextDate.day + (7 * deadline.repeatSkip),
-        hour: deadline.startDate.hour,
-        minute: deadline.startDate.minute,
+        hour: deadline.startDate!.hour,
+        minute: deadline.startDate!.minute,
         second: 0,
         millisecond: 0,
         microsecond: 0);

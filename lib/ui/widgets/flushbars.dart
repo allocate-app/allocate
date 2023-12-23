@@ -12,7 +12,7 @@ class Flushbars {
     // Return to this later.
     // Color? actionColor,
     Color? backgroundColor,
-    Duration duration = const Duration(seconds: 3),
+    Duration duration = const Duration(seconds: 1),
     void Function()? dismissCallback,
   }) =>
       Flushbar(
@@ -23,7 +23,7 @@ class Flushbars {
               horizontal: Constants.padding, vertical: Constants.innerPadding),
           padding: const EdgeInsets.all(Constants.padding),
           borderRadius:
-              const BorderRadius.all(Radius.circular(Constants.roundedCorners)),
+              const BorderRadius.all(Radius.circular(Constants.semiCircular)),
           duration: duration,
           backgroundColor: backgroundColor ??
               Theme.of(context).snackBarTheme.backgroundColor ??
@@ -46,7 +46,7 @@ class Flushbars {
     Color alertColor = Colors.amber,
     Color? textColor,
     Color? backgroundColor,
-    Duration duration = const Duration(seconds: 3),
+    Duration duration = const Duration(seconds: 1),
     void Function()? dismissCallback,
   }) =>
       Flushbar(
@@ -57,7 +57,7 @@ class Flushbars {
               horizontal: Constants.padding, vertical: Constants.innerPadding),
           padding: const EdgeInsets.all(Constants.padding),
           borderRadius:
-              const BorderRadius.all(Radius.circular(Constants.roundedCorners)),
+              const BorderRadius.all(Radius.circular(Constants.semiCircular)),
           duration: duration,
           backgroundColor: backgroundColor ??
               Theme.of(context).snackBarTheme.backgroundColor ??

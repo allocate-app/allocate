@@ -10,3 +10,4 @@ export "sub_views/update_group.dart";
 export "sub_views/update_reminder.dart";
 export "sub_views/update_routine.dart";
 export "sub_views/update_todo.dart";
+export "sub_views/calendar.dart";

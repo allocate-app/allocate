@@ -109,30 +109,27 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
         const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics());
     nameEditingController = TextEditingController();
     nameEditingController.addListener(() {
-      nameErrorText = null;
-      checkClose = true;
-      String newText = nameEditingController.text;
-      SemanticsService.announce(newText, Directionality.of(context));
-      if (mounted) {
-        return setState(() => name = newText);
+      if (null != nameErrorText && mounted) {
+        setState(() {
+          nameErrorText = null;
+        });
       }
+      SemanticsService.announce(
+          nameEditingController.text, Directionality.of(context));
     });
 
     descriptionEditingController = TextEditingController();
     descriptionEditingController.addListener(() {
-      checkClose = true;
       String newText = descriptionEditingController.text;
       SemanticsService.announce(newText, Directionality.of(context));
-      description = newText;
     });
 
     repeatSkipEditingController = TextEditingController();
     repeatSkipEditingController.addListener(() {
-      checkClose = true;
       String newText = descriptionEditingController.text;
       SemanticsService.announce(newText, Directionality.of(context));
-      repeatSkip = int.tryParse(newText) ?? repeatSkip;
-      repeatSkip = max(repeatSkip, 1);
+      // repeatSkip = int.tryParse(newText) ?? repeatSkip;
+      // repeatSkip = max(repeatSkip, 1);
     });
   }
 
@@ -159,6 +156,10 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
       error.show(context);
     }
 
+    if (null == startDate || null == dueDate) {
+      frequency = Frequency.once;
+    }
+
     if (frequency == Frequency.custom) {
       if (weekdayList.isEmpty) {
         weekdayList
@@ -170,27 +171,23 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
   }
 
   void mergeDateTimes() {
-    startDate = startDate ?? DateTime.now();
-    startTime = startTime ?? Constants.midnight;
-
     startDate =
-        startDate!.copyWith(hour: startTime!.hour, minute: startTime!.minute);
+        startDate?.copyWith(hour: startTime?.hour, minute: startTime?.minute);
 
-    dueDate = dueDate ?? DateTime.now();
-    dueTime = dueTime ?? Constants.midnight;
+    dueDate = dueDate?.copyWith(hour: dueTime?.hour, minute: dueTime?.minute);
 
-    dueDate = dueDate!.copyWith(hour: dueTime!.hour, minute: dueTime!.minute);
-
-    warnDate = warnDate ?? DateTime.now();
-    warnTime = warnTime ?? Constants.eod;
     warnDate =
-        warnDate!.copyWith(hour: warnTime!.hour, minute: warnTime!.minute);
+        warnDate?.copyWith(hour: warnTime?.hour, minute: warnTime?.minute);
   }
 
   Future<void> handleCreate() async {
     for (int index in weekdayList) {
       weekdays[index] = true;
     }
+
+    // in case the usr doesn't submit to the textfields
+    name = nameEditingController.text;
+    description = descriptionEditingController.text;
 
     await deadlineProvider
         .createDeadline(
@@ -238,6 +235,23 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
         checkClose = true;
         nameEditingController.clear();
         name = "";
+      });
+    }
+  }
+
+  void updateName() {
+    if (mounted) {
+      setState(() {
+        checkClose = true;
+        name = nameEditingController.text;
+      });
+    }
+  }
+
+  void updateDescription() {
+    if (mounted) {
+      setState(() {
+        description = descriptionEditingController.text;
       });
     }
   }
@@ -360,7 +374,6 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
     bool hugeScreen = (width >= Constants.hugeScreen);
 
     bool showTimeTile = (null != startDate || null != dueDate);
-
     return (largeScreen)
         ? buildDesktopDialog(
             context: context,
@@ -440,7 +453,8 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
                                               const EdgeInsets.symmetric(
                                             horizontal: Constants.halfPadding,
                                           ),
-                                          handleClear: clearNameField),
+                                          handleClear: clearNameField,
+                                          onEditingComplete: updateName),
 
                                       Tiles.priorityTile(
                                         context: context,
@@ -466,7 +480,7 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
                                         showDate: warnMe,
                                         unsetDateText: "Warn me?",
                                         unsetTimeText: "Warn Time",
-                                        dialogHeader: "Select Warning Date",
+                                        dialogHeader: "Warn Date",
                                         handleClear: clearWarnMe,
                                         handleUpdate: updateWarnMe,
                                       ),
@@ -502,18 +516,21 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
                                           ? const PaddedDivider(
                                               padding: Constants.padding)
                                           : const SizedBox.shrink(),
-                                      Tiles.repeatableTile(
-                                        context: context,
-                                        outerPadding:
-                                            const EdgeInsets.symmetric(
-                                                horizontal: Constants.padding),
-                                        frequency: frequency,
-                                        weekdays: weekdayList,
-                                        repeatSkip: repeatSkip,
-                                        startDate: startDate,
-                                        handleUpdate: updateRepeatable,
-                                        handleClear: clearRepeatable,
-                                      ),
+                                      (null != dueDate && null != startDate)
+                                          ? Tiles.repeatableTile(
+                                              context: context,
+                                              outerPadding:
+                                                  const EdgeInsets.symmetric(
+                                                      horizontal:
+                                                          Constants.padding),
+                                              frequency: frequency,
+                                              weekdays: weekdayList,
+                                              repeatSkip: repeatSkip,
+                                              startDate: startDate,
+                                              handleUpdate: updateRepeatable,
+                                              handleClear: clearRepeatable,
+                                            )
+                                          : const SizedBox.shrink(),
                                     ]),
                               ),
                               Flexible(
@@ -532,6 +549,7 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
                                             const EdgeInsets.symmetric(
                                                 horizontal: Constants.padding),
                                         context: context,
+                                        onEditingComplete: updateDescription,
                                       ),
                                     ]),
                               )
@@ -600,7 +618,8 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
                         textFieldPadding: const EdgeInsets.symmetric(
                           horizontal: Constants.halfPadding,
                         ),
-                        handleClear: clearNameField),
+                        handleClear: clearNameField,
+                        onEditingComplete: updateName),
 
                     Tiles.priorityTile(
                       mobile: smallScreen,
@@ -623,7 +642,7 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
                       showDate: warnMe,
                       unsetDateText: "Warn me?",
                       unsetTimeText: "Warn Time",
-                      dialogHeader: "Select Warning Date",
+                      dialogHeader: "Warn Date",
                       handleClear: clearWarnMe,
                       handleUpdate: updateWarnMe,
                     ),
@@ -634,6 +653,7 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
                       outerPadding: const EdgeInsets.symmetric(
                           horizontal: Constants.padding),
                       context: context,
+                      onEditingComplete: updateDescription,
                     ),
                     const PaddedDivider(padding: Constants.padding),
 
@@ -664,17 +684,19 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
                         ? const PaddedDivider(padding: Constants.padding)
                         : const SizedBox.shrink(),
                     // Repeatable Stuff -> Show status, on click, open a dialog.
-                    Tiles.repeatableTile(
-                      context: context,
-                      outerPadding: const EdgeInsets.symmetric(
-                          horizontal: Constants.padding),
-                      frequency: frequency,
-                      weekdays: weekdayList,
-                      repeatSkip: repeatSkip,
-                      startDate: startDate,
-                      handleUpdate: updateRepeatable,
-                      handleClear: clearRepeatable,
-                    ),
+                    (null != dueDate && null != startDate)
+                        ? Tiles.repeatableTile(
+                            context: context,
+                            outerPadding: const EdgeInsets.symmetric(
+                                horizontal: Constants.padding),
+                            frequency: frequency,
+                            weekdays: weekdayList,
+                            repeatSkip: repeatSkip,
+                            startDate: startDate,
+                            handleUpdate: updateRepeatable,
+                            handleClear: clearRepeatable,
+                          )
+                        : const SizedBox.shrink(),
                   ],
                 ),
               ),

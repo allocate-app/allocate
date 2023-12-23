@@ -1,7 +1,7 @@
-
 import 'package:equatable/equatable.dart';
 import 'package:isar/isar.dart';
 
+import '../../util/constants.dart';
 import '../../util/enums.dart';
 import '../../util/interfaces/copyable.dart';
 import '../../util/sorting/deadline_sorter.dart';
@@ -14,32 +14,35 @@ part "user.g.dart";
 
 @Collection(inheritance: false)
 class User with EquatableMixin implements Copyable<User> {
-  Id localID = Isar.autoIncrement;
+  // Local ID
+  Id id = Constants.generateID();
+
+  // Online id
+  @Index()
+  String? uuid;
 
   // Online stuff
   bool syncOnline;
   bool isSynced;
 
   bool checkDelete;
+  bool dontAsk;
 
-  @Index(unique: true, replace: true)
+  @Index()
   String userName;
 
+  // Emotional bandwidth
   int bandwidth;
 
-  // User Theme.
+  // User Theme type.
   @Enumerated(EnumType.ordinal)
-  UserThemeData curTheme;
+  ThemeType themeType;
 
+  @Enumerated(EnumType.ordinal)
   // Routines
   int? curMornID;
   int? curAftID;
   int? curEveID;
-
-  // Routine TOD.
-  int? mornHour;
-  int? aftHour;
-  int? eveHour;
 
   // Sorting preferences
   @ignore
@@ -61,9 +64,10 @@ class User with EquatableMixin implements Copyable<User> {
       {required this.userName,
       required this.syncOnline,
       this.checkDelete = true,
+      this.dontAsk = false,
       this.isSynced = false,
       this.bandwidth = 100,
-      this.curTheme = UserThemeData.dark,
+      this.themeType = ThemeType.dark,
       this.curMornID,
       this.curAftID,
       this.curEveID,
@@ -74,15 +78,16 @@ class User with EquatableMixin implements Copyable<User> {
       this.toDoSorter,
       required this.lastOpened});
 
-  // This needs refactoring.
   User.fromEntity({required Map<String, dynamic> entity})
-      : localID = entity["localID"] as int,
+      : id = entity["id"] as int,
+        uuid = entity["uuid"] as String,
         userName = entity["userName"] as String,
         syncOnline = true,
         checkDelete = entity["checkDelete"],
+        dontAsk = entity["dontAsk"],
         isSynced = entity["isSynced"],
         bandwidth = entity["bandwidth"] as int,
-        curTheme = UserThemeData.values[entity["curTheme"]],
+        themeType = ThemeType.values[entity["curTheme"]],
         curMornID = entity["curMornID"] as int?,
         curAftID = entity["curAftID"] as int?,
         curEveID = entity["curEveID"] as int?,
@@ -116,11 +121,13 @@ class User with EquatableMixin implements Copyable<User> {
         lastOpened = DateTime.parse(entity["lastOpened"]);
 
   Map<String, dynamic> toEntity() => {
+        "id": id,
         "userName": userName,
         "isSynced": isSynced,
         "checkDelete": checkDelete,
+        "dontAsk": dontAsk,
         "bandwidth": bandwidth,
-        "curTheme": curTheme.index,
+        "curTheme": themeType.index,
         "curMornID": curMornID,
         "curAftID": curAftID,
         "curEveID": curEveID,
@@ -142,7 +149,7 @@ class User with EquatableMixin implements Copyable<User> {
       userName: userName,
       syncOnline: syncOnline,
       bandwidth: bandwidth,
-      curTheme: curTheme,
+      themeType: themeType,
       curMornID: curMornID,
       curAftID: curAftID,
       curEveID: curEveID,
@@ -159,7 +166,7 @@ class User with EquatableMixin implements Copyable<User> {
           {String? userName,
           bool? syncOnline,
           int? bandwidth,
-          UserThemeData? curTheme,
+          ThemeType? curTheme,
           int? curMornID,
           int? curAftID,
           int? curEveID,
@@ -174,7 +181,7 @@ class User with EquatableMixin implements Copyable<User> {
           userName: userName ?? this.userName,
           syncOnline: syncOnline ?? this.syncOnline,
           bandwidth: bandwidth ?? this.bandwidth,
-          curTheme: curTheme ?? this.curTheme,
+          themeType: curTheme ?? this.themeType,
           curMornID: curMornID ?? this.curMornID,
           curAftID: curAftID ?? this.curAftID,
           curEveID: curEveID ?? this.curEveID,
@@ -188,27 +195,12 @@ class User with EquatableMixin implements Copyable<User> {
 
   @ignore
   @override
-  List<Object?> get props => [
-        localID,
-        syncOnline,
-        userName,
-        bandwidth,
-        curTheme,
-        curMornID,
-        curAftID,
-        curEveID,
-        groupSorter,
-        deadlineSorter,
-        reminderSorter,
-        routineSorter,
-        isSynced,
-        lastOpened
-      ];
+  List<Object?> get props => [id];
 
   @override
   toString() =>
-      "userName: $userName, syncOnline: $syncOnline, bandwidth: $bandwidth, "
-      "curTheme: ${curTheme.name}, curMornID: $curMornID, curAftID: $curAftID, curEveID: $curEveID,"
+      "id: $id, uuid: $uuid, userName: $userName, syncOnline: $syncOnline, bandwidth: $bandwidth, "
+      "curTheme: ${themeType.name}, curMornID: $curMornID, curAftID: $curAftID, curEveID: $curEveID,"
       "groupSorter: $groupSorter, deadlineSorter: $deadlineSorter,"
       "reminderSorter: $reminderSorter, routineSorter: $routineSorter, "
       "isSynced: $isSynced, lastOpened: $lastOpened";

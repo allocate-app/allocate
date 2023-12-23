@@ -35,7 +35,8 @@ class SubtaskQuickEntry extends StatefulWidget {
 class _SubtaskQuickEntry extends State<SubtaskQuickEntry> {
   late String name;
   late double weight;
-  late TextEditingController nameController;
+  late TextEditingController nameEditingController;
+  late MenuController menuController;
 
   late final SubtaskProvider subtaskProvider;
 
@@ -45,21 +46,23 @@ class _SubtaskQuickEntry extends State<SubtaskQuickEntry> {
     name = "";
     weight = widget.weight;
     subtaskProvider = Provider.of<SubtaskProvider>(context, listen: false);
-    nameController = TextEditingController();
-    nameController.addListener(() {
-      String newText = nameController.text;
-      SemanticsService.announce(newText, Directionality.of(context));
-      if (mounted) {
+    nameEditingController = TextEditingController();
+    nameEditingController.addListener(() {
+      if (nameEditingController.text.isEmpty ^ name.isEmpty) {
         setState(() {
-          name = newText;
+          name = nameEditingController.text;
         });
       }
+      SemanticsService.announce(
+          nameEditingController.text, Directionality.of(context));
     });
+
+    menuController = MenuController();
   }
 
   @override
   void dispose() {
-    nameController.dispose();
+    nameEditingController.dispose();
     super.dispose();
   }
 
@@ -73,30 +76,40 @@ class _SubtaskQuickEntry extends State<SubtaskQuickEntry> {
           children: [
             Expanded(
               child: AutoSizeTextField(
-                controller: nameController,
-                minFontSize: Constants.large,
-                decoration: InputDecoration(
-                    contentPadding: widget.innerPadding,
-                    hintText: widget.hintText,
-                    enabledBorder: OutlineInputBorder(
-                        borderRadius: const BorderRadius.all(
-                            Radius.circular(Constants.roundedCorners)),
+                  controller: nameEditingController,
+                  minFontSize: Constants.large,
+                  decoration: InputDecoration(
+                      contentPadding: widget.innerPadding,
+                      hintText: widget.hintText,
+                      enabledBorder: OutlineInputBorder(
+                          borderRadius: const BorderRadius.all(
+                              Radius.circular(Constants.semiCircular)),
+                          borderSide: BorderSide(
+                            width: 2,
+                            color: Theme.of(context).colorScheme.outlineVariant,
+                            strokeAlign: BorderSide.strokeAlignOutside,
+                          )),
+                      border: const OutlineInputBorder(
+                        borderRadius: BorderRadius.all(
+                            Radius.circular(Constants.semiCircular)),
                         borderSide: BorderSide(
-                          width: 2,
-                          color: Theme.of(context).colorScheme.outlineVariant,
                           strokeAlign: BorderSide.strokeAlignOutside,
-                        )),
-                    border: const OutlineInputBorder(
-                      borderRadius: BorderRadius.all(
-                          Radius.circular(Constants.roundedCorners)),
-                      borderSide: BorderSide(
-                        strokeAlign: BorderSide.strokeAlignOutside,
-                      ),
-                    )),
-              ),
+                        ),
+                      )),
+                  onEditingComplete: () {
+                    if (mounted) {
+                      setState(() {
+                        name = nameEditingController.text;
+                      });
+                    }
+                  }),
             ),
             Tiles.weightAnchor(
+                controller: menuController,
                 weight: weight,
+                onChangeEnd: (value) {
+                  menuController.close();
+                },
                 handleWeightChange: (value) {
                   if (null == value) {
                     return;
@@ -109,6 +122,9 @@ class _SubtaskQuickEntry extends State<SubtaskQuickEntry> {
                 icon: const Icon(Icons.add_rounded),
                 onPressed: (name.isNotEmpty)
                     ? () async {
+                        // in case the usr doesn't submit to the textfields
+                        name = nameEditingController.text;
+
                         await subtaskProvider
                             .createSubtask(
                                 name: name,
@@ -120,8 +136,9 @@ class _SubtaskQuickEntry extends State<SubtaskQuickEntry> {
                             setState(() {
                               name = "";
                               weight = 0;
-                              nameController.value =
-                                  nameController.value.copyWith(text: name);
+                              nameEditingController.value =
+                                  nameEditingController.value
+                                      .copyWith(text: name);
                             });
                           }
                         }).catchError((e) {

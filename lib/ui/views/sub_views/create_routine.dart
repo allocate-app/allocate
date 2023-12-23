@@ -17,7 +17,6 @@ import "../../widgets/title_bar.dart";
 class CreateRoutineScreen extends StatefulWidget {
   const CreateRoutineScreen({Key? key, this.times}) : super(key: key);
 
-  // TODO: finish functionality -> creating from MyDayRoutineScreen.
   final int? times;
 
   @override
@@ -81,13 +80,13 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
         const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics());
     nameEditingController = TextEditingController();
     nameEditingController.addListener(() {
-      nameErrorText = null;
-      checkClose = true;
-      String newText = nameEditingController.text;
-      SemanticsService.announce(newText, Directionality.of(context));
-      if (mounted) {
-        return setState(() => name = newText);
+      if (null != nameErrorText && mounted) {
+        setState(() {
+          nameErrorText = null;
+        });
       }
+      SemanticsService.announce(
+          nameEditingController.text, Directionality.of(context));
     });
   }
 
@@ -110,8 +109,8 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
     subtasks = await routineProvider.getSubtasks(
       id: Constants.intMax,
     );
-    routineProvider.routineSubtaskCounts[Constants.intMax]!.value =
-        subtasks.length;
+    routineProvider.setSubtaskCount(
+        id: Constants.intMax, count: subtasks.length);
     weight = await routineProvider.getWeight(taskID: Constants.intMax);
     realDuration = routineProvider.calculateRealDuration(
         weight: weight, duration: expectedDuration);
@@ -134,6 +133,8 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
   }
 
   Future<void> handleCreate() async {
+    // in case the usr doesn't submit to the textfields
+    name = nameEditingController.text;
     await routineProvider
         .createRoutine(
             name: name,
@@ -180,6 +181,15 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
         checkClose = true;
         nameEditingController.clear();
         name = "";
+      });
+    }
+  }
+
+  void updateName() {
+    if (mounted) {
+      setState(() {
+        checkClose = true;
+        name = nameEditingController.text;
       });
     }
   }
@@ -366,7 +376,8 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
                                         const EdgeInsets.all(Constants.padding),
                                     textFieldPadding: const EdgeInsets.only(
                                         left: Constants.halfPadding),
-                                    handleClear: clearNameField),
+                                    handleClear: clearNameField,
+                                    onEditingComplete: updateName),
                                 Tiles.weightTile(
                                   outerPadding: const EdgeInsets.all(
                                       Constants.innerPadding),
@@ -468,7 +479,8 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
                         outerPadding: const EdgeInsets.all(Constants.padding),
                         textFieldPadding:
                             const EdgeInsets.only(left: Constants.halfPadding),
-                        handleClear: clearNameField),
+                        handleClear: clearNameField,
+                        onEditingComplete: updateName),
                     Tiles.weightTile(
                       outerPadding:
                           const EdgeInsets.all(Constants.innerPadding),
@@ -493,7 +505,6 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
                     const PaddedDivider(padding: Constants.padding),
 
                     Tiles.subtasksTile(
-                        isDense: smallScreen,
                         context: context,
                         id: Constants.intMax,
                         subtasks: subtasks,

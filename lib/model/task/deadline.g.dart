@@ -296,7 +296,7 @@ Deadline _deadlineDeserialize(
   final object = Deadline(
     customViewIndex: reader.readLongOrNull(offsets[0]) ?? -1,
     description: reader.readStringOrNull(offsets[1]) ?? "",
-    dueDate: reader.readDateTime(offsets[2]),
+    dueDate: reader.readDateTimeOrNull(offsets[2]),
     frequency:
         _DeadlinefrequencyValueEnumMap[reader.readByteOrNull(offsets[3])] ??
             Frequency.once,
@@ -310,8 +310,8 @@ Deadline _deadlineDeserialize(
     repeatID: reader.readLongOrNull(offsets[10]),
     repeatSkip: reader.readLongOrNull(offsets[11]) ?? 1,
     repeatable: reader.readBoolOrNull(offsets[12]) ?? false,
-    startDate: reader.readDateTime(offsets[13]),
-    warnDate: reader.readDateTime(offsets[15]),
+    startDate: reader.readDateTimeOrNull(offsets[13]),
+    warnDate: reader.readDateTimeOrNull(offsets[15]),
     warnMe: reader.readBoolOrNull(offsets[16]) ?? false,
   );
   object.id = id;
@@ -332,7 +332,7 @@ P _deadlineDeserializeProp<P>(
     case 1:
       return (reader.readStringOrNull(offset) ?? "") as P;
     case 2:
-      return (reader.readDateTime(offset)) as P;
+      return (reader.readDateTimeOrNull(offset)) as P;
     case 3:
       return (_DeadlinefrequencyValueEnumMap[reader.readByteOrNull(offset)] ??
           Frequency.once) as P;
@@ -356,11 +356,11 @@ P _deadlineDeserializeProp<P>(
     case 12:
       return (reader.readBoolOrNull(offset) ?? false) as P;
     case 13:
-      return (reader.readDateTime(offset)) as P;
+      return (reader.readDateTimeOrNull(offset)) as P;
     case 14:
       return (reader.readBool(offset)) as P;
     case 15:
-      return (reader.readDateTime(offset)) as P;
+      return (reader.readDateTimeOrNull(offset)) as P;
     case 16:
       return (reader.readBoolOrNull(offset) ?? false) as P;
     default:
@@ -909,8 +909,28 @@ extension DeadlineQueryWhere on QueryBuilder<Deadline, Deadline, QWhereClause> {
     });
   }
 
+  QueryBuilder<Deadline, Deadline, QAfterWhereClause> dueDateIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'dueDate',
+        value: [null],
+      ));
+    });
+  }
+
+  QueryBuilder<Deadline, Deadline, QAfterWhereClause> dueDateIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'dueDate',
+        lower: [null],
+        includeLower: false,
+        upper: [],
+      ));
+    });
+  }
+
   QueryBuilder<Deadline, Deadline, QAfterWhereClause> dueDateEqualTo(
-      DateTime dueDate) {
+      DateTime? dueDate) {
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(IndexWhereClause.equalTo(
         indexName: r'dueDate',
@@ -920,7 +940,7 @@ extension DeadlineQueryWhere on QueryBuilder<Deadline, Deadline, QWhereClause> {
   }
 
   QueryBuilder<Deadline, Deadline, QAfterWhereClause> dueDateNotEqualTo(
-      DateTime dueDate) {
+      DateTime? dueDate) {
     return QueryBuilder.apply(this, (query) {
       if (query.whereSort == Sort.asc) {
         return query
@@ -955,7 +975,7 @@ extension DeadlineQueryWhere on QueryBuilder<Deadline, Deadline, QWhereClause> {
   }
 
   QueryBuilder<Deadline, Deadline, QAfterWhereClause> dueDateGreaterThan(
-    DateTime dueDate, {
+    DateTime? dueDate, {
     bool include = false,
   }) {
     return QueryBuilder.apply(this, (query) {
@@ -969,7 +989,7 @@ extension DeadlineQueryWhere on QueryBuilder<Deadline, Deadline, QWhereClause> {
   }
 
   QueryBuilder<Deadline, Deadline, QAfterWhereClause> dueDateLessThan(
-    DateTime dueDate, {
+    DateTime? dueDate, {
     bool include = false,
   }) {
     return QueryBuilder.apply(this, (query) {
@@ -983,8 +1003,8 @@ extension DeadlineQueryWhere on QueryBuilder<Deadline, Deadline, QWhereClause> {
   }
 
   QueryBuilder<Deadline, Deadline, QAfterWhereClause> dueDateBetween(
-    DateTime lowerDueDate,
-    DateTime upperDueDate, {
+    DateTime? lowerDueDate,
+    DateTime? upperDueDate, {
     bool includeLower = true,
     bool includeUpper = true,
   }) {
@@ -1460,8 +1480,24 @@ extension DeadlineQueryFilter
     });
   }
 
+  QueryBuilder<Deadline, Deadline, QAfterFilterCondition> dueDateIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'dueDate',
+      ));
+    });
+  }
+
+  QueryBuilder<Deadline, Deadline, QAfterFilterCondition> dueDateIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'dueDate',
+      ));
+    });
+  }
+
   QueryBuilder<Deadline, Deadline, QAfterFilterCondition> dueDateEqualTo(
-      DateTime value) {
+      DateTime? value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
         property: r'dueDate',
@@ -1471,7 +1507,7 @@ extension DeadlineQueryFilter
   }
 
   QueryBuilder<Deadline, Deadline, QAfterFilterCondition> dueDateGreaterThan(
-    DateTime value, {
+    DateTime? value, {
     bool include = false,
   }) {
     return QueryBuilder.apply(this, (query) {
@@ -1484,7 +1520,7 @@ extension DeadlineQueryFilter
   }
 
   QueryBuilder<Deadline, Deadline, QAfterFilterCondition> dueDateLessThan(
-    DateTime value, {
+    DateTime? value, {
     bool include = false,
   }) {
     return QueryBuilder.apply(this, (query) {
@@ -1497,8 +1533,8 @@ extension DeadlineQueryFilter
   }
 
   QueryBuilder<Deadline, Deadline, QAfterFilterCondition> dueDateBetween(
-    DateTime lower,
-    DateTime upper, {
+    DateTime? lower,
+    DateTime? upper, {
     bool includeLower = true,
     bool includeUpper = true,
   }) {
@@ -2168,8 +2204,24 @@ extension DeadlineQueryFilter
     });
   }
 
+  QueryBuilder<Deadline, Deadline, QAfterFilterCondition> startDateIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'startDate',
+      ));
+    });
+  }
+
+  QueryBuilder<Deadline, Deadline, QAfterFilterCondition> startDateIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'startDate',
+      ));
+    });
+  }
+
   QueryBuilder<Deadline, Deadline, QAfterFilterCondition> startDateEqualTo(
-      DateTime value) {
+      DateTime? value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
         property: r'startDate',
@@ -2179,7 +2231,7 @@ extension DeadlineQueryFilter
   }
 
   QueryBuilder<Deadline, Deadline, QAfterFilterCondition> startDateGreaterThan(
-    DateTime value, {
+    DateTime? value, {
     bool include = false,
   }) {
     return QueryBuilder.apply(this, (query) {
@@ -2192,7 +2244,7 @@ extension DeadlineQueryFilter
   }
 
   QueryBuilder<Deadline, Deadline, QAfterFilterCondition> startDateLessThan(
-    DateTime value, {
+    DateTime? value, {
     bool include = false,
   }) {
     return QueryBuilder.apply(this, (query) {
@@ -2205,8 +2257,8 @@ extension DeadlineQueryFilter
   }
 
   QueryBuilder<Deadline, Deadline, QAfterFilterCondition> startDateBetween(
-    DateTime lower,
-    DateTime upper, {
+    DateTime? lower,
+    DateTime? upper, {
     bool includeLower = true,
     bool includeUpper = true,
   }) {
@@ -2231,8 +2283,24 @@ extension DeadlineQueryFilter
     });
   }
 
+  QueryBuilder<Deadline, Deadline, QAfterFilterCondition> warnDateIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'warnDate',
+      ));
+    });
+  }
+
+  QueryBuilder<Deadline, Deadline, QAfterFilterCondition> warnDateIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'warnDate',
+      ));
+    });
+  }
+
   QueryBuilder<Deadline, Deadline, QAfterFilterCondition> warnDateEqualTo(
-      DateTime value) {
+      DateTime? value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
         property: r'warnDate',
@@ -2242,7 +2310,7 @@ extension DeadlineQueryFilter
   }
 
   QueryBuilder<Deadline, Deadline, QAfterFilterCondition> warnDateGreaterThan(
-    DateTime value, {
+    DateTime? value, {
     bool include = false,
   }) {
     return QueryBuilder.apply(this, (query) {
@@ -2255,7 +2323,7 @@ extension DeadlineQueryFilter
   }
 
   QueryBuilder<Deadline, Deadline, QAfterFilterCondition> warnDateLessThan(
-    DateTime value, {
+    DateTime? value, {
     bool include = false,
   }) {
     return QueryBuilder.apply(this, (query) {
@@ -2268,8 +2336,8 @@ extension DeadlineQueryFilter
   }
 
   QueryBuilder<Deadline, Deadline, QAfterFilterCondition> warnDateBetween(
-    DateTime lower,
-    DateTime upper, {
+    DateTime? lower,
+    DateTime? upper, {
     bool includeLower = true,
     bool includeUpper = true,
   }) {
@@ -2829,7 +2897,7 @@ extension DeadlineQueryProperty
     });
   }
 
-  QueryBuilder<Deadline, DateTime, QQueryOperations> dueDateProperty() {
+  QueryBuilder<Deadline, DateTime?, QQueryOperations> dueDateProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'dueDate');
     });
@@ -2895,7 +2963,7 @@ extension DeadlineQueryProperty
     });
   }
 
-  QueryBuilder<Deadline, DateTime, QQueryOperations> startDateProperty() {
+  QueryBuilder<Deadline, DateTime?, QQueryOperations> startDateProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'startDate');
     });
@@ -2907,7 +2975,7 @@ extension DeadlineQueryProperty
     });
   }
 
-  QueryBuilder<Deadline, DateTime, QQueryOperations> warnDateProperty() {
+  QueryBuilder<Deadline, DateTime?, QQueryOperations> warnDateProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'warnDate');
     });

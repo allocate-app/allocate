@@ -241,8 +241,8 @@ class GroupRepo implements GroupRepository {
 
   // Basic query logic.
   @override
-  Future<List<Group>> getRepoList({int limit = 50, int offset = 0}) =>
-      _isarClient.groups
+  Future<List<Group>> getRepoList({int limit = 50, int offset = 0}) async =>
+      await _isarClient.groups
           .where()
           .toDeleteEqualTo(false)
           .sortByCustomViewIndex()
@@ -259,20 +259,20 @@ class GroupRepo implements GroupRepository {
     switch (sorter.sortMethod) {
       case SortMethod.name:
         if (sorter.descending) {
-          return _isarClient.groups
+          return await _isarClient.groups
               .where()
               .toDeleteEqualTo(false)
               .sortByNameDesc()
-              .thenByLastUpdated()
+              .thenByLastUpdatedDesc()
               .offset(offset)
               .limit(limit)
               .findAll();
         } else {
-          return _isarClient.groups
+          return await _isarClient.groups
               .where()
               .toDeleteEqualTo(false)
               .sortByName()
-              .thenByLastUpdated()
+              .thenByLastUpdatedDesc()
               .offset(offset)
               .limit(limit)
               .findAll();
@@ -282,9 +282,12 @@ class GroupRepo implements GroupRepository {
     }
   }
 
-  Future<List<int>> getDeleteIds() async =>
-      _isarClient.groups.filter().toDeleteEqualTo(true).idProperty().findAll();
+  Future<List<int>> getDeleteIds() async => await _isarClient.groups
+      .filter()
+      .toDeleteEqualTo(true)
+      .idProperty()
+      .findAll();
 
   Future<List<Group>> getUnsynced() async =>
-      _isarClient.groups.filter().isSyncedEqualTo(false).findAll();
+      await _isarClient.groups.filter().isSyncedEqualTo(false).findAll();
 }

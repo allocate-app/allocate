@@ -25,16 +25,13 @@ class _ToDosListScreen extends State<ToDosListScreen> {
   late final ToDoProvider toDoProvider;
   late final GroupProvider groupProvider;
 
+  // DB is too fast.
+
   @override
   void initState() {
     super.initState();
     initializeProviders();
     initializeParameters();
-  }
-
-  @override
-  void dispose() {
-    super.dispose();
   }
 
   void initializeProviders() {
@@ -44,6 +41,12 @@ class _ToDosListScreen extends State<ToDosListScreen> {
 
   void initializeParameters() {
     checkDelete = true;
+  }
+
+  ValueKey<int> getAnimationKey() {
+    return ValueKey(
+        (toDoProvider.toDos.length + toDoProvider.sorter.sortMethod.index) *
+            ((toDoProvider.sorter.descending) ? -1 : 1));
   }
 
   @override
@@ -59,13 +62,13 @@ class _ToDosListScreen extends State<ToDosListScreen> {
             header: "Tasks",
             sorter: toDoProvider.sorter,
             leadingIcon: const Icon(Icons.task_outlined),
-            onChanged: (SortMethod? method) {
-              if (null == method) {
+            onChanged: ({SortMethod? sortMethod}) {
+              if (null == sortMethod) {
                 return;
               }
               if (mounted) {
                 setState(() {
-                  toDoProvider.sortMethod = method;
+                  toDoProvider.sortMethod = sortMethod;
                 });
               }
             }),
@@ -79,10 +82,11 @@ class _ToDosListScreen extends State<ToDosListScreen> {
         ),
         Flexible(
           child: PaginatingListview<ToDo>(
+              getAnimationKey: getAnimationKey,
               items: toDoProvider.toDos,
               query: toDoProvider.getToDosBy,
               offset: (toDoProvider.rebuild) ? 0 : toDoProvider.toDos.length,
-              limit: Constants.minLimitPerQuery,
+              limit: 3,
               rebuildNotifiers: [toDoProvider, groupProvider],
               rebuildCallback: ({required List<ToDo> items}) {
                 toDoProvider.toDos = items;
@@ -90,9 +94,12 @@ class _ToDosListScreen extends State<ToDosListScreen> {
               },
               paginateButton: false,
               listviewBuilder: (
-                  {required BuildContext context, required List<ToDo> items}) {
+                  {Key? key,
+                  required BuildContext context,
+                  required List<ToDo> items}) {
                 if (toDoProvider.sortMethod == SortMethod.none) {
                   return ListViews.reorderableToDos(
+                    key: key,
                     context: context,
                     toDos: items,
                     checkDelete: checkDelete,
@@ -110,6 +117,7 @@ class _ToDosListScreen extends State<ToDosListScreen> {
                   );
                 }
                 return ListViews.immutableToDos(
+                  key: key,
                   context: context,
                   toDos: items,
                   checkDelete: checkDelete,

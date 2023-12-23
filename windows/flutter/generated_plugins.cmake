@@ -4,6 +4,7 @@
 
 list(APPEND FLUTTER_PLUGIN_LIST
   app_links
+  flutter_acrylic
   isar_flutter_libs
   screen_retriever
   url_launcher_windows

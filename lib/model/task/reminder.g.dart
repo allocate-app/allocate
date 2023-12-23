@@ -249,7 +249,7 @@ Reminder _reminderDeserialize(
   Map<Type, List<int>> allOffsets,
 ) {
   final object = Reminder(
-    dueDate: reader.readDateTime(offsets[1]),
+    dueDate: reader.readDateTimeOrNull(offsets[1]),
     frequency:
         _ReminderfrequencyValueEnumMap[reader.readByteOrNull(offsets[2])] ??
             Frequency.once,
@@ -278,7 +278,7 @@ P _reminderDeserializeProp<P>(
     case 0:
       return (reader.readLong(offset)) as P;
     case 1:
-      return (reader.readDateTime(offset)) as P;
+      return (reader.readDateTimeOrNull(offset)) as P;
     case 2:
       return (_ReminderfrequencyValueEnumMap[reader.readByteOrNull(offset)] ??
           Frequency.once) as P;
@@ -828,8 +828,28 @@ extension ReminderQueryWhere on QueryBuilder<Reminder, Reminder, QWhereClause> {
     });
   }
 
+  QueryBuilder<Reminder, Reminder, QAfterWhereClause> dueDateIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'dueDate',
+        value: [null],
+      ));
+    });
+  }
+
+  QueryBuilder<Reminder, Reminder, QAfterWhereClause> dueDateIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'dueDate',
+        lower: [null],
+        includeLower: false,
+        upper: [],
+      ));
+    });
+  }
+
   QueryBuilder<Reminder, Reminder, QAfterWhereClause> dueDateEqualTo(
-      DateTime dueDate) {
+      DateTime? dueDate) {
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(IndexWhereClause.equalTo(
         indexName: r'dueDate',
@@ -839,7 +859,7 @@ extension ReminderQueryWhere on QueryBuilder<Reminder, Reminder, QWhereClause> {
   }
 
   QueryBuilder<Reminder, Reminder, QAfterWhereClause> dueDateNotEqualTo(
-      DateTime dueDate) {
+      DateTime? dueDate) {
     return QueryBuilder.apply(this, (query) {
       if (query.whereSort == Sort.asc) {
         return query
@@ -874,7 +894,7 @@ extension ReminderQueryWhere on QueryBuilder<Reminder, Reminder, QWhereClause> {
   }
 
   QueryBuilder<Reminder, Reminder, QAfterWhereClause> dueDateGreaterThan(
-    DateTime dueDate, {
+    DateTime? dueDate, {
     bool include = false,
   }) {
     return QueryBuilder.apply(this, (query) {
@@ -888,7 +908,7 @@ extension ReminderQueryWhere on QueryBuilder<Reminder, Reminder, QWhereClause> {
   }
 
   QueryBuilder<Reminder, Reminder, QAfterWhereClause> dueDateLessThan(
-    DateTime dueDate, {
+    DateTime? dueDate, {
     bool include = false,
   }) {
     return QueryBuilder.apply(this, (query) {
@@ -902,8 +922,8 @@ extension ReminderQueryWhere on QueryBuilder<Reminder, Reminder, QWhereClause> {
   }
 
   QueryBuilder<Reminder, Reminder, QAfterWhereClause> dueDateBetween(
-    DateTime lowerDueDate,
-    DateTime upperDueDate, {
+    DateTime? lowerDueDate,
+    DateTime? upperDueDate, {
     bool includeLower = true,
     bool includeUpper = true,
   }) {
@@ -1202,8 +1222,24 @@ extension ReminderQueryFilter
     });
   }
 
+  QueryBuilder<Reminder, Reminder, QAfterFilterCondition> dueDateIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'dueDate',
+      ));
+    });
+  }
+
+  QueryBuilder<Reminder, Reminder, QAfterFilterCondition> dueDateIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'dueDate',
+      ));
+    });
+  }
+
   QueryBuilder<Reminder, Reminder, QAfterFilterCondition> dueDateEqualTo(
-      DateTime value) {
+      DateTime? value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
         property: r'dueDate',
@@ -1213,7 +1249,7 @@ extension ReminderQueryFilter
   }
 
   QueryBuilder<Reminder, Reminder, QAfterFilterCondition> dueDateGreaterThan(
-    DateTime value, {
+    DateTime? value, {
     bool include = false,
   }) {
     return QueryBuilder.apply(this, (query) {
@@ -1226,7 +1262,7 @@ extension ReminderQueryFilter
   }
 
   QueryBuilder<Reminder, Reminder, QAfterFilterCondition> dueDateLessThan(
-    DateTime value, {
+    DateTime? value, {
     bool include = false,
   }) {
     return QueryBuilder.apply(this, (query) {
@@ -1239,8 +1275,8 @@ extension ReminderQueryFilter
   }
 
   QueryBuilder<Reminder, Reminder, QAfterFilterCondition> dueDateBetween(
-    DateTime lower,
-    DateTime upper, {
+    DateTime? lower,
+    DateTime? upper, {
     bool includeLower = true,
     bool includeUpper = true,
   }) {
@@ -2245,7 +2281,7 @@ extension ReminderQueryProperty
     });
   }
 
-  QueryBuilder<Reminder, DateTime, QQueryOperations> dueDateProperty() {
+  QueryBuilder<Reminder, DateTime?, QQueryOperations> dueDateProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'dueDate');
     });

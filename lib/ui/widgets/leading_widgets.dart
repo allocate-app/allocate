@@ -28,24 +28,25 @@ class LeadingWidgets {
   // This might eventually require different definitions if reminder/deadline
   // buttons are implemented with functionality.
   static Widget eventIcon(
-          {required RepeatableType type,
+          {required ModelType type,
           required BuildContext currentContext,
           EdgeInsetsGeometry iconPadding = EdgeInsets.zero,
           EdgeInsetsGeometry outerPadding = EdgeInsets.zero}) =>
       switch (type) {
-        RepeatableType.task => outlinedIcon(
+        ModelType.task => outlinedIcon(
             currentContext: currentContext,
             iconPadding: iconPadding,
             outerPadding: outerPadding,
             icon: const Icon(Icons.task_rounded)),
-        RepeatableType.deadline => deadlineIcon(
+        ModelType.deadline => deadlineIcon(
             currentContext: currentContext,
             iconPadding: iconPadding,
             outerPadding: outerPadding),
-        RepeatableType.reminder => reminderIcon(
+        ModelType.reminder => reminderIcon(
             currentContext: currentContext,
             iconPadding: iconPadding,
             outerPadding: outerPadding),
+        _ => const SizedBox.shrink(),
       };
 
   // This has no functionality at the moment. If a feature is added,
@@ -112,7 +113,7 @@ class LeadingWidgets {
           iconPadding: iconPadding,
           icon: const Icon(Icons.table_view_rounded));
 
-  static Widget toDoCheckbox({
+  static Widget checkbox({
     double scale = 1,
     bool completed = false,
     EdgeInsetsGeometry outerPadding = EdgeInsets.zero,
@@ -139,12 +140,16 @@ class LeadingWidgets {
       );
 
   static Widget myDayRoutineIcon(
-      {Routine? routine, int times = 0, required void Function() onPressed}) {
+      {Routine? routine, int times = 0, void Function()? onPressed}) {
     if (null == routine) {
-      return IconButton.outlined(
-        icon: routineGlyph(times: times),
-        onPressed: onPressed,
+      return Padding(
+        padding: const EdgeInsets.all(Constants.padding),
+        child: routineGlyph(times: times),
       );
+      // return IconButton.outlined(
+      //   icon: routineGlyph(times: times),
+      //   onPressed: onPressed,
+      // );
     }
     return IconButton.filledTonal(
         icon: routineGlyph(times: times), onPressed: onPressed);
@@ -164,7 +169,6 @@ class LeadingWidgets {
     };
   }
 
-  // TODO: still bugged, fix pls.
   static Widget routineIcon({
     required BuildContext currentContext,
     double scale = 1,

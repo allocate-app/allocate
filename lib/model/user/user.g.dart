@@ -17,70 +17,60 @@ const UserSchema = CollectionSchema(
   name: r'User',
   id: -7838171048429979076,
   properties: {
-    r'aftHour': PropertySchema(
-      id: 0,
-      name: r'aftHour',
-      type: IsarType.long,
-    ),
     r'bandwidth': PropertySchema(
-      id: 1,
+      id: 0,
       name: r'bandwidth',
       type: IsarType.long,
     ),
     r'checkDelete': PropertySchema(
-      id: 2,
+      id: 1,
       name: r'checkDelete',
       type: IsarType.bool,
     ),
     r'curAftID': PropertySchema(
-      id: 3,
+      id: 2,
       name: r'curAftID',
       type: IsarType.long,
     ),
     r'curEveID': PropertySchema(
-      id: 4,
+      id: 3,
       name: r'curEveID',
       type: IsarType.long,
     ),
     r'curMornID': PropertySchema(
-      id: 5,
+      id: 4,
       name: r'curMornID',
       type: IsarType.long,
     ),
-    r'curTheme': PropertySchema(
-      id: 6,
-      name: r'curTheme',
-      type: IsarType.byte,
-      enumMap: _UsercurThemeEnumValueMap,
-    ),
-    r'eveHour': PropertySchema(
-      id: 7,
-      name: r'eveHour',
-      type: IsarType.long,
-    ),
     r'isSynced': PropertySchema(
-      id: 8,
+      id: 5,
       name: r'isSynced',
       type: IsarType.bool,
     ),
     r'lastOpened': PropertySchema(
-      id: 9,
+      id: 6,
       name: r'lastOpened',
       type: IsarType.dateTime,
     ),
-    r'mornHour': PropertySchema(
-      id: 10,
-      name: r'mornHour',
-      type: IsarType.long,
-    ),
     r'syncOnline': PropertySchema(
-      id: 11,
+      id: 7,
       name: r'syncOnline',
       type: IsarType.bool,
     ),
+    r'themeType': PropertySchema(
+      id: 8,
+      name: r'themeType',
+      type: IsarType.byte,
+      enumMap: _UserthemeTypeEnumValueMap,
+    ),
     r'userName': PropertySchema(
-      id: 12,
+      id: 9,
       name: r'userName',
+      type: IsarType.string,
+    ),
+    r'uuid': PropertySchema(
+      id: 10,
+      name: r'uuid',
       type: IsarType.string,
     )
   },
@@ -88,13 +78,26 @@ const UserSchema = CollectionSchema(
   serialize: _userSerialize,
   deserialize: _userDeserialize,
   deserializeProp: _userDeserializeProp,
-  idName: r'localID',
+  idName: r'id',
   indexes: {
+    r'uuid': IndexSchema(
+      id: 2134397340427724972,
+      name: r'uuid',
+      unique: false,
+      replace: false,
+      properties: [
+        IndexPropertySchema(
+          name: r'uuid',
+          type: IndexType.hash,
+          caseSensitive: true,
+        )
+      ],
+    ),
     r'userName': IndexSchema(
       id: -1677712070637581736,
       name: r'userName',
-      unique: true,
-      replace: true,
+      unique: false,
+      replace: false,
       properties: [
         IndexPropertySchema(
           name: r'userName',
@@ -119,6 +122,12 @@ int _userEstimateSize(
 ) {
   var bytesCount = offsets.last;
   bytesCount += 3 + object.userName.length * 3;
+  {
+    final value = object.uuid;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
   return bytesCount;
 }
 
@@ -128,19 +137,17 @@ void _userSerialize(
   List<int> offsets,
   Map<Type, List<int>> allOffsets,
 ) {
-  writer.writeLong(offsets[0], object.aftHour);
-  writer.writeLong(offsets[1], object.bandwidth);
-  writer.writeBool(offsets[2], object.checkDelete);
-  writer.writeLong(offsets[3], object.curAftID);
-  writer.writeLong(offsets[4], object.curEveID);
-  writer.writeLong(offsets[5], object.curMornID);
-  writer.writeByte(offsets[6], object.curTheme.index);
-  writer.writeLong(offsets[7], object.eveHour);
-  writer.writeBool(offsets[8], object.isSynced);
-  writer.writeDateTime(offsets[9], object.lastOpened);
-  writer.writeLong(offsets[10], object.mornHour);
-  writer.writeBool(offsets[11], object.syncOnline);
-  writer.writeString(offsets[12], object.userName);
+  writer.writeLong(offsets[0], object.bandwidth);
+  writer.writeBool(offsets[1], object.checkDelete);
+  writer.writeLong(offsets[2], object.curAftID);
+  writer.writeLong(offsets[3], object.curEveID);
+  writer.writeLong(offsets[4], object.curMornID);
+  writer.writeBool(offsets[5], object.isSynced);
+  writer.writeDateTime(offsets[6], object.lastOpened);
+  writer.writeBool(offsets[7], object.syncOnline);
+  writer.writeByte(offsets[8], object.themeType.index);
+  writer.writeString(offsets[9], object.userName);
+  writer.writeString(offsets[10], object.uuid);
 }
 
 User _userDeserialize(
@@ -150,22 +157,20 @@ User _userDeserialize(
   Map<Type, List<int>> allOffsets,
 ) {
   final object = User(
-    bandwidth: reader.readLongOrNull(offsets[1]) ?? 100,
-    checkDelete: reader.readBoolOrNull(offsets[2]) ?? true,
-    curAftID: reader.readLongOrNull(offsets[3]),
-    curEveID: reader.readLongOrNull(offsets[4]),
-    curMornID: reader.readLongOrNull(offsets[5]),
-    curTheme: _UsercurThemeValueEnumMap[reader.readByteOrNull(offsets[6])] ??
-        UserThemeData.dark,
-    isSynced: reader.readBoolOrNull(offsets[8]) ?? false,
-    lastOpened: reader.readDateTime(offsets[9]),
-    syncOnline: reader.readBool(offsets[11]),
-    userName: reader.readString(offsets[12]),
+    bandwidth: reader.readLongOrNull(offsets[0]) ?? 100,
+    checkDelete: reader.readBoolOrNull(offsets[1]) ?? true,
+    curAftID: reader.readLongOrNull(offsets[2]),
+    curEveID: reader.readLongOrNull(offsets[3]),
+    curMornID: reader.readLongOrNull(offsets[4]),
+    isSynced: reader.readBoolOrNull(offsets[5]) ?? false,
+    lastOpened: reader.readDateTime(offsets[6]),
+    syncOnline: reader.readBool(offsets[7]),
+    themeType: _UserthemeTypeValueEnumMap[reader.readByteOrNull(offsets[8])] ??
+        ThemeType.dark,
+    userName: reader.readString(offsets[9]),
   );
-  object.aftHour = reader.readLongOrNull(offsets[0]);
-  object.eveHour = reader.readLongOrNull(offsets[7]);
-  object.localID = id;
-  object.mornHour = reader.readLongOrNull(offsets[10]);
+  object.id = id;
+  object.uuid = reader.readStringOrNull(offsets[10]);
   return object;
 }
 
@@ -177,50 +182,48 @@ P _userDeserializeProp<P>(
 ) {
   switch (propertyId) {
     case 0:
-      return (reader.readLongOrNull(offset)) as P;
-    case 1:
       return (reader.readLongOrNull(offset) ?? 100) as P;
-    case 2:
+    case 1:
       return (reader.readBoolOrNull(offset) ?? true) as P;
+    case 2:
+      return (reader.readLongOrNull(offset)) as P;
     case 3:
       return (reader.readLongOrNull(offset)) as P;
     case 4:
       return (reader.readLongOrNull(offset)) as P;
     case 5:
-      return (reader.readLongOrNull(offset)) as P;
-    case 6:
-      return (_UsercurThemeValueEnumMap[reader.readByteOrNull(offset)] ??
-          UserThemeData.dark) as P;
-    case 7:
-      return (reader.readLongOrNull(offset)) as P;
-    case 8:
       return (reader.readBoolOrNull(offset) ?? false) as P;
-    case 9:
+    case 6:
       return (reader.readDateTime(offset)) as P;
-    case 10:
-      return (reader.readLongOrNull(offset)) as P;
-    case 11:
+    case 7:
       return (reader.readBool(offset)) as P;
-    case 12:
+    case 8:
+      return (_UserthemeTypeValueEnumMap[reader.readByteOrNull(offset)] ??
+          ThemeType.dark) as P;
+    case 9:
       return (reader.readString(offset)) as P;
+    case 10:
+      return (reader.readStringOrNull(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
   }
 }
 
-const _UsercurThemeEnumValueMap = {
-  'light': 0,
-  'dark': 1,
-  'hi_contrast': 2,
+const _UserthemeTypeEnumValueMap = {
+  'adaptive': 0,
+  'light': 1,
+  'dark': 2,
+  'hi_contrast': 3,
 };
-const _UsercurThemeValueEnumMap = {
-  0: UserThemeData.light,
-  1: UserThemeData.dark,
-  2: UserThemeData.hi_contrast,
+const _UserthemeTypeValueEnumMap = {
+  0: ThemeType.adaptive,
+  1: ThemeType.light,
+  2: ThemeType.dark,
+  3: ThemeType.hi_contrast,
 };
 
 Id _userGetId(User object) {
-  return object.localID;
+  return object.id;
 }
 
 List<IsarLinkBase<dynamic>> _userGetLinks(User object) {
@@ -228,65 +231,11 @@ List<IsarLinkBase<dynamic>> _userGetLinks(User object) {
 }
 
 void _userAttach(IsarCollection<dynamic> col, Id id, User object) {
-  object.localID = id;
-}
-
-extension UserByIndex on IsarCollection<User> {
-  Future<User?> getByUserName(String userName) {
-    return getByIndex(r'userName', [userName]);
-  }
-
-  User? getByUserNameSync(String userName) {
-    return getByIndexSync(r'userName', [userName]);
-  }
-
-  Future<bool> deleteByUserName(String userName) {
-    return deleteByIndex(r'userName', [userName]);
-  }
-
-  bool deleteByUserNameSync(String userName) {
-    return deleteByIndexSync(r'userName', [userName]);
-  }
-
-  Future<List<User?>> getAllByUserName(List<String> userNameValues) {
-    final values = userNameValues.map((e) => [e]).toList();
-    return getAllByIndex(r'userName', values);
-  }
-
-  List<User?> getAllByUserNameSync(List<String> userNameValues) {
-    final values = userNameValues.map((e) => [e]).toList();
-    return getAllByIndexSync(r'userName', values);
-  }
-
-  Future<int> deleteAllByUserName(List<String> userNameValues) {
-    final values = userNameValues.map((e) => [e]).toList();
-    return deleteAllByIndex(r'userName', values);
-  }
-
-  int deleteAllByUserNameSync(List<String> userNameValues) {
-    final values = userNameValues.map((e) => [e]).toList();
-    return deleteAllByIndexSync(r'userName', values);
-  }
-
-  Future<Id> putByUserName(User object) {
-    return putByIndex(r'userName', object);
-  }
-
-  Id putByUserNameSync(User object, {bool saveLinks = true}) {
-    return putByIndexSync(r'userName', object, saveLinks: saveLinks);
-  }
-
-  Future<List<Id>> putAllByUserName(List<User> objects) {
-    return putAllByIndex(r'userName', objects);
-  }
-
-  List<Id> putAllByUserNameSync(List<User> objects, {bool saveLinks = true}) {
-    return putAllByIndexSync(r'userName', objects, saveLinks: saveLinks);
-  }
+  object.id = id;
 }
 
 extension UserQueryWhereSort on QueryBuilder<User, User, QWhere> {
-  QueryBuilder<User, User, QAfterWhere> anyLocalID() {
+  QueryBuilder<User, User, QAfterWhere> anyId() {
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(const IdWhereClause.any());
     });
@@ -294,68 +243,131 @@ extension UserQueryWhereSort on QueryBuilder<User, User, QWhere> {
 }
 
 extension UserQueryWhere on QueryBuilder<User, User, QWhereClause> {
-  QueryBuilder<User, User, QAfterWhereClause> localIDEqualTo(Id localID) {
+  QueryBuilder<User, User, QAfterWhereClause> idEqualTo(Id id) {
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(IdWhereClause.between(
-        lower: localID,
-        upper: localID,
+        lower: id,
+        upper: id,
       ));
     });
   }
 
-  QueryBuilder<User, User, QAfterWhereClause> localIDNotEqualTo(Id localID) {
+  QueryBuilder<User, User, QAfterWhereClause> idNotEqualTo(Id id) {
     return QueryBuilder.apply(this, (query) {
       if (query.whereSort == Sort.asc) {
         return query
             .addWhereClause(
-              IdWhereClause.lessThan(upper: localID, includeUpper: false),
+              IdWhereClause.lessThan(upper: id, includeUpper: false),
             )
             .addWhereClause(
-              IdWhereClause.greaterThan(lower: localID, includeLower: false),
+              IdWhereClause.greaterThan(lower: id, includeLower: false),
             );
       } else {
         return query
             .addWhereClause(
-              IdWhereClause.greaterThan(lower: localID, includeLower: false),
+              IdWhereClause.greaterThan(lower: id, includeLower: false),
             )
             .addWhereClause(
-              IdWhereClause.lessThan(upper: localID, includeUpper: false),
+              IdWhereClause.lessThan(upper: id, includeUpper: false),
             );
       }
     });
   }
 
-  QueryBuilder<User, User, QAfterWhereClause> localIDGreaterThan(Id localID,
+  QueryBuilder<User, User, QAfterWhereClause> idGreaterThan(Id id,
       {bool include = false}) {
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(
-        IdWhereClause.greaterThan(lower: localID, includeLower: include),
+        IdWhereClause.greaterThan(lower: id, includeLower: include),
       );
     });
   }
 
-  QueryBuilder<User, User, QAfterWhereClause> localIDLessThan(Id localID,
+  QueryBuilder<User, User, QAfterWhereClause> idLessThan(Id id,
       {bool include = false}) {
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(
-        IdWhereClause.lessThan(upper: localID, includeUpper: include),
+        IdWhereClause.lessThan(upper: id, includeUpper: include),
       );
     });
   }
 
-  QueryBuilder<User, User, QAfterWhereClause> localIDBetween(
-    Id lowerLocalID,
-    Id upperLocalID, {
+  QueryBuilder<User, User, QAfterWhereClause> idBetween(
+    Id lowerId,
+    Id upperId, {
     bool includeLower = true,
     bool includeUpper = true,
   }) {
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(IdWhereClause.between(
-        lower: lowerLocalID,
+        lower: lowerId,
         includeLower: includeLower,
-        upper: upperLocalID,
+        upper: upperId,
         includeUpper: includeUpper,
       ));
+    });
+  }
+
+  QueryBuilder<User, User, QAfterWhereClause> uuidIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'uuid',
+        value: [null],
+      ));
+    });
+  }
+
+  QueryBuilder<User, User, QAfterWhereClause> uuidIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'uuid',
+        lower: [null],
+        includeLower: false,
+        upper: [],
+      ));
+    });
+  }
+
+  QueryBuilder<User, User, QAfterWhereClause> uuidEqualTo(String? uuid) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'uuid',
+        value: [uuid],
+      ));
+    });
+  }
+
+  QueryBuilder<User, User, QAfterWhereClause> uuidNotEqualTo(String? uuid) {
+    return QueryBuilder.apply(this, (query) {
+      if (query.whereSort == Sort.asc) {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'uuid',
+              lower: [],
+              upper: [uuid],
+              includeUpper: false,
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'uuid',
+              lower: [uuid],
+              includeLower: false,
+              upper: [],
+            ));
+      } else {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'uuid',
+              lower: [uuid],
+              includeLower: false,
+              upper: [],
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'uuid',
+              lower: [],
+              upper: [uuid],
+              includeUpper: false,
+            ));
+      }
     });
   }
 
@@ -405,74 +417,6 @@ extension UserQueryWhere on QueryBuilder<User, User, QWhereClause> {
 }
 
 extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
-  QueryBuilder<User, User, QAfterFilterCondition> aftHourIsNull() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(const FilterCondition.isNull(
-        property: r'aftHour',
-      ));
-    });
-  }
-
-  QueryBuilder<User, User, QAfterFilterCondition> aftHourIsNotNull() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(const FilterCondition.isNotNull(
-        property: r'aftHour',
-      ));
-    });
-  }
-
-  QueryBuilder<User, User, QAfterFilterCondition> aftHourEqualTo(int? value) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'aftHour',
-        value: value,
-      ));
-    });
-  }
-
-  QueryBuilder<User, User, QAfterFilterCondition> aftHourGreaterThan(
-    int? value, {
-    bool include = false,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        include: include,
-        property: r'aftHour',
-        value: value,
-      ));
-    });
-  }
-
-  QueryBuilder<User, User, QAfterFilterCondition> aftHourLessThan(
-    int? value, {
-    bool include = false,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.lessThan(
-        include: include,
-        property: r'aftHour',
-        value: value,
-      ));
-    });
-  }
-
-  QueryBuilder<User, User, QAfterFilterCondition> aftHourBetween(
-    int? lower,
-    int? upper, {
-    bool includeLower = true,
-    bool includeUpper = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.between(
-        property: r'aftHour',
-        lower: lower,
-        includeLower: includeLower,
-        upper: upper,
-        includeUpper: includeUpper,
-      ));
-    });
-  }
-
   QueryBuilder<User, User, QAfterFilterCondition> bandwidthEqualTo(int value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
@@ -739,119 +683,50 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> curThemeEqualTo(
-      UserThemeData value) {
+  QueryBuilder<User, User, QAfterFilterCondition> idEqualTo(Id value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'curTheme',
+        property: r'id',
         value: value,
       ));
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> curThemeGreaterThan(
-    UserThemeData value, {
+  QueryBuilder<User, User, QAfterFilterCondition> idGreaterThan(
+    Id value, {
     bool include = false,
   }) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.greaterThan(
         include: include,
-        property: r'curTheme',
+        property: r'id',
         value: value,
       ));
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> curThemeLessThan(
-    UserThemeData value, {
+  QueryBuilder<User, User, QAfterFilterCondition> idLessThan(
+    Id value, {
     bool include = false,
   }) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.lessThan(
         include: include,
-        property: r'curTheme',
+        property: r'id',
         value: value,
       ));
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> curThemeBetween(
-    UserThemeData lower,
-    UserThemeData upper, {
+  QueryBuilder<User, User, QAfterFilterCondition> idBetween(
+    Id lower,
+    Id upper, {
     bool includeLower = true,
     bool includeUpper = true,
   }) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.between(
-        property: r'curTheme',
-        lower: lower,
-        includeLower: includeLower,
-        upper: upper,
-        includeUpper: includeUpper,
-      ));
-    });
-  }
-
-  QueryBuilder<User, User, QAfterFilterCondition> eveHourIsNull() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(const FilterCondition.isNull(
-        property: r'eveHour',
-      ));
-    });
-  }
-
-  QueryBuilder<User, User, QAfterFilterCondition> eveHourIsNotNull() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(const FilterCondition.isNotNull(
-        property: r'eveHour',
-      ));
-    });
-  }
-
-  QueryBuilder<User, User, QAfterFilterCondition> eveHourEqualTo(int? value) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'eveHour',
-        value: value,
-      ));
-    });
-  }
-
-  QueryBuilder<User, User, QAfterFilterCondition> eveHourGreaterThan(
-    int? value, {
-    bool include = false,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        include: include,
-        property: r'eveHour',
-        value: value,
-      ));
-    });
-  }
-
-  QueryBuilder<User, User, QAfterFilterCondition> eveHourLessThan(
-    int? value, {
-    bool include = false,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.lessThan(
-        include: include,
-        property: r'eveHour',
-        value: value,
-      ));
-    });
-  }
-
-  QueryBuilder<User, User, QAfterFilterCondition> eveHourBetween(
-    int? lower,
-    int? upper, {
-    bool includeLower = true,
-    bool includeUpper = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.between(
-        property: r'eveHour',
+        property: r'id',
         lower: lower,
         includeLower: includeLower,
         upper: upper,
@@ -922,132 +797,65 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> localIDEqualTo(Id value) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'localID',
-        value: value,
-      ));
-    });
-  }
-
-  QueryBuilder<User, User, QAfterFilterCondition> localIDGreaterThan(
-    Id value, {
-    bool include = false,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        include: include,
-        property: r'localID',
-        value: value,
-      ));
-    });
-  }
-
-  QueryBuilder<User, User, QAfterFilterCondition> localIDLessThan(
-    Id value, {
-    bool include = false,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.lessThan(
-        include: include,
-        property: r'localID',
-        value: value,
-      ));
-    });
-  }
-
-  QueryBuilder<User, User, QAfterFilterCondition> localIDBetween(
-    Id lower,
-    Id upper, {
-    bool includeLower = true,
-    bool includeUpper = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.between(
-        property: r'localID',
-        lower: lower,
-        includeLower: includeLower,
-        upper: upper,
-        includeUpper: includeUpper,
-      ));
-    });
-  }
-
-  QueryBuilder<User, User, QAfterFilterCondition> mornHourIsNull() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(const FilterCondition.isNull(
-        property: r'mornHour',
-      ));
-    });
-  }
-
-  QueryBuilder<User, User, QAfterFilterCondition> mornHourIsNotNull() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(const FilterCondition.isNotNull(
-        property: r'mornHour',
-      ));
-    });
-  }
-
-  QueryBuilder<User, User, QAfterFilterCondition> mornHourEqualTo(int? value) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'mornHour',
-        value: value,
-      ));
-    });
-  }
-
-  QueryBuilder<User, User, QAfterFilterCondition> mornHourGreaterThan(
-    int? value, {
-    bool include = false,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        include: include,
-        property: r'mornHour',
-        value: value,
-      ));
-    });
-  }
-
-  QueryBuilder<User, User, QAfterFilterCondition> mornHourLessThan(
-    int? value, {
-    bool include = false,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.lessThan(
-        include: include,
-        property: r'mornHour',
-        value: value,
-      ));
-    });
-  }
-
-  QueryBuilder<User, User, QAfterFilterCondition> mornHourBetween(
-    int? lower,
-    int? upper, {
-    bool includeLower = true,
-    bool includeUpper = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.between(
-        property: r'mornHour',
-        lower: lower,
-        includeLower: includeLower,
-        upper: upper,
-        includeUpper: includeUpper,
-      ));
-    });
-  }
-
   QueryBuilder<User, User, QAfterFilterCondition> syncOnlineEqualTo(
       bool value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
         property: r'syncOnline',
         value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<User, User, QAfterFilterCondition> themeTypeEqualTo(
+      ThemeType value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'themeType',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<User, User, QAfterFilterCondition> themeTypeGreaterThan(
+    ThemeType value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'themeType',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<User, User, QAfterFilterCondition> themeTypeLessThan(
+    ThemeType value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'themeType',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<User, User, QAfterFilterCondition> themeTypeBetween(
+    ThemeType lower,
+    ThemeType upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'themeType',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
       ));
     });
   }
@@ -1180,6 +988,150 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
       ));
     });
   }
+
+  QueryBuilder<User, User, QAfterFilterCondition> uuidIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'uuid',
+      ));
+    });
+  }
+
+  QueryBuilder<User, User, QAfterFilterCondition> uuidIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'uuid',
+      ));
+    });
+  }
+
+  QueryBuilder<User, User, QAfterFilterCondition> uuidEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'uuid',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<User, User, QAfterFilterCondition> uuidGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'uuid',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<User, User, QAfterFilterCondition> uuidLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'uuid',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<User, User, QAfterFilterCondition> uuidBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'uuid',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<User, User, QAfterFilterCondition> uuidStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'uuid',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<User, User, QAfterFilterCondition> uuidEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'uuid',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<User, User, QAfterFilterCondition> uuidContains(String value,
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'uuid',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<User, User, QAfterFilterCondition> uuidMatches(String pattern,
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'uuid',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<User, User, QAfterFilterCondition> uuidIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'uuid',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<User, User, QAfterFilterCondition> uuidIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'uuid',
+        value: '',
+      ));
+    });
+  }
 }
 
 extension UserQueryObject on QueryBuilder<User, User, QFilterCondition> {}
@@ -1187,18 +1139,6 @@ extension UserQueryObject on QueryBuilder<User, User, QFilterCondition> {}
 extension UserQueryLinks on QueryBuilder<User, User, QFilterCondition> {}
 
 extension UserQuerySortBy on QueryBuilder<User, User, QSortBy> {
-  QueryBuilder<User, User, QAfterSortBy> sortByAftHour() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'aftHour', Sort.asc);
-    });
-  }
-
-  QueryBuilder<User, User, QAfterSortBy> sortByAftHourDesc() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'aftHour', Sort.desc);
-    });
-  }
-
   QueryBuilder<User, User, QAfterSortBy> sortByBandwidth() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'bandwidth', Sort.asc);
@@ -1259,30 +1199,6 @@ extension UserQuerySortBy on QueryBuilder<User, User, QSortBy> {
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> sortByCurTheme() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'curTheme', Sort.asc);
-    });
-  }
-
-  QueryBuilder<User, User, QAfterSortBy> sortByCurThemeDesc() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'curTheme', Sort.desc);
-    });
-  }
-
-  QueryBuilder<User, User, QAfterSortBy> sortByEveHour() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'eveHour', Sort.asc);
-    });
-  }
-
-  QueryBuilder<User, User, QAfterSortBy> sortByEveHourDesc() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'eveHour', Sort.desc);
-    });
-  }
-
   QueryBuilder<User, User, QAfterSortBy> sortByIsSynced() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isSynced', Sort.asc);
@@ -1307,18 +1223,6 @@ extension UserQuerySortBy on QueryBuilder<User, User, QSortBy> {
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> sortByMornHour() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'mornHour', Sort.asc);
-    });
-  }
-
-  QueryBuilder<User, User, QAfterSortBy> sortByMornHourDesc() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'mornHour', Sort.desc);
-    });
-  }
-
   QueryBuilder<User, User, QAfterSortBy> sortBySyncOnline() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'syncOnline', Sort.asc);
@@ -1328,6 +1232,18 @@ extension UserQuerySortBy on QueryBuilder<User, User, QSortBy> {
   QueryBuilder<User, User, QAfterSortBy> sortBySyncOnlineDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'syncOnline', Sort.desc);
+    });
+  }
+
+  QueryBuilder<User, User, QAfterSortBy> sortByThemeType() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'themeType', Sort.asc);
+    });
+  }
+
+  QueryBuilder<User, User, QAfterSortBy> sortByThemeTypeDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'themeType', Sort.desc);
     });
   }
 
@@ -1342,21 +1258,21 @@ extension UserQuerySortBy on QueryBuilder<User, User, QSortBy> {
       return query.addSortBy(r'userName', Sort.desc);
     });
   }
+
+  QueryBuilder<User, User, QAfterSortBy> sortByUuid() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'uuid', Sort.asc);
+    });
+  }
+
+  QueryBuilder<User, User, QAfterSortBy> sortByUuidDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'uuid', Sort.desc);
+    });
+  }
 }
 
 extension UserQuerySortThenBy on QueryBuilder<User, User, QSortThenBy> {
-  QueryBuilder<User, User, QAfterSortBy> thenByAftHour() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'aftHour', Sort.asc);
-    });
-  }
-
-  QueryBuilder<User, User, QAfterSortBy> thenByAftHourDesc() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'aftHour', Sort.desc);
-    });
-  }
-
   QueryBuilder<User, User, QAfterSortBy> thenByBandwidth() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'bandwidth', Sort.asc);
@@ -1417,27 +1333,15 @@ extension UserQuerySortThenBy on QueryBuilder<User, User, QSortThenBy> {
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> thenByCurTheme() {
+  QueryBuilder<User, User, QAfterSortBy> thenById() {
     return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'curTheme', Sort.asc);
+      return query.addSortBy(r'id', Sort.asc);
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> thenByCurThemeDesc() {
+  QueryBuilder<User, User, QAfterSortBy> thenByIdDesc() {
     return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'curTheme', Sort.desc);
-    });
-  }
-
-  QueryBuilder<User, User, QAfterSortBy> thenByEveHour() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'eveHour', Sort.asc);
-    });
-  }
-
-  QueryBuilder<User, User, QAfterSortBy> thenByEveHourDesc() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'eveHour', Sort.desc);
+      return query.addSortBy(r'id', Sort.desc);
     });
   }
 
@@ -1465,30 +1369,6 @@ extension UserQuerySortThenBy on QueryBuilder<User, User, QSortThenBy> {
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> thenByLocalID() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'localID', Sort.asc);
-    });
-  }
-
-  QueryBuilder<User, User, QAfterSortBy> thenByLocalIDDesc() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'localID', Sort.desc);
-    });
-  }
-
-  QueryBuilder<User, User, QAfterSortBy> thenByMornHour() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'mornHour', Sort.asc);
-    });
-  }
-
-  QueryBuilder<User, User, QAfterSortBy> thenByMornHourDesc() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'mornHour', Sort.desc);
-    });
-  }
-
   QueryBuilder<User, User, QAfterSortBy> thenBySyncOnline() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'syncOnline', Sort.asc);
@@ -1498,6 +1378,18 @@ extension UserQuerySortThenBy on QueryBuilder<User, User, QSortThenBy> {
   QueryBuilder<User, User, QAfterSortBy> thenBySyncOnlineDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'syncOnline', Sort.desc);
+    });
+  }
+
+  QueryBuilder<User, User, QAfterSortBy> thenByThemeType() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'themeType', Sort.asc);
+    });
+  }
+
+  QueryBuilder<User, User, QAfterSortBy> thenByThemeTypeDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'themeType', Sort.desc);
     });
   }
 
@@ -1512,15 +1404,21 @@ extension UserQuerySortThenBy on QueryBuilder<User, User, QSortThenBy> {
       return query.addSortBy(r'userName', Sort.desc);
     });
   }
-}
 
-extension UserQueryWhereDistinct on QueryBuilder<User, User, QDistinct> {
-  QueryBuilder<User, User, QDistinct> distinctByAftHour() {
+  QueryBuilder<User, User, QAfterSortBy> thenByUuid() {
     return QueryBuilder.apply(this, (query) {
-      return query.addDistinctBy(r'aftHour');
+      return query.addSortBy(r'uuid', Sort.asc);
     });
   }
 
+  QueryBuilder<User, User, QAfterSortBy> thenByUuidDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'uuid', Sort.desc);
+    });
+  }
+}
+
+extension UserQueryWhereDistinct on QueryBuilder<User, User, QDistinct> {
   QueryBuilder<User, User, QDistinct> distinctByBandwidth() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'bandwidth');
@@ -1551,18 +1449,6 @@ extension UserQueryWhereDistinct on QueryBuilder<User, User, QDistinct> {
     });
   }
 
-  QueryBuilder<User, User, QDistinct> distinctByCurTheme() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addDistinctBy(r'curTheme');
-    });
-  }
-
-  QueryBuilder<User, User, QDistinct> distinctByEveHour() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addDistinctBy(r'eveHour');
-    });
-  }
-
   QueryBuilder<User, User, QDistinct> distinctByIsSynced() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'isSynced');
@@ -1575,15 +1461,15 @@ extension UserQueryWhereDistinct on QueryBuilder<User, User, QDistinct> {
     });
   }
 
-  QueryBuilder<User, User, QDistinct> distinctByMornHour() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addDistinctBy(r'mornHour');
-    });
-  }
-
   QueryBuilder<User, User, QDistinct> distinctBySyncOnline() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'syncOnline');
+    });
+  }
+
+  QueryBuilder<User, User, QDistinct> distinctByThemeType() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'themeType');
     });
   }
 
@@ -1593,18 +1479,19 @@ extension UserQueryWhereDistinct on QueryBuilder<User, User, QDistinct> {
       return query.addDistinctBy(r'userName', caseSensitive: caseSensitive);
     });
   }
+
+  QueryBuilder<User, User, QDistinct> distinctByUuid(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'uuid', caseSensitive: caseSensitive);
+    });
+  }
 }
 
 extension UserQueryProperty on QueryBuilder<User, User, QQueryProperty> {
-  QueryBuilder<User, int, QQueryOperations> localIDProperty() {
+  QueryBuilder<User, int, QQueryOperations> idProperty() {
     return QueryBuilder.apply(this, (query) {
-      return query.addPropertyName(r'localID');
-    });
-  }
-
-  QueryBuilder<User, int?, QQueryOperations> aftHourProperty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addPropertyName(r'aftHour');
+      return query.addPropertyName(r'id');
     });
   }
 
@@ -1638,18 +1525,6 @@ extension UserQueryProperty on QueryBuilder<User, User, QQueryProperty> {
     });
   }
 
-  QueryBuilder<User, UserThemeData, QQueryOperations> curThemeProperty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addPropertyName(r'curTheme');
-    });
-  }
-
-  QueryBuilder<User, int?, QQueryOperations> eveHourProperty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addPropertyName(r'eveHour');
-    });
-  }
-
   QueryBuilder<User, bool, QQueryOperations> isSyncedProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'isSynced');
@@ -1662,21 +1537,27 @@ extension UserQueryProperty on QueryBuilder<User, User, QQueryProperty> {
     });
   }
 
-  QueryBuilder<User, int?, QQueryOperations> mornHourProperty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addPropertyName(r'mornHour');
-    });
-  }
-
   QueryBuilder<User, bool, QQueryOperations> syncOnlineProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'syncOnline');
     });
   }
 
+  QueryBuilder<User, ThemeType, QQueryOperations> themeTypeProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'themeType');
+    });
+  }
+
   QueryBuilder<User, String, QQueryOperations> userNameProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'userName');
+    });
+  }
+
+  QueryBuilder<User, String?, QQueryOperations> uuidProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'uuid');
     });
   }
 }

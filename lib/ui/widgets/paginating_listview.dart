@@ -21,6 +21,7 @@ class PaginatingListview<T> extends StatefulWidget {
       this.pullToRefresh = true,
       this.allData = false,
       this.scrollController,
+      this.getAnimationKey,
       this.rebuildNotifiers,
       this.rebuildCallback})
       : super(key: key);
@@ -33,10 +34,13 @@ class PaginatingListview<T> extends StatefulWidget {
 
   final Future<List<T>> Function({int offset, int limit})? query;
 
-  final Widget Function({required BuildContext context, required List<T> items})
-      listviewBuilder;
+  final Widget Function(
+      {Key? key,
+      required BuildContext context,
+      required List<T> items}) listviewBuilder;
 
   final void Function({required List<T> items})? rebuildCallback;
+  final ValueKey<int> Function()? getAnimationKey;
 
   final bool paginateButton;
   final bool pullToRefresh;
@@ -54,6 +58,12 @@ class _PaginatingListview<T> extends State<PaginatingListview<T>> {
   late final ScrollController scrollController;
   late final ScrollPhysics scrollPhysics;
   late final ScrollPhysics refreshPhysics;
+
+  late ValueKey<int> _animationKey;
+  late ValueKey<int> Function() getAnimationKey;
+
+  static final offsetIn =
+      Tween(begin: const Offset(1, 0), end: const Offset(0, 0));
 
   final GlobalKey<RefreshIndicatorState> _refreshIndicatorKey =
       GlobalKey<RefreshIndicatorState>();
@@ -87,7 +97,14 @@ class _PaginatingListview<T> extends State<PaginatingListview<T>> {
         ? AlwaysScrollableScrollPhysics(parent: scrollPhysics)
         : NeverScrollableScrollPhysics(parent: scrollPhysics);
 
+    initializeAnimation();
+
     super.initState();
+  }
+
+  void initializeAnimation() {
+    getAnimationKey = widget.getAnimationKey ?? () => const ValueKey(0);
+    _animationKey = getAnimationKey();
   }
 
   @override
@@ -104,7 +121,12 @@ class _PaginatingListview<T> extends State<PaginatingListview<T>> {
       widget.rebuildCallback!(items: paginator.items!);
     }
     if (mounted) {
-      setState(() {});
+      setState(() {
+        setState(() {
+          _animationKey = getAnimationKey();
+          print(_animationKey.value);
+        });
+      });
     }
   }
 
@@ -143,29 +165,46 @@ class _PaginatingListview<T> extends State<PaginatingListview<T>> {
             dragDevices: {PointerDeviceKind.touch, PointerDeviceKind.mouse},
           ),
           child: Scrollbar(
-              thumbVisibility: true,
+            thumbVisibility: true,
+            controller: scrollController,
+            child: ListView(
+              shrinkWrap: true,
               controller: scrollController,
-              child: ListView(
-                shrinkWrap: true,
-                controller: scrollController,
-                physics: refreshPhysics,
-                children: [
-                  (!widget.pullToRefresh && (paginator.items?.length ?? 0) > 1)
-                      ? Tiles.resetTile(onTap: () {
-                          _refreshIndicatorKey.currentState?.show();
-                        })
-                      : const SizedBox.shrink(),
-                  widget.listviewBuilder(
-                      context: context, items: paginator.items!),
-                  (widget.paginateButton && !paginator.allData)
-                      ? Tiles.fetchTile(onTap: () async {
-                          return await paginator
-                              .appendData()
-                              .catchError(onError);
-                        })
-                      : const SizedBox.shrink(),
-                ],
-              )),
+              physics: refreshPhysics,
+              children: [
+                // (!widget.pullToRefresh && (paginator.items?.length ?? 0) > 1)
+                //     ? Tiles.resetTile(onTap: () {
+                //         _refreshIndicatorKey.currentState?.show();
+                //       })
+                //     : const SizedBox.shrink(),
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 600),
+                  reverseDuration: const Duration(milliseconds: 200),
+                  switchInCurve: Curves.fastLinearToSlowEaseIn,
+                  switchOutCurve: Curves.linear,
+                  transitionBuilder:
+                      (Widget child, Animation<double> animation) {
+                    if (child.key == getAnimationKey()) {
+                      return SlideTransition(
+                        position: offsetIn.animate(animation),
+                        child: child,
+                      );
+                    }
+                    return FadeTransition(opacity: animation, child: child);
+                  },
+                  child: widget.listviewBuilder(
+                      key: _animationKey,
+                      context: context,
+                      items: paginator.items!),
+                ),
+                (widget.paginateButton && !paginator.allData)
+                    ? Tiles.fetchTile(onTap: () async {
+                        return await paginator.appendData().catchError(onError);
+                      })
+                    : const SizedBox.shrink(),
+              ],
+            ),
+          ),
         ));
   }
 }

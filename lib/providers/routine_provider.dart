@@ -14,7 +14,7 @@ import "../util/exceptions.dart";
 import '../util/sorting/routine_sorter.dart';
 
 class RoutineProvider extends ChangeNotifier {
-  bool rebuild = false;
+  bool rebuild = true;
   late Timer syncTimer;
 
   final RoutineService _routineService;
@@ -101,6 +101,7 @@ class RoutineProvider extends ChangeNotifier {
     if (timeOfDay == 0) {
       unsetDailyRoutine(id: routine.id);
     }
+    notifyListeners();
   }
 
   void unsetDailyRoutine({required int id}) {
@@ -218,8 +219,8 @@ class RoutineProvider extends ChangeNotifier {
   }
 
   Future<void> setSubtaskCount(
-      {required int id, int limit = Constants.maxNumTasks}) async {
-    int count =
+      {required int id, int limit = Constants.maxNumTasks, int? count}) async {
+    count = count ??
         await _subtaskService.getTaskSubtasksCount(taskID: id, limit: limit);
     if (routineSubtaskCounts.containsKey(id)) {
       routineSubtaskCounts[id]?.value = count;
@@ -307,6 +308,7 @@ class RoutineProvider extends ChangeNotifier {
     routine = routine ?? curRoutine;
     await updateRoutineAsync(routine: routine);
     if (null != times) {
+      unsetDailyRoutine(id: routine!.id);
       setDailyRoutine(timeOfDay: times, routine: routine);
     }
     notifyListeners();
@@ -475,7 +477,7 @@ class RoutineProvider extends ChangeNotifier {
 
   Future<List<Subtask>> getSubtasks({
     required int id,
-    limit = Constants.maxNumTasks,
+    int limit = Constants.maxNumTasks,
   }) async =>
       await _subtaskService.getTaskSubtasks(id: id, limit: limit);
 

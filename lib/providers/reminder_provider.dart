@@ -14,7 +14,7 @@ import '../util/exceptions.dart';
 import '../util/sorting/reminder_sorter.dart';
 
 class ReminderProvider extends ChangeNotifier {
-  bool rebuild = false;
+  bool rebuild = true;
   late Timer syncTimer;
 
   final ReminderService _reminderService;
@@ -73,7 +73,7 @@ class ReminderProvider extends ChangeNotifier {
   Future<void> _syncRepo() async {
     // Not quite sure how to handle this outside of gui warning.
     try {
-      _reminderService.syncRepo();
+      await _reminderService.syncRepo();
     } on FailureToDeleteException catch (e) {
       log(e.cause);
       return Future.error(e);
@@ -86,26 +86,23 @@ class ReminderProvider extends ChangeNotifier {
 
   Future<void> createReminder({
     required String name,
-    DateTime? startDate,
     DateTime? dueDate,
     bool? repeatable,
     List<bool>? repeatDays,
     int? repeatSkip,
     Frequency? frequency,
   }) async {
-    dueDate = dueDate?.copyWith(second: 0, microsecond: 0, millisecond: 0) ??
-        DateTime.now().copyWith(
-            hour: Constants.eod.hour,
-            minute: Constants.eod.minute,
-            second: 0,
-            microsecond: 0,
-            millisecond: 0);
-    if (DateTime.now().isAfter(dueDate)) {
-      dueDate = dueDate.copyWith(
-          day: dueDate.day + 1,
-          hour: Constants.midnight.hour,
-          minute: Constants.midnight.minute);
+    if (null != dueDate) {
+      dueDate = dueDate.copyWith(second: 0, microsecond: 0, millisecond: 0);
     }
+
+    // This code should never run
+    // if (null != dueDate && DateTime.now().isAfter(dueDate)) {
+    //   dueDate = dueDate.copyWith(
+    //       day: dueDate.day + 1,
+    //       hour: Constants.midnight.hour,
+    //       minute: Constants.midnight.minute);
+    // }
 
     curReminder = Reminder(
       name: name,
@@ -117,7 +114,7 @@ class ReminderProvider extends ChangeNotifier {
       lastUpdated: DateTime.now(),
     );
 
-    curReminder!.notificationID = Constants.generateID();
+    curReminder!.notificationID = Constants.generate32ID();
 
     if (curReminder!.repeatable) {
       curReminder!.repeatID = Constants.generateID();
@@ -127,7 +124,7 @@ class ReminderProvider extends ChangeNotifier {
     try {
       curReminder =
           await _reminderService.createReminder(reminder: curReminder!);
-      await scheduleNotification();
+      await scheduleNotification(reminder: curReminder);
     } on FailureToCreateException catch (e) {
       log(e.cause);
       await cancelNotification();
@@ -158,7 +155,7 @@ class ReminderProvider extends ChangeNotifier {
           await _reminderService.updateReminder(reminder: curReminder!);
       await cancelNotification();
       if (validateDueDate()) {
-        await scheduleNotification();
+        await scheduleNotification(reminder: curReminder);
       }
     } on FailureToUploadException catch (e) {
       log(e.cause);
@@ -298,13 +295,16 @@ class ReminderProvider extends ChangeNotifier {
 
   Future<void> scheduleNotification({Reminder? reminder}) async {
     reminder = reminder ?? curReminder!;
-    String newDue = Jiffy.parseFromDateTime(reminder.dueDate)
+    if (null == reminder.dueDate) {
+      return;
+    }
+    String newDue = Jiffy.parseFromDateTime(reminder.dueDate!)
         .toLocal()
         .format(pattern: "MMM d, hh:mm a")
         .toString();
     await _notificationService.scheduleNotification(
         id: reminder.notificationID!,
-        warnDate: reminder.dueDate,
+        warnDate: reminder.dueDate!,
         message:
             "${reminder.name} is due on: $newDue\n It's okay to ask for more time.",
         payload: "REMINDER\n${reminder.id}");

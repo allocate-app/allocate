@@ -125,9 +125,11 @@ class _NotificationsScreen extends State<NotificationsScreen> {
                                       ? 0
                                       : deadlineProvider.deadlines.length,
                                   listviewBuilder: (
-                                          {required BuildContext context,
+                                          {Key? key,
+                                          required BuildContext context,
                                           required List<Deadline> items}) =>
                                       ListViews.immutableDeadlines(
+                                        key: key,
                                         context: context,
                                         deadlines: items,
                                         checkDelete: checkDelete,
@@ -162,9 +164,11 @@ class _NotificationsScreen extends State<NotificationsScreen> {
                                       ? 0
                                       : reminderProvider.reminders.length,
                                   listviewBuilder: (
-                                          {required BuildContext context,
+                                          {Key? key,
+                                          required BuildContext context,
                                           required List<Reminder> items}) =>
                                       ListViews.immutableReminders(
+                                        key: key,
                                         context: context,
                                         reminders: items,
                                         checkDelete: checkDelete,
@@ -199,9 +203,11 @@ class _NotificationsScreen extends State<NotificationsScreen> {
                                       ? 0
                                       : toDoProvider.toDos.length,
                                   listviewBuilder: (
-                                          {required BuildContext context,
+                                          {Key? key,
+                                          required BuildContext context,
                                           required List<ToDo> items}) =>
                                       ListViews.immutableToDos(
+                                        key: key,
                                         context: context,
                                         toDos: items,
                                         checkDelete: checkDelete,
@@ -268,9 +274,11 @@ class _NotificationsScreen extends State<NotificationsScreen> {
                                         : deadlineProvider
                                             .secondaryDeadlines.length,
                                     listviewBuilder: (
-                                            {required BuildContext context,
+                                            {Key? key,
+                                            required BuildContext context,
                                             required List<Deadline> items}) =>
                                         ListViews.immutableDeadlines(
+                                          key: key,
                                           context: context,
                                           deadlines: items,
                                           checkDelete: checkDelete,
@@ -307,9 +315,11 @@ class _NotificationsScreen extends State<NotificationsScreen> {
                                         : reminderProvider
                                             .secondaryReminders.length,
                                     listviewBuilder: (
-                                            {required BuildContext context,
+                                            {Key? key,
+                                            required BuildContext context,
                                             required List<Reminder> items}) =>
                                         ListViews.immutableReminders(
+                                          key: key,
                                           context: context,
                                           reminders: items,
                                           checkDelete: checkDelete,
@@ -345,9 +355,11 @@ class _NotificationsScreen extends State<NotificationsScreen> {
                                         ? 0
                                         : toDoProvider.secondaryToDos.length,
                                     listviewBuilder: (
-                                            {required BuildContext context,
+                                            {Key? key,
+                                            required BuildContext context,
                                             required List<ToDo> items}) =>
                                         ListViews.immutableToDos(
+                                          key: key,
                                           context: context,
                                           toDos: items,
                                           checkDelete: checkDelete,

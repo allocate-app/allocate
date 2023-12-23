@@ -103,21 +103,19 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
         const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics());
     nameEditingController = TextEditingController(text: group.name);
     nameEditingController.addListener(() {
-      nameErrorText = null;
-      checkClose = true;
-      String newText = nameEditingController.text;
-      SemanticsService.announce(newText, Directionality.of(context));
-      if (mounted) {
-        return setState(() => group.name = newText);
+      if (null != nameErrorText && mounted) {
+        setState(() {
+          nameErrorText = null;
+        });
       }
+      SemanticsService.announce(
+          nameEditingController.text, Directionality.of(context));
     });
     descriptionEditingController =
         TextEditingController(text: group.description);
     descriptionEditingController.addListener(() {
-      checkClose = true;
       String newText = descriptionEditingController.text;
       SemanticsService.announce(newText, Directionality.of(context));
-      group.description = newText;
     });
     toDoSearchController = SearchController();
   }
@@ -147,10 +145,28 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
 
   void clearNameField() {
     if (mounted) {
-      return setState(() {
+      setState(() {
         checkClose = true;
         nameEditingController.clear();
         group.name = "";
+      });
+    }
+  }
+
+  void updateName() {
+    if (mounted) {
+      setState(() {
+        checkClose = true;
+        group.name = nameEditingController.text;
+      });
+    }
+  }
+
+  void updateDescription() {
+    if (mounted) {
+      setState(() {
+        checkClose = true;
+        group.description = descriptionEditingController.text;
       });
     }
   }
@@ -169,21 +185,25 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
       return null;
     });
 
-    if (null != toDo) {
-      toDo.groupID = group.id;
-      await toDoProvider.updateToDo(toDo: toDo);
+    if (null == toDo) {
+      return;
     }
+    if (group.id == toDo.groupID) {
+      return;
+    }
+
+    toDo.groupID = group.id;
+    toDo.groupIndex = group.toDos.length;
+    await toDoProvider.updateToDo(toDo: toDo);
   }
 
-  Future<void> handleClose({required bool willDiscard}) async {
+  void handleClose({required bool willDiscard}) {
     if (willDiscard) {
-      return await groupProvider
-          .updateGroup(group: prevGroup)
-          .whenComplete(() => Navigator.pop(context));
+      return Navigator.pop(context);
     }
 
     if (mounted) {
-      return setState(() => checkClose = false);
+      setState(() => checkClose = false);
     }
   }
 
@@ -219,6 +239,10 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
   }
 
   Future<void> handleUpdate() async {
+    // in case the usr doesn't submit to the textfields
+    group.name = nameEditingController.text;
+    group.description = descriptionEditingController.text;
+
     await groupProvider.updateGroup().whenComplete(() {
       Navigator.pop(context);
     }).catchError((e) {
@@ -330,7 +354,8 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
                                         textFieldPadding: const EdgeInsets.only(
                                           left: Constants.halfPadding,
                                         ),
-                                        handleClear: clearNameField),
+                                        handleClear: clearNameField,
+                                        onEditingComplete: updateName),
                                     buildToDosTile(),
                                   ])),
                               Flexible(
@@ -351,6 +376,7 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
                                             const EdgeInsets.symmetric(
                                                 horizontal: Constants.padding),
                                         context: context,
+                                        onEditingComplete: updateDescription,
                                       ),
                                     ]),
                               )
@@ -422,7 +448,8 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
                           textFieldPadding: const EdgeInsets.only(
                             left: Constants.halfPadding,
                           ),
-                          handleClear: clearNameField),
+                          handleClear: clearNameField,
+                          onEditingComplete: updateName),
                       buildToDosTile(),
                       const PaddedDivider(padding: Constants.padding),
                       Tiles.descriptionTile(
@@ -430,6 +457,7 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
                         outerPadding: const EdgeInsets.symmetric(
                             horizontal: Constants.padding),
                         context: context,
+                        onEditingComplete: updateDescription,
                       ),
                     ]),
               ),
@@ -460,20 +488,8 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
           softWrap: false,
           minFontSize: Constants.large),
       subtitle: Subtitles.groupSubtitle(
-          toDoCount: groupProvider.getToDoCount(id: group.id)),
+          toDoCount: groupProvider.getToDoCount(id: group.id)!),
       children: [
-        SearchRecentsBar<ToDo>(
-          border: BorderSide.none,
-          clearOnSelection: true,
-          hintText: "Search Tasks",
-          padding: const EdgeInsets.all(Constants.padding),
-          handleDataSelection: handleSelection,
-          handleHistorySelection: handleSelection,
-          searchController: toDoSearchController,
-          dispose: false,
-          mostRecent: toDoProvider.mostRecent,
-          search: toDoProvider.searchToDos,
-        ),
         // This is too jarring. The database is too fast.
         // (loading) ? const CircularProgressIndicator() : const SizedBox.shrink(),
         PaginatingListview<ToDo>(
@@ -488,49 +504,75 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
             rebuildNotifiers: [toDoProvider],
             rebuildCallback: ({required List<ToDo> items}) {
               group.toDos = items;
-              groupProvider.setToDoCount(id: group.id);
+              groupProvider.setToDoCount(id: group.id, count: items.length);
             },
             listviewBuilder: (
-                {required BuildContext context, required List<ToDo> items}) {
+                {Key? key,
+                required BuildContext context,
+                required List<ToDo> items}) {
               return ListViews.reorderableGroupToDos(
+                key: key,
                 context: context,
                 toDos: items,
                 physics: physics,
-                onChanged: ({required int index, bool value = false}) async {
-                  items[index].completed = value;
-                  await toDoProvider.updateToDo(toDo: items[index]);
+                onChanged: ({ToDo? toDo, bool? value}) async {
+                  if (null == toDo) {
+                    return;
+                  }
+                  toDo.completed = value!;
+                  await toDoProvider.updateToDo(toDo: toDo);
                 },
-                handleRemove: ({required int index}) async {
-                  items[index].groupID = null;
-                  await toDoProvider.updateToDo(toDo: items[index]);
+                handleRemove: ({ToDo? toDo}) async {
+                  if (null == toDo) {
+                    return;
+                  }
+                  toDo.groupIndex = -1;
+                  toDo.groupID = null;
+                  await toDoProvider.updateToDo(toDo: toDo);
                 },
-                onTap: ({required int index}) async => await showDialog(
-                    barrierDismissible: false,
-                    useRootNavigator: false,
-                    context: context,
-                    builder: (BuildContext context) => UpdateToDoScreen(
-                          initialToDo: items[index],
-                          initialGroup: MapEntry<String, int>(
-                              (group.name.isNotEmpty)
-                                  ? group.name
-                                  : "New Group",
-                              group.id),
-                        )).catchError((e) {
-                  Flushbar? error;
+                onTap: ({ToDo? toDo}) async {
+                  if (null == toDo) {
+                    return;
+                  }
+                  return await showDialog(
+                      barrierDismissible: false,
+                      useRootNavigator: false,
+                      context: context,
+                      builder: (BuildContext context) => UpdateToDoScreen(
+                            initialToDo: toDo,
+                            initialGroup: MapEntry<String, int>(
+                                (group.name.isNotEmpty)
+                                    ? group.name
+                                    : "New Group",
+                                group.id),
+                          )).catchError((e) {
+                    Flushbar? error;
 
-                  error = Flushbars.createError(
-                    message: e.cause,
-                    context: context,
-                    dismissCallback: () => error?.dismiss(),
-                  );
+                    error = Flushbars.createError(
+                      message: e.cause,
+                      context: context,
+                      dismissCallback: () => error?.dismiss(),
+                    );
 
-                  error.show(context);
+                    error.show(context);
+                  },
+                      test: (e) =>
+                          e is FailureToCreateException ||
+                          e is FailureToUploadException);
                 },
-                    test: (e) =>
-                        e is FailureToCreateException ||
-                        e is FailureToUploadException),
               );
             }),
+        SearchRecentsBar<ToDo>(
+          border: BorderSide.none,
+          clearOnSelection: true,
+          hintText: "Search Tasks",
+          padding: const EdgeInsets.all(Constants.padding),
+          handleDataSelection: handleSelection,
+          searchController: toDoSearchController,
+          dispose: false,
+          mostRecent: toDoProvider.mostRecent,
+          search: toDoProvider.searchToDos,
+        ),
         Tiles.addTile(
           title: "Add Task",
           onTap: () async => await showDialog(

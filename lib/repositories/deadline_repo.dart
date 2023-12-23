@@ -148,7 +148,7 @@ class DeadlineRepo implements DeadlineRepository {
         .where()
         .repeatIDEqualTo(deleteFrom.repeatID)
         .filter()
-        .dueDateGreaterThan(deleteFrom.dueDate)
+        .dueDateGreaterThan(deleteFrom.dueDate!)
         .findAll();
 
     // This is to prevent a race condition & accidentally deleting a notification.
@@ -234,7 +234,7 @@ class DeadlineRepo implements DeadlineRepository {
       await _isarClient.writeTxn(() async {
         await _isarClient.deadlines.clear();
         for (Deadline deadline in deadlines) {
-          _isarClient.deadlines.put(deadline);
+          await _isarClient.deadlines.put(deadline);
         }
       });
     });
@@ -262,12 +262,12 @@ class DeadlineRepo implements DeadlineRepository {
       await _isarClient.deadlines.where().idEqualTo(id).findFirst();
 
   @override
-  Future<List<Deadline>> getRepoList({int limit = 50, int offset = 0}) =>
-      _isarClient.deadlines
+  Future<List<Deadline>> getRepoList({int limit = 50, int offset = 0}) async =>
+      await _isarClient.deadlines
           .where()
           .toDeleteEqualTo(false)
           .sortByCustomViewIndex()
-          .thenByLastUpdated()
+          .thenByLastUpdatedDesc()
           .offset(offset)
           .limit(limit)
           .findAll();
@@ -280,60 +280,60 @@ class DeadlineRepo implements DeadlineRepository {
     switch (sorter.sortMethod) {
       case SortMethod.name:
         if (sorter.descending) {
-          return _isarClient.deadlines
+          return await _isarClient.deadlines
               .where()
               .toDeleteEqualTo(false)
               .sortByNameDesc()
-              .thenByLastUpdated()
+              .thenByLastUpdatedDesc()
               .offset(offset)
               .limit(limit)
               .findAll();
         } else {
-          return _isarClient.deadlines
+          return await _isarClient.deadlines
               .where()
               .toDeleteEqualTo(false)
               .sortByName()
-              .thenByLastUpdated()
+              .thenByLastUpdatedDesc()
               .offset(offset)
               .limit(limit)
               .findAll();
         }
       case SortMethod.priority:
         if (sorter.descending) {
-          return _isarClient.deadlines
+          return await _isarClient.deadlines
               .where()
               .toDeleteEqualTo(false)
               .sortByPriorityDesc()
-              .thenByLastUpdated()
+              .thenByLastUpdatedDesc()
               .offset(offset)
               .limit(limit)
               .findAll();
         } else {
-          return _isarClient.deadlines
+          return await _isarClient.deadlines
               .where()
               .toDeleteEqualTo(false)
               .sortByPriority()
-              .thenByLastUpdated()
+              .thenByLastUpdatedDesc()
               .offset(offset)
               .limit(limit)
               .findAll();
         }
       case SortMethod.due_date:
         if (sorter.descending) {
-          return _isarClient.deadlines
+          return await _isarClient.deadlines
               .where()
               .toDeleteEqualTo(false)
               .sortByDueDateDesc()
-              .thenByLastUpdated()
+              .thenByLastUpdatedDesc()
               .offset(offset)
               .limit(limit)
               .findAll();
         } else {
-          return _isarClient.deadlines
+          return await _isarClient.deadlines
               .where()
               .toDeleteEqualTo(false)
               .sortByDueDate()
-              .thenByLastUpdated()
+              .thenByLastUpdatedDesc()
               .offset(offset)
               .limit(limit)
               .findAll();
@@ -345,7 +345,7 @@ class DeadlineRepo implements DeadlineRepository {
 
   @override
   Future<List<Deadline>> getWarnMes({DateTime? now, int limit = 10}) async =>
-      _isarClient.deadlines
+      await _isarClient.deadlines
           .where()
           .warnMeEqualTo(true)
           .filter()
@@ -357,7 +357,7 @@ class DeadlineRepo implements DeadlineRepository {
 
   @override
   Future<List<Deadline>> getRepeatables({DateTime? now}) async =>
-      _isarClient.deadlines
+      await _isarClient.deadlines
           .where()
           .repeatableEqualTo(true)
           .filter()
@@ -365,14 +365,14 @@ class DeadlineRepo implements DeadlineRepository {
           .dueDateLessThan(now ?? Constants.today)
           .findAll();
 
-  Future<List<int>> getDeleteIds() async => _isarClient.deadlines
+  Future<List<int>> getDeleteIds() async => await _isarClient.deadlines
       .where()
       .toDeleteEqualTo(true)
       .idProperty()
       .findAll();
 
   Future<List<Deadline>> getUnsynced() async =>
-      _isarClient.deadlines.where().isSyncedEqualTo(false).findAll();
+      await _isarClient.deadlines.where().isSyncedEqualTo(false).findAll();
 
   @override
   Future<List<Deadline>> getRange({DateTime? start, DateTime? end}) async {
@@ -388,13 +388,13 @@ class DeadlineRepo implements DeadlineRepository {
 
   @override
   Future<List<Deadline>> getUpcoming({int limit = 50, int offset = 0}) async =>
-      _isarClient.deadlines
+      await _isarClient.deadlines
           .where()
           .dueDateGreaterThan(Constants.today)
           .filter()
           .toDeleteEqualTo(false)
           .sortByDueDate()
-          .thenByLastUpdated()
+          .thenByLastUpdatedDesc()
           .offset(offset)
           .limit(limit)
           .findAll();
@@ -407,7 +407,7 @@ class DeadlineRepo implements DeadlineRepository {
           .filter()
           .toDeleteEqualTo(false)
           .sortByDueDateDesc()
-          .thenByLastUpdated()
+          .thenByLastUpdatedDesc()
           .offset(offset)
           .limit(limit)
           .findAll();

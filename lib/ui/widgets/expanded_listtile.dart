@@ -52,7 +52,7 @@ class _ExpandedListTile extends State<ExpandedListTile> {
                     color: Theme.of(context).colorScheme.outlineVariant,
                     strokeAlign: BorderSide.strokeAlignInside),
             borderRadius: const BorderRadius.all(
-                Radius.circular(Constants.roundedCorners))),
+                Radius.circular(Constants.semiCircular))),
         child: ExpansionTile(
           initiallyExpanded: expanded,
           maintainState: true,
@@ -63,10 +63,10 @@ class _ExpandedListTile extends State<ExpandedListTile> {
           subtitle: widget.subtitle,
           collapsedShape: const RoundedRectangleBorder(
               borderRadius:
-                  BorderRadius.all(Radius.circular(Constants.roundedCorners))),
+                  BorderRadius.all(Radius.circular(Constants.semiCircular))),
           shape: const RoundedRectangleBorder(
               borderRadius:
-                  BorderRadius.all(Radius.circular(Constants.roundedCorners))),
+                  BorderRadius.all(Radius.circular(Constants.semiCircular))),
           children: widget.children ?? [],
         ),
       ),

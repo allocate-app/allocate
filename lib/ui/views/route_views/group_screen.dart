@@ -61,13 +61,13 @@ class _GroupsListScreen extends State<GroupsListScreen> {
             header: "Groups",
             leadingIcon: const Icon(Icons.table_view_rounded),
             sorter: groupProvider.sorter,
-            onChanged: (SortMethod? method) {
-              if (null == method) {
+            onChanged: ({SortMethod? sortMethod}) {
+              if (null == sortMethod) {
                 return;
               }
               if (mounted) {
                 setState(() {
-                  groupProvider.sortMethod = method;
+                  groupProvider.sortMethod = sortMethod;
                 });
               }
             }),
@@ -92,15 +92,19 @@ class _GroupsListScreen extends State<GroupsListScreen> {
               },
               paginateButton: false,
               listviewBuilder: (
-                  {required BuildContext context, required List<Group> items}) {
+                  {Key? key,
+                  required BuildContext context,
+                  required List<Group> items}) {
                 if (groupProvider.sortMethod == SortMethod.none) {
                   return ListViews.reorderableGroups(
+                    key: key,
                     context: context,
                     groups: items,
                     checkDelete: checkDelete,
                   );
                 }
                 return ListViews.immutableGroups(
+                  key: key,
                   context: context,
                   groups: items,
                   checkDelete: checkDelete,

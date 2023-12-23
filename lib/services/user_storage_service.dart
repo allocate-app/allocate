@@ -9,7 +9,8 @@ import 'isar_service.dart';
 import 'supabase_service.dart';
 
 class UserStorageService {
-  final SupabaseClient _supabaseClient = SupabaseService.instance.supabaseClient;
+  final SupabaseClient _supabaseClient =
+      SupabaseService.instance.supabaseClient;
   final Isar _isarClient = IsarService.instance.isarClient;
 
   Future<void> createUser({required User user}) async {
@@ -23,8 +24,6 @@ class UserStorageService {
       throw FailureToCreateException("Failed to create user locally \n"
           "User: ${user.toString()}");
     }
-
-    user.localID = id!;
 
     if (null != _supabaseClient.auth.currentSession) {
       Map<String, dynamic> userEntity = user.toEntity();
@@ -86,7 +85,8 @@ class UserStorageService {
       }
       userEntities = await _supabaseClient.from("users").select();
       if (userEntities.length > 1 || userEntities.isEmpty) {
-        throw UserSyncException("ERROR - Number of users found: ${userEntities.length}");
+        throw UserSyncException(
+            "ERROR - Number of users found: ${userEntities.length}");
       }
 
       User user = User.fromEntity(entity: userEntities.last);

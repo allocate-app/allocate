@@ -124,8 +124,10 @@ class SubtaskRepo implements SubtaskRepository {
       await _isarClient.subtasks
           .where()
           .taskIDEqualTo(taskID)
+          .filter()
+          .toDeleteEqualTo(false)
           .sortByCustomViewIndex()
-          .thenByLastUpdated()
+          .thenByLastUpdatedDesc()
           .limit(limit)
           .count();
 
@@ -139,7 +141,7 @@ class SubtaskRepo implements SubtaskRepository {
           .toDeleteEqualTo(false)
           .completedEqualTo(false)
           .sortByCustomViewIndex()
-          .thenByLastUpdated()
+          .thenByLastUpdatedDesc()
           .limit(limit)
           .weightProperty()
           .sum();
@@ -153,7 +155,7 @@ class SubtaskRepo implements SubtaskRepository {
           .filter()
           .toDeleteEqualTo(false)
           .sortByCustomViewIndex()
-          .thenByLastUpdated()
+          .thenByLastUpdatedDesc()
           .offset(offset)
           .limit(limit)
           .findAll();

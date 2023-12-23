@@ -31,8 +31,6 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
   late final RoutineProvider routineProvider;
   late final SubtaskProvider subtaskProvider;
 
-  late final Routine prevRoutine;
-
   // Scrolling
   late final ScrollController mobileScrollController;
   late final ScrollController desktopScrollController;
@@ -65,7 +63,7 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
   void initializeParameters() {
     checkClose = false;
     expanded = true;
-    prevRoutine = routine.copy();
+    times = routineProvider.getRoutineTime(routine: routine);
   }
 
   void initializeControllers() {
@@ -75,13 +73,14 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
         const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics());
     nameEditingController = TextEditingController(text: routine.name);
     nameEditingController.addListener(() {
-      nameErrorText = null;
+      if (null != nameErrorText && mounted) {
+        setState(() {
+          nameErrorText = null;
+        });
+      }
       checkClose = true;
       String newText = nameEditingController.text;
       SemanticsService.announce(newText, Directionality.of(context));
-      if (mounted) {
-        return setState(() => routine.name = newText);
-      }
     });
   }
 
@@ -108,9 +107,9 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
     routine.subtasks = await routineProvider.getSubtasks(
       id: routine.id,
     );
-    routineProvider.routineSubtaskCounts[routine.id]!.value =
-        routine.subtasks.length;
-    routine.weight = await routineProvider.getWeight(taskID: Constants.intMax);
+    routineProvider.setSubtaskCount(
+        id: routine.id, count: routine.subtasks.length);
+    routine.weight = await routineProvider.getWeight(taskID: routine.id);
     routine.realDuration = routineProvider.calculateRealDuration(
         weight: routine.weight, duration: routine.expectedDuration);
     if (mounted) {
@@ -132,6 +131,9 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
   }
 
   Future<void> handleUpdate() async {
+    // in case the usr doesn't submit to the textfields
+    routine.name = nameEditingController.text;
+
     await routineProvider.updateRoutine(times: times).whenComplete(() {
       Navigator.pop(context);
     }).catchError((e) {
@@ -151,17 +153,18 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
 
   void handleClose({required bool willDiscard}) {
     if (willDiscard) {
-      Navigator.pop(context, prevRoutine);
+      routineProvider.rebuild = true;
+      return Navigator.pop(context);
     }
 
     if (mounted) {
-      return setState(() => checkClose = false);
+      setState(() => checkClose = false);
     }
   }
 
   void clearNameField() {
     if (mounted) {
-      return setState(() {
+      setState(() {
         checkClose = true;
         nameEditingController.clear();
         routine.name = "";
@@ -169,95 +172,26 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
     }
   }
 
+  void updateName() {
+    if (mounted) {
+      setState(() {
+        routine.name = nameEditingController.text;
+      });
+    }
+  }
+
   void changeRoutineTime({required int newRoutineTimes}) {
     if (mounted) {
-      return setState(() {
+      setState(() {
         checkClose = true;
         times = newRoutineTimes;
       });
     }
   }
 
-  // void handleWeightChange(double value) {
-  //   if (mounted) {
-  //     return setState(() {
-  //       checkClose = true;
-  //       routine.weight = value.toInt();
-  //       routine.realDuration = routineProvider.calculateRealDuration(
-  //           weight: routine.weight, duration: routine.expectedDuration);
-  //     });
-  //   }
-  // }
-  //
-  // void removeRoutineTask({required int index}) {
-  //   if (mounted) {
-  //     return setState(() {
-  //       checkClose = true;
-  //       Subtask st = cacheRoutineTasks.removeAt(index);
-  //       st = Subtask();
-  //       cacheRoutineTasks.add(st);
-  //       TextEditingController ct = routineTaskEditingController.removeAt(index);
-  //       ct.value = ct.value.copyWith(text: st.name);
-  //       routineTaskEditingController.add(ct);
-  //
-  //       shownTasks--;
-  //       shownTasks = max(shownTasks, 0);
-  //       routine.weight =
-  //           routineProvider.calculateWeight(routineTasks: cacheRoutineTasks);
-  //       routine.realDuration = routineProvider.calculateRealDuration(
-  //           weight: routine.weight, duration: routine.expectedDuration);
-  //     });
-  //   }
-  // }
-  //
-  // void reorderRoutineTasks(int oldIndex, int newIndex) {
-  //   if (mounted) {
-  //     return setState(() {
-  //       checkClose = true;
-  //       if (oldIndex < newIndex) {
-  //         newIndex--;
-  //       }
-  //       Subtask st = cacheRoutineTasks.removeAt(oldIndex);
-  //       cacheRoutineTasks.insert(newIndex, st);
-  //       TextEditingController ct =
-  //           routineTaskEditingController.removeAt(oldIndex);
-  //       routineTaskEditingController.insert(newIndex, ct);
-  //     });
-  //   }
-  // }
-
-  // void onDataChange() {
-  //   if (mounted) {
-  //     return setState(() {
-  //       checkClose = true;
-  //     });
-  //   }
-  // }
-  //
-  // void onRoutineTaskWeightChanged() {
-  //   if (mounted) {
-  //     return setState(() {
-  //       checkClose = true;
-  //       routine.weight =
-  //           routineProvider.calculateWeight(routineTasks: cacheRoutineTasks);
-  //       routine.realDuration = routineProvider.calculateRealDuration(
-  //           weight: routine.weight, duration: routine.expectedDuration);
-  //     });
-  //   }
-  // }
-  //
-  // void addRoutineTask() {
-  //   if (mounted) {
-  //     return setState(() {
-  //       shownTasks++;
-  //       shownTasks = min(shownTasks, Constants.maxNumTasks);
-  //     });
-  //   }
-  // }
-
   void updateDuration(int? value) {
     if (mounted) {
-      return setState(() {
+      setState(() {
         checkClose = true;
         routine.expectedDuration = value ?? routine.expectedDuration;
         routine.realDuration = routineProvider.calculateRealDuration(
@@ -268,7 +202,7 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
 
   void clearDuration() {
     if (mounted) {
-      return setState(() {
+      setState(() {
         checkClose = true;
         routine.expectedDuration = 0;
         routine.realDuration = 0;
@@ -373,7 +307,8 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
                                   textFieldPadding: const EdgeInsets.symmetric(
                                     horizontal: Constants.halfPadding,
                                   ),
-                                  handleClear: clearNameField),
+                                  handleClear: clearNameField,
+                                  onEditingComplete: updateName),
                               Tiles.weightTile(
                                 outerPadding: const EdgeInsets.all(
                                     Constants.innerPadding),
@@ -480,7 +415,8 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
                         textFieldPadding: const EdgeInsets.only(
                           left: Constants.halfPadding,
                         ),
-                        handleClear: clearNameField),
+                        handleClear: clearNameField,
+                        onEditingComplete: updateName),
                     Tiles.weightTile(
                       outerPadding:
                           const EdgeInsets.all(Constants.innerPadding),
@@ -505,7 +441,6 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
                     const PaddedDivider(padding: Constants.padding),
 
                     Tiles.subtasksTile(
-                        isDense: smallScreen,
                         context: context,
                         id: routine.id,
                         subtasks: routine.subtasks,

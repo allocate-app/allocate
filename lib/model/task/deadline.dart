@@ -19,7 +19,7 @@ class Deadline with EquatableMixin implements Copyable<Deadline>, IRepeatable {
 
   @override
   @ignore
-  RepeatableType repeatableType = RepeatableType.deadline;
+  ModelType get repeatableType => modelType;
 
   @override
   @Index()
@@ -36,11 +36,11 @@ class Deadline with EquatableMixin implements Copyable<Deadline>, IRepeatable {
   String description;
 
   @override
-  DateTime startDate;
+  DateTime? startDate;
   @Index()
   @override
-  DateTime dueDate;
-  DateTime warnDate;
+  DateTime? dueDate;
+  DateTime? warnDate;
   @Index()
   bool warnMe;
 
@@ -70,16 +70,20 @@ class Deadline with EquatableMixin implements Copyable<Deadline>, IRepeatable {
       this.customViewIndex = -1,
       required this.name,
       this.description = "",
-      required this.startDate,
-      required this.dueDate,
-      required this.warnDate,
+      this.startDate,
+      this.dueDate,
+      this.warnDate,
       this.warnMe = false,
       this.priority = Priority.low,
       this.repeatable = false,
       this.frequency = Frequency.once,
       required this.repeatDays,
       this.repeatSkip = 1,
-      required this.lastUpdated});
+      required this.lastUpdated}) {
+    while (Constants.intMax == id) {
+      id = Constants.generateID();
+    }
+  }
 
   Deadline.fromEntity({required Map<String, dynamic> entity})
       : id = entity["id"] as Id,
@@ -88,9 +92,9 @@ class Deadline with EquatableMixin implements Copyable<Deadline>, IRepeatable {
         notificationID = entity["notificationID"] as int?,
         name = entity["name"] as String,
         description = entity["description"] as String,
-        startDate = DateTime.parse(entity["startDate"]),
-        dueDate = DateTime.parse(entity["dueDate"]),
-        warnDate = DateTime.parse(entity["warnDate"]),
+        startDate = DateTime.tryParse(entity["startDate"]),
+        dueDate = DateTime.tryParse(entity["dueDate"]),
+        warnDate = DateTime.tryParse(entity["warnDate"]),
         warnMe = entity["warnMe"] as bool,
         priority = Priority.values[entity["priority"]],
         repeatable = entity["repeatable"],
@@ -109,9 +113,9 @@ class Deadline with EquatableMixin implements Copyable<Deadline>, IRepeatable {
         "repeatID": repeatID,
         "name": name,
         "description": description,
-        "startDate": startDate.toIso8601String(),
-        "dueDate": dueDate.toIso8601String(),
-        "warnDate": warnDate.toIso8601String(),
+        "startDate": (null != startDate) ? startDate?.toIso8601String() : null,
+        "dueDate": (null != dueDate) ? dueDate?.toIso8601String() : null,
+        "warnDate": (null != warnDate) ? warnDate?.toIso8601String() : null,
         "warnMe": warnMe,
         "priority": priority.index,
         "repeatable": repeatable,

@@ -14,7 +14,8 @@ import '../util/exceptions.dart';
 import '../util/sorting/deadline_sorter.dart';
 
 class DeadlineProvider extends ChangeNotifier {
-  bool rebuild = false;
+  bool rebuild = true;
+
   late Timer syncTimer;
 
   final DeadlineService _deadlineService;
@@ -73,7 +74,7 @@ class DeadlineProvider extends ChangeNotifier {
   Future<void> _syncRepo() async {
     // Not quite sure how to handle this outside of gui warning.
     try {
-      _deadlineService.syncRepo();
+      await _deadlineService.syncRepo();
     } on FailureToDeleteException catch (e) {
       log(e.cause);
       return Future.error(e);
@@ -97,22 +98,13 @@ class DeadlineProvider extends ChangeNotifier {
     List<bool>? repeatDays,
     int? repeatSkip,
   }) async {
-    startDate =
-        startDate?.copyWith(second: 0, millisecond: 0, microsecond: 0) ??
-            DateTime.now().copyWith(
-                hour: Constants.midnight.hour,
-                minute: Constants.midnight.minute,
-                second: 0,
-                microsecond: 0,
-                millisecond: 0);
-    dueDate = dueDate?.copyWith(second: 0, microsecond: 0, millisecond: 0) ??
-        DateTime.now().copyWith(
-            hour: Constants.eod.hour,
-            minute: Constants.eod.minute,
-            second: 0,
-            microsecond: 0,
-            millisecond: 0);
-    if (startDate.isAfter(dueDate)) {
+    if (null != startDate) {
+      startDate = startDate.copyWith(second: 0, millisecond: 0, microsecond: 0);
+    }
+    if (null != dueDate) {
+      dueDate = dueDate.copyWith(second: 0, microsecond: 0, millisecond: 0);
+    }
+    if (null != startDate && null != dueDate && startDate.isAfter(dueDate)) {
       dueDate = startDate.copyWith(
           day: dueDate.day + 1,
           hour: Constants.midnight.hour,
@@ -122,7 +114,7 @@ class DeadlineProvider extends ChangeNotifier {
     warnDate = warnDate?.copyWith(second: 0, millisecond: 0, microsecond: 0) ??
         dueDate;
 
-    if (startDate.isAfter(warnDate)) {
+    if (null != startDate && null != warnDate && startDate.isAfter(warnDate)) {
       warnDate = startDate.copyWith(minute: startDate.minute + 15);
     }
 
@@ -141,7 +133,7 @@ class DeadlineProvider extends ChangeNotifier {
         lastUpdated: DateTime.now());
 
     if (warnMe) {
-      curDeadline!.notificationID = Constants.generateID();
+      curDeadline!.notificationID = Constants.generate32ID();
     }
     if (repeatable ?? false) {
       curDeadline!.repeatID = Constants.generateID();
@@ -150,7 +142,7 @@ class DeadlineProvider extends ChangeNotifier {
 
     try {
       curDeadline =
-      await _deadlineService.createDeadline(deadline: curDeadline!);
+          await _deadlineService.createDeadline(deadline: curDeadline!);
 
       if (curDeadline!.warnMe) {
         await scheduleNotification();
@@ -183,7 +175,7 @@ class DeadlineProvider extends ChangeNotifier {
 
     try {
       curDeadline =
-      await _deadlineService.updateDeadline(deadline: curDeadline!);
+          await _deadlineService.updateDeadline(deadline: curDeadline!);
       await cancelNotification();
       if (deadline.warnMe && validateWarnDate()) {
         deadline.notificationID =
@@ -212,9 +204,10 @@ class DeadlineProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<List<Deadline>> reorderDeadlines({List<Deadline>? deadlines,
-    required int oldIndex,
-    required int newIndex}) async {
+  Future<List<Deadline>> reorderDeadlines(
+      {List<Deadline>? deadlines,
+      required int oldIndex,
+      required int newIndex}) async {
     try {
       return await _deadlineService.reorderDeadlines(
           deadlines: deadlines ?? this.deadlines,
@@ -270,7 +263,7 @@ class DeadlineProvider extends ChangeNotifier {
   Future<void> deleteAndCancelFutures({Deadline? deadline}) async {
     await deleteFutures(deadline: deadline).then((toDelete) async {
       List<int?> cancelIDs =
-      toDelete.map((deadline) => deadline.notificationID).toList();
+          toDelete.map((deadline) => deadline.notificationID).toList();
       return await _notificationService.cancelFutures(ids: cancelIDs);
     });
   }
@@ -289,7 +282,7 @@ class DeadlineProvider extends ChangeNotifier {
   }
 
   Future<List<Deadline>> getDeadlines(
-      {int limit = Constants.minLimitPerQuery, int offset = 0}) async =>
+          {int limit = Constants.minLimitPerQuery, int offset = 0}) async =>
       await _deadlineService.getDeadlinesBy(
           sorter: sorter, limit: limit, offset: offset);
 
@@ -297,7 +290,7 @@ class DeadlineProvider extends ChangeNotifier {
       deadlines = await _deadlineService.getDeadlines();
 
   Future<List<Deadline>> getDeadlinesBy(
-      {int limit = Constants.minLimitPerQuery, int offset = 0}) async =>
+          {int limit = Constants.minLimitPerQuery, int offset = 0}) async =>
       await _deadlineService.getDeadlinesBy(
           sorter: sorter, limit: limit, offset: offset);
 
@@ -311,7 +304,7 @@ class DeadlineProvider extends ChangeNotifier {
       await _deadlineService.getUpcoming(limit: limit, offset: offset);
 
   Future<List<Deadline>> searchDeadlines(
-      {required String searchString}) async =>
+          {required String searchString}) async =>
       await _deadlineService.searchDeadlines(searchString: searchString);
 
   Future<List<Deadline>> mostRecent({int limit = 5}) async =>
@@ -333,15 +326,18 @@ class DeadlineProvider extends ChangeNotifier {
 
   Future<void> scheduleNotification({Deadline? deadline}) async {
     deadline = deadline ?? curDeadline!;
-    String newDue = Jiffy.parseFromDateTime(deadline.dueDate)
+    if (null == deadline.dueDate || null == deadline.warnDate) {
+      return;
+    }
+    String newDue = Jiffy.parseFromDateTime(deadline.dueDate!)
         .toLocal()
         .format(pattern: "MMM d, hh:mm a")
         .toString();
     await _notificationService.scheduleNotification(
         id: deadline.notificationID!,
-        warnDate: deadline.warnDate,
+        warnDate: deadline.warnDate!,
         message:
-        "${deadline.name} is due on: $newDue\n It's okay to ask for more time.",
+            "${deadline.name} is due on: $newDue\n It's okay to ask for more time.",
         payload: "DEADLINE\n${deadline.id}");
   }
 
@@ -358,6 +354,6 @@ class DeadlineProvider extends ChangeNotifier {
           notificationDate: warnDate ?? curDeadline!.warnDate);
 
   Future<List<Deadline>> getDeadlinesBetween(
-      {DateTime? start, DateTime? end}) async =>
+          {DateTime? start, DateTime? end}) async =>
       await _deadlineService.getRange(start: start, end: end);
 }

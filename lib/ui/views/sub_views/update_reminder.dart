@@ -27,6 +27,7 @@ class UpdateReminderScreen extends StatefulWidget {
 
 class _UpdateReminderScreen extends State<UpdateReminderScreen> {
   late bool checkClose;
+  late bool showTime;
 
   late final ReminderProvider reminderProvider;
   late final Reminder prevReminder;
@@ -58,6 +59,7 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
 
   void initializeParameters() {
     checkClose = false;
+    showTime = null != reminder.dueDate;
     prevReminder = reminder.copy();
   }
 
@@ -67,13 +69,13 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
         const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics());
     nameEditingController = TextEditingController(text: reminder.name);
     nameEditingController.addListener(() {
-      nameErrorText = null;
-      checkClose = true;
-      String newText = nameEditingController.text;
-      SemanticsService.announce(newText, Directionality.of(context));
-      if (mounted) {
-        return setState(() => reminder.name = newText);
+      if (null != nameErrorText && mounted) {
+        setState(() {
+          nameErrorText = null;
+        });
       }
+      SemanticsService.announce(
+          nameEditingController.text, Directionality.of(context));
     });
   }
 
@@ -110,6 +112,9 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
   }
 
   Future<void> handleUpdate() async {
+    // in case the usr doesn't submit to the textfields
+    reminder.name = nameEditingController.text;
+
     if (prevReminder.frequency != Frequency.once && checkClose) {
       bool? updateSingle = await showModalBottomSheet<bool?>(
           showDragHandle: true,
@@ -117,6 +122,7 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
           builder: (BuildContext context) {
             return const HandleRepeatableModal(action: "Update");
           });
+
       // If the modal is discarded.
       if (null == updateSingle) {
         return;
@@ -258,23 +264,20 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
             e is FailureToCreateException || e is FailureToUploadException);
   }
 
-  Future<void> handleClose({required bool willDiscard}) async {
+  void handleClose({required bool willDiscard}) {
     if (willDiscard) {
-      await reminderProvider
-          .updateReminder(reminder: prevReminder)
-          .whenComplete(() {
-        Navigator.pop(context);
-      });
+      reminderProvider.rebuild = true;
+      return Navigator.pop(context);
     }
 
     if (mounted) {
-      return setState(() => checkClose = false);
+      setState(() => checkClose = false);
     }
   }
 
   void clearNameField() {
     if (mounted) {
-      return setState(() {
+      setState(() {
         checkClose = true;
         nameEditingController.clear();
         reminder.name = "";
@@ -282,31 +285,39 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
     }
   }
 
+  void updateName() {
+    if (mounted) {
+      setState(() {
+        checkClose = true;
+        reminder.name = nameEditingController.text;
+      });
+    }
+  }
+
   void clearDue() {
     if (mounted) {
-      return setState(() {
+      setState(() {
         checkClose = true;
-        reminder.dueDate = Constants.nullDate.copyWith(
-            hour: Constants.midnight.hour, minute: Constants.midnight.minute);
+        reminder.dueDate = null;
+        showTime = false;
       });
     }
   }
 
   void updateDue({bool? checkClose, DateTime? newDate, TimeOfDay? newTime}) {
     if (mounted) {
-      return setState(() {
+      setState(() {
         this.checkClose = checkClose ?? this.checkClose;
-        newDate = newDate ?? Constants.nullDate;
-        newTime = newTime ?? Constants.midnight;
         reminder.dueDate =
-            newDate!.copyWith(hour: newTime!.hour, minute: newTime!.minute);
+            newDate?.copyWith(hour: newTime?.hour, minute: newTime?.minute);
+        showTime = null != newTime;
       });
     }
   }
 
   void clearRepeatable() {
     if (mounted) {
-      return setState(() {
+      setState(() {
         checkClose = true;
         reminder.frequency = Frequency.once;
         reminder.repeatDays.fillRange(0, reminder.repeatDays.length, false);
@@ -321,13 +332,16 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
       required Set<int> newWeekdays,
       required int newSkip}) {
     if (mounted) {
-      return setState(() {
+      setState(() {
         this.checkClose = checkClose ?? this.checkClose;
         reminder.frequency = newFreq;
         reminder.repeatSkip = newSkip;
+
         if (newWeekdays.isEmpty) {
-          newWeekdays.add(reminder.dueDate.weekday - 1);
+          newWeekdays
+              .add((reminder.dueDate?.weekday ?? DateTime.now().weekday) - 1);
         }
+
         for (int i = 0; i < reminder.repeatDays.length; i++) {
           reminder.repeatDays[i] = newWeekdays.contains(i);
         }
@@ -357,7 +371,6 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
     bool largeScreen = (width >= Constants.largeScreen);
     bool smallScreen = (width <= Constants.smallScreen);
     bool hugeScreen = (width >= Constants.hugeScreen);
-
     return Dialog(
         insetPadding: EdgeInsets.all((smallScreen)
             ? Constants.mobileDialogPadding
@@ -415,22 +428,18 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
                                           const EdgeInsets.symmetric(
                                         horizontal: Constants.halfPadding,
                                       ),
-                                      handleClear: clearNameField),
+                                      handleClear: clearNameField,
+                                      onEditingComplete: updateName),
 
                                   Tiles.singleDateTimeTile(
                                     leading: const Icon(Icons.today_outlined),
                                     outerPadding: const EdgeInsets.symmetric(
                                         horizontal: Constants.padding),
                                     context: context,
-                                    date:
-                                        (Constants.nullDate != reminder.dueDate)
-                                            ? reminder.dueDate
-                                            : null,
-                                    time: (Constants.midnight !=
-                                            TimeOfDay.fromDateTime(
-                                                reminder.dueDate))
+                                    date: reminder.dueDate,
+                                    time: (null != reminder.dueDate && showTime)
                                         ? TimeOfDay.fromDateTime(
-                                            reminder.dueDate)
+                                            reminder.dueDate!)
                                         : null,
                                     useAlertIcon: false,
                                     showDate: true,
@@ -445,17 +454,21 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
                                       padding: Constants.padding),
 
                                   // Repeatable Stuff -> Show status, on click, open a dialog.
-                                  Tiles.repeatableTile(
-                                    context: context,
-                                    outerPadding: const EdgeInsets.symmetric(
-                                        horizontal: Constants.padding),
-                                    frequency: reminder.frequency,
-                                    weekdays: weekdayList,
-                                    repeatSkip: reminder.repeatSkip,
-                                    startDate: reminder.dueDate,
-                                    handleUpdate: updateRepeatable,
-                                    handleClear: clearRepeatable,
-                                  ),
+                                  (null != reminder.dueDate)
+                                      ? Tiles.repeatableTile(
+                                          context: context,
+                                          outerPadding:
+                                              const EdgeInsets.symmetric(
+                                                  horizontal:
+                                                      Constants.padding),
+                                          frequency: reminder.frequency,
+                                          weekdays: weekdayList,
+                                          repeatSkip: reminder.repeatSkip,
+                                          startDate: reminder.dueDate,
+                                          handleUpdate: updateRepeatable,
+                                          handleClear: clearRepeatable,
+                                        )
+                                      : const SizedBox.shrink(),
                                 ]))),
                     const PaddedDivider(padding: Constants.halfPadding),
                     Tiles.updateAndDeleteButtons(

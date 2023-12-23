@@ -6,7 +6,6 @@ import 'package:another_flushbar/flushbar.dart';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:auto_size_text_field/auto_size_text_field.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/semantics.dart';
 import 'package:intl/intl.dart';
 import 'package:jiffy/jiffy.dart';
 import 'package:provider/provider.dart';
@@ -30,18 +29,19 @@ import '../../util/constants.dart';
 import '../../util/enums.dart';
 import '../../util/exceptions.dart';
 import '../../util/numbers.dart';
+import '../views/sub_views/create_routine.dart';
 import '../views/sub_views/create_todo.dart';
 import '../views/sub_views/update_deadline.dart';
 import '../views/sub_views/update_group.dart';
 import '../views/sub_views/update_reminder.dart';
 import '../views/sub_views/update_routine.dart';
+import '../views/sub_views/update_subtask.dart';
 import '../views/sub_views/update_todo.dart';
 import 'check_delete_dialog.dart';
 import 'date_range_dialog.dart';
 import 'date_time_dialog.dart';
 import 'drain_bar.dart';
 import 'duration_dialog.dart';
-import 'energy_modal.dart';
 import 'expanded_listtile.dart';
 import 'flushbars.dart';
 import 'frequency_dialog.dart';
@@ -51,7 +51,6 @@ import 'search_recents_bar.dart';
 
 class Tiles {
   /// ListView Tiles
-  // TODO: fix these once subtasks are implemented.
   static Widget toDoListTile(
       {required BuildContext context,
       required int index,
@@ -63,6 +62,10 @@ class Tiles {
       bool checkDelete = false}) {
     UserProvider userProvider = Provider.of(context, listen: false);
     ToDoProvider toDoProvider = Provider.of(context, listen: false);
+    // This is not an ideal solution, but it is to maintain a proper count
+    // of linked ToDos.
+    GroupProvider groupProvider = Provider.of(context, listen: false);
+
     return ListTile(
         tileColor: (toDo.myDay)
             ? Theme.of(context)
@@ -75,8 +78,8 @@ class Tiles {
         key: ValueKey(toDo.id),
         shape: const RoundedRectangleBorder(
             borderRadius:
-                BorderRadius.all(Radius.circular(Constants.roundedCorners))),
-        leading: LeadingWidgets.toDoCheckbox(
+                BorderRadius.all(Radius.circular(Constants.semiCircular))),
+        leading: LeadingWidgets.checkbox(
             outerPadding:
                 const EdgeInsets.symmetric(horizontal: Constants.halfPadding),
             scale: 1.1,
@@ -161,7 +164,8 @@ class Tiles {
                     await deleteToDo(
                         toDo: toDo,
                         context: context,
-                        toDoProvider: toDoProvider);
+                        toDoProvider: toDoProvider,
+                        groupProvider: groupProvider);
                   });
                 },
               )),
@@ -173,12 +177,16 @@ class Tiles {
   }
 
   // Helper function to delete ToDos ->
-  static Future<void> deleteToDo(
-      {required ToDo toDo,
-      required BuildContext context,
-      ToDoProvider? toDoProvider}) async {
+  static Future<void> deleteToDo({
+    required ToDo toDo,
+    required BuildContext context,
+    ToDoProvider? toDoProvider,
+    GroupProvider? groupProvider,
+  }) async {
     toDoProvider =
         toDoProvider ?? Provider.of<ToDoProvider>(context, listen: false);
+    groupProvider =
+        groupProvider ?? Provider.of<GroupProvider>(context, listen: false);
     // For repeating ToDos.
     if (toDo.frequency != Frequency.once) {
       await showModalBottomSheet<bool?>(
@@ -223,7 +231,11 @@ class Tiles {
       });
     }
 
-    return await toDoProvider.deleteToDo(toDo: toDo).catchError((e) {
+    return await toDoProvider.deleteToDo(toDo: toDo).whenComplete(() {
+      if (null != toDo.groupID) {
+        groupProvider!.setToDoCount(id: toDo.groupID!);
+      }
+    }).catchError((e) {
       Flushbar? error;
 
       error = Flushbars.createError(
@@ -252,8 +264,8 @@ class Tiles {
         key: ValueKey(toDo.id ^ index),
         shape: const RoundedRectangleBorder(
             borderRadius:
-                BorderRadius.all(Radius.circular(Constants.roundedCorners))),
-        leading: LeadingWidgets.toDoCheckbox(
+                BorderRadius.all(Radius.circular(Constants.semiCircular))),
+        leading: LeadingWidgets.checkbox(
             outerPadding:
                 const EdgeInsets.symmetric(horizontal: Constants.halfPadding),
             scale: 1.1,
@@ -343,12 +355,13 @@ class Tiles {
         key: ValueKey(routine.id),
         shape: const RoundedRectangleBorder(
             borderRadius:
-                BorderRadius.all(Radius.circular(Constants.roundedCorners))),
+                BorderRadius.all(Radius.circular(Constants.semiCircular))),
         leading: LeadingWidgets.routineIcon(
             currentContext: context,
             scale: 1,
             times: routineProvider.getRoutineTime(routine: routine),
             handleRoutineTimeChange: ({required int newRoutineTimes}) {
+              routineProvider.unsetDailyRoutine(id: routine.id);
               routineProvider.setDailyRoutine(
                   timeOfDay: newRoutineTimes, routine: routine);
             }),
@@ -459,7 +472,7 @@ class Tiles {
         key: ValueKey(deadline.id),
         shape: const RoundedRectangleBorder(
             borderRadius:
-                BorderRadius.all(Radius.circular(Constants.roundedCorners))),
+                BorderRadius.all(Radius.circular(Constants.semiCircular))),
         leading: (deadline.warnMe)
             ? LeadingWidgets.deadlineWarnMeIcon(
                 currentContext: context,
@@ -614,7 +627,7 @@ class Tiles {
         key: ValueKey(reminder.id),
         shape: const RoundedRectangleBorder(
             borderRadius:
-                BorderRadius.all(Radius.circular(Constants.roundedCorners))),
+                BorderRadius.all(Radius.circular(Constants.semiCircular))),
         leading: (Frequency.once != reminder.frequency)
             ? LeadingWidgets.reminderRepeatingIcon(
                 currentContext: context,
@@ -816,38 +829,9 @@ class Tiles {
           minFontSize: Constants.large,
         ),
         subtitle: Subtitles.groupSubtitle(
-            toDoCount: groupProvider.getToDoCount(id: group.id)),
+            toDoCount: groupProvider.getToDoCount(id: group.id)!),
         children: [
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Expanded(
-                child: SearchRecentsBar<ToDo>(
-                  border: BorderSide.none,
-                  clearOnSelection: true,
-                  hintText: "Search Tasks",
-                  padding: const EdgeInsets.all(Constants.padding),
-                  handleDataSelection: ({required int id}) async {
-                    await groupToDoDataSelection(
-                        toDoID: id,
-                        groupID: group.id,
-                        context: context,
-                        toDoProvider: toDoProvider);
-                  },
-                  handleHistorySelection: ({required int id}) async {
-                    await groupToDoDataSelection(
-                        toDoID: id,
-                        groupID: group.id,
-                        context: context,
-                        toDoProvider: toDoProvider);
-                  },
-                  searchController: SearchController(),
-                  mostRecent: toDoProvider.mostRecent,
-                  search: toDoProvider.searchToDos,
-                ),
-              ),
-            ],
-          ),
+          // TODO: this needs a valuekey function.
           PaginatingListview<ToDo>(
             items: group.toDos,
             query: (
@@ -860,25 +844,34 @@ class Tiles {
             pullToRefresh: false,
             rebuildNotifiers: [toDoProvider],
             rebuildCallback: ({required List<ToDo> items}) {
-              groupProvider.setToDoCount(id: group.id);
+              groupProvider.setToDoCount(id: group.id, count: items.length);
             },
             listviewBuilder: (
-                {required BuildContext context, required List<ToDo> items}) {
+                {Key? key,
+                required BuildContext context,
+                required List<ToDo> items}) {
               return ListViews.reorderableGroupToDos(
+                  key: key,
                   context: context,
                   toDos: items,
                   physics: physics,
-                  onChanged: ({required int index, bool value = false}) async {
-                    items[index].completed = value;
-                    await toDoProvider.updateToDo(toDo: items[index]);
+                  onChanged: ({ToDo? toDo, bool? value}) async {
+                    if (null == toDo) {
+                      return;
+                    }
+                    toDo.completed = value!;
+                    await toDoProvider.updateToDo(toDo: toDo);
                   },
-                  onTap: ({required int index}) async {
+                  onTap: ({ToDo? toDo}) async {
+                    if (null == toDo) {
+                      return;
+                    }
                     await showDialog(
                         barrierDismissible: false,
                         useRootNavigator: false,
                         context: context,
                         builder: (BuildContext context) => UpdateToDoScreen(
-                              initialToDo: items[index],
+                              initialToDo: toDo,
                               initialGroup:
                                   MapEntry<String, int>(group.name, group.id),
                             )).catchError((e) {
@@ -896,14 +889,41 @@ class Tiles {
                             e is FailureToCreateException ||
                             e is FailureToUploadException);
                   },
-                  handleRemove: ({required int index}) async {
-                    items[index].groupID = null;
+                  handleRemove: ({ToDo? toDo}) async {
+                    if (null == toDo) {
+                      return;
+                    }
+                    toDo.groupIndex = -1;
+                    toDo.groupID = null;
                     await toDoProvider.updateToDo(toDo: items[index]);
                   });
             },
           ),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Expanded(
+                child: SearchRecentsBar<ToDo>(
+                  dispose: true,
+                  border: BorderSide.none,
+                  clearOnSelection: true,
+                  hintText: "Search Tasks",
+                  padding: const EdgeInsets.all(Constants.padding),
+                  handleDataSelection: ({required int id}) async {
+                    await groupToDoDataSelection(
+                        toDoID: id,
+                        groupID: group.id,
+                        context: context,
+                        toDoProvider: toDoProvider);
+                  },
+                  mostRecent: toDoProvider.mostRecent,
+                  search: toDoProvider.searchToDos,
+                ),
+              ),
+            ],
+          ),
           addTile(
-              title: "Add Task",
+              title: "New Task",
               onTap: () async {
                 await showDialog(
                     barrierDismissible: false,
@@ -950,84 +970,78 @@ class Tiles {
       error.show(context);
       return null;
     });
-    if (null != toDo) {
-      toDo.groupID = groupID;
-      await toDoProvider.updateToDo(toDo: toDo);
+
+    if (null == toDo) {
+      return;
     }
+    if (groupID == toDo.groupID) {
+      return;
+    }
+    toDo.groupID = groupID;
+    await toDoProvider.updateToDo(toDo: toDo);
   }
 
-  // TODO: Refactor this -> should bring up a dialog instead, text is causing issues.
-  // and the modal is gross.
-  // Right now, using a focus node to check when focus is lost to update.
+  /// Checkboxes
+  static Widget checkboxListTile({
+    Key? key,
+    EdgeInsetsGeometry contentPadding = EdgeInsets.zero,
+    Widget? title,
+    required void Function(bool? value) onChanged,
+    void Function()? onTap,
+    bool value = false,
+    Widget? trailing,
+  }) =>
+      ListTile(
+          leading: LeadingWidgets.checkbox(
+            completed: value,
+            onChanged: onChanged,
+          ),
+          onTap: onTap,
+          contentPadding: contentPadding,
+          key: key,
+          shape: const RoundedRectangleBorder(
+              borderRadius:
+                  BorderRadius.all(Radius.circular(Constants.semiCircular))),
+          title: title,
+          trailing: trailing);
+
   static Widget subtaskCheckboxTile(
-          {required BuildContext context,
-          EdgeInsetsGeometry textFieldPadding = EdgeInsets.zero,
-          required int index,
+          {required int index,
           required Subtask subtask,
-          required Future<void> Function({required Subtask subtask})
-              updateSubtask,
-          required Future<void> Function({required Subtask subtask}) onRemoved,
+          required void Function(bool? value) onChanged,
+          required void Function() onTap,
+          required void Function() onRemoved,
           bool showHandle = false}) =>
       checkboxListTile(
           key: ValueKey(index),
           contentPadding:
               const EdgeInsets.symmetric(horizontal: Constants.padding),
-          onChanged: (bool? value) {
-            subtask.completed = value!;
-            updateSubtask(subtask: subtask);
-          },
-          title: Padding(
-            padding: textFieldPadding,
-            child: Focus(
-              onFocusChange: (bool hasFocus) async {
-                if (!hasFocus) {
-                  await updateSubtask(subtask: subtask);
-                }
-              },
-              child: AutoSizeTextField(
-                  // TODO: get rid of this widget entirely. NEEDS to be its own statefulwidget.
-                  controller: TextEditingController(text: subtask.name),
-                  minLines: 1,
-                  maxLines: 1,
-                  minFontSize: Constants.large,
-                  decoration: const InputDecoration.collapsed(
-                    hintText: "Step name",
-                  ),
-                  onEditingComplete: () async {
-                    await updateSubtask(subtask: subtask);
-                  },
-                  onChanged: (value) {
-                    SemanticsService.announce(
-                        value, Directionality.of(context));
-                    subtask.name = value;
-                  }),
-            ),
-          ),
+          onChanged: onChanged,
+          title: AutoSizeText(subtask.name,
+              overflow: TextOverflow.ellipsis,
+              minFontSize: Constants.large,
+              softWrap: false,
+              maxLines: 2),
+          onTap: onTap,
           value: subtask.completed,
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              IconButton(
-                visualDensity: VisualDensity.adaptivePlatformDensity,
-                icon: Constants.batteryIcons[subtask.weight]!,
-                selectedIcon: Constants.selectedBatteryIcons[subtask.weight]!,
-                onPressed: () async {
-                  await showModalBottomSheet<int?>(
-                      useSafeArea: true,
-                      showDragHandle: true,
-                      context: context,
-                      builder: (BuildContext context) {
-                        return EnergyModal(initialWeight: subtask.weight);
-                      }).then((newWeight) async {
-                    subtask.weight = newWeight ?? subtask.weight;
-                    await updateSubtask(subtask: subtask);
-                  });
-                },
+              Constants.batteryIcons[subtask.weight]!,
+              AutoSizeText(
+                "${subtask.weight}",
+                overflow: TextOverflow.visible,
+                minFontSize: Constants.large,
+                softWrap: false,
+                maxLines: 1,
               ),
-              IconButton(
-                  visualDensity: VisualDensity.adaptivePlatformDensity,
-                  icon: const Icon(Icons.remove_circle_outline_rounded),
-                  onPressed: () => onRemoved(subtask: subtask)),
+              Padding(
+                padding: EdgeInsets.zero,
+                child: IconButton(
+                    visualDensity: VisualDensity.adaptivePlatformDensity,
+                    icon: const Icon(Icons.remove_circle_outline_rounded),
+                    onPressed: onRemoved),
+              ),
               (showHandle)
                   ? ReorderableDragStartListener(
                       index: index,
@@ -1036,52 +1050,26 @@ class Tiles {
             ],
           ));
 
-  /// Checkboxes
-  static Widget checkboxListTile({
-    Key? key,
-    EdgeInsetsGeometry contentPadding = EdgeInsets.zero,
-    Widget? title,
-    required void Function(bool? value) onChanged,
-    bool value = false,
-    Widget? trailing,
-  }) =>
-      ListTile(
-          leading: LeadingWidgets.toDoCheckbox(
-            completed: value,
-            onChanged: onChanged,
-          ),
-          contentPadding: contentPadding,
-          key: key,
-          shape: const RoundedRectangleBorder(
-              borderRadius:
-                  BorderRadius.all(Radius.circular(Constants.roundedCorners))),
-          title: title,
-          trailing: trailing);
-
   static Widget toDoCheckTile({
     required int index,
     required ToDo toDo,
     bool showHandle = false,
-    required Future<void> Function({required int index, bool value}) onChanged,
-    required Future<void> Function({required int index}) onTap,
-    required void Function({required int index}) handleRemove,
+    required void Function(bool?) onChanged,
+    void Function()? onTap,
+    void Function()? handleRemove,
   }) {
-    return ListTile(
+    return checkboxListTile(
         contentPadding:
             const EdgeInsets.symmetric(horizontal: Constants.innerPadding),
         key: ValueKey(toDo.id),
-        shape: const RoundedRectangleBorder(
-            borderRadius:
-                BorderRadius.all(Radius.circular(Constants.roundedCorners))),
-        leading: LeadingWidgets.toDoCheckbox(
-            completed: toDo.completed,
-            onChanged: (bool? value) => onChanged(index: index, value: value!)),
+        value: toDo.completed,
+        onChanged: onChanged,
         title: AutoSizeText(toDo.name,
             overflow: TextOverflow.ellipsis,
             minFontSize: Constants.large,
             softWrap: false,
             maxLines: 2),
-        onTap: () async => await onTap(index: index),
+        onTap: onTap,
         trailing: Row(mainAxisSize: MainAxisSize.min, children: [
           Row(mainAxisSize: MainAxisSize.min, children: [
             Constants.batteryIcons[(toDo.taskType == TaskType.small)
@@ -1105,7 +1093,7 @@ class Tiles {
               padding: EdgeInsets.zero,
               child: IconButton(
                 icon: const Icon(Icons.remove_circle_outline_rounded),
-                onPressed: () => handleRemove(index: index),
+                onPressed: handleRemove,
               )),
           (showHandle)
               ? ReorderableDragStartListener(
@@ -1115,12 +1103,12 @@ class Tiles {
   }
 
   // SUBTASK EXPANSION TILES
-  // TODO: refactor subtasks into their own provider class.
-  // issue with single-listener -> code should be shared
   static Widget subtasksTile({
+    Widget? leading,
+    Widget? trailing,
+    String? title,
     required BuildContext context,
     required int id,
-    bool isDense = false,
     int limit = Constants.maxNumTasks,
     required List<Subtask> subtasks,
     required ValueNotifier<int> subtaskCount,
@@ -1130,13 +1118,15 @@ class Tiles {
     SubtaskProvider subtaskProvider =
         Provider.of<SubtaskProvider>(context, listen: false);
     return ExpandedListTile(
+        leading: leading,
         outerPadding: outerPadding,
-        title: const AutoSizeText("Steps",
+        title: AutoSizeText(title ?? "Steps",
             maxLines: 1,
             overflow: TextOverflow.visible,
             softWrap: false,
             minFontSize: Constants.small),
         subtitle: Subtitles.subtaskSubtitle(subtaskCount: subtaskCount),
+        trailing: trailing,
         children: [
           ListViews.reorderableSubtasks(
               showHandle: subtasks.length > 1,
@@ -1144,7 +1134,31 @@ class Tiles {
               context: context,
               subtasks: subtasks,
               itemCount: subtasks.length,
-              updateSubtask: ({required Subtask subtask}) async {
+              onTap: ({Subtask? subtask}) async {
+                await showDialog(
+                        barrierDismissible: true,
+                        useRootNavigator: false,
+                        context: context,
+                        builder: (BuildContext context) =>
+                            UpdateSubtaskScreen(initialSubtask: subtask))
+                    .catchError((e) {
+                  Flushbar? error;
+                  error = Flushbars.createError(
+                    message: e.cause,
+                    context: context,
+                    dismissCallback: () => error?.dismiss(),
+                  );
+                  error.show(context);
+                },
+                        test: (e) =>
+                            e is FailureToUpdateException ||
+                            e is FailureToUploadException);
+              },
+              onChanged: ({bool? value, Subtask? subtask}) async {
+                if (null == subtask) {
+                  return;
+                }
+                subtask.completed = value!;
                 await subtaskProvider
                     .updateSubtask(subtask: subtask)
                     .catchError((e) {
@@ -1158,7 +1172,10 @@ class Tiles {
                             e is FailureToUpdateException ||
                             e is FailureToUploadException);
               },
-              onRemoved: ({required Subtask subtask}) async {
+              onRemoved: ({Subtask? subtask}) async {
+                if (null == subtask) {
+                  return;
+                }
                 await subtaskProvider
                     .deleteSubtask(subtask: subtask)
                     .catchError((e) {
@@ -1196,23 +1213,6 @@ class Tiles {
                       horizontal: Constants.innerPadding),
                   hintText: "Add step",
                 )
-
-              // addTile(
-              //         title: "Add a step",
-              //         onTap: () async {
-              //           await subtaskProvider
-              //               .createSubtask(taskID: id, index: subtasks.length)
-              //               .catchError((e) {
-              //             Flushbar? error;
-              //             error = Flushbars.createError(
-              //                 message: e.cause,
-              //                 context: context,
-              //                 dismissCallback: () => error?.dismiss());
-              //           },
-              //                   test: (e) =>
-              //                       e is FailureToCreateException ||
-              //                       e is FailureToUploadException);
-              //         })
               : const SizedBox.shrink()
         ]);
   }
@@ -1233,11 +1233,8 @@ class Tiles {
       _ => "",
     };
 
-    // TODO: onpressed should create a new routine.
-    // OR -> Use a decorated box?
-    // Also: add an add tile.
     return ExpandedListTile(
-      leading: LeadingWidgets.myDayRoutineIcon(times: times, onPressed: () {}),
+      leading: LeadingWidgets.myDayRoutineIcon(times: times, onPressed: null),
       title: Padding(
         padding: const EdgeInsets.symmetric(vertical: Constants.padding),
         child: AutoSizeText("$type Routine",
@@ -1249,14 +1246,9 @@ class Tiles {
       children: [
         SearchRecentsBar<Routine>(
           border: BorderSide.none,
+          clearOnSelection: true,
+          dispose: true,
           handleDataSelection: ({required int id}) async {
-            Routine? routine = await routineProvider.getRoutineByID(id: id);
-            if (null == routine) {
-              return;
-            }
-            routineProvider.setDailyRoutine(timeOfDay: times, routine: routine);
-          },
-          handleHistorySelection: ({required int id}) async {
             Routine? routine = await routineProvider.getRoutineByID(id: id);
             if (null == routine) {
               return;
@@ -1267,13 +1259,21 @@ class Tiles {
           search: routineProvider.searchRoutines,
           hintText: "Search Routines",
         ),
-        // TODO: add tile -> Create routine with initial time set.
+        addTile(
+            title: "New Routine",
+            onTap: () async {
+              await showDialog(
+                  context: context,
+                  barrierDismissible: false,
+                  useRootNavigator: false,
+                  builder: (BuildContext context) {
+                    return CreateRoutineScreen(times: times);
+                  });
+            }),
       ],
     );
   }
 
-  // This doesn't really differ much from the subtasks tile.
-  // TODO: try to make one widget
   static Widget filledRoutineTile({
     required BuildContext context,
     required Routine routine,
@@ -1282,104 +1282,42 @@ class Tiles {
   }) {
     RoutineProvider routineProvider =
         Provider.of<RoutineProvider>(context, listen: false);
-    SubtaskProvider subtaskProvider =
-        Provider.of<SubtaskProvider>(context, listen: false);
-    return ExpandedListTile(
-        leading: LeadingWidgets.myDayRoutineIcon(
+    return subtasksTile(
+      id: routine.id,
+      subtaskCount: routineProvider.getSubtaskCount(id: routine.id),
+      subtasks: routine.subtasks,
+      context: context,
+      leading: LeadingWidgets.myDayRoutineIcon(
           times: times,
           routine: routine,
           onPressed: () async {
             await showDialog(
-              barrierDismissible: false,
-              useRootNavigator: false,
-              context: context,
-              builder: (BuildContext context) => UpdateRoutineScreen(
-                initialRoutine: routine,
-              ),
-            );
-          },
-        ),
-        title: AutoSizeText(routine.name,
-            maxLines: 1,
-            overflow: TextOverflow.visible,
-            softWrap: false,
-            minFontSize: Constants.large),
-        subtitle: Subtitles.subtaskSubtitle(
-            subtaskCount: routineProvider.getSubtaskCount(id: routine.id)),
-        trailing: IconButton(
-          icon: const Icon(Icons.remove_circle_outline),
-          onPressed: () => routineProvider.unsetDailyRoutine(id: routine.id),
-        ),
-        children: [
-          ListViews.reorderableSubtasks(
-            context: context,
-            physics: physics,
-            itemCount: routine.subtasks.length,
-            subtasks: routine.subtasks,
-            updateSubtask: ({required Subtask subtask}) async {
-              await subtaskProvider.updateSubtask(subtask: subtask).catchError(
-                  (e) {
-                Flushbar? error;
-                error = Flushbars.createError(
-                    message: e.cause,
-                    context: context,
-                    dismissCallback: () => error?.dismiss());
-              },
-                  test: (e) =>
-                      e is FailureToUpdateException ||
-                      e is FailureToUploadException);
-            },
-            onRemoved: ({required Subtask subtask}) async {
-              await subtaskProvider.deleteSubtask(subtask: subtask).catchError(
-                  (e) {
-                Flushbar? error;
-                error = Flushbars.createError(
-                    message: e.cause,
-                    context: context,
-                    dismissCallback: () => error?.dismiss());
-              }, test: (e) => e is FailureToDeleteException);
-            },
-            onReorder: (int oldIndex, int newIndex) async {
-              await subtaskProvider
-                  .reorderSubtasks(
-                      subtasks: routine.subtasks,
-                      oldIndex: oldIndex,
-                      newIndex: newIndex)
-                  .catchError((e) {
-                Flushbar? error;
-                error = Flushbars.createError(
-                    message: e.cause,
-                    context: context,
-                    dismissCallback: () => error?.dismiss());
-                return List<Subtask>.empty(growable: false);
-              },
-                      test: (e) =>
-                          e is FailureToUpdateException ||
-                          e is FailureToUploadException);
-            },
-            showHandle: routine.subtasks.length > 1,
-          ),
-          (routine.subtasks.length < Constants.maxNumTasks)
-              ? addTile(
-                  onTap: () async {
-                    await subtaskProvider
-                        .createSubtask(
-                            taskID: routine.id, index: routine.subtasks.length)
-                        .catchError((e) {
-                      Flushbar? error;
-                      error = Flushbars.createError(
-                          message: e.cause,
-                          context: context,
-                          dismissCallback: () => error?.dismiss());
-                    },
-                            test: (e) =>
-                                e is FailureToCreateException ||
-                                e is FailureToUploadException);
-                  },
-                  title: "Add a step",
-                )
-              : const SizedBox.shrink(),
-        ]);
+                context: context,
+                barrierDismissible: false,
+                useRootNavigator: true,
+                builder: (BuildContext context) =>
+                    UpdateRoutineScreen(initialRoutine: routine));
+          }),
+      title: routine.name,
+      trailing: IconButton(
+        icon: const Icon(Icons.remove_circle_outline_rounded),
+        onPressed: () {
+          switch (times) {
+            case 1:
+              routineProvider.curMorning = null;
+              break;
+            case 2:
+              routineProvider.curAfternoon = null;
+              break;
+            case 4:
+              routineProvider.curEvening = null;
+              break;
+            default:
+              break;
+          }
+        },
+      ),
+    );
   }
 
   /// Model Parameter Tiles
@@ -1393,6 +1331,7 @@ class Tiles {
     String? errorText = "",
     TextEditingController? controller,
     required void Function() handleClear,
+    required void Function() onEditingComplete,
   }) =>
       Padding(
         padding: outerPadding,
@@ -1415,7 +1354,7 @@ class Tiles {
                         const EdgeInsets.all(Constants.innerPadding),
                     enabledBorder: OutlineInputBorder(
                         borderRadius: const BorderRadius.all(
-                            Radius.circular(Constants.roundedCorners)),
+                            Radius.circular(Constants.semiCircular)),
                         borderSide: BorderSide(
                           width: 2,
                           color: Theme.of(context).colorScheme.outlineVariant,
@@ -1423,7 +1362,7 @@ class Tiles {
                         )),
                     border: const OutlineInputBorder(
                         borderRadius: BorderRadius.all(
-                            Radius.circular(Constants.roundedCorners)),
+                            Radius.circular(Constants.semiCircular)),
                         borderSide: BorderSide(
                           strokeAlign: BorderSide.strokeAlignOutside,
                         )),
@@ -1431,6 +1370,7 @@ class Tiles {
                     errorText: errorText,
                   ),
                   controller: controller,
+                  onEditingComplete: onEditingComplete,
                 ),
               ),
             ),
@@ -1491,7 +1431,7 @@ class Tiles {
               value: weight,
               max: Constants.maxTaskWeight.toDouble(),
               label:
-                  "$weight ${(weight > (Constants.maxTaskWeight / 2).floor()) ? Constants.lowBattery : Constants.fullBattery}",
+                  "${weight.toInt()} ${(weight > (Constants.maxTaskWeight / 2).floor()) ? Constants.lowBattery : Constants.fullBattery}",
               divisions: Constants.maxTaskWeight,
               onChanged: handleWeightChange,
               onChangeEnd: onChangeEnd,
@@ -1504,15 +1444,15 @@ class Tiles {
   // TODO: on focus, number key might be a good shortcut?
   static Widget weightAnchor(
       {required double weight,
-      void Function(double? value)? handleWeightChange}) {
-    MenuController controller = MenuController();
+      MenuController? controller,
+      void Function(double? value)? handleWeightChange,
+      void Function(double? value)? onChangeEnd}) {
     return MenuAnchor(
         style: const MenuStyle(
             alignment: AlignmentDirectional(-10, 1.1),
             shape: MaterialStatePropertyAll(RoundedRectangleBorder(
                 borderRadius: BorderRadius.all(
-                    Radius.circular(Constants.roundedCorners))))),
-        anchorTapClosesMenu: true,
+                    Radius.circular(Constants.semiCircular))))),
         controller: controller,
         menuChildren: [
           Padding(
@@ -1520,7 +1460,7 @@ class Tiles {
             child: weightSlider(
                 weight: weight,
                 handleWeightChange: handleWeightChange,
-                onChangeEnd: (value) => controller.close()),
+                onChangeEnd: onChangeEnd),
           )
         ],
         builder:
@@ -1546,7 +1486,8 @@ class Tiles {
           int minLines = Constants.mobileMinLines,
           double? minFontSize,
           bool isDense = false,
-          required BuildContext context}) =>
+          required BuildContext context,
+          required void Function() onEditingComplete}) =>
       Padding(
         padding: outerPadding,
         child: AutoSizeTextField(
@@ -1572,7 +1513,8 @@ class Tiles {
                   borderSide: BorderSide(
                     strokeAlign: BorderSide.strokeAlignOutside,
                   )),
-            )),
+            ),
+            onEditingComplete: onEditingComplete),
       );
 
   // DURATION
@@ -1590,7 +1532,7 @@ class Tiles {
         leading: const Icon(Icons.timer_outlined),
         shape: const RoundedRectangleBorder(
             borderRadius:
-                BorderRadius.all(Radius.circular(Constants.roundedCorners))),
+                BorderRadius.all(Radius.circular(Constants.semiCircular))),
         title: (expectedDuration > 0)
             ? Row(
                 children: [
@@ -1666,7 +1608,7 @@ class Tiles {
           leading: const Icon(Icons.today_rounded),
           shape: const RoundedRectangleBorder(
               borderRadius:
-                  BorderRadius.all(Radius.circular(Constants.roundedCorners))),
+                  BorderRadius.all(Radius.circular(Constants.semiCircular))),
           title: (null == startDate && null == dueDate)
               ? const AutoSizeText(
                   "Add Dates",
@@ -1779,13 +1721,13 @@ class Tiles {
             contentPadding: const EdgeInsets.only(left: Constants.innerPadding),
             leading: const Icon(Icons.schedule_rounded),
             shape: const RoundedRectangleBorder(
-                borderRadius: BorderRadius.all(
-                    Radius.circular(Constants.roundedCorners))),
+                borderRadius:
+                    BorderRadius.all(Radius.circular(Constants.semiCircular))),
             title: (null == startTime && null == dueTime)
                 ? const AutoSizeText(
                     "Add Times",
                     overflow: TextOverflow.visible,
-                    minFontSize: Constants.small,
+                    minFontSize: Constants.large,
                     maxLines: 2,
                     softWrap: true,
                   )
@@ -1797,15 +1739,23 @@ class Tiles {
                             softWrap: false,
                             overflow: TextOverflow.visible,
                             maxLines: 1,
-                            minFontSize: Constants.large,
+                            minFontSize: Constants.huge,
                           ))
                         : Flexible(
                             child: AutoSizeText(
                             startTime.format(context).toString(),
                             softWrap: false,
-                            overflow: TextOverflow.visible,
+                            overflowReplacement: AutoSizeText(
+                              startTime
+                                  .format(context)
+                                  .toString()
+                                  .replaceAll("M", ""),
+                              minFontSize: Constants.huge,
+                              overflow: TextOverflow.visible,
+                              softWrap: false,
+                            ),
                             maxLines: 1,
-                            minFontSize: Constants.large,
+                            minFontSize: Constants.huge,
                           )),
                     (null == dueTime)
                         ? const Flexible(
@@ -1828,16 +1778,24 @@ class Tiles {
                               softWrap: false,
                               overflow: TextOverflow.visible,
                               maxLines: 1,
-                              minFontSize: Constants.large,
+                              minFontSize: Constants.huge,
                             ),
                           )
                         : Flexible(
                             child: AutoSizeText(
                               dueTime.format(context).toString(),
                               softWrap: false,
-                              overflow: TextOverflow.visible,
+                              overflowReplacement: AutoSizeText(
+                                dueTime
+                                    .format(context)
+                                    .toString()
+                                    .replaceAll("M", ""),
+                                softWrap: false,
+                                overflow: TextOverflow.visible,
+                                minFontSize: Constants.huge,
+                              ),
                               maxLines: 1,
-                              minFontSize: Constants.large,
+                              minFontSize: Constants.huge,
                             ),
                           ),
                   ]),
@@ -1886,8 +1844,8 @@ class Tiles {
         child: ListTile(
             contentPadding: const EdgeInsets.only(left: Constants.innerPadding),
             shape: const RoundedRectangleBorder(
-                borderRadius: BorderRadius.all(
-                    Radius.circular(Constants.roundedCorners))),
+                borderRadius:
+                    BorderRadius.all(Radius.circular(Constants.semiCircular))),
             leading: (useAlertIcon)
                 ? LeadingWidgets.alertIconButton(
                     warn: showDate,
@@ -2013,7 +1971,7 @@ class Tiles {
           leading: const Icon(Icons.event_repeat_rounded),
           shape: const RoundedRectangleBorder(
               borderRadius:
-                  BorderRadius.all(Radius.circular(Constants.roundedCorners))),
+                  BorderRadius.all(Radius.circular(Constants.semiCircular))),
           title: (frequency == Frequency.once)
               ? const AutoSizeText("Set Recurring?",
                   overflow: TextOverflow.visible,
@@ -2101,9 +2059,11 @@ class Tiles {
                               ? Text(
                                   "${toBeginningOfSentenceCase(type.name)}",
                                   softWrap: false,
-                                  overflow: TextOverflow.ellipsis,
+                                  overflow: TextOverflow.visible,
                                 )
-                              : null))
+                              : Text(
+                                  "${toBeginningOfSentenceCase(type.name.replaceAll("medium", "med."))}",
+                                )))
                       .toList(growable: false),
                   selected: <Priority>{priority},
                   onSelectionChanged: onSelectionChanged)
@@ -2136,7 +2096,7 @@ class Tiles {
         leading: leading,
         shape: const RoundedRectangleBorder(
             borderRadius:
-                BorderRadius.all(Radius.circular(Constants.roundedCorners))),
+                BorderRadius.all(Radius.circular(Constants.semiCircular))),
         title: AutoSizeText(
           title,
           overflow: TextOverflow.visible,
@@ -2155,14 +2115,14 @@ class Tiles {
       bool smallScreen = false}) {
     return ListTile(
       leading: LeadingWidgets.eventIcon(
-          type: event.repeatableType,
+          type: event.model.repeatableType,
           currentContext: context,
           outerPadding:
               const EdgeInsets.symmetric(horizontal: Constants.halfPadding),
           iconPadding: const EdgeInsets.all(Constants.halfPadding)),
       shape: const RoundedRectangleBorder(
           borderRadius:
-              BorderRadius.all(Radius.circular(Constants.roundedCorners))),
+              BorderRadius.all(Radius.circular(Constants.semiCircular))),
       title: AutoSizeText(
         event.model.name,
         minFontSize: Constants.large,
@@ -2172,18 +2132,20 @@ class Tiles {
       ),
       onTap: () async {
         late Widget dialog;
-        switch (event.repeatableType) {
-          case RepeatableType.task:
+        switch (event.model.repeatableType) {
+          case ModelType.task:
             dialog = UpdateToDoScreen(initialToDo: event.model as ToDo);
             break;
-          case RepeatableType.deadline:
+          case ModelType.deadline:
             dialog =
                 UpdateDeadlineScreen(initialDeadline: event.model as Deadline);
             break;
-          case RepeatableType.reminder:
+          case ModelType.reminder:
             dialog =
                 UpdateReminderScreen(initialReminder: event.model as Reminder);
             break;
+          default:
+            return;
         }
 
         await showDialog(
@@ -2195,7 +2157,6 @@ class Tiles {
       subtitle: Subtitles.eventSubtitle(
         context: context,
         model: event.model,
-        type: event.repeatableType,
         smallScreen: smallScreen,
       ),
       trailing: (Frequency.once != event.model.frequency)
@@ -2215,7 +2176,7 @@ class Tiles {
           leading: const Icon(Icons.history_rounded),
           shape: const RoundedRectangleBorder(
               borderRadius:
-                  BorderRadius.all(Radius.circular(Constants.roundedCorners))),
+                  BorderRadius.all(Radius.circular(Constants.semiCircular))),
           title: AutoSizeText(
             title,
             maxLines: 1,
@@ -2236,7 +2197,7 @@ class Tiles {
         leading: leading,
         shape: const RoundedRectangleBorder(
             borderRadius:
-                BorderRadius.all(Radius.circular(Constants.roundedCorners))),
+                BorderRadius.all(Radius.circular(Constants.semiCircular))),
         title: AutoSizeText(
           title,
           maxLines: 1,
@@ -2268,7 +2229,7 @@ class Tiles {
         contentPadding: const EdgeInsets.all(Constants.padding),
         shape: const RoundedRectangleBorder(
           borderRadius:
-              BorderRadius.all(Radius.circular(Constants.roundedCorners)),
+              BorderRadius.all(Radius.circular(Constants.semiCircular)),
         ),
         onTap: onTap,
       );
@@ -2281,7 +2242,7 @@ class Tiles {
       ListTile(
         shape: const RoundedRectangleBorder(
             borderRadius:
-                BorderRadius.all(Radius.circular(Constants.roundedCorners))),
+                BorderRadius.all(Radius.circular(Constants.semiCircular))),
         leading: const Icon(Icons.add_rounded),
         title: AutoSizeText(title,
             maxLines: 1,
@@ -2298,7 +2259,7 @@ class Tiles {
       ListTile(
           shape: const RoundedRectangleBorder(
               borderRadius:
-                  BorderRadius.all(Radius.circular(Constants.roundedCorners))),
+                  BorderRadius.all(Radius.circular(Constants.semiCircular))),
           leading: const Icon(Icons.redo_rounded),
           title: const AutoSizeText(
             "Load more",
@@ -2315,7 +2276,7 @@ class Tiles {
       ListTile(
           shape: const RoundedRectangleBorder(
               borderRadius:
-                  BorderRadius.all(Radius.circular(Constants.roundedCorners))),
+                  BorderRadius.all(Radius.circular(Constants.semiCircular))),
           leading: const Icon(Icons.refresh_rounded),
           title: const AutoSizeText(
             "Reset",

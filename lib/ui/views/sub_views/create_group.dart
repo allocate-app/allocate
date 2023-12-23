@@ -98,18 +98,19 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
         const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics());
     nameEditingController = TextEditingController();
     nameEditingController.addListener(() {
-      nameErrorText = null;
-      checkClose = true;
-      String newText = nameEditingController.text;
-      SemanticsService.announce(newText, Directionality.of(context));
-      setState(() => name = newText);
+      if (null != nameErrorText && mounted) {
+        setState(() {
+          nameErrorText = null;
+        });
+      }
+
+      SemanticsService.announce(
+          nameEditingController.text, Directionality.of(context));
     });
     descriptionEditingController = TextEditingController();
     descriptionEditingController.addListener(() {
-      checkClose = true;
       String newText = descriptionEditingController.text;
       SemanticsService.announce(newText, Directionality.of(context));
-      description = newText;
     });
 
     toDoSearchController = SearchController();
@@ -137,6 +138,10 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
   }
 
   Future<void> handleCreate() async {
+    // in case the usr doesn't submit to the textfields
+    name = nameEditingController.text;
+    description = descriptionEditingController.text;
+
     await groupProvider
         .createGroup(name: name, description: description)
         .whenComplete(() async {
@@ -169,10 +174,16 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
       error.show(context);
       return null;
     });
-    if (null != toDo) {
-      toDo.groupID = Constants.intMax;
-      await toDoProvider.updateToDo(toDo: toDo);
+    if (null == toDo) {
+      return;
     }
+    if (Constants.intMax == toDo.groupID) {
+      return;
+    }
+
+    toDo.groupID = Constants.intMax;
+    toDo.groupIndex = toDos.length;
+    await toDoProvider.updateToDo(toDo: toDo);
   }
 
   Future<void> handleClose({required bool willDiscard}) async {
@@ -210,6 +221,24 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
       nameEditingController.clear();
       name = "";
     });
+  }
+
+  void updateName() {
+    if (mounted) {
+      setState(() {
+        checkClose = true;
+        name = nameEditingController.text;
+      });
+    }
+  }
+
+  void updateDescription() {
+    if (mounted) {
+      setState(() {
+        checkClose = true;
+        description = descriptionEditingController.text;
+      });
+    }
   }
 
   Future<void> createAndValidate() async {
@@ -279,26 +308,28 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
                                     // Title
 
                                     Tiles.nameTile(
-                                        context: context,
-                                        leading: LeadingWidgets.groupIcon(
-                                            currentContext: context,
-                                            iconPadding: const EdgeInsets.all(
-                                                Constants.padding),
-                                            outerPadding:
-                                                const EdgeInsets.symmetric(
-                                              horizontal: Constants.halfPadding,
-                                            )),
-                                        hintText: "Group Name",
-                                        errorText: nameErrorText,
-                                        controller: nameEditingController,
-                                        outerPadding: const EdgeInsets.only(
-                                            left: Constants.padding,
-                                            right: Constants.padding,
-                                            bottom: Constants.padding),
-                                        textFieldPadding: const EdgeInsets.only(
-                                          left: Constants.halfPadding,
-                                        ),
-                                        handleClear: clearNameField),
+                                      context: context,
+                                      leading: LeadingWidgets.groupIcon(
+                                          currentContext: context,
+                                          iconPadding: const EdgeInsets.all(
+                                              Constants.padding),
+                                          outerPadding:
+                                              const EdgeInsets.symmetric(
+                                            horizontal: Constants.halfPadding,
+                                          )),
+                                      hintText: "Group Name",
+                                      errorText: nameErrorText,
+                                      controller: nameEditingController,
+                                      outerPadding: const EdgeInsets.only(
+                                          left: Constants.padding,
+                                          right: Constants.padding,
+                                          bottom: Constants.padding),
+                                      textFieldPadding: const EdgeInsets.only(
+                                        left: Constants.halfPadding,
+                                      ),
+                                      handleClear: clearNameField,
+                                      onEditingComplete: updateName,
+                                    ),
                                     buildToDosTile(),
                                   ])),
                               Flexible(
@@ -319,6 +350,7 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
                                             const EdgeInsets.symmetric(
                                                 horizontal: Constants.padding),
                                         context: context,
+                                        onEditingComplete: updateDescription,
                                       ),
                                     ]),
                               )
@@ -387,11 +419,13 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
                           textFieldPadding: const EdgeInsets.only(
                             left: Constants.halfPadding,
                           ),
-                          handleClear: clearNameField),
+                          handleClear: clearNameField,
+                          onEditingComplete: updateName),
                       buildToDosTile(),
                       const PaddedDivider(padding: Constants.padding),
                       Tiles.descriptionTile(
                         controller: descriptionEditingController,
+                        onEditingComplete: updateDescription,
                         outerPadding: const EdgeInsets.symmetric(
                             horizontal: Constants.padding),
                         context: context,
@@ -421,20 +455,8 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
           softWrap: false,
           minFontSize: Constants.large),
       subtitle: Subtitles.groupSubtitle(
-          toDoCount: groupProvider.getToDoCount(id: Constants.intMax)),
+          toDoCount: groupProvider.getToDoCount(id: Constants.intMax)!),
       children: [
-        SearchRecentsBar<ToDo>(
-          border: BorderSide.none,
-          clearOnSelection: true,
-          hintText: "Search Tasks",
-          padding: const EdgeInsets.all(Constants.padding),
-          handleDataSelection: handleSelection,
-          handleHistorySelection: handleSelection,
-          searchController: toDoSearchController,
-          dispose: false,
-          mostRecent: toDoProvider.mostRecent,
-          search: toDoProvider.searchToDos,
-        ),
         PaginatingListview<ToDo>(
             items: toDos,
             query: (
@@ -450,44 +472,70 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
               groupProvider.setToDoCount(id: Constants.intMax);
             },
             listviewBuilder: (
-                {required BuildContext context, required List<ToDo> items}) {
+                {Key? key,
+                required BuildContext context,
+                required List<ToDo> items}) {
               return ListViews.reorderableGroupToDos(
+                key: key,
                 context: context,
                 toDos: toDos,
                 physics: physics,
-                onChanged: ({required int index, bool value = false}) async {
-                  items[index].completed = value;
-                  await toDoProvider.updateToDo(toDo: items[index]);
+                onChanged: ({ToDo? toDo, bool? value}) async {
+                  if (null == toDo) {
+                    return;
+                  }
+                  toDo.completed = value!;
+                  await toDoProvider.updateToDo(toDo: toDo);
                 },
-                handleRemove: ({required int index}) async {
-                  items[index].groupID = null;
-                  await toDoProvider.updateToDo(toDo: items[index]);
+                handleRemove: ({ToDo? toDo}) async {
+                  if (null == toDo) {
+                    return;
+                  }
+                  toDo.groupIndex = -1;
+                  toDo.groupID = null;
+                  await toDoProvider.updateToDo(toDo: toDo);
                 },
-                onTap: ({required int index}) async => await showDialog(
-                    barrierDismissible: false,
-                    useRootNavigator: false,
-                    context: context,
-                    builder: (BuildContext context) => UpdateToDoScreen(
-                          initialToDo: items[index],
-                          initialGroup: MapEntry<String, int>(
-                              (name.isNotEmpty) ? name : "New Group",
-                              Constants.intMax),
-                        )).catchError((e) {
-                  Flushbar? error;
+                onTap: ({ToDo? toDo}) async {
+                  if (null == toDo) {
+                    return;
+                  }
+                  return await showDialog(
+                      barrierDismissible: false,
+                      useRootNavigator: false,
+                      context: context,
+                      builder: (BuildContext context) => UpdateToDoScreen(
+                            initialToDo: toDo,
+                            initialGroup: MapEntry<String, int>(
+                                (name.isNotEmpty) ? name : "New Group",
+                                Constants.intMax),
+                          )).catchError((e) {
+                    Flushbar? error;
 
-                  error = Flushbars.createError(
-                    message: e.cause,
-                    context: context,
-                    dismissCallback: () => error?.dismiss(),
-                  );
+                    error = Flushbars.createError(
+                      message: e.cause,
+                      context: context,
+                      dismissCallback: () => error?.dismiss(),
+                    );
 
-                  error.show(context);
+                    error.show(context);
+                  },
+                      test: (e) =>
+                          e is FailureToCreateException ||
+                          e is FailureToUploadException);
                 },
-                    test: (e) =>
-                        e is FailureToCreateException ||
-                        e is FailureToUploadException),
               );
             }),
+        SearchRecentsBar<ToDo>(
+          border: BorderSide.none,
+          clearOnSelection: true,
+          hintText: "Search Tasks",
+          padding: const EdgeInsets.all(Constants.padding),
+          handleDataSelection: handleSelection,
+          searchController: toDoSearchController,
+          dispose: false,
+          mostRecent: toDoProvider.mostRecent,
+          search: toDoProvider.searchToDos,
+        ),
         Tiles.addTile(
           title: "Add Task",
           onTap: () async => await showDialog(

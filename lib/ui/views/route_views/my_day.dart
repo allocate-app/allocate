@@ -9,9 +9,6 @@ import '../../../providers/user_provider.dart';
 import '../../../util/constants.dart';
 import '../../../util/enums.dart';
 import '../../widgets/listview_header.dart';
-import '../sub_views/calendar.dart';
-import '../sub_views/my_day_routines.dart';
-import '../sub_views/my_day_todos.dart';
 
 class MyDayScreen extends StatefulWidget {
   const MyDayScreen({Key? key}) : super(key: key);
@@ -24,20 +21,6 @@ class _MyDayScreen extends State<MyDayScreen> {
   late final UserProvider userProvider;
 
   late final ToDoProvider toDoProvider;
-
-  // TODO: factor out?
-  static const List<Tab> tabs = [
-    Tab(text: "Tasks"),
-    Tab(text: "Routines"),
-    Tab(text: "Calendar")
-  ];
-
-  // TODO: factor out?
-  static const List<Widget> views = [
-    MyDayToDos(),
-    MyDayRoutines(),
-    CalendarScreen(),
-  ];
 
   @override
   void initState() {
@@ -62,7 +45,7 @@ class _MyDayScreen extends State<MyDayScreen> {
     bool smallScreen = (width <= Constants.smallScreen);
     bool hugeScreen = (width >= Constants.hugeScreen);
 
-    if (userProvider.myDayIndex == tabs.length - 1 && hugeScreen) {
+    if (userProvider.myDayIndex == Constants.tabs.length - 1 && hugeScreen) {
       userProvider.myDayIndex = 0;
     }
 
@@ -89,23 +72,27 @@ class _MyDayScreen extends State<MyDayScreen> {
           sorter: toDoProvider.sorter,
           leadingIcon: const Icon(Icons.wb_sunny_outlined),
           subTitle: AutoSizeText(
-              Jiffy.now().format(
-                  pattern:
-                      (smallScreen) ? "EE. MMM. d, 'yy" : "EEEE, MMMM d, yyyy"),
+              Jiffy.now().format(pattern: "EEEE, MMMM d, yyyy"),
               style: Constants.headerStyle,
               softWrap: false,
               maxLines: 1,
-              overflow: TextOverflow.visible,
+              overflowReplacement: AutoSizeText(
+                  Jiffy.now().format(pattern: "EE. MMM. d, 'yy"),
+                  style: Constants.headerStyle,
+                  softWrap: false,
+                  maxLines: 1,
+                  overflow: TextOverflow.visible,
+                  minFontSize: Constants.large),
               minFontSize: Constants.large),
           showSorter: (userProvider.myDayIndex == 0),
           header: "My Day",
-          onChanged: (SortMethod? method) {
-            if (null == method) {
+          onChanged: ({SortMethod? sortMethod}) {
+            if (null == sortMethod) {
               return;
             }
             if (mounted) {
               setState(() {
-                toDoProvider.sortMethod = method;
+                toDoProvider.sortMethod = sortMethod;
               });
             }
           }),
@@ -122,7 +109,7 @@ class _MyDayScreen extends State<MyDayScreen> {
                     child: DecoratedBox(
                       decoration: BoxDecoration(
                         borderRadius: const BorderRadius.all(
-                            Radius.circular(Constants.roundedCorners)),
+                            Radius.circular(Constants.semiCircular)),
                         color: Theme.of(context)
                             .colorScheme
                             .surfaceVariant
@@ -139,21 +126,23 @@ class _MyDayScreen extends State<MyDayScreen> {
                             color:
                                 Theme.of(context).colorScheme.primaryContainer,
                             borderRadius: const BorderRadius.all(
-                                Radius.circular(Constants.roundedCorners))),
+                                Radius.circular(Constants.semiCircular))),
                         splashBorderRadius: const BorderRadius.all(
-                            Radius.circular(Constants.roundedCorners)),
+                            Radius.circular(Constants.semiCircular)),
                         dividerColor: Colors.transparent,
                         tabs: (buildCalendar)
-                            ? tabs
-                            : tabs.sublist(0, tabs.length - 1),
+                            ? Constants.tabs
+                            : Constants.tabs
+                                .sublist(0, Constants.tabs.length - 1),
                       ),
                     ),
                   ),
                   Expanded(
                     child: TabBarView(
                       children: (buildCalendar)
-                          ? views
-                          : views.sublist(0, views.length - 1),
+                          ? Constants.views
+                          : Constants.views
+                              .sublist(0, Constants.views.length - 1),
                     ),
                   ),
                 ])),
@@ -171,7 +160,7 @@ class _MyDayScreen extends State<MyDayScreen> {
               Flexible(
                   child: buildRegular(context: context, buildCalendar: false)),
               const VerticalDivider(),
-              Flexible(child: views[views.length - 1])
+              Flexible(child: Constants.views[Constants.views.length - 1])
             ]));
   }
 }

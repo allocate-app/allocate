@@ -20,6 +20,7 @@ import 'tiles.dart';
 
 // TODO: Implement crossfading between lists?
 class ListViews {
+  // This is for dragging
   static Widget proxyDecorator(
           Widget child, int index, Animation<double> animation) =>
       AnimatedBuilder(
@@ -31,7 +32,7 @@ class ListViews {
             final Color shadowColor = colorScheme.shadow;
             return Material(
               borderRadius: const BorderRadius.all(
-                  Radius.circular(Constants.roundedCorners)),
+                  Radius.circular(Constants.semiCircular)),
               color: draggableColor,
               shadowColor: shadowColor,
               child: child,
@@ -39,6 +40,7 @@ class ListViews {
           });
 
   static Widget reorderableToDos({
+    Key? key,
     required BuildContext context,
     required List<ToDo> toDos,
     bool checkDelete = false,
@@ -48,6 +50,7 @@ class ListViews {
     ScrollPhysics physics = const NeverScrollableScrollPhysics(),
   }) =>
       ReorderableListView.builder(
+          key: key,
           proxyDecorator: proxyDecorator,
           buildDefaultDragHandles: false,
           physics: physics,
@@ -86,6 +89,7 @@ class ListViews {
           });
 
   static Widget immutableToDos({
+    Key? key,
     required BuildContext context,
     required List<ToDo> toDos,
     bool checkDelete = false,
@@ -95,6 +99,7 @@ class ListViews {
     ScrollPhysics physics = const NeverScrollableScrollPhysics(),
   }) =>
       ListView.builder(
+          key: key,
           physics: physics,
           shrinkWrap: true,
           itemCount: toDos.length,
@@ -111,6 +116,7 @@ class ListViews {
           });
 
   static Widget reorderableMyDay({
+    Key? key,
     required BuildContext context,
     required List<ToDo> toDos,
     bool checkDelete = false,
@@ -120,6 +126,7 @@ class ListViews {
     ScrollPhysics physics = const NeverScrollableScrollPhysics(),
   }) =>
       ReorderableListView.builder(
+          key: key,
           proxyDecorator: proxyDecorator,
           buildDefaultDragHandles: false,
           physics: physics,
@@ -156,6 +163,7 @@ class ListViews {
           });
 
   static Widget immutableMyDay({
+    Key? key,
     required BuildContext context,
     required List<ToDo> toDos,
     bool smallScreen = false,
@@ -164,6 +172,7 @@ class ListViews {
     ScrollPhysics physics = const NeverScrollableScrollPhysics(),
   }) =>
       ListView.builder(
+          key: key,
           physics: physics,
           shrinkWrap: true,
           itemCount: toDos.length,
@@ -179,12 +188,14 @@ class ListViews {
           });
 
   static Widget reorderableRoutines({
+    Key? key,
     required BuildContext context,
     required List<Routine> routines,
     bool checkDelete = false,
     ScrollPhysics physics = const NeverScrollableScrollPhysics(),
   }) =>
       ReorderableListView.builder(
+          key: key,
           proxyDecorator: proxyDecorator,
           buildDefaultDragHandles: false,
           physics: physics,
@@ -218,12 +229,14 @@ class ListViews {
           });
 
   static Widget immutableRoutines({
+    Key? key,
     required BuildContext context,
     required List<Routine> routines,
     bool checkDelete = false,
     ScrollPhysics physics = const NeverScrollableScrollPhysics(),
   }) =>
       ListView.builder(
+          key: key,
           physics: physics,
           shrinkWrap: true,
           itemCount: routines.length,
@@ -238,6 +251,7 @@ class ListViews {
           });
 
   static Widget reorderableDeadlines({
+    Key? key,
     required BuildContext context,
     required List<Deadline> deadlines,
     bool checkDelete = false,
@@ -245,6 +259,7 @@ class ListViews {
     ScrollPhysics physics = const NeverScrollableScrollPhysics(),
   }) =>
       ReorderableListView.builder(
+          key: key,
           proxyDecorator: proxyDecorator,
           buildDefaultDragHandles: false,
           physics: physics,
@@ -280,6 +295,7 @@ class ListViews {
           });
 
   static Widget immutableDeadlines({
+    Key? key,
     required BuildContext context,
     required List<Deadline> deadlines,
     bool checkDelete = false,
@@ -287,6 +303,7 @@ class ListViews {
     ScrollPhysics physics = const NeverScrollableScrollPhysics(),
   }) =>
       ListView.builder(
+          key: key,
           physics: physics,
           shrinkWrap: true,
           itemCount: deadlines.length,
@@ -302,6 +319,7 @@ class ListViews {
           });
 
   static Widget reorderableReminders({
+    Key? key,
     required BuildContext context,
     required List<Reminder> reminders,
     bool checkDelete = false,
@@ -309,6 +327,7 @@ class ListViews {
     ScrollPhysics physics = const NeverScrollableScrollPhysics(),
   }) =>
       ReorderableListView.builder(
+          key: key,
           proxyDecorator: proxyDecorator,
           buildDefaultDragHandles: false,
           physics: physics,
@@ -344,6 +363,7 @@ class ListViews {
           });
 
   static Widget immutableReminders({
+    Key? key,
     required BuildContext context,
     required List<Reminder> reminders,
     bool checkDelete = false,
@@ -351,6 +371,7 @@ class ListViews {
     ScrollPhysics physics = const NeverScrollableScrollPhysics(),
   }) =>
       ListView.builder(
+          key: key,
           physics: physics,
           shrinkWrap: true,
           itemCount: reminders.length,
@@ -366,12 +387,14 @@ class ListViews {
           });
 
   static Widget reorderableGroups({
+    Key? key,
     required BuildContext context,
     required List<Group> groups,
     bool checkDelete = false,
     ScrollPhysics physics = const NeverScrollableScrollPhysics(),
   }) =>
       ReorderableListView.builder(
+          key: key,
           proxyDecorator: proxyDecorator,
           buildDefaultDragHandles: false,
           physics: physics,
@@ -404,12 +427,14 @@ class ListViews {
           });
 
   static Widget immutableGroups({
+    Key? key,
     required BuildContext context,
     required List<Group> groups,
     bool checkDelete = false,
     ScrollPhysics physics = const NeverScrollableScrollPhysics(),
   }) =>
       ListView.builder(
+          key: key,
           shrinkWrap: true,
           physics: physics,
           itemCount: groups.length,
@@ -423,14 +448,16 @@ class ListViews {
           });
 
   static Widget reorderableGroupToDos({
+    Key? key,
     required BuildContext context,
     required List<ToDo> toDos,
     ScrollPhysics physics = const NeverScrollableScrollPhysics(),
-    required Future<void> Function({required int index, bool value}) onChanged,
-    required Future<void> Function({required int index}) onTap,
-    required void Function({required int index}) handleRemove,
+    required void Function({ToDo? toDo, bool? value}) onChanged,
+    void Function({ToDo? toDo})? onTap,
+    void Function({ToDo? toDo})? handleRemove,
   }) =>
       ReorderableListView.builder(
+        key: key,
         proxyDecorator: proxyDecorator,
         buildDefaultDragHandles: false,
         physics: physics,
@@ -453,9 +480,12 @@ class ListViews {
                 index: index,
                 toDo: toDos[index],
                 showHandle: true,
-                onChanged: onChanged,
-                onTap: onTap,
-                handleRemove: handleRemove,
+                onChanged: (value) =>
+                    onChanged(toDo: toDos[index], value: value),
+                onTap: () => (null != onTap) ? onTap(toDo: toDos[index]) : null,
+                handleRemove: () => (null != handleRemove)
+                    ? handleRemove(toDo: toDos[index])
+                    : null,
               ),
             );
           }
@@ -463,48 +493,52 @@ class ListViews {
             index: index,
             toDo: toDos[index],
             showHandle: false,
-            onChanged: onChanged,
-            onTap: onTap,
-            handleRemove: handleRemove,
+            onChanged: (value) => onChanged(toDo: toDos[index], value: value),
+            onTap: () => (null != onTap) ? onTap(toDo: toDos[index]) : null,
+            handleRemove: () => (null != handleRemove)
+                ? handleRemove(toDo: toDos[index])
+                : null,
           );
         },
       );
 
   static Widget reorderableSubtasks({
+    Key? key,
     required BuildContext context,
     required List<Subtask> subtasks,
     int? itemCount,
     showHandle = false,
     ScrollPhysics physics = const NeverScrollableScrollPhysics(),
-    required Future<void> Function({required Subtask subtask}) updateSubtask,
     required void Function(int oldIndex, int newIndex) onReorder,
-    required Future<void> Function({required Subtask subtask}) onRemoved,
+    required void Function({bool? value, Subtask? subtask}) onChanged,
+    required void Function({Subtask? subtask}) onTap,
+    required void Function({Subtask? subtask}) onRemoved,
     EdgeInsetsGeometry contentPadding = EdgeInsets.zero,
   }) =>
       ReorderableListView.builder(
+          key: key,
           proxyDecorator: proxyDecorator,
           buildDefaultDragHandles: false,
           physics: physics,
           shrinkWrap: true,
-          itemCount: itemCount ?? subtasks.length,
+          itemCount: subtasks.length,
           onReorderStart: (_) {
             FocusScope.of(context).unfocus();
           },
           onReorder: onReorder,
           itemBuilder: (BuildContext context, int index) {
             return CustomDragStartListener(
-              delay: Constants.delayTime,
-              index: index,
-              key: ValueKey(index),
-              child: Tiles.subtaskCheckboxTile(
-                context: context,
+                delay: Constants.delayTime,
                 index: index,
-                subtask: subtasks[index],
-                updateSubtask: updateSubtask,
-                onRemoved: onRemoved,
-                showHandle: showHandle,
-              ),
-            );
+                key: ValueKey(index),
+                child: Tiles.subtaskCheckboxTile(
+                    index: index,
+                    subtask: subtasks[index],
+                    onTap: () => onTap(subtask: subtasks[index]),
+                    onChanged: (value) =>
+                        onChanged(value: value, subtask: subtasks[index]),
+                    onRemoved: () => onRemoved(subtask: subtasks[index]),
+                    showHandle: (subtasks.length > 1)));
           });
 
   static Widget eventList(

@@ -44,7 +44,11 @@ class Group with EquatableMixin implements Copyable<Group>, IModel {
     required this.name,
     this.description = "",
     required this.lastUpdated,
-  });
+  }) {
+    while (Constants.intMax == id) {
+      id = Constants.generateID();
+    }
+  }
 
   Group.fromEntity({required Map<String, dynamic> entity})
       : id = entity["id"] as Id,

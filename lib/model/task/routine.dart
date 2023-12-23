@@ -54,7 +54,11 @@ class Routine with EquatableMixin implements Copyable<Routine>, IModel {
     required this.realDuration,
     this.subtasks = const <Subtask>[],
     required this.lastUpdated,
-  });
+  }) {
+    while (Constants.intMax == id) {
+      id = Constants.generateID();
+    }
+  }
 
   Routine.fromEntity({required Map<String, dynamic> entity})
       : id = entity["id"] as Id,
@@ -65,7 +69,6 @@ class Routine with EquatableMixin implements Copyable<Routine>, IModel {
         customViewIndex = entity["customViewIndex"] as int,
         isSynced = true,
         toDelete = false,
-        subtasks = List.empty(growable: true),
         lastUpdated = DateTime.parse(entity["lastUpdated"]);
 
   Map<String, dynamic> toEntity() => {
@@ -84,7 +87,6 @@ class Routine with EquatableMixin implements Copyable<Routine>, IModel {
       weight: weight,
       expectedDuration: expectedDuration,
       realDuration: realDuration,
-      subtasks: List.generate(subtasks.length, (i) => subtasks[i].copy()),
       lastUpdated: lastUpdated);
 
   @override
@@ -100,8 +102,6 @@ class Routine with EquatableMixin implements Copyable<Routine>, IModel {
           weight: weight ?? this.weight,
           expectedDuration: expectedDuration ?? this.expectedDuration,
           realDuration: realDuration ?? this.realDuration,
-          subtasks: List.generate((routineTasks ?? subtasks).length,
-              (i) => (routineTasks ?? subtasks)[i].copy()),
           lastUpdated: lastUpdated ?? this.lastUpdated);
 
   @ignore

@@ -199,7 +199,7 @@ class _GlobalModelSearch extends State<GlobalModelSearch> {
                   return ListTile(
                       shape: const RoundedRectangleBorder(
                           borderRadius: BorderRadius.all(
-                              Radius.circular(Constants.roundedCorners))),
+                              Radius.circular(Constants.semiCircular))),
                       title: AutoSizeText(data[index].name),
                       onTap: () async {
                         controller.closeView("");
@@ -225,7 +225,7 @@ class _GlobalModelSearch extends State<GlobalModelSearch> {
       decoration: BoxDecoration(
           shape: BoxShape.rectangle,
           borderRadius:
-              const BorderRadius.all(Radius.circular(Constants.roundedCorners)),
+              const BorderRadius.all(Radius.circular(Constants.semiCircular)),
           border: Border.all(
               color: Theme.of(context).colorScheme.outlineVariant,
               strokeAlign: BorderSide.strokeAlignOutside)),

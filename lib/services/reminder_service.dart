@@ -22,22 +22,22 @@ class ReminderService {
 
   DateTime? getRepeatDate({required Reminder reminder}) =>
       switch (reminder.frequency) {
-        (Frequency.daily) => reminder.dueDate.copyWith(
-            day: reminder.dueDate.day + reminder.repeatSkip,
-            hour: reminder.dueDate.hour,
-            minute: reminder.dueDate.minute),
-        (Frequency.weekly) => reminder.dueDate.copyWith(
-            day: reminder.dueDate.day + (reminder.repeatSkip * 7),
-            hour: reminder.dueDate.hour,
-            minute: reminder.dueDate.minute),
-        (Frequency.monthly) => reminder.dueDate.copyWith(
-            month: reminder.dueDate.month + reminder.repeatSkip,
-            hour: reminder.dueDate.hour,
-            minute: reminder.dueDate.minute),
-        (Frequency.yearly) => reminder.dueDate.copyWith(
-            year: reminder.dueDate.year + reminder.repeatSkip,
-            hour: reminder.dueDate.hour,
-            minute: reminder.dueDate.minute),
+        (Frequency.daily) => reminder.dueDate!.copyWith(
+            day: reminder.dueDate!.day + reminder.repeatSkip,
+            hour: reminder.dueDate!.hour,
+            minute: reminder.dueDate!.minute),
+        (Frequency.weekly) => reminder.dueDate!.copyWith(
+            day: reminder.dueDate!.day + (reminder.repeatSkip * 7),
+            hour: reminder.dueDate!.hour,
+            minute: reminder.dueDate!.minute),
+        (Frequency.monthly) => reminder.dueDate!.copyWith(
+            month: reminder.dueDate!.month + reminder.repeatSkip,
+            hour: reminder.dueDate!.hour,
+            minute: reminder.dueDate!.minute),
+        (Frequency.yearly) => reminder.dueDate!.copyWith(
+            year: reminder.dueDate!.year + reminder.repeatSkip,
+            hour: reminder.dueDate!.hour,
+            minute: reminder.dueDate!.minute),
         (Frequency.custom) => getCustom(reminder: reminder),
         //Once should never repeat -> fixing asynchronously in case validation fails.
         (Frequency.once) => null,
@@ -101,26 +101,26 @@ class ReminderService {
   }
 
   DateTime? getCustom({required Reminder reminder}) {
-    int start = reminder.dueDate.weekday - 1;
+    int start = reminder.dueDate!.weekday - 1;
     int end = 0;
     if (start + 1 != 7) {
       end = reminder.repeatDays.indexOf(true, start + 1);
       if (end > 0) {
-        return reminder.dueDate.copyWith(
-            day: reminder.dueDate.day + (end - start),
-            hour: reminder.dueDate.hour,
-            minute: reminder.dueDate.minute);
+        return reminder.dueDate!.copyWith(
+            day: reminder.dueDate!.day + (end - start),
+            hour: reminder.dueDate!.hour,
+            minute: reminder.dueDate!.minute);
       }
     }
     end = reminder.repeatDays.indexOf(true);
     int offset = end - start;
     DateTime nextDate =
-        reminder.dueDate.copyWith(day: reminder.dueDate.day + offset);
+        reminder.dueDate!.copyWith(day: reminder.dueDate!.day + offset);
 
     nextDate = nextDate.copyWith(
         day: nextDate.day + (7 * reminder.repeatSkip),
-        hour: reminder.dueDate.hour,
-        minute: reminder.dueDate.minute,
+        hour: reminder.dueDate!.hour,
+        minute: reminder.dueDate!.minute,
         second: 0,
         millisecond: 0,
         microsecond: 0);

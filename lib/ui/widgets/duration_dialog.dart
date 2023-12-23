@@ -35,161 +35,173 @@ class _DurationDialog extends State<DurationDialog> {
   @override
   Widget build(context) {
     return Dialog(
-        insetPadding: const EdgeInsets.all(Constants.innerPadding),
-        child: Padding(
-            padding: const EdgeInsets.all(Constants.innerPadding),
-            child: Column(
-                mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Flexible(
-                    child: Row(
-                        mainAxisAlignment: MainAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
+        insetPadding: const EdgeInsets.all(Constants.mobileDialogPadding),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(
+              maxWidth: Constants.smallLandscapeDialogWidth),
+          child: Padding(
+              padding: const EdgeInsets.all(Constants.innerPadding),
+              child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Flexible(
+                      child: Row(
+                          mainAxisAlignment: MainAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Expanded(
+                              child: AutoSizeText(
+                                "Expected Duration",
+                                style: Constants.largeHeaderStyle,
+                                softWrap: true,
+                                overflow: TextOverflow.visible,
+                                maxLines: 2,
+                                minFontSize: Constants.huge,
+                              ),
+                            )
+                          ]),
+                    ),
+                    const Flexible(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        mainAxisSize: MainAxisSize.max,
                         children: [
                           Expanded(
-                            child: AutoSizeText(
-                              "Expected Duration",
-                              style: Constants.headerStyle,
-                              softWrap: true,
-                              overflow: TextOverflow.visible,
-                              maxLines: 2,
-                              minFontSize: Constants.large,
+                              flex: 3,
+                              child: AutoSizeText("Hour | Minute | Second ",
+                                  style: Constants.hugeHeaderStyle,
+                                  softWrap: false,
+                                  overflowReplacement: AutoSizeText(
+                                    "Hour | Min | Sec",
+                                    style: Constants.largeHeaderStyle,
+                                    softWrap: false,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.visible,
+                                    minFontSize: Constants.huge,
+                                  ),
+                                  maxLines: 1,
+                                  minFontSize: Constants.huge)),
+                          Flexible(
+                            child: FittedBox(
+                                fit: BoxFit.fill,
+                                child: Icon(Icons.timer_outlined,
+                                    size: Constants.lgIconSize)),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Flexible(
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          Expanded(
+                            child: NumberPicker(
+                              infiniteLoop: true,
+                              textStyle: Constants.numberPickerSecondary(
+                                  context: context),
+                              selectedTextStyle: Constants.numberPickerPrimary(
+                                  context: context),
+                              minValue: 0,
+                              maxValue: 100,
+                              value: hours,
+                              haptics: true,
+                              onChanged: (value) {
+                                SemanticsService.announce("$value, hours",
+                                    Directionality.of(context));
+                                setState(() => hours = value);
+                              },
                             ),
-                          )
-                        ]),
-                  ),
-                  const Flexible(
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      mainAxisSize: MainAxisSize.max,
-                      children: [
-                        Expanded(
-                            flex: 3,
-                            child: AutoSizeText(
-                              "Hours | Minutes | Seconds ",
-                              style: Constants.largeHeaderStyle,
-                              softWrap: true,
-                              overflow: TextOverflow.visible,
-                              maxLines: 1,
-                              minFontSize: Constants.large,
-                            )),
-                        Flexible(
-                          child: FittedBox(
-                              fit: BoxFit.fill,
-                              child: Icon(Icons.timer_outlined,
-                                  size: Constants.lgIconSize)),
-                        ),
-                      ],
+                          ),
+                          const Padding(
+                              padding: EdgeInsets.symmetric(
+                                  horizontal: Constants.padding),
+                              child: Text(":", style: Constants.timeColon)),
+                          Expanded(
+                            child: NumberPicker(
+                              infiniteLoop: true,
+                              textStyle: Constants.numberPickerSecondary(
+                                  context: context),
+                              selectedTextStyle: Constants.numberPickerPrimary(
+                                  context: context),
+                              minValue: 0,
+                              maxValue: 59,
+                              value: minutes,
+                              haptics: true,
+                              onChanged: (value) {
+                                SemanticsService.announce("$value, minutes",
+                                    Directionality.of(context));
+                                setState(() => minutes = value);
+                              },
+                            ),
+                          ),
+                          const Padding(
+                              padding: EdgeInsets.symmetric(
+                                  horizontal: Constants.padding),
+                              child: Text(":", style: Constants.timeColon)),
+                          Expanded(
+                            child: NumberPicker(
+                              infiniteLoop: true,
+                              textStyle: Constants.numberPickerSecondary(
+                                  context: context),
+                              selectedTextStyle: Constants.numberPickerPrimary(
+                                  context: context),
+                              minValue: 0,
+                              maxValue: 59,
+                              value: seconds,
+                              haptics: true,
+                              onChanged: (value) {
+                                SemanticsService.announce("$value, seconds",
+                                    Directionality.of(context));
+                                setState(() => seconds = value);
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                  Flexible(
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        Expanded(
-                          child: NumberPicker(
-                            infiniteLoop: true,
-                            textStyle: Constants.numberPickerSecondary(
-                                context: context),
-                            selectedTextStyle:
-                            Constants.numberPickerPrimary(context: context),
-                            minValue: 0,
-                            maxValue: 100,
-                            value: hours,
-                            haptics: true,
-                            onChanged: (value) {
-                              SemanticsService.announce(
-                                  "$value, hours", Directionality.of(context));
-                              setState(() => hours = value);
-                            },
+                    const SizedBox(height: 20),
+                    Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.only(
+                                  right: Constants.padding),
+                              child: FilledButton.tonalIcon(
+                                  icon: const Icon(Icons.close_rounded),
+                                  onPressed: () => Navigator.pop(context, null),
+                                  label: const AutoSizeText("Cancel",
+                                      softWrap: false,
+                                      overflow: TextOverflow.visible,
+                                      maxLines: 1,
+                                      minFontSize: Constants.small)),
+                            ),
                           ),
-                        ),
-                        const Padding(
-                            padding: EdgeInsets.symmetric(
-                                horizontal: Constants.padding),
-                            child: Text(":", style: Constants.timeColon)),
-                        Expanded(
-                          child: NumberPicker(
-                            infiniteLoop: true,
-                            textStyle: Constants.numberPickerSecondary(
-                                context: context),
-                            selectedTextStyle:
-                            Constants.numberPickerPrimary(context: context),
-                            minValue: 0,
-                            maxValue: 59,
-                            value: minutes,
-                            haptics: true,
-                            onChanged: (value) {
-                              SemanticsService.announce("$value, minutes",
-                                  Directionality.of(context));
-                              setState(() => minutes = value);
-                            },
-                          ),
-                        ),
-                        const Padding(
-                            padding: EdgeInsets.symmetric(
-                                horizontal: Constants.padding),
-                            child: Text(":", style: Constants.timeColon)),
-                        Expanded(
-                          child: NumberPicker(
-                            infiniteLoop: true,
-                            textStyle: Constants.numberPickerSecondary(
-                                context: context),
-                            selectedTextStyle:
-                            Constants.numberPickerPrimary(context: context),
-                            minValue: 0,
-                            maxValue: 59,
-                            value: seconds,
-                            haptics: true,
-                            onChanged: (value) {
-                              SemanticsService.announce("$value, seconds",
-                                  Directionality.of(context));
-                              setState(() => seconds = value);
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        Expanded(
-                          child: Padding(
-                            padding:
-                            const EdgeInsets.only(right: Constants.padding),
-                            child: FilledButton.tonalIcon(
-                                icon: const Icon(Icons.close_rounded),
-                                onPressed: () => Navigator.pop(context, null),
-                                label: const AutoSizeText("Cancel",
+                          Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.only(
+                                  left: Constants.padding),
+                              child: FilledButton.icon(
+                                icon: const Icon(Icons.done_rounded),
+                                onPressed: () {
+                                  Navigator.pop(
+                                      context,
+                                      (hours * 3600) +
+                                          (minutes * 60) +
+                                          seconds);
+                                },
+                                label: const AutoSizeText("Done",
                                     softWrap: false,
                                     overflow: TextOverflow.visible,
                                     maxLines: 1,
-                                    minFontSize: Constants.small)),
-                          ),
-                        ),
-                        Expanded(
-                          child: Padding(
-                            padding:
-                            const EdgeInsets.only(left: Constants.padding),
-                            child: FilledButton.icon(
-                              icon: const Icon(Icons.done_rounded),
-                              onPressed: () {
-                                Navigator.pop(context,
-                                    (hours * 3600) + (minutes * 60) + seconds);
-                              },
-                              label: const AutoSizeText("Done",
-                                  softWrap: false,
-                                  overflow: TextOverflow.visible,
-                                  maxLines: 1,
-                                  minFontSize: Constants.small),
+                                    minFontSize: Constants.small),
+                              ),
                             ),
-                          ),
-                        )
-                      ])
-                ])));
+                          )
+                        ])
+                  ])),
+        ));
   }
 }

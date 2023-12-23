@@ -2,7 +2,10 @@ import 'dart:io';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_acrylic/flutter_acrylic.dart';
 import 'package:isar/isar.dart';
+//import 'package:macos_window_utils/macos_window_utils.dart';
 import 'package:provider/provider.dart';
 import 'package:window_manager/window_manager.dart';
 
@@ -26,15 +29,39 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   DartPluginRegistrant.ensureInitialized();
 
-  // THIS needs to be added to main in the app.
+  // TODO: test flutter_acrylic for windows/mac.
+  // on Linux, it's disrupting the keydown event.
   if (!Platform.isIOS && !Platform.isAndroid) {
+    // Flutter acrylic doesn't allow keystrokes in linux.
+    if (!Platform.isLinux) {
+      // Transparency effects - Flutter acrylic
+      await Window.initialize();
+
+      // // see flutter_acrylic for effects. Only Transparent/disabled/solid for linux
+      // // Windows - use Aero, acrylic is breaking in W10.
+      // // Set colors according to user theme.
+      // // MacOS - features for sidebar
+      // await Window.setEffect(
+      //   effect: WindowEffect.transparent,
+      //   dark: true,
+      // );
+
+      await Window.setEffect(effect: WindowEffect.disabled, dark: true);
+
+      // I think the idea is to make the window fully transparent/effected,
+      // then add colours/opacities per widget.
+
+      // Use for changing the transparency of the sidebar
+      // await Window.setEffect(
+      //   effect: WindowEffect.sidebar,
+      //   dark: true,
+      // );
+    }
     // This is for default sizing.
     await windowManager.ensureInitialized();
 
-    // NOTE: This is not currently working in Linux. Possibly macOS.
-    // Linux size issue is not resolved.
-    await WindowManager.instance.setResizable(true);
-    await WindowManager.instance.setMinimumSize(Constants.testDesktopSize);
+    await windowManager.setResizable(true);
+    await windowManager.setMinimumSize(Constants.testDesktopSize);
 
     WindowOptions windowOptions = const WindowOptions(
       minimumSize: Constants.testDesktopSize,
@@ -122,6 +149,7 @@ class _NavigationTester extends State<NavigationTester> with WindowListener {
   void initState() {
     if (!Platform.isAndroid && !Platform.isIOS) {
       windowManager.addListener(this);
+      ServicesBinding.instance.keyboard.addHandler(_onKey);
     }
     // Test to inject 100 tasks.
     // testListView();
@@ -146,6 +174,18 @@ class _NavigationTester extends State<NavigationTester> with WindowListener {
   void onWindowClose() async {
     await dispose();
     await windowManager.destroy();
+  }
+
+  bool _onKey(KeyEvent event) {
+    final key = event.logicalKey.keyLabel;
+    if (event is KeyDownEvent) {
+      print("Key down: $key");
+    } else if (event is KeyUpEvent) {
+      print("Key up: $key");
+    } else if (event is KeyRepeatEvent) {
+      print("Key repeat: $key");
+    }
+    return false;
   }
 
   void testListView() async {
@@ -174,9 +214,16 @@ class _NavigationTester extends State<NavigationTester> with WindowListener {
     Size size = MediaQuery.of(context).size;
 
     print("MQ: $size");
-    return MaterialApp(
-      theme: ThemeData(useMaterial3: true),
-      home: const HomeScreen(),
+    //TitlebarSafeArea is only for MacOS for window-tinting
+    // return MaterialApp(
+    //   home: const HomeScreen(),
+    //   theme: ThemeData(useMaterial3: true),
+    // );
+    return TitlebarSafeArea(
+      child: MaterialApp(
+        theme: ThemeData(useMaterial3: true),
+        home: const HomeScreen(),
+      ),
     );
   }
 }

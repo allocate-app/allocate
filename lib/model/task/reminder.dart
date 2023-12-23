@@ -15,9 +15,10 @@ class Reminder with EquatableMixin implements Copyable<Reminder>, IRepeatable {
   @override
   @ignore
   ModelType modelType = ModelType.reminder;
+
   @override
   @ignore
-  RepeatableType repeatableType = RepeatableType.reminder;
+  ModelType get repeatableType => ModelType.reminder;
 
   @override
   @Index()
@@ -35,14 +36,14 @@ class Reminder with EquatableMixin implements Copyable<Reminder>, IRepeatable {
 
   @Ignore()
   @override
-  DateTime get startDate => dueDate;
+  DateTime? get startDate => dueDate;
 
   @override
-  set startDate(DateTime newDate) => dueDate = newDate;
+  set startDate(DateTime? newDate) => dueDate = newDate;
 
   @Index()
   @override
-  DateTime dueDate;
+  DateTime? dueDate;
   @Index()
   bool repeatable;
   @override
@@ -68,7 +69,11 @@ class Reminder with EquatableMixin implements Copyable<Reminder>, IRepeatable {
       required this.repeatDays,
       this.repeatSkip = 1,
       this.frequency = Frequency.once,
-      required this.lastUpdated});
+      required this.lastUpdated}) {
+    while (Constants.intMax == id) {
+      id = Constants.generateID();
+    }
+  }
 
   @override
   Reminder copy() => Reminder(
@@ -110,7 +115,7 @@ class Reminder with EquatableMixin implements Copyable<Reminder>, IRepeatable {
         repeatID = entity["repeatID"] as int?,
         notificationID = entity["notificationID"] as int?,
         name = entity["name"] as String,
-        dueDate = DateTime.parse(entity["dueDate"]),
+        dueDate = DateTime.tryParse(entity["dueDate"]),
         frequency = Frequency.values[entity["frequency"]],
         repeatable = entity["repeatable"] as bool,
         repeatDays = entity["repeatDays"] as List<bool>,
@@ -125,7 +130,7 @@ class Reminder with EquatableMixin implements Copyable<Reminder>, IRepeatable {
         "repeatID": repeatID,
         "notificationID": notificationID,
         "name": name,
-        "dueDate": dueDate.toIso8601String(),
+        "dueDate": (null != dueDate) ? dueDate!.toIso8601String() : dueDate,
         "frequency": frequency.index,
         "repeatable": repeatable,
         "repeatDays": repeatDays,

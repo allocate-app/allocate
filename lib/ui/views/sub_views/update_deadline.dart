@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'package:another_flushbar/flushbar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
@@ -75,10 +73,9 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
     checkClose = false;
     prevDeadline = deadline.copy();
 
-    showStartTime =
-        Constants.midnight != TimeOfDay.fromDateTime(deadline.startDate);
-    showDueTime =
-        Constants.midnight != TimeOfDay.fromDateTime(deadline.dueDate);
+    showStartTime = null != deadline.startDate;
+    showDueTime = null != deadline.dueDate;
+    showWarnTime = null != deadline.warnDate;
   }
 
   void initializeProviders() {
@@ -95,32 +92,29 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
         const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics());
     nameEditingController = TextEditingController(text: deadline.name);
     nameEditingController.addListener(() {
-      nameErrorText = null;
-      checkClose = true;
-      String newText = nameEditingController.text;
-      SemanticsService.announce(newText, Directionality.of(context));
-      if (mounted) {
-        return setState(() => deadline.name = newText);
+      if (null != nameErrorText && mounted) {
+        setState(() {
+          nameErrorText = null;
+        });
       }
+      SemanticsService.announce(
+          nameEditingController.text, Directionality.of(context));
     });
 
     descriptionEditingController =
         TextEditingController(text: deadline.description);
     descriptionEditingController.addListener(() {
-      checkClose = true;
       String newText = descriptionEditingController.text;
       SemanticsService.announce(newText, Directionality.of(context));
-      deadline.description = newText;
     });
 
     repeatSkipEditingController =
         TextEditingController(text: deadline.repeatSkip.toString());
     repeatSkipEditingController.addListener(() {
-      checkClose = true;
       String newText = descriptionEditingController.text;
       SemanticsService.announce(newText, Directionality.of(context));
-      deadline.repeatSkip = int.tryParse(newText) ?? deadline.repeatSkip;
-      deadline.repeatSkip = max(deadline.repeatSkip, 1);
+      // deadline.repeatSkip = int.tryParse(newText) ?? deadline.repeatSkip;
+      // deadline.repeatSkip = max(deadline.repeatSkip, 1);
     });
   }
 
@@ -152,6 +146,10 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
       error.show(context);
     }
 
+    if (null == deadline.startDate || null == deadline.dueDate) {
+      deadline.frequency = Frequency.once;
+    }
+
     if (deadline.frequency == Frequency.custom) {
       if (!deadline.repeatDays.contains(true)) {
         for (int i = 0; i < deadline.repeatDays.length; i++) {
@@ -165,7 +163,7 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
 
   void clearNameField() {
     if (mounted) {
-      return setState(() {
+      setState(() {
         checkClose = true;
         nameEditingController.clear();
         deadline.name = "";
@@ -173,7 +171,29 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
     }
   }
 
+  void updateName() {
+    if (mounted) {
+      setState(() {
+        checkClose = true;
+        deadline.name = nameEditingController.text;
+      });
+    }
+  }
+
+  void updateDescription() {
+    if (mounted) {
+      setState(() {
+        checkClose = true;
+        deadline.description = descriptionEditingController.text;
+      });
+    }
+  }
+
   Future<void> handleUpdate() async {
+    // in case the usr doesn't submit to the textfields
+    deadline.name = nameEditingController.text;
+    deadline.description = descriptionEditingController.text;
+
     if (prevDeadline.frequency != Frequency.once && checkClose) {
       bool? updateSingle = await showModalBottomSheet<bool?>(
           showDragHandle: true,
@@ -319,17 +339,17 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
 
   void handleClose({required bool willDiscard}) {
     if (willDiscard) {
-      Navigator.pop(context, prevDeadline);
+      return Navigator.pop(context);
     }
 
     if (mounted) {
-      return setState(() => checkClose = false);
+      setState(() => checkClose = false);
     }
   }
 
   void changePriority(Set<Priority> newSelection) {
     if (mounted) {
-      return setState(() {
+      setState(() {
         checkClose = true;
         deadline.priority = newSelection.first;
       });
@@ -338,10 +358,10 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
 
   void clearWarnMe() {
     if (mounted) {
-      return setState(() {
+      setState(() {
         checkClose = true;
-        deadline.warnDate = Constants.nullDate.copyWith(
-            hour: Constants.midnight.hour, minute: Constants.midnight.minute);
+        deadline.warnDate = null;
+        showWarnTime = false;
         deadline.warnMe = false;
       });
     }
@@ -349,37 +369,37 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
 
   void updateWarnMe({bool? checkClose, DateTime? newDate, TimeOfDay? newTime}) {
     if (mounted) {
-      return setState(() {
+      setState(() {
         this.checkClose = checkClose ?? this.checkClose;
-        newDate = newDate ?? Constants.nullDate;
-        newTime = newTime ?? Constants.midnight;
         deadline.warnDate =
-            newDate!.copyWith(hour: newTime!.hour, minute: newTime!.minute);
-        deadline.warnMe = (Constants.nullDate != deadline.warnDate);
+            newDate?.copyWith(hour: newTime?.hour, minute: newTime?.minute);
+        showWarnTime = null != newTime;
+        deadline.warnMe = null != deadline.warnDate;
       });
     }
   }
 
   void clearDates() {
     if (mounted) {
-      return setState(() {
+      setState(() {
         checkClose = true;
-        deadline.startDate = Constants.nullDate;
-        deadline.dueDate = Constants.nullDate;
+        deadline.startDate = null;
+        deadline.dueDate = null;
+        showStartTime = false;
+        showDueTime = false;
       });
     }
   }
 
   void updateDates({bool? checkClose, DateTime? newStart, DateTime? newDue}) {
     if (mounted) {
-      return setState(() {
+      setState(() {
         this.checkClose = checkClose ?? this.checkClose;
-        deadline.startDate = newStart ?? Constants.nullDate;
-        deadline.dueDate = newDue ?? Constants.nullDate;
-
-        if (Constants.nullDate != deadline.startDate &&
-            Constants.nullDate != deadline.dueDate &&
-            deadline.startDate.isAfter(deadline.dueDate)) {
+        deadline.startDate = newStart;
+        deadline.dueDate = newDue;
+        if (null != deadline.startDate &&
+            null != deadline.dueDate &&
+            deadline.startDate!.isAfter(deadline.dueDate!)) {
           deadline.startDate = deadline.dueDate;
         }
       });
@@ -388,34 +408,35 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
 
   void clearTimes() {
     if (mounted) {
-      return setState(() {
+      setState(() {
         checkClose = true;
 
-        deadline.startDate = deadline.startDate.copyWith(
-            hour: Constants.midnight.hour, minute: Constants.midnight.minute);
-        deadline.dueDate = deadline.dueDate.copyWith(
-            hour: Constants.midnight.hour, minute: Constants.midnight.minute);
+        checkClose = true;
+        showStartTime = false;
+        showDueTime = false;
       });
     }
   }
 
   void updateTimes({bool? checkClose, TimeOfDay? newStart, TimeOfDay? newDue}) {
     if (mounted) {
-      return setState(() {
+      setState(() {
         this.checkClose = checkClose ?? this.checkClose;
-        newStart = newStart ?? Constants.midnight;
-        newDue = newDue ?? Constants.midnight;
+
         deadline.startDate = deadline.startDate
-            .copyWith(hour: newStart!.hour, minute: newStart!.minute);
+            ?.copyWith(hour: newStart?.hour, minute: newStart?.minute);
         deadline.dueDate = deadline.dueDate
-            .copyWith(hour: newDue!.hour, minute: newDue!.minute);
+            ?.copyWith(hour: newDue?.hour, minute: newDue?.minute);
+
+        showStartTime = null != newStart;
+        showDueTime = null != newDue;
       });
     }
   }
 
   void clearRepeatable() {
     if (mounted) {
-      return setState(() {
+      setState(() {
         checkClose = true;
         deadline.frequency = Frequency.once;
 
@@ -431,13 +452,14 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
       required Set<int> newWeekdays,
       required int newSkip}) {
     if (mounted) {
-      return setState(() {
+      setState(() {
         this.checkClose = checkClose ?? this.checkClose;
         deadline.frequency = newFreq;
         deadline.repeatSkip = newSkip;
 
         if (newWeekdays.isEmpty) {
-          newWeekdays.add(deadline.startDate.weekday - 1);
+          newWeekdays
+              .add((deadline.startDate?.weekday ?? DateTime.now().weekday) - 1);
         }
         for (int i = 0; i < deadline.repeatDays.length; i++) {
           deadline.repeatDays[i] = newWeekdays.contains(i);
@@ -463,8 +485,8 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
     bool smallScreen = (width <= Constants.smallScreen);
     bool hugeScreen = (width >= Constants.hugeScreen);
 
-    bool showTimeTile = (Constants.nullDate != deadline.startDate ||
-        Constants.nullDate != deadline.dueDate);
+    bool showTimeTile =
+        (null != deadline.startDate || null != deadline.dueDate);
 
     return (largeScreen)
         ? buildDesktopDialog(
@@ -545,7 +567,8 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                                               const EdgeInsets.symmetric(
                                             horizontal: Constants.halfPadding,
                                           ),
-                                          handleClear: clearNameField),
+                                          handleClear: clearNameField,
+                                          onEditingComplete: updateName),
 
                                       Tiles.priorityTile(
                                         context: context,
@@ -566,17 +589,16 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                                                 horizontal: Constants.padding),
                                         context: context,
                                         date: deadline.warnDate,
-                                        time: (Constants.midnight !=
-                                                TimeOfDay.fromDateTime(
-                                                    deadline.startDate))
+                                        time: (null != deadline.warnDate &&
+                                                showWarnTime)
                                             ? TimeOfDay.fromDateTime(
-                                                deadline.startDate)
+                                                deadline.warnDate!)
                                             : null,
                                         useAlertIcon: true,
                                         showDate: deadline.warnMe,
                                         unsetDateText: "Warn me?",
                                         unsetTimeText: "Warn Time",
-                                        dialogHeader: "Select Warning Date",
+                                        dialogHeader: "Warn Date",
                                         handleClear: clearWarnMe,
                                         handleUpdate: updateWarnMe,
                                       ),
@@ -607,17 +629,13 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                                                   const EdgeInsets.symmetric(
                                                       horizontal:
                                                           Constants.padding),
-                                              startTime: (Constants.midnight !=
-                                                      TimeOfDay.fromDateTime(
-                                                          deadline.startDate))
+                                              startTime: (showStartTime)
                                                   ? TimeOfDay.fromDateTime(
-                                                      deadline.startDate)
+                                                      deadline.startDate!)
                                                   : null,
-                                              dueTime: (Constants.midnight !=
-                                                      TimeOfDay.fromDateTime(
-                                                          deadline.dueDate))
+                                              dueTime: (showDueTime)
                                                   ? TimeOfDay.fromDateTime(
-                                                      deadline.dueDate)
+                                                      deadline.dueDate!)
                                                   : null,
                                               context: context,
                                               handleClear: clearTimes,
@@ -628,18 +646,22 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                                           ? const PaddedDivider(
                                               padding: Constants.padding)
                                           : const SizedBox.shrink(),
-                                      Tiles.repeatableTile(
-                                        context: context,
-                                        outerPadding:
-                                            const EdgeInsets.symmetric(
-                                                horizontal: Constants.padding),
-                                        frequency: deadline.frequency,
-                                        weekdays: weekdayList,
-                                        repeatSkip: deadline.repeatSkip,
-                                        startDate: deadline.startDate,
-                                        handleUpdate: updateRepeatable,
-                                        handleClear: clearRepeatable,
-                                      ),
+                                      (null != deadline.dueDate &&
+                                              null != deadline.startDate)
+                                          ? Tiles.repeatableTile(
+                                              context: context,
+                                              outerPadding:
+                                                  const EdgeInsets.symmetric(
+                                                      horizontal:
+                                                          Constants.padding),
+                                              frequency: deadline.frequency,
+                                              weekdays: weekdayList,
+                                              repeatSkip: deadline.repeatSkip,
+                                              startDate: deadline.startDate,
+                                              handleUpdate: updateRepeatable,
+                                              handleClear: clearRepeatable,
+                                            )
+                                          : const SizedBox.shrink(),
                                     ]),
                               ),
                               Flexible(
@@ -658,6 +680,7 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                                             const EdgeInsets.symmetric(
                                                 horizontal: Constants.padding),
                                         context: context,
+                                        onEditingComplete: updateDescription,
                                       ),
                                     ]),
                               )
@@ -728,7 +751,8 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                         textFieldPadding: const EdgeInsets.symmetric(
                           horizontal: Constants.halfPadding,
                         ),
-                        handleClear: clearNameField),
+                        handleClear: clearNameField,
+                        onEditingComplete: updateName),
 
                     Tiles.priorityTile(
                       mobile: smallScreen,
@@ -745,18 +769,15 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                       outerPadding: const EdgeInsets.symmetric(
                           horizontal: Constants.padding),
                       context: context,
-                      date: (Constants.nullDate != deadline.warnDate)
-                          ? deadline.warnDate
-                          : null,
-                      time: (Constants.midnight !=
-                              TimeOfDay.fromDateTime(deadline.warnDate))
-                          ? TimeOfDay.fromDateTime(deadline.warnDate)
+                      date: deadline.warnDate,
+                      time: (null != deadline.warnDate && showWarnTime)
+                          ? TimeOfDay.fromDateTime(deadline.warnDate!)
                           : null,
                       useAlertIcon: true,
                       showDate: deadline.warnMe,
                       unsetDateText: "Warn me?",
                       unsetTimeText: "Warn Time",
-                      dialogHeader: "Select Warning Date",
+                      dialogHeader: "Warn Date",
                       handleClear: clearWarnMe,
                       handleUpdate: updateWarnMe,
                     ),
@@ -767,6 +788,7 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                       outerPadding: const EdgeInsets.symmetric(
                           horizontal: Constants.padding),
                       context: context,
+                      onEditingComplete: updateDescription,
                     ),
                     const PaddedDivider(padding: Constants.padding),
 
@@ -790,13 +812,11 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                         ? Tiles.timeTile(
                             outerPadding: const EdgeInsets.symmetric(
                                 horizontal: Constants.padding),
-                            startTime: (Constants.midnight !=
-                                    TimeOfDay.fromDateTime(deadline.startDate))
-                                ? TimeOfDay.fromDateTime(deadline.startDate)
+                            startTime: (showStartTime)
+                                ? TimeOfDay.fromDateTime(deadline.startDate!)
                                 : null,
-                            dueTime: (Constants.midnight !=
-                                    TimeOfDay.fromDateTime(deadline.dueDate))
-                                ? TimeOfDay.fromDateTime(deadline.dueDate)
+                            dueTime: (showDueTime)
+                                ? TimeOfDay.fromDateTime(deadline.dueDate!)
                                 : null,
                             context: context,
                             handleClear: clearTimes,
@@ -807,17 +827,19 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                         ? const PaddedDivider(padding: Constants.padding)
                         : const SizedBox.shrink(),
                     // Repeatable Stuff -> Show status, on click, open a dialog.
-                    Tiles.repeatableTile(
-                      context: context,
-                      outerPadding: const EdgeInsets.symmetric(
-                          horizontal: Constants.padding),
-                      frequency: deadline.frequency,
-                      weekdays: weekdayList,
-                      repeatSkip: deadline.repeatSkip,
-                      startDate: deadline.startDate,
-                      handleUpdate: updateRepeatable,
-                      handleClear: clearRepeatable,
-                    ),
+                    (null != deadline.dueDate && null != deadline.startDate)
+                        ? Tiles.repeatableTile(
+                            context: context,
+                            outerPadding: const EdgeInsets.symmetric(
+                                horizontal: Constants.padding),
+                            frequency: deadline.frequency,
+                            weekdays: weekdayList,
+                            repeatSkip: deadline.repeatSkip,
+                            startDate: deadline.startDate,
+                            handleUpdate: updateRepeatable,
+                            handleClear: clearRepeatable,
+                          )
+                        : const SizedBox.shrink(),
                   ],
                 ),
               ),

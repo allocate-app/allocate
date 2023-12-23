@@ -24,8 +24,6 @@ class UserProvider extends ChangeNotifier {
 
   User? curUser;
 
-  bool retry = false;
-
   UserProvider() {
     init();
   }
@@ -37,10 +35,6 @@ class UserProvider extends ChangeNotifier {
 
   void startTimer() {
     syncTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
-      if (retry) {
-        retry = false;
-        updateUser();
-      }
       if (curUser?.syncOnline ?? false) {
         syncUser();
       }
@@ -55,7 +49,7 @@ class UserProvider extends ChangeNotifier {
       bool syncOnline = false,
       bool? isSynced,
       int? bandwidth,
-      UserThemeData? theme,
+      ThemeType? theme,
       int? curMornID,
       int? curAftID,
       int? curEveID,
@@ -68,7 +62,7 @@ class UserProvider extends ChangeNotifier {
         userName: userName,
         syncOnline: syncOnline,
         isSynced: isSynced ?? false,
-        curTheme: theme ?? UserThemeData.dark,
+        themeType: theme ?? ThemeType.dark,
         curMornID: curMornID,
         curAftID: curAftID,
         curEveID: curEveID,
@@ -86,11 +80,9 @@ class UserProvider extends ChangeNotifier {
       _userStorageService.createUser(user: curUser!);
     } on FailureToCreateException catch (e) {
       log(e.cause);
-      retry = true;
       return Future.error(e);
     } on FailureToUploadException catch (e) {
       log(e.cause);
-      retry = true;
       return Future.error(e);
     }
     notifyListeners();
@@ -101,11 +93,9 @@ class UserProvider extends ChangeNotifier {
       _userStorageService.updateUser(user: curUser!);
     } on FailureToUpdateException catch (e) {
       log(e.cause);
-      retry = true;
       return Future.error(e);
     } on FailureToUploadException catch (e) {
       log(e.cause);
-      retry = true;
       return Future.error(e);
     }
     notifyListeners();
@@ -134,6 +124,7 @@ class UserProvider extends ChangeNotifier {
           email: email, password: password);
 
       // For switching users.
+      // -- Needs rewriting.
       _userStorageService.fetchUser();
 
       User? newUser = await _userStorageService.getUser();
@@ -170,11 +161,9 @@ class UserProvider extends ChangeNotifier {
       await _userStorageService.syncUser(user: curUser!);
     } on FailureToUploadException catch (e) {
       log(e.cause);
-      retry = true;
       return Future.error(e);
     } on UserSyncException catch (e) {
       log(e.cause);
-      retry = true;
       return Future.error(e);
     }
   }

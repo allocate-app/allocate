@@ -62,8 +62,11 @@ dependencies:
   another_flushbar: ^1.12.30
   windows_notification: ^0.0.3
   table_calendar: ^3.0.9
-  device_info_plus: ^10.0.0
+  device_info_plus: ^9.1.1
   uuid: ^4.1.0
+  flutter_acrylic: ^1.1.0
+  macos_window_utils: ^1.4.0
+
 
 
 dev_dependencies:

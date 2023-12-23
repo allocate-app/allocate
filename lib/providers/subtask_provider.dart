@@ -7,7 +7,17 @@ import '../services/subtask_service.dart';
 import '../util/exceptions.dart';
 
 class SubtaskProvider extends ChangeNotifier {
-  bool rebuild = true;
+  bool _rebuild = true;
+
+  bool get rebuild => _rebuild;
+
+  set rebuild(bool rebuild) {
+    _rebuild = rebuild;
+    if (true == _rebuild) {
+      notifyListeners();
+    }
+  }
+
   final SubtaskService _subtaskService;
 
   // Not sure if I need a ptr, or a usr pref.

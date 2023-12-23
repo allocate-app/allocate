@@ -150,13 +150,13 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
         const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics());
     nameEditingController = TextEditingController();
     nameEditingController.addListener(() {
-      nameErrorText = null;
-      checkClose = true;
-      String newText = nameEditingController.text;
-      SemanticsService.announce(newText, Directionality.of(context));
-      if (mounted) {
-        return setState(() => name = newText);
+      if (null != nameErrorText && mounted) {
+        setState(() {
+          nameErrorText = null;
+        });
       }
+      SemanticsService.announce(
+          nameEditingController.text, Directionality.of(context));
     });
 
     groupEditingController = SearchController();
@@ -165,19 +165,17 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
 
     descriptionEditingController = TextEditingController();
     descriptionEditingController.addListener(() {
-      checkClose = true;
       String newText = descriptionEditingController.text;
       SemanticsService.announce(newText, Directionality.of(context));
-      description = newText;
     });
 
     repeatSkipEditingController = TextEditingController();
     repeatSkipEditingController.addListener(() {
-      checkClose = true;
       String newText = descriptionEditingController.text;
       SemanticsService.announce(newText, Directionality.of(context));
-      repeatSkip = int.tryParse(newText) ?? repeatSkip;
-      repeatSkip = max(repeatSkip, 1);
+      // I don't think these are req'd.
+      // repeatSkip = int.tryParse(newText) ?? repeatSkip;
+      // repeatSkip = max(repeatSkip, 1);
     });
   }
 
@@ -205,29 +203,20 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
   Future<void> resetSubtasks() async {
     subtasks = await toDoProvider.getSubtasks(
         id: Constants.intMax, limit: Constants.numTasks[taskType]!);
-    toDoProvider.toDoSubtaskCounts[Constants.intMax]!.value = subtasks.length;
+    toDoProvider.setSubtaskCount(id: Constants.intMax, count: subtasks.length);
     sumWeight = await toDoProvider.getWeight(
         taskID: Constants.intMax, limit: Constants.numTasks[taskType]!);
     realDuration = toDoProvider.calculateRealDuration(
         weight: sumWeight, duration: expectedDuration);
+
+    subtaskProvider.rebuild = false;
 
     if (mounted) {
       setState(() {});
     }
   }
 
-  void handleGroupSelection({required int id}) {
-    if (mounted) {
-      return setState(() {
-        checkClose = true;
-        groupID = id;
-      });
-    }
-  }
-
-  void handleHistorySelection({
-    required int id,
-  }) {
+  Future<void> handleGroupSelection({required int id}) async {
     if (mounted) {
       return setState(() {
         checkClose = true;
@@ -247,6 +236,11 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
         setState(() => nameErrorText = "Enter Task Name");
       }
     }
+
+    if (null == startDate || null == dueDate) {
+      frequency = Frequency.once;
+    }
+
     if (frequency == Frequency.custom) {
       if (weekdayList.isEmpty) {
         weekdayList
@@ -258,16 +252,10 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
   }
 
   void mergeDateTimes() {
-    startDate = startDate ?? DateTime.now();
-    startTime = startTime ?? Constants.midnight;
-
     startDate =
-        startDate!.copyWith(hour: startTime!.hour, minute: startTime!.minute);
+        startDate?.copyWith(hour: startTime?.hour, minute: startTime?.minute);
 
-    dueDate = dueDate ?? DateTime.now();
-    dueTime = dueTime ?? Constants.midnight;
-
-    dueDate = dueDate!.copyWith(hour: dueTime!.hour, minute: dueTime!.minute);
+    dueDate = dueDate?.copyWith(hour: dueTime?.hour, minute: dueTime?.minute);
   }
 
   Future<void> handleCreate() async {
@@ -275,28 +263,37 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
       weekdays[index] = true;
     }
 
+    // in case the usr doesn't submit to the textfields
+    name = nameEditingController.text;
+    description = descriptionEditingController.text;
+
     await toDoProvider
         .createToDo(
-          groupID: groupID,
-          taskType: taskType,
-          name: name,
-          description: description,
-          weight: (taskType == TaskType.small) ? weight : sumWeight,
-          expectedDuration: expectedDuration,
-          realDuration: realDuration,
-          priority: priority,
-          startDate: startDate,
-          dueDate: dueDate,
-          myDay: myDay,
-          completed: completed,
-          repeatable: frequency != Frequency.once,
-          frequency: frequency,
-          repeatDays: weekdays,
-          repeatSkip: repeatSkip,
-          subtasks: subtasks,
-        )
-        .whenComplete(() => Navigator.pop(context))
-        .catchError((e) {
+      groupID: groupID,
+      groupIndex: groupProvider.getToDoCount(id: groupID)?.value,
+      taskType: taskType,
+      name: name,
+      description: description,
+      weight: (taskType == TaskType.small) ? weight : sumWeight,
+      expectedDuration: expectedDuration,
+      realDuration: realDuration,
+      priority: priority,
+      startDate: startDate,
+      dueDate: dueDate,
+      myDay: myDay,
+      completed: completed,
+      repeatable: frequency != Frequency.once,
+      frequency: frequency,
+      repeatDays: weekdays,
+      repeatSkip: repeatSkip,
+      subtasks: subtasks,
+    )
+        .whenComplete(() {
+      if (null != groupID) {
+        groupProvider.setToDoCount(id: groupID!);
+      }
+      Navigator.pop(context);
+    }).catchError((e) {
       Flushbar? error;
 
       error = Flushbars.createError(
@@ -332,6 +329,24 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
         checkClose = true;
         nameEditingController.clear();
         name = "";
+      });
+    }
+  }
+
+  void updateName() {
+    if (mounted) {
+      setState(() {
+        checkClose = true;
+        name = nameEditingController.text;
+      });
+    }
+  }
+
+  void updateDescription() {
+    if (mounted) {
+      setState(() {
+        checkClose = true;
+        description = descriptionEditingController.text;
       });
     }
   }
@@ -608,7 +623,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                                 children: [
                                   Tiles.nameTile(
                                       context: context,
-                                      leading: LeadingWidgets.toDoCheckbox(
+                                      leading: LeadingWidgets.checkbox(
                                         scale: Constants.largeCheckboxScale,
                                         completed: completed,
                                         onChanged: completeToDo,
@@ -621,14 +636,16 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                                       textFieldPadding: const EdgeInsets.only(
                                         left: Constants.halfPadding,
                                       ),
-                                      handleClear: clearNameField),
+                                      handleClear: clearNameField,
+                                      onEditingComplete: updateName),
                                   Tiles.weightTile(
                                     outerPadding: const EdgeInsets.all(
                                         Constants.innerPadding),
                                     batteryPadding: const EdgeInsets.symmetric(
                                         horizontal: Constants.innerPadding),
-                                    constraints:
-                                        const BoxConstraints(maxWidth: 200),
+                                    constraints: const BoxConstraints(
+                                      maxWidth: 200,
+                                    ),
                                     weight: (taskType == TaskType.small)
                                         ? weight.toDouble()
                                         : sumWeight.toDouble(),
@@ -720,17 +737,21 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                                       : const SizedBox.shrink(),
 
                                   // Repeatable Stuff -> Show status, on click, open a dialog.
-                                  Tiles.repeatableTile(
-                                    context: context,
-                                    outerPadding: const EdgeInsets.symmetric(
-                                        horizontal: Constants.padding),
-                                    frequency: frequency,
-                                    weekdays: weekdayList,
-                                    repeatSkip: repeatSkip,
-                                    startDate: startDate,
-                                    handleUpdate: updateRepeatable,
-                                    handleClear: clearRepeatable,
-                                  ),
+                                  (null != dueDate && null != startDate)
+                                      ? Tiles.repeatableTile(
+                                          context: context,
+                                          outerPadding:
+                                              const EdgeInsets.symmetric(
+                                                  horizontal:
+                                                      Constants.padding),
+                                          frequency: frequency,
+                                          weekdays: weekdayList,
+                                          repeatSkip: repeatSkip,
+                                          startDate: startDate,
+                                          handleUpdate: updateRepeatable,
+                                          handleClear: clearRepeatable,
+                                        )
+                                      : const SizedBox.shrink(),
                                 ]),
                           ),
                           Flexible(
@@ -746,8 +767,6 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                                     padding:
                                         const EdgeInsets.all(Constants.padding),
                                     handleDataSelection: handleGroupSelection,
-                                    handleHistorySelection:
-                                        handleHistorySelection,
                                     searchController: groupEditingController,
                                     dispose: false,
                                     mostRecent: groupProvider.mostRecent,
@@ -794,6 +813,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                                     outerPadding: const EdgeInsets.symmetric(
                                         horizontal: Constants.padding),
                                     context: context,
+                                    onEditingComplete: updateDescription,
                                   ),
                                 ]),
                           )
@@ -850,7 +870,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                   children: [
                     Tiles.nameTile(
                         context: context,
-                        leading: LeadingWidgets.toDoCheckbox(
+                        leading: LeadingWidgets.checkbox(
                           scale: Constants.largeCheckboxScale,
                           completed: completed,
                           onChanged: completeToDo,
@@ -862,7 +882,8 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                         textFieldPadding: const EdgeInsets.only(
                           left: Constants.halfPadding,
                         ),
-                        handleClear: clearNameField),
+                        handleClear: clearNameField,
+                        onEditingComplete: updateName),
 
                     Tiles.weightTile(
                       outerPadding:
@@ -902,7 +923,6 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                     // Subtasks
                     (taskType != TaskType.small)
                         ? Tiles.subtasksTile(
-                            isDense: smallScreen,
                             context: context,
                             limit: Constants.numTasks[taskType]!,
                             subtasks: subtasks,
@@ -945,7 +965,6 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                           horizontal: Constants.padding),
                       searchController: groupEditingController,
                       dispose: false,
-                      handleHistorySelection: handleHistorySelection,
                       mostRecent: groupProvider.mostRecent,
                       search: groupProvider.searchGroups,
                       handleDataSelection: handleGroupSelection,
@@ -959,13 +978,13 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
 
                     // Description
                     Tiles.descriptionTile(
-                      hintText: "Notes",
-                      controller: descriptionEditingController,
-                      outerPadding: const EdgeInsets.symmetric(
-                          horizontal: Constants.padding),
-                      isDense: true,
-                      context: context,
-                    ),
+                        hintText: "Notes",
+                        controller: descriptionEditingController,
+                        outerPadding: const EdgeInsets.symmetric(
+                            horizontal: Constants.padding),
+                        isDense: true,
+                        context: context,
+                        onEditingComplete: updateDescription),
 
                     const PaddedDivider(padding: Constants.innerPadding),
                     // Expected Duration / RealDuration -> Show status, on click, open a dialog.
@@ -1009,17 +1028,19 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                         ? const PaddedDivider(padding: Constants.innerPadding)
                         : const SizedBox.shrink(),
                     // Repeatable Stuff -> Show status, on click, open a dialog.
-                    Tiles.repeatableTile(
-                      context: context,
-                      outerPadding: const EdgeInsets.symmetric(
-                          horizontal: Constants.padding),
-                      frequency: frequency,
-                      weekdays: weekdayList,
-                      repeatSkip: repeatSkip,
-                      startDate: startDate,
-                      handleUpdate: updateRepeatable,
-                      handleClear: clearRepeatable,
-                    ),
+                    (null != dueDate && null != startDate)
+                        ? Tiles.repeatableTile(
+                            context: context,
+                            outerPadding: const EdgeInsets.symmetric(
+                                horizontal: Constants.padding),
+                            frequency: frequency,
+                            weekdays: weekdayList,
+                            repeatSkip: repeatSkip,
+                            startDate: startDate,
+                            handleUpdate: updateRepeatable,
+                            handleClear: clearRepeatable,
+                          )
+                        : const SizedBox.shrink(),
                   ],
                 ),
               ),
@@ -1035,42 +1056,6 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
     );
   }
 
-  // TODO: refactor this out into tiles class.
-  // Widget buildSubTasksTile({physics = const NeverScrollableScrollPhysics()}) {
-  //   return ExpandedListTile(
-  //     title: const AutoSizeText("Steps",
-  //         maxLines: 1,
-  //         overflow: TextOverflow.visible,
-  //         softWrap: false,
-  //         minFontSize: Constants.small),
-  //     subtitle: AutoSizeText(
-  //         "${min(shownTasks, Constants.numTasks[taskType]!)}/${Constants.numTasks[taskType]!} Steps",
-  //         maxLines: 1,
-  //         overflow: TextOverflow.visible,
-  //         softWrap: false,
-  //         minFontSize: Constants.small),
-  //     children: [
-  //       ListViews.reorderableSubtasks(
-  //         physics: physics,
-  //         context: context,
-  //         subtasks: subtasks,
-  //         itemCount: min(Constants.numTasks[taskType]!, shownTasks),
-  //         onRemoved: removeSubtask,
-  //         onReorder: reorderSubtasks,
-  //         updateSubtask: onDataChange,
-  //         showHandle: shownTasks > 1,
-  //       ),
-  //       (shownTasks < Constants.numTasks[taskType]!)
-  //           ? Tiles.addTile(
-  //               title: "Add a step",
-  //               onTap: addSubTask,
-  //             )
-  //           : const SizedBox.shrink(),
-  //     ],
-  //   );
-  // }
-
-  // TODO: refactor this into tiles class once taskType is mutable in model.
   Widget buildTaskTypeButton() {
     return Padding(
       padding: const EdgeInsets.all(Constants.padding),

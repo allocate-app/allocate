@@ -25,7 +25,7 @@ class ListViewHeader<T> extends StatefulWidget {
   final String header;
   final SortableView<T>? sorter;
   final bool showSorter;
-  final void Function(SortMethod? sortMethod)? onChanged;
+  final void Function({SortMethod? sortMethod})? onChanged;
 
   @override
   State<ListViewHeader<T>> createState() => _ListViewHeader();
@@ -57,6 +57,8 @@ class _ListViewHeader<T> extends State<ListViewHeader<T>> {
 
   @override
   Widget build(context) {
+    double width = MediaQuery.of(context).size.width;
+    bool smallScreen = (width <= Constants.smallScreen);
     return Padding(
         padding: widget.outerPadding,
         child: ListTile(
@@ -72,55 +74,131 @@ class _ListViewHeader<T> extends State<ListViewHeader<T>> {
             minFontSize: Constants.huge,
           ),
           trailing: (null != sorter && widget.showSorter)
-              ? DropdownMenu<SortMethod>(
-                  width: 150,
-                  textStyle: Constants.minHeaderStyle,
-                  leadingIcon: const Icon(Icons.swap_vert_rounded),
-                  trailingIcon: getTrailingIcon(),
-                  inputDecorationTheme: Theme.of(context)
-                      .inputDecorationTheme
-                      .copyWith(
-                          isDense: true,
-                          enabledBorder: OutlineInputBorder(
-                              borderRadius: const BorderRadius.all(
-                                  Radius.circular(Constants.roundedCorners)),
-                              borderSide: BorderSide(
-                                width: 2,
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .outlineVariant,
-                                strokeAlign: BorderSide.strokeAlignOutside,
-                              )),
-                          border: const OutlineInputBorder(
-                              borderRadius: BorderRadius.all(
-                                  Radius.circular(Constants.roundedCorners)),
-                              borderSide: BorderSide(
-                                strokeAlign: BorderSide.strokeAlignOutside,
-                              ))),
-                  initialSelection: sorter!.sortMethod,
-                  controller: dropdownController,
-                  label: const Text("Sort"),
-                  hintText: "Sort method",
-                  dropdownMenuEntries: sorter!.sortMethods
-                      .map((SortMethod method) => DropdownMenuEntry(
-                          value: method,
-                          label: toBeginningOfSentenceCase(
-                              method.name.replaceAll("_", " "))!))
-                      .toList(),
-                  onSelected: (SortMethod? sortMethod) {
-                    String newText =
-                        sortMethod?.name ?? sorter!.sortMethod.name;
-                    dropdownController.value = dropdownController.value
-                        .copyWith(
-                            text: toBeginningOfSentenceCase(
-                                newText.replaceAll("_", " "))!,
-                            selection: TextSelection.collapsed(
-                                offset: sorter!.sortMethod.name.length));
+              ? (smallScreen)
+                  ? MenuAnchor(
+                      style: const MenuStyle(
+                          visualDensity: VisualDensity(
+                              horizontal: VisualDensity.minimumDensity,
+                              vertical: VisualDensity.minimumDensity),
+                          padding: MaterialStatePropertyAll(
+                            EdgeInsets.all(Constants.padding),
+                          ),
+                          shape:
+                              MaterialStatePropertyAll(RoundedRectangleBorder(
+                            borderRadius: BorderRadius.all(
+                                Radius.circular(Constants.roundedCorners)),
+                          ))),
+                      builder: (BuildContext context, MenuController controller,
+                          Widget? child) {
+                        return IconButton(
+                            onPressed: () {
+                              if (controller.isOpen) {
+                                return controller.close();
+                              }
+                              return controller.open();
+                            },
+                            icon: getTrailingIcon() ??
+                                const Icon(Icons.swap_vert_rounded),
+                            tooltip:
+                                "Sort by: ${toBeginningOfSentenceCase(sorter!.sortMethod.name.replaceAll("_", " "))!}");
+                      },
+                      menuChildren: sorter!.sortMethods
+                          .map((SortMethod method) => MenuItemButton(
+                                style: const ButtonStyle(
+                                  padding: MaterialStatePropertyAll(
+                                      EdgeInsets.all(Constants.innerPadding)),
+                                  textStyle: MaterialStatePropertyAll(
+                                      Constants.smDropdownStyle),
+                                  shape: MaterialStatePropertyAll(
+                                      RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.all(
+                                              Radius.circular(
+                                                  Constants.semiCircular)))),
+                                ),
+                                onPressed: () {
+                                  if (null != widget.onChanged) {
+                                    widget.onChanged!(sortMethod: method);
+                                  }
+                                },
+                                child: Text(
+                                    toBeginningOfSentenceCase(
+                                        method.name.replaceAll("_", " "))!,
+                                    style: Constants.smDropdownStyle),
+                              ))
+                          .toList(),
+                    )
+                  : DropdownMenu<SortMethod>(
+                      width: 150,
+                      menuStyle: const MenuStyle(
+                          visualDensity: VisualDensity(
+                              horizontal: VisualDensity.minimumDensity,
+                              vertical: VisualDensity.minimumDensity),
+                          padding: MaterialStatePropertyAll(
+                            EdgeInsets.all(Constants.padding),
+                          ),
+                          shape:
+                              MaterialStatePropertyAll(RoundedRectangleBorder(
+                            borderRadius: BorderRadius.all(
+                                Radius.circular(Constants.roundedCorners)),
+                          ))),
+                      textStyle: Constants.minHeaderStyle,
+                      leadingIcon: const Icon(Icons.swap_vert_rounded),
+                      trailingIcon: getTrailingIcon(),
+                      inputDecorationTheme: Theme.of(context)
+                          .inputDecorationTheme
+                          .copyWith(
+                              isDense: true,
+                              enabledBorder: OutlineInputBorder(
+                                  borderRadius: const BorderRadius.all(
+                                      Radius.circular(Constants.semiCircular)),
+                                  borderSide: BorderSide(
+                                    width: 2,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .outlineVariant,
+                                    strokeAlign: BorderSide.strokeAlignOutside,
+                                  )),
+                              border: const OutlineInputBorder(
+                                  borderRadius: BorderRadius.all(
+                                      Radius.circular(Constants.semiCircular)),
+                                  borderSide: BorderSide(
+                                    strokeAlign: BorderSide.strokeAlignOutside,
+                                  ))),
+                      initialSelection: sorter!.sortMethod,
+                      controller: dropdownController,
+                      label: const Text("Sort"),
+                      hintText: "Sort method",
+                      dropdownMenuEntries: sorter!.sortMethods
+                          .map((SortMethod method) => DropdownMenuEntry(
+                              style: const ButtonStyle(
+                                padding: MaterialStatePropertyAll(
+                                    EdgeInsets.all(Constants.innerPadding)),
+                                textStyle: MaterialStatePropertyAll(
+                                    Constants.smDropdownStyle),
+                                shape: MaterialStatePropertyAll(
+                                    RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.all(
+                                            Radius.circular(
+                                                Constants.semiCircular)))),
+                              ),
+                              value: method,
+                              label: toBeginningOfSentenceCase(
+                                  method.name.replaceAll("_", " "))!))
+                          .toList(),
+                      onSelected: (SortMethod? sortMethod) {
+                        String newText =
+                            sortMethod?.name ?? sorter!.sortMethod.name;
+                        dropdownController.value = dropdownController.value
+                            .copyWith(
+                                text: toBeginningOfSentenceCase(
+                                    newText.replaceAll("_", " "))!,
+                                selection: TextSelection.collapsed(
+                                    offset: sorter!.sortMethod.name.length));
 
-                    if (null != widget.onChanged) {
-                      widget.onChanged!(sortMethod);
-                    }
-                  })
+                        if (null != widget.onChanged) {
+                          widget.onChanged!(sortMethod: sortMethod);
+                        }
+                      })
               : const SizedBox.shrink(),
         ));
   }

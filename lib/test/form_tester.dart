@@ -149,9 +149,6 @@ class _FormTester extends State<FormTester> with WindowListener {
     await windowManager.destroy();
   }
 
-  //TODO: refactor floating action buttons.
-  // Make rows of them for each part of the model.
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -217,8 +214,6 @@ class _FormTester extends State<FormTester> with WindowListener {
                     ),
                   )
                 ]),
-
-                // TODO: finish these
 
                 Column(children: [
                   Padding(

@@ -145,7 +145,7 @@ class ReminderRepo implements ReminderRepository {
         .where()
         .repeatIDEqualTo(deleteFrom.repeatID)
         .filter()
-        .dueDateGreaterThan(deleteFrom.dueDate)
+        .dueDateGreaterThan(deleteFrom.dueDate!)
         .findAll();
 
     // This is to prevent a race condition & accidentally deleting a notification.
@@ -262,12 +262,12 @@ class ReminderRepo implements ReminderRepository {
       await _isarClient.reminders.where().idEqualTo(id).findFirst();
 
   @override
-  Future<List<Reminder>> getRepoList({int limit = 50, int offset = 0}) =>
-      _isarClient.reminders
+  Future<List<Reminder>> getRepoList({int limit = 50, int offset = 0}) async =>
+      await _isarClient.reminders
           .where()
           .toDeleteEqualTo(false)
           .sortByCustomViewIndex()
-          .thenByLastUpdated()
+          .thenByLastUpdatedDesc()
           .offset(offset)
           .limit(limit)
           .findAll();
@@ -280,40 +280,40 @@ class ReminderRepo implements ReminderRepository {
     switch (sorter.sortMethod) {
       case SortMethod.name:
         if (sorter.descending) {
-          return _isarClient.reminders
+          return await _isarClient.reminders
               .where()
               .toDeleteEqualTo(false)
               .sortByNameDesc()
-              .thenByLastUpdated()
+              .thenByLastUpdatedDesc()
               .offset(offset)
               .limit(limit)
               .findAll();
         } else {
-          return _isarClient.reminders
+          return await _isarClient.reminders
               .where()
               .toDeleteEqualTo(false)
               .sortByNameDesc()
-              .thenByLastUpdated()
+              .thenByLastUpdatedDesc()
               .offset(offset)
               .limit(limit)
               .findAll();
         }
       case SortMethod.due_date:
         if (sorter.descending) {
-          return _isarClient.reminders
+          return await _isarClient.reminders
               .where()
               .toDeleteEqualTo(false)
               .sortByDueDateDesc()
-              .thenByLastUpdated()
+              .thenByLastUpdatedDesc()
               .offset(offset)
               .limit(limit)
               .findAll();
         } else {
-          return _isarClient.reminders
+          return await _isarClient.reminders
               .where()
               .toDeleteEqualTo(false)
               .sortByDueDate()
-              .thenByLastUpdated()
+              .thenByLastUpdatedDesc()
               .offset(offset)
               .limit(limit)
               .findAll();
@@ -325,7 +325,7 @@ class ReminderRepo implements ReminderRepository {
 
   @override
   Future<List<Reminder>> getWarnMes({DateTime? now, int limit = 10}) async =>
-      _isarClient.reminders
+      await _isarClient.reminders
           .where()
           .dueDateGreaterThan(now ?? Constants.today)
           .filter()
@@ -336,7 +336,7 @@ class ReminderRepo implements ReminderRepository {
 
   @override
   Future<List<Reminder>> getRepeatables({DateTime? now}) async =>
-      _isarClient.reminders
+      await _isarClient.reminders
           .where()
           .repeatableEqualTo(true)
           .filter()
@@ -344,14 +344,14 @@ class ReminderRepo implements ReminderRepository {
           .dueDateLessThan(now ?? Constants.today)
           .findAll();
 
-  Future<List<int>> getDeleteIds() async => _isarClient.reminders
+  Future<List<int>> getDeleteIds() async => await _isarClient.reminders
       .where()
       .toDeleteEqualTo(true)
       .idProperty()
       .findAll();
 
   Future<List<Reminder>> getUnsynced() async =>
-      _isarClient.reminders.where().isSyncedEqualTo(false).findAll();
+      await _isarClient.reminders.where().isSyncedEqualTo(false).findAll();
 
   @override
   Future<List<Reminder>> getRange({DateTime? start, DateTime? end}) async {
@@ -373,7 +373,7 @@ class ReminderRepo implements ReminderRepository {
           .filter()
           .toDeleteEqualTo(false)
           .sortByDueDate()
-          .thenByLastUpdated()
+          .thenByLastUpdatedDesc()
           .offset(offset)
           .limit(limit)
           .findAll();
@@ -386,7 +386,7 @@ class ReminderRepo implements ReminderRepository {
           .filter()
           .toDeleteEqualTo(false)
           .sortByDueDateDesc()
-          .thenByLastUpdated()
+          .thenByLastUpdatedDesc()
           .offset(offset)
           .limit(limit)
           .findAll();

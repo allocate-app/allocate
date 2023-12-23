@@ -13,45 +13,6 @@ import "../services/supabase_service.dart";
 import "../util/constants.dart";
 import "../util/enums.dart";
 
-/// Testing:
-/// TODO: fix tests to have enough waiting time.
-/// Initialize isar && clear db -> Setup func.
-///
-/// Tests:
-///  - Local DB init & close.
-///
-///  - Create todo, put in database:
-///  - Update todo:
-///     -Test data updating
-///     -Test subtask updating: add, modify, reorder.
-///     -Test subtask reordering.
-///     - Test ListLimit Error.
-///
-///  - Read todo:
-///     - Test get by id / with null id
-///     - With multiple todos, test sorted views
-///     - Test customview reordering.
-///
-///   - Delete todo:
-///     - Test deletion:
-///       - Run the delete method
-///       - Run the clock
-///       - Check whether it was successfully deleted.
-///
-///
-///     - Intentionally invoke -> Requires supabase fake session or throw intentional isar error.
-///
-///   - Test recurring todos.
-///     - Test creation on day change.
-///     - Test calendar creation.
-///     - Test edit: For one.
-///     - Test edit: For all.
-///
-///   - When Supabase, test pls.
-///
-///
-/// Clear on end of testing -> end func.
-
 final IsarService isarService = IsarService.instance;
 final SupabaseService supabaseService = SupabaseService.instance;
 SupabaseClient? supabaseClient;
@@ -201,8 +162,6 @@ void main() {
           reason: "Insertion failure\n"
               "Provider todos: ${provider!.toDos.toString()}");
     });
-
-    // TODO: Wrong ID? Maybe.
 
     // My Day
     test("My Day", () async {
@@ -639,8 +598,8 @@ void main() {
           reason:
               "Daily routine failed \n ToDos: ${provider!.toDos.toString()}");
       expect(
-          provider!.toDos.firstOrNull?.dueDate
-              .isAfter(provider!.curToDo!.dueDate),
+          provider!.toDos.firstOrNull?.dueDate!
+              .isAfter(provider!.curToDo!.dueDate!),
           true,
           reason:
               "Repeat copy was unsuccessful \n todos: ${provider!.toDos.toString()}");
@@ -687,8 +646,8 @@ void main() {
           reason:
               "Weekly routine failed \n ToDos: ${provider!.toDos.toString()}");
       expect(
-          provider!.toDos.firstOrNull?.dueDate
-              .isAfter(provider!.curToDo!.dueDate),
+          provider!.toDos.firstOrNull?.dueDate!
+              .isAfter(provider!.curToDo!.dueDate!),
           true,
           reason:
               "Repeat copy was unsuccessful\n CurToDo: ${provider!.curToDo!.dueDate}, Last: ${provider!.toDos.first.dueDate} \n todos: ${provider!.toDos.toString()}");
@@ -726,8 +685,8 @@ void main() {
           reason:
               "Biweekly Repeat broken\n ToDos: ${provider!.toDos.toString()}");
       expect(
-          provider!.toDos.firstOrNull?.dueDate
-              .isAfter(provider!.curToDo!.dueDate),
+          provider!.toDos.firstOrNull?.dueDate!
+              .isAfter(provider!.curToDo!.dueDate!),
           true,
           reason:
               "Copy Routine didn't work or sorting busted \n ToDos: ${provider!.toDos.toString()}");
@@ -771,8 +730,8 @@ void main() {
           reason:
               "Monthly routine failed \n ToDos: ${provider!.toDos.toString()}");
       expect(
-          provider!.toDos.firstOrNull?.dueDate
-              .isAfter(provider!.curToDo!.dueDate),
+          provider!.toDos.firstOrNull?.dueDate!
+              .isAfter(provider!.curToDo!.dueDate!),
           true,
           reason:
               "Repeat copy was unsuccessful \n todos: ${provider!.toDos.toString()}");
@@ -816,8 +775,8 @@ void main() {
           reason:
               "Yearly routine failed \n ToDos: ${provider!.toDos.toString()}");
       expect(
-          provider!.toDos.firstOrNull?.dueDate
-              .isAfter(provider!.curToDo!.dueDate),
+          provider!.toDos.firstOrNull?.dueDate!
+              .isAfter(provider!.curToDo!.dueDate!),
           true,
           reason:
               "Repeat copy was unsuccessful \n todos: ${provider!.toDos.toString()}");
@@ -859,8 +818,8 @@ void main() {
           reason:
               "Mon-Tues biweekly (custom) routine failed \n todos: ${provider!.toDos.toString()}");
       expect(
-          provider!.toDos.firstOrNull?.dueDate
-              .isAfter(provider!.curToDo!.dueDate),
+          provider!.toDos.firstOrNull?.dueDate!
+              .isAfter(provider!.curToDo!.dueDate!),
           true,
           reason:
               "Copy Routine didn't work or sorting busted \n todos: ${provider!.toDos.toString()}");
@@ -884,7 +843,7 @@ void main() {
           repeatSkip: 1,
           repeatDays: [true, false, true, false, true, false, false]);
 
-      DateTime testDate = Jiffy.parseFromDateTime(provider!.curToDo!.startDate)
+      DateTime testDate = Jiffy.parseFromDateTime(provider!.curToDo!.startDate!)
           .add(months: 1, days: 1)
           .dateTime;
 
@@ -900,8 +859,8 @@ void main() {
           reason:
               "Mon-Tues biweekly (custom) routine failed \n todos: ${provider!.toDos.toString()}");
       expect(
-          provider!.toDos.firstOrNull?.dueDate
-              .isAfter(provider!.curToDo!.dueDate),
+          provider!.toDos.firstOrNull?.dueDate!
+              .isAfter(provider!.curToDo!.dueDate!),
           true,
           reason:
               "Copy Routine didn't work or sorting busted \n todos: ${provider!.toDos.toString()}");

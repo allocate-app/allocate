@@ -48,22 +48,22 @@ class ToDoService {
   }
 
   DateTime? getRepeatDate({required ToDo toDo}) => switch (toDo.frequency) {
-        (Frequency.daily) => toDo.startDate.copyWith(
-            day: toDo.startDate.day + toDo.repeatSkip,
-            hour: toDo.startDate.hour,
-            minute: toDo.startDate.minute),
-        (Frequency.weekly) => toDo.startDate.copyWith(
-            day: toDo.startDate.day + (toDo.repeatSkip * 7),
-            hour: toDo.startDate.hour,
-            minute: toDo.startDate.minute),
-        (Frequency.monthly) => toDo.startDate.copyWith(
-            month: toDo.startDate.month + toDo.repeatSkip,
-            hour: toDo.startDate.hour,
-            minute: toDo.startDate.minute),
-        (Frequency.yearly) => toDo.startDate.copyWith(
-            year: toDo.startDate.year + toDo.repeatSkip,
-            hour: toDo.startDate.hour,
-            minute: toDo.startDate.minute),
+        (Frequency.daily) => toDo.startDate!.copyWith(
+            day: toDo.startDate!.day + toDo.repeatSkip,
+            hour: toDo.startDate!.hour,
+            minute: toDo.startDate!.minute),
+        (Frequency.weekly) => toDo.startDate!.copyWith(
+            day: toDo.startDate!.day + (toDo.repeatSkip * 7),
+            hour: toDo.startDate!.hour,
+            minute: toDo.startDate!.minute),
+        (Frequency.monthly) => toDo.startDate!.copyWith(
+            month: toDo.startDate!.month + toDo.repeatSkip,
+            hour: toDo.startDate!.hour,
+            minute: toDo.startDate!.minute),
+        (Frequency.yearly) => toDo.startDate!.copyWith(
+            year: toDo.startDate!.year + toDo.repeatSkip,
+            hour: toDo.startDate!.hour,
+            minute: toDo.startDate!.minute),
         (Frequency.custom) => getCustom(toDo: toDo),
         //Once should never repeat -> fixing asynchronously in case validation fails.
         (Frequency.once) => null,
@@ -81,14 +81,15 @@ class ToDoService {
       return;
     }
 
-    int offset = getDateTimeDayOffset(start: toDo.startDate, end: toDo.dueDate);
+    int offset =
+        getDateTimeDayOffset(start: toDo.startDate!, end: toDo.dueDate!);
 
     ToDo newToDo = toDo.copyWith(
       startDate: nextRepeatDate,
       dueDate: nextRepeatDate.copyWith(
           day: nextRepeatDate.day + offset,
-          hour: toDo.dueDate.hour,
-          minute: toDo.dueDate.minute),
+          hour: toDo.dueDate!.hour,
+          minute: toDo.dueDate!.minute),
       completed: false,
       myDay: false,
     );
@@ -123,11 +124,11 @@ class ToDoService {
         continue;
       }
       int offset =
-          getDateTimeDayOffset(start: toDo.startDate, end: toDo.dueDate);
+          getDateTimeDayOffset(start: toDo.startDate!, end: toDo.dueDate!);
 
       DateTime nextDueDate = nextRepeatDate.copyWith(
-          hour: toDo.dueDate.hour,
-          minute: toDo.dueDate.minute,
+          hour: toDo.dueDate!.hour,
+          minute: toDo.dueDate!.minute,
           day: nextRepeatDate.day + offset);
 
       ToDo newToDo = toDo.copyWith(
@@ -143,26 +144,26 @@ class ToDoService {
   }
 
   DateTime? getCustom({required ToDo toDo}) {
-    int start = toDo.startDate.weekday - 1;
+    int start = toDo.startDate!.weekday - 1;
     int end = 0;
     if (start + 1 != 7) {
       end = toDo.repeatDays.indexOf(true, start + 1);
       if (end > 0) {
-        return toDo.startDate.copyWith(
-            day: toDo.startDate.day + (end - start),
-            hour: toDo.startDate.hour,
-            minute: toDo.startDate.minute);
+        return toDo.startDate!.copyWith(
+            day: toDo.startDate!.day + (end - start),
+            hour: toDo.startDate!.hour,
+            minute: toDo.startDate!.minute);
       }
     }
     end = toDo.repeatDays.indexOf(true);
     int offset = end - start;
     DateTime nextDate =
-        toDo.startDate.copyWith(day: toDo.startDate.day + offset);
+        toDo.startDate!.copyWith(day: toDo.startDate!.day + offset);
 
     nextDate = nextDate.copyWith(
         day: nextDate.day + (7 * toDo.repeatSkip),
-        hour: toDo.startDate.hour,
-        minute: toDo.startDate.minute,
+        hour: toDo.startDate!.hour,
+        minute: toDo.startDate!.minute,
         second: 0,
         millisecond: 0,
         microsecond: 0);
@@ -257,7 +258,7 @@ class ToDoService {
     for (int i = 0; i < toDos.length; i++) {
       toDos[i].customViewIndex = i;
     }
-    _repository.updateBatch(toDos);
+    await _repository.updateBatch(toDos);
     return toDos;
   }
 

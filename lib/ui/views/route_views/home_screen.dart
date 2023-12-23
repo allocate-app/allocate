@@ -1,9 +1,9 @@
 import "package:auto_route/auto_route.dart";
 import 'package:auto_size_text/auto_size_text.dart';
 import "package:flutter/material.dart";
+import 'package:macos_window_utils/widgets/transparent_macos_sidebar.dart';
 import "package:provider/provider.dart";
 
-import '../../../model/task/group.dart';
 import '../../../providers/deadline_provider.dart';
 import '../../../providers/group_provider.dart';
 import '../../../providers/reminder_provider.dart';
@@ -15,6 +15,7 @@ import '../../../util/constants.dart';
 import '../../../util/interfaces/i_model.dart';
 import '../../../util/strings.dart';
 import '../../widgets/desktop_drawer_wrapper.dart';
+import '../../widgets/drain_bar.dart';
 import '../../widgets/global_model_search.dart';
 import '../../widgets/padded_divider.dart';
 import '../../widgets/subtitles.dart';
@@ -41,13 +42,15 @@ class _HomeScreen extends State<HomeScreen> {
   late final UserProvider userProvider;
   late final GroupProvider groupProvider;
 
-  late Future<List<Group>> groupFuture;
-
   late bool navLoading;
 
   late final ScrollController navScrollController;
 
   late final ScrollPhysics scrollPhysics;
+
+  // NavigationDrawer stuff
+  //late final GlobalKey<ScaffoldState> _scaffoldKey;
+  late bool _opened;
 
   // I haven't fully thought this through yet.
   int get myDayTotal =>
@@ -74,7 +77,6 @@ class _HomeScreen extends State<HomeScreen> {
     groupProvider.addListener(rebuildGroup);
     deadlineProvider.addListener(rebuildDeadline);
     reminderProvider.addListener(rebuildReminder);
-    resetProviders();
   }
 
   void resetProviders() {
@@ -106,17 +108,16 @@ class _HomeScreen extends State<HomeScreen> {
 
   void rebuildToDo() {
     toDoProvider.rebuild = true;
-    // These are asynchronous, but can happen in the background - navGroups calls setState
     toDoProvider
         .setMyDayWeight()
         .whenComplete(() => userProvider.myDayTotal = myDayTotal);
-    resetNavGroups();
   }
 
   void initializeParams() {
     selectedPageIndex = widget.index ?? 0;
     navLoading = false;
-    groupFuture = groupProvider.mostRecent(grabToDos: true);
+    _opened = true;
+    // _scaffoldKey = GlobalKey<ScaffoldState>();
   }
 
   void initializeControllers() {
@@ -125,8 +126,8 @@ class _HomeScreen extends State<HomeScreen> {
         const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics());
   }
 
-  // TODO: OI, PAGINATE PLS.
   Future<void> resetNavGroups() async {
+    // TODO: remove loading progress indicator. Db is too fast.
     setState(() {
       navLoading = true;
     });
@@ -134,7 +135,7 @@ class _HomeScreen extends State<HomeScreen> {
     return Future.delayed(
         const Duration(milliseconds: 100),
         () async => await groupProvider
-            .mostRecent(grabToDos: true)
+            .mostRecent(grabToDos: false)
             .then((groups) => setState(() {
                   groupProvider.secondaryGroups = groups;
                   navLoading = false;
@@ -152,57 +153,6 @@ class _HomeScreen extends State<HomeScreen> {
     super.dispose();
   }
 
-  // TODO: Refactor this to the const widget
-  Widget buildDrainBar({required BuildContext context}) {
-    int maxBandwidth =
-        userProvider.curUser?.bandwidth ?? Constants.maxBandwidth;
-    double offset = myDayTotal.toDouble() / maxBandwidth.toDouble();
-    return Transform.scale(
-      scale: 0.75,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 100, maxHeight: 50),
-        child: Stack(alignment: Alignment.center, children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
-            child: Container(
-              decoration: BoxDecoration(
-                  border: Border.all(
-                      color: Theme.of(context).colorScheme.outline,
-                      width: 3,
-                      strokeAlign: BorderSide.strokeAlignCenter),
-                  shape: BoxShape.rectangle,
-                  borderRadius: const BorderRadius.all(Radius.circular(10))),
-              child: Padding(
-                padding: const EdgeInsets.all(Constants.halfPadding),
-                child: LinearProgressIndicator(
-                    color: (offset < 0.8) ? null : Colors.redAccent,
-                    minHeight: 50,
-                    value: 1 - offset,
-                    // Possibly remove
-                    borderRadius: const BorderRadius.all(Radius.circular(10))),
-              ),
-            ),
-          ),
-          Align(
-              alignment: Alignment.centerRight,
-              child: Container(
-                  height: 40,
-                  width: 8,
-                  decoration: BoxDecoration(
-                    borderRadius: const BorderRadius.all(Radius.circular(2)),
-                    color: Theme.of(context).colorScheme.outline,
-                  ))),
-          AutoSizeText("${maxBandwidth - userProvider.myDayTotal}",
-              minFontSize: Constants.large,
-              softWrap: false,
-              maxLines: 1,
-              overflow: TextOverflow.visible,
-              style: Constants.hugeHeaderStyle),
-        ]),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     //TODO: refactor the media query ALL SCREENS to avoid running twice;
@@ -212,61 +162,150 @@ class _HomeScreen extends State<HomeScreen> {
     bool smallScreen = (width <= Constants.smallScreen);
 
     return (largeScreen)
-        ? buildDesktop(context: context, largeScreen: largeScreen)
-        : buildMobile(context: context, largeScreen: largeScreen);
+        ? buildDesktop(context: context)
+        : buildMobile(context: context);
   }
 
-  Widget buildDesktop(
-      {required BuildContext context, bool largeScreen = true}) {
+  Widget buildDesktop({required BuildContext context}) {
     return Row(children: [
       // This is a workaround for a standard navigation drawer
       // until m3 spec is fully implemented in flutter.
       // TODO: implement animatedSwitcher.
-      DesktopDrawerWrapper(
-          drawer: buildNavigationDrawer(
-              context: context, largeScreen: largeScreen)),
+      TweenAnimationBuilder<double>(
+          duration: const Duration(milliseconds: 600),
+          curve: Curves.fastLinearToSlowEaseIn,
+          tween: Tween<double>(
+            begin: _opened ? Constants.navigationDrawerWidth : 0.0,
+            end: _opened ? Constants.navigationDrawerWidth : 0.0,
+          ),
+          builder: (BuildContext context, double value, Widget? child) {
+            return TransparentMacOSSidebar(
+                child: Container(
+              width: value,
+              clipBehavior: Clip.hardEdge,
+              decoration: const BoxDecoration(),
+              child: OverflowBox(
+                minWidth: Constants.navigationDrawerWidth,
+                maxWidth: Constants.navigationDrawerWidth,
+                child: DesktopDrawerWrapper(
+                  drawer: buildNavigationDrawer(
+                      context: context, largeScreen: true),
+                ),
+              ),
+            ));
+          }),
+      // TransparentMacOSSidebar(
+      //   // state: This should be user define-able,
+      //   child: DesktopDrawerWrapper(
+      //       drawer: buildNavigationDrawer(
+      //           context: context, largeScreen: largeScreen)),
+      // ),
       const VerticalDivider(
         width: 1,
       ),
 
       Expanded(
           child: Scaffold(
-              appBar: buildAppBar(context: context),
+              appBar: buildAppBar(mobile: false),
               body: SafeArea(
                   child: Constants.viewRoutes[selectedPageIndex].view)))
     ]);
   }
 
-  Widget buildMobile(
-      {required BuildContext context, bool largeScreen = false}) {
+  Widget buildMobile({required BuildContext context}) {
     return Scaffold(
-        appBar: buildAppBar(context: context),
-        drawer:
-            buildNavigationDrawer(context: context, largeScreen: largeScreen),
+        //key: _scaffoldKey,
+        appBar: buildAppBar(mobile: true),
+        drawer: buildNavigationDrawer(context: context, largeScreen: false),
         body: SafeArea(child: Constants.viewRoutes[selectedPageIndex].view));
   }
 
-  // TODO: this needs an iconbutton with custom functionality for desktop.
-  AppBar buildAppBar({required BuildContext context}) {
+  AppBar buildAppBar({bool mobile = false}) {
     return AppBar(
-      title: buildDrainBar(context: context),
+      leading: getLeading(mobile: mobile),
+      automaticallyImplyLeading: false,
+      title: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const AutoSizeText(
+            "Allocate:",
+            style: Constants.largeHeaderStyle,
+            minFontSize: Constants.huge,
+            maxLines: 1,
+            softWrap: false,
+            overflow: TextOverflow.visible,
+          ),
+          Tooltip(
+            message: "Remaining energy for tasks",
+            child: DrainBar(
+                scale: .65,
+                weight: myDayTotal.toDouble(),
+                max: userProvider.curUser?.bandwidth.toDouble() ??
+                    Constants.maxDoubleBandwidth,
+                constraints: const BoxConstraints(maxWidth: 100)),
+          ),
+        ],
+      ),
       centerTitle: true,
       scrolledUnderElevation: 0,
     );
   }
 
+  Widget getLeading({bool mobile = false}) {
+    if (mobile) {
+      return Builder(builder: (BuildContext context) {
+        return IconButton(
+            icon: const Icon(Icons.menu_rounded),
+            onPressed: () {
+              Scaffold.of(context).openDrawer();
+              //_scaffoldKey.currentState?.openDrawer();
+            });
+      });
+    }
+
+    if (_opened) {
+      return IconButton(
+          icon: const Icon(Icons.arrow_back_rounded),
+          onPressed: () async {
+            if (mounted) {
+              setState(() => _opened = false);
+            }
+          });
+    }
+    return IconButton(
+        icon: const Icon(Icons.menu_rounded),
+        onPressed: () async {
+          if (mounted) {
+            setState(() => _opened = true);
+          }
+        });
+  }
+
+  // TODO: refactor: largescreen -> mobile;
   NavigationDrawer buildNavigationDrawer(
       {required BuildContext context, bool largeScreen = false}) {
     return NavigationDrawer(
+        backgroundColor: (largeScreen)
+            ? Theme.of(context).colorScheme.surface.withOpacity(0.85)
+            : null,
+        // TODO: implement themes with userclass.
+        // Not sure if MacOS needs to have a different bg color, or none.
+        // >>> Most likely easiest to write a ThemeService class.
+        // Theme.of(context)
+        //     .navigationDrawerTheme
+        //     .backgroundColor
+        //     ?.withOpacity(0.75),
         onDestinationSelected: (index) {
           setState(() {
-            resetProviders();
             selectedPageIndex = index;
           });
 
           if (!largeScreen) {
             Navigator.pop(context);
           }
+
+          resetProviders();
         },
         selectedIndex: selectedPageIndex,
         children: [
@@ -277,7 +316,7 @@ class _HomeScreen extends State<HomeScreen> {
             child: ListTile(
               shape: const RoundedRectangleBorder(
                   borderRadius: BorderRadius.all(
-                      Radius.circular(Constants.roundedCorners))),
+                      Radius.circular(Constants.semiCircular))),
               leading: CircleAvatar(
                   child: Text(
                       "${userProvider.curUser?.userName[0].toUpperCase()}")),
@@ -356,8 +395,6 @@ class _HomeScreen extends State<HomeScreen> {
               .map((view) => view.destination ?? const SizedBox.shrink()),
           const PaddedDivider(padding: Constants.innerPadding),
           // Drop down menu for Groups.
-          // Future TODO: Factor rounded rectangle shape to constants class.
-          // This Card is a workaround until The ExpansionTile inkwell bug is fixed.
           // TODO: refactor this to use the pre-built expansiontile.
           Card(
             clipBehavior: Clip.hardEdge,
@@ -365,7 +402,7 @@ class _HomeScreen extends State<HomeScreen> {
             color: Colors.transparent,
             shape: const RoundedRectangleBorder(
               borderRadius:
-                  BorderRadius.all(Radius.circular(Constants.roundedCorners)),
+                  BorderRadius.all(Radius.circular(Constants.semiCircular)),
             ),
             child: ExpansionTile(
               tilePadding: const EdgeInsets.symmetric(
@@ -388,7 +425,7 @@ class _HomeScreen extends State<HomeScreen> {
                         horizontal: Constants.padding + Constants.innerPadding),
                     shape: const RoundedRectangleBorder(
                         borderRadius: BorderRadius.all(
-                            Radius.circular(Constants.roundedCorners))),
+                            Radius.circular(Constants.semiCircular))),
                     leading: const Icon(Icons.workspaces_outlined),
                     title: const AutoSizeText(
                       "All Groups",
@@ -412,7 +449,7 @@ class _HomeScreen extends State<HomeScreen> {
                         horizontal: Constants.padding + Constants.innerPadding),
                     shape: const RoundedRectangleBorder(
                         borderRadius: BorderRadius.all(
-                            Radius.circular(Constants.roundedCorners))),
+                            Radius.circular(Constants.semiCircular))),
                     leading: const Icon(Icons.add_rounded),
                     title: const AutoSizeText(
                       "Add New",
@@ -456,7 +493,7 @@ class _HomeScreen extends State<HomeScreen> {
                               Constants.padding + Constants.innerPadding),
                       shape: const RoundedRectangleBorder(
                           borderRadius: BorderRadius.all(
-                              Radius.circular(Constants.roundedCorners))),
+                              Radius.circular(Constants.semiCircular))),
                       leading:
                           const Icon(Icons.playlist_add_check_circle_outlined),
                       title: AutoSizeText(value.secondaryGroups[index].name,
@@ -475,7 +512,7 @@ class _HomeScreen extends State<HomeScreen> {
                       },
                       trailing: Subtitles.groupSubtitle(
                           toDoCount: groupProvider.getToDoCount(
-                              id: value.secondaryGroups[index].id)));
+                              id: value.secondaryGroups[index].id)!));
                 });
           }),
           (navLoading)

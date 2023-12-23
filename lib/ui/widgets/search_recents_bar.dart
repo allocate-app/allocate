@@ -11,7 +11,6 @@ class SearchRecentsBar<T extends IModel> extends StatefulWidget {
       this.padding = EdgeInsets.zero,
       this.hintText = "",
       this.searchController,
-      required this.handleHistorySelection,
       required this.mostRecent,
       required this.search,
       this.clearOnSelection = false,
@@ -28,8 +27,7 @@ class SearchRecentsBar<T extends IModel> extends StatefulWidget {
   final SearchController? searchController;
   final bool clearOnSelection;
   final bool dispose;
-  final void Function({required int id}) handleHistorySelection;
-  final void Function({required int id}) handleDataSelection;
+  final Future<void> Function({required int id}) handleDataSelection;
   final Future<List<T>> Function() mostRecent;
   final Future<List<T>> Function({required String searchString}) search;
 
@@ -55,9 +53,19 @@ class _SearchRecents<T extends IModel> extends State<SearchRecentsBar<T>> {
   @override
   void dispose() {
     if (widget.dispose) {
-      searchController.dispose();
+      // For the life of me, I cannot figure out why this throws
+      // when called synced.
+      // This will dispose properly if, and only if there is a minute delay
+      // DO NOT CHANGE THIS.
+      disposeController();
     }
+
     super.dispose();
+  }
+
+  Future<void> disposeController() async {
+    await Future.delayed(const Duration(seconds: 1));
+    searchController.dispose();
   }
 
   void updateHistory({required MapEntry<String, int> data}) {
@@ -76,7 +84,6 @@ class _SearchRecents<T extends IModel> extends State<SearchRecentsBar<T>> {
       padding: widget.padding,
       child: SearchAnchor.bar(
           isFullScreen: false,
-          // TODO: factor this out into the widget pls.
           barSide: MaterialStatePropertyAll(widget.border ??
               BorderSide(
                   width: 2,
@@ -96,10 +103,11 @@ class _SearchRecents<T extends IModel> extends State<SearchRecentsBar<T>> {
                 return searchHistory
                     .map((MapEntry<String, int> data) => Tiles.historyTile(
                           title: data.key,
-                          onTap: () {
+                          onTap: () async {
+                            FocusScope.of(context).unfocus();
+                            await widget.handleDataSelection(id: data.value);
                             controller.closeView(
                                 (widget.clearOnSelection) ? "" : data.key);
-                            widget.handleHistorySelection(id: data.value);
                           },
                         ))
                     .toList();
@@ -137,13 +145,14 @@ class _SearchRecents<T extends IModel> extends State<SearchRecentsBar<T>> {
                   itemBuilder: (BuildContext context, int index) {
                     return Tiles.searchTile(
                         title: data[index].name,
-                        onTap: () {
+                        onTap: () async {
+                          FocusScope.of(context).unfocus();
+                          await widget.handleDataSelection(id: data[index].id);
+                          updateHistory(
+                              data: MapEntry(data[index].name, data[index].id));
                           controller.closeView((widget.clearOnSelection)
                               ? ""
                               : data[index].name);
-                          updateHistory(
-                              data: MapEntry(data[index].name, data[index].id));
-                          widget.handleDataSelection(id: data[index].id);
                         });
                   });
             }
@@ -152,13 +161,14 @@ class _SearchRecents<T extends IModel> extends State<SearchRecentsBar<T>> {
                 ? Tiles.searchTile(
                     leading: const Icon(Icons.manage_history_rounded),
                     title: widget.persistentEntry!.key,
-                    onTap: () {
+                    onTap: () async {
+                      FocusScope.of(context).unfocus();
+                      updateHistory(data: widget.persistentEntry!);
+                      await widget.handleDataSelection(
+                          id: widget.persistentEntry!.value);
                       controller.closeView((widget.clearOnSelection)
                           ? ""
                           : widget.persistentEntry!.key);
-                      updateHistory(data: widget.persistentEntry!);
-                      widget.handleDataSelection(
-                          id: widget.persistentEntry!.value);
                     })
                 : const SizedBox.shrink();
           }

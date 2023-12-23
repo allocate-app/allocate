@@ -1,19 +1,19 @@
 enum ModelType { task, deadline, reminder, routine, group }
 
-enum RepeatableType { task, deadline, reminder }
-
 enum Priority { low, medium, high }
 
 enum Frequency { once, daily, weekly, monthly, yearly, custom }
-
-//enum CustomFrequency { weekly, monthly, yearly }
 
 enum TaskType { small, large, huge }
 
 enum SortMethod { none, name, due_date, weight, priority, duration }
 
-//enum RoutineTime { morning, afternoon, evening }
+enum Effect {
+  disabled,
+  transparent,
+  aero,
+  acrylic,
+}
 
-enum UserThemeData { light, dark, hi_contrast }
-
-enum WeekDays { monday, tuesday, wednesday, thursday, friday, saturday, sunday }
+// This might need to change
+enum ThemeType { adaptive, light, dark, hi_contrast }

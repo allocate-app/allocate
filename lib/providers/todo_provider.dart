@@ -51,6 +51,7 @@ class ToDoProvider extends ChangeNotifier {
     setMyDayWeight();
   }
 
+  // This is just for testing atm.
   void startTimer() {
     syncTimer = Timer.periodic(const Duration(seconds: 10), (timer) async {
       if (user?.syncOnline ?? false) {
@@ -120,8 +121,8 @@ class ToDoProvider extends ChangeNotifier {
   }
 
   Future<void> setSubtaskCount(
-      {required int id, int limit = Constants.maxNumTasks}) async {
-    int count =
+      {required int id, int limit = Constants.maxNumTasks, int? count}) async {
+    count = count ??
         await _subtaskService.getTaskSubtasksCount(taskID: id, limit: limit);
     if (toDoSubtaskCounts.containsKey(id)) {
       toDoSubtaskCounts[id]?.value = count;
@@ -132,7 +133,7 @@ class ToDoProvider extends ChangeNotifier {
 
   Future<void> _syncRepo() async {
     try {
-      _toDoService.syncRepo();
+      await _toDoService.syncRepo();
     } on FailureToDeleteException catch (e) {
       log(e.cause);
       return Future.error(e);
@@ -147,6 +148,7 @@ class ToDoProvider extends ChangeNotifier {
     required TaskType taskType,
     required String name,
     int? groupID,
+    int? groupIndex,
     String? description,
     int? weight,
     int? expectedDuration,
@@ -171,23 +173,14 @@ class ToDoProvider extends ChangeNotifier {
             weight: weight, duration: expectedDuration);
     subtasks =
         subtasks ?? await _subtaskService.getTaskSubtasks(id: Constants.intMax);
-    startDate =
-        startDate?.copyWith(second: 0, microsecond: 0, millisecond: 0) ??
-            DateTime.now().copyWith(
-                hour: Constants.midnight.hour,
-                minute: Constants.midnight.minute,
-                second: 0,
-                millisecond: 0,
-                microsecond: 0);
-    dueDate = dueDate?.copyWith(second: 0, microsecond: 0, millisecond: 0) ??
-        startDate.copyWith();
 
-    if (startDate.isAfter(dueDate)) {
+    if (null != startDate && null != dueDate && startDate.isAfter(dueDate)) {
       dueDate = startDate.copyWith(minute: startDate.minute + 15);
     }
 
     curToDo = ToDo(
         groupID: groupID,
+        groupIndex: groupIndex ?? -1,
         taskType: taskType,
         name: name,
         description: description ?? "",

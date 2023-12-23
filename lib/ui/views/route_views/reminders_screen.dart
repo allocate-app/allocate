@@ -56,13 +56,13 @@ class _RemindersListScreen extends State<RemindersListScreen> {
             header: "Reminders",
             leadingIcon: const Icon(Icons.push_pin_outlined),
             sorter: reminderProvider.sorter,
-            onChanged: (SortMethod? method) {
-              if (null == method) {
+            onChanged: ({SortMethod? sortMethod}) {
+              if (null == sortMethod) {
                 return;
               }
               if (mounted) {
                 setState(() {
-                  reminderProvider.sortMethod = method;
+                  reminderProvider.sortMethod = sortMethod;
                 });
               }
             }),
@@ -89,10 +89,12 @@ class _RemindersListScreen extends State<RemindersListScreen> {
               },
               paginateButton: false,
               listviewBuilder: (
-                  {required BuildContext context,
+                  {Key? key,
+                  required BuildContext context,
                   required List<Reminder> items}) {
                 if (reminderProvider.sortMethod == SortMethod.none) {
                   return ListViews.reorderableReminders(
+                    key: key,
                     context: context,
                     reminders: items,
                     checkDelete: checkDelete,
@@ -100,6 +102,7 @@ class _RemindersListScreen extends State<RemindersListScreen> {
                   );
                 }
                 return ListViews.immutableReminders(
+                  key: key,
                   context: context,
                   reminders: items,
                   checkDelete: checkDelete,

@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import 'package:table_calendar/table_calendar.dart';
 
 import '../../../model/calendar_event.dart';
+import '../../../model/task/todo.dart';
 import '../../../providers/deadline_provider.dart';
 import '../../../providers/group_provider.dart';
 import '../../../providers/reminder_provider.dart';
@@ -165,12 +166,12 @@ class _CalendarScreen extends State<CalendarScreen> {
             e is FailureToUploadException || e is FailureToUpdateException);
   }
 
-  // TODO: Factor this into an EventProvider class?
   Future<void> getEvents({DateTime? day, DateTime? end}) async {
     day = day ?? Constants.today.copyWith(day: 1);
     end = end ?? day.copyWith(month: day.month + 1);
 
     await Future.wait([
+      toDoProvider.getMyDay(),
       toDoProvider.getToDosBetween(
         start: day,
         end: end,
@@ -180,13 +181,19 @@ class _CalendarScreen extends State<CalendarScreen> {
     ]).then((data) {
       for (int i = 0; i < data.length; i++) {
         for (IRepeatable eventModel in data[i]) {
-          DateTime startDay = eventModel.startDate.copyWith(
+          if (eventModel.modelType == ModelType.task &&
+              (eventModel as ToDo).myDay) {
+            // My Day toDos can have null dates - if the date is null, set to today.
+            eventModel.startDate = eventModel.startDate ?? DateTime.now();
+            eventModel.dueDate = eventModel.dueDate ?? DateTime.now();
+          }
+
+          DateTime startDay = eventModel.startDate!.copyWith(
               hour: Constants.midnight.hour, minute: Constants.midnight.minute);
-          DateTime dueDay = eventModel.dueDate.copyWith(
+          DateTime dueDay = eventModel.dueDate!.copyWith(
               hour: Constants.midnight.hour, minute: Constants.midnight.minute);
 
-          CalendarEvent event = CalendarEvent(
-              model: eventModel, repeatableType: RepeatableType.values[i]);
+          CalendarEvent event = CalendarEvent(model: eventModel);
           if (_events.containsKey(startDay)) {
             _events[startDay]!.add(event);
           } else {

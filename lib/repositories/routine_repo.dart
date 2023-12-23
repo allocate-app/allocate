@@ -223,7 +223,7 @@ class RoutineRepo implements RoutineRepository {
       await _isarClient.writeTxn(() async {
         await _isarClient.routines.clear();
         for (Routine routine in routines) {
-          _isarClient.routines.put(routine);
+          await _isarClient.routines.put(routine);
         }
       });
     });
@@ -232,7 +232,7 @@ class RoutineRepo implements RoutineRepository {
   // TODO: possibly factor the magic number out.
   @override
   Future<List<Routine>> search({required String searchString}) async =>
-      await _isarClient.routines
+      await await _isarClient.routines
           .filter()
           .nameContains(searchString, caseSensitive: false)
           .limit(5)
@@ -240,7 +240,7 @@ class RoutineRepo implements RoutineRepository {
 
   @override
   Future<List<Routine>> mostRecent({int limit = 50}) async =>
-      await _isarClient.routines
+      await await _isarClient.routines
           .where()
           .sortByLastUpdatedDesc()
           .limit(limit)
@@ -248,15 +248,15 @@ class RoutineRepo implements RoutineRepository {
 
   @override
   Future<Routine?> getByID({required int id}) async =>
-      await _isarClient.routines.where().idEqualTo(id).findFirst();
+      await await _isarClient.routines.where().idEqualTo(id).findFirst();
 
   @override
   Future<List<Routine>> getRepoList({int limit = 50, int offset = 0}) async {
-    return _isarClient.routines
+    return await _isarClient.routines
         .where()
         .toDeleteEqualTo(false)
         .sortByCustomViewIndex()
-        .thenByLastUpdated()
+        .thenByLastUpdatedDesc()
         .offset(offset)
         .limit(limit)
         .findAll();
@@ -270,57 +270,57 @@ class RoutineRepo implements RoutineRepository {
     switch (sorter.sortMethod) {
       case SortMethod.name:
         if (sorter.descending) {
-          return _isarClient.routines
+          return await _isarClient.routines
               .where()
               .toDeleteEqualTo(false)
               .sortByNameDesc()
               .findAll();
         }
-        return _isarClient.routines
+        return await _isarClient.routines
             .where()
             .toDeleteEqualTo(false)
             .sortByName()
-            .thenByLastUpdated()
+            .thenByLastUpdatedDesc()
             .offset(offset)
             .limit(limit)
             .findAll();
 
       case SortMethod.weight:
         if (sorter.descending) {
-          return _isarClient.routines
+          return await _isarClient.routines
               .where()
               .toDeleteEqualTo(false)
               .sortByWeightDesc()
-              .thenByLastUpdated()
+              .thenByLastUpdatedDesc()
               .offset(offset)
               .limit(limit)
               .findAll();
         }
-        return _isarClient.routines
+        return await _isarClient.routines
             .where()
             .toDeleteEqualTo(false)
             .sortByWeight()
-            .thenByLastUpdated()
+            .thenByLastUpdatedDesc()
             .offset(offset)
             .limit(limit)
             .findAll();
 
       case SortMethod.duration:
         if (sorter.descending) {
-          return _isarClient.routines
+          return await _isarClient.routines
               .where()
               .toDeleteEqualTo(false)
               .sortByRealDurationDesc()
-              .thenByLastUpdated()
+              .thenByLastUpdatedDesc()
               .offset(offset)
               .limit(limit)
               .findAll();
         }
-        return _isarClient.routines
+        return await _isarClient.routines
             .where()
             .toDeleteEqualTo(false)
             .sortByRealDuration()
-            .thenByLastUpdated()
+            .thenByLastUpdatedDesc()
             .offset(offset)
             .limit(limit)
             .findAll();
@@ -331,9 +331,12 @@ class RoutineRepo implements RoutineRepository {
   }
 
   // This needs to be from local.
-  Future<List<int>> getDeleteIds() async =>
-      _isarClient.routines.where().toDeleteEqualTo(true).idProperty().findAll();
+  Future<List<int>> getDeleteIds() async => await _isarClient.routines
+      .where()
+      .toDeleteEqualTo(true)
+      .idProperty()
+      .findAll();
 
   Future<List<Routine>> getUnsynced() async =>
-      _isarClient.routines.where().isSyncedEqualTo(false).findAll();
+      await _isarClient.routines.where().isSyncedEqualTo(false).findAll();
 }

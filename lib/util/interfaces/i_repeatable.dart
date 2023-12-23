@@ -2,8 +2,9 @@ import '../enums.dart';
 import 'i_model.dart';
 
 abstract interface class IRepeatable implements IModel {
-  DateTime startDate = DateTime.now();
-  DateTime dueDate = DateTime.now();
+  DateTime? startDate = DateTime.now();
+  DateTime? dueDate = DateTime.now();
   Frequency frequency = Frequency.once;
-  RepeatableType repeatableType = RepeatableType.task;
+
+  ModelType get repeatableType;
 }

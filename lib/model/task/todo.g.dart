@@ -380,7 +380,7 @@ ToDo _toDoDeserialize(
     completed: reader.readBoolOrNull(offsets[0]) ?? false,
     customViewIndex: reader.readLongOrNull(offsets[1]) ?? -1,
     description: reader.readStringOrNull(offsets[2]) ?? "",
-    dueDate: reader.readDateTime(offsets[3]),
+    dueDate: reader.readDateTimeOrNull(offsets[3]),
     expectedDuration: reader.readLong(offsets[4]),
     frequency: _ToDofrequencyValueEnumMap[reader.readByteOrNull(offsets[5])] ??
         Frequency.once,
@@ -396,7 +396,7 @@ ToDo _toDoDeserialize(
     repeatID: reader.readLongOrNull(offsets[15]),
     repeatSkip: reader.readLongOrNull(offsets[16]) ?? 1,
     repeatable: reader.readBoolOrNull(offsets[17]) ?? false,
-    startDate: reader.readDateTime(offsets[18]),
+    startDate: reader.readDateTimeOrNull(offsets[18]),
     taskType: _ToDotaskTypeValueEnumMap[reader.readByteOrNull(offsets[19])] ??
         TaskType.small,
     weight: reader.readLongOrNull(offsets[21]) ?? 0,
@@ -421,7 +421,7 @@ P _toDoDeserializeProp<P>(
     case 2:
       return (reader.readStringOrNull(offset) ?? "") as P;
     case 3:
-      return (reader.readDateTime(offset)) as P;
+      return (reader.readDateTimeOrNull(offset)) as P;
     case 4:
       return (reader.readLong(offset)) as P;
     case 5:
@@ -453,7 +453,7 @@ P _toDoDeserializeProp<P>(
     case 17:
       return (reader.readBoolOrNull(offset) ?? false) as P;
     case 18:
-      return (reader.readDateTime(offset)) as P;
+      return (reader.readDateTimeOrNull(offset)) as P;
     case 19:
       return (_ToDotaskTypeValueEnumMap[reader.readByteOrNull(offset)] ??
           TaskType.small) as P;
@@ -1246,7 +1246,28 @@ extension ToDoQueryWhere on QueryBuilder<ToDo, ToDo, QWhereClause> {
     });
   }
 
-  QueryBuilder<ToDo, ToDo, QAfterWhereClause> dueDateEqualTo(DateTime dueDate) {
+  QueryBuilder<ToDo, ToDo, QAfterWhereClause> dueDateIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'dueDate',
+        value: [null],
+      ));
+    });
+  }
+
+  QueryBuilder<ToDo, ToDo, QAfterWhereClause> dueDateIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'dueDate',
+        lower: [null],
+        includeLower: false,
+        upper: [],
+      ));
+    });
+  }
+
+  QueryBuilder<ToDo, ToDo, QAfterWhereClause> dueDateEqualTo(
+      DateTime? dueDate) {
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(IndexWhereClause.equalTo(
         indexName: r'dueDate',
@@ -1256,7 +1277,7 @@ extension ToDoQueryWhere on QueryBuilder<ToDo, ToDo, QWhereClause> {
   }
 
   QueryBuilder<ToDo, ToDo, QAfterWhereClause> dueDateNotEqualTo(
-      DateTime dueDate) {
+      DateTime? dueDate) {
     return QueryBuilder.apply(this, (query) {
       if (query.whereSort == Sort.asc) {
         return query
@@ -1291,7 +1312,7 @@ extension ToDoQueryWhere on QueryBuilder<ToDo, ToDo, QWhereClause> {
   }
 
   QueryBuilder<ToDo, ToDo, QAfterWhereClause> dueDateGreaterThan(
-    DateTime dueDate, {
+    DateTime? dueDate, {
     bool include = false,
   }) {
     return QueryBuilder.apply(this, (query) {
@@ -1305,7 +1326,7 @@ extension ToDoQueryWhere on QueryBuilder<ToDo, ToDo, QWhereClause> {
   }
 
   QueryBuilder<ToDo, ToDo, QAfterWhereClause> dueDateLessThan(
-    DateTime dueDate, {
+    DateTime? dueDate, {
     bool include = false,
   }) {
     return QueryBuilder.apply(this, (query) {
@@ -1319,8 +1340,8 @@ extension ToDoQueryWhere on QueryBuilder<ToDo, ToDo, QWhereClause> {
   }
 
   QueryBuilder<ToDo, ToDo, QAfterWhereClause> dueDateBetween(
-    DateTime lowerDueDate,
-    DateTime upperDueDate, {
+    DateTime? lowerDueDate,
+    DateTime? upperDueDate, {
     bool includeLower = true,
     bool includeUpper = true,
   }) {
@@ -1904,8 +1925,24 @@ extension ToDoQueryFilter on QueryBuilder<ToDo, ToDo, QFilterCondition> {
     });
   }
 
+  QueryBuilder<ToDo, ToDo, QAfterFilterCondition> dueDateIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'dueDate',
+      ));
+    });
+  }
+
+  QueryBuilder<ToDo, ToDo, QAfterFilterCondition> dueDateIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'dueDate',
+      ));
+    });
+  }
+
   QueryBuilder<ToDo, ToDo, QAfterFilterCondition> dueDateEqualTo(
-      DateTime value) {
+      DateTime? value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
         property: r'dueDate',
@@ -1915,7 +1952,7 @@ extension ToDoQueryFilter on QueryBuilder<ToDo, ToDo, QFilterCondition> {
   }
 
   QueryBuilder<ToDo, ToDo, QAfterFilterCondition> dueDateGreaterThan(
-    DateTime value, {
+    DateTime? value, {
     bool include = false,
   }) {
     return QueryBuilder.apply(this, (query) {
@@ -1928,7 +1965,7 @@ extension ToDoQueryFilter on QueryBuilder<ToDo, ToDo, QFilterCondition> {
   }
 
   QueryBuilder<ToDo, ToDo, QAfterFilterCondition> dueDateLessThan(
-    DateTime value, {
+    DateTime? value, {
     bool include = false,
   }) {
     return QueryBuilder.apply(this, (query) {
@@ -1941,8 +1978,8 @@ extension ToDoQueryFilter on QueryBuilder<ToDo, ToDo, QFilterCondition> {
   }
 
   QueryBuilder<ToDo, ToDo, QAfterFilterCondition> dueDateBetween(
-    DateTime lower,
-    DateTime upper, {
+    DateTime? lower,
+    DateTime? upper, {
     bool includeLower = true,
     bool includeUpper = true,
   }) {
@@ -2764,8 +2801,24 @@ extension ToDoQueryFilter on QueryBuilder<ToDo, ToDo, QFilterCondition> {
     });
   }
 
+  QueryBuilder<ToDo, ToDo, QAfterFilterCondition> startDateIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'startDate',
+      ));
+    });
+  }
+
+  QueryBuilder<ToDo, ToDo, QAfterFilterCondition> startDateIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'startDate',
+      ));
+    });
+  }
+
   QueryBuilder<ToDo, ToDo, QAfterFilterCondition> startDateEqualTo(
-      DateTime value) {
+      DateTime? value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
         property: r'startDate',
@@ -2775,7 +2828,7 @@ extension ToDoQueryFilter on QueryBuilder<ToDo, ToDo, QFilterCondition> {
   }
 
   QueryBuilder<ToDo, ToDo, QAfterFilterCondition> startDateGreaterThan(
-    DateTime value, {
+    DateTime? value, {
     bool include = false,
   }) {
     return QueryBuilder.apply(this, (query) {
@@ -2788,7 +2841,7 @@ extension ToDoQueryFilter on QueryBuilder<ToDo, ToDo, QFilterCondition> {
   }
 
   QueryBuilder<ToDo, ToDo, QAfterFilterCondition> startDateLessThan(
-    DateTime value, {
+    DateTime? value, {
     bool include = false,
   }) {
     return QueryBuilder.apply(this, (query) {
@@ -2801,8 +2854,8 @@ extension ToDoQueryFilter on QueryBuilder<ToDo, ToDo, QFilterCondition> {
   }
 
   QueryBuilder<ToDo, ToDo, QAfterFilterCondition> startDateBetween(
-    DateTime lower,
-    DateTime upper, {
+    DateTime? lower,
+    DateTime? upper, {
     bool includeLower = true,
     bool includeUpper = true,
   }) {
@@ -3617,7 +3670,7 @@ extension ToDoQueryProperty on QueryBuilder<ToDo, ToDo, QQueryProperty> {
     });
   }
 
-  QueryBuilder<ToDo, DateTime, QQueryOperations> dueDateProperty() {
+  QueryBuilder<ToDo, DateTime?, QQueryOperations> dueDateProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'dueDate');
     });
@@ -3707,7 +3760,7 @@ extension ToDoQueryProperty on QueryBuilder<ToDo, ToDo, QQueryProperty> {
     });
   }
 
-  QueryBuilder<ToDo, DateTime, QQueryOperations> startDateProperty() {
+  QueryBuilder<ToDo, DateTime?, QQueryOperations> startDateProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'startDate');
     });
