@@ -6,10 +6,13 @@ import 'package:another_flushbar/flushbar.dart';
 import 'package:flutter/material.dart';
 
 import '../../util/constants.dart';
+import '../../util/interfaces/i_model.dart';
 import '../../util/paginator.dart';
 import 'flushbars.dart';
 
-class PaginatingListview<T> extends StatefulWidget {
+// TODO: Ignorepointer on list during animation.
+
+class PaginatingListview<T extends IModel> extends StatefulWidget {
   const PaginatingListview(
       {Key? key,
       required this.listviewBuilder,
@@ -21,6 +24,8 @@ class PaginatingListview<T> extends StatefulWidget {
       this.pullToRefresh = true,
       this.allData = false,
       this.scrollController,
+      this.onFetch,
+      this.onRemove,
       this.getAnimationKey,
       this.rebuildNotifiers,
       this.rebuildCallback})
@@ -34,13 +39,18 @@ class PaginatingListview<T> extends StatefulWidget {
 
   final Future<List<T>> Function({int offset, int limit})? query;
 
-  final Widget Function(
-      {Key? key,
-      required BuildContext context,
-      required List<T> items}) listviewBuilder;
+  final Widget Function({
+    Key? key,
+    required BuildContext context,
+    required List<T> items,
+    Future<void> Function({T? item})? onRemove,
+  }) listviewBuilder;
 
   final void Function({required List<T> items})? rebuildCallback;
   final ValueKey<int> Function()? getAnimationKey;
+
+  final void Function({List<T>? items})? onFetch;
+  final Future<void> Function({T? item})? onRemove;
 
   final bool paginateButton;
   final bool pullToRefresh;
@@ -52,7 +62,8 @@ class PaginatingListview<T> extends StatefulWidget {
 }
 
 // Come back to this if it's needed.
-class _PaginatingListview<T> extends State<PaginatingListview<T>> {
+class _PaginatingListview<T extends IModel>
+    extends State<PaginatingListview<T>> {
   late final Paginator<T> paginator;
   late final ChangeNotifier? resetNotifier;
   late final ScrollController scrollController;
@@ -61,9 +72,6 @@ class _PaginatingListview<T> extends State<PaginatingListview<T>> {
 
   late ValueKey<int> _animationKey;
   late ValueKey<int> Function() getAnimationKey;
-
-  static final offsetIn =
-      Tween(begin: const Offset(1, 0), end: const Offset(0, 0));
 
   final GlobalKey<RefreshIndicatorState> _refreshIndicatorKey =
       GlobalKey<RefreshIndicatorState>();
@@ -79,6 +87,7 @@ class _PaginatingListview<T> extends State<PaginatingListview<T>> {
       allData: widget.allData,
       query: widget.query,
       resetNotifiers: widget.rebuildNotifiers,
+      onFetch: widget.onFetch,
     );
 
     paginator.addListener(repaint);
@@ -98,7 +107,6 @@ class _PaginatingListview<T> extends State<PaginatingListview<T>> {
         : NeverScrollableScrollPhysics(parent: scrollPhysics);
 
     initializeAnimation();
-
     super.initState();
   }
 
@@ -120,12 +128,12 @@ class _PaginatingListview<T> extends State<PaginatingListview<T>> {
     if (null != widget.rebuildCallback) {
       widget.rebuildCallback!(items: paginator.items!);
     }
+
+    // Repaint & animate new items accordingly.
     if (mounted) {
       setState(() {
-        setState(() {
-          _animationKey = getAnimationKey();
-          print(_animationKey.value);
-        });
+        print("key repaint");
+        _animationKey = getAnimationKey();
       });
     }
   }
@@ -145,6 +153,7 @@ class _PaginatingListview<T> extends State<PaginatingListview<T>> {
     if (paginator.loading) {
       return;
     }
+
     if (!(scrollController.offset >=
         scrollController.position.maxScrollExtent - Constants.loadOffset)) {
       return;
@@ -162,7 +171,12 @@ class _PaginatingListview<T> extends State<PaginatingListview<T>> {
         },
         child: ScrollConfiguration(
           behavior: ScrollConfiguration.of(context).copyWith(
-            dragDevices: {PointerDeviceKind.touch, PointerDeviceKind.mouse},
+            dragDevices: {
+              PointerDeviceKind.touch,
+              PointerDeviceKind.mouse,
+              PointerDeviceKind.trackpad,
+              PointerDeviceKind.stylus,
+            },
           ),
           child: Scrollbar(
             thumbVisibility: true,
@@ -178,24 +192,27 @@ class _PaginatingListview<T> extends State<PaginatingListview<T>> {
                 //       })
                 //     : const SizedBox.shrink(),
                 AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 600),
-                  reverseDuration: const Duration(milliseconds: 200),
+                  duration: const Duration(milliseconds: Constants.slideInTime),
+                  reverseDuration:
+                      const Duration(milliseconds: Constants.fadeOutTime),
                   switchInCurve: Curves.fastLinearToSlowEaseIn,
                   switchOutCurve: Curves.linear,
                   transitionBuilder:
                       (Widget child, Animation<double> animation) {
                     if (child.key == getAnimationKey()) {
                       return SlideTransition(
-                        position: offsetIn.animate(animation),
+                        position: Constants.offsetIn.animate(animation),
                         child: child,
                       );
                     }
                     return FadeTransition(opacity: animation, child: child);
                   },
                   child: widget.listviewBuilder(
-                      key: _animationKey,
-                      context: context,
-                      items: paginator.items!),
+                    key: _animationKey,
+                    context: context,
+                    items: paginator.items!,
+                    onRemove: widget.onRemove,
+                  ),
                 ),
                 (widget.paginateButton && !paginator.allData)
                     ? Tiles.fetchTile(onTap: () async {

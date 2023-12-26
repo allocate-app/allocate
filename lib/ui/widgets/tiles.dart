@@ -58,6 +58,7 @@ class Tiles {
       bool smallScreen = false,
       Future<void> Function({required ToDo toDo, required int index})?
           checkboxAnimateBeforeUpdate,
+      Future<void> Function({ToDo? item})? onRemove,
       bool showHandle = false,
       bool checkDelete = false}) {
     UserProvider userProvider = Provider.of(context, listen: false);
@@ -144,7 +145,8 @@ class Tiles {
                 icon: const Icon(Icons.delete_forever_rounded),
                 onPressed: () async {
                   if (!checkDelete) {
-                    return await deleteToDo(toDo: toDo, context: context);
+                    return await deleteToDo(
+                        toDo: toDo, context: context, onRemove: onRemove);
                   }
                   return await showDialog<List<bool>?>(
                       barrierDismissible: true,
@@ -161,9 +163,11 @@ class Tiles {
                     if (!results[0]) {
                       return;
                     }
+
                     await deleteToDo(
                         toDo: toDo,
                         context: context,
+                        onRemove: onRemove,
                         toDoProvider: toDoProvider,
                         groupProvider: groupProvider);
                   });
@@ -182,6 +186,7 @@ class Tiles {
     required BuildContext context,
     ToDoProvider? toDoProvider,
     GroupProvider? groupProvider,
+    Future<void> Function({ToDo item})? onRemove,
   }) async {
     toDoProvider =
         toDoProvider ?? Provider.of<ToDoProvider>(context, listen: false);
@@ -231,6 +236,10 @@ class Tiles {
       });
     }
 
+    if (null != onRemove) {
+      await onRemove(item: toDo);
+    }
+
     return await toDoProvider.deleteToDo(toDo: toDo).whenComplete(() {
       if (null != toDo.groupID) {
         groupProvider!.setToDoCount(id: toDo.groupID!);
@@ -255,6 +264,7 @@ class Tiles {
     bool smallScreen = false,
     Future<void> Function({required ToDo toDo, required int index})?
         checkboxAnimateBeforeUpdate,
+    Future<void> Function({ToDo item})? onRemove,
     bool showHandle = false,
   }) {
     ToDoProvider toDoProvider = Provider.of(context, listen: false);
@@ -330,6 +340,10 @@ class Tiles {
                 icon: const Icon(Icons.cloud_off_rounded),
                 onPressed: () async {
                   toDo.myDay = false;
+                  if (null != onRemove) {
+                    await onRemove(item: toDo);
+                  }
+
                   await toDoProvider.updateToDo(toDo: toDo);
                 },
               )),
@@ -344,6 +358,7 @@ class Tiles {
       {required BuildContext context,
       required int index,
       required Routine routine,
+      Future<void> Function({Routine? item})? onRemove,
       bool showHandle = false,
       bool checkDelete = false}) {
     RoutineProvider routineProvider =
@@ -403,6 +418,9 @@ class Tiles {
                 icon: const Icon(Icons.delete_forever_rounded),
                 onPressed: () async {
                   if (!checkDelete) {
+                    if (null != onRemove) {
+                      await onRemove(item: routine);
+                    }
                     return await routineProvider
                         .deleteRoutine(routine: routine)
                         .catchError((e) {
@@ -432,6 +450,11 @@ class Tiles {
                     if (!results[0]) {
                       return;
                     }
+
+                    if (null != onRemove) {
+                      await onRemove(item: routine);
+                    }
+
                     await routineProvider
                         .deleteRoutine(routine: routine)
                         .catchError((e) {
@@ -455,13 +478,15 @@ class Tiles {
         ]));
   }
 
-  static Widget deadlineListTile(
-      {required BuildContext context,
-      required int index,
-      required Deadline deadline,
-      bool smallScreen = false,
-      bool showHandle = false,
-      bool checkDelete = false}) {
+  static Widget deadlineListTile({
+    required BuildContext context,
+    required int index,
+    required Deadline deadline,
+    bool smallScreen = false,
+    bool showHandle = false,
+    bool checkDelete = false,
+    Future<void> Function({Deadline? item})? onRemove,
+  }) {
     DeadlineProvider deadlineProvider =
         Provider.of<DeadlineProvider>(context, listen: false);
     UserProvider userProvider = Provider.of(context, listen: false);
@@ -512,7 +537,9 @@ class Tiles {
                 onPressed: () async {
                   if (!checkDelete) {
                     return await deleteDeadline(
-                        deadline: deadline, context: context);
+                        deadline: deadline,
+                        context: context,
+                        onRemove: onRemove);
                   }
                   return await showDialog<List<bool>?>(
                       barrierDismissible: true,
@@ -532,6 +559,7 @@ class Tiles {
                     await deleteDeadline(
                         deadline: deadline,
                         context: context,
+                        onRemove: onRemove,
                         deadlineProvider: deadlineProvider);
                   });
                 },
@@ -548,6 +576,7 @@ class Tiles {
     required Deadline deadline,
     required BuildContext context,
     DeadlineProvider? deadlineProvider,
+    Future<void> Function({Deadline? item})? onRemove,
   }) async {
     deadlineProvider = deadlineProvider ??
         Provider.of<DeadlineProvider>(context, listen: false);
@@ -597,6 +626,10 @@ class Tiles {
       });
     }
 
+    if (null != onRemove) {
+      await onRemove(item: deadline);
+    }
+
     return await deadlineProvider.deleteDeadline(deadline: deadline).catchError(
         (e) {
       Flushbar? error;
@@ -617,7 +650,8 @@ class Tiles {
       required Reminder reminder,
       bool smallScreen = false,
       bool showHandle = false,
-      bool checkDelete = false}) {
+      bool checkDelete = false,
+      Future<void> Function({Reminder item})? onRemove}) {
     ReminderProvider reminderProvider =
         Provider.of<ReminderProvider>(context, listen: false);
     UserProvider userProvider = Provider.of(context, listen: false);
@@ -667,6 +701,7 @@ class Tiles {
                     return await deleteReminder(
                         reminder: reminder,
                         context: context,
+                        onRemove: onRemove,
                         reminderProvider: reminderProvider);
                   }
                   return await showDialog<List<bool>?>(
@@ -684,7 +719,11 @@ class Tiles {
                     if (!results[0]) {
                       return;
                     }
-                    await deleteReminder(reminder: reminder, context: context);
+                    await deleteReminder(
+                        reminder: reminder,
+                        context: context,
+                        onRemove: onRemove,
+                        reminderProvider: reminderProvider);
                   });
                 },
               )),
@@ -699,7 +738,8 @@ class Tiles {
   static Future<void> deleteReminder(
       {required Reminder reminder,
       required BuildContext context,
-      ReminderProvider? reminderProvider}) async {
+      ReminderProvider? reminderProvider,
+      Future<void> Function({Reminder item})? onRemove}) async {
     reminderProvider = reminderProvider ??
         Provider.of<ReminderProvider>(context, listen: false);
     // For repeating deadlines.
@@ -748,6 +788,10 @@ class Tiles {
       });
     }
 
+    if (null != onRemove) {
+      await onRemove(item: reminder);
+    }
+
     return await reminderProvider.deleteReminder(reminder: reminder).catchError(
         (e) {
       Flushbar? error;
@@ -766,8 +810,12 @@ class Tiles {
       {required int index,
       required Group group,
       required BuildContext context,
+      void Function({List<ToDo>? items})? onToDoFetch,
+      Future<void> Function({ToDo? item})? onToDoRemove,
+      Future<void> Function({Group? item})? onRemove,
       bool showHandle = false,
       bool checkDelete = false,
+      bool animate = false,
       ScrollPhysics physics = const NeverScrollableScrollPhysics()}) {
     GroupProvider groupProvider =
         Provider.of<GroupProvider>(context, listen: false);
@@ -795,6 +843,9 @@ class Tiles {
                 icon: const Icon(Icons.delete_forever_rounded),
                 onPressed: () async {
                   if (!checkDelete) {
+                    if (null != onRemove) {
+                      await onRemove(item: group);
+                    }
                     return await groupProvider.deleteGroup(group: group);
                   }
                   return await showDialog<List<bool>?>(
@@ -812,6 +863,11 @@ class Tiles {
                     if (!results[0]) {
                       return;
                     }
+
+                    if (null != onRemove) {
+                      await onRemove(item: group);
+                    }
+
                     await groupProvider.deleteGroup(group: group);
                   });
                 },
@@ -831,7 +887,8 @@ class Tiles {
         subtitle: Subtitles.groupSubtitle(
             toDoCount: groupProvider.getToDoCount(id: group.id)!),
         children: [
-          // TODO: this needs a valuekey function.
+          // ValueKey will always be 0, as this list doesn't change ordering.
+          // new items will fade in accordingly.
           PaginatingListview<ToDo>(
             items: group.toDos,
             query: (
@@ -842,6 +899,8 @@ class Tiles {
             offset: group.toDos.length,
             paginateButton: true,
             pullToRefresh: false,
+            onFetch: onToDoFetch,
+            onRemove: onToDoRemove,
             rebuildNotifiers: [toDoProvider],
             rebuildCallback: ({required List<ToDo> items}) {
               groupProvider.setToDoCount(id: group.id, count: items.length);
@@ -849,7 +908,8 @@ class Tiles {
             listviewBuilder: (
                 {Key? key,
                 required BuildContext context,
-                required List<ToDo> items}) {
+                required List<ToDo> items,
+                Future<void> Function({ToDo item})? onRemove}) {
               return ListViews.reorderableGroupToDos(
                   key: key,
                   context: context,
@@ -893,6 +953,10 @@ class Tiles {
                     if (null == toDo) {
                       return;
                     }
+                    if (null != onRemove) {
+                      await onRemove(item: toDo);
+                    }
+
                     toDo.groupIndex = -1;
                     toDo.groupID = null;
                     await toDoProvider.updateToDo(toDo: items[index]);
@@ -1013,7 +1077,7 @@ class Tiles {
           required void Function() onRemoved,
           bool showHandle = false}) =>
       checkboxListTile(
-          key: ValueKey(index),
+          key: ValueKey(subtask.id),
           contentPadding:
               const EdgeInsets.symmetric(horizontal: Constants.padding),
           onChanged: onChanged,
@@ -1112,6 +1176,7 @@ class Tiles {
     int limit = Constants.maxNumTasks,
     required List<Subtask> subtasks,
     required ValueNotifier<int> subtaskCount,
+    Future<void> Function({Subtask? item})? onRemove,
     ScrollPhysics physics = const NeverScrollableScrollPhysics(),
     EdgeInsetsGeometry outerPadding = EdgeInsets.zero,
   }) {
@@ -1129,7 +1194,6 @@ class Tiles {
         trailing: trailing,
         children: [
           ListViews.reorderableSubtasks(
-              showHandle: subtasks.length > 1,
               physics: physics,
               context: context,
               subtasks: subtasks,
@@ -1176,6 +1240,11 @@ class Tiles {
                 if (null == subtask) {
                   return;
                 }
+
+                if (null != onRemove) {
+                  await onRemove(item: subtask);
+                }
+
                 await subtaskProvider
                     .deleteSubtask(subtask: subtask)
                     .catchError((e) {
@@ -1277,6 +1346,7 @@ class Tiles {
   static Widget filledRoutineTile({
     required BuildContext context,
     required Routine routine,
+    Future<void> Function({Subtask? item})? onSubtaskRemove,
     ScrollPhysics physics = const NeverScrollableScrollPhysics(),
     int times = 0,
   }) {
@@ -1287,6 +1357,7 @@ class Tiles {
       subtaskCount: routineProvider.getSubtaskCount(id: routine.id),
       subtasks: routine.subtasks,
       context: context,
+      onRemove: onSubtaskRemove,
       leading: LeadingWidgets.myDayRoutineIcon(
           times: times,
           routine: routine,

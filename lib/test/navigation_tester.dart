@@ -149,7 +149,7 @@ class _NavigationTester extends State<NavigationTester> with WindowListener {
   void initState() {
     if (!Platform.isAndroid && !Platform.isIOS) {
       windowManager.addListener(this);
-      ServicesBinding.instance.keyboard.addHandler(_onKey);
+      //ServicesBinding.instance.keyboard.addHandler(_onKey);
     }
     // Test to inject 100 tasks.
     // testListView();

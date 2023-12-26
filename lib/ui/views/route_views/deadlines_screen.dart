@@ -83,15 +83,39 @@ class _DeadlinesListScreen extends State<DeadlinesListScreen> {
                   : deadlineProvider.deadlines.length,
               limit: Constants.minLimitPerQuery,
               rebuildNotifiers: [deadlineProvider],
+              getAnimationKey: () => ValueKey(
+                  deadlineProvider.sorter.sortMethod.index *
+                          (deadlineProvider.sorter.descending ? -1 : 1) +
+                      (deadlineProvider.deadlines.isEmpty ? 0 : 1)),
               rebuildCallback: ({required List<Deadline> items}) {
                 deadlineProvider.deadlines = items;
                 deadlineProvider.rebuild = false;
+              },
+              // TODO: make condtnl
+              onFetch: ({List<Deadline>? items}) {
+                if (null == items) {
+                  return;
+                }
+                for (Deadline deadline in items) {
+                  deadline.fade = Fade.fadeIn;
+                }
+              },
+              // TODO: check delay.
+              onRemove: ({Deadline? item}) async {
+                if (null == item) {
+                  return;
+                }
+                if (mounted) {
+                  setState(() => item.fade = Fade.fadeOut);
+                  await Future.delayed(const Duration(milliseconds: 500));
+                }
               },
               paginateButton: false,
               listviewBuilder: (
                   {Key? key,
                   required BuildContext context,
-                  required List<Deadline> items}) {
+                  required List<Deadline> items,
+                  Future<void> Function({Deadline? item})? onRemove}) {
                 if (deadlineProvider.sortMethod == SortMethod.none) {
                   return ListViews.reorderableDeadlines(
                     key: key,
@@ -99,6 +123,7 @@ class _DeadlinesListScreen extends State<DeadlinesListScreen> {
                     deadlines: items,
                     checkDelete: checkDelete,
                     smallScreen: smallScreen,
+                    onRemove: onRemove,
                   );
                 }
                 return ListViews.immutableDeadlines(
@@ -107,6 +132,7 @@ class _DeadlinesListScreen extends State<DeadlinesListScreen> {
                   deadlines: items,
                   checkDelete: checkDelete,
                   smallScreen: smallScreen,
+                  onRemove: onRemove,
                 );
               }),
         ),

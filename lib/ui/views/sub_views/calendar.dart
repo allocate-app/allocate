@@ -193,6 +193,14 @@ class _CalendarScreen extends State<CalendarScreen> {
           DateTime dueDay = eventModel.dueDate!.copyWith(
               hour: Constants.midnight.hour, minute: Constants.midnight.minute);
 
+          // TODO: once user class finished -- uncomment.
+          // if (toDoProvider.user.animate) {
+          //   eventModel.fade = Fade.fadeIn;
+          // }
+
+          // TODO: remove after testing done.
+          eventModel.fade = Fade.fadeIn;
+
           CalendarEvent event = CalendarEvent(model: eventModel);
           if (_events.containsKey(startDay)) {
             _events[startDay]!.add(event);

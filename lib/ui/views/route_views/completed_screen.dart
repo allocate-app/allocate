@@ -40,6 +40,9 @@ class _CompletedListScreen extends State<CompletedListScreen> {
 
   void initializeProviders() {
     toDoProvider = Provider.of<ToDoProvider>(context, listen: false);
+    if (toDoProvider.rebuild) {
+      toDoProvider.toDos = [];
+    }
     groupProvider = Provider.of<GroupProvider>(context, listen: false);
   }
 
@@ -84,16 +87,42 @@ class _CompletedListScreen extends State<CompletedListScreen> {
                 groupProvider.rebuild = false;
               },
               paginateButton: false,
+              onFetch: ({List<ToDo>? items}) {
+                if (null == items) {
+                  return;
+                }
+                for (ToDo toDo in items) {
+                  if (!toDoProvider.toDos.contains(toDo)) {
+                    toDo.fade = Fade.fadeIn;
+                  }
+                }
+              },
+              onRemove: ({ToDo? item}) async {
+                if (null == item) {
+                  return;
+                }
+                if (mounted) {
+                  setState(() => item.fade = Fade.fadeOut);
+                  await Future.delayed(
+                      const Duration(milliseconds: Constants.fadeOutTime));
+                }
+              },
+              getAnimationKey: () => ValueKey(
+                  toDoProvider.sorter.sortMethod.index *
+                          (toDoProvider.sorter.descending ? -1 : 1) +
+                      (toDoProvider.toDos.isEmpty ? 0 : 1)),
               listviewBuilder: (
                   {Key? key,
                   required BuildContext context,
-                  required List<ToDo> items}) {
+                  required List<ToDo> items,
+                  Future<void> Function({ToDo? item})? onRemove}) {
                 if (toDoProvider.sortMethod == SortMethod.none) {
                   return ListViews.reorderableToDos(
                     key: key,
                     context: context,
                     toDos: items,
                     checkDelete: checkDelete,
+                    onRemove: onRemove,
                     checkboxAnimateBeforeUpdate: (
                         {required ToDo toDo, required int index}) async {
                       if (mounted) {
@@ -101,8 +130,11 @@ class _CompletedListScreen extends State<CompletedListScreen> {
                           items[index] = toDo;
                         });
                       }
-                      return await Future.delayed(const Duration(
-                          milliseconds: Constants.checkboxAnimationTime));
+                      await Future.delayed(const Duration(
+                          milliseconds: Constants.animationDelay));
+                      if (null != onRemove && toDoProvider.toDos.length > 1) {
+                        await onRemove(item: toDo);
+                      }
                     },
                     smallScreen: smallScreen,
                   );
@@ -112,6 +144,7 @@ class _CompletedListScreen extends State<CompletedListScreen> {
                   context: context,
                   toDos: items,
                   checkDelete: checkDelete,
+                  onRemove: onRemove,
                   checkboxAnimateBeforeUpdate: (
                       {required ToDo toDo, required int index}) async {
                     if (mounted) {
@@ -119,8 +152,11 @@ class _CompletedListScreen extends State<CompletedListScreen> {
                         items[index] = toDo;
                       });
                     }
-                    return await Future.delayed(const Duration(
-                        milliseconds: Constants.checkboxAnimationTime));
+                    await Future.delayed(
+                        const Duration(milliseconds: Constants.animationDelay));
+                    if (null != onRemove && toDoProvider.toDos.length > 1) {
+                      await onRemove(item: toDo);
+                    }
                   },
                   smallScreen: smallScreen,
                 );

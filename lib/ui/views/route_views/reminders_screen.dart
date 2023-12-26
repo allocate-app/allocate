@@ -88,10 +88,35 @@ class _RemindersListScreen extends State<RemindersListScreen> {
                 reminderProvider.rebuild = false;
               },
               paginateButton: false,
-              listviewBuilder: (
-                  {Key? key,
-                  required BuildContext context,
-                  required List<Reminder> items}) {
+              // TODO: conditinl
+              onFetch: ({List<Reminder>? items}) {
+                if (null == items) {
+                  return;
+                }
+                for (Reminder reminder in items) {
+                  reminder.fade = Fade.fadeIn;
+                }
+              },
+              // TODO: check delay,
+              onRemove: ({Reminder? item}) async {
+                if (null == item) {
+                  return;
+                }
+                if (mounted) {
+                  setState(() => item.fade = Fade.fadeOut);
+                  Future.delayed(const Duration(milliseconds: 500));
+                }
+              },
+              getAnimationKey: () => ValueKey(
+                  reminderProvider.sorter.sortMethod.index *
+                          (reminderProvider.sorter.descending ? -1 : 1) +
+                      (reminderProvider.reminders.isEmpty ? 0 : 1)),
+              listviewBuilder: ({
+                Key? key,
+                required BuildContext context,
+                required List<Reminder> items,
+                Future<void> Function({Reminder? item})? onRemove,
+              }) {
                 if (reminderProvider.sortMethod == SortMethod.none) {
                   return ListViews.reorderableReminders(
                     key: key,
@@ -99,6 +124,7 @@ class _RemindersListScreen extends State<RemindersListScreen> {
                     reminders: items,
                     checkDelete: checkDelete,
                     smallScreen: smallScreen,
+                    onRemove: onRemove,
                   );
                 }
                 return ListViews.immutableReminders(
@@ -107,6 +133,7 @@ class _RemindersListScreen extends State<RemindersListScreen> {
                   reminders: items,
                   checkDelete: checkDelete,
                   smallScreen: smallScreen,
+                  onRemove: onRemove,
                 );
               }),
         ),

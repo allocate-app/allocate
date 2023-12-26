@@ -6,6 +6,7 @@ import '../../../providers/group_provider.dart';
 import '../../../providers/todo_provider.dart';
 import '../../../util/constants.dart';
 import '../../../util/enums.dart';
+import '../../../util/interfaces/i_model.dart';
 import '../../widgets/listview_header.dart';
 import '../../widgets/listviews.dart';
 import '../../widgets/paginating_listview.dart';
@@ -42,6 +43,26 @@ class _GroupsListScreen extends State<GroupsListScreen> {
   }
 
   void initializeControllers() {}
+
+  // TODO: check time.
+  Future<void> onRemove({IModel? item}) async {
+    if (null == item) {
+      return;
+    }
+    if (mounted) {
+      setState(() => item.fade = Fade.fadeOut);
+      await Future.delayed(const Duration(milliseconds: 500));
+    }
+  }
+
+  void onFetch({List<IModel>? items}) {
+    if (null == items) {
+      return;
+    }
+    for (IModel item in items) {
+      item.fade = Fade.fadeIn;
+    }
+  }
 
   @override
   void dispose() {
@@ -90,25 +111,37 @@ class _GroupsListScreen extends State<GroupsListScreen> {
                 groupProvider.groups = items;
                 groupProvider.rebuild = false;
               },
+              onFetch: onFetch,
+              onRemove: onRemove,
               paginateButton: false,
+              getAnimationKey: () => ValueKey(
+                  groupProvider.sorter.sortMethod.index *
+                          (groupProvider.sorter.descending ? -1 : 1) +
+                      (groupProvider.groups.isEmpty ? 0 : 1)),
               listviewBuilder: (
                   {Key? key,
                   required BuildContext context,
-                  required List<Group> items}) {
+                  required List<Group> items,
+                  Future<void> Function({Group? item})? onRemove}) {
                 if (groupProvider.sortMethod == SortMethod.none) {
                   return ListViews.reorderableGroups(
                     key: key,
                     context: context,
                     groups: items,
                     checkDelete: checkDelete,
+                    onRemove: onRemove,
+                    onToDoFetch: onFetch,
+                    onToDoRemove: this.onRemove,
                   );
                 }
                 return ListViews.immutableGroups(
-                  key: key,
-                  context: context,
-                  groups: items,
-                  checkDelete: checkDelete,
-                );
+                    key: key,
+                    context: context,
+                    groups: items,
+                    checkDelete: checkDelete,
+                    onRemove: onRemove,
+                    onToDoFetch: onFetch,
+                    onToDoRemove: this.onRemove);
               }),
         ),
       ]),

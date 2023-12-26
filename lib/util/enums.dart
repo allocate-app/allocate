@@ -1,6 +1,8 @@
-enum ModelType { task, deadline, reminder, routine, group }
+enum ModelType { task, subtask, deadline, reminder, routine, group }
 
 enum Priority { low, medium, high }
+
+enum Fade { none, fadeIn, fadeOut }
 
 enum Frequency { once, daily, weekly, monthly, yearly, custom }
 

@@ -10,6 +10,7 @@ import '../../../model/task/todo.dart';
 import '../../../providers/group_provider.dart';
 import '../../../providers/todo_provider.dart';
 import '../../../util/constants.dart';
+import '../../../util/enums.dart';
 import '../../../util/exceptions.dart';
 import '../../widgets/expanded_listtile.dart';
 import '../../widgets/flushbars.dart';
@@ -471,10 +472,32 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
               toDos = items;
               groupProvider.setToDoCount(id: Constants.intMax);
             },
+            // TODO: once usr, make conditional
+            onFetch: ({List<ToDo>? items}) {
+              if (null == items) {
+                return;
+              }
+              for (ToDo toDo in items) {
+                toDo.fade = Fade.fadeIn;
+              }
+            },
+            onRemove: ({ToDo? item}) async {
+              if (null == item) {
+                return;
+              }
+              if (mounted) {
+                setState(() {
+                  item.fade = Fade.fadeOut;
+                });
+                // TODO: not sure abt delay
+                await Future.delayed(const Duration(milliseconds: 500));
+              }
+            },
             listviewBuilder: (
                 {Key? key,
                 required BuildContext context,
-                required List<ToDo> items}) {
+                required List<ToDo> items,
+                void Function({ToDo? item})? onRemove}) {
               return ListViews.reorderableGroupToDos(
                 key: key,
                 context: context,
@@ -493,6 +516,9 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
                   }
                   toDo.groupIndex = -1;
                   toDo.groupID = null;
+                  if (null != onRemove) {
+                    onRemove(item: toDo);
+                  }
                   await toDoProvider.updateToDo(toDo: toDo);
                 },
                 onTap: ({ToDo? toDo}) async {

@@ -134,6 +134,8 @@ class _GlobalModelSearch extends State<GlobalModelSearch> {
               dialog: UpdateGroupScreen(initialGroup: group));
         });
         break;
+      default:
+        break;
     }
   }
 

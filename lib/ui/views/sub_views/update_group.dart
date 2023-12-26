@@ -11,6 +11,7 @@ import '../../../model/task/group.dart';
 import '../../../model/task/todo.dart';
 import '../../../providers/todo_provider.dart';
 import '../../../util/constants.dart';
+import '../../../util/enums.dart';
 import '../../../util/exceptions.dart';
 import '../../widgets/expanded_listtile.dart';
 import '../../widgets/flushbars.dart';
@@ -501,6 +502,25 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
                     id: group.id, limit: limit, offset: offset),
             offset: group.toDos.length,
             paginateButton: true,
+            // TODO: once usr, make conditional.
+            onFetch: ({List<ToDo>? items}) {
+              if (null == items) {
+                return;
+              }
+              for (ToDo toDo in items) {
+                toDo.fade = Fade.fadeIn;
+              }
+            },
+            onRemove: ({ToDo? item}) async {
+              if (null == item) {
+                return;
+              }
+              if (mounted) {
+                setState(() => item.fade = Fade.fadeOut);
+                // TODO: not sure if this should be delayed.
+                await Future.delayed(const Duration(milliseconds: 500));
+              }
+            },
             rebuildNotifiers: [toDoProvider],
             rebuildCallback: ({required List<ToDo> items}) {
               group.toDos = items;
@@ -509,7 +529,8 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
             listviewBuilder: (
                 {Key? key,
                 required BuildContext context,
-                required List<ToDo> items}) {
+                required List<ToDo> items,
+                void Function({ToDo? item})? onRemove}) {
               return ListViews.reorderableGroupToDos(
                 key: key,
                 context: context,
@@ -526,8 +547,12 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
                   if (null == toDo) {
                     return;
                   }
+                  if (null != onRemove) {
+                    onRemove(item: toDo);
+                  }
                   toDo.groupIndex = -1;
                   toDo.groupID = null;
+
                   await toDoProvider.updateToDo(toDo: toDo);
                 },
                 onTap: ({ToDo? toDo}) async {

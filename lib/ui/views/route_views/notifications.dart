@@ -11,6 +11,8 @@ import '../../../providers/deadline_provider.dart';
 import '../../../providers/reminder_provider.dart';
 import '../../../providers/todo_provider.dart';
 import '../../../util/constants.dart';
+import '../../../util/enums.dart';
+import '../../../util/interfaces/i_model.dart';
 import '../../../util/interfaces/i_repeatable.dart';
 import '../../widgets/expanded_listtile.dart';
 import '../../widgets/listview_header.dart';
@@ -58,6 +60,25 @@ class _NotificationsScreen extends State<NotificationsScreen> {
         ? const BouncingScrollPhysics()
         : const ClampingScrollPhysics();
     parentScrollPhysics = AlwaysScrollableScrollPhysics(parent: scrollPhysics);
+  }
+
+  void onFetch({List<IModel>? items}) {
+    if (null == items) {
+      return;
+    }
+    for (IModel item in items) {
+      item.fade = Fade.fadeIn;
+    }
+  }
+
+  Future<void> onRemove({IModel? item}) async {
+    if (null == item) {
+      return;
+    }
+    if (mounted) {
+      setState(() => item.fade = Fade.fadeOut);
+      await Future.delayed(const Duration(milliseconds: 500));
+    }
   }
 
   @override
@@ -127,16 +148,23 @@ class _NotificationsScreen extends State<NotificationsScreen> {
                                   listviewBuilder: (
                                           {Key? key,
                                           required BuildContext context,
-                                          required List<Deadline> items}) =>
+                                          required List<Deadline> items,
+                                          Future<void> Function(
+                                                  {Deadline? item})?
+                                              onRemove}) =>
                                       ListViews.immutableDeadlines(
                                         key: key,
                                         context: context,
                                         deadlines: items,
                                         checkDelete: checkDelete,
                                         smallScreen: smallScreen,
+                                        onRemove: onRemove,
                                       ),
                                   query: deadlineProvider.getUpcoming,
                                   paginateButton: true,
+                                  // TODO: make conditin
+                                  onFetch: onFetch,
+                                  onRemove: onRemove,
                                   rebuildNotifiers: [deadlineProvider],
                                   rebuildCallback: (
                                       {required List<Deadline> items}) {
@@ -163,16 +191,23 @@ class _NotificationsScreen extends State<NotificationsScreen> {
                                   offset: (reminderProvider.rebuild)
                                       ? 0
                                       : reminderProvider.reminders.length,
+                                  // TODO: make conditinl
+                                  onFetch: onFetch,
+                                  onRemove: onRemove,
                                   listviewBuilder: (
                                           {Key? key,
                                           required BuildContext context,
-                                          required List<Reminder> items}) =>
+                                          required List<Reminder> items,
+                                          Future<void> Function(
+                                                  {Reminder? item})?
+                                              onRemove}) =>
                                       ListViews.immutableReminders(
                                         key: key,
                                         context: context,
                                         reminders: items,
                                         checkDelete: checkDelete,
                                         smallScreen: smallScreen,
+                                        onRemove: onRemove,
                                       ),
                                   query: reminderProvider.getUpcoming,
                                   paginateButton: true,
@@ -202,16 +237,22 @@ class _NotificationsScreen extends State<NotificationsScreen> {
                                   offset: (toDoProvider.rebuild)
                                       ? 0
                                       : toDoProvider.toDos.length,
+                                  // TODO; make cond.
+                                  onFetch: onFetch,
+                                  onRemove: onRemove,
                                   listviewBuilder: (
                                           {Key? key,
                                           required BuildContext context,
-                                          required List<ToDo> items}) =>
+                                          required List<ToDo> items,
+                                          Future<void> Function({ToDo? item})?
+                                              onRemove}) =>
                                       ListViews.immutableToDos(
                                         key: key,
                                         context: context,
                                         toDos: items,
                                         checkDelete: checkDelete,
                                         smallScreen: smallScreen,
+                                        onRemove: onRemove,
                                         checkboxAnimateBeforeUpdate: (
                                             {required int index,
                                             required ToDo toDo}) async {
@@ -223,7 +264,7 @@ class _NotificationsScreen extends State<NotificationsScreen> {
                                           return await Future.delayed(
                                               const Duration(
                                                   milliseconds: Constants
-                                                      .checkboxAnimationTime));
+                                                      .animationDelay));
                                         },
                                       ),
                                   query: toDoProvider.getUpcoming,
@@ -273,16 +314,22 @@ class _NotificationsScreen extends State<NotificationsScreen> {
                                         ? 0
                                         : deadlineProvider
                                             .secondaryDeadlines.length,
+                                    onFetch: onFetch,
+                                    onRemove: onRemove,
                                     listviewBuilder: (
                                             {Key? key,
                                             required BuildContext context,
-                                            required List<Deadline> items}) =>
+                                            required List<Deadline> items,
+                                            Future<void> Function(
+                                                    {Deadline? item})?
+                                                onRemove}) =>
                                         ListViews.immutableDeadlines(
                                           key: key,
                                           context: context,
                                           deadlines: items,
                                           checkDelete: checkDelete,
                                           smallScreen: smallScreen,
+                                          onRemove: onRemove,
                                         ),
                                     query: deadlineProvider.getOverdues,
                                     paginateButton: true,
@@ -314,16 +361,22 @@ class _NotificationsScreen extends State<NotificationsScreen> {
                                         ? 0
                                         : reminderProvider
                                             .secondaryReminders.length,
+                                    onFetch: onFetch,
+                                    onRemove: onRemove,
                                     listviewBuilder: (
                                             {Key? key,
                                             required BuildContext context,
-                                            required List<Reminder> items}) =>
+                                            required List<Reminder> items,
+                                            Future<void> Function(
+                                                    {Reminder? item})?
+                                                onRemove}) =>
                                         ListViews.immutableReminders(
                                           key: key,
                                           context: context,
                                           reminders: items,
                                           checkDelete: checkDelete,
                                           smallScreen: smallScreen,
+                                          onRemove: onRemove,
                                         ),
                                     query: reminderProvider.getOverdues,
                                     paginateButton: true,
@@ -354,16 +407,21 @@ class _NotificationsScreen extends State<NotificationsScreen> {
                                     offset: (toDoProvider.rebuild)
                                         ? 0
                                         : toDoProvider.secondaryToDos.length,
+                                    onFetch: onFetch,
+                                    onRemove: onRemove,
                                     listviewBuilder: (
                                             {Key? key,
                                             required BuildContext context,
-                                            required List<ToDo> items}) =>
+                                            required List<ToDo> items,
+                                            Future<void> Function({ToDo? item})?
+                                                onRemove}) =>
                                         ListViews.immutableToDos(
                                           key: key,
                                           context: context,
                                           toDos: items,
                                           checkDelete: checkDelete,
                                           smallScreen: smallScreen,
+                                          onRemove: onRemove,
                                           checkboxAnimateBeforeUpdate: (
                                               {required int index,
                                               required ToDo toDo}) async {
@@ -375,7 +433,7 @@ class _NotificationsScreen extends State<NotificationsScreen> {
                                             return await Future.delayed(
                                                 const Duration(
                                                     milliseconds: Constants
-                                                        .checkboxAnimationTime));
+                                                        .animationDelay));
                                           },
                                         ),
                                     query: toDoProvider.getOverdues,

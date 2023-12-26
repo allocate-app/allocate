@@ -36,17 +36,14 @@ class _ToDosListScreen extends State<ToDosListScreen> {
 
   void initializeProviders() {
     toDoProvider = Provider.of<ToDoProvider>(context, listen: false);
+    if (toDoProvider.rebuild) {
+      toDoProvider.toDos = [];
+    }
     groupProvider = Provider.of<GroupProvider>(context, listen: false);
   }
 
   void initializeParameters() {
     checkDelete = true;
-  }
-
-  ValueKey<int> getAnimationKey() {
-    return ValueKey(
-        (toDoProvider.toDos.length + toDoProvider.sorter.sortMethod.index) *
-            ((toDoProvider.sorter.descending) ? -1 : 1));
   }
 
   @override
@@ -82,27 +79,54 @@ class _ToDosListScreen extends State<ToDosListScreen> {
         ),
         Flexible(
           child: PaginatingListview<ToDo>(
-              getAnimationKey: getAnimationKey,
               items: toDoProvider.toDos,
               query: toDoProvider.getToDosBy,
               offset: (toDoProvider.rebuild) ? 0 : toDoProvider.toDos.length,
-              limit: 3,
+              limit: Constants.minLimitPerQuery,
               rebuildNotifiers: [toDoProvider, groupProvider],
               rebuildCallback: ({required List<ToDo> items}) {
                 toDoProvider.toDos = items;
                 toDoProvider.rebuild = false;
               },
               paginateButton: false,
+              getAnimationKey: () => ValueKey(
+                  toDoProvider.sorter.sortMethod.index *
+                          (toDoProvider.sorter.descending ? -1 : 1) +
+                      (toDoProvider.toDos.isEmpty ? 0 : 1)),
+              // TODO: make conditional
+              onFetch: ({List<ToDo>? items}) {
+                if (null == items) {
+                  return;
+                }
+                for (ToDo toDo in items) {
+                  if (!toDoProvider.toDos.contains(toDo)) {
+                    toDo.fade = Fade.fadeIn;
+                  }
+                }
+              },
+              // TODO: check delay,
+              onRemove: ({ToDo? item}) async {
+                if (null == item) {
+                  return;
+                }
+                if (mounted) {
+                  setState(() => item.fade = Fade.fadeOut);
+                  await Future.delayed(
+                      const Duration(milliseconds: Constants.fadeOutTime));
+                }
+              },
               listviewBuilder: (
                   {Key? key,
                   required BuildContext context,
-                  required List<ToDo> items}) {
+                  required List<ToDo> items,
+                  Future<void> Function({ToDo? item})? onRemove}) {
                 if (toDoProvider.sortMethod == SortMethod.none) {
                   return ListViews.reorderableToDos(
                     key: key,
                     context: context,
                     toDos: items,
                     checkDelete: checkDelete,
+                    onRemove: onRemove,
                     checkboxAnimateBeforeUpdate: (
                         {required ToDo toDo, required int index}) async {
                       if (mounted) {
@@ -110,8 +134,12 @@ class _ToDosListScreen extends State<ToDosListScreen> {
                           items[index] = toDo;
                         });
                       }
-                      return await Future.delayed(const Duration(
-                          milliseconds: Constants.checkboxAnimationTime));
+                      await Future.delayed(const Duration(
+                          milliseconds: Constants.animationDelay));
+
+                      if (null != onRemove && toDoProvider.toDos.length > 1) {
+                        await onRemove(item: toDo);
+                      }
                     },
                     smallScreen: smallScreen,
                   );
@@ -121,6 +149,7 @@ class _ToDosListScreen extends State<ToDosListScreen> {
                   context: context,
                   toDos: items,
                   checkDelete: checkDelete,
+                  onRemove: onRemove,
                   checkboxAnimateBeforeUpdate: (
                       {required ToDo toDo, required int index}) async {
                     if (mounted) {
@@ -128,8 +157,11 @@ class _ToDosListScreen extends State<ToDosListScreen> {
                         items[index] = toDo;
                       });
                     }
-                    return await Future.delayed(const Duration(
-                        milliseconds: Constants.checkboxAnimationTime));
+                    await Future.delayed(
+                        const Duration(milliseconds: Constants.animationDelay));
+                    if (null != onRemove && toDoProvider.toDos.length > 1) {
+                      await onRemove(item: toDo);
+                    }
                   },
                   smallScreen: smallScreen,
                 );

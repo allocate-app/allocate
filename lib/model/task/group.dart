@@ -17,6 +17,10 @@ class Group with EquatableMixin implements Copyable<Group>, IModel {
   ModelType modelType = ModelType.group;
 
   @override
+  @ignore
+  Fade fade = Fade.none;
+
+  @override
   @Index()
   Id id = Constants.generateID();
 

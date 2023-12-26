@@ -88,16 +88,43 @@ class _RoutinesListScreen extends State<RoutinesListScreen> {
                 routineProvider.rebuild = false;
               },
               paginateButton: false,
-              listviewBuilder: (
-                  {Key? key,
-                  required BuildContext context,
-                  required List<Routine> items}) {
+              getAnimationKey: () => ValueKey(
+                  routineProvider.sorter.sortMethod.index *
+                          (routineProvider.sorter.descending ? -1 : 1) +
+                      (routineProvider.routines.isEmpty ? 0 : 1)),
+              // TODO: make conditinl.
+              onFetch: ({List<Routine>? items}) {
+                if (null == items) {
+                  return;
+                }
+                for (Routine routine in items) {
+                  routine.fade = Fade.fadeIn;
+                }
+              },
+              // TODO: check delay.
+              onRemove: ({Routine? item}) async {
+                if (null == item) {
+                  return;
+                }
+
+                if (mounted) {
+                  setState(() => item.fade = Fade.fadeOut);
+                  await Future.delayed(const Duration(milliseconds: 500));
+                }
+              },
+              listviewBuilder: ({
+                Key? key,
+                required BuildContext context,
+                required List<Routine> items,
+                Future<void> Function({Routine? item})? onRemove,
+              }) {
                 if (routineProvider.sortMethod == SortMethod.none) {
                   return ListViews.reorderableRoutines(
                     key: key,
                     context: context,
                     routines: items,
                     checkDelete: checkDelete,
+                    onRemove: onRemove,
                   );
                 }
                 return ListViews.immutableRoutines(
@@ -105,6 +132,7 @@ class _RoutinesListScreen extends State<RoutinesListScreen> {
                   context: context,
                   routines: items,
                   checkDelete: checkDelete,
+                  onRemove: onRemove,
                 );
               }),
         ),

@@ -20,6 +20,10 @@ class ToDo with EquatableMixin implements Copyable<ToDo>, IRepeatable {
   ModelType get repeatableType => modelType;
 
   @override
+  @ignore
+  Fade fade = Fade.none;
+
+  @override
   Id id = Constants.generateID();
 
   @Index()

@@ -16,6 +16,10 @@ class Routine with EquatableMixin implements Copyable<Routine>, IModel {
   ModelType modelType = ModelType.routine;
 
   @override
+  @ignore
+  Fade fade = Fade.none;
+
+  @override
   @Index()
   Id id = Constants.generateID();
 

@@ -58,22 +58,47 @@ class _MyDayToDos extends State<MyDayToDos> {
               query: toDoProvider.getMyDay,
               offset: (toDoProvider.rebuild) ? 0 : toDoProvider.toDos.length,
               limit: Constants.minLimitPerQuery,
+              getAnimationKey: () => ValueKey(
+                  toDoProvider.sorter.sortMethod.index *
+                          (toDoProvider.sorter.descending ? -1 : 1) +
+                      (toDoProvider.toDos.isEmpty ? 0 : 1)),
               rebuildNotifiers: [toDoProvider, groupProvider],
               rebuildCallback: ({required List<ToDo> items}) {
                 toDoProvider.toDos = items;
                 toDoProvider.rebuild = false;
                 groupProvider.rebuild = false;
               },
+              // TODO: once usr, factor in conditional.
+              onFetch: ({List<ToDo>? items}) {
+                if (null == items) {
+                  return;
+                }
+                for (ToDo toDo in items) {
+                  toDo.fade = Fade.fadeIn;
+                }
+              },
+              onRemove: ({ToDo? item}) async {
+                if (null == item) {
+                  return;
+                }
+                if (mounted) {
+                  setState(() => item.fade = Fade.fadeOut);
+                  // TODO: not sure about delay.
+                  Future.delayed(const Duration(milliseconds: 500));
+                }
+              },
               paginateButton: false,
               listviewBuilder: (
                   {Key? key,
                   required BuildContext context,
-                  required List<ToDo> items}) {
+                  required List<ToDo> items,
+                  Future<void> Function({ToDo? item})? onRemove}) {
                 if (toDoProvider.sortMethod == SortMethod.none) {
                   return ListViews.reorderableMyDay(
                     key: key,
                     context: context,
                     toDos: items,
+                    onRemove: onRemove,
                     checkboxAnimateBeforeUpdate: (
                         {required ToDo toDo, required int index}) async {
                       if (mounted) {
@@ -82,7 +107,7 @@ class _MyDayToDos extends State<MyDayToDos> {
                         });
                       }
                       return await Future.delayed(const Duration(
-                          milliseconds: Constants.checkboxAnimationTime));
+                          milliseconds: Constants.animationDelay));
                     },
                     smallScreen: smallScreen,
                   );
@@ -91,6 +116,7 @@ class _MyDayToDos extends State<MyDayToDos> {
                   key: key,
                   context: context,
                   toDos: items,
+                  onRemove: onRemove,
                   checkboxAnimateBeforeUpdate: (
                       {required ToDo toDo, required int index}) async {
                     if (mounted) {
@@ -98,8 +124,8 @@ class _MyDayToDos extends State<MyDayToDos> {
                         items[index] = toDo;
                       });
                     }
-                    return await Future.delayed(const Duration(
-                        milliseconds: Constants.checkboxAnimationTime));
+                    return await Future.delayed(
+                        const Duration(milliseconds: Constants.animationDelay));
                   },
                   smallScreen: smallScreen,
                 );

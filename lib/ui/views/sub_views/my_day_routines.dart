@@ -3,9 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../model/task/routine.dart';
+import '../../../model/task/subtask.dart';
 import '../../../providers/routine_provider.dart';
 import '../../../providers/subtask_provider.dart';
 import '../../../providers/user_provider.dart';
+import '../../../util/enums.dart';
 import '../../../util/exceptions.dart';
 import '../../widgets/flushbars.dart';
 import '../../widgets/tiles.dart';
@@ -83,6 +85,12 @@ class _MyDayRoutines extends State<MyDayRoutines> {
     }
 
     routine.subtasks = await routineProvider.getSubtasks(id: routine.id);
+
+    // TODO: make conditinl.
+    for (Subtask subtask in routine.subtasks) {
+      subtask.fade = Fade.fadeIn;
+    }
+
     routineProvider.setSubtaskCount(
         id: routine.id, count: routine.subtasks.length);
     routine.weight = await routineProvider.getWeight(taskID: routine.id);
@@ -100,6 +108,16 @@ class _MyDayRoutines extends State<MyDayRoutines> {
     },
         test: (e) =>
             e is FailureToUpdateException || e is FailureToUploadException);
+  }
+
+  Future<void> onRemove({Subtask? item}) async {
+    if (null == item) {
+      return;
+    }
+    if (mounted) {
+      setState(() => item.fade = Fade.fadeOut);
+      await Future.delayed(const Duration(milliseconds: 500));
+    }
   }
 
   @override
@@ -121,7 +139,10 @@ class _MyDayRoutines extends State<MyDayRoutines> {
                   (BuildContext context, RoutineProvider value, Widget? child) {
                 if (null != value.curMorning) {
                   return Tiles.filledRoutineTile(
-                      context: context, routine: value.curMorning!, times: 1);
+                      context: context,
+                      onSubtaskRemove: onRemove,
+                      routine: value.curMorning!,
+                      times: 1);
                 }
                 return Tiles.emptyRoutineTile(context: context, times: 1);
               },
@@ -131,7 +152,10 @@ class _MyDayRoutines extends State<MyDayRoutines> {
                   (BuildContext context, RoutineProvider value, Widget? child) {
                 if (null != value.curAfternoon) {
                   return Tiles.filledRoutineTile(
-                      context: context, routine: value.curAfternoon!, times: 2);
+                      context: context,
+                      onSubtaskRemove: onRemove,
+                      routine: value.curAfternoon!,
+                      times: 2);
                 }
                 return Tiles.emptyRoutineTile(context: context, times: 2);
               },
@@ -141,7 +165,10 @@ class _MyDayRoutines extends State<MyDayRoutines> {
                   (BuildContext context, RoutineProvider value, Widget? child) {
                 if (null != value.curEvening) {
                   return Tiles.filledRoutineTile(
-                      context: context, routine: value.curEvening!, times: 4);
+                      context: context,
+                      onSubtaskRemove: onRemove,
+                      routine: value.curEvening!,
+                      times: 4);
                 }
                 return Tiles.emptyRoutineTile(context: context, times: 4);
               },

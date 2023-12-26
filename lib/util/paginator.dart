@@ -3,9 +3,10 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 
 import 'constants.dart';
+import 'interfaces/i_model.dart';
 
 // Component for self-pagination.
-class Paginator<T> extends ChangeNotifier {
+class Paginator<T extends IModel> extends ChangeNotifier {
   bool _disposed = false;
   late List<T>? items;
   late int limit;
@@ -14,6 +15,7 @@ class Paginator<T> extends ChangeNotifier {
   late bool allData;
   late bool loading;
   late Future<List<T>> Function({int limit, int offset})? query;
+  late void Function({List<T>? items})? onFetch;
 
   // This is for listening to global stage changes.
   // ie. A change to a provider class.
@@ -28,6 +30,7 @@ class Paginator<T> extends ChangeNotifier {
     this.allData = false,
     this.loading = false,
     this.query,
+    this.onFetch,
     this.resetNotifiers,
     // this.appendNotifier
   }) {
@@ -54,7 +57,10 @@ class Paginator<T> extends ChangeNotifier {
 
   Future<void> overwriteData() async {
     List<T> newItems = await fetchData();
-    offset += newItems.length;
+    offset = newItems.length;
+    if (null != onFetch) {
+      onFetch!(items: newItems);
+    }
     items = newItems;
     loading = false;
     allData = (items?.length ?? 0) < limit;
@@ -73,7 +79,9 @@ class Paginator<T> extends ChangeNotifier {
     }
 
     List<T> newItems = await fetchData();
-
+    if (null != onFetch) {
+      onFetch!(items: newItems);
+    }
     offset += newItems.length;
     items?.addAll(newItems);
     loading = false;

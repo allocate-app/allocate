@@ -18,6 +18,10 @@ class Reminder with EquatableMixin implements Copyable<Reminder>, IRepeatable {
 
   @override
   @ignore
+  Fade fade = Fade.none;
+
+  @override
+  @ignore
   ModelType get repeatableType => ModelType.reminder;
 
   @override

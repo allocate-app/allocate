@@ -2,16 +2,29 @@ import 'package:equatable/equatable.dart';
 import 'package:isar/isar.dart';
 
 import '../../util/constants.dart';
+import '../../util/enums.dart';
 import '../../util/interfaces/copyable.dart';
+import '../../util/interfaces/i_model.dart';
 
 part "subtask.g.dart";
 
 @Collection(inheritance: false)
 class Subtask
     with EquatableMixin
-    implements Copyable<Subtask>, Comparable<Subtask> {
+    implements Copyable<Subtask>, Comparable<Subtask>, IModel {
+  @override
   @Index()
   Id id = Constants.generateID();
+
+  @override
+  @ignore
+  ModelType modelType = ModelType.subtask;
+
+  @override
+  @ignore
+  Fade fade = Fade.none;
+
+  @override
   @Index()
   String name;
   @Index()
@@ -26,6 +39,7 @@ class Subtask
   @Index()
   bool toDelete = false;
 
+  @override
   @Index()
   DateTime lastUpdated;
 

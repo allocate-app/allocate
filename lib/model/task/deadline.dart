@@ -19,6 +19,10 @@ class Deadline with EquatableMixin implements Copyable<Deadline>, IRepeatable {
 
   @override
   @ignore
+  Fade fade = Fade.none;
+
+  @override
+  @ignore
   ModelType get repeatableType => modelType;
 
   @override

@@ -15,10 +15,13 @@ import '../../providers/group_provider.dart';
 import '../../providers/routine_provider.dart';
 import '../../providers/todo_provider.dart';
 import '../../util/constants.dart';
+import '../../util/enums.dart';
 import 'custom_drag_start.dart';
 import 'tiles.dart';
 
 // TODO: Implement crossfading between lists?
+// fadeIn req's same value key.
+// paginatinglistview needs to set the ptr in the listview constructor.
 class ListViews {
   // This is for dragging
   static Widget proxyDecorator(
@@ -39,6 +42,30 @@ class ListViews {
             );
           });
 
+  static Widget fade({Key? key, Fade fade = Fade.fadeIn, Widget? child}) =>
+      TweenAnimationBuilder(
+          key: key,
+          duration: switch (fade) {
+            Fade.fadeIn => const Duration(milliseconds: Constants.fadeInTime),
+            Fade.fadeOut => const Duration(milliseconds: Constants.fadeOutTime),
+            Fade.none => const Duration(milliseconds: 0),
+          },
+          tween: switch (fade) {
+            Fade.fadeIn => Tween<double>(begin: 0.0, end: 1.0),
+            Fade.fadeOut => Tween<double>(begin: 1.0, end: 0.0),
+            Fade.none => Tween<double>(begin: 1.0, end: 1.0),
+          },
+          curve: switch (fade) {
+            Fade.fadeIn => Curves.fastLinearToSlowEaseIn,
+            Fade.fadeOut => Curves.linear,
+            Fade.none => Curves.linear,
+          },
+          child: child,
+          builder: (BuildContext context, double opacity, Widget? child) {
+            //print("opacity: $opacity");
+            return Opacity(opacity: opacity, child: child);
+          });
+
   static Widget reorderableToDos({
     Key? key,
     required BuildContext context,
@@ -47,6 +74,7 @@ class ListViews {
     bool smallScreen = false,
     Future<void> Function({required ToDo toDo, required int index})?
         checkboxAnimateBeforeUpdate,
+    Future<void> Function({ToDo? item})? onRemove,
     ScrollPhysics physics = const NeverScrollableScrollPhysics(),
   }) =>
       ReorderableListView.builder(
@@ -61,41 +89,41 @@ class ListViews {
                       oldIndex: oldIndex, newIndex: newIndex, toDos: toDos),
           itemCount: toDos.length,
           itemBuilder: (BuildContext context, int index) {
+            Widget child = fade(
+              key: ValueKey(toDos[index].id),
+              fade: toDos[index].fade,
+              child: Tiles.toDoListTile(
+                checkboxAnimateBeforeUpdate: checkboxAnimateBeforeUpdate,
+                smallScreen: smallScreen,
+                context: context,
+                index: index,
+                toDo: toDos[index],
+                showHandle: toDos.length > 1,
+                checkDelete: checkDelete,
+                onRemove: onRemove,
+              ),
+            );
             if (toDos.length > 1) {
               return CustomDragStartListener(
                 delay: Constants.delayTime,
                 index: index,
                 key: ValueKey(toDos[index].id),
-                child: Tiles.toDoListTile(
-                  checkboxAnimateBeforeUpdate: checkboxAnimateBeforeUpdate,
-                  smallScreen: smallScreen,
-                  context: context,
-                  index: index,
-                  toDo: toDos[index],
-                  showHandle: true,
-                  checkDelete: checkDelete,
-                ),
+                child: child,
               );
             }
-            return Tiles.toDoListTile(
-              checkboxAnimateBeforeUpdate: checkboxAnimateBeforeUpdate,
-              smallScreen: smallScreen,
-              context: context,
-              index: index,
-              toDo: toDos[index],
-              showHandle: false,
-              checkDelete: checkDelete,
-            );
+            return child;
           });
 
   static Widget immutableToDos({
     Key? key,
     required BuildContext context,
     required List<ToDo> toDos,
+    bool animate = false,
     bool checkDelete = false,
     bool smallScreen = false,
     Future<void> Function({required ToDo toDo, required int index})?
         checkboxAnimateBeforeUpdate,
+    Future<void> Function({ToDo? item})? onRemove,
     ScrollPhysics physics = const NeverScrollableScrollPhysics(),
   }) =>
       ListView.builder(
@@ -104,14 +132,19 @@ class ListViews {
           shrinkWrap: true,
           itemCount: toDos.length,
           itemBuilder: (BuildContext context, int index) {
-            return Tiles.toDoListTile(
-              checkboxAnimateBeforeUpdate: checkboxAnimateBeforeUpdate,
-              smallScreen: smallScreen,
-              context: context,
-              index: index,
-              toDo: toDos[index],
-              showHandle: false,
-              checkDelete: checkDelete,
+            return fade(
+              key: ValueKey(toDos[index].id),
+              fade: toDos[index].fade,
+              child: Tiles.toDoListTile(
+                checkboxAnimateBeforeUpdate: checkboxAnimateBeforeUpdate,
+                smallScreen: smallScreen,
+                context: context,
+                index: index,
+                toDo: toDos[index],
+                onRemove: onRemove,
+                showHandle: false,
+                checkDelete: checkDelete,
+              ),
             );
           });
 
@@ -119,10 +152,12 @@ class ListViews {
     Key? key,
     required BuildContext context,
     required List<ToDo> toDos,
+    bool animate = false,
     bool checkDelete = false,
     bool smallScreen = false,
     Future<void> Function({required ToDo toDo, required int index})?
         checkboxAnimateBeforeUpdate,
+    Future<void> Function({ToDo? item})? onRemove,
     ScrollPhysics physics = const NeverScrollableScrollPhysics(),
   }) =>
       ReorderableListView.builder(
@@ -137,38 +172,40 @@ class ListViews {
                       oldIndex: oldIndex, newIndex: newIndex, toDos: toDos),
           itemCount: toDos.length,
           itemBuilder: (BuildContext context, int index) {
+            // Key is id ^ index. and I don't know why...
+            Widget child = fade(
+              key: ValueKey(toDos[index].id ^ index),
+              fade: toDos[index].fade,
+              child: Tiles.toDoMyDayTile(
+                checkboxAnimateBeforeUpdate: checkboxAnimateBeforeUpdate,
+                smallScreen: smallScreen,
+                context: context,
+                index: index,
+                toDo: toDos[index],
+                showHandle: toDos.length > 1,
+                onRemove: onRemove,
+              ),
+            );
             if (toDos.length > 1) {
               return CustomDragStartListener(
                 delay: Constants.delayTime,
                 index: index,
                 key: ValueKey(toDos[index].id ^ index),
-                child: Tiles.toDoMyDayTile(
-                  checkboxAnimateBeforeUpdate: checkboxAnimateBeforeUpdate,
-                  smallScreen: smallScreen,
-                  context: context,
-                  index: index,
-                  toDo: toDos[index],
-                  showHandle: true,
-                ),
+                child: child,
               );
             }
-            return Tiles.toDoMyDayTile(
-              checkboxAnimateBeforeUpdate: checkboxAnimateBeforeUpdate,
-              smallScreen: smallScreen,
-              context: context,
-              index: index,
-              toDo: toDos[index],
-              showHandle: false,
-            );
+            return child;
           });
 
   static Widget immutableMyDay({
     Key? key,
     required BuildContext context,
     required List<ToDo> toDos,
+    bool animate = false,
     bool smallScreen = false,
     Future<void> Function({required ToDo toDo, required int index})?
         checkboxAnimateBeforeUpdate,
+    Future<void> Function({ToDo? item})? onRemove,
     ScrollPhysics physics = const NeverScrollableScrollPhysics(),
   }) =>
       ListView.builder(
@@ -177,13 +214,18 @@ class ListViews {
           shrinkWrap: true,
           itemCount: toDos.length,
           itemBuilder: (BuildContext context, int index) {
-            return Tiles.toDoMyDayTile(
-              checkboxAnimateBeforeUpdate: checkboxAnimateBeforeUpdate,
-              smallScreen: smallScreen,
-              context: context,
-              index: index,
-              toDo: toDos[index],
-              showHandle: false,
+            return fade(
+              key: ValueKey(toDos[index].id ^ index),
+              fade: toDos[index].fade,
+              child: Tiles.toDoMyDayTile(
+                checkboxAnimateBeforeUpdate: checkboxAnimateBeforeUpdate,
+                smallScreen: smallScreen,
+                context: context,
+                index: index,
+                toDo: toDos[index],
+                showHandle: false,
+                onRemove: onRemove,
+              ),
             );
           });
 
@@ -191,7 +233,9 @@ class ListViews {
     Key? key,
     required BuildContext context,
     required List<Routine> routines,
+    bool animate = false,
     bool checkDelete = false,
+    Future<void> Function({Routine? item})? onRemove,
     ScrollPhysics physics = const NeverScrollableScrollPhysics(),
   }) =>
       ReorderableListView.builder(
@@ -205,35 +249,36 @@ class ListViews {
                   .reorderRoutines(oldIndex: oldIndex, newIndex: newIndex),
           itemCount: routines.length,
           itemBuilder: (BuildContext context, int index) {
+            Widget child = fade(
+              key: ValueKey(routines[index].id),
+              fade: routines[index].fade,
+              child: Tiles.routineListTile(
+                context: context,
+                index: index,
+                routine: routines[index],
+                showHandle: routines.length > 1,
+                checkDelete: checkDelete,
+                onRemove: onRemove,
+              ),
+            );
             if (routines.length > 1) {
               return CustomDragStartListener(
-                delay: Constants.delayTime,
-                index: index,
-                key: ValueKey(routines[index].id),
-                child: Tiles.routineListTile(
-                  context: context,
+                  delay: Constants.delayTime,
                   index: index,
-                  routine: routines[index],
-                  showHandle: true,
-                  checkDelete: checkDelete,
-                ),
-              );
+                  key: ValueKey(routines[index].id),
+                  child: child);
             }
-            return Tiles.routineListTile(
-              context: context,
-              index: index,
-              routine: routines[index],
-              showHandle: false,
-              checkDelete: checkDelete,
-            );
+            return child;
           });
 
   static Widget immutableRoutines({
     Key? key,
     required BuildContext context,
     required List<Routine> routines,
+    bool animate = false,
     bool checkDelete = false,
     ScrollPhysics physics = const NeverScrollableScrollPhysics(),
+    Future<void> Function({Routine? item})? onRemove,
   }) =>
       ListView.builder(
           key: key,
@@ -241,12 +286,16 @@ class ListViews {
           shrinkWrap: true,
           itemCount: routines.length,
           itemBuilder: (BuildContext context, int index) {
-            return Tiles.routineListTile(
-              context: context,
-              index: index,
-              routine: routines[index],
-              showHandle: false,
-              checkDelete: checkDelete,
+            return fade(
+              key: ValueKey(routines[index].id),
+              fade: routines[index].fade,
+              child: Tiles.routineListTile(
+                context: context,
+                index: index,
+                routine: routines[index],
+                showHandle: false,
+                checkDelete: checkDelete,
+              ),
             );
           });
 
@@ -254,9 +303,11 @@ class ListViews {
     Key? key,
     required BuildContext context,
     required List<Deadline> deadlines,
+    bool animate = false,
     bool checkDelete = false,
     bool smallScreen = false,
     ScrollPhysics physics = const NeverScrollableScrollPhysics(),
+    Future<void> Function({Deadline? item})? onRemove,
   }) =>
       ReorderableListView.builder(
           key: key,
@@ -269,38 +320,39 @@ class ListViews {
                   .reorderDeadlines(oldIndex: oldIndex, newIndex: newIndex),
           itemCount: deadlines.length,
           itemBuilder: (BuildContext context, int index) {
+            Widget child = fade(
+              key: ValueKey(deadlines[index].id),
+              fade: deadlines[index].fade,
+              child: Tiles.deadlineListTile(
+                context: context,
+                index: index,
+                smallScreen: smallScreen,
+                deadline: deadlines[index],
+                showHandle: deadlines.length > 1,
+                checkDelete: checkDelete,
+                onRemove: onRemove,
+              ),
+            );
             if (deadlines.length > 1) {
               return CustomDragStartListener(
                 delay: Constants.delayTime,
                 index: index,
                 key: ValueKey(deadlines[index].id),
-                child: Tiles.deadlineListTile(
-                  context: context,
-                  index: index,
-                  smallScreen: smallScreen,
-                  deadline: deadlines[index],
-                  showHandle: true,
-                  checkDelete: checkDelete,
-                ),
+                child: child,
               );
             }
-            return Tiles.deadlineListTile(
-              context: context,
-              index: index,
-              smallScreen: smallScreen,
-              deadline: deadlines[index],
-              showHandle: false,
-              checkDelete: checkDelete,
-            );
+            return child;
           });
 
   static Widget immutableDeadlines({
     Key? key,
     required BuildContext context,
     required List<Deadline> deadlines,
+    bool animate = false,
     bool checkDelete = false,
     smallScreen = false,
     ScrollPhysics physics = const NeverScrollableScrollPhysics(),
+    Future<void> Function({Deadline? item})? onRemove,
   }) =>
       ListView.builder(
           key: key,
@@ -308,13 +360,18 @@ class ListViews {
           shrinkWrap: true,
           itemCount: deadlines.length,
           itemBuilder: (BuildContext context, int index) {
-            return Tiles.deadlineListTile(
-              context: context,
-              index: index,
-              smallScreen: smallScreen,
-              deadline: deadlines[index],
-              showHandle: false,
-              checkDelete: checkDelete,
+            return fade(
+              key: ValueKey(deadlines[index].id),
+              fade: deadlines[index].fade,
+              child: Tiles.deadlineListTile(
+                context: context,
+                index: index,
+                smallScreen: smallScreen,
+                deadline: deadlines[index],
+                showHandle: false,
+                checkDelete: checkDelete,
+                onRemove: onRemove,
+              ),
             );
           });
 
@@ -322,9 +379,11 @@ class ListViews {
     Key? key,
     required BuildContext context,
     required List<Reminder> reminders,
+    bool animate = false,
     bool checkDelete = false,
     bool smallScreen = false,
     ScrollPhysics physics = const NeverScrollableScrollPhysics(),
+    Future<void> Function({Reminder? item})? onRemove,
   }) =>
       ReorderableListView.builder(
           key: key,
@@ -337,38 +396,39 @@ class ListViews {
                   .reorderReminders(oldIndex: oldIndex, newIndex: newIndex),
           itemCount: reminders.length,
           itemBuilder: (BuildContext context, int index) {
+            Widget child = fade(
+              key: ValueKey(reminders[index].id),
+              fade: reminders[index].fade,
+              child: Tiles.reminderListTile(
+                context: context,
+                index: index,
+                smallScreen: smallScreen,
+                reminder: reminders[index],
+                showHandle: reminders.length > 1,
+                checkDelete: checkDelete,
+                onRemove: onRemove,
+              ),
+            );
             if (reminders.length > 1) {
               return CustomDragStartListener(
                 delay: Constants.delayTime,
                 index: index,
                 key: ValueKey(reminders[index].id),
-                child: Tiles.reminderListTile(
-                  context: context,
-                  index: index,
-                  smallScreen: smallScreen,
-                  reminder: reminders[index],
-                  showHandle: true,
-                  checkDelete: checkDelete,
-                ),
+                child: child,
               );
             }
-            return Tiles.reminderListTile(
-              context: context,
-              index: index,
-              smallScreen: smallScreen,
-              reminder: reminders[index],
-              showHandle: false,
-              checkDelete: checkDelete,
-            );
+            return child;
           });
 
   static Widget immutableReminders({
     Key? key,
     required BuildContext context,
     required List<Reminder> reminders,
+    bool animate = false,
     bool checkDelete = false,
     bool smallScreen = false,
     ScrollPhysics physics = const NeverScrollableScrollPhysics(),
+    Future<void> Function({Reminder? item})? onRemove,
   }) =>
       ListView.builder(
           key: key,
@@ -376,13 +436,18 @@ class ListViews {
           shrinkWrap: true,
           itemCount: reminders.length,
           itemBuilder: (BuildContext context, int index) {
-            return Tiles.reminderListTile(
-              context: context,
-              index: index,
-              smallScreen: smallScreen,
-              reminder: reminders[index],
-              showHandle: false,
-              checkDelete: checkDelete,
+            return fade(
+              key: ValueKey(reminders[index].id),
+              fade: reminders[index].fade,
+              child: Tiles.reminderListTile(
+                context: context,
+                index: index,
+                smallScreen: smallScreen,
+                reminder: reminders[index],
+                showHandle: false,
+                checkDelete: checkDelete,
+                onRemove: onRemove,
+              ),
             );
           });
 
@@ -390,8 +455,12 @@ class ListViews {
     Key? key,
     required BuildContext context,
     required List<Group> groups,
+    bool animate = false,
     bool checkDelete = false,
     ScrollPhysics physics = const NeverScrollableScrollPhysics(),
+    Future<void> Function({Group? item})? onRemove,
+    void Function({List<ToDo>? items})? onToDoFetch,
+    Future<void> Function({ToDo? item})? onToDoRemove,
   }) =>
       ReorderableListView.builder(
           key: key,
@@ -404,34 +473,42 @@ class ListViews {
                   .reorderGroups(oldIndex: oldIndex, newIndex: newIndex),
           itemCount: groups.length,
           itemBuilder: (BuildContext context, int index) {
+            Widget child = fade(
+              key: ValueKey(groups[index].id),
+              fade: groups[index].fade,
+              child: Tiles.groupListTile(
+                context: context,
+                index: index,
+                group: groups[index],
+                showHandle: groups.length > 1,
+                checkDelete: checkDelete,
+                animate: animate,
+                onRemove: onRemove,
+                onToDoFetch: onToDoFetch,
+                onToDoRemove: onToDoRemove,
+              ),
+            );
             if (groups.length > 1) {
               return CustomDragStartListener(
-                  delay: Constants.delayTime,
-                  key: ValueKey(groups[index].id),
-                  index: index,
-                  child: Tiles.groupListTile(
-                    context: context,
-                    index: index,
-                    group: groups[index],
-                    showHandle: true,
-                    checkDelete: checkDelete,
-                  ));
+                delay: Constants.delayTime,
+                key: ValueKey(groups[index].id),
+                index: index,
+                child: child,
+              );
             }
-            return Tiles.groupListTile(
-              context: context,
-              index: index,
-              group: groups[index],
-              showHandle: false,
-              checkDelete: checkDelete,
-            );
+            return child;
           });
 
   static Widget immutableGroups({
     Key? key,
     required BuildContext context,
     required List<Group> groups,
+    bool animate = false,
     bool checkDelete = false,
     ScrollPhysics physics = const NeverScrollableScrollPhysics(),
+    Future<void> Function({Group? item})? onRemove,
+    void Function({List<ToDo>? items})? onToDoFetch,
+    Future<void> Function({ToDo? item})? onToDoRemove,
   }) =>
       ListView.builder(
           key: key,
@@ -439,11 +516,18 @@ class ListViews {
           physics: physics,
           itemCount: groups.length,
           itemBuilder: (BuildContext context, int index) {
-            return Tiles.groupListTile(
-              context: context,
-              index: index,
-              group: groups[index],
-              checkDelete: checkDelete,
+            return fade(
+              key: ValueKey(groups[index].id),
+              fade: groups[index].fade,
+              child: Tiles.groupListTile(
+                context: context,
+                index: index,
+                group: groups[index],
+                checkDelete: checkDelete,
+                onRemove: onRemove,
+                onToDoFetch: onToDoFetch,
+                onToDoRemove: onToDoRemove,
+              ),
             );
           });
 
@@ -451,6 +535,7 @@ class ListViews {
     Key? key,
     required BuildContext context,
     required List<ToDo> toDos,
+    bool animate = false,
     ScrollPhysics physics = const NeverScrollableScrollPhysics(),
     required void Function({ToDo? toDo, bool? value}) onChanged,
     void Function({ToDo? toDo})? onTap,
@@ -471,34 +556,29 @@ class ListViews {
         },
         itemCount: toDos.length,
         itemBuilder: (BuildContext context, int index) {
+          Widget child = fade(
+            key: ValueKey(toDos[index].id),
+            fade: toDos[index].fade,
+            child: Tiles.toDoCheckTile(
+              index: index,
+              toDo: toDos[index],
+              showHandle: toDos.length > 1,
+              onChanged: (value) => onChanged(toDo: toDos[index], value: value),
+              onTap: () => (null != onTap) ? onTap(toDo: toDos[index]) : null,
+              handleRemove: () => (null != handleRemove)
+                  ? handleRemove(toDo: toDos[index])
+                  : null,
+            ),
+          );
+
           if (toDos.length > 1) {
             return CustomDragStartListener(
-              delay: Constants.delayTime,
-              index: index,
-              key: ValueKey(toDos[index].id),
-              child: Tiles.toDoCheckTile(
+                delay: Constants.delayTime,
                 index: index,
-                toDo: toDos[index],
-                showHandle: true,
-                onChanged: (value) =>
-                    onChanged(toDo: toDos[index], value: value),
-                onTap: () => (null != onTap) ? onTap(toDo: toDos[index]) : null,
-                handleRemove: () => (null != handleRemove)
-                    ? handleRemove(toDo: toDos[index])
-                    : null,
-              ),
-            );
+                key: ValueKey(toDos[index].id),
+                child: child);
           }
-          return Tiles.toDoCheckTile(
-            index: index,
-            toDo: toDos[index],
-            showHandle: false,
-            onChanged: (value) => onChanged(toDo: toDos[index], value: value),
-            onTap: () => (null != onTap) ? onTap(toDo: toDos[index]) : null,
-            handleRemove: () => (null != handleRemove)
-                ? handleRemove(toDo: toDos[index])
-                : null,
-          );
+          return child;
         },
       );
 
@@ -506,8 +586,8 @@ class ListViews {
     Key? key,
     required BuildContext context,
     required List<Subtask> subtasks,
+    bool animate = false,
     int? itemCount,
-    showHandle = false,
     ScrollPhysics physics = const NeverScrollableScrollPhysics(),
     required void Function(int oldIndex, int newIndex) onReorder,
     required void Function({bool? value, Subtask? subtask}) onChanged,
@@ -530,20 +610,26 @@ class ListViews {
             return CustomDragStartListener(
                 delay: Constants.delayTime,
                 index: index,
-                key: ValueKey(index),
-                child: Tiles.subtaskCheckboxTile(
+                key: ValueKey(subtasks[index].id),
+                child: fade(
+                  key: ValueKey(subtasks[index].id),
+                  fade: subtasks[index].fade,
+                  child: Tiles.subtaskCheckboxTile(
                     index: index,
                     subtask: subtasks[index],
                     onTap: () => onTap(subtask: subtasks[index]),
                     onChanged: (value) =>
                         onChanged(value: value, subtask: subtasks[index]),
                     onRemoved: () => onRemoved(subtask: subtasks[index]),
-                    showHandle: (subtasks.length > 1)));
+                    showHandle: subtasks.length > 1,
+                  ),
+                ));
           });
 
-  static Widget eventList(
-          {required ValueListenable<List<CalendarEvent>> selectedEvents,
-          bool smallScreen = false}) =>
+  static Widget eventList({
+    required ValueListenable<List<CalendarEvent>> selectedEvents,
+    bool smallScreen = false,
+  }) =>
       ValueListenableBuilder<List<CalendarEvent>>(
           valueListenable: selectedEvents,
           builder:
@@ -553,10 +639,13 @@ class ListViews {
                 shrinkWrap: true,
                 itemCount: value.length,
                 itemBuilder: (BuildContext context, int index) {
-                  return Tiles.eventTile(
-                    event: value[index],
-                    context: context,
-                    smallScreen: smallScreen,
+                  return fade(
+                    fade: value[index].model.fade,
+                    child: Tiles.eventTile(
+                      event: value[index],
+                      context: context,
+                      smallScreen: smallScreen,
+                    ),
                   );
                 });
           });
