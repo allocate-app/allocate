@@ -101,6 +101,9 @@ class _CompletedListScreen extends State<CompletedListScreen> {
                 if (null == item) {
                   return;
                 }
+                if (toDoProvider.toDos.length < 2) {
+                  return;
+                }
                 if (mounted) {
                   setState(() => item.fade = Fade.fadeOut);
                   await Future.delayed(
@@ -132,7 +135,7 @@ class _CompletedListScreen extends State<CompletedListScreen> {
                       }
                       await Future.delayed(const Duration(
                           milliseconds: Constants.animationDelay));
-                      if (null != onRemove && toDoProvider.toDos.length > 1) {
+                      if (null != onRemove) {
                         await onRemove(item: toDo);
                       }
                     },
@@ -154,7 +157,7 @@ class _CompletedListScreen extends State<CompletedListScreen> {
                     }
                     await Future.delayed(
                         const Duration(milliseconds: Constants.animationDelay));
-                    if (null != onRemove && toDoProvider.toDos.length > 1) {
+                    if (null != onRemove) {
                       await onRemove(item: toDo);
                     }
                   },

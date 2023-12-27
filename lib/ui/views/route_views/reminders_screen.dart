@@ -32,6 +32,9 @@ class _RemindersListScreen extends State<RemindersListScreen> {
 
   void initializeProviders() {
     reminderProvider = Provider.of<ReminderProvider>(context, listen: false);
+    if (reminderProvider.rebuild) {
+      reminderProvider.reminders = [];
+    }
   }
 
   void initializeParameters() {
@@ -88,23 +91,30 @@ class _RemindersListScreen extends State<RemindersListScreen> {
                 reminderProvider.rebuild = false;
               },
               paginateButton: false,
-              // TODO: conditinl
               onFetch: ({List<Reminder>? items}) {
                 if (null == items) {
                   return;
                 }
+
                 for (Reminder reminder in items) {
-                  reminder.fade = Fade.fadeIn;
+                  if (!reminderProvider.reminders.contains(reminder)) {
+                    reminder.fade = Fade.fadeIn;
+                  }
                 }
               },
-              // TODO: check delay,
               onRemove: ({Reminder? item}) async {
                 if (null == item) {
                   return;
                 }
+
+                if (reminderProvider.reminders.length < 2) {
+                  return;
+                }
+
                 if (mounted) {
                   setState(() => item.fade = Fade.fadeOut);
-                  Future.delayed(const Duration(milliseconds: 500));
+                  await Future.delayed(
+                      const Duration(milliseconds: Constants.fadeOutTime));
                 }
               },
               getAnimationKey: () => ValueKey(

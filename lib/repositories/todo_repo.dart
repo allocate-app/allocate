@@ -572,8 +572,6 @@ class ToDoRepo implements ToDoRepository {
           .groupIDEqualTo(groupID)
           .filter()
           .toDeleteEqualTo(false)
-          // TODO: Factor this out to a user preference?
-          //.completedEqualTo(false)
           .sortByGroupIndex()
           .thenByLastUpdatedDesc()
           .offset(offset)

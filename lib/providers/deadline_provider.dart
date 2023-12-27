@@ -350,8 +350,7 @@ class DeadlineProvider extends ChangeNotifier {
   }
 
   bool validateWarnDate({DateTime? warnDate}) =>
-      _notificationService.validateNotificationDate(
-          notificationDate: warnDate ?? curDeadline!.warnDate);
+      _notificationService.validateNotificationDate(notificationDate: warnDate);
 
   Future<List<Deadline>> getDeadlinesBetween(
           {DateTime? start, DateTime? end}) async =>

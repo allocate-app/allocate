@@ -114,6 +114,7 @@ class _MyDayRoutines extends State<MyDayRoutines> {
     if (null == item) {
       return;
     }
+
     if (mounted) {
       setState(() => item.fade = Fade.fadeOut);
       await Future.delayed(const Duration(milliseconds: 500));

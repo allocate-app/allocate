@@ -233,8 +233,8 @@ class _CreateReminderScreen extends State<CreateReminderScreen> {
   }
 
   Future<void> createAndValidate() async {
-    mergeDateTimes();
     if (validateData()) {
+      mergeDateTimes();
       await handleCreate();
     }
   }
@@ -323,8 +323,10 @@ class _CreateReminderScreen extends State<CreateReminderScreen> {
                                     handleUpdate: updateDue,
                                   ),
 
-                                  const PaddedDivider(
-                                      padding: Constants.padding),
+                                  (null != dueDate)
+                                      ? const PaddedDivider(
+                                          padding: Constants.padding)
+                                      : const SizedBox.shrink(),
 
                                   // Repeatable Stuff -> Show status, on click, open a dialog.
                                   (null != dueDate)

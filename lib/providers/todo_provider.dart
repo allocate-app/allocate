@@ -215,7 +215,6 @@ class ToDoProvider extends ChangeNotifier {
       return await updateToDo();
     }
 
-    // TODO: migrate this to groupprovider to get logic out of gui.
     await _updateSubtasks(subtasks: subtasks, taskID: curToDo!.id);
     toDoSubtaskCounts[Constants.intMax]!.value = 0;
 

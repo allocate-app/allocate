@@ -66,8 +66,7 @@ dependencies:
   uuid: ^4.1.0
   flutter_acrylic: ^1.1.0
   macos_window_utils: ^1.4.0
-  #flex color scheme
-
+  flex_seed_scheme: ^1.4.0
 
 
 

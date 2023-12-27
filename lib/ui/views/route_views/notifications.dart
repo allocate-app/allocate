@@ -63,11 +63,21 @@ class _NotificationsScreen extends State<NotificationsScreen> {
   }
 
   void onFetch({List<IModel>? items}) {
-    if (null == items) {
+    if (null == items || items.isEmpty) {
       return;
     }
+
+    List<IModel> oldList = switch (items[0].modelType) {
+      ModelType.task => toDoProvider.toDos,
+      ModelType.deadline => deadlineProvider.deadlines,
+      ModelType.reminder => reminderProvider.reminders,
+      _ => List<IModel>.empty(),
+    };
+
     for (IModel item in items) {
-      item.fade = Fade.fadeIn;
+      if (!oldList.contains(item)) {
+        item.fade = Fade.fadeIn;
+      }
     }
   }
 
@@ -75,9 +85,27 @@ class _NotificationsScreen extends State<NotificationsScreen> {
     if (null == item) {
       return;
     }
+
+    switch (item.modelType) {
+      case ModelType.task:
+        if (toDoProvider.toDos.length < 2) {
+          return;
+        }
+      case ModelType.deadline:
+        if (deadlineProvider.deadlines.length < 2) {
+          return;
+        }
+      case ModelType.reminder:
+        if (reminderProvider.reminders.length < 2) {
+          return;
+        }
+      default:
+        break;
+    }
+
     if (mounted) {
       setState(() => item.fade = Fade.fadeOut);
-      await Future.delayed(const Duration(milliseconds: 500));
+      await Future.delayed(const Duration(milliseconds: Constants.fadeOutTime));
     }
   }
 
@@ -261,10 +289,12 @@ class _NotificationsScreen extends State<NotificationsScreen> {
                                               items[index] = toDo;
                                             });
                                           }
-                                          return await Future.delayed(
-                                              const Duration(
-                                                  milliseconds: Constants
-                                                      .animationDelay));
+                                          await Future.delayed(const Duration(
+                                              milliseconds:
+                                                  Constants.animationDelay));
+                                          if (null != onRemove) {
+                                            await onRemove(item: toDo);
+                                          }
                                         },
                                       ),
                                   query: toDoProvider.getUpcoming,
@@ -430,10 +460,12 @@ class _NotificationsScreen extends State<NotificationsScreen> {
                                                 items[index] = toDo;
                                               });
                                             }
-                                            return await Future.delayed(
-                                                const Duration(
-                                                    milliseconds: Constants
-                                                        .animationDelay));
+                                            await Future.delayed(const Duration(
+                                                milliseconds:
+                                                    Constants.animationDelay));
+                                            if (null != onRemove) {
+                                              await onRemove(item: toDo);
+                                            }
                                           },
                                         ),
                                     query: toDoProvider.getOverdues,

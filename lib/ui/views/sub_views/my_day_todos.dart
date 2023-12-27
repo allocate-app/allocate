@@ -31,6 +31,10 @@ class _MyDayToDos extends State<MyDayToDos> {
 
   void initializeProviders() {
     toDoProvider = Provider.of<ToDoProvider>(context, listen: false);
+    if (toDoProvider.rebuild) {
+      toDoProvider.toDos = [];
+    }
+
     userProvider = Provider.of<UserProvider>(context, listen: false);
     groupProvider = Provider.of<GroupProvider>(context, listen: false);
   }
@@ -74,17 +78,24 @@ class _MyDayToDos extends State<MyDayToDos> {
                   return;
                 }
                 for (ToDo toDo in items) {
-                  toDo.fade = Fade.fadeIn;
+                  if (!toDoProvider.toDos.contains(toDo)) {
+                    toDo.fade = Fade.fadeIn;
+                  }
                 }
               },
               onRemove: ({ToDo? item}) async {
                 if (null == item) {
                   return;
                 }
+
+                if (toDoProvider.toDos.length < 2) {
+                  return;
+                }
+
                 if (mounted) {
                   setState(() => item.fade = Fade.fadeOut);
-                  // TODO: not sure about delay.
-                  Future.delayed(const Duration(milliseconds: 500));
+                  await Future.delayed(
+                      const Duration(milliseconds: Constants.fadeOutTime));
                 }
               },
               paginateButton: false,
@@ -106,8 +117,11 @@ class _MyDayToDos extends State<MyDayToDos> {
                           items[index] = toDo;
                         });
                       }
-                      return await Future.delayed(const Duration(
+                      await Future.delayed(const Duration(
                           milliseconds: Constants.animationDelay));
+                      if (null != onRemove) {
+                        await onRemove(item: toDo);
+                      }
                     },
                     smallScreen: smallScreen,
                   );
@@ -124,8 +138,11 @@ class _MyDayToDos extends State<MyDayToDos> {
                         items[index] = toDo;
                       });
                     }
-                    return await Future.delayed(
+                    await Future.delayed(
                         const Duration(milliseconds: Constants.animationDelay));
+                    if (null != onRemove) {
+                      await onRemove(item: toDo);
+                    }
                   },
                   smallScreen: smallScreen,
                 );

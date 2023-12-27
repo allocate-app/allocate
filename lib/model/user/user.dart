@@ -181,7 +181,7 @@ class User with EquatableMixin implements Copyable<User> {
           userName: userName ?? this.userName,
           syncOnline: syncOnline ?? this.syncOnline,
           bandwidth: bandwidth ?? this.bandwidth,
-          themeType: curTheme ?? this.themeType,
+          themeType: curTheme ?? themeType,
           curMornID: curMornID ?? this.curMornID,
           curAftID: curAftID ?? this.curAftID,
           curEveID: curEveID ?? this.curEveID,

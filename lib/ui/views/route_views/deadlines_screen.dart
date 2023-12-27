@@ -32,6 +32,9 @@ class _DeadlinesListScreen extends State<DeadlinesListScreen> {
 
   void initializeProviders() {
     deadlineProvider = Provider.of<DeadlineProvider>(context, listen: false);
+    if (deadlineProvider.rebuild) {
+      deadlineProvider.deadlines = [];
+    }
   }
 
   void initializeParameters() {
@@ -91,23 +94,31 @@ class _DeadlinesListScreen extends State<DeadlinesListScreen> {
                 deadlineProvider.deadlines = items;
                 deadlineProvider.rebuild = false;
               },
+
               // TODO: make condtnl
               onFetch: ({List<Deadline>? items}) {
                 if (null == items) {
                   return;
                 }
                 for (Deadline deadline in items) {
-                  deadline.fade = Fade.fadeIn;
+                  if (!deadlineProvider.deadlines.contains(deadline)) {
+                    deadline.fade = Fade.fadeIn;
+                  }
                 }
               },
-              // TODO: check delay.
               onRemove: ({Deadline? item}) async {
                 if (null == item) {
                   return;
                 }
+
+                if (deadlineProvider.deadlines.length < 2) {
+                  return;
+                }
+
                 if (mounted) {
                   setState(() => item.fade = Fade.fadeOut);
-                  await Future.delayed(const Duration(milliseconds: 500));
+                  await Future.delayed(
+                      const Duration(milliseconds: Constants.fadeOutTime));
                 }
               },
               paginateButton: false,

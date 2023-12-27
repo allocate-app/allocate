@@ -35,6 +35,9 @@ class _GroupsListScreen extends State<GroupsListScreen> {
 
   void initializeProviders() {
     groupProvider = Provider.of<GroupProvider>(context, listen: false);
+    if (groupProvider.rebuild) {
+      groupProvider.groups = [];
+    }
     toDoProvider = Provider.of<ToDoProvider>(context, listen: false);
   }
 
@@ -44,23 +47,44 @@ class _GroupsListScreen extends State<GroupsListScreen> {
 
   void initializeControllers() {}
 
-  // TODO: check time.
   Future<void> onRemove({IModel? item}) async {
     if (null == item) {
       return;
     }
+
+    switch (item.modelType) {
+      case ModelType.task:
+        if (toDoProvider.toDos.length < 2) {
+          return;
+        }
+      case ModelType.group:
+        if (groupProvider.groups.length < 2) {
+          return;
+        }
+      default:
+        break;
+    }
+
     if (mounted) {
       setState(() => item.fade = Fade.fadeOut);
-      await Future.delayed(const Duration(milliseconds: 500));
+      await Future.delayed(const Duration(milliseconds: Constants.fadeOutTime));
     }
   }
 
   void onFetch({List<IModel>? items}) {
-    if (null == items) {
+    if (null == items || items.isEmpty) {
       return;
     }
+    List<IModel> oldList = switch (items[0].modelType) {
+      ModelType.task => toDoProvider.toDos,
+      ModelType.group => groupProvider.groups,
+      _ => List<IModel>.empty(),
+    } as List<IModel>;
+
     for (IModel item in items) {
-      item.fade = Fade.fadeIn;
+      if (!oldList.contains(item)) {
+        item.fade = Fade.fadeIn;
+      }
     }
   }
 

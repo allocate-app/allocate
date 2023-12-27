@@ -32,6 +32,9 @@ class _RoutinesListScreen extends State<RoutinesListScreen> {
 
   void initializeProviders() {
     routineProvider = Provider.of<RoutineProvider>(context, listen: false);
+    if (routineProvider.rebuild) {
+      routineProvider.routines = [];
+    }
   }
 
   void initializeParameters() {
@@ -92,24 +95,29 @@ class _RoutinesListScreen extends State<RoutinesListScreen> {
                   routineProvider.sorter.sortMethod.index *
                           (routineProvider.sorter.descending ? -1 : 1) +
                       (routineProvider.routines.isEmpty ? 0 : 1)),
-              // TODO: make conditinl.
               onFetch: ({List<Routine>? items}) {
                 if (null == items) {
                   return;
                 }
                 for (Routine routine in items) {
-                  routine.fade = Fade.fadeIn;
+                  if (!routineProvider.routines.contains(routine)) {
+                    routine.fade = Fade.fadeIn;
+                  }
                 }
               },
-              // TODO: check delay.
               onRemove: ({Routine? item}) async {
                 if (null == item) {
                   return;
                 }
 
+                if (routineProvider.routines.length < 2) {
+                  return;
+                }
+
                 if (mounted) {
                   setState(() => item.fade = Fade.fadeOut);
-                  await Future.delayed(const Duration(milliseconds: 500));
+                  await Future.delayed(
+                      const Duration(milliseconds: Constants.fadeOutTime));
                 }
               },
               listviewBuilder: ({

@@ -232,7 +232,7 @@ class RoutineRepo implements RoutineRepository {
   // TODO: possibly factor the magic number out.
   @override
   Future<List<Routine>> search({required String searchString}) async =>
-      await await _isarClient.routines
+      await _isarClient.routines
           .filter()
           .nameContains(searchString, caseSensitive: false)
           .limit(5)
@@ -240,7 +240,7 @@ class RoutineRepo implements RoutineRepository {
 
   @override
   Future<List<Routine>> mostRecent({int limit = 50}) async =>
-      await await _isarClient.routines
+      await _isarClient.routines
           .where()
           .sortByLastUpdatedDesc()
           .limit(limit)
@@ -248,7 +248,7 @@ class RoutineRepo implements RoutineRepository {
 
   @override
   Future<Routine?> getByID({required int id}) async =>
-      await await _isarClient.routines.where().idEqualTo(id).findFirst();
+      await _isarClient.routines.where().idEqualTo(id).findFirst();
 
   @override
   Future<List<Routine>> getRepoList({int limit = 50, int offset = 0}) async {

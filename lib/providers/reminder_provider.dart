@@ -316,8 +316,7 @@ class ReminderProvider extends ChangeNotifier {
   }
 
   bool validateDueDate({DateTime? dueDate}) =>
-      _notificationService.validateNotificationDate(
-          notificationDate: dueDate ?? curReminder!.dueDate);
+      _notificationService.validateNotificationDate(notificationDate: dueDate);
 
   Future<List<Reminder>> getRemindersBetween(
           {DateTime? start, DateTime? end}) async =>
