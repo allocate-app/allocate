@@ -7,7 +7,7 @@ import 'tiles.dart';
 
 class SearchRecentsBar<T extends IModel> extends StatefulWidget {
   const SearchRecentsBar(
-      {Key? key,
+      {super.key,
       this.padding = EdgeInsets.zero,
       this.hintText = "",
       this.searchController,
@@ -17,8 +17,7 @@ class SearchRecentsBar<T extends IModel> extends StatefulWidget {
       this.dispose = true,
       this.persistentEntry,
       this.border,
-      required this.handleDataSelection})
-      : super(key: key);
+      required this.handleDataSelection});
 
   final BorderSide? border;
   final MapEntry<String, int>? persistentEntry;

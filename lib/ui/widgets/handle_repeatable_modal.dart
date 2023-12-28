@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../util/constants.dart';
 
 class HandleRepeatableModal extends StatelessWidget {
-  const HandleRepeatableModal({Key? key, this.action = ""}) : super(key: key);
+  const HandleRepeatableModal({super.key, this.action = ""});
 
   final String action;
 

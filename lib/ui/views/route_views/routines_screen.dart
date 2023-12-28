@@ -12,7 +12,7 @@ import '../../widgets/tiles.dart';
 import '../sub_views/create_routine.dart';
 
 class RoutinesListScreen extends StatefulWidget {
-  const RoutinesListScreen({Key? key}) : super(key: key);
+  const RoutinesListScreen({super.key});
 
   @override
   State<RoutinesListScreen> createState() => _RoutinesListScreen();
@@ -100,9 +100,7 @@ class _RoutinesListScreen extends State<RoutinesListScreen> {
                   return;
                 }
                 for (Routine routine in items) {
-                  if (!routineProvider.routines.contains(routine)) {
-                    routine.fade = Fade.fadeIn;
-                  }
+                  routine.fade = Fade.fadeIn;
                 }
               },
               onRemove: ({Routine? item}) async {

@@ -20,7 +20,7 @@ import '../../widgets/flushbars.dart';
 import '../../widgets/listviews.dart';
 
 class CalendarScreen extends StatefulWidget {
-  const CalendarScreen({Key? key}) : super(key: key);
+  const CalendarScreen({super.key});
 
   @override
   State<CalendarScreen> createState() => _CalendarScreen();

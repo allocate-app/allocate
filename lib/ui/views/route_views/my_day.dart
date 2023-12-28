@@ -11,7 +11,7 @@ import '../../../util/enums.dart';
 import '../../widgets/listview_header.dart';
 
 class MyDayScreen extends StatefulWidget {
-  const MyDayScreen({Key? key}) : super(key: key);
+  const MyDayScreen({super.key});
 
   @override
   State<MyDayScreen> createState() => _MyDayScreen();

@@ -3,7 +3,7 @@ import "package:flutter/material.dart";
 
 @RoutePage()
 class UpdatePasswordScreen extends StatefulWidget {
-  const UpdatePasswordScreen({Key? key}) : super(key: key);
+  const UpdatePasswordScreen({super.key});
 
   @override
   State<UpdatePasswordScreen> createState() => _UpdatePasswordScreen();

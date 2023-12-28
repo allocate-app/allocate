@@ -13,7 +13,7 @@ import '../../widgets/tiles.dart';
 import '../sub_views/create_todo.dart';
 
 class ToDosListScreen extends StatefulWidget {
-  const ToDosListScreen({Key? key}) : super(key: key);
+  const ToDosListScreen({super.key});
 
   @override
   State<ToDosListScreen> createState() => _ToDosListScreen();
@@ -93,15 +93,12 @@ class _ToDosListScreen extends State<ToDosListScreen> {
                   toDoProvider.sorter.sortMethod.index *
                           (toDoProvider.sorter.descending ? -1 : 1) +
                       (toDoProvider.toDos.isEmpty ? 0 : 1)),
-              // TODO: make conditional
               onFetch: ({List<ToDo>? items}) {
                 if (null == items) {
                   return;
                 }
                 for (ToDo toDo in items) {
-                  if (!toDoProvider.toDos.contains(toDo)) {
-                    toDo.fade = Fade.fadeIn;
-                  }
+                  toDo.fade = Fade.fadeIn;
                 }
               },
               onRemove: ({ToDo? item}) async {

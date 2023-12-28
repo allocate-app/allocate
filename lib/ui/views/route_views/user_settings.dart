@@ -3,7 +3,7 @@ import "package:flutter/material.dart";
 import "../../widgets/debug_placeholder.dart";
 
 class UserSettingsScreen extends StatefulWidget {
-  const UserSettingsScreen({Key? key}) : super(key: key);
+  const UserSettingsScreen({super.key});
 
   @override
   State<UserSettingsScreen> createState() => _UserSettingsScreen();

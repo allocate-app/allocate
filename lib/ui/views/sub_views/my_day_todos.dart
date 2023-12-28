@@ -11,7 +11,7 @@ import '../../widgets/listviews.dart';
 import '../../widgets/paginating_listview.dart';
 
 class MyDayToDos extends StatefulWidget {
-  const MyDayToDos({Key? key}) : super(key: key);
+  const MyDayToDos({super.key});
 
   @override
   State<MyDayToDos> createState() => _MyDayToDos();
@@ -78,9 +78,7 @@ class _MyDayToDos extends State<MyDayToDos> {
                   return;
                 }
                 for (ToDo toDo in items) {
-                  if (!toDoProvider.toDos.contains(toDo)) {
-                    toDo.fade = Fade.fadeIn;
-                  }
+                  toDo.fade = Fade.fadeIn;
                 }
               },
               onRemove: ({ToDo? item}) async {

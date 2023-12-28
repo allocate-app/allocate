@@ -175,7 +175,10 @@ class ReminderRepo implements ReminderRepository {
     List<int> toDeletes = await getDeleteIds();
     if (toDeletes.isNotEmpty) {
       try {
-        await _supabaseClient.from("reminders").delete().in_("id", toDeletes);
+        await _supabaseClient
+            .from("reminders")
+            .delete()
+            .inFilter("id", toDeletes);
       } catch (error) {
         // I'm also unsure about this Exception.
         throw FailureToDeleteException("Failed to delete reminders on sync\n"

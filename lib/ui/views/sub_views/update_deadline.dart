@@ -18,8 +18,7 @@ import '../../widgets/title_bar.dart';
 class UpdateDeadlineScreen extends StatefulWidget {
   final Deadline? initialDeadline;
 
-  const UpdateDeadlineScreen({Key? key, this.initialDeadline})
-      : super(key: key);
+  const UpdateDeadlineScreen({super.key, this.initialDeadline});
 
   @override
   State<UpdateDeadlineScreen> createState() => _UpdateDeadlineScreen();

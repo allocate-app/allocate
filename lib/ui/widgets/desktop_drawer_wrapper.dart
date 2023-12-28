@@ -3,8 +3,7 @@
 import 'package:flutter/material.dart';
 
 class DesktopDrawerWrapper extends StatelessWidget {
-  const DesktopDrawerWrapper({Key? key, required this.drawer})
-      : super(key: key);
+  const DesktopDrawerWrapper({super.key, required this.drawer});
   final NavigationDrawer drawer;
 
   @override

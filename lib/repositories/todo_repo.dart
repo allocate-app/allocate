@@ -177,7 +177,7 @@ class ToDoRepo implements ToDoRepository {
     List<int> toDeletes = await getDeleteIds();
     if (toDeletes.isNotEmpty) {
       try {
-        await _supabaseClient.from("toDos").delete().in_("id", toDeletes);
+        await _supabaseClient.from("toDos").delete().inFilter("id", toDeletes);
       } catch (error) {
         throw FailureToDeleteException("Failed to delete toDos on sync.\n"
             "ids: ${toDeletes.toString()}\n"

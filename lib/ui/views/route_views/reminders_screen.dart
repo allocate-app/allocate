@@ -12,7 +12,7 @@ import '../../widgets/tiles.dart';
 import '../sub_views/create_reminder.dart';
 
 class RemindersListScreen extends StatefulWidget {
-  const RemindersListScreen({Key? key}) : super(key: key);
+  const RemindersListScreen({super.key});
 
   @override
   State<RemindersListScreen> createState() => _RemindersListScreen();
@@ -97,9 +97,7 @@ class _RemindersListScreen extends State<RemindersListScreen> {
                 }
 
                 for (Reminder reminder in items) {
-                  if (!reminderProvider.reminders.contains(reminder)) {
-                    reminder.fade = Fade.fadeIn;
-                  }
+                  reminder.fade = Fade.fadeIn;
                 }
               },
               onRemove: ({Reminder? item}) async {

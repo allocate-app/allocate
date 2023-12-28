@@ -14,7 +14,7 @@ import '../../widgets/tiles.dart';
 import '../../widgets/title_bar.dart';
 
 class UpdateSubtaskScreen extends StatefulWidget {
-  const UpdateSubtaskScreen({Key? key, this.initialSubtask}) : super(key: key);
+  const UpdateSubtaskScreen({super.key, this.initialSubtask});
   final Subtask? initialSubtask;
 
   @override

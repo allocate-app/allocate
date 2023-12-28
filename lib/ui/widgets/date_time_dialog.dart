@@ -6,8 +6,7 @@ import 'package:jiffy/jiffy.dart';
 import '../../util/constants.dart';
 
 class DateTimeDialog extends StatefulWidget {
-  const DateTimeDialog({Key? key, this.header = "", this.date, this.time})
-      : super(key: key);
+  const DateTimeDialog({super.key, this.header = "", this.date, this.time});
 
   final String header;
   final DateTime? date;

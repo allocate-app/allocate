@@ -26,7 +26,7 @@ import "../../widgets/title_bar.dart";
 class CreateToDoScreen extends StatefulWidget {
   final MapEntry<String, int>? initialGroup;
 
-  const CreateToDoScreen({Key? key, this.initialGroup}) : super(key: key);
+  const CreateToDoScreen({super.key, this.initialGroup});
 
   @override
   State<CreateToDoScreen> createState() => _CreateToDoScreen();

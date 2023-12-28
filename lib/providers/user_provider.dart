@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import '../model/user/user.dart';
 import '../services/authentication_service.dart';
 import '../services/user_storage_service.dart';
+import '../util/constants.dart';
 import '../util/enums.dart';
 import '../util/exceptions.dart';
 import '../util/sorting/deadline_sorter.dart';
@@ -14,6 +15,7 @@ import '../util/sorting/reminder_sorter.dart';
 import '../util/sorting/routine_sorter.dart';
 import '../util/sorting/todo_sorter.dart';
 
+// TODO: re-implement this.
 class UserProvider extends ChangeNotifier {
   late Timer syncTimer;
   final _userStorageService = UserStorageService();
@@ -71,7 +73,9 @@ class UserProvider extends ChangeNotifier {
         reminderSorter: reminderSorter ?? ReminderSorter(),
         routineSorter: routineSorter ?? RoutineSorter(),
         toDoSorter: toDoSorter ?? ToDoSorter(),
-        lastOpened: DateTime.now());
+        lastOpened: DateTime.now(),
+        lastUpdated: DateTime.now(),
+        primarySeed: Constants.defaultPrimaryColorSeed);
     // This WILL require a "check close" parameter.
     // TODO: implement checkClose preference.
     // If this needs to scale, migrate data to a userprefs table and relate by uid.

@@ -12,14 +12,13 @@ import 'flushbars.dart';
 
 class SubtaskQuickEntry extends StatefulWidget {
   const SubtaskQuickEntry(
-      {Key? key,
+      {super.key,
       required this.taskID,
       this.taskIndex,
       this.weight = 0.0,
       this.innerPadding = EdgeInsets.zero,
       this.outerPadding = EdgeInsets.zero,
-      this.hintText = ""})
-      : super(key: key);
+      this.hintText = ""});
 
   final EdgeInsetsGeometry outerPadding;
   final EdgeInsetsGeometry innerPadding;

@@ -5,12 +5,11 @@ class CustomDragStartListener extends ReorderableDragStartListener {
   final Duration delay;
 
   const CustomDragStartListener(
-      {Key? key,
+      {super.key,
       this.delay = kLongPressTimeout,
-      required Widget child,
-      required int index,
-      bool enabled = true})
-      : super(key: key, child: child, index: index, enabled: enabled);
+      required super.child,
+      required super.index,
+      super.enabled});
 
   @override
   MultiDragGestureRecognizer createRecognizer() {

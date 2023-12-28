@@ -16,7 +16,7 @@ import '../../widgets/tiles.dart';
 import '../../widgets/title_bar.dart';
 
 class CreateDeadlineScreen extends StatefulWidget {
-  const CreateDeadlineScreen({Key? key}) : super(key: key);
+  const CreateDeadlineScreen({super.key});
 
   @override
   State<CreateDeadlineScreen> createState() => _CreateDeadlineScreen();

@@ -13,7 +13,7 @@ import '../../widgets/flushbars.dart';
 import '../../widgets/tiles.dart';
 
 class MyDayRoutines extends StatefulWidget {
-  const MyDayRoutines({Key? key}) : super(key: key);
+  const MyDayRoutines({super.key});
 
   @override
   State<MyDayRoutines> createState() => _MyDayRoutines();

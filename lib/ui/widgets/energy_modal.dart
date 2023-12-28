@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../util/constants.dart';
 
 class EnergyModal extends StatefulWidget {
-  const EnergyModal({Key? key, this.initialWeight = 0}) : super(key: key);
+  const EnergyModal({super.key, this.initialWeight = 0});
 
   final int initialWeight;
 

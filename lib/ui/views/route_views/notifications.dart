@@ -20,7 +20,7 @@ import '../../widgets/listviews.dart';
 import '../../widgets/paginating_listview.dart';
 
 class NotificationsScreen extends StatefulWidget {
-  const NotificationsScreen({Key? key}) : super(key: key);
+  const NotificationsScreen({super.key});
 
   @override
   State<NotificationsScreen> createState() => _NotificationsScreen();
@@ -67,17 +67,8 @@ class _NotificationsScreen extends State<NotificationsScreen> {
       return;
     }
 
-    List<IModel> oldList = switch (items[0].modelType) {
-      ModelType.task => toDoProvider.toDos,
-      ModelType.deadline => deadlineProvider.deadlines,
-      ModelType.reminder => reminderProvider.reminders,
-      _ => List<IModel>.empty(),
-    };
-
     for (IModel item in items) {
-      if (!oldList.contains(item)) {
-        item.fade = Fade.fadeIn;
-      }
+      item.fade = Fade.fadeIn;
     }
   }
 

@@ -6,7 +6,7 @@ import 'package:numberpicker/numberpicker.dart';
 import '../../util/constants.dart';
 
 class DurationDialog extends StatefulWidget {
-  const DurationDialog({Key? key, this.duration = 0}) : super(key: key);
+  const DurationDialog({super.key, this.duration = 0});
   final int duration;
 
   @override

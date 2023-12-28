@@ -62,8 +62,8 @@ class ToDoProvider extends ChangeNotifier {
     });
   }
 
-  void setUser({User? user}) {
-    user = user;
+  void setUser({User? newUser}) {
+    user = newUser;
     sorter = user?.toDoSorter ?? sorter;
     notifyListeners();
   }

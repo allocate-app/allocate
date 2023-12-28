@@ -176,7 +176,10 @@ class DeadlineRepo implements DeadlineRepository {
     List<int> toDeletes = await getDeleteIds();
     if (toDeletes.isNotEmpty) {
       try {
-        await _supabaseClient.from("deadlines").delete().in_("id", toDeletes);
+        await _supabaseClient
+            .from("deadlines")
+            .delete()
+            .inFilter("id", toDeletes);
       } catch (error) {
         // I'm also unsure about this Exception.
         throw FailureToDeleteException("Failed to delete deadlines\n"

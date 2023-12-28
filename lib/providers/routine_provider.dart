@@ -135,10 +135,10 @@ class RoutineProvider extends ChangeNotifier {
     });
   }
 
-  void setUser({User? user}) {
-    user = user;
+  void setUser({User? newUser}) {
+    user = newUser;
     sorter = user?.routineSorter ?? sorter;
-    setDailyRoutines();
+    notifyListeners();
   }
 
   int getRoutineTime({Routine? routine}) {

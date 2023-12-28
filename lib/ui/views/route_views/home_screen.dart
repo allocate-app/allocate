@@ -12,6 +12,7 @@ import '../../../providers/todo_provider.dart';
 import '../../../providers/user_provider.dart';
 import '../../../services/supabase_service.dart';
 import '../../../util/constants.dart';
+import '../../../util/enums.dart';
 import '../../../util/interfaces/i_model.dart';
 import '../../../util/strings.dart';
 import '../../widgets/desktop_drawer_wrapper.dart';
@@ -26,7 +27,7 @@ import '../sub_views/update_group.dart';
 class HomeScreen extends StatefulWidget {
   final int? index;
 
-  const HomeScreen({Key? key, this.index}) : super(key: key);
+  const HomeScreen({super.key, this.index});
 
   @override
   State<HomeScreen> createState() => _HomeScreen();
@@ -55,6 +56,19 @@ class _HomeScreen extends State<HomeScreen> {
   // I haven't fully thought this through yet.
   int get myDayTotal =>
       toDoProvider.myDayWeight + routineProvider.routineWeight;
+
+  double get sidebarOpacity {
+    // TODO: change this after userProvider && widgets are finished.
+    return (Effect.disabled == userProvider.curUser?.windowEffect)
+        ? 1.0
+        : userProvider.curUser?.sidebarOpacity ?? 0.85;
+  }
+
+  double get scaffoldOpacity {
+    return (Effect.disabled == userProvider.curUser?.windowEffect)
+        ? 1.0
+        : userProvider.curUser?.scaffoldOpacity ?? 1.0;
+  }
 
   @override
   void initState() {
@@ -206,6 +220,9 @@ class _HomeScreen extends State<HomeScreen> {
 
       Expanded(
           child: Scaffold(
+              backgroundColor: Theme.of(context)
+                  .scaffoldBackgroundColor
+                  .withOpacity(scaffoldOpacity),
               appBar: buildAppBar(mobile: false),
               body: SafeArea(
                   child: Constants.viewRoutes[selectedPageIndex].view)))
@@ -214,7 +231,9 @@ class _HomeScreen extends State<HomeScreen> {
 
   Widget buildMobile({required BuildContext context}) {
     return Scaffold(
-        //key: _scaffoldKey,
+        backgroundColor: Theme.of(context)
+            .scaffoldBackgroundColor
+            .withOpacity(scaffoldOpacity),
         appBar: buildAppBar(mobile: true),
         drawer: buildNavigationDrawer(context: context, largeScreen: false),
         body: SafeArea(child: Constants.viewRoutes[selectedPageIndex].view));
@@ -287,7 +306,7 @@ class _HomeScreen extends State<HomeScreen> {
       {required BuildContext context, bool largeScreen = false}) {
     return NavigationDrawer(
         backgroundColor: (largeScreen)
-            ? Theme.of(context).colorScheme.surface.withOpacity(0.85)
+            ? Theme.of(context).colorScheme.surface.withOpacity(sidebarOpacity)
             : null,
         // TODO: implement themes with userclass.
         // Not sure if MacOS needs to have a different bg color, or none.

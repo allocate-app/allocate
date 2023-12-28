@@ -28,7 +28,7 @@ import '../sub_views.dart';
 class UpdateGroupScreen extends StatefulWidget {
   final Group? initialGroup;
 
-  const UpdateGroupScreen({Key? key, this.initialGroup}) : super(key: key);
+  const UpdateGroupScreen({super.key, this.initialGroup});
 
   @override
   State<UpdateGroupScreen> createState() => _UpdateGroupScreen();

@@ -16,8 +16,7 @@ import '../../widgets/tiles.dart';
 import '../../widgets/title_bar.dart';
 
 class UpdateReminderScreen extends StatefulWidget {
-  const UpdateReminderScreen({Key? key, this.initialReminder})
-      : super(key: key);
+  const UpdateReminderScreen({super.key, this.initialReminder});
 
   final Reminder? initialReminder;
 

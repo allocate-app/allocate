@@ -14,7 +14,7 @@ import '../../widgets/tiles.dart';
 import '../../widgets/title_bar.dart';
 
 class CreateReminderScreen extends StatefulWidget {
-  const CreateReminderScreen({Key? key}) : super(key: key);
+  const CreateReminderScreen({super.key});
 
   @override
   State<CreateReminderScreen> createState() => _CreateReminderScreen();
@@ -233,8 +233,8 @@ class _CreateReminderScreen extends State<CreateReminderScreen> {
   }
 
   Future<void> createAndValidate() async {
+    mergeDateTimes();
     if (validateData()) {
-      mergeDateTimes();
       await handleCreate();
     }
   }

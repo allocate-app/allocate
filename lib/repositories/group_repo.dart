@@ -150,7 +150,7 @@ class GroupRepo implements GroupRepository {
     List<int> toDeletes = await getDeleteIds();
     if (toDeletes.isNotEmpty) {
       try {
-        await _supabaseClient.from("groups").delete().in_("id", toDeletes);
+        await _supabaseClient.from("groups").delete().inFilter("id", toDeletes);
       } catch (error) {
         // I'm also unsure about this Exception.
         throw FailureToDeleteException("Failed to delete groups on sync\n"

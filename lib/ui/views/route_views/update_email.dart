@@ -3,7 +3,7 @@ import "package:flutter/material.dart";
 
 @RoutePage()
 class UpdateEmailScreen extends StatefulWidget {
-  const UpdateEmailScreen({Key? key}) : super(key: key);
+  const UpdateEmailScreen({super.key});
 
   @override
   State<UpdateEmailScreen> createState() => _UpdateEmailScreen();

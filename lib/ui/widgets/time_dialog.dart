@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import '../../util/constants.dart';
 
 class TimeDialog extends StatefulWidget {
-  const TimeDialog({Key? key, this.startTime, this.dueTime}) : super(key: key);
+  const TimeDialog({super.key, this.startTime, this.dueTime});
 
   final TimeOfDay? startTime;
   final TimeOfDay? dueTime;

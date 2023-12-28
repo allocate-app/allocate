@@ -12,7 +12,7 @@ import '../../widgets/tiles.dart';
 import '../sub_views/create_deadline.dart';
 
 class DeadlinesListScreen extends StatefulWidget {
-  const DeadlinesListScreen({Key? key}) : super(key: key);
+  const DeadlinesListScreen({super.key});
 
   @override
   State<DeadlinesListScreen> createState() => _DeadlinesListScreen();
@@ -101,9 +101,7 @@ class _DeadlinesListScreen extends State<DeadlinesListScreen> {
                   return;
                 }
                 for (Deadline deadline in items) {
-                  if (!deadlineProvider.deadlines.contains(deadline)) {
-                    deadline.fade = Fade.fadeIn;
-                  }
+                  deadline.fade = Fade.fadeIn;
                 }
               },
               onRemove: ({Deadline? item}) async {

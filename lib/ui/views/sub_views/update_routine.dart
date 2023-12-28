@@ -18,7 +18,7 @@ import "../../widgets/title_bar.dart";
 class UpdateRoutineScreen extends StatefulWidget {
   final Routine? initialRoutine;
 
-  const UpdateRoutineScreen({Key? key, this.initialRoutine}) : super(key: key);
+  const UpdateRoutineScreen({super.key, this.initialRoutine});
 
   @override
   State<UpdateRoutineScreen> createState() => _UpdateRoutineScreen();

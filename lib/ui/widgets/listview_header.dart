@@ -9,15 +9,14 @@ import '../../util/interfaces/sortable.dart';
 
 class ListViewHeader<T> extends StatefulWidget {
   const ListViewHeader(
-      {Key? key,
+      {super.key,
       this.outerPadding = EdgeInsets.zero,
       this.header = "",
       this.sorter,
       this.showSorter = true,
       this.leadingIcon,
       this.subTitle,
-      this.onChanged})
-      : super(key: key);
+      this.onChanged});
 
   final Widget? leadingIcon;
   final Widget? subTitle;

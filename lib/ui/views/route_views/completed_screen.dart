@@ -12,7 +12,7 @@ import '../../widgets/listviews.dart';
 import '../../widgets/paginating_listview.dart';
 
 class CompletedListScreen extends StatefulWidget {
-  const CompletedListScreen({Key? key}) : super(key: key);
+  const CompletedListScreen({super.key});
 
   @override
   State<CompletedListScreen> createState() => _CompletedListScreen();
@@ -92,9 +92,7 @@ class _CompletedListScreen extends State<CompletedListScreen> {
                   return;
                 }
                 for (ToDo toDo in items) {
-                  if (!toDoProvider.toDos.contains(toDo)) {
-                    toDo.fade = Fade.fadeIn;
-                  }
+                  toDo.fade = Fade.fadeIn;
                 }
               },
               onRemove: ({ToDo? item}) async {

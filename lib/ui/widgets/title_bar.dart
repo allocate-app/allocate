@@ -5,14 +5,13 @@ import '../../util/constants.dart';
 
 class TitleBar extends StatefulWidget {
   const TitleBar(
-      {Key? key,
+      {super.key,
       required this.currentContext,
       this.title = "",
       this.centerWidget,
       this.checkClose = false,
       this.padding = EdgeInsets.zero,
-      required this.handleClose})
-      : super(key: key);
+      required this.handleClose});
 
   final BuildContext currentContext;
   final String title;

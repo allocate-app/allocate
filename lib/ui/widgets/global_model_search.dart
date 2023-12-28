@@ -26,10 +26,10 @@ import 'tiles.dart';
 
 class GlobalModelSearch extends StatefulWidget {
   const GlobalModelSearch({
-    Key? key,
+    super.key,
     required this.mostRecent,
     required this.search,
-  }) : super(key: key);
+  });
 
   final Future<List<IModel>> Function() mostRecent;
   final Future<List<IModel>> Function({required String searchString}) search;

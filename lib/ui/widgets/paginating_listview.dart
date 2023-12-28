@@ -14,7 +14,7 @@ import 'flushbars.dart';
 
 class PaginatingListview<T extends IModel> extends StatefulWidget {
   const PaginatingListview(
-      {Key? key,
+      {super.key,
       required this.listviewBuilder,
       required this.items,
       this.query,
@@ -28,8 +28,7 @@ class PaginatingListview<T extends IModel> extends StatefulWidget {
       this.onRemove,
       this.getAnimationKey,
       this.rebuildNotifiers,
-      this.rebuildCallback})
-      : super(key: key);
+      this.rebuildCallback});
 
   final List<T> items;
   final int offset;

@@ -82,7 +82,7 @@ class NotificationService {
     await flutterLocalNotificationsPlugin
         .resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin>()
-        ?.requestPermission();
+        ?.requestNotificationsPermission();
 
     // LocalNotifierSettings
     const initSettings = InitializationSettings(
@@ -102,21 +102,21 @@ class NotificationService {
     // Windows
     winLocalNotificationPlugin =
         WindowsNotification(applicationId: Constants.windowsApplicationID);
-    winLocalNotificationPlugin.initNotificationCallBack(
-        (NotificationMessage data, EventType eventType, String? args) async {
-      if (eventType == EventType.onActivate) {
+    winLocalNotificationPlugin
+        .initNotificationCallBack((NotificationCallBackDetails details) async {
+      if (details.eventType == EventType.onActivate) {
         NotificationResponse response = NotificationResponse(
           notificationResponseType:
               NotificationResponseType.selectedNotification,
-          id: int.tryParse(data.id),
-          payload: data.payload["payload"],
+          id: int.tryParse(details.message.id),
+          payload: details.message.payload["payload"],
         );
 
         return await onDidReceiveNotificationResponse(response);
       }
-      if (eventType == EventType.onDismissed) {
-        winLocalNotificationPlugin.removeNotificationId(
-            data.id, data.group ?? Constants.applicationName);
+      if (details.eventType == EventType.onDismissedUserCanceled) {
+        winLocalNotificationPlugin.removeNotificationId(details.message.id,
+            details.message.group ?? Constants.applicationName);
       }
     });
   }

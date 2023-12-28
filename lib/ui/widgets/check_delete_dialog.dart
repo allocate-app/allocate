@@ -4,8 +4,7 @@ import 'package:flutter/material.dart';
 import '../../util/constants.dart';
 
 class CheckDeleteDialog extends StatefulWidget {
-  const CheckDeleteDialog({Key? key, this.dontAsk = false, this.type = ""})
-      : super(key: key);
+  const CheckDeleteDialog({super.key, this.dontAsk = false, this.type = ""});
 
   final bool dontAsk;
   final String type;

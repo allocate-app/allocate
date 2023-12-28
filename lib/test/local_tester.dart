@@ -1,11 +1,12 @@
 import 'dart:io';
 import 'dart:ui';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_acrylic/flutter_acrylic.dart';
 import 'package:isar/isar.dart';
-//import 'package:macos_window_utils/macos_window_utils.dart';
+// import 'package:macos_window_utils/macos_window_utils.dart';
 import 'package:provider/provider.dart';
 import 'package:window_manager/window_manager.dart';
 
@@ -15,6 +16,7 @@ import '../providers/group_provider.dart';
 import '../providers/reminder_provider.dart';
 import '../providers/routine_provider.dart';
 import '../providers/subtask_provider.dart';
+import '../providers/theme_provider.dart';
 import '../providers/todo_provider.dart';
 import '../providers/user_provider.dart';
 import '../services/isar_service.dart';
@@ -29,14 +31,22 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   DartPluginRegistrant.ensureInitialized();
 
+  if (kReleaseMode) {
+    print("RELEASEMODE");
+  }
+
+  // await SystemTheme.accentColor.load();
+  // SystemTheme.fallbackColor = Constants.windowsDefaultDark;
+
   // TODO: test flutter_acrylic for windows/mac.
   // on Linux, it's disrupting the keydown event.
   if (!Platform.isIOS && !Platform.isAndroid) {
-    // Flutter acrylic doesn't allow keystrokes in linux.
+    // Flutter acrylic doesn't currently work in linux, but is required for window transparency.
     if (!Platform.isLinux) {
+      // This needs testing
       // Transparency effects - Flutter acrylic
-      await Window.initialize();
-
+      // await Window.initialize();
+      // await Window.setEffect(effect: WindowEffect.aero, dark: true);
       // // see flutter_acrylic for effects. Only Transparent/disabled/solid for linux
       // // Windows - use Aero, acrylic is breaking in W10.
       // // Set colors according to user theme.
@@ -45,8 +55,6 @@ void main() async {
       //   effect: WindowEffect.transparent,
       //   dark: true,
       // );
-
-      await Window.setEffect(effect: WindowEffect.disabled, dark: true);
 
       // I think the idea is to make the window fully transparent/effected,
       // then add colours/opacities per widget.
@@ -57,15 +65,13 @@ void main() async {
       //   dark: true,
       // );
     }
+
     // This is for default sizing.
     await windowManager.ensureInitialized();
 
     await windowManager.setResizable(true);
-    await windowManager.setMinimumSize(Constants.testDesktopSize);
-
     WindowOptions windowOptions = const WindowOptions(
       minimumSize: Constants.testDesktopSize,
-      title: "TESTING",
     );
 
     windowManager.waitUntilReadyToShow(windowOptions, () async {
@@ -89,7 +95,7 @@ void main() async {
                 user: Provider.of<UserProvider>(context, listen: false).curUser,
                 toDoService: null),
             update: (BuildContext context, UserProvider up, ToDoProvider? tp) {
-              tp?.setUser(user: up.curUser);
+              tp?.setUser(newUser: up.curUser);
               return tp ?? ToDoProvider(user: up.curUser, toDoService: null);
             }),
         ChangeNotifierProxyProvider<UserProvider, RoutineProvider>(
@@ -98,7 +104,7 @@ void main() async {
                 routineService: null),
             update:
                 (BuildContext context, UserProvider up, RoutineProvider? rp) {
-              rp?.setUser(user: up.curUser);
+              rp?.setUser(newUser: up.curUser);
               return rp ??
                   RoutineProvider(user: up.curUser, routineService: null);
             }),
@@ -111,7 +117,7 @@ void main() async {
                 service: null),
             update:
                 (BuildContext context, UserProvider up, ReminderProvider? rp) {
-              rp?.setUser(user: up.curUser);
+              rp?.setUser(newUser: up.curUser);
               return rp ?? ReminderProvider(user: up.curUser, service: null);
             }),
         ChangeNotifierProxyProvider<UserProvider, DeadlineProvider>(
@@ -120,7 +126,7 @@ void main() async {
                 service: null),
             update:
                 (BuildContext context, UserProvider up, DeadlineProvider? dp) {
-              dp?.setUser(user: up.curUser);
+              dp?.setUser(newUser: up.curUser);
               return dp ?? DeadlineProvider(user: up.curUser, service: null);
             }),
         ChangeNotifierProxyProvider<UserProvider, GroupProvider>(
@@ -129,31 +135,42 @@ void main() async {
                 groupService: null,
                 toDoService: null),
             update: (BuildContext context, UserProvider up, GroupProvider? gp) {
-              gp?.setUser(user: up.curUser);
+              gp?.setUser(newUser: up.curUser);
               return gp ??
                   GroupProvider(
                       user: up.curUser, groupService: null, toDoService: null);
-            })
-      ], child: const NavigationTester())));
+            }),
+        ChangeNotifierProxyProvider<UserProvider, ThemeProvider>(
+            create: (BuildContext context) => ThemeProvider(
+                user:
+                    Provider.of<UserProvider>(context, listen: false).curUser),
+            update: (BuildContext context, UserProvider up, ThemeProvider? tp) {
+              tp?.setUser(newUser: up.curUser);
+              return tp ?? ThemeProvider(user: up.curUser);
+            }),
+      ], child: const LocalTester())));
 }
 
-class NavigationTester extends StatefulWidget {
-  const NavigationTester({super.key});
+class LocalTester extends StatefulWidget {
+  const LocalTester({super.key});
 
   @override
-  State<NavigationTester> createState() => _NavigationTester();
+  State<LocalTester> createState() => _LocalTester();
 }
 
-class _NavigationTester extends State<NavigationTester> with WindowListener {
+class _LocalTester extends State<LocalTester> with WindowListener {
+  late ThemeProvider themeProvider;
+
   @override
   void initState() {
     if (!Platform.isAndroid && !Platform.isIOS) {
       windowManager.addListener(this);
-      //ServicesBinding.instance.keyboard.addHandler(_onKey);
+      ServicesBinding.instance.keyboard.addHandler(_onKey);
     }
     // Test to inject 100 tasks.
     // testListView();
 
+    themeProvider = Provider.of<ThemeProvider>(context, listen: false);
     super.initState();
   }
 
@@ -168,6 +185,11 @@ class _NavigationTester extends State<NavigationTester> with WindowListener {
     ]).whenComplete(() {
       super.dispose();
     });
+  }
+
+  @override
+  void onWindowFocus() {
+    setState(() {});
   }
 
   @override
@@ -221,7 +243,11 @@ class _NavigationTester extends State<NavigationTester> with WindowListener {
     // );
     return TitlebarSafeArea(
       child: MaterialApp(
-        theme: ThemeData(useMaterial3: true),
+        theme: themeProvider.themeData,
+        darkTheme: themeProvider.darkTheme,
+        highContrastTheme: themeProvider.highContrastLight,
+        highContrastDarkTheme: themeProvider.highContrastDark,
+        themeMode: ThemeMode.system,
         home: const HomeScreen(),
       ),
     );

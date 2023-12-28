@@ -27,7 +27,7 @@ void main() {
               user: Provider.of<UserProvider>(context, listen: false).curUser,
               toDoService: null),
           update: (BuildContext context, UserProvider up, ToDoProvider? tp) {
-            tp?.setUser(user: up.curUser);
+            tp?.setUser(newUser: up.curUser);
             return tp ?? ToDoProvider(user: up.curUser, toDoService: null);
           }),
       ChangeNotifierProxyProvider<UserProvider, RoutineProvider>(
@@ -35,7 +35,7 @@ void main() {
               user: Provider.of<UserProvider>(context, listen: false).curUser,
               routineService: null),
           update: (BuildContext context, UserProvider up, RoutineProvider? rp) {
-            rp?.setUser(user: up.curUser);
+            rp?.setUser(newUser: up.curUser);
             return rp ??
                 RoutineProvider(user: up.curUser, routineService: null);
           }),
@@ -45,7 +45,7 @@ void main() {
               service: null),
           update:
               (BuildContext context, UserProvider up, ReminderProvider? rp) {
-            rp?.setUser(user: up.curUser);
+            rp?.setUser(newUser: up.curUser);
             return rp ?? ReminderProvider(user: up.curUser, service: null);
           }),
       ChangeNotifierProxyProvider<UserProvider, DeadlineProvider>(
@@ -54,7 +54,7 @@ void main() {
               service: null),
           update:
               (BuildContext context, UserProvider up, DeadlineProvider? dp) {
-            dp?.setUser(user: up.curUser);
+            dp?.setUser(newUser: up.curUser);
             return dp ?? DeadlineProvider(user: up.curUser, service: null);
           }),
       ChangeNotifierProxyProvider<UserProvider, GroupProvider>(
@@ -63,7 +63,7 @@ void main() {
               groupService: null,
               toDoService: null),
           update: (BuildContext context, UserProvider up, GroupProvider? gp) {
-            gp?.setUser(user: up.curUser);
+            gp?.setUser(newUser: up.curUser);
             return gp ??
                 GroupProvider(
                     user: up.curUser, groupService: null, toDoService: null);

@@ -1,6 +1,7 @@
 import "package:mocktail/mocktail.dart";
 import "package:supabase_flutter/supabase_flutter.dart";
 
+// TODO: fix this once usr done. Upgrade broke stuff.
 class SupabaseService {
   static final SupabaseService _instance = SupabaseService._internal();
 
@@ -19,8 +20,7 @@ class SupabaseService {
       return;
     }
 
-    await Supabase.initialize(
-        url: supabaseUrl, anonKey: anonKey, authCallbackUrlHostname: "login");
+    await Supabase.initialize(url: supabaseUrl, anonKey: anonKey);
     _supabaseClient = Supabase.instance.client;
   }
 

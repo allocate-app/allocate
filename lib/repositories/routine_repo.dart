@@ -167,7 +167,10 @@ class RoutineRepo implements RoutineRepository {
     List<int> toDeletes = await getDeleteIds();
     if (toDeletes.isNotEmpty) {
       try {
-        await _supabaseClient.from("routines").delete().in_("id", toDeletes);
+        await _supabaseClient
+            .from("routines")
+            .delete()
+            .inFilter("id", toDeletes);
       } catch (error) {
         throw FailureToDeleteException("Failed to delete routines on sync\n"
             "ids: ${toDeletes.toString()}\n"

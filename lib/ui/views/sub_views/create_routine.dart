@@ -15,7 +15,7 @@ import "../../widgets/tiles.dart";
 import "../../widgets/title_bar.dart";
 
 class CreateRoutineScreen extends StatefulWidget {
-  const CreateRoutineScreen({Key? key, this.times}) : super(key: key);
+  const CreateRoutineScreen({super.key, this.times});
 
   final int? times;
 

@@ -14,7 +14,7 @@ import '../../widgets/tiles.dart';
 import '../sub_views/create_group.dart';
 
 class GroupsListScreen extends StatefulWidget {
-  const GroupsListScreen({Key? key}) : super(key: key);
+  const GroupsListScreen({super.key});
 
   @override
   State<GroupsListScreen> createState() => _GroupsListScreen();
@@ -75,16 +75,9 @@ class _GroupsListScreen extends State<GroupsListScreen> {
     if (null == items || items.isEmpty) {
       return;
     }
-    List<IModel> oldList = switch (items[0].modelType) {
-      ModelType.task => toDoProvider.toDos,
-      ModelType.group => groupProvider.groups,
-      _ => List<IModel>.empty(),
-    } as List<IModel>;
 
     for (IModel item in items) {
-      if (!oldList.contains(item)) {
-        item.fade = Fade.fadeIn;
-      }
+      item.fade = Fade.fadeIn;
     }
   }
 

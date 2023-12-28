@@ -5,12 +5,12 @@ import "../../util/constants.dart";
 
 class DrainBar extends StatefulWidget {
   const DrainBar({
-    Key? key,
+    super.key,
     this.weight = 0,
     this.scale = 1.0,
     this.max = Constants.maxDoubleBandwidth,
     this.constraints = const BoxConstraints(),
-  }) : super(key: key);
+  });
 
   final double scale;
   final double weight;

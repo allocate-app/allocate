@@ -168,7 +168,10 @@ class SubtaskRepo implements SubtaskRepository {
     List<int> toDeletes = await getDeleteIds();
     if (toDeletes.isNotEmpty) {
       try {
-        await _supabaseClient.from("subtasks").delete().in_("id", toDeletes);
+        await _supabaseClient
+            .from("subtasks")
+            .delete()
+            .inFilter("id", toDeletes);
       } catch (error) {
         throw FailureToDeleteException("Failed to delete subtasks on sync.\n"
             "ids: ${toDeletes.toString()}\n"

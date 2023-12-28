@@ -11,12 +11,11 @@ import '../../util/enums.dart';
 
 class FrequencyDialog extends StatefulWidget {
   const FrequencyDialog(
-      {Key? key,
+      {super.key,
       this.frequency = Frequency.once,
       this.startDate,
       this.repeatSkip = 1,
-      this.weekdays})
-      : super(key: key);
+      this.weekdays});
 
   final Frequency frequency;
   final DateTime? startDate;

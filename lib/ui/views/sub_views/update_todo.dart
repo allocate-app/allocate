@@ -24,8 +24,7 @@ class UpdateToDoScreen extends StatefulWidget {
   final MapEntry<String, int>? initialGroup;
   final ToDo? initialToDo;
 
-  const UpdateToDoScreen({Key? key, this.initialGroup, this.initialToDo})
-      : super(key: key);
+  const UpdateToDoScreen({super.key, this.initialGroup, this.initialToDo});
 
   @override
   State<UpdateToDoScreen> createState() => _UpdateToDoScreen();

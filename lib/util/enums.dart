@@ -15,7 +15,22 @@ enum Effect {
   transparent,
   aero,
   acrylic,
+  sidebar,
 }
 
-// This might need to change
-enum ThemeType { adaptive, light, dark, hi_contrast }
+enum ThemeType { system, light, dark, hi_contrast_light, hi_contrast_dark }
+
+enum ToneMapping {
+  system,
+  soft,
+  vivid,
+  monochromatic,
+  hi_contrast,
+  ultra_hi_contrast,
+}
+
+enum DeleteSchedule {
+  never,
+  monthly,
+  yearly,
+}

@@ -3,7 +3,7 @@ import "package:flutter/material.dart";
 
 @RoutePage()
 class InitUserScreen extends StatefulWidget {
-  const InitUserScreen({Key? key}) : super(key: key);
+  const InitUserScreen({super.key});
 
   @override
   State<InitUserScreen> createState() => _InitUserScreen();
