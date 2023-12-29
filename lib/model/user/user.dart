@@ -26,7 +26,7 @@ class User with EquatableMixin implements Copyable<User> {
   bool isSynced;
 
   bool checkDelete;
-  bool dontAsk;
+  bool checkClose;
 
   @Index()
   String userName;
@@ -84,7 +84,7 @@ class User with EquatableMixin implements Copyable<User> {
   User(
       {required this.userName,
       this.checkDelete = true,
-      this.dontAsk = false,
+      this.checkClose = true,
       this.bandwidth = 100,
       this.dayCost = 0,
       this.themeType = ThemeType.system,
@@ -109,7 +109,12 @@ class User with EquatableMixin implements Copyable<User> {
       this.isSynced = false,
       this.syncOnline = false,
       required this.lastOpened,
-      required this.lastUpdated});
+      required this.lastUpdated}) {
+    // Constants.intMax is reserved, generate until the id is different.
+    while (Constants.intMax == id) {
+      id = Constants.generateID();
+    }
+  }
 
   User.fromEntity({required Map<String, dynamic> entity})
       : id = entity["id"] as int,
@@ -118,7 +123,7 @@ class User with EquatableMixin implements Copyable<User> {
         bandwidth = entity["bandwidth"] as int,
         dayCost = entity["dayCost"] as int,
         checkDelete = entity["checkDelete"],
-        dontAsk = entity["dontAsk"],
+        checkClose = entity["checkClose"],
         curMornID = entity["curMornID"] as int?,
         curAftID = entity["curAftID"] as int?,
         curEveID = entity["curEveID"] as int?,
@@ -169,7 +174,7 @@ class User with EquatableMixin implements Copyable<User> {
         "bandwidth": bandwidth,
         "dayCost": dayCost,
         "checkDelete": checkDelete,
-        "dontAsk": dontAsk,
+        "checkClose": checkClose,
         "curMornID": curMornID,
         "curAftID": curAftID,
         "curEveID": curEveID,
@@ -202,7 +207,7 @@ class User with EquatableMixin implements Copyable<User> {
         bandwidth: bandwidth,
         dayCost: dayCost,
         checkDelete: checkDelete,
-        dontAsk: dontAsk,
+        checkClose: checkClose,
         curMornID: curMornID,
         curAftID: curAftID,
         curEveID: curEveID,
@@ -234,7 +239,7 @@ class User with EquatableMixin implements Copyable<User> {
           int? bandwidth,
           int? dayCost,
           bool? checkDelete,
-          bool? dontAsk,
+          bool? checkClose,
           int? curMornID,
           int? curAftID,
           int? curEveID,
@@ -263,7 +268,7 @@ class User with EquatableMixin implements Copyable<User> {
           bandwidth: bandwidth ?? this.bandwidth,
           dayCost: dayCost ?? this.dayCost,
           checkDelete: checkDelete ?? this.checkDelete,
-          dontAsk: dontAsk ?? this.dontAsk,
+          checkClose: checkClose ?? this.checkClose,
           curMornID: curMornID ?? this.curMornID,
           curAftID: curAftID ?? this.curAftID,
           curEveID: curEveID ?? this.curEveID,

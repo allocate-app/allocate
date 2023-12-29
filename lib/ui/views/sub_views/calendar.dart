@@ -12,6 +12,7 @@ import '../../../providers/deadline_provider.dart';
 import '../../../providers/group_provider.dart';
 import '../../../providers/reminder_provider.dart';
 import '../../../providers/todo_provider.dart';
+import '../../../providers/user_provider.dart';
 import '../../../util/constants.dart';
 import '../../../util/enums.dart';
 import '../../../util/exceptions.dart';
@@ -58,6 +59,7 @@ class _CalendarScreen extends State<CalendarScreen> {
   late ReminderProvider reminderProvider;
   late DeadlineProvider deadlineProvider;
   late GroupProvider groupProvider;
+  late UserProvider userProvider;
 
   late ScrollController mainScrollController;
   late ScrollPhysics scrollPhysics;
@@ -85,6 +87,7 @@ class _CalendarScreen extends State<CalendarScreen> {
     reminderProvider = Provider.of(context, listen: false);
     deadlineProvider = Provider.of(context, listen: false);
     groupProvider = Provider.of(context, listen: false);
+    userProvider = Provider.of<UserProvider>(context, listen: false);
 
     toDoProvider.addListener(resetEvents);
     reminderProvider.addListener(resetEvents);
@@ -193,13 +196,9 @@ class _CalendarScreen extends State<CalendarScreen> {
           DateTime dueDay = eventModel.dueDate!.copyWith(
               hour: Constants.midnight.hour, minute: Constants.midnight.minute);
 
-          // TODO: once user class finished -- uncomment.
-          // if (toDoProvider.user.animate) {
-          //   eventModel.fade = Fade.fadeIn;
-          // }
-
-          // TODO: remove after testing done.
-          eventModel.fade = Fade.fadeIn;
+          if (!(userProvider.curUser?.reduceMotion ?? false)) {
+            eventModel.fade = Fade.fadeIn;
+          }
 
           CalendarEvent event = CalendarEvent(model: eventModel);
           if (_events.containsKey(startDay)) {
@@ -239,10 +238,7 @@ class _CalendarScreen extends State<CalendarScreen> {
 
   @override
   Widget build(BuildContext context) {
-    double width = MediaQuery.of(context).size.width;
-    bool largeScreen = (width >= Constants.largeScreen);
-    bool smallScreen = (width <= Constants.smallScreen);
-    bool hugeScreen = (width >= Constants.hugeScreen);
+    MediaQuery.of(context).size;
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -283,7 +279,8 @@ class _CalendarScreen extends State<CalendarScreen> {
                       }
                     }),
                 ListViews.eventList(
-                    selectedEvents: _selectedEvents, smallScreen: smallScreen)
+                    selectedEvents: _selectedEvents,
+                    smallScreen: userProvider.smallScreen)
               ]),
         )),
       ],

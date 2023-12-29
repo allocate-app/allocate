@@ -6,6 +6,7 @@ import 'package:flutter/semantics.dart';
 import 'package:provider/provider.dart';
 
 import '../../../providers/deadline_provider.dart';
+import '../../../providers/user_provider.dart';
 import '../../../util/constants.dart';
 import '../../../util/enums.dart';
 import '../../../util/exceptions.dart';
@@ -25,8 +26,8 @@ class CreateDeadlineScreen extends StatefulWidget {
 class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
   late bool checkClose;
 
-  // Provider (Needs user values) -> Refactor to DI for testing. One day.
   late final DeadlineProvider deadlineProvider;
+  late final UserProvider userProvider;
 
   // Scrolling
   late final ScrollController mobileScrollController;
@@ -100,6 +101,7 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
 
   void initializeProviders() {
     deadlineProvider = Provider.of<DeadlineProvider>(context, listen: false);
+    userProvider = Provider.of<UserProvider>(context, listen: false);
   }
 
   void initializeControllers() {
@@ -171,10 +173,11 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
   }
 
   void mergeDateTimes() {
-    startDate =
-        startDate?.copyWith(hour: startTime?.hour, minute: startTime?.minute);
+    startDate = startDate?.copyWith(
+        hour: startTime?.hour ?? 0, minute: startTime?.minute ?? 0);
 
-    dueDate = dueDate?.copyWith(hour: dueTime?.hour, minute: dueTime?.minute);
+    dueDate = dueDate?.copyWith(
+        hour: dueTime?.hour ?? 0, minute: dueTime?.minute ?? 0);
 
     warnDate =
         warnDate?.copyWith(hour: warnTime?.hour, minute: warnTime?.minute);
@@ -232,7 +235,7 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
   void clearNameField() {
     if (mounted) {
       return setState(() {
-        checkClose = true;
+        checkClose = userProvider.curUser?.checkClose ?? true;
         nameEditingController.clear();
         name = "";
       });
@@ -242,7 +245,7 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
   void updateName() {
     if (mounted) {
       setState(() {
-        checkClose = true;
+        checkClose = userProvider.curUser?.checkClose ?? true;
         name = nameEditingController.text;
       });
     }
@@ -259,7 +262,7 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
   void changePriority(Set<Priority> newSelection) {
     if (mounted) {
       return setState(() {
-        checkClose = true;
+        checkClose = userProvider.curUser?.checkClose ?? true;
         priority = newSelection.first;
       });
     }
@@ -268,7 +271,7 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
   void clearDates() {
     if (mounted) {
       return setState(() {
-        checkClose = true;
+        checkClose = userProvider.curUser?.checkClose ?? true;
         startDate = null;
         dueDate = null;
       });
@@ -278,7 +281,7 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
   void clearWarnMe() {
     if (mounted) {
       return setState(() {
-        checkClose = true;
+        checkClose = userProvider.curUser?.checkClose ?? true;
         warnDate = null;
         warnTime = null;
         warnMe = false;
@@ -289,7 +292,10 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
   void updateWarnMe({bool? checkClose, DateTime? newDate, TimeOfDay? newTime}) {
     if (mounted) {
       return setState(() {
-        this.checkClose = checkClose ?? this.checkClose;
+        checkClose = checkClose ?? this.checkClose;
+        this.checkClose = (checkClose!)
+            ? userProvider.curUser?.checkClose ?? checkClose!
+            : checkClose!;
         warnDate = newDate;
         warnTime = newTime;
         warnMe = (null != warnDate);
@@ -300,7 +306,10 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
   void updateDates({bool? checkClose, DateTime? newStart, DateTime? newDue}) {
     if (mounted) {
       return setState(() {
-        this.checkClose = checkClose ?? this.checkClose;
+        checkClose = checkClose ?? this.checkClose;
+        this.checkClose = (checkClose!)
+            ? userProvider.curUser?.checkClose ?? checkClose!
+            : checkClose!;
         startDate = newStart;
         dueDate = newDue;
 
@@ -316,7 +325,7 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
   void clearTimes() {
     if (mounted) {
       return setState(() {
-        checkClose = true;
+        checkClose = userProvider.curUser?.checkClose ?? true;
         startTime = null;
         dueTime = null;
       });
@@ -326,7 +335,10 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
   void updateTimes({bool? checkClose, TimeOfDay? newStart, TimeOfDay? newDue}) {
     if (mounted) {
       return setState(() {
-        this.checkClose = checkClose ?? this.checkClose;
+        checkClose = checkClose ?? this.checkClose;
+        this.checkClose = (checkClose!)
+            ? userProvider.curUser?.checkClose ?? checkClose!
+            : checkClose!;
         startTime = newStart;
         dueTime = newDue;
       });
@@ -336,7 +348,7 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
   void clearRepeatable() {
     if (mounted) {
       return setState(() {
-        checkClose = true;
+        checkClose = userProvider.curUser?.checkClose ?? true;
         frequency = Frequency.once;
         weekdayList.clear();
         repeatSkip = 1;
@@ -351,7 +363,10 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
       required int newSkip}) {
     if (mounted) {
       return setState(() {
-        this.checkClose = checkClose ?? this.checkClose;
+        checkClose = checkClose ?? this.checkClose;
+        this.checkClose = (checkClose!)
+            ? userProvider.curUser?.checkClose ?? checkClose!
+            : checkClose!;
         frequency = newFreq;
         weekdayList = newWeekdays;
         repeatSkip = newSkip;
@@ -368,26 +383,27 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
 
   @override
   Widget build(BuildContext context) {
-    double width = MediaQuery.of(context).size.width;
-    bool largeScreen = (width >= Constants.largeScreen);
-    bool smallScreen = (width <= Constants.smallScreen);
-    bool hugeScreen = (width >= Constants.hugeScreen);
+    MediaQuery.of(context).size;
 
-    bool showTimeTile = (null != startDate || null != dueDate);
-    return (largeScreen)
+    bool showTimeTile = null != startDate || null != dueDate;
+    bool showRepeatTile = null != startDate && null != dueDate;
+    return (userProvider.largeScreen)
         ? buildDesktopDialog(
             context: context,
             showTimeTile: showTimeTile,
+            showRepeatTile: showRepeatTile,
           )
         : buildMobileDialog(
-            smallScreen: smallScreen,
+            smallScreen: userProvider.smallScreen,
             context: context,
             showTimeTile: showTimeTile,
-          );
+            showRepeatTile: showRepeatTile);
   }
 
   Dialog buildDesktopDialog(
-      {required BuildContext context, showTimeTile = false}) {
+      {required BuildContext context,
+      showTimeTile = false,
+      showRepeatTile = false}) {
     return Dialog(
       insetPadding: const EdgeInsets.all(Constants.outerDialogPadding),
       child: ConstrainedBox(
@@ -409,7 +425,7 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
                       const EdgeInsets.symmetric(horizontal: Constants.padding),
                   handleClose: handleClose,
                 ),
-                const PaddedDivider(padding: Constants.padding),
+                const PaddedDivider(padding: Constants.halfPadding),
                 Flexible(
                   child: Scrollbar(
                     thumbVisibility: true,
@@ -496,9 +512,10 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
                                         handleClear: clearDates,
                                         handleUpdate: updateDates,
                                       ),
-                                      const PaddedDivider(
-                                          padding: Constants.padding),
-
+                                      (showTimeTile)
+                                          ? const PaddedDivider(
+                                              padding: Constants.padding)
+                                          : const SizedBox.shrink(),
                                       (showTimeTile)
                                           ? Tiles.timeTile(
                                               outerPadding:
@@ -512,11 +529,11 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
                                               handleUpdate: updateTimes,
                                             )
                                           : const SizedBox.shrink(),
-                                      (showTimeTile)
+                                      (showRepeatTile)
                                           ? const PaddedDivider(
                                               padding: Constants.padding)
                                           : const SizedBox.shrink(),
-                                      (null != dueDate && null != startDate)
+                                      (showRepeatTile)
                                           ? Tiles.repeatableTile(
                                               context: context,
                                               outerPadding:
@@ -559,7 +576,7 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
                   ),
                 ),
 
-                const PaddedDivider(padding: Constants.padding),
+                const PaddedDivider(padding: Constants.halfPadding),
                 Tiles.createButton(
                   outerPadding:
                       const EdgeInsets.symmetric(horizontal: Constants.padding),
@@ -571,10 +588,12 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
     );
   }
 
-  Dialog buildMobileDialog(
-      {required BuildContext context,
-      bool smallScreen = false,
-      showTimeTile = false}) {
+  Dialog buildMobileDialog({
+    required BuildContext context,
+    bool smallScreen = false,
+    showTimeTile = false,
+    showRepeatTile = false,
+  }) {
     return Dialog(
       insetPadding: EdgeInsets.all((smallScreen)
           ? Constants.mobileDialogPadding
@@ -594,7 +613,7 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
                     const EdgeInsets.symmetric(horizontal: Constants.padding),
                 handleClose: handleClose,
               ),
-              const PaddedDivider(padding: Constants.padding),
+              const PaddedDivider(padding: Constants.halfPadding),
               Flexible(
                 child: ListView(
                   shrinkWrap: true,
@@ -667,7 +686,9 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
                       handleUpdate: updateDates,
                     ),
 
-                    const PaddedDivider(padding: Constants.padding),
+                    (showTimeTile)
+                        ? const PaddedDivider(padding: Constants.padding)
+                        : const SizedBox.shrink(),
                     // Time
                     (showTimeTile)
                         ? Tiles.timeTile(
@@ -680,11 +701,11 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
                             handleUpdate: updateTimes,
                           )
                         : const SizedBox.shrink(),
-                    (showTimeTile)
+                    (showRepeatTile)
                         ? const PaddedDivider(padding: Constants.padding)
                         : const SizedBox.shrink(),
                     // Repeatable Stuff -> Show status, on click, open a dialog.
-                    (null != dueDate && null != startDate)
+                    (showRepeatTile)
                         ? Tiles.repeatableTile(
                             context: context,
                             outerPadding: const EdgeInsets.symmetric(
@@ -701,7 +722,7 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
                 ),
               ),
 
-              const PaddedDivider(padding: Constants.padding),
+              const PaddedDivider(padding: Constants.halfPadding),
               Tiles.createButton(
                 outerPadding:
                     const EdgeInsets.symmetric(horizontal: Constants.padding),

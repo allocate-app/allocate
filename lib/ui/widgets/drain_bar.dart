@@ -43,13 +43,18 @@ class _DrainBar extends State<DrainBar> {
                       Radius.circular(Constants.roundedCorners))),
               child: Padding(
                 padding: const EdgeInsets.all(Constants.halfPadding),
-                child: LinearProgressIndicator(
-                    color: (offset < 0.6) ? null : Colors.redAccent,
+                child: ClipRRect(
+                  borderRadius: const BorderRadius.all(
+                      Radius.circular(Constants.curvedCorners)),
+                  child: LinearProgressIndicator(
+                    color: (offset < 0.6)
+                        ? Theme.of(context).colorScheme.inversePrimary
+                        : Colors.redAccent,
                     minHeight: 50,
                     value: 1 - offset,
                     // Possibly remove
-                    borderRadius: const BorderRadius.all(
-                        Radius.circular(Constants.curvedCorners))),
+                  ),
+                ),
               ),
             ),
           ),

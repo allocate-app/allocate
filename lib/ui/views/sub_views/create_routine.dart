@@ -6,7 +6,9 @@ import "package:provider/provider.dart";
 import "../../../model/task/subtask.dart";
 import "../../../providers/routine_provider.dart";
 import "../../../providers/subtask_provider.dart";
+import "../../../providers/user_provider.dart";
 import "../../../util/constants.dart";
+import "../../../util/enums.dart";
 import "../../../util/exceptions.dart";
 import "../../widgets/flushbars.dart";
 import "../../widgets/leading_widgets.dart";
@@ -29,6 +31,7 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
 
   // Provider (Needs user values) -> Refactor to DI for testing. One day.
   late final RoutineProvider routineProvider;
+  late final UserProvider userProvider;
   late final SubtaskProvider subtaskProvider;
 
   // Scrolling
@@ -92,6 +95,7 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
 
   void initializeProviders() {
     routineProvider = Provider.of<RoutineProvider>(context, listen: false);
+    userProvider = Provider.of<UserProvider>(context, listen: false);
     subtaskProvider = Provider.of<SubtaskProvider>(context, listen: false);
     subtaskProvider.addListener(resetSubtasks);
   }
@@ -106,9 +110,15 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
   }
 
   Future<void> resetSubtasks() async {
-    subtasks = await routineProvider.getSubtasks(
+    List<Subtask> newSubtasks = await routineProvider.getSubtasks(
       id: Constants.intMax,
     );
+    if (!(userProvider.curUser?.reduceMotion ?? false)) {
+      onFetch(items: newSubtasks);
+    }
+
+    subtasks = newSubtasks;
+
     routineProvider.setSubtaskCount(
         id: Constants.intMax, count: subtasks.length);
     weight = await routineProvider.getWeight(taskID: Constants.intMax);
@@ -178,7 +188,7 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
   void clearNameField() {
     if (mounted) {
       return setState(() {
-        checkClose = true;
+        checkClose = userProvider.curUser?.checkClose ?? true;
         nameEditingController.clear();
         name = "";
       });
@@ -188,7 +198,7 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
   void updateName() {
     if (mounted) {
       setState(() {
-        checkClose = true;
+        checkClose = userProvider.curUser?.checkClose ?? true;
         name = nameEditingController.text;
       });
     }
@@ -197,88 +207,16 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
   void changeRoutineTime({required int newRoutineTimes}) {
     if (mounted) {
       return setState(() {
-        checkClose = true;
+        checkClose = userProvider.curUser?.checkClose ?? true;
         times = newRoutineTimes;
       });
     }
   }
 
-  // void handleWeightChange(double value) {
-  //   if (mounted) {
-  //     return setState(() {
-  //       checkClose = true;
-  //       weight = value.toInt();
-  //       realDuration = routineProvider.calculateRealDuration(
-  //           weight: weight, duration: expectedDuration);
-  //     });
-  //   }
-  // }
-
-  // void removeRoutineTask({required int index}) {
-  //   if (mounted) {
-  //     return setState(() {
-  //       checkClose = true;
-  //       Subtask st = subtasks.removeAt(index);
-  //       subtasks.add(st);
-  //       TextEditingController ct = routineTaskEditingController.removeAt(index);
-  //       ct.value = ct.value.copyWith(text: st.name);
-  //       routineTaskEditingController.add(ct);
-  //
-  //       shownTasks--;
-  //       shownTasks = max(shownTasks, 0);
-  //       weight = routineProvider.calculateWeight(subtasks: subtasks);
-  //     });
-  //   }
-  // }
-
-  // void reorderRoutineTasks(int oldIndex, int newIndex) {
-  //   if (mounted) {
-  //     return setState(() {
-  //       checkClose = true;
-  //       if (oldIndex < newIndex) {
-  //         newIndex--;
-  //       }
-  //       Subtask st = subtasks.removeAt(oldIndex);
-  //       subtasks.insert(newIndex, st);
-  //       TextEditingController ct =
-  //           routineTaskEditingController.removeAt(oldIndex);
-  //       routineTaskEditingController.insert(newIndex, ct);
-  //     });
-  //   }
-  // }
-
-  // void onDataChange() {
-  //   if (mounted) {
-  //     return setState(() {
-  //       checkClose = true;
-  //     });
-  //   }
-  // }
-  //
-  // void onRoutineTaskWeightChanged() {
-  //   if (mounted) {
-  //     return setState(() {
-  //       checkClose = true;
-  //       weight = routineProvider.calculateWeight(subtasks: subtasks);
-  //       realDuration = routineProvider.calculateRealDuration(
-  //           weight: weight, duration: expectedDuration);
-  //     });
-  //   }
-  // }
-
-  // void addRoutineTask() {
-  //   if (mounted) {
-  //     return setState(() {
-  //       shownTasks++;
-  //       shownTasks = min(shownTasks, Constants.maxNumTasks);
-  //     });
-  //   }
-  // }
-
   void updateDuration(int? value) {
     if (mounted) {
       return setState(() {
-        checkClose = true;
+        checkClose = userProvider.curUser?.checkClose ?? true;
         expectedDuration = value ?? expectedDuration;
         realDuration = routineProvider.calculateRealDuration(
             weight: weight, duration: expectedDuration);
@@ -289,7 +227,7 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
   void clearDuration() {
     if (mounted) {
       return setState(() {
-        checkClose = true;
+        checkClose = userProvider.curUser?.checkClose ?? true;
         expectedDuration = 0;
         realDuration = 0;
       });
@@ -302,16 +240,36 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
     }
   }
 
+  void onFetch({List<Subtask>? items}) {
+    if (null == items) {
+      return;
+    }
+    for (Subtask subtask in items) {
+      subtask.fade = Fade.fadeIn;
+    }
+  }
+
+  Future<void> onRemove({Subtask? item}) async {
+    if (null == item) {
+      return;
+    }
+    if (mounted) {
+      setState(() => item.fade = Fade.fadeOut);
+      await Future.delayed(const Duration(milliseconds: Constants.fadeInTime));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    double width = MediaQuery.of(context).size.width;
-    bool largeScreen = (width >= Constants.largeScreen);
-    bool smallScreen = (width <= Constants.smallScreen);
-    bool hugeScreen = (width >= Constants.hugeScreen);
-    return (largeScreen)
+    MediaQuery.of(context).size;
+
+    return (userProvider.largeScreen)
         ? buildDesktopDialog(
-            context: context, smallScreen: smallScreen, hugeScreen: hugeScreen)
-        : buildMobileDialog(context: context, smallScreen: smallScreen);
+            context: context,
+            smallScreen: userProvider.smallScreen,
+            hugeScreen: userProvider.hugeScreen)
+        : buildMobileDialog(
+            context: context, smallScreen: userProvider.smallScreen);
   }
 
   Dialog buildDesktopDialog(
@@ -411,6 +369,11 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
                                   outerPadding: const EdgeInsets.all(
                                       Constants.halfPadding),
                                   id: Constants.intMax,
+                                  onRemove:
+                                      (userProvider.curUser?.reduceMotion ??
+                                              false)
+                                          ? null
+                                          : onRemove,
                                   subtasks: subtasks,
                                   subtaskCount: routineProvider.getSubtaskCount(
                                       id: Constants.intMax),

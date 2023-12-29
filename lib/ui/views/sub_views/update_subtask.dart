@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 
 import '../../../model/task/subtask.dart';
 import '../../../providers/subtask_provider.dart';
+import '../../../providers/user_provider.dart';
 import '../../../util/constants.dart';
 import '../../../util/exceptions.dart';
 import '../../widgets/flushbars.dart';
@@ -15,6 +16,7 @@ import '../../widgets/title_bar.dart';
 
 class UpdateSubtaskScreen extends StatefulWidget {
   const UpdateSubtaskScreen({super.key, this.initialSubtask});
+
   final Subtask? initialSubtask;
 
   @override
@@ -22,9 +24,11 @@ class UpdateSubtaskScreen extends StatefulWidget {
 }
 
 class _UpdateSubtaskScreen extends State<UpdateSubtaskScreen> {
-  late final SubtaskProvider subtaskProvider;
-  late final TextEditingController nameEditingController;
   late bool checkClose;
+  late final SubtaskProvider subtaskProvider;
+  late final UserProvider userProvider;
+
+  late final TextEditingController nameEditingController;
 
   String? nameErrorText;
 
@@ -36,10 +40,10 @@ class _UpdateSubtaskScreen extends State<UpdateSubtaskScreen> {
     if (null != widget.initialSubtask) {
       subtaskProvider.curSubtask = widget.initialSubtask;
     }
-    checkClose = false;
+
+    userProvider = Provider.of<UserProvider>(context, listen: false);
 
     nameEditingController = TextEditingController(text: subtask.name);
-
     nameEditingController.addListener(() {
       SemanticsService.announce(
           nameEditingController.text, Directionality.of(context));
@@ -49,6 +53,7 @@ class _UpdateSubtaskScreen extends State<UpdateSubtaskScreen> {
         });
       }
     });
+    checkClose = false;
     super.initState();
   }
 
@@ -71,10 +76,10 @@ class _UpdateSubtaskScreen extends State<UpdateSubtaskScreen> {
 
   @override
   Widget build(context) {
-    double width = MediaQuery.of(context).size.width;
-    bool smallScreen = (width <= Constants.smallScreen);
+    MediaQuery.of(context).size;
+
     return Dialog(
-        insetPadding: (smallScreen)
+        insetPadding: (userProvider.smallScreen)
             ? const EdgeInsets.all(Constants.mobileDialogPadding)
             : const EdgeInsets.all(Constants.outerDialogPadding),
         child: ConstrainedBox(
@@ -108,7 +113,8 @@ class _UpdateSubtaskScreen extends State<UpdateSubtaskScreen> {
                       onChanged: (value) {
                         if (mounted) {
                           setState(() {
-                            checkClose = true;
+                            checkClose =
+                                userProvider.curUser?.checkClose ?? true;
                             subtask.completed = value!;
                           });
                         }
@@ -123,7 +129,7 @@ class _UpdateSubtaskScreen extends State<UpdateSubtaskScreen> {
                     handleClear: () {
                       if (mounted) {
                         setState(() {
-                          checkClose = true;
+                          checkClose = userProvider.curUser?.checkClose ?? true;
                           nameEditingController.clear();
                           subtask.name = "";
                         });
@@ -132,7 +138,7 @@ class _UpdateSubtaskScreen extends State<UpdateSubtaskScreen> {
                     onEditingComplete: () {
                       if (mounted) {
                         setState(() {
-                          checkClose = true;
+                          checkClose = userProvider.curUser?.checkClose ?? true;
                           subtask.name = nameEditingController.text;
                         });
                       }
@@ -152,7 +158,8 @@ class _UpdateSubtaskScreen extends State<UpdateSubtaskScreen> {
                         }
                         if (mounted) {
                           setState(() {
-                            checkClose = true;
+                            checkClose =
+                                userProvider.curUser?.checkClose ?? true;
                             subtask.weight = value.toInt();
                           });
                         }

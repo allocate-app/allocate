@@ -212,7 +212,7 @@ void _userSerialize(
   writer.writeLong(offsets[4], object.curMornID);
   writer.writeLong(offsets[5], object.dayCost);
   writer.writeByte(offsets[6], object.deleteSchedule.index);
-  writer.writeBool(offsets[7], object.dontAsk);
+  writer.writeBool(offsets[7], object.checkClose);
   writer.writeBool(offsets[8], object.isSynced);
   writer.writeDateTime(offsets[9], object.lastOpened);
   writer.writeDateTime(offsets[10], object.lastUpdated);
@@ -247,7 +247,7 @@ User _userDeserialize(
     deleteSchedule:
         _UserdeleteScheduleValueEnumMap[reader.readByteOrNull(offsets[6])] ??
             DeleteSchedule.never,
-    dontAsk: reader.readBoolOrNull(offsets[7]) ?? false,
+    checkClose: reader.readBoolOrNull(offsets[7]) ?? false,
     isSynced: reader.readBoolOrNull(offsets[8]) ?? false,
     lastOpened: reader.readDateTime(offsets[9]),
     lastUpdated: reader.readDateTime(offsets[10]),

@@ -151,6 +151,7 @@ class Tiles {
                   return await showDialog<List<bool>?>(
                       barrierDismissible: true,
                       context: context,
+                      useRootNavigator: false,
                       builder: (BuildContext context) {
                         return CheckDeleteDialog(
                             dontAsk: !checkDelete, type: "Task");
@@ -437,6 +438,7 @@ class Tiles {
                   }
                   return await showDialog<List<bool>?>(
                       barrierDismissible: true,
+                      useRootNavigator: false,
                       context: context,
                       builder: (BuildContext context) {
                         return CheckDeleteDialog(
@@ -543,6 +545,7 @@ class Tiles {
                   }
                   return await showDialog<List<bool>?>(
                       barrierDismissible: true,
+                      useRootNavigator: false,
                       context: context,
                       builder: (BuildContext context) {
                         return CheckDeleteDialog(
@@ -706,6 +709,7 @@ class Tiles {
                   }
                   return await showDialog<List<bool>?>(
                       barrierDismissible: true,
+                      useRootNavigator: false,
                       context: context,
                       builder: (BuildContext context) {
                         return CheckDeleteDialog(
@@ -834,7 +838,7 @@ class Tiles {
               context: context,
               builder: (BuildContext context) {
                 return UpdateGroupScreen(initialGroup: group);
-              });
+              }).whenComplete(() {});
         }),
         trailing: Row(mainAxisSize: MainAxisSize.min, children: [
           Padding(
@@ -850,6 +854,7 @@ class Tiles {
                   }
                   return await showDialog<List<bool>?>(
                       barrierDismissible: true,
+                      useRootNavigator: false,
                       context: context,
                       builder: (BuildContext context) {
                         return CheckDeleteDialog(
@@ -892,13 +897,13 @@ class Tiles {
           PaginatingListview<ToDo>(
             items: group.toDos,
             query: (
-                    {int limit = Constants.minLimitPerQuery,
-                    int offset = 0}) async =>
-                await groupProvider.getToDosByGroupID(
-                    id: group.id, limit: limit, offset: offset),
-            offset: group.toDos.length,
-            paginateButton: true,
+                {int limit = Constants.minLimitPerQuery,
+                int offset = 0}) async {
+              return await groupProvider.getToDosByGroupID(
+                  id: group.id, limit: limit, offset: offset);
+            },
             pullToRefresh: false,
+            offset: group.toDos.length,
             onFetch: onToDoFetch,
             onRemove: onToDoRemove,
             rebuildNotifiers: [toDoProvider],
@@ -959,7 +964,7 @@ class Tiles {
 
                     toDo.groupIndex = -1;
                     toDo.groupID = null;
-                    await toDoProvider.updateToDo(toDo: items[index]);
+                    await toDoProvider.updateToDo(toDo: toDo);
                   });
             },
           ),
@@ -1343,6 +1348,8 @@ class Tiles {
     );
   }
 
+  // TODO: fix double query
+  // Not likely to be possible, nor helpful.
   static Widget filledRoutineTile({
     required BuildContext context,
     required Routine routine,
@@ -1365,7 +1372,7 @@ class Tiles {
             await showDialog(
                 context: context,
                 barrierDismissible: false,
-                useRootNavigator: true,
+                useRootNavigator: false,
                 builder: (BuildContext context) =>
                     UpdateRoutineScreen(initialRoutine: routine));
           }),
@@ -2057,6 +2064,7 @@ class Tiles {
           onTap: () async {
             await showDialog<Map<String, dynamic>?>(
                 context: context,
+                useRootNavigator: false,
                 builder: (BuildContext context) {
                   return FrequencyDialog(
                     frequency: frequency,

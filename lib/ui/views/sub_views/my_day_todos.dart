@@ -26,7 +26,6 @@ class _MyDayToDos extends State<MyDayToDos> {
   void initState() {
     super.initState();
     initializeProviders();
-    initializeParameters();
   }
 
   void initializeProviders() {
@@ -39,20 +38,37 @@ class _MyDayToDos extends State<MyDayToDos> {
     groupProvider = Provider.of<GroupProvider>(context, listen: false);
   }
 
-  void initializeParameters() {}
-
   @override
   void dispose() {
     super.dispose();
   }
 
+  void onFetch({List<ToDo>? items}) {
+    if (null == items) {
+      return;
+    }
+    for (ToDo toDo in items) {
+      toDo.fade = Fade.fadeIn;
+    }
+  }
+
+  Future<void> onRemove({ToDo? item}) async {
+    if (null == item) {
+      return;
+    }
+
+    if (toDoProvider.toDos.length < 2) {
+      return;
+    }
+
+    if (mounted) {
+      setState(() => item.fade = Fade.fadeOut);
+      await Future.delayed(const Duration(milliseconds: Constants.fadeOutTime));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    double width = MediaQuery.of(context).size.width;
-    bool largeScreen = (width >= Constants.largeScreen);
-    bool smallScreen = (width <= Constants.smallScreen);
-    bool hugeScreen = (width >= Constants.hugeScreen);
-
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -72,31 +88,12 @@ class _MyDayToDos extends State<MyDayToDos> {
                 toDoProvider.rebuild = false;
                 groupProvider.rebuild = false;
               },
-              // TODO: once usr, factor in conditional.
-              onFetch: ({List<ToDo>? items}) {
-                if (null == items) {
-                  return;
-                }
-                for (ToDo toDo in items) {
-                  toDo.fade = Fade.fadeIn;
-                }
-              },
-              onRemove: ({ToDo? item}) async {
-                if (null == item) {
-                  return;
-                }
-
-                if (toDoProvider.toDos.length < 2) {
-                  return;
-                }
-
-                if (mounted) {
-                  setState(() => item.fade = Fade.fadeOut);
-                  await Future.delayed(
-                      const Duration(milliseconds: Constants.fadeOutTime));
-                }
-              },
-              paginateButton: false,
+              onFetch: (userProvider.curUser?.reduceMotion ?? false)
+                  ? null
+                  : onFetch,
+              onRemove: (userProvider.curUser?.reduceMotion ?? false)
+                  ? null
+                  : onRemove,
               listviewBuilder: (
                   {Key? key,
                   required BuildContext context,
@@ -121,7 +118,6 @@ class _MyDayToDos extends State<MyDayToDos> {
                         await onRemove(item: toDo);
                       }
                     },
-                    smallScreen: smallScreen,
                   );
                 }
                 return ListViews.immutableMyDay(
@@ -142,7 +138,6 @@ class _MyDayToDos extends State<MyDayToDos> {
                       await onRemove(item: toDo);
                     }
                   },
-                  smallScreen: smallScreen,
                 );
               }),
         ),

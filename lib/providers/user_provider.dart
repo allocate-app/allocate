@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:developer';
+import 'dart:ui';
 
 import 'package:flutter/foundation.dart';
 
@@ -24,11 +25,49 @@ class UserProvider extends ChangeNotifier {
   int myDayTotal = 0;
   int myDayIndex = 0;
 
+  Size _size = const Size(0, 0);
+
+  bool _largeScreen = false;
+  bool _hugeScreen = false;
+  bool _smallScreen = false;
+  bool isTablet = false;
+
+  // not sure if this is needed
+  bool isMobile = false;
+
+  Size get size => _size;
+
+  set size(Size newSize) {
+    _size = newSize;
+    _smallScreen = width <= Constants.smallScreen;
+    _largeScreen = width >= Constants.largeScreen;
+    _hugeScreen = width >= Constants.hugeScreen;
+  }
+
+  double get height => size.height;
+
+  double get width => size.width;
+
+  bool get smallScreen => _smallScreen;
+
+  bool get largeScreen => _largeScreen;
+
+  bool get hugeScreen => _hugeScreen;
+
   User? curUser;
+  List<User> users = [];
 
   UserProvider() {
     init();
   }
+
+  // Init. (no timer, wtf).
+  // Get user, (last updated)
+  // Swap user, *maybe store JWT?* see if possible
+  // Sign in -> should query supabase.
+  // Sign out.
+  // Update user.
+  // None of this sync nonsense.
 
   Future<void> init() async {
     startTimer();

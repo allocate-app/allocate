@@ -1,3 +1,4 @@
+import 'package:allocate/providers/user_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -21,16 +22,14 @@ class GroupsListScreen extends StatefulWidget {
 }
 
 class _GroupsListScreen extends State<GroupsListScreen> {
-  late bool checkDelete;
-
   late final GroupProvider groupProvider;
   late final ToDoProvider toDoProvider;
+  late final UserProvider userProvider;
 
   @override
   void initState() {
     super.initState();
     initializeProviders();
-    initializeParameters();
   }
 
   void initializeProviders() {
@@ -39,10 +38,7 @@ class _GroupsListScreen extends State<GroupsListScreen> {
       groupProvider.groups = [];
     }
     toDoProvider = Provider.of<ToDoProvider>(context, listen: false);
-  }
-
-  void initializeParameters() {
-    checkDelete = true;
+    userProvider = Provider.of<UserProvider>(context, listen: false);
   }
 
   void initializeControllers() {}
@@ -88,10 +84,6 @@ class _GroupsListScreen extends State<GroupsListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    double width = MediaQuery.of(context).size.width;
-    bool largeScreen = (width >= Constants.largeScreen);
-    bool smallScreen = (width <= Constants.smallScreen);
-
     return Padding(
       padding: const EdgeInsets.all(Constants.innerPadding),
       child: Column(mainAxisSize: MainAxisSize.min, children: [
@@ -128,9 +120,12 @@ class _GroupsListScreen extends State<GroupsListScreen> {
                 groupProvider.groups = items;
                 groupProvider.rebuild = false;
               },
-              onFetch: onFetch,
-              onRemove: onRemove,
-              paginateButton: false,
+              onFetch: (userProvider.curUser?.reduceMotion ?? false)
+                  ? null
+                  : onFetch,
+              onRemove: (userProvider.curUser?.reduceMotion ?? false)
+                  ? null
+                  : onRemove,
               getAnimationKey: () => ValueKey(
                   groupProvider.sorter.sortMethod.index *
                           (groupProvider.sorter.descending ? -1 : 1) +
@@ -145,7 +140,7 @@ class _GroupsListScreen extends State<GroupsListScreen> {
                     key: key,
                     context: context,
                     groups: items,
-                    checkDelete: checkDelete,
+                    checkDelete: userProvider.curUser?.checkDelete ?? true,
                     onRemove: onRemove,
                     onToDoFetch: onFetch,
                     onToDoRemove: this.onRemove,
@@ -155,7 +150,7 @@ class _GroupsListScreen extends State<GroupsListScreen> {
                     key: key,
                     context: context,
                     groups: items,
-                    checkDelete: checkDelete,
+                    checkDelete: userProvider.curUser?.checkDelete ?? true,
                     onRemove: onRemove,
                     onToDoFetch: onFetch,
                     onToDoRemove: this.onRemove);

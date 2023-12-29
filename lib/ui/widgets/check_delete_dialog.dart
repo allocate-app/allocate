@@ -1,6 +1,8 @@
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
+import '../../providers/user_provider.dart';
 import '../../util/constants.dart';
 
 class CheckDeleteDialog extends StatefulWidget {
@@ -16,18 +18,23 @@ class CheckDeleteDialog extends StatefulWidget {
 class _CheckDeleteDialog extends State<CheckDeleteDialog> {
   late bool dontAsk;
   late final String type;
+  late final UserProvider userProvider;
 
   @override
   void initState() {
     dontAsk = widget.dontAsk;
     type = widget.type;
+    userProvider = Provider.of<UserProvider>(context, listen: false);
     super.initState();
   }
 
   @override
   Widget build(context) {
+    MediaQuery.of(context).size;
     return Dialog(
-        insetPadding: const EdgeInsets.all(Constants.mobileDialogPadding),
+        insetPadding: EdgeInsets.all((userProvider.smallScreen)
+            ? Constants.mobileDialogPadding
+            : Constants.outerDialogPadding),
         child: ConstrainedBox(
           constraints: const BoxConstraints(
               maxHeight: Constants.smallLandscapeDialogHeight,
@@ -81,7 +88,7 @@ class _CheckDeleteDialog extends State<CheckDeleteDialog> {
                               child: FilledButton.tonalIcon(
                                   icon: const Icon(Icons.close_outlined),
                                   onPressed: () {
-                                    Navigator.pop(context, [false, !dontAsk]);
+                                    Navigator.pop(context, [false, false]);
                                   },
                                   label: const AutoSizeText("Cancel",
                                       softWrap: false,
@@ -116,7 +123,7 @@ class _CheckDeleteDialog extends State<CheckDeleteDialog> {
                               Radius.circular(Constants.semiCircular))),
                       checkboxShape: const CircleBorder(),
                       title: const AutoSizeText(
-                        "Don't ask me again",
+                        "Delete without checking",
                         overflow: TextOverflow.visible,
                         softWrap: false,
                         maxLines: 1,

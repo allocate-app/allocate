@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../../model/task/todo.dart';
 import '../../../providers/group_provider.dart';
 import '../../../providers/todo_provider.dart';
+import '../../../providers/user_provider.dart';
 import '../../../util/constants.dart';
 import '../../../util/enums.dart';
 import '../../widgets/listview_header.dart';
@@ -20,9 +21,8 @@ class ToDosListScreen extends StatefulWidget {
 }
 
 class _ToDosListScreen extends State<ToDosListScreen> {
-  late bool checkDelete;
-
   late final ToDoProvider toDoProvider;
+  late final UserProvider userProvider;
   late final GroupProvider groupProvider;
 
   // DB is too fast.
@@ -31,7 +31,6 @@ class _ToDosListScreen extends State<ToDosListScreen> {
   void initState() {
     super.initState();
     initializeProviders();
-    initializeParameters();
   }
 
   void initializeProviders() {
@@ -39,19 +38,37 @@ class _ToDosListScreen extends State<ToDosListScreen> {
     if (toDoProvider.rebuild) {
       toDoProvider.toDos = [];
     }
+
+    userProvider = Provider.of<UserProvider>(context, listen: false);
     groupProvider = Provider.of<GroupProvider>(context, listen: false);
   }
 
-  void initializeParameters() {
-    checkDelete = true;
+  void onFetch({List<ToDo>? items}) {
+    if (null == items) {
+      return;
+    }
+    for (ToDo toDo in items) {
+      toDo.fade = Fade.fadeIn;
+    }
+  }
+
+  Future<void> onRemove({ToDo? item}) async {
+    if (null == item) {
+      return;
+    }
+
+    if (toDoProvider.toDos.length < 2) {
+      return;
+    }
+
+    if (mounted) {
+      setState(() => item.fade = Fade.fadeOut);
+      await Future.delayed(const Duration(milliseconds: Constants.fadeOutTime));
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    double width = MediaQuery.of(context).size.width;
-    bool largeScreen = (width >= Constants.largeScreen);
-    bool smallScreen = (width <= Constants.smallScreen);
-
     return Padding(
       padding: const EdgeInsets.all(Constants.innerPadding),
       child: Column(mainAxisSize: MainAxisSize.min, children: [
@@ -88,35 +105,16 @@ class _ToDosListScreen extends State<ToDosListScreen> {
                 toDoProvider.toDos = items;
                 toDoProvider.rebuild = false;
               },
-              paginateButton: false,
               getAnimationKey: () => ValueKey(
                   toDoProvider.sorter.sortMethod.index *
                           (toDoProvider.sorter.descending ? -1 : 1) +
                       (toDoProvider.toDos.isEmpty ? 0 : 1)),
-              onFetch: ({List<ToDo>? items}) {
-                if (null == items) {
-                  return;
-                }
-                for (ToDo toDo in items) {
-                  toDo.fade = Fade.fadeIn;
-                }
-              },
-              onRemove: ({ToDo? item}) async {
-                if (null == item) {
-                  return;
-                }
-
-                // The list will animate out if there is only one item removed.
-                if (toDoProvider.toDos.length < 2) {
-                  return;
-                }
-
-                if (mounted) {
-                  setState(() => item.fade = Fade.fadeOut);
-                  await Future.delayed(
-                      const Duration(milliseconds: Constants.fadeOutTime));
-                }
-              },
+              onFetch: (userProvider.curUser?.reduceMotion ?? false)
+                  ? null
+                  : onFetch,
+              onRemove: (userProvider.curUser?.reduceMotion ?? false)
+                  ? null
+                  : onRemove,
               listviewBuilder: (
                   {Key? key,
                   required BuildContext context,
@@ -127,7 +125,7 @@ class _ToDosListScreen extends State<ToDosListScreen> {
                     key: key,
                     context: context,
                     toDos: items,
-                    checkDelete: checkDelete,
+                    checkDelete: userProvider.curUser?.checkDelete ?? true,
                     onRemove: onRemove,
                     checkboxAnimateBeforeUpdate: (
                         {required ToDo toDo, required int index}) async {
@@ -142,14 +140,14 @@ class _ToDosListScreen extends State<ToDosListScreen> {
                         await onRemove(item: toDo);
                       }
                     },
-                    smallScreen: smallScreen,
+                    smallScreen: userProvider.smallScreen,
                   );
                 }
                 return ListViews.immutableToDos(
                   key: key,
                   context: context,
                   toDos: items,
-                  checkDelete: checkDelete,
+                  checkDelete: userProvider.curUser?.checkDelete ?? true,
                   onRemove: onRemove,
                   checkboxAnimateBeforeUpdate: (
                       {required ToDo toDo, required int index}) async {
@@ -164,7 +162,7 @@ class _ToDosListScreen extends State<ToDosListScreen> {
                       await onRemove(item: toDo);
                     }
                   },
-                  smallScreen: smallScreen,
+                  smallScreen: userProvider.smallScreen,
                 );
               }),
         ),

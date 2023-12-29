@@ -61,7 +61,7 @@ class _HomeScreen extends State<HomeScreen> {
     // TODO: change this after userProvider && widgets are finished.
     return (Effect.disabled == userProvider.curUser?.windowEffect)
         ? 1.0
-        : userProvider.curUser?.sidebarOpacity ?? 0.85;
+        : userProvider.curUser?.sidebarOpacity ?? 0.95;
   }
 
   double get scaffoldOpacity {
@@ -78,6 +78,8 @@ class _HomeScreen extends State<HomeScreen> {
     initializeControllers();
   }
 
+  // TODO: fix this -> rebuild should notify listeners in other classes.
+  // Listening here should just be for myday/navgroups.
   void initializeProviders() {
     toDoProvider = Provider.of<ToDoProvider>(context, listen: false);
     routineProvider = Provider.of<RoutineProvider>(context, listen: false);
@@ -169,13 +171,10 @@ class _HomeScreen extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    //TODO: refactor the media query ALL SCREENS to avoid running twice;
-    double width = MediaQuery.of(context).size.width;
+    userProvider.size = MediaQuery.of(context).size;
+    print("MQ: ${userProvider.size}");
 
-    bool largeScreen = (width >= Constants.largeScreen);
-    bool smallScreen = (width <= Constants.smallScreen);
-
-    return (largeScreen)
+    return (userProvider.largeScreen)
         ? buildDesktop(context: context)
         : buildMobile(context: context);
   }
@@ -184,7 +183,6 @@ class _HomeScreen extends State<HomeScreen> {
     return Row(children: [
       // This is a workaround for a standard navigation drawer
       // until m3 spec is fully implemented in flutter.
-      // TODO: implement animatedSwitcher.
       TweenAnimationBuilder<double>(
           duration: const Duration(milliseconds: 600),
           curve: Curves.fastLinearToSlowEaseIn,
@@ -208,15 +206,11 @@ class _HomeScreen extends State<HomeScreen> {
               ),
             ));
           }),
-      // TransparentMacOSSidebar(
-      //   // state: This should be user define-able,
-      //   child: DesktopDrawerWrapper(
-      //       drawer: buildNavigationDrawer(
-      //           context: context, largeScreen: largeScreen)),
+      // VerticalDivider(
+      //   color: Theme.of(context).colorScheme.outlineVariant,
+      //   thickness: 2,
+      //   width: 2,
       // ),
-      const VerticalDivider(
-        width: 1,
-      ),
 
       Expanded(
           child: Scaffold(
@@ -301,7 +295,6 @@ class _HomeScreen extends State<HomeScreen> {
         });
   }
 
-  // TODO: refactor: largescreen -> mobile;
   NavigationDrawer buildNavigationDrawer(
       {required BuildContext context, bool largeScreen = false}) {
     return NavigationDrawer(

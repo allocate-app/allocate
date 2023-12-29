@@ -10,6 +10,7 @@ import '../../../../providers/group_provider.dart';
 import '../../../model/task/group.dart';
 import '../../../model/task/todo.dart';
 import '../../../providers/todo_provider.dart';
+import '../../../providers/user_provider.dart';
 import '../../../util/constants.dart';
 import '../../../util/enums.dart';
 import '../../../util/exceptions.dart';
@@ -48,6 +49,7 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
   // Providers
   late final GroupProvider groupProvider;
   late final ToDoProvider toDoProvider;
+  late final UserProvider userProvider;
 
   // Scrolling
   late final ScrollController desktopScrollController;
@@ -84,7 +86,8 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
     if (null != widget.initialGroup) {
       groupProvider.curGroup = widget.initialGroup;
     }
-    // toDoProvider.addListener(resetPagination);
+
+    userProvider = Provider.of<UserProvider>(context, listen: false);
   }
 
   void initializeParameters() {
@@ -147,7 +150,7 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
   void clearNameField() {
     if (mounted) {
       setState(() {
-        checkClose = true;
+        checkClose = (groupProvider.user?.checkClose ?? true);
         nameEditingController.clear();
         group.name = "";
       });
@@ -157,7 +160,7 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
   void updateName() {
     if (mounted) {
       setState(() {
-        checkClose = true;
+        checkClose = (groupProvider.user?.checkClose ?? true);
         group.name = nameEditingController.text;
       });
     }
@@ -166,7 +169,7 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
   void updateDescription() {
     if (mounted) {
       setState(() {
-        checkClose = true;
+        checkClose = (groupProvider.user?.checkClose ?? true);
         group.description = descriptionEditingController.text;
       });
     }
@@ -208,9 +211,8 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
     }
   }
 
-  // This should just reset pagination
   Future<void> createToDo() async {
-    checkClose = true;
+    checkClose = (groupProvider.user?.checkClose ?? true);
     await showDialog(
         barrierDismissible: false,
         useRootNavigator: false,
@@ -275,16 +277,33 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
     }, test: (e) => e is FailureToDeleteException);
   }
 
+  void onFetch({List<ToDo>? items}) {
+    if (null == items) {
+      return;
+    }
+    for (ToDo toDo in items) {
+      toDo.fade = Fade.fadeIn;
+    }
+  }
+
+  Future<void> onRemove({ToDo? item}) async {
+    if (null == item) {
+      return;
+    }
+    if (mounted) {
+      setState(() => item.fade = Fade.fadeOut);
+      await Future.delayed(const Duration(milliseconds: Constants.fadeInTime));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    double width = MediaQuery.of(context).size.width;
-    bool largeScreen = (width >= Constants.largeScreen);
-    bool smallScreen = (width <= Constants.smallScreen);
-    bool hugeScreen = (width >= Constants.hugeScreen);
-
-    return (largeScreen)
-        ? buildDesktopDialog(context: context, smallScreen: smallScreen)
-        : buildMobileDialog(context: context, smallScreen: smallScreen);
+    MediaQuery.of(context).size;
+    return (userProvider.largeScreen)
+        ? buildDesktopDialog(
+            context: context, smallScreen: userProvider.smallScreen)
+        : buildMobileDialog(
+            context: context, smallScreen: userProvider.smallScreen);
   }
 
   Dialog buildDesktopDialog(
@@ -310,7 +329,7 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
                       const EdgeInsets.symmetric(horizontal: Constants.padding),
                   handleClose: handleClose,
                 ),
-                const PaddedDivider(padding: Constants.padding),
+                const PaddedDivider(padding: Constants.halfPadding),
                 Flexible(
                   child: Scrollbar(
                     thumbVisibility: true,
@@ -387,7 +406,7 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
                   ),
                 ),
 
-                const PaddedDivider(padding: Constants.padding),
+                const PaddedDivider(padding: Constants.halfPadding),
                 Tiles.updateAndDeleteButtons(
                   handleDelete: handleDelete,
                   handleUpdate: handleUpdate,
@@ -423,7 +442,7 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
                     const EdgeInsets.symmetric(horizontal: Constants.padding),
                 handleClose: handleClose,
               ),
-              const PaddedDivider(padding: Constants.padding),
+              const PaddedDivider(padding: Constants.halfPadding),
               Flexible(
                 child: ListView(
                     shrinkWrap: true,
@@ -463,7 +482,7 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
                     ]),
               ),
 
-              const PaddedDivider(padding: Constants.padding),
+              const PaddedDivider(padding: Constants.halfPadding),
               Tiles.updateAndDeleteButtons(
                 handleDelete: handleDelete,
                 handleUpdate: handleUpdate,
@@ -491,8 +510,6 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
       subtitle: Subtitles.groupSubtitle(
           toDoCount: groupProvider.getToDoCount(id: group.id)!),
       children: [
-        // This is too jarring. The database is too fast.
-        // (loading) ? const CircularProgressIndicator() : const SizedBox.shrink(),
         PaginatingListview<ToDo>(
             items: group.toDos,
             query: (
@@ -501,26 +518,11 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
                 await groupProvider.getToDosByGroupID(
                     id: group.id, limit: limit, offset: offset),
             offset: group.toDos.length,
-            paginateButton: true,
-            // TODO: once usr, make conditional.
-            onFetch: ({List<ToDo>? items}) {
-              if (null == items) {
-                return;
-              }
-              for (ToDo toDo in items) {
-                toDo.fade = Fade.fadeIn;
-              }
-            },
-            onRemove: ({ToDo? item}) async {
-              if (null == item) {
-                return;
-              }
-              if (mounted) {
-                setState(() => item.fade = Fade.fadeOut);
-                // TODO: not sure if this should be delayed.
-                await Future.delayed(const Duration(milliseconds: 500));
-              }
-            },
+            indicatorDisplacement: 0.0,
+            onFetch:
+                (groupProvider.user?.reduceMotion ?? false) ? null : onFetch,
+            onRemove:
+                (groupProvider.user?.reduceMotion ?? false) ? null : onRemove,
             rebuildNotifiers: [toDoProvider],
             rebuildCallback: ({required List<ToDo> items}) {
               group.toDos = items;

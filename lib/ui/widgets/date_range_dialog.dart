@@ -2,7 +2,9 @@ import 'package:auto_size_text/auto_size_text.dart';
 import 'package:calendar_date_picker2/calendar_date_picker2.dart';
 import 'package:flutter/material.dart';
 import 'package:jiffy/jiffy.dart';
+import 'package:provider/provider.dart';
 
+import '../../providers/user_provider.dart';
 import '../../util/constants.dart';
 
 class DateRangeDialog extends StatefulWidget {
@@ -24,6 +26,7 @@ class _DateRangeDialog extends State<DateRangeDialog> {
 
   late bool setStart = false;
   late List<DateTime?> showDates;
+  late UserProvider userProvider;
 
   @override
   void initState() {
@@ -33,15 +36,18 @@ class _DateRangeDialog extends State<DateRangeDialog> {
     numDays = (dueDate?.difference(initDate).inDays ?? 0) + 1;
     showDates =
         List.generate(numDays, (i) => initDate.copyWith(day: initDate.day + i));
+    userProvider = Provider.of<UserProvider>(context, listen: false);
     super.initState();
   }
 
   @override
   Widget build(context) {
-    double width = MediaQuery.of(context).size.width;
-    bool smallScreen = (width <= Constants.smallScreen);
+    // This still has to run to repaint the screen
+    MediaQuery.of(context).size;
     return Dialog(
-        insetPadding: const EdgeInsets.all(Constants.mobileDialogPadding),
+        insetPadding: EdgeInsets.all((userProvider.smallScreen)
+            ? Constants.mobileDialogPadding
+            : Constants.outerDialogPadding),
         child: ConstrainedBox(
           constraints: const BoxConstraints(
               maxWidth: Constants.smallLandscapeDialogWidth),
@@ -256,7 +262,7 @@ class _DateRangeDialog extends State<DateRangeDialog> {
 
                   // Calendar view.
                   Flexible(
-                    flex: (smallScreen) ? 1 : 2,
+                    flex: (userProvider.smallScreen) ? 1 : 2,
                     child: CalendarDatePicker2(
                         config: CalendarDatePicker2Config(
                           centerAlignModePicker: true,

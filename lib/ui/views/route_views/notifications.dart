@@ -10,6 +10,7 @@ import '../../../model/task/todo.dart';
 import '../../../providers/deadline_provider.dart';
 import '../../../providers/reminder_provider.dart';
 import '../../../providers/todo_provider.dart';
+import '../../../providers/user_provider.dart';
 import '../../../util/constants.dart';
 import '../../../util/enums.dart';
 import '../../../util/interfaces/i_model.dart';
@@ -27,10 +28,10 @@ class NotificationsScreen extends StatefulWidget {
 }
 
 class _NotificationsScreen extends State<NotificationsScreen> {
-  late bool checkDelete;
   late final ToDoProvider toDoProvider;
   late final ReminderProvider reminderProvider;
   late final DeadlineProvider deadlineProvider;
+  late final UserProvider userProvider;
 
   late final ScrollController mainScrollController;
 
@@ -40,18 +41,31 @@ class _NotificationsScreen extends State<NotificationsScreen> {
   void initState() {
     super.initState();
     initializeProviders();
-    initializeParameters();
     initializeControllers();
   }
 
   void initializeProviders() {
     toDoProvider = Provider.of<ToDoProvider>(context, listen: false);
-    reminderProvider = Provider.of<ReminderProvider>(context, listen: false);
-    deadlineProvider = Provider.of<DeadlineProvider>(context, listen: false);
-  }
 
-  void initializeParameters() {
-    checkDelete = true;
+    if (toDoProvider.rebuild) {
+      toDoProvider.toDos = [];
+      toDoProvider.secondaryToDos = [];
+    }
+
+    reminderProvider = Provider.of<ReminderProvider>(context, listen: false);
+
+    if (reminderProvider.rebuild) {
+      reminderProvider.reminders = [];
+      reminderProvider.secondaryReminders = [];
+    }
+
+    deadlineProvider = Provider.of<DeadlineProvider>(context, listen: false);
+    if (deadlineProvider.rebuild) {
+      deadlineProvider.deadlines = [];
+      deadlineProvider.secondaryDeadlines = [];
+    }
+
+    userProvider = Provider.of<UserProvider>(context, listen: false);
   }
 
   void initializeControllers() {
@@ -108,10 +122,7 @@ class _NotificationsScreen extends State<NotificationsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    double width = MediaQuery.of(context).size.width;
-    bool largeScreen = (width >= Constants.largeScreen);
-    bool smallScreen = (width <= Constants.smallScreen);
-
+    MediaQuery.of(context).size;
     return Padding(
         padding: const EdgeInsets.all(Constants.innerPadding),
         child: Column(mainAxisSize: MainAxisSize.min, children: [
@@ -175,15 +186,23 @@ class _NotificationsScreen extends State<NotificationsScreen> {
                                         key: key,
                                         context: context,
                                         deadlines: items,
-                                        checkDelete: checkDelete,
-                                        smallScreen: smallScreen,
+                                        checkDelete:
+                                            userProvider.curUser?.checkDelete ??
+                                                true,
+                                        smallScreen: userProvider.smallScreen,
                                         onRemove: onRemove,
                                       ),
                                   query: deadlineProvider.getUpcoming,
-                                  paginateButton: true,
-                                  // TODO: make conditin
-                                  onFetch: onFetch,
-                                  onRemove: onRemove,
+                                  onFetch:
+                                      (userProvider.curUser?.reduceMotion ??
+                                              false)
+                                          ? null
+                                          : onFetch,
+                                  onRemove:
+                                      (userProvider.curUser?.reduceMotion ??
+                                              false)
+                                          ? null
+                                          : onRemove,
                                   rebuildNotifiers: [deadlineProvider],
                                   rebuildCallback: (
                                       {required List<Deadline> items}) {
@@ -210,9 +229,16 @@ class _NotificationsScreen extends State<NotificationsScreen> {
                                   offset: (reminderProvider.rebuild)
                                       ? 0
                                       : reminderProvider.reminders.length,
-                                  // TODO: make conditinl
-                                  onFetch: onFetch,
-                                  onRemove: onRemove,
+                                  onFetch:
+                                      (userProvider.curUser?.reduceMotion ??
+                                              false)
+                                          ? null
+                                          : onFetch,
+                                  onRemove:
+                                      (userProvider.curUser?.reduceMotion ??
+                                              false)
+                                          ? null
+                                          : onRemove,
                                   listviewBuilder: (
                                           {Key? key,
                                           required BuildContext context,
@@ -224,12 +250,13 @@ class _NotificationsScreen extends State<NotificationsScreen> {
                                         key: key,
                                         context: context,
                                         reminders: items,
-                                        checkDelete: checkDelete,
-                                        smallScreen: smallScreen,
+                                        checkDelete:
+                                            userProvider.curUser?.checkDelete ??
+                                                true,
+                                        smallScreen: userProvider.smallScreen,
                                         onRemove: onRemove,
                                       ),
                                   query: reminderProvider.getUpcoming,
-                                  paginateButton: true,
                                   rebuildNotifiers: [reminderProvider],
                                   rebuildCallback: (
                                       {required List<Reminder> items}) {
@@ -256,9 +283,16 @@ class _NotificationsScreen extends State<NotificationsScreen> {
                                   offset: (toDoProvider.rebuild)
                                       ? 0
                                       : toDoProvider.toDos.length,
-                                  // TODO; make cond.
-                                  onFetch: onFetch,
-                                  onRemove: onRemove,
+                                  onFetch:
+                                      (userProvider.curUser?.reduceMotion ??
+                                              false)
+                                          ? null
+                                          : onFetch,
+                                  onRemove:
+                                      (userProvider.curUser?.reduceMotion ??
+                                              false)
+                                          ? null
+                                          : onRemove,
                                   listviewBuilder: (
                                           {Key? key,
                                           required BuildContext context,
@@ -269,8 +303,10 @@ class _NotificationsScreen extends State<NotificationsScreen> {
                                         key: key,
                                         context: context,
                                         toDos: items,
-                                        checkDelete: checkDelete,
-                                        smallScreen: smallScreen,
+                                        checkDelete:
+                                            userProvider.curUser?.checkDelete ??
+                                                true,
+                                        smallScreen: userProvider.smallScreen,
                                         onRemove: onRemove,
                                         checkboxAnimateBeforeUpdate: (
                                             {required int index,
@@ -289,7 +325,6 @@ class _NotificationsScreen extends State<NotificationsScreen> {
                                         },
                                       ),
                                   query: toDoProvider.getUpcoming,
-                                  paginateButton: true,
                                   rebuildNotifiers: [toDoProvider],
                                   rebuildCallback: (
                                       {required List<ToDo> items}) {
@@ -335,8 +370,16 @@ class _NotificationsScreen extends State<NotificationsScreen> {
                                         ? 0
                                         : deadlineProvider
                                             .secondaryDeadlines.length,
-                                    onFetch: onFetch,
-                                    onRemove: onRemove,
+                                    onFetch:
+                                        (userProvider.curUser?.reduceMotion ??
+                                                false)
+                                            ? null
+                                            : onFetch,
+                                    onRemove:
+                                        (userProvider.curUser?.reduceMotion ??
+                                                false)
+                                            ? null
+                                            : onRemove,
                                     listviewBuilder: (
                                             {Key? key,
                                             required BuildContext context,
@@ -348,12 +391,13 @@ class _NotificationsScreen extends State<NotificationsScreen> {
                                           key: key,
                                           context: context,
                                           deadlines: items,
-                                          checkDelete: checkDelete,
-                                          smallScreen: smallScreen,
+                                          checkDelete: userProvider
+                                                  .curUser?.checkDelete ??
+                                              true,
+                                          smallScreen: userProvider.smallScreen,
                                           onRemove: onRemove,
                                         ),
                                     query: deadlineProvider.getOverdues,
-                                    paginateButton: true,
                                     rebuildNotifiers: [deadlineProvider],
                                     rebuildCallback: (
                                         {required List<Deadline> items}) {
@@ -382,8 +426,16 @@ class _NotificationsScreen extends State<NotificationsScreen> {
                                         ? 0
                                         : reminderProvider
                                             .secondaryReminders.length,
-                                    onFetch: onFetch,
-                                    onRemove: onRemove,
+                                    onFetch:
+                                        (userProvider.curUser?.reduceMotion ??
+                                                false)
+                                            ? null
+                                            : onFetch,
+                                    onRemove:
+                                        (userProvider.curUser?.reduceMotion ??
+                                                false)
+                                            ? null
+                                            : onRemove,
                                     listviewBuilder: (
                                             {Key? key,
                                             required BuildContext context,
@@ -395,12 +447,13 @@ class _NotificationsScreen extends State<NotificationsScreen> {
                                           key: key,
                                           context: context,
                                           reminders: items,
-                                          checkDelete: checkDelete,
-                                          smallScreen: smallScreen,
+                                          checkDelete: userProvider
+                                                  .curUser?.checkDelete ??
+                                              true,
+                                          smallScreen: userProvider.smallScreen,
                                           onRemove: onRemove,
                                         ),
                                     query: reminderProvider.getOverdues,
-                                    paginateButton: true,
                                     rebuildNotifiers: [reminderProvider],
                                     rebuildCallback: (
                                         {required List<Reminder> items}) {
@@ -428,8 +481,16 @@ class _NotificationsScreen extends State<NotificationsScreen> {
                                     offset: (toDoProvider.rebuild)
                                         ? 0
                                         : toDoProvider.secondaryToDos.length,
-                                    onFetch: onFetch,
-                                    onRemove: onRemove,
+                                    onFetch:
+                                        (userProvider.curUser?.reduceMotion ??
+                                                false)
+                                            ? null
+                                            : onFetch,
+                                    onRemove:
+                                        (userProvider.curUser?.reduceMotion ??
+                                                false)
+                                            ? null
+                                            : onRemove,
                                     listviewBuilder: (
                                             {Key? key,
                                             required BuildContext context,
@@ -440,8 +501,10 @@ class _NotificationsScreen extends State<NotificationsScreen> {
                                           key: key,
                                           context: context,
                                           toDos: items,
-                                          checkDelete: checkDelete,
-                                          smallScreen: smallScreen,
+                                          checkDelete: userProvider
+                                                  .curUser?.checkDelete ??
+                                              true,
+                                          smallScreen: userProvider.smallScreen,
                                           onRemove: onRemove,
                                           checkboxAnimateBeforeUpdate: (
                                               {required int index,
@@ -460,7 +523,6 @@ class _NotificationsScreen extends State<NotificationsScreen> {
                                           },
                                         ),
                                     query: toDoProvider.getOverdues,
-                                    paginateButton: true,
                                     rebuildNotifiers: [toDoProvider],
                                     rebuildCallback: (
                                         {required List<ToDo> items}) {

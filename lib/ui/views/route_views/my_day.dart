@@ -40,23 +40,20 @@ class _MyDayScreen extends State<MyDayScreen> {
 
   @override
   Widget build(BuildContext context) {
-    double width = MediaQuery.of(context).size.width;
-    bool largeScreen = (width >= Constants.largeScreen);
-    bool smallScreen = (width <= Constants.smallScreen);
-    bool hugeScreen = (width >= Constants.hugeScreen);
-
-    if (userProvider.myDayIndex == Constants.tabs.length - 1 && hugeScreen) {
+    if (userProvider.myDayIndex == Constants.tabs.length - 1 &&
+        userProvider.hugeScreen) {
       userProvider.myDayIndex = 0;
     }
+    MediaQuery.of(context).size;
 
-    return (hugeScreen)
+    return (userProvider.hugeScreen)
         ? buildHuge(context: context)
         : Padding(
             padding: const EdgeInsets.all(Constants.innerPadding),
             child: buildRegular(
                 context: context,
                 buildCalendar: true,
-                smallScreen: smallScreen),
+                smallScreen: userProvider.smallScreen),
           );
   }
 

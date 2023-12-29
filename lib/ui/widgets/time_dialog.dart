@@ -1,6 +1,8 @@
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
+import '../../providers/user_provider.dart';
 import '../../util/constants.dart';
 
 class TimeDialog extends StatefulWidget {
@@ -17,17 +19,23 @@ class _TimeDialog extends State<TimeDialog> {
   late TimeOfDay? startTime;
   late TimeOfDay? dueTime;
 
+  late final UserProvider userProvider;
+
   @override
   void initState() {
     startTime = widget.startTime;
     dueTime = widget.dueTime;
+    userProvider = Provider.of<UserProvider>(context, listen: false);
     super.initState();
   }
 
   @override
   Widget build(context) {
+    MediaQuery.of(context).size;
     return Dialog(
-        insetPadding: const EdgeInsets.all(Constants.mobileDialogPadding),
+        insetPadding: EdgeInsets.all((userProvider.smallScreen)
+            ? Constants.mobileDialogPadding
+            : Constants.outerDialogPadding),
         child: ConstrainedBox(
           constraints: const BoxConstraints(
               maxHeight: Constants.smallLandscapeDialogHeight,

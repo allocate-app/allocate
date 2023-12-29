@@ -23,7 +23,7 @@ class ThemeProvider extends ChangeNotifier {
 
   late ThemeType _themeType;
   late ToneMapping _toneMapping;
-  late Effect? _windowEffect;
+  late Effect _windowEffect;
 
   User? user;
 
@@ -91,7 +91,7 @@ class ThemeProvider extends ChangeNotifier {
     setTheme(theme: _themeType);
   }
 
-  Effect get windowEffect => _windowEffect!;
+  Effect get windowEffect => _windowEffect;
 
   //Notifies.
   set windowEffect(Effect newEffect) {
@@ -119,19 +119,23 @@ class ThemeProvider extends ChangeNotifier {
     _tertiarySeed =
         (null != user?.tertiarySeed) ? Color(user!.tertiarySeed!) : null;
 
+    _themeType = user?.themeType ?? ThemeType.system;
+    _toneMapping = user?.toneMapping ?? ToneMapping.system;
+    _windowEffect = user?.windowEffect ?? Effect.disabled;
+
     // Get tonemapping.
-    setToneMapping(tone: user?.toneMapping);
+    setToneMapping(tone: _toneMapping);
 
     // Generate Themes.
     generateThemes();
 
     // Set the theme, fall back to system.
-    _themeData = getTheme(theme: user?.themeType ?? ThemeType.system);
+    _themeData = getTheme(theme: _themeType);
 
     // Set the window effect for desktop. Runs asynchronously, should be set by the time
     // the splash screen is done.
     if (!Platform.isIOS || !Platform.isAndroid) {
-      setWindowEffect();
+      setWindowEffect(effect: _windowEffect);
     }
   }
 
@@ -225,11 +229,10 @@ class ThemeProvider extends ChangeNotifier {
     };
   }
 
-  Future<void> setWindowEffect({Effect? effect = Effect.disabled}) async {
+  Future<void> setWindowEffect({Effect effect = Effect.disabled}) async {
     if (Platform.isIOS || Platform.isAndroid || Platform.isLinux) {
       return;
     }
-    effect = effect ?? Effect.disabled;
     switch (effect) {
       case Effect.disabled:
         // if (Platform.isLinux) {

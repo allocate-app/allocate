@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../../model/task/deadline.dart';
 import '../../../providers/deadline_provider.dart';
+import '../../../providers/user_provider.dart';
 import '../../../util/constants.dart';
 import '../../../util/enums.dart';
 import '../../widgets/listview_header.dart';
@@ -19,15 +20,13 @@ class DeadlinesListScreen extends StatefulWidget {
 }
 
 class _DeadlinesListScreen extends State<DeadlinesListScreen> {
-  late bool checkDelete;
-
   late final DeadlineProvider deadlineProvider;
+  late final UserProvider userProvider;
 
   @override
   void initState() {
     super.initState();
     initializeProviders();
-    initializeParameters();
   }
 
   void initializeProviders() {
@@ -35,10 +34,8 @@ class _DeadlinesListScreen extends State<DeadlinesListScreen> {
     if (deadlineProvider.rebuild) {
       deadlineProvider.deadlines = [];
     }
-  }
 
-  void initializeParameters() {
-    checkDelete = true;
+    userProvider = Provider.of<UserProvider>(context, listen: false);
   }
 
   @override
@@ -46,12 +43,32 @@ class _DeadlinesListScreen extends State<DeadlinesListScreen> {
     super.dispose();
   }
 
+  void onFetch({List<Deadline>? items}) {
+    if (null == items) {
+      return;
+    }
+    for (Deadline deadline in items) {
+      deadline.fade = Fade.fadeIn;
+    }
+  }
+
+  Future<void> onRemove({Deadline? item}) async {
+    if (null == item) {
+      return;
+    }
+
+    if (deadlineProvider.deadlines.length < 2) {
+      return;
+    }
+
+    if (mounted) {
+      setState(() => item.fade = Fade.fadeOut);
+      await Future.delayed(const Duration(milliseconds: Constants.fadeOutTime));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    double width = MediaQuery.of(context).size.width;
-    bool largeScreen = (width >= Constants.largeScreen);
-    bool smallScreen = (width <= Constants.smallScreen);
-
     return Padding(
       padding: const EdgeInsets.all(Constants.innerPadding),
       child: Column(mainAxisSize: MainAxisSize.min, children: [
@@ -94,32 +111,12 @@ class _DeadlinesListScreen extends State<DeadlinesListScreen> {
                 deadlineProvider.deadlines = items;
                 deadlineProvider.rebuild = false;
               },
-
-              // TODO: make condtnl
-              onFetch: ({List<Deadline>? items}) {
-                if (null == items) {
-                  return;
-                }
-                for (Deadline deadline in items) {
-                  deadline.fade = Fade.fadeIn;
-                }
-              },
-              onRemove: ({Deadline? item}) async {
-                if (null == item) {
-                  return;
-                }
-
-                if (deadlineProvider.deadlines.length < 2) {
-                  return;
-                }
-
-                if (mounted) {
-                  setState(() => item.fade = Fade.fadeOut);
-                  await Future.delayed(
-                      const Duration(milliseconds: Constants.fadeOutTime));
-                }
-              },
-              paginateButton: false,
+              onFetch: (userProvider.curUser?.reduceMotion ?? false)
+                  ? null
+                  : onFetch,
+              onRemove: (userProvider.curUser?.reduceMotion ?? false)
+                  ? null
+                  : onRemove,
               listviewBuilder: (
                   {Key? key,
                   required BuildContext context,
@@ -130,8 +127,8 @@ class _DeadlinesListScreen extends State<DeadlinesListScreen> {
                     key: key,
                     context: context,
                     deadlines: items,
-                    checkDelete: checkDelete,
-                    smallScreen: smallScreen,
+                    checkDelete: userProvider.curUser?.checkDelete ?? true,
+                    smallScreen: userProvider.smallScreen,
                     onRemove: onRemove,
                   );
                 }
@@ -139,8 +136,8 @@ class _DeadlinesListScreen extends State<DeadlinesListScreen> {
                   key: key,
                   context: context,
                   deadlines: items,
-                  checkDelete: checkDelete,
-                  smallScreen: smallScreen,
+                  checkDelete: userProvider.curUser?.checkDelete ?? true,
+                  smallScreen: userProvider.smallScreen,
                   onRemove: onRemove,
                 );
               }),

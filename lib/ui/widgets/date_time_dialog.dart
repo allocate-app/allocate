@@ -2,7 +2,9 @@ import 'package:auto_size_text/auto_size_text.dart';
 import 'package:calendar_date_picker2/calendar_date_picker2.dart';
 import 'package:flutter/material.dart';
 import 'package:jiffy/jiffy.dart';
+import 'package:provider/provider.dart';
 
+import '../../providers/user_provider.dart';
 import '../../util/constants.dart';
 
 class DateTimeDialog extends StatefulWidget {
@@ -20,20 +22,23 @@ class _DateTimeDialog extends State<DateTimeDialog> {
   DateTime? date;
   TimeOfDay? time;
 
+  late final UserProvider userProvider;
+
   @override
   void initState() {
     date = widget.date;
     time = widget.time;
+    userProvider = Provider.of<UserProvider>(context, listen: false);
     super.initState();
   }
 
   @override
   Widget build(context) {
-    double width = MediaQuery.of(context).size.width;
-    bool smallScreen = (width <= Constants.smallScreen);
-
+    MediaQuery.of(context).size;
     return Dialog(
-        insetPadding: const EdgeInsets.all(Constants.mobileDialogPadding),
+        insetPadding: (userProvider.smallScreen)
+            ? const EdgeInsets.all(Constants.mobileDialogPadding)
+            : const EdgeInsets.all(Constants.outerDialogPadding),
         child: ConstrainedBox(
           constraints: const BoxConstraints(
               maxWidth: Constants.smallLandscapeDialogWidth),
@@ -235,7 +240,7 @@ class _DateTimeDialog extends State<DateTimeDialog> {
 
                     // Calendar view.
                     Flexible(
-                      flex: (smallScreen) ? 1 : 2,
+                      flex: (userProvider.smallScreen) ? 1 : 2,
                       child: CalendarDatePicker2(
                           config: CalendarDatePicker2Config(
                             centerAlignModePicker: true,

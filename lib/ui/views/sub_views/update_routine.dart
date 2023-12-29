@@ -7,7 +7,9 @@ import "../../../model/task/routine.dart";
 import "../../../model/task/subtask.dart";
 import "../../../providers/routine_provider.dart";
 import "../../../providers/subtask_provider.dart";
+import "../../../providers/user_provider.dart";
 import "../../../util/constants.dart";
+import "../../../util/enums.dart";
 import "../../../util/exceptions.dart";
 import "../../widgets/flushbars.dart";
 import "../../widgets/leading_widgets.dart";
@@ -30,6 +32,7 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
 
   late final RoutineProvider routineProvider;
   late final SubtaskProvider subtaskProvider;
+  late final UserProvider userProvider;
 
   // Scrolling
   late final ScrollController mobileScrollController;
@@ -78,7 +81,7 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
           nameErrorText = null;
         });
       }
-      checkClose = true;
+      checkClose = userProvider.curUser?.checkClose ?? true;
       String newText = nameEditingController.text;
       SemanticsService.announce(newText, Directionality.of(context));
     });
@@ -92,6 +95,7 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
     subtaskProvider = Provider.of<SubtaskProvider>(context, listen: false);
 
     subtaskProvider.addListener(resetSubtasks);
+    userProvider = Provider.of<UserProvider>(context, listen: false);
   }
 
   @override
@@ -104,9 +108,15 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
   }
 
   Future<void> resetSubtasks() async {
-    routine.subtasks = await routineProvider.getSubtasks(
+    List<Subtask> newSubtasks = await routineProvider.getSubtasks(
       id: routine.id,
     );
+
+    if (!(userProvider.curUser?.reduceMotion ?? false)) {
+      onFetch(items: newSubtasks);
+    }
+
+    routine.subtasks = newSubtasks;
     routineProvider.setSubtaskCount(
         id: routine.id, count: routine.subtasks.length);
     routine.weight = await routineProvider.getWeight(taskID: routine.id);
@@ -165,7 +175,7 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
   void clearNameField() {
     if (mounted) {
       setState(() {
-        checkClose = true;
+        checkClose = userProvider.curUser?.checkClose ?? true;
         nameEditingController.clear();
         routine.name = "";
       });
@@ -183,7 +193,7 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
   void changeRoutineTime({required int newRoutineTimes}) {
     if (mounted) {
       setState(() {
-        checkClose = true;
+        checkClose = userProvider.curUser?.checkClose ?? true;
         times = newRoutineTimes;
       });
     }
@@ -192,7 +202,7 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
   void updateDuration(int? value) {
     if (mounted) {
       setState(() {
-        checkClose = true;
+        checkClose = userProvider.curUser?.checkClose ?? true;
         routine.expectedDuration = value ?? routine.expectedDuration;
         routine.realDuration = routineProvider.calculateRealDuration(
             weight: routine.weight, duration: routine.expectedDuration);
@@ -203,7 +213,7 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
   void clearDuration() {
     if (mounted) {
       setState(() {
-        checkClose = true;
+        checkClose = userProvider.curUser?.checkClose ?? true;
         routine.expectedDuration = 0;
         routine.realDuration = 0;
       });
@@ -232,16 +242,35 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
     }, test: (e) => e is FailureToDeleteException);
   }
 
+  void onFetch({List<Subtask>? items}) {
+    if (null == items) {
+      return;
+    }
+    for (Subtask subtask in items) {
+      subtask.fade = Fade.fadeIn;
+    }
+  }
+
+  Future<void> onRemove({Subtask? item}) async {
+    if (null == item) {
+      return;
+    }
+    if (mounted) {
+      setState(() => item.fade = Fade.fadeOut);
+      await Future.delayed(const Duration(milliseconds: Constants.fadeInTime));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    double width = MediaQuery.of(context).size.width;
-    bool largeScreen = (width >= Constants.largeScreen);
-    bool smallScreen = (width <= Constants.smallScreen);
-    bool hugeScreen = (width >= Constants.hugeScreen);
-    return (largeScreen)
+    MediaQuery.of(context).size;
+    return (userProvider.largeScreen)
         ? buildDesktopDialog(
-            context: context, smallScreen: smallScreen, hugeScreen: hugeScreen)
-        : buildMobileDialog(context: context, smallScreen: smallScreen);
+            context: context,
+            smallScreen: userProvider.smallScreen,
+            hugeScreen: userProvider.hugeScreen)
+        : buildMobileDialog(
+            context: context, smallScreen: userProvider.smallScreen);
   }
 
   Dialog buildDesktopDialog(
@@ -342,6 +371,10 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
                                 outerPadding:
                                     const EdgeInsets.all(Constants.halfPadding),
                                 id: routine.id,
+                                onRemove: (userProvider.curUser?.reduceMotion ??
+                                        false)
+                                    ? null
+                                    : onRemove,
                                 subtasks: routine.subtasks,
                                 subtaskCount: routineProvider.getSubtaskCount(
                                     id: routine.id),
@@ -463,43 +496,4 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
       ),
     );
   }
-
-// Widget buildRoutineTasksTile(
-//     {ScrollPhysics physics = const NeverScrollableScrollPhysics(),
-//     EdgeInsetsGeometry outerPadding = EdgeInsets.zero}) {
-//   return ExpandedListTile(
-//     outerPadding: outerPadding,
-//     title: const AutoSizeText("Steps",
-//         maxLines: 1,
-//         overflow: TextOverflow.visible,
-//         softWrap: false,
-//         minFontSize: Constants.small),
-//     subtitle: AutoSizeText(
-//         "${min(shownTasks, Constants.maxNumTasks)}/${Constants.maxNumTasks} Steps",
-//         maxLines: 1,
-//         overflow: TextOverflow.visible,
-//         softWrap: false,
-//         minFontSize: Constants.small),
-//     children: [
-//       ListViews.reorderableSubtasks(
-//         physics: physics,
-//         context: context,
-//         subtasks: cacheRoutineTasks,
-//         itemCount: min(Constants.maxNumTasks, shownTasks),
-//         controllers: routineTaskEditingController,
-//         onRemoved: removeRoutineTask,
-//         onReorder: reorderRoutineTasks,
-//         updateSubTask: onDataChange,
-//         onSubtaskWeightChanged: onRoutineTaskWeightChanged,
-//         showHandle: shownTasks > 1,
-//       ),
-//       (shownTasks < Constants.maxNumTasks)
-//           ? Tiles.addTile(
-//               title: "Add a step",
-//               onTap: addRoutineTask,
-//             )
-//           : const SizedBox.shrink(),
-//     ],
-//   );
-// }
 }

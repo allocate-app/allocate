@@ -111,7 +111,6 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
   }
 
   void initializeParameters() {
-    // Refactor this into the user provider class.
     checkClose = false;
     expanded = false;
     taskType = TaskType.small;
@@ -201,8 +200,17 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
   }
 
   Future<void> resetSubtasks() async {
-    subtasks = await toDoProvider.getSubtasks(
+    if (taskType == TaskType.small) {
+      return;
+    }
+    List<Subtask> newSubtasks = await toDoProvider.getSubtasks(
         id: Constants.intMax, limit: Constants.numTasks[taskType]!);
+
+    if (!(userProvider.curUser?.reduceMotion ?? false)) {
+      onFetch(items: newSubtasks);
+    }
+
+    subtasks = newSubtasks;
     toDoProvider.setSubtaskCount(id: Constants.intMax, count: subtasks.length);
     sumWeight = await toDoProvider.getWeight(
         taskID: Constants.intMax, limit: Constants.numTasks[taskType]!);
@@ -219,7 +227,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
   Future<void> handleGroupSelection({required int id}) async {
     if (mounted) {
       return setState(() {
-        checkClose = true;
+        checkClose = userProvider.curUser?.checkClose ?? true;
         groupID = id;
       });
     }
@@ -252,10 +260,11 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
   }
 
   void mergeDateTimes() {
-    startDate =
-        startDate?.copyWith(hour: startTime?.hour, minute: startTime?.minute);
+    startDate = startDate?.copyWith(
+        hour: startTime?.hour ?? 0, minute: startTime?.minute ?? 0);
 
-    dueDate = dueDate?.copyWith(hour: dueTime?.hour, minute: dueTime?.minute);
+    dueDate = dueDate?.copyWith(
+        hour: dueTime?.hour ?? 0, minute: dueTime?.minute ?? 0);
   }
 
   Future<void> handleCreate() async {
@@ -326,7 +335,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
   void clearNameField() {
     if (mounted) {
       return setState(() {
-        checkClose = true;
+        checkClose = userProvider.curUser?.checkClose ?? true;
         nameEditingController.clear();
         name = "";
       });
@@ -336,7 +345,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
   void updateName() {
     if (mounted) {
       setState(() {
-        checkClose = true;
+        checkClose = userProvider.curUser?.checkClose ?? true;
         name = nameEditingController.text;
       });
     }
@@ -345,7 +354,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
   void updateDescription() {
     if (mounted) {
       setState(() {
-        checkClose = true;
+        checkClose = userProvider.curUser?.checkClose ?? true;
         description = descriptionEditingController.text;
       });
     }
@@ -354,7 +363,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
   void completeToDo(bool? value) {
     if (mounted) {
       return setState(() {
-        checkClose = true;
+        checkClose = userProvider.curUser?.checkClose ?? true;
         completed = value!;
       });
     }
@@ -366,7 +375,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
     }
     if (mounted) {
       return setState(() {
-        checkClose = true;
+        checkClose = userProvider.curUser?.checkClose ?? true;
         weight = value.toInt();
         realDuration = toDoProvider.calculateRealDuration(
             weight: weight, duration: expectedDuration);
@@ -374,75 +383,10 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
     }
   }
 
-  // void removeSubtask({required int index}) {
-  //   if (mounted) {
-  //     return setState(() {
-  //       checkClose = true;
-  //       Subtask st = subtasks.removeAt(index);
-  //       subtasks.add(st);
-  //       ct.value = ct.value.copyWith(text: st.name);
-  //       subTaskEditingController.add(ct);
-  //
-  //       shownTasks--;
-  //       shownTasks = max(shownTasks, 0);
-  //       sumWeight = toDoProvider.calculateWeight(
-  //           subtasks: List.generate(
-  //               Constants.numTasks[taskType]!, (index) => subtasks[index]));
-  //       realDuration = toDoProvider.calculateRealDuration(
-  //           weight: sumWeight, duration: expectedDuration);
-  //     });
-  //   }
-  // }
-  //
-  // void reorderSubtasks(int oldIndex, int newIndex) {
-  //   if (mounted) {
-  //     return setState(() {
-  //       checkClose = true;
-  //       if (oldIndex < newIndex) {
-  //         newIndex--;
-  //       }
-  //       Subtask st = subtasks.removeAt(oldIndex);
-  //       subtasks.insert(newIndex, st);
-  //       TextEditingController ct = subTaskEditingController.removeAt(oldIndex);
-  //       subTaskEditingController.insert(newIndex, ct);
-  //     });
-  //   }
-  // }
-  //
-  // void onDataChange() {
-  //   if (mounted) {
-  //     return setState(() {
-  //       checkClose = true;
-  //     });
-  //   }
-  // }
-  //
-  // void onSubtaskWeightChanged() {
-  //   if (mounted) {
-  //     return setState(() {
-  //       checkClose = true;
-  //       sumWeight = toDoProvider.calculateWeight(
-  //           subtasks: List.generate(
-  //               Constants.numTasks[taskType]!, (index) => subtasks[index]));
-  //       realDuration = toDoProvider.calculateRealDuration(
-  //           weight: sumWeight, duration: expectedDuration);
-  //     });
-  //   }
-  // }
-  //
-  // void addSubTask() {
-  //   if (mounted) {
-  //     return setState(() {
-  //       shownTasks++;
-  //       shownTasks = min(shownTasks, Constants.maxNumTasks);
-  //     });
-  //   }
-  // }
-
   void toggleMyDay() {
     if (mounted) {
       return setState(() {
-        checkClose = true;
+        checkClose = userProvider.curUser?.checkClose ?? true;
         myDay = !myDay;
       });
     }
@@ -451,7 +395,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
   void changePriority(Set<Priority> newSelection) {
     if (mounted) {
       return setState(() {
-        checkClose = true;
+        checkClose = userProvider.curUser?.checkClose ?? true;
         priority = newSelection.first;
       });
     }
@@ -460,7 +404,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
   void updateDuration(int? value) {
     if (mounted) {
       return setState(() {
-        checkClose = true;
+        checkClose = userProvider.curUser?.checkClose ?? true;
         expectedDuration = value ?? expectedDuration;
         realDuration = toDoProvider.calculateRealDuration(
             weight: (taskType == TaskType.small) ? weight : sumWeight,
@@ -472,7 +416,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
   void clearDuration() {
     if (mounted) {
       return setState(() {
-        checkClose = true;
+        checkClose = userProvider.curUser?.checkClose ?? true;
         expectedDuration = 0;
         realDuration = 0;
       });
@@ -482,7 +426,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
   void clearDates() {
     if (mounted) {
       return setState(() {
-        checkClose = true;
+        checkClose = userProvider.curUser?.checkClose ?? true;
         startDate = null;
         dueDate = null;
       });
@@ -492,7 +436,10 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
   void updateDates({bool? checkClose, DateTime? newStart, DateTime? newDue}) {
     if (mounted) {
       return setState(() {
-        this.checkClose = checkClose ?? this.checkClose;
+        checkClose = checkClose ?? this.checkClose;
+        this.checkClose = (checkClose!)
+            ? userProvider.curUser?.checkClose ?? checkClose!
+            : checkClose!;
         startDate = newStart;
         dueDate = newDue;
 
@@ -508,7 +455,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
   void clearTimes() {
     if (mounted) {
       return setState(() {
-        checkClose = true;
+        checkClose = userProvider.curUser?.checkClose ?? true;
         startTime = null;
         dueTime = null;
       });
@@ -518,7 +465,10 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
   void updateTimes({bool? checkClose, TimeOfDay? newStart, TimeOfDay? newDue}) {
     if (mounted) {
       return setState(() {
-        this.checkClose = checkClose ?? this.checkClose;
+        checkClose = checkClose ?? this.checkClose;
+        this.checkClose = (checkClose!)
+            ? userProvider.curUser?.checkClose ?? checkClose!
+            : checkClose!;
         startTime = newStart;
         dueTime = newDue;
       });
@@ -528,7 +478,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
   void clearRepeatable() {
     if (mounted) {
       return setState(() {
-        checkClose = true;
+        checkClose = userProvider.curUser?.checkClose ?? true;
         frequency = Frequency.once;
         weekdayList.clear();
         repeatSkip = 1;
@@ -543,7 +493,10 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
       required int newSkip}) {
     if (mounted) {
       return setState(() {
-        this.checkClose = checkClose ?? this.checkClose;
+        checkClose = checkClose ?? this.checkClose;
+        this.checkClose = (checkClose!)
+            ? userProvider.curUser?.checkClose ?? checkClose!
+            : checkClose!;
         frequency = newFreq;
         weekdayList = newWeekdays;
         repeatSkip = newSkip;
@@ -558,28 +511,50 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
     }
   }
 
+  void onFetch({List<Subtask>? items}) {
+    if (null == items) {
+      return;
+    }
+    for (Subtask subtask in items) {
+      subtask.fade = Fade.fadeIn;
+    }
+  }
+
+  Future<void> onRemove({Subtask? item}) async {
+    if (null == item) {
+      return;
+    }
+    if (mounted) {
+      setState(() => item.fade = Fade.fadeOut);
+      await Future.delayed(const Duration(milliseconds: Constants.fadeInTime));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    double width = MediaQuery.of(context).size.width;
-    bool largeScreen = (width >= Constants.largeScreen);
-    bool smallScreen = (width <= Constants.smallScreen);
-    bool hugeScreen = (width >= Constants.hugeScreen);
+    // The query still needs to be performed to force a build.
+    // Consuming UserProvider throws an error.
+    MediaQuery.of(context).size.width;
 
-    bool showTimeTile = (null != startDate || null != dueDate);
-    return (largeScreen)
+    bool showTimeTile = null != startDate || null != dueDate;
+    bool showRepeatTile = null != dueDate && null != startDate;
+    return (userProvider.largeScreen)
         ? buildDesktopDialog(
             context: context,
             showTimeTile: showTimeTile,
+            showRepeatTile: showRepeatTile,
           )
         : buildMobileDialog(
             context: context,
             showTimeTile: showTimeTile,
-            smallScreen: smallScreen);
+            showRepeatTile: showRepeatTile,
+            smallScreen: userProvider.smallScreen);
   }
 
   Dialog buildDesktopDialog({
     required BuildContext context,
     bool showTimeTile = false,
+    bool showRepeatTile = false,
   }) {
     return Dialog(
       insetPadding: const EdgeInsets.all(Constants.outerDialogPadding),
@@ -668,10 +643,10 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                                   // My Day
                                   Tiles.myDayTile(
                                       myDay: myDay,
-                                      canAdd: (userProvider.myDayTotal +
-                                              weight <=
-                                          (userProvider.curUser?.bandwidth ??
-                                              Constants.maxBandwidth)),
+                                      canAdd:
+                                          (userProvider.myDayTotal + weight <=
+                                              (toDoProvider.user?.bandwidth ??
+                                                  Constants.maxBandwidth)),
                                       toggleMyDay: toggleMyDay),
 
                                   const PaddedDivider(
@@ -714,8 +689,10 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                                     handleClear: clearDates,
                                     handleUpdate: updateDates,
                                   ),
-                                  const PaddedDivider(
-                                      padding: Constants.padding),
+                                  (showTimeTile)
+                                      ? const PaddedDivider(
+                                          padding: Constants.padding)
+                                      : const SizedBox.shrink(),
                                   // Time
 
                                   (showTimeTile)
@@ -731,13 +708,13 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                                           handleUpdate: updateTimes,
                                         )
                                       : const SizedBox.shrink(),
-                                  (showTimeTile)
+                                  (showRepeatTile)
                                       ? const PaddedDivider(
                                           padding: Constants.padding)
                                       : const SizedBox.shrink(),
 
                                   // Repeatable Stuff -> Show status, on click, open a dialog.
-                                  (null != dueDate && null != startDate)
+                                  (showRepeatTile)
                                       ? Tiles.repeatableTile(
                                           context: context,
                                           outerPadding:
@@ -793,6 +770,11 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                                           context: context,
                                           id: Constants.intMax,
                                           limit: Constants.numTasks[taskType]!,
+                                          onRemove: (userProvider
+                                                      .curUser?.reduceMotion ??
+                                                  false)
+                                              ? null
+                                              : onRemove,
                                           subtasks: subtasks,
                                           subtaskCount:
                                               toDoProvider.getSubtaskCount(
@@ -836,7 +818,8 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
   Dialog buildMobileDialog(
       {required BuildContext context,
       bool smallScreen = false,
-      showTimeTile = false}) {
+      bool showTimeTile = false,
+      bool showRepeatTile = false}) {
     return Dialog(
       insetPadding: EdgeInsets.all((smallScreen)
           ? Constants.mobileDialogPadding
@@ -937,7 +920,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                     Tiles.myDayTile(
                         myDay: myDay,
                         canAdd: (userProvider.myDayTotal + weight <=
-                            (userProvider.curUser?.bandwidth ??
+                            (toDoProvider.user?.bandwidth ??
                                 Constants.maxBandwidth)),
                         toggleMyDay: toggleMyDay),
 
@@ -986,7 +969,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                         context: context,
                         onEditingComplete: updateDescription),
 
-                    const PaddedDivider(padding: Constants.innerPadding),
+                    const PaddedDivider(padding: Constants.padding),
                     // Expected Duration / RealDuration -> Show status, on click, open a dialog.
                     Tiles.durationTile(
                       expectedDuration: expectedDuration,
@@ -998,7 +981,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                       handleUpdate: updateDuration,
                     ),
 
-                    const PaddedDivider(padding: Constants.innerPadding),
+                    const PaddedDivider(padding: Constants.padding),
                     // DateTime -> Show status, on click, open a dialog.
                     //startDate
                     Tiles.dateRangeTile(
@@ -1011,7 +994,9 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                       handleUpdate: updateDates,
                     ),
 
-                    const PaddedDivider(padding: Constants.innerPadding),
+                    (showTimeTile)
+                        ? const PaddedDivider(padding: Constants.padding)
+                        : const SizedBox.shrink(),
                     // Time
                     (showTimeTile)
                         ? Tiles.timeTile(
@@ -1024,11 +1009,11 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                             handleUpdate: updateTimes,
                           )
                         : const SizedBox.shrink(),
-                    (showTimeTile)
-                        ? const PaddedDivider(padding: Constants.innerPadding)
+                    (showRepeatTile)
+                        ? const PaddedDivider(padding: Constants.padding)
                         : const SizedBox.shrink(),
                     // Repeatable Stuff -> Show status, on click, open a dialog.
-                    (null != dueDate && null != startDate)
+                    (showRepeatTile)
                         ? Tiles.repeatableTile(
                             context: context,
                             outerPadding: const EdgeInsets.symmetric(
@@ -1083,7 +1068,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
             if (taskType != newType) {
               if (mounted) {
                 return setState(() {
-                  checkClose = true;
+                  checkClose = userProvider.curUser?.checkClose ?? true;
                   taskType = newSelection.first;
                   realDuration = toDoProvider.calculateRealDuration(
                       weight: (taskType == TaskType.small) ? weight : sumWeight,

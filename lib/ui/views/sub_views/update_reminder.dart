@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 
 import '../../../model/task/reminder.dart';
 import '../../../providers/reminder_provider.dart';
+import '../../../providers/user_provider.dart';
 import '../../../util/constants.dart';
 import '../../../util/enums.dart';
 import '../../../util/exceptions.dart';
@@ -29,6 +30,7 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
   late bool showTime;
 
   late final ReminderProvider reminderProvider;
+  late final UserProvider userProvider;
   late final Reminder prevReminder;
 
   // Name
@@ -54,6 +56,7 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
     if (null != widget.initialReminder) {
       reminderProvider.curReminder = widget.initialReminder;
     }
+    userProvider = Provider.of<UserProvider>(context, listen: false);
   }
 
   void initializeParameters() {
@@ -277,7 +280,7 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
   void clearNameField() {
     if (mounted) {
       setState(() {
-        checkClose = true;
+        checkClose = userProvider.curUser?.checkClose ?? true;
         nameEditingController.clear();
         reminder.name = "";
       });
@@ -287,7 +290,7 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
   void updateName() {
     if (mounted) {
       setState(() {
-        checkClose = true;
+        checkClose = userProvider.curUser?.checkClose ?? true;
         reminder.name = nameEditingController.text;
       });
     }
@@ -296,7 +299,7 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
   void clearDue() {
     if (mounted) {
       setState(() {
-        checkClose = true;
+        checkClose = userProvider.curUser?.checkClose ?? true;
         reminder.dueDate = null;
         showTime = false;
       });
@@ -306,7 +309,10 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
   void updateDue({bool? checkClose, DateTime? newDate, TimeOfDay? newTime}) {
     if (mounted) {
       setState(() {
-        this.checkClose = checkClose ?? this.checkClose;
+        checkClose = checkClose ?? this.checkClose;
+        this.checkClose = (checkClose!)
+            ? userProvider.curUser?.checkClose ?? checkClose!
+            : checkClose!;
         reminder.dueDate =
             newDate?.copyWith(hour: newTime?.hour, minute: newTime?.minute);
         showTime = null != newTime;
@@ -317,7 +323,7 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
   void clearRepeatable() {
     if (mounted) {
       setState(() {
-        checkClose = true;
+        checkClose = userProvider.curUser?.checkClose ?? true;
         reminder.frequency = Frequency.once;
         reminder.repeatDays.fillRange(0, reminder.repeatDays.length, false);
         reminder.repeatSkip = 1;
@@ -332,7 +338,10 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
       required int newSkip}) {
     if (mounted) {
       setState(() {
-        this.checkClose = checkClose ?? this.checkClose;
+        checkClose = checkClose ?? this.checkClose;
+        this.checkClose = (checkClose!)
+            ? userProvider.curUser?.checkClose ?? checkClose!
+            : checkClose!;
         reminder.frequency = newFreq;
         reminder.repeatSkip = newSkip;
 
@@ -366,12 +375,9 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
 
   @override
   Widget build(BuildContext context) {
-    double width = MediaQuery.of(context).size.width;
-    bool largeScreen = (width >= Constants.largeScreen);
-    bool smallScreen = (width <= Constants.smallScreen);
-    bool hugeScreen = (width >= Constants.hugeScreen);
+    MediaQuery.of(context).size;
     return Dialog(
-        insetPadding: EdgeInsets.all((smallScreen)
+        insetPadding: EdgeInsets.all((userProvider.smallScreen)
             ? Constants.mobileDialogPadding
             : Constants.outerDialogPadding),
         child: ConstrainedBox(

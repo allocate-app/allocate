@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../../model/task/routine.dart';
 import '../../../providers/routine_provider.dart';
+import '../../../providers/user_provider.dart';
 import '../../../util/constants.dart';
 import '../../../util/enums.dart';
 import '../../widgets/listview_header.dart';
@@ -19,15 +20,13 @@ class RoutinesListScreen extends StatefulWidget {
 }
 
 class _RoutinesListScreen extends State<RoutinesListScreen> {
-  late bool checkDelete;
-
   late final RoutineProvider routineProvider;
+  late final UserProvider userProvider;
 
   @override
   void initState() {
     super.initState();
     initializeProviders();
-    initializeParameters();
   }
 
   void initializeProviders() {
@@ -35,10 +34,8 @@ class _RoutinesListScreen extends State<RoutinesListScreen> {
     if (routineProvider.rebuild) {
       routineProvider.routines = [];
     }
-  }
 
-  void initializeParameters() {
-    checkDelete = true;
+    userProvider = Provider.of<UserProvider>(context, listen: false);
   }
 
   @override
@@ -46,12 +43,32 @@ class _RoutinesListScreen extends State<RoutinesListScreen> {
     super.dispose();
   }
 
+  void onFetch({List<Routine>? items}) {
+    if (null == items) {
+      return;
+    }
+    for (Routine routine in items) {
+      routine.fade = Fade.fadeIn;
+    }
+  }
+
+  Future<void> onRemove({Routine? item}) async {
+    if (null == item) {
+      return;
+    }
+
+    if (routineProvider.routines.length < 2) {
+      return;
+    }
+
+    if (mounted) {
+      setState(() => item.fade = Fade.fadeOut);
+      await Future.delayed(const Duration(milliseconds: Constants.fadeOutTime));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    double width = MediaQuery.of(context).size.width;
-    bool largeScreen = (width >= Constants.largeScreen);
-    bool smallScreen = (width <= Constants.smallScreen);
-
     return Padding(
       padding: const EdgeInsets.all(Constants.innerPadding),
       child: Column(mainAxisSize: MainAxisSize.min, children: [
@@ -90,34 +107,16 @@ class _RoutinesListScreen extends State<RoutinesListScreen> {
                 routineProvider.routines = items;
                 routineProvider.rebuild = false;
               },
-              paginateButton: false,
               getAnimationKey: () => ValueKey(
                   routineProvider.sorter.sortMethod.index *
                           (routineProvider.sorter.descending ? -1 : 1) +
                       (routineProvider.routines.isEmpty ? 0 : 1)),
-              onFetch: ({List<Routine>? items}) {
-                if (null == items) {
-                  return;
-                }
-                for (Routine routine in items) {
-                  routine.fade = Fade.fadeIn;
-                }
-              },
-              onRemove: ({Routine? item}) async {
-                if (null == item) {
-                  return;
-                }
-
-                if (routineProvider.routines.length < 2) {
-                  return;
-                }
-
-                if (mounted) {
-                  setState(() => item.fade = Fade.fadeOut);
-                  await Future.delayed(
-                      const Duration(milliseconds: Constants.fadeOutTime));
-                }
-              },
+              onFetch: (userProvider.curUser?.reduceMotion ?? false)
+                  ? null
+                  : onFetch,
+              onRemove: (userProvider.curUser?.reduceMotion ?? false)
+                  ? null
+                  : onRemove,
               listviewBuilder: ({
                 Key? key,
                 required BuildContext context,
@@ -129,7 +128,7 @@ class _RoutinesListScreen extends State<RoutinesListScreen> {
                     key: key,
                     context: context,
                     routines: items,
-                    checkDelete: checkDelete,
+                    checkDelete: userProvider.curUser?.checkDelete ?? true,
                     onRemove: onRemove,
                   );
                 }
@@ -137,7 +136,7 @@ class _RoutinesListScreen extends State<RoutinesListScreen> {
                   key: key,
                   context: context,
                   routines: items,
-                  checkDelete: checkDelete,
+                  checkDelete: userProvider.curUser?.checkDelete ?? true,
                   onRemove: onRemove,
                 );
               }),

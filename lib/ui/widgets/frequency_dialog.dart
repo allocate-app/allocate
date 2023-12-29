@@ -5,7 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:intl/intl.dart';
 import 'package:numberpicker/numberpicker.dart';
+import 'package:provider/provider.dart';
 
+import '../../providers/user_provider.dart';
 import '../../util/constants.dart';
 import '../../util/enums.dart';
 
@@ -34,9 +36,12 @@ class _FrequencyDialog extends State<FrequencyDialog> {
 
   late TextEditingController dropdownController;
 
+  late final UserProvider userProvider;
+
   @override
   void initState() {
     super.initState();
+    userProvider = Provider.of<UserProvider>(context, listen: false);
     frequency = widget.frequency;
     startDate = widget.startDate ?? DateTime.now();
     repeatSkip = widget.repeatSkip;
@@ -60,11 +65,12 @@ class _FrequencyDialog extends State<FrequencyDialog> {
 
   @override
   Widget build(context) {
-    // DropdownMenu expansion is coming in 3.14.
-    double width = MediaQuery.of(context).size.width;
+    MediaQuery.of(context).size.width;
 
     return Dialog(
-        insetPadding: const EdgeInsets.all(Constants.mobileDialogPadding),
+        insetPadding: EdgeInsets.all((userProvider.smallScreen)
+            ? Constants.mobileDialogPadding
+            : Constants.outerDialogPadding),
         child: ConstrainedBox(
           constraints: const BoxConstraints(
               maxWidth: Constants.smallLandscapeDialogWidth),

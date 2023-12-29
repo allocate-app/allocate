@@ -1,3 +1,4 @@
+import 'package:allocate/providers/user_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -19,15 +20,13 @@ class RemindersListScreen extends StatefulWidget {
 }
 
 class _RemindersListScreen extends State<RemindersListScreen> {
-  late bool checkDelete;
-
   late final ReminderProvider reminderProvider;
+  late final UserProvider userProvider;
 
   @override
   void initState() {
     super.initState();
     initializeProviders();
-    initializeParameters();
   }
 
   void initializeProviders() {
@@ -35,10 +34,7 @@ class _RemindersListScreen extends State<RemindersListScreen> {
     if (reminderProvider.rebuild) {
       reminderProvider.reminders = [];
     }
-  }
-
-  void initializeParameters() {
-    checkDelete = true;
+    userProvider = Provider.of<UserProvider>(context, listen: false);
   }
 
   @override
@@ -46,12 +42,32 @@ class _RemindersListScreen extends State<RemindersListScreen> {
     super.dispose();
   }
 
+  void onFetch({List<Reminder>? items}) {
+    if (null == items) {
+      return;
+    }
+    for (Reminder reminder in items) {
+      reminder.fade = Fade.fadeIn;
+    }
+  }
+
+  Future<void> onRemove({Reminder? item}) async {
+    if (null == item) {
+      return;
+    }
+
+    if (reminderProvider.reminders.length < 2) {
+      return;
+    }
+
+    if (mounted) {
+      setState(() => item.fade = Fade.fadeOut);
+      await Future.delayed(const Duration(milliseconds: Constants.fadeOutTime));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    double width = MediaQuery.of(context).size.width;
-    bool largeScreen = (width >= Constants.largeScreen);
-    bool smallScreen = (width <= Constants.smallScreen);
-
     return Padding(
       padding: const EdgeInsets.all(Constants.innerPadding),
       child: Column(mainAxisSize: MainAxisSize.min, children: [
@@ -90,31 +106,12 @@ class _RemindersListScreen extends State<RemindersListScreen> {
                 reminderProvider.reminders = items;
                 reminderProvider.rebuild = false;
               },
-              paginateButton: false,
-              onFetch: ({List<Reminder>? items}) {
-                if (null == items) {
-                  return;
-                }
-
-                for (Reminder reminder in items) {
-                  reminder.fade = Fade.fadeIn;
-                }
-              },
-              onRemove: ({Reminder? item}) async {
-                if (null == item) {
-                  return;
-                }
-
-                if (reminderProvider.reminders.length < 2) {
-                  return;
-                }
-
-                if (mounted) {
-                  setState(() => item.fade = Fade.fadeOut);
-                  await Future.delayed(
-                      const Duration(milliseconds: Constants.fadeOutTime));
-                }
-              },
+              onFetch: (userProvider.curUser?.reduceMotion ?? false)
+                  ? null
+                  : onFetch,
+              onRemove: (userProvider.curUser?.reduceMotion ?? false)
+                  ? null
+                  : onRemove,
               getAnimationKey: () => ValueKey(
                   reminderProvider.sorter.sortMethod.index *
                           (reminderProvider.sorter.descending ? -1 : 1) +
@@ -130,8 +127,8 @@ class _RemindersListScreen extends State<RemindersListScreen> {
                     key: key,
                     context: context,
                     reminders: items,
-                    checkDelete: checkDelete,
-                    smallScreen: smallScreen,
+                    checkDelete: userProvider.curUser?.checkDelete ?? true,
+                    smallScreen: userProvider.smallScreen,
                     onRemove: onRemove,
                   );
                 }
@@ -139,8 +136,8 @@ class _RemindersListScreen extends State<RemindersListScreen> {
                   key: key,
                   context: context,
                   reminders: items,
-                  checkDelete: checkDelete,
-                  smallScreen: smallScreen,
+                  checkDelete: userProvider.curUser?.checkDelete ?? true,
+                  smallScreen: userProvider.smallScreen,
                   onRemove: onRemove,
                 );
               }),

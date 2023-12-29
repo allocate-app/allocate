@@ -2,11 +2,14 @@ import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:numberpicker/numberpicker.dart';
+import 'package:provider/provider.dart';
 
+import '../../providers/user_provider.dart';
 import '../../util/constants.dart';
 
 class DurationDialog extends StatefulWidget {
   const DurationDialog({super.key, this.duration = 0});
+
   final int duration;
 
   @override
@@ -17,10 +20,12 @@ class _DurationDialog extends State<DurationDialog> {
   late int hours;
   late int minutes;
   late int seconds;
+  late final UserProvider userProvider;
 
   @override
   void initState() {
     super.initState();
+    userProvider = Provider.of<UserProvider>(context, listen: false);
     setTimeValues(time: widget.duration);
   }
 
@@ -34,8 +39,11 @@ class _DurationDialog extends State<DurationDialog> {
 
   @override
   Widget build(context) {
+    MediaQuery.of(context).size;
     return Dialog(
-        insetPadding: const EdgeInsets.all(Constants.mobileDialogPadding),
+        insetPadding: EdgeInsets.all((userProvider.smallScreen)
+            ? Constants.mobileDialogPadding
+            : Constants.outerDialogPadding),
         child: ConstrainedBox(
           constraints: const BoxConstraints(
               maxWidth: Constants.smallLandscapeDialogWidth),

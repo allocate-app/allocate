@@ -165,7 +165,7 @@ class _LocalTester extends State<LocalTester> with WindowListener {
   void initState() {
     if (!Platform.isAndroid && !Platform.isIOS) {
       windowManager.addListener(this);
-      ServicesBinding.instance.keyboard.addHandler(_onKey);
+      // ServicesBinding.instance.keyboard.addHandler(_onKey);
     }
     // Test to inject 100 tasks.
     // testListView();
@@ -233,21 +233,15 @@ class _LocalTester extends State<LocalTester> with WindowListener {
 
   @override
   Widget build(BuildContext context) {
-    Size size = MediaQuery.of(context).size;
-
-    print("MQ: $size");
-    //TitlebarSafeArea is only for MacOS for window-tinting
-    // return MaterialApp(
-    //   home: const HomeScreen(),
-    //   theme: ThemeData(useMaterial3: true),
-    // );
     return TitlebarSafeArea(
       child: MaterialApp(
         theme: themeProvider.themeData,
         darkTheme: themeProvider.darkTheme,
         highContrastTheme: themeProvider.highContrastLight,
         highContrastDarkTheme: themeProvider.highContrastDark,
-        themeMode: ThemeMode.system,
+        themeMode: (ThemeType.system == themeProvider.themeType)
+            ? ThemeMode.system
+            : ThemeMode.light,
         home: const HomeScreen(),
       ),
     );

@@ -4,6 +4,7 @@ import 'package:flutter/rendering.dart';
 import 'package:provider/provider.dart';
 
 import '../../../providers/reminder_provider.dart';
+import '../../../providers/user_provider.dart';
 import '../../../util/constants.dart';
 import '../../../util/enums.dart';
 import '../../../util/exceptions.dart';
@@ -24,6 +25,7 @@ class _CreateReminderScreen extends State<CreateReminderScreen> {
   late bool checkClose;
 
   late final ReminderProvider reminderProvider;
+  late final UserProvider userProvider;
 
   // Name
   late String name;
@@ -57,6 +59,7 @@ class _CreateReminderScreen extends State<CreateReminderScreen> {
 
   void initializeProviders() {
     reminderProvider = Provider.of<ReminderProvider>(context, listen: false);
+    userProvider = Provider.of<UserProvider>(context, listen: false);
   }
 
   void initializeParameters() {
@@ -119,10 +122,8 @@ class _CreateReminderScreen extends State<CreateReminderScreen> {
 
   // Validator should catch invalid datetimes; this is a fallback & to merge time.
   void mergeDateTimes() {
-    dueDate = dueDate ?? DateTime.now();
-    dueTime = dueTime ?? Constants.eod;
-
-    dueDate = dueDate!.copyWith(hour: dueTime!.hour, minute: dueTime!.minute);
+    dueDate = dueDate?.copyWith(
+        hour: dueTime?.hour ?? 0, minute: dueTime?.minute ?? 0);
   }
 
   Future<void> handleCreate() async {
@@ -170,7 +171,7 @@ class _CreateReminderScreen extends State<CreateReminderScreen> {
   void clearNameField() {
     if (mounted) {
       return setState(() {
-        checkClose = true;
+        checkClose = userProvider.curUser?.checkClose ?? true;
         nameEditingController.clear();
         name = "";
       });
@@ -180,7 +181,7 @@ class _CreateReminderScreen extends State<CreateReminderScreen> {
   void updateName() {
     if (mounted) {
       setState(() {
-        checkClose = true;
+        checkClose = userProvider.curUser?.checkClose ?? true;
         name = nameEditingController.text;
       });
     }
@@ -189,7 +190,7 @@ class _CreateReminderScreen extends State<CreateReminderScreen> {
   void clearDue() {
     if (mounted) {
       return setState(() {
-        checkClose = true;
+        checkClose = userProvider.curUser?.checkClose ?? true;
         dueDate = null;
         dueTime = null;
       });
@@ -199,7 +200,10 @@ class _CreateReminderScreen extends State<CreateReminderScreen> {
   void updateDue({bool? checkClose, DateTime? newDate, TimeOfDay? newTime}) {
     if (mounted) {
       return setState(() {
-        this.checkClose = checkClose ?? this.checkClose;
+        checkClose = checkClose ?? this.checkClose;
+        this.checkClose = (checkClose!)
+            ? userProvider.curUser?.checkClose ?? checkClose!
+            : checkClose!;
         dueDate = newDate;
         dueTime = newTime;
       });
@@ -209,7 +213,7 @@ class _CreateReminderScreen extends State<CreateReminderScreen> {
   void clearRepeatable() {
     if (mounted) {
       return setState(() {
-        checkClose = true;
+        checkClose = userProvider.curUser?.checkClose ?? true;
         frequency = Frequency.once;
         weekdayList.clear();
         repeatSkip = 1;
@@ -224,7 +228,10 @@ class _CreateReminderScreen extends State<CreateReminderScreen> {
       required int newSkip}) {
     if (mounted) {
       return setState(() {
-        this.checkClose = checkClose ?? this.checkClose;
+        checkClose = checkClose ?? this.checkClose;
+        this.checkClose = (checkClose!)
+            ? userProvider.curUser?.checkClose ?? checkClose!
+            : checkClose!;
         frequency = newFreq;
         weekdayList = newWeekdays;
         repeatSkip = newSkip;
@@ -241,13 +248,10 @@ class _CreateReminderScreen extends State<CreateReminderScreen> {
 
   @override
   Widget build(BuildContext context) {
-    double width = MediaQuery.of(context).size.width;
-    bool largeScreen = (width >= Constants.largeScreen);
-    bool smallScreen = (width <= Constants.smallScreen);
-    bool hugeScreen = (width >= Constants.hugeScreen);
+    MediaQuery.of(context).size;
 
     return Dialog(
-        insetPadding: EdgeInsets.all((smallScreen)
+        insetPadding: EdgeInsets.all((userProvider.smallScreen)
             ? Constants.mobileDialogPadding
             : Constants.outerDialogPadding),
         child: ConstrainedBox(

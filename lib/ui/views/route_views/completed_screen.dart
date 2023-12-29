@@ -4,9 +4,9 @@ import 'package:provider/provider.dart';
 import '../../../model/task/todo.dart';
 import '../../../providers/group_provider.dart';
 import '../../../providers/todo_provider.dart';
+import '../../../providers/user_provider.dart';
 import '../../../util/constants.dart';
 import '../../../util/enums.dart';
-import '../../../util/paginator.dart';
 import '../../widgets/listview_header.dart';
 import '../../widgets/listviews.dart';
 import '../../widgets/paginating_listview.dart';
@@ -19,18 +19,14 @@ class CompletedListScreen extends StatefulWidget {
 }
 
 class _CompletedListScreen extends State<CompletedListScreen> {
-  late bool checkDelete;
-
-  late Paginator<ToDo> paginator;
-
   late final ToDoProvider toDoProvider;
   late final GroupProvider groupProvider;
+  late final UserProvider userProvider;
 
   @override
   void initState() {
     super.initState();
     initializeProviders();
-    initializeParameters();
   }
 
   @override
@@ -44,18 +40,35 @@ class _CompletedListScreen extends State<CompletedListScreen> {
       toDoProvider.toDos = [];
     }
     groupProvider = Provider.of<GroupProvider>(context, listen: false);
+    userProvider = Provider.of<UserProvider>(context, listen: false);
   }
 
-  void initializeParameters() {
-    checkDelete = true;
+  void onFetch({List<ToDo>? items}) {
+    if (null == items) {
+      return;
+    }
+    for (ToDo toDo in items) {
+      toDo.fade = Fade.fadeIn;
+    }
+  }
+
+  Future<void> onRemove({ToDo? item}) async {
+    if (null == item) {
+      return;
+    }
+
+    if (toDoProvider.toDos.length < 2) {
+      return;
+    }
+
+    if (mounted) {
+      setState(() => item.fade = Fade.fadeOut);
+      await Future.delayed(const Duration(milliseconds: Constants.fadeOutTime));
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    double width = MediaQuery.of(context).size.width;
-    bool largeScreen = (width >= Constants.largeScreen);
-    bool smallScreen = (width <= Constants.smallScreen);
-
     return Padding(
       padding: const EdgeInsets.all(Constants.innerPadding),
       child: Column(mainAxisSize: MainAxisSize.min, children: [
@@ -86,28 +99,12 @@ class _CompletedListScreen extends State<CompletedListScreen> {
                 toDoProvider.rebuild = false;
                 groupProvider.rebuild = false;
               },
-              paginateButton: false,
-              onFetch: ({List<ToDo>? items}) {
-                if (null == items) {
-                  return;
-                }
-                for (ToDo toDo in items) {
-                  toDo.fade = Fade.fadeIn;
-                }
-              },
-              onRemove: ({ToDo? item}) async {
-                if (null == item) {
-                  return;
-                }
-                if (toDoProvider.toDos.length < 2) {
-                  return;
-                }
-                if (mounted) {
-                  setState(() => item.fade = Fade.fadeOut);
-                  await Future.delayed(
-                      const Duration(milliseconds: Constants.fadeOutTime));
-                }
-              },
+              onFetch: (userProvider.curUser?.reduceMotion ?? false)
+                  ? null
+                  : onFetch,
+              onRemove: (userProvider.curUser?.reduceMotion ?? false)
+                  ? null
+                  : onRemove,
               getAnimationKey: () => ValueKey(
                   toDoProvider.sorter.sortMethod.index *
                           (toDoProvider.sorter.descending ? -1 : 1) +
@@ -122,7 +119,7 @@ class _CompletedListScreen extends State<CompletedListScreen> {
                     key: key,
                     context: context,
                     toDos: items,
-                    checkDelete: checkDelete,
+                    checkDelete: userProvider.curUser?.checkDelete ?? true,
                     onRemove: onRemove,
                     checkboxAnimateBeforeUpdate: (
                         {required ToDo toDo, required int index}) async {
@@ -137,14 +134,14 @@ class _CompletedListScreen extends State<CompletedListScreen> {
                         await onRemove(item: toDo);
                       }
                     },
-                    smallScreen: smallScreen,
+                    smallScreen: userProvider.smallScreen,
                   );
                 }
                 return ListViews.immutableToDos(
                   key: key,
                   context: context,
                   toDos: items,
-                  checkDelete: checkDelete,
+                  checkDelete: userProvider.curUser?.checkDelete ?? true,
                   onRemove: onRemove,
                   checkboxAnimateBeforeUpdate: (
                       {required ToDo toDo, required int index}) async {
@@ -159,7 +156,7 @@ class _CompletedListScreen extends State<CompletedListScreen> {
                       await onRemove(item: toDo);
                     }
                   },
-                  smallScreen: smallScreen,
+                  smallScreen: userProvider.smallScreen,
                 );
               }),
         ),

@@ -7,6 +7,7 @@ import '../../../model/task/subtask.dart';
 import '../../../providers/routine_provider.dart';
 import '../../../providers/subtask_provider.dart';
 import '../../../providers/user_provider.dart';
+import '../../../util/constants.dart';
 import '../../../util/enums.dart';
 import '../../../util/exceptions.dart';
 import '../../widgets/flushbars.dart';
@@ -84,12 +85,14 @@ class _MyDayRoutines extends State<MyDayRoutines> {
       return;
     }
 
-    routine.subtasks = await routineProvider.getSubtasks(id: routine.id);
+    List<Subtask> newSubtasks =
+        await routineProvider.getSubtasks(id: routine.id);
 
-    // TODO: make conditinl.
-    for (Subtask subtask in routine.subtasks) {
-      subtask.fade = Fade.fadeIn;
+    if (!(routineProvider.user?.reduceMotion ?? false)) {
+      onFetch(items: newSubtasks);
     }
+
+    routine.subtasks = newSubtasks;
 
     routineProvider.setSubtaskCount(
         id: routine.id, count: routine.subtasks.length);
@@ -110,6 +113,15 @@ class _MyDayRoutines extends State<MyDayRoutines> {
             e is FailureToUpdateException || e is FailureToUploadException);
   }
 
+  void onFetch({List<Subtask>? items}) {
+    if (null == items) {
+      return;
+    }
+    for (Subtask subtask in items) {
+      subtask.fade = Fade.fadeIn;
+    }
+  }
+
   Future<void> onRemove({Subtask? item}) async {
     if (null == item) {
       return;
@@ -117,7 +129,7 @@ class _MyDayRoutines extends State<MyDayRoutines> {
 
     if (mounted) {
       setState(() => item.fade = Fade.fadeOut);
-      await Future.delayed(const Duration(milliseconds: 500));
+      await Future.delayed(const Duration(milliseconds: Constants.fadeOutTime));
     }
   }
 
@@ -141,7 +153,10 @@ class _MyDayRoutines extends State<MyDayRoutines> {
                 if (null != value.curMorning) {
                   return Tiles.filledRoutineTile(
                       context: context,
-                      onSubtaskRemove: onRemove,
+                      onSubtaskRemove:
+                          (routineProvider.user?.reduceMotion ?? false)
+                              ? null
+                              : onRemove,
                       routine: value.curMorning!,
                       times: 1);
                 }
@@ -154,7 +169,10 @@ class _MyDayRoutines extends State<MyDayRoutines> {
                 if (null != value.curAfternoon) {
                   return Tiles.filledRoutineTile(
                       context: context,
-                      onSubtaskRemove: onRemove,
+                      onSubtaskRemove:
+                          (routineProvider.user?.reduceMotion ?? false)
+                              ? null
+                              : onRemove,
                       routine: value.curAfternoon!,
                       times: 2);
                 }
@@ -167,7 +185,10 @@ class _MyDayRoutines extends State<MyDayRoutines> {
                 if (null != value.curEvening) {
                   return Tiles.filledRoutineTile(
                       context: context,
-                      onSubtaskRemove: onRemove,
+                      onSubtaskRemove:
+                          (routineProvider.user?.reduceMotion ?? false)
+                              ? null
+                              : onRemove,
                       routine: value.curEvening!,
                       times: 4);
                 }
