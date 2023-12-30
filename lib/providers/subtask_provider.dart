@@ -18,6 +18,10 @@ class SubtaskProvider extends ChangeNotifier {
     }
   }
 
+  set softRebuild(bool rebuild) {
+    _rebuild = rebuild;
+  }
+
   final SubtaskService _subtaskService;
 
   // Not sure if I need a ptr, or a usr pref.

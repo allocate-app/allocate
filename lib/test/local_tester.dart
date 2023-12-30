@@ -159,7 +159,7 @@ class LocalTester extends StatefulWidget {
 }
 
 class _LocalTester extends State<LocalTester> with WindowListener {
-  late ThemeProvider themeProvider;
+  // late ThemeProvider themeProvider;
 
   @override
   void initState() {
@@ -170,7 +170,7 @@ class _LocalTester extends State<LocalTester> with WindowListener {
     // Test to inject 100 tasks.
     // testListView();
 
-    themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+    // themeProvider = Provider.of<ThemeProvider>(context, listen: false);
     super.initState();
   }
 
@@ -233,17 +233,21 @@ class _LocalTester extends State<LocalTester> with WindowListener {
 
   @override
   Widget build(BuildContext context) {
-    return TitlebarSafeArea(
-      child: MaterialApp(
-        theme: themeProvider.themeData,
-        darkTheme: themeProvider.darkTheme,
-        highContrastTheme: themeProvider.highContrastLight,
-        highContrastDarkTheme: themeProvider.highContrastDark,
-        themeMode: (ThemeType.system == themeProvider.themeType)
-            ? ThemeMode.system
-            : ThemeMode.light,
-        home: const HomeScreen(),
-      ),
+    return Consumer<ThemeProvider>(
+      builder: (BuildContext context, ThemeProvider value, Widget? child) {
+        return TitlebarSafeArea(
+          child: MaterialApp(
+            theme: value.themeData,
+            darkTheme: value.darkTheme,
+            highContrastTheme: value.highContrastLight,
+            highContrastDarkTheme: value.highContrastDark,
+            themeMode: (ThemeType.system == value.themeType)
+                ? ThemeMode.system
+                : ThemeMode.light,
+            home: const HomeScreen(),
+          ),
+        );
+      },
     );
   }
 }

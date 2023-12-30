@@ -1,5 +1,10 @@
+import 'dart:io';
+import 'dart:math';
+import 'dart:ui';
+
 import "package:auto_route/auto_route.dart";
 import 'package:auto_size_text/auto_size_text.dart';
+import 'package:flutter/foundation.dart';
 import "package:flutter/material.dart";
 import 'package:macos_window_utils/widgets/transparent_macos_sidebar.dart';
 import "package:provider/provider.dart";
@@ -17,11 +22,12 @@ import '../../../util/interfaces/i_model.dart';
 import '../../../util/strings.dart';
 import '../../widgets/desktop_drawer_wrapper.dart';
 import '../../widgets/drain_bar.dart';
+import '../../widgets/expanded_listtile.dart';
 import '../../widgets/global_model_search.dart';
+import '../../widgets/listviews.dart';
 import '../../widgets/padded_divider.dart';
-import '../../widgets/subtitles.dart';
+import '../../widgets/tiles.dart';
 import '../sub_views/create_group.dart';
-import '../sub_views/update_group.dart';
 
 @RoutePage()
 class HomeScreen extends StatefulWidget {
@@ -43,19 +49,39 @@ class _HomeScreen extends State<HomeScreen> {
   late final UserProvider userProvider;
   late final GroupProvider groupProvider;
 
-  late bool navLoading;
-
   late final ScrollController navScrollController;
 
   late final ScrollPhysics scrollPhysics;
 
   // NavigationDrawer stuff
-  //late final GlobalKey<ScaffoldState> _scaffoldKey;
   late bool _opened;
+  late bool _navDrawerExpanded;
+  late bool _footerTween;
+  late double _navDrawerWidth;
 
-  // I haven't fully thought this through yet.
-  int get myDayTotal =>
-      toDoProvider.myDayWeight + routineProvider.routineWeight;
+  // This is a hacky, hacky way of creating a footer.
+  // ie. number of tiles + user tile + room for 1 extra tile *
+  // approx tile height in lp.
+  double get footerOffset => max(userProvider.size.height - tileSpace, 0);
+
+  double get footerOffsetOpened =>
+      max(userProvider.size.height - tileSpaceOpened, 0);
+
+  double get tileSpace =>
+      (Constants.viewRoutes.length + 2) * Constants.navDestinationHeight +
+      2 * Constants.innerPadding;
+
+  double get tileSpaceOpened =>
+      (Constants.viewRoutes.length +
+              2 +
+              groupProvider.secondaryGroups.length +
+              2) *
+          Constants.navDestinationHeight +
+      2 * Constants.padding;
+
+  // I haven't fully thought this through yet. => Also, should probably just BE a double
+  // + userProvider.curUser?.dayCost;
+  int get myDayTotal => userProvider.myDayTotal + routineProvider.routineWeight;
 
   double get sidebarOpacity {
     // TODO: change this after userProvider && widgets are finished.
@@ -76,6 +102,8 @@ class _HomeScreen extends State<HomeScreen> {
     initializeProviders();
     initializeParams();
     initializeControllers();
+    updateMyDayWeight();
+    resetNavGroups();
   }
 
   // TODO: fix this -> rebuild should notify listeners in other classes.
@@ -88,85 +116,56 @@ class _HomeScreen extends State<HomeScreen> {
     userProvider = Provider.of<UserProvider>(context, listen: false);
     groupProvider = Provider.of<GroupProvider>(context, listen: false);
 
-    toDoProvider.addListener(rebuildToDo);
-    routineProvider.addListener(rebuildRoutine);
-    groupProvider.addListener(rebuildGroup);
-    deadlineProvider.addListener(rebuildDeadline);
-    reminderProvider.addListener(rebuildReminder);
+    toDoProvider.addListener(updateMyDayWeight);
+    groupProvider.addListener(resetNavGroups);
   }
 
   void resetProviders() {
-    rebuildToDo();
-    rebuildRoutine();
-    rebuildDeadline();
-    rebuildReminder();
-    // TODO: Figure this out.
-    // userProvider.rebuild = true
-    rebuildGroup();
-  }
-
-  void rebuildGroup() {
-    groupProvider.rebuild = true;
-    resetNavGroups();
-  }
-
-  void rebuildReminder() {
-    reminderProvider.rebuild = true;
-  }
-
-  void rebuildDeadline() {
-    deadlineProvider.rebuild = true;
-  }
-
-  void rebuildRoutine() {
-    routineProvider.rebuild = true;
-  }
-
-  void rebuildToDo() {
-    toDoProvider.rebuild = true;
-    toDoProvider
-        .setMyDayWeight()
-        .whenComplete(() => userProvider.myDayTotal = myDayTotal);
+    toDoProvider.softRebuild = true;
+    routineProvider.softRebuild = true;
+    deadlineProvider.softRebuild = true;
+    reminderProvider.softRebuild = true;
+    groupProvider.softRebuild = true;
   }
 
   void initializeParams() {
     selectedPageIndex = widget.index ?? 0;
-    navLoading = false;
+    _navDrawerWidth = Constants.navigationDrawerMaxWidth;
     _opened = true;
-    // _scaffoldKey = GlobalKey<ScaffoldState>();
+    _navDrawerExpanded = false;
+    _footerTween = false;
   }
 
   void initializeControllers() {
     navScrollController = ScrollController();
-    scrollPhysics =
-        const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics());
+
+    ScrollPhysics parentPhysics = (Platform.isIOS || Platform.isMacOS)
+        ? const BouncingScrollPhysics()
+        : const ClampingScrollPhysics();
+
+    scrollPhysics = AlwaysScrollableScrollPhysics(parent: parentPhysics);
   }
 
   Future<void> resetNavGroups() async {
-    // TODO: remove loading progress indicator. Db is too fast.
-    setState(() {
-      navLoading = true;
-    });
-
-    return Future.delayed(
-        const Duration(milliseconds: 100),
-        () async => await groupProvider
-            .mostRecent(grabToDos: false)
-            .then((groups) => setState(() {
-                  groupProvider.secondaryGroups = groups;
-                  navLoading = false;
-                })));
+    groupProvider.secondaryGroups = await groupProvider.mostRecent();
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   @override
   void dispose() {
     navScrollController.dispose();
-    toDoProvider.removeListener(rebuildToDo);
-    routineProvider.removeListener(rebuildRoutine);
-    groupProvider.removeListener(rebuildGroup);
-    deadlineProvider.removeListener(rebuildDeadline);
-    reminderProvider.removeListener(rebuildReminder);
+    toDoProvider.removeListener(updateMyDayWeight);
+    groupProvider.removeListener(resetNavGroups);
     super.dispose();
+  }
+
+  Future<void> updateMyDayWeight() async {
+    userProvider.myDayTotal = await toDoProvider.getMyDayWeight();
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   @override
@@ -187,8 +186,8 @@ class _HomeScreen extends State<HomeScreen> {
           duration: const Duration(milliseconds: 600),
           curve: Curves.fastLinearToSlowEaseIn,
           tween: Tween<double>(
-            begin: _opened ? Constants.navigationDrawerWidth : 0.0,
-            end: _opened ? Constants.navigationDrawerWidth : 0.0,
+            begin: _opened ? _navDrawerWidth : 0.0,
+            end: _opened ? _navDrawerWidth : 0.0,
           ),
           builder: (BuildContext context, double value, Widget? child) {
             return TransparentMacOSSidebar(
@@ -197,8 +196,8 @@ class _HomeScreen extends State<HomeScreen> {
               clipBehavior: Clip.hardEdge,
               decoration: const BoxDecoration(),
               child: OverflowBox(
-                minWidth: Constants.navigationDrawerWidth,
-                maxWidth: Constants.navigationDrawerWidth,
+                minWidth: Constants.navigationDrawerMaxWidth,
+                maxWidth: Constants.navigationDrawerMaxWidth,
                 child: DesktopDrawerWrapper(
                   drawer: buildNavigationDrawer(
                       context: context, largeScreen: true),
@@ -206,11 +205,60 @@ class _HomeScreen extends State<HomeScreen> {
               ),
             ));
           }),
-      // VerticalDivider(
-      //   color: Theme.of(context).colorScheme.outlineVariant,
-      //   thickness: 2,
-      //   width: 2,
-      // ),
+      // Possibly only render this on open.
+      (_opened)
+          ? MouseRegion(
+              hitTestBehavior: HitTestBehavior.translucent,
+              cursor: SystemMouseCursors.resizeLeftRight,
+              child: GestureDetector(
+                behavior: HitTestBehavior.translucent,
+                supportedDevices: PointerDeviceKind.values.toSet(),
+                onHorizontalDragEnd: (DragEndDetails details) {
+                  if ((0 - _navDrawerWidth).abs() <= precisionErrorTolerance) {
+                    _opened = false;
+                    _navDrawerWidth = Constants.navigationDrawerMaxWidth;
+                    if (mounted) {
+                      setState(() {});
+                    }
+                  }
+                },
+                onHorizontalDragUpdate: (DragUpdateDetails details) {
+                  if (mounted) {
+                    setState(() {
+                      _navDrawerWidth = (_navDrawerWidth + details.delta.dx)
+                          .clamp(0, Constants.navigationDrawerMaxWidth);
+                    });
+                  }
+                },
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    VerticalDivider(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .surface
+                          .withOpacity(sidebarOpacity),
+                      thickness: Constants.verticalDividerThickness,
+                      width: Constants.verticalDividerThickness,
+                    ),
+                    VerticalDivider(
+                      color: Theme.of(context).colorScheme.outlineVariant,
+                      thickness: Constants.verticalDividerThickness,
+                      width: Constants.verticalDividerThickness,
+                    ),
+                    VerticalDivider(
+                      color: Theme.of(context)
+                          .scaffoldBackgroundColor
+                          .withOpacity(scaffoldOpacity),
+                      thickness: Constants.verticalDividerThickness,
+                      width: Constants.verticalDividerThickness,
+                    )
+                  ],
+                ),
+              ),
+            )
+          : const SizedBox.shrink(),
 
       Expanded(
           child: Scaffold(
@@ -235,7 +283,8 @@ class _HomeScreen extends State<HomeScreen> {
 
   AppBar buildAppBar({bool mobile = false}) {
     return AppBar(
-      leading: getLeading(mobile: mobile),
+      // elevation: 1.0,
+      leading: getAppBarLeading(mobile: mobile),
       automaticallyImplyLeading: false,
       title: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -252,6 +301,7 @@ class _HomeScreen extends State<HomeScreen> {
           Tooltip(
             message: "Remaining energy for tasks",
             child: DrainBar(
+                showDifference: true,
                 scale: .65,
                 weight: myDayTotal.toDouble(),
                 max: userProvider.curUser?.bandwidth.toDouble() ??
@@ -265,14 +315,13 @@ class _HomeScreen extends State<HomeScreen> {
     );
   }
 
-  Widget getLeading({bool mobile = false}) {
+  Widget getAppBarLeading({bool mobile = false}) {
     if (mobile) {
       return Builder(builder: (BuildContext context) {
         return IconButton(
             icon: const Icon(Icons.menu_rounded),
             onPressed: () {
               Scaffold.of(context).openDrawer();
-              //_scaffoldKey.currentState?.openDrawer();
             });
       });
     }
@@ -295,19 +344,13 @@ class _HomeScreen extends State<HomeScreen> {
         });
   }
 
+  // TODO: include index -within- the constants class
   NavigationDrawer buildNavigationDrawer(
       {required BuildContext context, bool largeScreen = false}) {
     return NavigationDrawer(
         backgroundColor: (largeScreen)
             ? Theme.of(context).colorScheme.surface.withOpacity(sidebarOpacity)
             : null,
-        // TODO: implement themes with userclass.
-        // Not sure if MacOS needs to have a different bg color, or none.
-        // >>> Most likely easiest to write a ThemeService class.
-        // Theme.of(context)
-        //     .navigationDrawerTheme
-        //     .backgroundColor
-        //     ?.withOpacity(0.75),
         onDestinationSelected: (index) {
           setState(() {
             selectedPageIndex = index;
@@ -324,11 +367,13 @@ class _HomeScreen extends State<HomeScreen> {
           // User name bar
           // Possible stretch Goal: add user images?
           Padding(
-            padding: const EdgeInsets.all(Constants.innerPadding),
+            padding: const EdgeInsets.symmetric(
+                vertical: Constants.innerPadding,
+                horizontal: Constants.padding),
             child: ListTile(
               shape: const RoundedRectangleBorder(
-                  borderRadius: BorderRadius.all(
-                      Radius.circular(Constants.semiCircular))),
+                  borderRadius:
+                      BorderRadius.all(Radius.circular(Constants.circular))),
               leading: CircleAvatar(
                   child: Text(
                       "${userProvider.curUser?.userName[0].toUpperCase()}")),
@@ -403,38 +448,35 @@ class _HomeScreen extends State<HomeScreen> {
           ),
           const PaddedDivider(padding: Constants.innerPadding),
 
-          ...Constants.viewRoutes
-              .map((view) => view.destination ?? const SizedBox.shrink()),
+          ...Constants.viewRoutes.map((view) =>
+              (view.inMainNav) ? view.destination : const SizedBox.shrink()),
           const PaddedDivider(padding: Constants.innerPadding),
           // Drop down menu for Groups.
-          // TODO: refactor this to use the pre-built expansiontile.
-          Card(
-            clipBehavior: Clip.hardEdge,
-            elevation: 0,
-            color: Colors.transparent,
-            shape: const RoundedRectangleBorder(
-              borderRadius:
-                  BorderRadius.all(Radius.circular(Constants.semiCircular)),
-            ),
-            child: ExpansionTile(
-              tilePadding: const EdgeInsets.symmetric(
-                  horizontal: Constants.innerPadding + Constants.padding),
-              shape: const RoundedRectangleBorder(),
-              collapsedShape: const RoundedRectangleBorder(
-                  borderRadius:
-                      BorderRadius.all(Radius.circular(Constants.circular))),
-              leading: const Icon(Icons.table_view_outlined),
-              title: const Text(
+          ExpandedListTile(
+              title: const AutoSizeText(
                 "Groups",
                 maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+                overflow: TextOverflow.visible,
                 softWrap: false,
+                maxFontSize: Constants.xtraLarge,
+                minFontSize: Constants.large,
               ),
+              border: BorderSide.none,
+              leading: const Icon(Icons.table_view_rounded),
+              initiallyExpanded: _navDrawerExpanded,
+              onExpansionChanged: ({bool expanded = false}) {
+                Future.delayed(
+                    const Duration(milliseconds: Constants.footerDelay), () {
+                  if (mounted) {
+                    setState(() => _navDrawerExpanded = expanded);
+                    _footerTween = true;
+                  }
+                });
+              },
               children: [
-                // Tile for "See all groups"
                 ListTile(
                     contentPadding: const EdgeInsets.symmetric(
-                        horizontal: Constants.padding + Constants.innerPadding),
+                        horizontal: Constants.innerPadding),
                     shape: const RoundedRectangleBorder(
                         borderRadius: BorderRadius.all(
                             Radius.circular(Constants.semiCircular))),
@@ -442,97 +484,75 @@ class _HomeScreen extends State<HomeScreen> {
                     title: const AutoSizeText(
                       "All Groups",
                       maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                      overflow: TextOverflow.visible,
                       softWrap: false,
+                      maxFontSize: Constants.xtraLarge,
+                      minFontSize: Constants.large,
                     ),
                     onTap: () {
-                      setState(() {
-                        resetProviders();
-                        selectedPageIndex =
-                            Constants.viewRoutes.indexOf(Constants.groupScreen);
-                      });
+                      groupProvider.softRebuild = true;
+                      selectedPageIndex = Constants.viewRoutes.length - 1;
+                      // Constants.viewRoutes.indexOf(Constants.groupScreen);
+                      if (mounted) {
+                        setState(() {});
+                      }
                       if (!largeScreen) {
                         Navigator.pop(context);
                       }
                     }),
-
-                ListTile(
-                    contentPadding: const EdgeInsets.symmetric(
-                        horizontal: Constants.padding + Constants.innerPadding),
-                    shape: const RoundedRectangleBorder(
-                        borderRadius: BorderRadius.all(
-                            Radius.circular(Constants.semiCircular))),
-                    leading: const Icon(Icons.add_rounded),
-                    title: const AutoSizeText(
-                      "Add New",
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      softWrap: false,
-                    ),
+                Tiles.addTile(
+                    title: "Add New",
                     onTap: () async {
-                      return await showDialog(
+                      await showDialog(
                           barrierDismissible: false,
                           useRootNavigator: false,
                           context: context,
                           builder: (BuildContext context) =>
                               const CreateGroupScreen());
                     }),
-
-                buildNavGroupTile(physics: scrollPhysics),
-              ],
-            ),
-          )
-        ]);
-  }
-
-  ListView buildNavGroupTile(
-      {ScrollPhysics physics = const NeverScrollableScrollPhysics()}) {
-    return ListView(
-        physics: physics,
-        controller: navScrollController,
-        shrinkWrap: true,
-        children: [
-          Consumer<GroupProvider>(builder:
-              (BuildContext context, GroupProvider value, Widget? child) {
-            return ListView.builder(
-                padding: EdgeInsets.zero,
-                shrinkWrap: true,
-                itemCount: value.secondaryGroups.length,
-                itemBuilder: (BuildContext context, int index) {
-                  return ListTile(
-                      contentPadding: const EdgeInsets.symmetric(
-                          horizontal:
-                              Constants.padding + Constants.innerPadding),
-                      shape: const RoundedRectangleBorder(
-                          borderRadius: BorderRadius.all(
-                              Radius.circular(Constants.semiCircular))),
-                      leading:
-                          const Icon(Icons.playlist_add_check_circle_outlined),
-                      title: AutoSizeText(value.secondaryGroups[index].name,
-                          maxLines: 1,
-                          overflow: TextOverflow.visible,
-                          softWrap: false,
-                          minFontSize: Constants.small),
-                      onTap: () async {
-                        value.curGroup = value.secondaryGroups[index];
-                        return await showDialog(
-                            barrierDismissible: false,
-                            useRootNavigator: false,
-                            context: context,
-                            builder: (BuildContext context) =>
-                                const UpdateGroupScreen());
-                      },
-                      trailing: Subtitles.groupSubtitle(
-                          toDoCount: groupProvider.getToDoCount(
-                              id: value.secondaryGroups[index].id)!));
-                });
-          }),
-          (navLoading)
-              ? const Padding(
-                  padding: EdgeInsets.all(Constants.padding),
-                  child: Center(child: CircularProgressIndicator()),
-                )
-              : const SizedBox.shrink()
+                ListViews.navDrawerGroups(
+                  context: context,
+                  groups: groupProvider.secondaryGroups,
+                  // TODO: tweak
+                  outerPadding:
+                      const EdgeInsets.symmetric(horizontal: Constants.padding),
+                  innerPadding:
+                      const EdgeInsets.symmetric(horizontal: Constants.padding),
+                ),
+                // refactor listview
+              ]),
+          const PaddedDivider(padding: Constants.innerPadding),
+          (_footerTween)
+              ? TweenAnimationBuilder<double>(
+                  duration: const Duration(milliseconds: Constants.footerTime),
+                  curve: Curves.fastOutSlowIn,
+                  onEnd: () {
+                    if (mounted) {
+                      setState(() => _footerTween = false);
+                    }
+                  },
+                  tween: Tween<double>(
+                    begin:
+                        _navDrawerExpanded ? footerOffset : footerOffsetOpened,
+                    end: _navDrawerExpanded ? footerOffsetOpened : footerOffset,
+                  ),
+                  builder: (BuildContext context, double value, Widget? child) {
+                    print("tweening");
+                    print("opened: $footerOffsetOpened closed: $footerOffset");
+                    print("value: $value");
+                    return Padding(
+                      padding: EdgeInsets.only(bottom: value),
+                      child: const SizedBox.shrink(),
+                    );
+                  })
+              : Padding(
+                  padding: EdgeInsets.only(
+                      bottom: (_navDrawerExpanded)
+                          ? footerOffsetOpened
+                          : footerOffset),
+                  child: const SizedBox.shrink()),
+          Constants.settingsScreen.destination,
+          Constants.trashScreen.destination,
         ]);
   }
 }

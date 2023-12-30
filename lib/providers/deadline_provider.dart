@@ -14,7 +14,20 @@ import '../util/exceptions.dart';
 import '../util/sorting/deadline_sorter.dart';
 
 class DeadlineProvider extends ChangeNotifier {
-  bool rebuild = true;
+  bool _rebuild = true;
+
+  bool get rebuild => _rebuild;
+
+  set rebuild(bool rebuild) {
+    _rebuild = rebuild;
+    if (_rebuild) {
+      notifyListeners();
+    }
+  }
+
+  set softRebuild(bool rebuild) {
+    _rebuild = rebuild;
+  }
 
   late Timer syncTimer;
 
@@ -132,20 +145,18 @@ class DeadlineProvider extends ChangeNotifier {
         repeatSkip: repeatSkip ?? 1,
         lastUpdated: DateTime.now());
 
-    if (warnMe) {
-      curDeadline!.notificationID = Constants.generate32ID();
-    }
-    if (repeatable ?? false) {
-      curDeadline!.repeatID = Constants.generateID();
-      nextRepeat(deadline: curDeadline);
-    }
-
     try {
       curDeadline =
           await _deadlineService.createDeadline(deadline: curDeadline!);
 
       if (curDeadline!.warnMe) {
-        await scheduleNotification();
+        curDeadline!.notificationID = Constants.generate32ID();
+        await scheduleNotification(deadline: curDeadline);
+      }
+
+      if (repeatable ?? false) {
+        curDeadline!.repeatID = Constants.generateID();
+        await nextRepeat(deadline: curDeadline);
       }
     } on FailureToCreateException catch (e) {
       log(e.cause);
@@ -168,19 +179,19 @@ class DeadlineProvider extends ChangeNotifier {
     deadline = deadline ?? curDeadline!;
     deadline.lastUpdated = DateTime.now();
 
-    if (deadline.repeatable && null == deadline.repeatID) {
-      deadline.repeatID = Constants.generateID();
-      nextRepeat(deadline: deadline);
-    }
-
     try {
       curDeadline =
           await _deadlineService.updateDeadline(deadline: curDeadline!);
-      await cancelNotification();
-      if (deadline.warnMe && validateWarnDate()) {
+      await cancelNotification(deadline: curDeadline);
+      if (deadline.warnMe &&
+          validateWarnDate(warnDate: curDeadline!.warnDate)) {
         deadline.notificationID =
             deadline.notificationID ?? Constants.generateID();
-        await scheduleNotification();
+        await scheduleNotification(deadline: deadline);
+      }
+      if (deadline.repeatable && null == deadline.repeatID) {
+        deadline.repeatID = Constants.generateID();
+        await nextRepeat(deadline: deadline);
       }
     } on FailureToUploadException catch (e) {
       log(e.cause);

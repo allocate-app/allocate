@@ -65,8 +65,9 @@ class DeadlineService {
     );
 
     newDeadline.notificationID = Constants.generateID();
+    deadline.repeatable = false;
 
-    await updateDeadline(deadline: newDeadline);
+    await _repository.updateBatch([deadline, newDeadline]);
   }
 
   Future<void> populateCalendar({required DateTime limit}) async {
@@ -82,7 +83,6 @@ class DeadlineService {
     }
   }
 
-  // This is somewhat hacky, but populateCalendar needs an early escape.
   Future<void> checkRepeating(
       {required DateTime now, List<Deadline>? repeatables}) async {
     List<Deadline> toUpdate = List.empty(growable: true);
@@ -121,7 +121,7 @@ class DeadlineService {
       toUpdate.add(newDeadline);
       toUpdate.add(deadline);
     }
-    await updateBatch(deadlines: toUpdate);
+    await _repository.updateBatch(toUpdate);
   }
 
   DateTime? getCustom({required Deadline deadline}) {

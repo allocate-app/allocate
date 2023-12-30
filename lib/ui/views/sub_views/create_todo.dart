@@ -17,7 +17,7 @@ import "../../../util/constants.dart";
 import "../../../util/enums.dart";
 import "../../../util/exceptions.dart";
 import "../../widgets/flushbars.dart";
-import "../../widgets/leading_widgets.dart";
+import "../../widgets/listtile_widgets.dart";
 import "../../widgets/padded_divider.dart";
 import "../../widgets/search_recents_bar.dart";
 import "../../widgets/tiles.dart";
@@ -598,7 +598,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                                 children: [
                                   Tiles.nameTile(
                                       context: context,
-                                      leading: LeadingWidgets.checkbox(
+                                      leading: ListTileWidgets.checkbox(
                                         scale: Constants.largeCheckboxScale,
                                         completed: completed,
                                         onChanged: completeToDo,
@@ -624,9 +624,14 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                                     weight: (taskType == TaskType.small)
                                         ? weight.toDouble()
                                         : sumWeight.toDouble(),
-                                    max: (taskType == TaskType.small)
-                                        ? Constants.maxTaskWeight.toDouble()
-                                        : Constants.maxWeight.toDouble(),
+                                    max: switch (taskType) {
+                                      TaskType.small =>
+                                        Constants.maxTaskWeight.toDouble(),
+                                      TaskType.large =>
+                                        Constants.medianWeight.toDouble(),
+                                      TaskType.huge =>
+                                        Constants.maxWeight.toDouble(),
+                                    },
                                     slider: (taskType == TaskType.small)
                                         ? Tiles.weightSlider(
                                             weight: (taskType == TaskType.small)
@@ -853,7 +858,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                   children: [
                     Tiles.nameTile(
                         context: context,
-                        leading: LeadingWidgets.checkbox(
+                        leading: ListTileWidgets.checkbox(
                           scale: Constants.largeCheckboxScale,
                           completed: completed,
                           onChanged: completeToDo,
@@ -877,9 +882,11 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                       weight: (taskType == TaskType.small)
                           ? weight.toDouble()
                           : sumWeight.toDouble(),
-                      max: (taskType == TaskType.small)
-                          ? Constants.maxTaskWeight.toDouble()
-                          : Constants.maxWeight.toDouble(),
+                      max: switch (taskType) {
+                        TaskType.small => Constants.maxTaskWeight.toDouble(),
+                        TaskType.large => Constants.medianWeight.toDouble(),
+                        TaskType.huge => Constants.maxWeight.toDouble(),
+                      },
                       slider: (taskType == TaskType.small)
                           ? Tiles.weightSlider(
                               weight: (taskType == TaskType.small)

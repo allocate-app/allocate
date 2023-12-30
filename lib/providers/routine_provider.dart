@@ -14,7 +14,21 @@ import "../util/exceptions.dart";
 import '../util/sorting/routine_sorter.dart';
 
 class RoutineProvider extends ChangeNotifier {
-  bool rebuild = true;
+  bool _rebuild = true;
+
+  bool get rebuild => _rebuild;
+
+  set rebuild(bool rebuild) {
+    _rebuild = rebuild;
+    if (_rebuild) {
+      notifyListeners();
+    }
+  }
+
+  set softRebuild(bool rebuild) {
+    _rebuild = rebuild;
+  }
+
   late Timer syncTimer;
 
   final RoutineService _routineService;
@@ -204,9 +218,6 @@ class RoutineProvider extends ChangeNotifier {
           {required int taskID, int limit = Constants.maxNumTasks}) async =>
       await _subtaskService.getTaskSubtaskWeight(taskID: taskID, limit: limit);
 
-  // int calculateWeight({List<Subtask>? routineTasks}) =>
-  //     _routineService.calculateWeight(routineTasks: routineTasks);
-
   ValueNotifier<int> getSubtaskCount(
       {required int id, int limit = Constants.maxNumTasks}) {
     if (routineSubtaskCounts.containsKey(id)) {
@@ -271,6 +282,7 @@ class RoutineProvider extends ChangeNotifier {
 
     try {
       curRoutine = await _routineService.createRoutine(routine: curRoutine!);
+      await _updateSubtasks(subtasks: subtasks, taskID: curRoutine!.id);
     } on FailureToCreateException catch (e) {
       log(e.cause);
       return Future.error(e);
@@ -280,29 +292,10 @@ class RoutineProvider extends ChangeNotifier {
       return updateRoutine();
     }
 
-    await _updateSubtasks(subtasks: subtasks, taskID: curRoutine!.id);
     routineSubtaskCounts[Constants.intMax]!.value = 0;
     setDailyRoutine(timeOfDay: times, routine: curRoutine);
     notifyListeners();
   }
-
-  // Future<void> createSubtask({required int taskID, int? index}) async {
-  //   Subtask subtask = Subtask(taskID: taskID, lastUpdated: DateTime.now());
-  //   if (null != index) {
-  //     subtask.customViewIndex = index;
-  //   }
-  //   try {
-  //     subtask = await _subtaskService.createSubtask(
-  //         subtask: Subtask(taskID: taskID, lastUpdated: DateTime.now()));
-  //   } on FailureToUploadException catch (e) {
-  //     log(e.cause);
-  //     return Future.error(e);
-  //   } on FailureToUpdateException catch (e) {
-  //     log(e.cause);
-  //     return Future.error(e);
-  //   }
-  //   notifyListeners();
-  // }
 
   Future<void> updateRoutine({Routine? routine, int? times}) async {
     routine = routine ?? curRoutine;
@@ -346,20 +339,6 @@ class RoutineProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Future<void> updateSubtask({required Subtask subtask}) async {
-  //   subtask.lastUpdated = DateTime.now();
-  //   try {
-  //     subtask = await _subtaskService.updateSubtask(subtask: subtask);
-  //   } on FailureToUploadException catch (e) {
-  //     log(e.cause);
-  //     return Future.error(e);
-  //   } on FailureToUpdateException catch (e) {
-  //     log(e.cause);
-  //     return Future.error(e);
-  //   }
-  //   notifyListeners();
-  // }
-
   Future<void> _updateSubtasks(
       {required List<Subtask> subtasks, required int taskID}) async {
     int i = 0;
@@ -374,11 +353,6 @@ class RoutineProvider extends ChangeNotifier {
         st.toDelete = true;
       }
     }
-    // for (int i = 0; i < subtasks.length; i++) {
-    //   subtasks[i].taskID = taskID;
-    //   subtasks[i].customViewIndex = i;
-    //   subtasks[i].lastUpdated = DateTime.now();
-    // }
     try {
       await _subtaskService.updateBatch(subtasks: subtasks);
     } on FailureToUploadException catch (e) {
@@ -401,16 +375,6 @@ class RoutineProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Future<void> deleteSubtask({required Subtask subtask}) async {
-  //   try {
-  //     await _subtaskService.deleteSubtask(subtask: subtask);
-  //   } on FailureToDeleteException catch (e) {
-  //     log(e.cause);
-  //     return Future.error(e);
-  //   }
-  //   notifyListeners();
-  // }
-
   Future<List<Routine>> reorderRoutines(
       {List<Routine>? routines,
       required int oldIndex,
@@ -428,22 +392,6 @@ class RoutineProvider extends ChangeNotifier {
       return Future.error(e);
     }
   }
-
-  // Future<List<Subtask>> reorderSubtasks(
-  //     {required List<Subtask> subtasks,
-  //     required int oldIndex,
-  //     required int newIndex}) async {
-  //   try {
-  //     return await _subtaskService.reorderSubtasks(
-  //         subtasks: subtasks, oldIndex: oldIndex, newIndex: newIndex);
-  //   } on FailureToUpdateException catch (e) {
-  //     log(e.cause);
-  //     return Future.error(e);
-  //   } on FailureToUploadException catch (e) {
-  //     log(e.cause);
-  //     return Future.error(e);
-  //   }
-  // }
 
   Future<void> resetRoutineSubtasks({Routine? routine}) async {
     routine = routine ?? curRoutine;

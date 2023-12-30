@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 class DesktopDrawerWrapper extends StatelessWidget {
   const DesktopDrawerWrapper({super.key, required this.drawer});
+
   final NavigationDrawer drawer;
 
   @override
@@ -14,11 +15,11 @@ class DesktopDrawerWrapper extends StatelessWidget {
         removeTop: true,
         removeLeft: true,
         removeRight: true,
-        // T
         child: Theme(
             data: Theme.of(context).copyWith(
                 drawerTheme: const DrawerThemeData(
               elevation: 0,
+              // These are for zero border radius
               shape: RoundedRectangleBorder(),
               endShape: RoundedRectangleBorder(),
             )),

@@ -6,12 +6,10 @@ import '../util/interfaces/repository/model/reminder_repository.dart';
 import '../util/interfaces/sortable.dart';
 
 class ReminderService {
-  //Default repo for now, switch as needed for testing.
   ReminderRepository _repository = ReminderRepo();
 
   set repository(ReminderRepository repo) => _repository = repo;
 
-//This may not be necessary, but keep for now
   int getDateTimeDayOffset({required DateTime start, required DateTime end}) {
     start = DateTime.utc(start.year, start.month, start.day, start.hour,
         start.minute, start.second, start.millisecond, start.microsecond);
@@ -55,7 +53,8 @@ class ReminderService {
     );
 
     newReminder.notificationID = Constants.generateID();
-    await updateReminder(reminder: newReminder);
+    reminder.repeatable = false;
+    await _repository.updateBatch([reminder, newReminder]);
   }
 
   Future<void> populateCalendar({required DateTime limit}) async {
@@ -71,7 +70,6 @@ class ReminderService {
     }
   }
 
-  // This is somewhat hacky, but populateCalendar needs an early escape.
   Future<void> checkRepeating(
       {required DateTime now, List<Reminder>? repeatables}) async {
     List<Reminder> toUpdate = List.empty(growable: true);
@@ -97,7 +95,7 @@ class ReminderService {
       toUpdate.add(newReminder);
       toUpdate.add(reminder);
     }
-    await updateBatch(reminders: toUpdate);
+    await _repository.updateBatch(toUpdate);
   }
 
   DateTime? getCustom({required Reminder reminder}) {

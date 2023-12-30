@@ -105,7 +105,7 @@ class ListViews {
             );
             if (toDos.length > 1) {
               return CustomDragStartListener(
-                delay: Constants.delayTime,
+                delay: Constants.dragDelayTime,
                 index: index,
                 key: ValueKey(toDos[index].id),
                 child: child,
@@ -118,7 +118,6 @@ class ListViews {
     Key? key,
     required BuildContext context,
     required List<ToDo> toDos,
-    bool animate = false,
     bool checkDelete = false,
     bool smallScreen = false,
     Future<void> Function({required ToDo toDo, required int index})?
@@ -152,7 +151,6 @@ class ListViews {
     Key? key,
     required BuildContext context,
     required List<ToDo> toDos,
-    bool animate = false,
     bool checkDelete = false,
     bool smallScreen = false,
     Future<void> Function({required ToDo toDo, required int index})?
@@ -188,7 +186,7 @@ class ListViews {
             );
             if (toDos.length > 1) {
               return CustomDragStartListener(
-                delay: Constants.delayTime,
+                delay: Constants.dragDelayTime,
                 index: index,
                 key: ValueKey(toDos[index].id ^ index),
                 child: child,
@@ -201,7 +199,6 @@ class ListViews {
     Key? key,
     required BuildContext context,
     required List<ToDo> toDos,
-    bool animate = false,
     bool smallScreen = false,
     Future<void> Function({required ToDo toDo, required int index})?
         checkboxAnimateBeforeUpdate,
@@ -233,7 +230,6 @@ class ListViews {
     Key? key,
     required BuildContext context,
     required List<Routine> routines,
-    bool animate = false,
     bool checkDelete = false,
     Future<void> Function({Routine? item})? onRemove,
     ScrollPhysics physics = const NeverScrollableScrollPhysics(),
@@ -263,7 +259,7 @@ class ListViews {
             );
             if (routines.length > 1) {
               return CustomDragStartListener(
-                  delay: Constants.delayTime,
+                  delay: Constants.dragDelayTime,
                   index: index,
                   key: ValueKey(routines[index].id),
                   child: child);
@@ -275,7 +271,6 @@ class ListViews {
     Key? key,
     required BuildContext context,
     required List<Routine> routines,
-    bool animate = false,
     bool checkDelete = false,
     ScrollPhysics physics = const NeverScrollableScrollPhysics(),
     Future<void> Function({Routine? item})? onRemove,
@@ -303,7 +298,6 @@ class ListViews {
     Key? key,
     required BuildContext context,
     required List<Deadline> deadlines,
-    bool animate = false,
     bool checkDelete = false,
     bool smallScreen = false,
     ScrollPhysics physics = const NeverScrollableScrollPhysics(),
@@ -335,7 +329,7 @@ class ListViews {
             );
             if (deadlines.length > 1) {
               return CustomDragStartListener(
-                delay: Constants.delayTime,
+                delay: Constants.dragDelayTime,
                 index: index,
                 key: ValueKey(deadlines[index].id),
                 child: child,
@@ -348,7 +342,6 @@ class ListViews {
     Key? key,
     required BuildContext context,
     required List<Deadline> deadlines,
-    bool animate = false,
     bool checkDelete = false,
     smallScreen = false,
     ScrollPhysics physics = const NeverScrollableScrollPhysics(),
@@ -379,7 +372,6 @@ class ListViews {
     Key? key,
     required BuildContext context,
     required List<Reminder> reminders,
-    bool animate = false,
     bool checkDelete = false,
     bool smallScreen = false,
     ScrollPhysics physics = const NeverScrollableScrollPhysics(),
@@ -411,7 +403,7 @@ class ListViews {
             );
             if (reminders.length > 1) {
               return CustomDragStartListener(
-                delay: Constants.delayTime,
+                delay: Constants.dragDelayTime,
                 index: index,
                 key: ValueKey(reminders[index].id),
                 child: child,
@@ -424,7 +416,6 @@ class ListViews {
     Key? key,
     required BuildContext context,
     required List<Reminder> reminders,
-    bool animate = false,
     bool checkDelete = false,
     bool smallScreen = false,
     ScrollPhysics physics = const NeverScrollableScrollPhysics(),
@@ -455,7 +446,6 @@ class ListViews {
     Key? key,
     required BuildContext context,
     required List<Group> groups,
-    bool animate = false,
     bool checkDelete = false,
     ScrollPhysics physics = const NeverScrollableScrollPhysics(),
     Future<void> Function({Group? item})? onRemove,
@@ -482,7 +472,6 @@ class ListViews {
                 group: groups[index],
                 showHandle: groups.length > 1,
                 checkDelete: checkDelete,
-                animate: animate,
                 onRemove: onRemove,
                 onToDoFetch: onToDoFetch,
                 onToDoRemove: onToDoRemove,
@@ -490,7 +479,7 @@ class ListViews {
             );
             if (groups.length > 1) {
               return CustomDragStartListener(
-                delay: Constants.delayTime,
+                delay: Constants.dragDelayTime,
                 key: ValueKey(groups[index].id),
                 index: index,
                 child: child,
@@ -503,7 +492,6 @@ class ListViews {
     Key? key,
     required BuildContext context,
     required List<Group> groups,
-    bool animate = false,
     bool checkDelete = false,
     ScrollPhysics physics = const NeverScrollableScrollPhysics(),
     Future<void> Function({Group? item})? onRemove,
@@ -535,7 +523,6 @@ class ListViews {
     Key? key,
     required BuildContext context,
     required List<ToDo> toDos,
-    bool animate = false,
     ScrollPhysics physics = const NeverScrollableScrollPhysics(),
     required void Function({ToDo? toDo, bool? value}) onChanged,
     void Function({ToDo? toDo})? onTap,
@@ -573,7 +560,7 @@ class ListViews {
 
           if (toDos.length > 1) {
             return CustomDragStartListener(
-                delay: Constants.delayTime,
+                delay: Constants.dragDelayTime,
                 index: index,
                 key: ValueKey(toDos[index].id),
                 child: child);
@@ -582,17 +569,36 @@ class ListViews {
         },
       );
 
+  static Widget navDrawerGroups({
+    Key? key,
+    required BuildContext context,
+    required List<Group> groups,
+    int? itemCount,
+    EdgeInsetsGeometry outerPadding = EdgeInsets.zero,
+    EdgeInsetsGeometry innerPadding = EdgeInsets.zero,
+    ScrollPhysics physics = const NeverScrollableScrollPhysics(),
+  }) =>
+      ListView.builder(
+          physics: physics,
+          itemCount: itemCount ?? groups.length,
+          padding: outerPadding,
+          shrinkWrap: true,
+          itemBuilder: (BuildContext context, int index) =>
+              Tiles.navDrawerGroupTile(
+                  context: context,
+                  padding: innerPadding,
+                  group: groups[index]));
+
   static Widget reorderableSubtasks({
     Key? key,
     required BuildContext context,
     required List<Subtask> subtasks,
-    bool animate = false,
     int? itemCount,
     ScrollPhysics physics = const NeverScrollableScrollPhysics(),
     required void Function(int oldIndex, int newIndex) onReorder,
     required void Function({bool? value, Subtask? subtask}) onChanged,
-    required void Function({Subtask? subtask}) onTap,
-    required void Function({Subtask? subtask}) onRemoved,
+    void Function({Subtask? subtask})? onTap,
+    void Function({Subtask? subtask})? onRemoved,
     EdgeInsetsGeometry contentPadding = EdgeInsets.zero,
   }) =>
       ReorderableListView.builder(
@@ -608,7 +614,7 @@ class ListViews {
           onReorder: onReorder,
           itemBuilder: (BuildContext context, int index) {
             return CustomDragStartListener(
-                delay: Constants.delayTime,
+                delay: Constants.dragDelayTime,
                 index: index,
                 key: ValueKey(subtasks[index].id),
                 child: fade(
@@ -617,10 +623,14 @@ class ListViews {
                   child: Tiles.subtaskCheckboxTile(
                     index: index,
                     subtask: subtasks[index],
-                    onTap: () => onTap(subtask: subtasks[index]),
+                    onTap: (null != onTap)
+                        ? () => onTap(subtask: subtasks[index])
+                        : null,
                     onChanged: (value) =>
                         onChanged(value: value, subtask: subtasks[index]),
-                    onRemoved: () => onRemoved(subtask: subtasks[index]),
+                    onRemoved: (null != onRemoved)
+                        ? () => onRemoved(subtask: subtasks[index])
+                        : null,
                     showHandle: subtasks.length > 1,
                   ),
                 ));

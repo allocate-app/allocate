@@ -11,7 +11,7 @@ import '../../../util/enums.dart';
 import '../../../util/exceptions.dart';
 import '../../widgets/flushbars.dart';
 import '../../widgets/handle_repeatable_modal.dart';
-import '../../widgets/leading_widgets.dart';
+import '../../widgets/listtile_widgets.dart';
 import '../../widgets/padded_divider.dart';
 import '../../widgets/tiles.dart';
 import '../../widgets/title_bar.dart';
@@ -342,6 +342,7 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
 
   void handleClose({required bool willDiscard}) {
     if (willDiscard) {
+      deadlineProvider.rebuild = true;
       return Navigator.pop(context);
     }
 
@@ -561,7 +562,7 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                                     children: [
                                       // Title
                                       Tiles.nameTile(
-                                          leading: LeadingWidgets.deadlineIcon(
+                                          leading: ListTileWidgets.deadlineIcon(
                                             currentContext: context,
                                             iconPadding: const EdgeInsets.all(
                                                 Constants.padding),
@@ -753,7 +754,7 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                   physics: scrollPhysics,
                   children: [
                     Tiles.nameTile(
-                        leading: LeadingWidgets.deadlineIcon(
+                        leading: ListTileWidgets.deadlineIcon(
                           currentContext: context,
                           iconPadding: const EdgeInsets.all(Constants.padding),
                           outerPadding: const EdgeInsets.symmetric(

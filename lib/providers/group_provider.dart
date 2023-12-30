@@ -13,8 +13,22 @@ import '../util/enums.dart';
 import '../util/exceptions.dart';
 import '../util/sorting/group_sorter.dart';
 
+// Internal setters currently going mostly unused.
 class GroupProvider extends ChangeNotifier {
-  bool rebuild = true;
+  bool _rebuild = true;
+
+  bool get rebuild => _rebuild;
+
+  set rebuild(bool rebuild) {
+    _rebuild = rebuild;
+    if (_rebuild) {
+      notifyListeners();
+    }
+  }
+
+  set softRebuild(bool rebuild) {
+    _rebuild = rebuild;
+  }
 
   late Timer syncTimer;
   final GroupService _groupService;
@@ -277,15 +291,13 @@ class GroupProvider extends ChangeNotifier {
   Future<List<Group>> searchGroups({required String searchString}) async =>
       await _groupService.searchGroups(searchString: searchString);
 
-  Future<List<Group>> mostRecent(
-      {int limit = 5, bool grabToDos = false}) async {
+  Future<List<Group>> mostRecent({int limit = 5}) async {
     List<Group> groups = await _groupService.mostRecent(limit: 5);
 
     return groups;
   }
 
-  Future<void> setMostRecent() async =>
-      secondaryGroups = await mostRecent(grabToDos: true);
+  Future<void> setMostRecent() async => secondaryGroups = await mostRecent();
 
   Future<Group?> getGroupByID({int? id}) async =>
       await _groupService.getGroupByID(id: id);

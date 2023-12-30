@@ -9,7 +9,7 @@ import '../../../util/constants.dart';
 import '../../../util/enums.dart';
 import '../../../util/exceptions.dart';
 import '../../widgets/flushbars.dart';
-import '../../widgets/leading_widgets.dart';
+import '../../widgets/listtile_widgets.dart';
 import '../../widgets/padded_divider.dart';
 import '../../widgets/tiles.dart';
 import '../../widgets/title_bar.dart';
@@ -287,7 +287,7 @@ class _CreateReminderScreen extends State<CreateReminderScreen> {
                                 physics: scrollPhysics,
                                 children: [
                                   Tiles.nameTile(
-                                      leading: LeadingWidgets.reminderIcon(
+                                      leading: ListTileWidgets.reminderIcon(
                                         currentContext: context,
                                         iconPadding: const EdgeInsets.all(
                                             Constants.padding),

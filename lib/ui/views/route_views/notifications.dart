@@ -142,7 +142,7 @@ class _NotificationsScreen extends State<NotificationsScreen> {
                   physics: parentScrollPhysics,
                   children: [
                     ExpandedListTile(
-                      expanded: true,
+                      initiallyExpanded: true,
                       leading: const Icon(Icons.upcoming_rounded),
                       title: const Padding(
                         padding:
@@ -158,7 +158,7 @@ class _NotificationsScreen extends State<NotificationsScreen> {
                       children: [
                         // Deadlines
                         ExpandedListTile(
-                            expanded: true,
+                            initiallyExpanded: true,
                             leading: const Icon(Icons.announcement_rounded),
                             title: const AutoSizeText(
                               "Deadlines",
@@ -212,7 +212,7 @@ class _NotificationsScreen extends State<NotificationsScreen> {
                             ]),
                         // Reminders
                         ExpandedListTile(
-                            expanded: true,
+                            initiallyExpanded: true,
                             leading: const Icon(Icons.push_pin_rounded),
                             title: const AutoSizeText(
                               "Reminders",
@@ -266,7 +266,7 @@ class _NotificationsScreen extends State<NotificationsScreen> {
                             ]),
                         // TODOS
                         ExpandedListTile(
-                            expanded: true,
+                            initiallyExpanded: true,
                             leading: const Icon(Icons.task_rounded),
                             title: const AutoSizeText(
                               "Tasks",
@@ -335,7 +335,7 @@ class _NotificationsScreen extends State<NotificationsScreen> {
                       ],
                     ),
                     ExpandedListTile(
-                        expanded: true,
+                        initiallyExpanded: true,
                         leading:
                             const Icon(Icons.notification_important_rounded),
                         title: const Padding(
@@ -352,7 +352,7 @@ class _NotificationsScreen extends State<NotificationsScreen> {
                         children: [
                           // Deadlines
                           ExpandedListTile(
-                              expanded: true,
+                              initiallyExpanded: true,
                               leading: const Icon(Icons.announcement_rounded),
                               title: const AutoSizeText(
                                 "Deadlines",
@@ -408,7 +408,7 @@ class _NotificationsScreen extends State<NotificationsScreen> {
                               ]),
                           // Reminders
                           ExpandedListTile(
-                              expanded: true,
+                              initiallyExpanded: true,
                               leading: const Icon(Icons.push_pin_rounded),
                               title: const AutoSizeText(
                                 "Reminders",
@@ -464,7 +464,7 @@ class _NotificationsScreen extends State<NotificationsScreen> {
                               ]),
                           // TODOS
                           ExpandedListTile(
-                              expanded: true,
+                              initiallyExpanded: true,
                               leading: const Icon(Icons.task_rounded),
                               title: const AutoSizeText(
                                 "Tasks",

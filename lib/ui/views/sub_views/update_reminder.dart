@@ -11,7 +11,7 @@ import '../../../util/enums.dart';
 import '../../../util/exceptions.dart';
 import '../../widgets/flushbars.dart';
 import '../../widgets/handle_repeatable_modal.dart';
-import '../../widgets/leading_widgets.dart';
+import '../../widgets/listtile_widgets.dart';
 import '../../widgets/padded_divider.dart';
 import '../../widgets/tiles.dart';
 import '../../widgets/title_bar.dart';
@@ -412,7 +412,7 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
                                 physics: scrollPhysics,
                                 children: [
                                   Tiles.nameTile(
-                                      leading: LeadingWidgets.reminderIcon(
+                                      leading: ListTileWidgets.reminderIcon(
                                         currentContext: context,
                                         iconPadding: const EdgeInsets.all(
                                             Constants.padding),
@@ -435,7 +435,8 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
                                       ),
                                       handleClear: clearNameField,
                                       onEditingComplete: updateName),
-
+                                  const PaddedDivider(
+                                      padding: Constants.padding),
                                   Tiles.singleDateTimeTile(
                                     leading: const Icon(Icons.today_outlined),
                                     outerPadding: const EdgeInsets.symmetric(
@@ -455,8 +456,10 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
                                     handleUpdate: updateDue,
                                   ),
 
-                                  const PaddedDivider(
-                                      padding: Constants.padding),
+                                  (null != reminder.dueDate)
+                                      ? const PaddedDivider(
+                                          padding: Constants.padding)
+                                      : const SizedBox.shrink(),
 
                                   // Repeatable Stuff -> Show status, on click, open a dialog.
                                   (null != reminder.dueDate)

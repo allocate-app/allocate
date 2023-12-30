@@ -7,7 +7,8 @@ class ExpandedListTile extends StatefulWidget {
       {super.key,
       this.outerPadding = EdgeInsets.zero,
       this.children,
-      this.expanded = false,
+      this.initiallyExpanded = false,
+      this.onExpansionChanged,
       required this.title,
       this.subtitle,
       this.leading,
@@ -16,12 +17,13 @@ class ExpandedListTile extends StatefulWidget {
 
   final EdgeInsetsGeometry outerPadding;
   final List<Widget>? children;
-  final bool expanded;
+  final bool initiallyExpanded;
   final Widget title;
   final Widget? subtitle;
   final Widget? leading;
   final Widget? trailing;
   final BorderSide? border;
+  final void Function({bool expanded})? onExpansionChanged;
 
   @override
   State<ExpandedListTile> createState() => _ExpandedListTile();
@@ -33,7 +35,7 @@ class _ExpandedListTile extends State<ExpandedListTile> {
   @override
   void initState() {
     super.initState();
-    expanded = widget.expanded;
+    expanded = widget.initiallyExpanded;
   }
 
   @override
@@ -57,7 +59,14 @@ class _ExpandedListTile extends State<ExpandedListTile> {
           maintainState: true,
           leading: widget.leading,
           trailing: widget.trailing,
-          onExpansionChanged: (value) => setState(() => expanded = value),
+          onExpansionChanged: (value) {
+            if (mounted) {
+              setState(() => expanded = value);
+            }
+            if (null != widget.onExpansionChanged) {
+              widget.onExpansionChanged!(expanded: value);
+            }
+          },
           title: widget.title,
           subtitle: widget.subtitle,
           collapsedShape: const RoundedRectangleBorder(

@@ -16,7 +16,7 @@ import '../../../util/enums.dart';
 import '../../../util/exceptions.dart';
 import '../../widgets/expanded_listtile.dart';
 import '../../widgets/flushbars.dart';
-import '../../widgets/leading_widgets.dart';
+import '../../widgets/listtile_widgets.dart';
 import '../../widgets/listviews.dart';
 import '../../widgets/padded_divider.dart';
 import '../../widgets/paginating_listview.dart';
@@ -203,6 +203,7 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
 
   void handleClose({required bool willDiscard}) {
     if (willDiscard) {
+      groupProvider.rebuild = true;
       return Navigator.pop(context);
     }
 
@@ -356,7 +357,7 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
                                     // Title
                                     Tiles.nameTile(
                                         context: context,
-                                        leading: LeadingWidgets.groupIcon(
+                                        leading: ListTileWidgets.groupIcon(
                                             currentContext: context,
                                             iconPadding: const EdgeInsets.all(
                                                 Constants.padding),
@@ -451,7 +452,7 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
                     children: [
                       Tiles.nameTile(
                           context: context,
-                          leading: LeadingWidgets.groupIcon(
+                          leading: ListTileWidgets.groupIcon(
                               currentContext: context,
                               iconPadding:
                                   const EdgeInsets.all(Constants.padding),
@@ -501,7 +502,7 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
       {ScrollPhysics physics = const NeverScrollableScrollPhysics()}) {
     return ExpandedListTile(
       outerPadding: const EdgeInsets.symmetric(horizontal: Constants.padding),
-      expanded: expanded,
+      initiallyExpanded: expanded,
       title: const AutoSizeText("Tasks",
           maxLines: 1,
           overflow: TextOverflow.visible,

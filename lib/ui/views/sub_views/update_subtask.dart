@@ -9,7 +9,7 @@ import '../../../providers/user_provider.dart';
 import '../../../util/constants.dart';
 import '../../../util/exceptions.dart';
 import '../../widgets/flushbars.dart';
-import '../../widgets/leading_widgets.dart';
+import '../../widgets/listtile_widgets.dart';
 import '../../widgets/padded_divider.dart';
 import '../../widgets/tiles.dart';
 import '../../widgets/title_bar.dart';
@@ -107,7 +107,7 @@ class _UpdateSubtaskScreen extends State<UpdateSubtaskScreen> {
                 const PaddedDivider(padding: Constants.halfPadding),
                 Tiles.nameTile(
                     context: context,
-                    leading: LeadingWidgets.checkbox(
+                    leading: ListTileWidgets.checkbox(
                       scale: Constants.largeCheckboxScale,
                       completed: subtask.completed,
                       onChanged: (value) {

@@ -24,7 +24,7 @@ class RoutineService {
   int calculateRealDuration({int? weight, int? duration}) => (remap(
               x: weight ?? 0,
               inMin: 0,
-              inMax: Constants.maxWeight,
+              inMax: Constants.medianWeight,
               outMin: Constants.lowerBound,
               outMax: Constants.upperBound) *
           (duration ?? 0))
@@ -34,7 +34,7 @@ class RoutineService {
       routine.realDuration = (remap(
                   x: routine.weight,
                   inMin: 0,
-                  inMax: Constants.maxWeight,
+                  inMax: Constants.medianWeight,
                   outMin: Constants.lowerBound,
                   outMax: Constants.upperBound) *
               routine.expectedDuration)

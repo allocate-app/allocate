@@ -45,7 +45,7 @@ import 'duration_dialog.dart';
 import 'expanded_listtile.dart';
 import 'flushbars.dart';
 import 'frequency_dialog.dart';
-import 'leading_widgets.dart';
+import 'listtile_widgets.dart';
 import 'listviews.dart';
 import 'search_recents_bar.dart';
 
@@ -80,7 +80,7 @@ class Tiles {
         shape: const RoundedRectangleBorder(
             borderRadius:
                 BorderRadius.all(Radius.circular(Constants.semiCircular))),
-        leading: LeadingWidgets.checkbox(
+        leading: ListTileWidgets.checkbox(
             outerPadding:
                 const EdgeInsets.symmetric(horizontal: Constants.halfPadding),
             scale: 1.1,
@@ -118,27 +118,7 @@ class Tiles {
                   UpdateToDoScreen(initialToDo: toDo));
         },
         trailing: Row(mainAxisSize: MainAxisSize.min, children: [
-          Row(mainAxisSize: MainAxisSize.min, children: [
-            Constants.batteryIcons[(toDo.taskType == TaskType.small)
-                ? toDo.weight
-                : clamp(
-                        x: remap(
-                            x: toDo.weight,
-                            inMin: 0,
-                            inMax: Constants.maxWeight,
-                            outMin: 0,
-                            outMax: 5),
-                        ll: 0,
-                        ul: 5)
-                    .toInt()]!,
-            AutoSizeText(
-              "${toDo.weight}",
-              overflow: TextOverflow.visible,
-              minFontSize: Constants.medium,
-              softWrap: false,
-              maxLines: 1,
-            ),
-          ]),
+          ListTileWidgets.toDoBatteryRow(toDo: toDo),
           Padding(
               padding: EdgeInsets.zero,
               child: IconButton(
@@ -276,7 +256,7 @@ class Tiles {
         shape: const RoundedRectangleBorder(
             borderRadius:
                 BorderRadius.all(Radius.circular(Constants.semiCircular))),
-        leading: LeadingWidgets.checkbox(
+        leading: ListTileWidgets.checkbox(
             outerPadding:
                 const EdgeInsets.symmetric(horizontal: Constants.halfPadding),
             scale: 1.1,
@@ -314,27 +294,28 @@ class Tiles {
                   UpdateToDoScreen(initialToDo: toDo));
         },
         trailing: Row(mainAxisSize: MainAxisSize.min, children: [
-          Row(mainAxisSize: MainAxisSize.min, children: [
-            Constants.batteryIcons[(toDo.taskType == TaskType.small)
-                ? toDo.weight
-                : clamp(
-                        x: remap(
-                            x: toDo.weight,
-                            inMin: 0,
-                            inMax: Constants.maxWeight,
-                            outMin: 0,
-                            outMax: 5),
-                        ll: 0,
-                        ul: 5)
-                    .toInt()]!,
-            AutoSizeText(
-              "${toDo.weight}",
-              overflow: TextOverflow.visible,
-              minFontSize: Constants.medium,
-              softWrap: false,
-              maxLines: 1,
-            ),
-          ]),
+          ListTileWidgets.toDoBatteryRow(toDo: toDo),
+          // Row(mainAxisSize: MainAxisSize.min, children: [
+          //   Constants.batteryIcons[(toDo.taskType == TaskType.small)
+          //       ? toDo.weight
+          //       : clamp(
+          //               x: remap(
+          //                   x: toDo.weight,
+          //                   inMin: 0,
+          //                   inMax: Constants.medianWeight,
+          //                   outMin: 0,
+          //                   outMax: 5),
+          //               ll: 0,
+          //               ul: 5)
+          //           .toInt()]!,
+          //   AutoSizeText(
+          //     "${toDo.weight}",
+          //     overflow: TextOverflow.visible,
+          //     minFontSize: Constants.medium,
+          //     softWrap: false,
+          //     maxLines: 1,
+          //   ),
+          // ]),
           Padding(
               padding: EdgeInsets.zero,
               child: IconButton(
@@ -372,7 +353,7 @@ class Tiles {
         shape: const RoundedRectangleBorder(
             borderRadius:
                 BorderRadius.all(Radius.circular(Constants.semiCircular))),
-        leading: LeadingWidgets.routineIcon(
+        leading: ListTileWidgets.routineIcon(
             currentContext: context,
             scale: 1,
             times: routineProvider.getRoutineTime(routine: routine),
@@ -396,23 +377,25 @@ class Tiles {
               builder: (BuildContext context) =>
                   UpdateRoutineScreen(initialRoutine: routine));
         },
+        // TODO: refactor this.
         trailing: Row(mainAxisSize: MainAxisSize.min, children: [
-          Row(mainAxisSize: MainAxisSize.min, children: [
-            Constants.batteryIcons[remap(
-                    x: routine.weight,
-                    inMin: 0,
-                    inMax: Constants.maxWeight,
-                    outMin: 0,
-                    outMax: 5)
-                .toInt()]!,
-            AutoSizeText(
-              "${routine.weight}",
-              overflow: TextOverflow.visible,
-              minFontSize: Constants.large,
-              softWrap: false,
-              maxLines: 1,
-            ),
-          ]),
+          ListTileWidgets.routineBatteryRow(routine: routine),
+          // Row(mainAxisSize: MainAxisSize.min, children: [
+          //   Constants.batteryIcons[remap(
+          //           x: routine.weight,
+          //           inMin: 0,
+          //           inMax: Constants.medianWeight,
+          //           outMin: 0,
+          //           outMax: 5)
+          //       .toInt()]!,
+          //   AutoSizeText(
+          //     "${routine.weight}",
+          //     overflow: TextOverflow.visible,
+          //     minFontSize: Constants.large,
+          //     softWrap: false,
+          //     maxLines: 1,
+          //   ),
+          // ]),
           Padding(
               padding: EdgeInsets.zero,
               child: IconButton(
@@ -501,12 +484,12 @@ class Tiles {
             borderRadius:
                 BorderRadius.all(Radius.circular(Constants.semiCircular))),
         leading: (deadline.warnMe)
-            ? LeadingWidgets.deadlineWarnMeIcon(
+            ? ListTileWidgets.deadlineWarnMeIcon(
                 currentContext: context,
                 outerPadding: const EdgeInsets.symmetric(
                     horizontal: Constants.halfPadding),
                 iconPadding: const EdgeInsets.all(Constants.halfPadding))
-            : LeadingWidgets.deadlineIcon(
+            : ListTileWidgets.deadlineIcon(
                 currentContext: context,
                 outerPadding: const EdgeInsets.symmetric(
                     horizontal: Constants.halfPadding),
@@ -666,12 +649,12 @@ class Tiles {
             borderRadius:
                 BorderRadius.all(Radius.circular(Constants.semiCircular))),
         leading: (Frequency.once != reminder.frequency)
-            ? LeadingWidgets.reminderRepeatingIcon(
+            ? ListTileWidgets.reminderRepeatingIcon(
                 currentContext: context,
                 outerPadding: const EdgeInsets.symmetric(
                     horizontal: Constants.halfPadding),
                 iconPadding: const EdgeInsets.all(Constants.halfPadding))
-            : LeadingWidgets.reminderIcon(
+            : ListTileWidgets.reminderIcon(
                 currentContext: context,
                 outerPadding: const EdgeInsets.symmetric(
                     horizontal: Constants.halfPadding),
@@ -819,7 +802,6 @@ class Tiles {
       Future<void> Function({Group? item})? onRemove,
       bool showHandle = false,
       bool checkDelete = false,
-      bool animate = false,
       ScrollPhysics physics = const NeverScrollableScrollPhysics()}) {
     GroupProvider groupProvider =
         Provider.of<GroupProvider>(context, listen: false);
@@ -830,8 +812,8 @@ class Tiles {
 
     return ExpandedListTile(
         key: ValueKey(group.id),
-        expanded: true,
-        leading: LeadingWidgets.groupListViewIcon(onPressed: () async {
+        initiallyExpanded: true,
+        leading: ListTileWidgets.groupListViewIcon(onPressed: () async {
           await showDialog(
               barrierDismissible: false,
               useRootNavigator: false,
@@ -1050,6 +1032,36 @@ class Tiles {
     await toDoProvider.updateToDo(toDo: toDo);
   }
 
+  // Leading?
+  static Widget navDrawerGroupTile({
+    required BuildContext context,
+    required Group group,
+    EdgeInsetsGeometry padding = EdgeInsets.zero,
+  }) {
+    GroupProvider groupProvider =
+        Provider.of<GroupProvider>(context, listen: false);
+    return ListTile(
+      contentPadding: padding,
+      title: AutoSizeText(
+        group.name,
+        maxLines: 1,
+        overflow: TextOverflow.visible,
+        softWrap: false,
+        minFontSize: Constants.large,
+      ),
+      onTap: () async {
+        await showDialog(
+            barrierDismissible: false,
+            useRootNavigator: false,
+            context: context,
+            builder: (BuildContext context) =>
+                UpdateGroupScreen(initialGroup: group));
+      },
+      trailing: Subtitles.groupSubtitle(
+          toDoCount: groupProvider.getToDoCount(id: group.id)!),
+    );
+  }
+
   /// Checkboxes
   static Widget checkboxListTile({
     Key? key,
@@ -1061,7 +1073,7 @@ class Tiles {
     Widget? trailing,
   }) =>
       ListTile(
-          leading: LeadingWidgets.checkbox(
+          leading: ListTileWidgets.checkbox(
             completed: value,
             onChanged: onChanged,
           ),
@@ -1078,8 +1090,8 @@ class Tiles {
           {required int index,
           required Subtask subtask,
           required void Function(bool? value) onChanged,
-          required void Function() onTap,
-          required void Function() onRemoved,
+          void Function()? onTap,
+          void Function()? onRemoved,
           bool showHandle = false}) =>
       checkboxListTile(
           key: ValueKey(subtask.id),
@@ -1146,7 +1158,7 @@ class Tiles {
                 : remap(
                         x: toDo.weight,
                         inMin: 0,
-                        inMax: Constants.maxWeight,
+                        inMax: Constants.medianWeight,
                         outMin: 0,
                         outMax: 5)
                     .toInt()]!,
@@ -1308,7 +1320,7 @@ class Tiles {
     };
 
     return ExpandedListTile(
-      leading: LeadingWidgets.myDayRoutineIcon(times: times, onPressed: null),
+      leading: ListTileWidgets.myDayRoutineIcon(times: times, onPressed: null),
       title: Padding(
         padding: const EdgeInsets.symmetric(vertical: Constants.padding),
         child: AutoSizeText("$type Routine",
@@ -1365,7 +1377,7 @@ class Tiles {
       subtasks: routine.subtasks,
       context: context,
       onRemove: onSubtaskRemove,
-      leading: LeadingWidgets.myDayRoutineIcon(
+      leading: ListTileWidgets.myDayRoutineIcon(
           times: times,
           routine: routine,
           onPressed: () async {
@@ -1925,7 +1937,7 @@ class Tiles {
                 borderRadius:
                     BorderRadius.all(Radius.circular(Constants.semiCircular))),
             leading: (useAlertIcon)
-                ? LeadingWidgets.alertIconButton(
+                ? ListTileWidgets.alertIconButton(
                     warn: showDate,
                     onTap: () async {
                       await showDialog<Map<String, dynamic>?>(
@@ -2193,7 +2205,7 @@ class Tiles {
       // Add padding later if needed
       bool smallScreen = false}) {
     return ListTile(
-      leading: LeadingWidgets.eventIcon(
+      leading: ListTileWidgets.eventIcon(
           type: event.model.repeatableType,
           currentContext: context,
           outerPadding:

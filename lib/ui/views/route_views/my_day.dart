@@ -156,7 +156,14 @@ class _MyDayScreen extends State<MyDayScreen> {
             children: [
               Flexible(
                   child: buildRegular(context: context, buildCalendar: false)),
-              const VerticalDivider(),
+              Padding(
+                padding: const EdgeInsets.only(
+                    left: Constants.padding, right: Constants.halfPadding),
+                child: VerticalDivider(
+                  color: Theme.of(context).colorScheme.outlineVariant,
+                  thickness: Constants.verticalDividerThickness,
+                ),
+              ),
               Flexible(child: Constants.views[Constants.views.length - 1])
             ]));
   }

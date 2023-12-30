@@ -14,7 +14,21 @@ import '../util/exceptions.dart';
 import '../util/sorting/reminder_sorter.dart';
 
 class ReminderProvider extends ChangeNotifier {
-  bool rebuild = true;
+  bool _rebuild = true;
+
+  bool get rebuild => _rebuild;
+
+  set rebuild(bool rebuild) {
+    _rebuild = rebuild;
+    if (_rebuild) {
+      notifyListeners();
+    }
+  }
+
+  set softRebuild(bool rebuild) {
+    _rebuild = rebuild;
+  }
+
   late Timer syncTimer;
 
   final ReminderService _reminderService;
@@ -96,14 +110,6 @@ class ReminderProvider extends ChangeNotifier {
       dueDate = dueDate.copyWith(second: 0, microsecond: 0, millisecond: 0);
     }
 
-    // This code should never run
-    // if (null != dueDate && DateTime.now().isAfter(dueDate)) {
-    //   dueDate = dueDate.copyWith(
-    //       day: dueDate.day + 1,
-    //       hour: Constants.midnight.hour,
-    //       minute: Constants.midnight.minute);
-    // }
-
     curReminder = Reminder(
       name: name,
       dueDate: dueDate,
@@ -116,15 +122,15 @@ class ReminderProvider extends ChangeNotifier {
 
     curReminder!.notificationID = Constants.generate32ID();
 
-    if (curReminder!.repeatable) {
-      curReminder!.repeatID = Constants.generateID();
-      nextRepeat(reminder: curReminder!);
-    }
-
     try {
       curReminder =
           await _reminderService.createReminder(reminder: curReminder!);
+
       await scheduleNotification(reminder: curReminder);
+      if (curReminder!.repeatable) {
+        curReminder!.repeatID = Constants.generateID();
+        await nextRepeat(reminder: curReminder);
+      }
     } on FailureToCreateException catch (e) {
       log(e.cause);
       await cancelNotification();
@@ -145,17 +151,18 @@ class ReminderProvider extends ChangeNotifier {
   Future<void> updateReminderAsync({Reminder? reminder}) async {
     reminder = reminder ?? curReminder!;
     reminder.lastUpdated = DateTime.now();
-    if (reminder.repeatable && null == reminder.repeatID) {
-      reminder.repeatID = Constants.generateID();
-      nextRepeat(reminder: reminder);
-    }
 
     try {
       curReminder =
           await _reminderService.updateReminder(reminder: curReminder!);
-      await cancelNotification();
-      if (validateDueDate()) {
+      await cancelNotification(reminder: curReminder);
+      if (validateDueDate(dueDate: curReminder!.dueDate)) {
         await scheduleNotification(reminder: curReminder);
+      }
+
+      if (reminder.repeatable && null == reminder.repeatID) {
+        reminder.repeatID = Constants.generateID();
+        await nextRepeat(reminder: reminder);
       }
     } on FailureToUploadException catch (e) {
       log(e.cause);

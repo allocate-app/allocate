@@ -16,8 +16,10 @@ num clamp({num x = 0, num ll = 0, num ul = 1}) => (x < ll)
         ? ul
         : x;
 
+// I did not realize dart had a built-in clamp
 num smoothstep({num x = 0, num v0 = 0, num v1 = 1}) {
-  x = clamp(x: (x - v0) / (v1 - v0));
+  x = ((x - v0) / (v1 - v0)).clamp(0, 1);
+  // x = clamp(x: (x - v0) / (v1 - v0));
   return pow(x, 3) * (3 * x * (2 * x - 5) + 10);
 }
 

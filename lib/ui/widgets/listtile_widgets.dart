@@ -2,10 +2,12 @@ import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
 
 import '../../model/task/routine.dart';
+import '../../model/task/todo.dart';
 import '../../util/constants.dart';
 import '../../util/enums.dart';
+import '../../util/numbers.dart';
 
-class LeadingWidgets {
+class ListTileWidgets {
   static Widget outlinedIcon(
           {required BuildContext currentContext,
           EdgeInsetsGeometry iconPadding = EdgeInsets.zero,
@@ -354,4 +356,80 @@ class LeadingWidgets {
             )
           : IconButton.outlined(
               icon: const Icon(Icons.notifications_outlined), onPressed: onTap);
+
+  static Widget batteryRow({int weight = 0, int scaledWeight = 0}) {
+    List<Widget> batteries = List.empty(growable: true);
+    while (scaledWeight > Constants.maxTaskWeight) {
+      batteries.add(Constants.batteryIcons[Constants.maxTaskWeight]!);
+      scaledWeight -= Constants.maxTaskWeight;
+    }
+    batteries.add(Constants.batteryIcons[scaledWeight]!);
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        ...batteries,
+        AutoSizeText(
+          "$weight",
+          overflow: TextOverflow.visible,
+          minFontSize: Constants.medium,
+          softWrap: false,
+          maxLines: 1,
+        )
+      ],
+    );
+  }
+
+  static Widget toDoBatteryRow({required ToDo toDo}) {
+    // List<Widget> batteries = List.empty(growable: true);
+    int scaledWeight = switch (toDo.taskType) {
+      TaskType.small => toDo.weight,
+      TaskType.large => remap(
+              x: toDo.weight,
+              inMin: 0,
+              inMax: Constants.medianWeight,
+              outMin: 0,
+              outMax: Constants.maxTaskWeight * 2)
+          .toInt(),
+      TaskType.huge => remap(
+              x: toDo.weight,
+              inMin: 0,
+              inMax: Constants.maxWeight,
+              outMin: 0,
+              outMax: Constants.maxTaskWeight * 3)
+          .toInt(),
+    };
+    print(scaledWeight);
+
+    return batteryRow(weight: toDo.weight, scaledWeight: scaledWeight);
+
+    // while (scaledWeight > Constants.maxTaskWeight) {
+    //   batteries.add(Constants.batteryIcons[Constants.maxTaskWeight]!);
+    //   scaledWeight -= Constants.maxTaskWeight;
+    // }
+    // batteries.add(Constants.batteryIcons[scaledWeight]!);
+    // return Row(
+    //   mainAxisSize: MainAxisSize.min,
+    //   children: [
+    //     ...batteries,
+    //     AutoSizeText(
+    //       "${toDo.weight}",
+    //       overflow: TextOverflow.visible,
+    //       minFontSize: Constants.medium,
+    //       softWrap: false,
+    //       maxLines: 1,
+    //     )
+    //   ],
+    // );
+  }
+
+  static Widget routineBatteryRow({required Routine routine}) {
+    int scaledWeight = remap(
+            x: routine.weight,
+            inMin: 0,
+            inMax: Constants.maxWeight,
+            outMin: 0,
+            outMax: Constants.maxTaskWeight * 3)
+        .toInt();
+    return batteryRow(weight: routine.weight, scaledWeight: scaledWeight);
+  }
 }

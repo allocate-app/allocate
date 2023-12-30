@@ -98,7 +98,10 @@ class _CalendarScreen extends State<CalendarScreen> {
     calendarFormat = CalendarFormat.month;
     _focusedDay = Constants.today;
     _selectedDay = _focusedDay;
-    latest = _focusedDay.copyWith(day: 1, month: _focusedDay.month + 1);
+
+    // Always generate out at least 1 mo + a week's worth of the model.
+    latest = _focusedDay.copyWith(
+        day: _focusedDay.day + 7, month: _focusedDay.month + 1);
     _events = LinkedHashMap<DateTime, Set<CalendarEvent>>(
       equals: isSameDay,
       hashCode: getHashCode,
@@ -268,8 +271,8 @@ class _CalendarScreen extends State<CalendarScreen> {
                     },
                     onPageChanged: (focusedDay) async {
                       _focusedDay = focusedDay;
-                      DateTime testDay =
-                          focusedDay.copyWith(month: focusedDay.month + 1);
+                      DateTime testDay = focusedDay.copyWith(
+                          month: focusedDay.month + 1, day: focusedDay.day + 7);
                       if (testDay.isAfter(latest)) {
                         // Populate new data if existing -- grabs events afterward.
                         await populateCalendars(startDay: focusedDay);

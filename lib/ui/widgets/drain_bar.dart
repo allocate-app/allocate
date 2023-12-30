@@ -9,12 +9,14 @@ class DrainBar extends StatefulWidget {
     this.weight = 0,
     this.scale = 1.0,
     this.max = Constants.maxDoubleBandwidth,
+    this.showDifference = false,
     this.constraints = const BoxConstraints(),
   });
 
   final double scale;
   final double weight;
   final double max;
+  final bool showDifference;
   final BoxConstraints constraints;
 
   @override
@@ -69,7 +71,8 @@ class _DrainBar extends State<DrainBar> {
                         bottomRight: Radius.circular(Constants.circular)),
                     color: Theme.of(context).colorScheme.outline,
                   ))),
-          AutoSizeText("${widget.weight.toInt()}",
+          AutoSizeText(
+              "${((widget.showDifference) ? widget.max - widget.weight : widget.weight).toInt()}",
               minFontSize: Constants.large,
               softWrap: false,
               maxLines: 1,

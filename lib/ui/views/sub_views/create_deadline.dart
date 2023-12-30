@@ -11,7 +11,7 @@ import '../../../util/constants.dart';
 import '../../../util/enums.dart';
 import '../../../util/exceptions.dart';
 import '../../widgets/flushbars.dart';
-import '../../widgets/leading_widgets.dart';
+import '../../widgets/listtile_widgets.dart';
 import '../../widgets/padded_divider.dart';
 import '../../widgets/tiles.dart';
 import '../../widgets/title_bar.dart';
@@ -448,7 +448,7 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
                                     children: [
                                       // Title
                                       Tiles.nameTile(
-                                          leading: LeadingWidgets.deadlineIcon(
+                                          leading: ListTileWidgets.deadlineIcon(
                                             currentContext: context,
                                             iconPadding: const EdgeInsets.all(
                                                 Constants.padding),
@@ -622,7 +622,7 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
                   children: [
                     // Title + status
                     Tiles.nameTile(
-                        leading: LeadingWidgets.deadlineIcon(
+                        leading: ListTileWidgets.deadlineIcon(
                           currentContext: context,
                           iconPadding: const EdgeInsets.all(Constants.padding),
                           outerPadding: const EdgeInsets.symmetric(

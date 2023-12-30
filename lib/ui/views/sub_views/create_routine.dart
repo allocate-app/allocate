@@ -11,7 +11,7 @@ import "../../../util/constants.dart";
 import "../../../util/enums.dart";
 import "../../../util/exceptions.dart";
 import "../../widgets/flushbars.dart";
-import "../../widgets/leading_widgets.dart";
+import "../../widgets/listtile_widgets.dart";
 import "../../widgets/padded_divider.dart";
 import "../../widgets/tiles.dart";
 import "../../widgets/title_bar.dart";
@@ -320,7 +320,7 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
 
                                 Tiles.nameTile(
                                     context: context,
-                                    leading: LeadingWidgets.routineIcon(
+                                    leading: ListTileWidgets.routineIcon(
                                       currentContext: context,
                                       scale: Constants.largeCheckboxMinScale,
                                       times: times ?? 0,
@@ -430,7 +430,7 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
                   children: [
                     Tiles.nameTile(
                         context: context,
-                        leading: LeadingWidgets.routineIcon(
+                        leading: ListTileWidgets.routineIcon(
                           currentContext: context,
                           scale: Constants.largeCheckboxMinScale,
                           times: times ?? 0,

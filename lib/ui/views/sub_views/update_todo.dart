@@ -15,7 +15,7 @@ import "../../../util/enums.dart";
 import "../../../util/exceptions.dart";
 import "../../widgets/flushbars.dart";
 import "../../widgets/handle_repeatable_modal.dart";
-import "../../widgets/leading_widgets.dart";
+import "../../widgets/listtile_widgets.dart";
 import "../../widgets/padded_divider.dart";
 import "../../widgets/search_recents_bar.dart";
 import "../../widgets/tiles.dart";
@@ -77,7 +77,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
   void initState() {
     super.initState();
     initializeProviders();
-    initializeParams();
+    initializeParameters();
     initializeControllers();
     resetSubtasks();
     expanded = false;
@@ -130,7 +130,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
     }
   }
 
-  void initializeParams() {
+  void initializeParameters() {
     checkClose = false;
     prevToDo = toDo.copy();
     prevToDo.id = toDo.id;
@@ -369,9 +369,8 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
 
   Future<void> handleClose({required bool willDiscard}) async {
     if (willDiscard) {
-      return await toDoProvider
-          .updateToDo(toDo: prevToDo)
-          .whenComplete(() => Navigator.pop(context));
+      toDoProvider.rebuild = true;
+      Navigator.pop(context);
     }
 
     if (mounted) {
@@ -664,7 +663,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                                 children: [
                                   Tiles.nameTile(
                                       context: context,
-                                      leading: LeadingWidgets.checkbox(
+                                      leading: ListTileWidgets.checkbox(
                                         scale: Constants.largeCheckboxScale,
                                         completed: toDo.completed,
                                         onChanged: completeToDo,
@@ -687,9 +686,14 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                                     constraints:
                                         const BoxConstraints(maxWidth: 200),
                                     weight: toDo.weight.toDouble(),
-                                    max: (toDo.taskType == TaskType.small)
-                                        ? Constants.maxTaskWeight.toDouble()
-                                        : Constants.maxWeight.toDouble(),
+                                    max: switch (toDo.taskType) {
+                                      TaskType.small =>
+                                        Constants.maxTaskWeight.toDouble(),
+                                      TaskType.large =>
+                                        Constants.medianWeight.toDouble(),
+                                      TaskType.huge =>
+                                        Constants.maxWeight.toDouble(),
+                                    },
                                     slider: (toDo.taskType == TaskType.small)
                                         ? Tiles.weightSlider(
                                             weight: toDo.weight.toDouble(),
@@ -919,7 +923,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                     // Title + status
                     Tiles.nameTile(
                         context: context,
-                        leading: LeadingWidgets.checkbox(
+                        leading: ListTileWidgets.checkbox(
                           scale: Constants.largeCheckboxScale,
                           completed: toDo.completed,
                           onChanged: completeToDo,
@@ -941,9 +945,11 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                           horizontal: Constants.padding),
                       constraints: const BoxConstraints(maxWidth: 200),
                       weight: toDo.weight.toDouble(),
-                      max: (toDo.taskType == TaskType.small)
-                          ? Constants.maxTaskWeight.toDouble()
-                          : Constants.maxWeight.toDouble(),
+                      max: switch (toDo.taskType) {
+                        TaskType.small => Constants.maxTaskWeight.toDouble(),
+                        TaskType.large => Constants.medianWeight.toDouble(),
+                        TaskType.huge => Constants.maxWeight.toDouble(),
+                      },
                       slider: (toDo.taskType == TaskType.small)
                           ? Tiles.weightSlider(
                               weight: toDo.weight.toDouble(),

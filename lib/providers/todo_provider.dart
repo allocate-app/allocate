@@ -14,7 +14,20 @@ import '../util/exceptions.dart';
 import '../util/sorting/todo_sorter.dart';
 
 class ToDoProvider extends ChangeNotifier {
-  bool rebuild = true;
+  bool _rebuild = true;
+
+  bool get rebuild => _rebuild;
+
+  set rebuild(bool rebuild) {
+    _rebuild = rebuild;
+    if (_rebuild) {
+      notifyListeners();
+    }
+  }
+
+  set softRebuild(bool rebuild) {
+    _rebuild = rebuild;
+  }
 
   // TODO: change timer.
   late Timer syncTimer;
@@ -32,8 +45,6 @@ class ToDoProvider extends ChangeNotifier {
 
   User? user;
 
-  int myDayWeight = 0;
-
   final Map<int, ValueNotifier<int>> toDoSubtaskCounts = {
     Constants.intMax: ValueNotifier<int>(0),
   };
@@ -48,7 +59,6 @@ class ToDoProvider extends ChangeNotifier {
 
   Future<void> init() async {
     startTimer();
-    setMyDayWeight();
   }
 
   // This is just for testing atm.
@@ -90,14 +100,9 @@ class ToDoProvider extends ChangeNotifier {
           {required int taskID, int limit = Constants.maxNumTasks}) async =>
       await _subtaskService.getTaskSubtaskWeight(taskID: taskID, limit: limit);
 
-  // int calculateWeight({List<Subtask>? subtasks}) =>
-  //     _toDoService.calculateWeight(subtasks: subtasks);
-
   List<SortMethod> get sortMethods => sorter.sortMethods;
 
   Future<int> getMyDayWeight() async => await _toDoService.getMyDayWeight();
-
-  Future<void> setMyDayWeight() async => myDayWeight = await getMyDayWeight();
 
   Future<void> recalculateWeight() async {
     _toDoService.recalculateWeight(toDo: curToDo!);
@@ -199,13 +204,15 @@ class ToDoProvider extends ChangeNotifier {
         subtasks: subtasks,
         lastUpdated: DateTime.now());
 
-    if (repeatable ?? false) {
-      curToDo!.repeatID = Constants.generateID();
-      nextRepeat(toDo: curToDo);
-    }
-
     try {
       curToDo = await _toDoService.createToDo(toDo: curToDo!);
+
+      await _updateSubtasks(subtasks: subtasks, taskID: curToDo!.id);
+      toDoSubtaskCounts[Constants.intMax]!.value = 0;
+      if (repeatable ?? false) {
+        curToDo!.repeatID = Constants.generateID();
+        await nextRepeat(toDo: curToDo);
+      }
     } on FailureToCreateException catch (e) {
       log(e.cause);
       return Future.error(e);
@@ -215,29 +222,8 @@ class ToDoProvider extends ChangeNotifier {
       return await updateToDo();
     }
 
-    await _updateSubtasks(subtasks: subtasks, taskID: curToDo!.id);
-    toDoSubtaskCounts[Constants.intMax]!.value = 0;
-
     notifyListeners();
   }
-
-  // Future<void> createSubtask({required int taskID, int? index}) async {
-  //   Subtask subtask = Subtask(taskID: taskID, lastUpdated: DateTime.now());
-  //   if (null != index) {
-  //     subtask.customViewIndex = index;
-  //   }
-  //   try {
-  //     subtask = await _subtaskService.createSubtask(
-  //         subtask: Subtask(taskID: taskID, lastUpdated: DateTime.now()));
-  //   } on FailureToUploadException catch (e) {
-  //     log(e.cause);
-  //     return Future.error(e);
-  //   } on FailureToUpdateException catch (e) {
-  //     log(e.cause);
-  //     return Future.error(e);
-  //   }
-  //   notifyListeners();
-  // }
 
   Future<void> updateToDo({ToDo? toDo}) async {
     await updateToDoAsync(toDo: toDo ?? curToDo!);
@@ -247,13 +233,13 @@ class ToDoProvider extends ChangeNotifier {
   Future<void> updateToDoAsync({ToDo? toDo}) async {
     toDo = toDo ?? curToDo!;
     toDo.lastUpdated = DateTime.now();
-    if (toDo.repeatable && null == toDo.repeatID) {
-      toDo.repeatID = Constants.generateID();
-      nextRepeat(toDo: toDo);
-    }
 
     try {
       curToDo = await _toDoService.updateToDo(toDo: toDo);
+      if (toDo.repeatable && null == toDo.repeatID) {
+        toDo.repeatID = Constants.generateID();
+        await nextRepeat(toDo: toDo);
+      }
     } on FailureToUploadException catch (e) {
       log(e.cause);
       return Future.error(e);
@@ -262,20 +248,6 @@ class ToDoProvider extends ChangeNotifier {
       return Future.error(e);
     }
   }
-
-  // Future<void> updateSubtask({required Subtask subtask}) async {
-  //   subtask.lastUpdated = DateTime.now();
-  //   try {
-  //     subtask = await _subtaskService.updateSubtask(subtask: subtask);
-  //   } on FailureToUploadException catch (e) {
-  //     log(e.cause);
-  //     return Future.error(e);
-  //   } on FailureToUpdateException catch (e) {
-  //     log(e.cause);
-  //     return Future.error(e);
-  //   }
-  //   notifyListeners();
-  // }
 
   Future<void> _updateSubtasks(
       {required List<Subtask> subtasks, required int taskID}) async {
@@ -290,11 +262,6 @@ class ToDoProvider extends ChangeNotifier {
         st.toDelete = true;
       }
     }
-    // for (int i = 0; i < subtasks.length; i++) {
-    //   subtasks[i].taskID = taskID;
-    //   subtasks[i].customViewIndex = i;
-    //   subtasks[i].lastUpdated = DateTime.now();
-    // }
     try {
       await _subtaskService.updateBatch(subtasks: subtasks);
     } on FailureToUploadException catch (e) {
@@ -335,16 +302,6 @@ class ToDoProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Future<void> deleteSubtask({required Subtask subtask}) async {
-  //   try {
-  //     await _subtaskService.deleteSubtask(subtask: subtask);
-  //   } on FailureToDeleteException catch (e) {
-  //     log(e.cause);
-  //     return Future.error(e);
-  //   }
-  //   notifyListeners();
-  // }
-
   Future<List<ToDo>> reorderToDos(
       {required int oldIndex, required int newIndex, List<ToDo>? toDos}) async {
     try {
@@ -370,22 +327,6 @@ class ToDoProvider extends ChangeNotifier {
       return Future.error(e);
     }
   }
-
-  // Future<List<Subtask>> reorderSubtasks(
-  //     {required List<Subtask> subtasks,
-  //     required int oldIndex,
-  //     required int newIndex}) async {
-  //   try {
-  //     return await _subtaskService.reorderSubtasks(
-  //         subtasks: subtasks, oldIndex: oldIndex, newIndex: newIndex);
-  //   } on FailureToUpdateException catch (e) {
-  //     log(e.cause);
-  //     return Future.error(e);
-  //   } on FailureToUploadException catch (e) {
-  //     log(e.cause);
-  //     return Future.error(e);
-  //   }
-  // }
 
   Future<void> nextRepeat({ToDo? toDo}) async {
     try {

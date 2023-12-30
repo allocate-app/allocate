@@ -1,16 +1,23 @@
 import '../model/task/subtask.dart';
 import '../model/task/todo.dart';
+import '../repositories/subtask_repo.dart';
 import '../repositories/todo_repo.dart';
 import '../util/constants.dart';
 import '../util/enums.dart';
+import '../util/interfaces/repository/model/subtask_repository.dart';
 import '../util/interfaces/repository/model/todo_repository.dart';
 import '../util/interfaces/sortable.dart';
 import '../util/numbers.dart';
 
 class ToDoService {
   ToDoRepository _repository = ToDoRepo();
+  SubtaskRepository _subtaskRepository = SubtaskRepo();
 
   set repository(ToDoRepository repo) => _repository = repo;
+
+  // This seems like the least awkward way to handle subtasks.
+  set subtaskRepository(SubtaskRepository subtaskRepo) =>
+      _subtaskRepository = subtaskRepo;
 
   int calculateWeight({List<Subtask>? subtasks}) =>
       (subtasks ?? List.empty(growable: false)).fold(0, (p, c) => p + c.weight);
@@ -22,7 +29,7 @@ class ToDoService {
   int calculateRealDuration({int? weight, int? duration}) => (remap(
               x: weight ?? 0,
               inMin: 0,
-              inMax: Constants.maxWeight,
+              inMax: Constants.medianWeight,
               outMin: Constants.lowerBound,
               outMax: Constants.upperBound) *
           (duration ?? 0))
@@ -40,7 +47,7 @@ class ToDoService {
     toDo.realDuration = (remap(
                 x: toDo.weight,
                 inMin: 0,
-                inMax: Constants.maxWeight,
+                inMax: Constants.medianWeight,
                 outMin: Constants.lowerBound,
                 outMax: Constants.upperBound) *
             toDo.expectedDuration)
@@ -75,6 +82,7 @@ class ToDoService {
       await _repository.getGroupToDoCount(groupID: groupID);
 
   Future<void> nextRepeatable({required ToDo toDo}) async {
+    List<Subtask> subtasksToUpdate = List.empty(growable: true);
     DateTime? nextRepeatDate = getRepeatDate(toDo: toDo);
 
     if (null == nextRepeatDate) {
@@ -92,9 +100,31 @@ class ToDoService {
           minute: toDo.dueDate!.minute),
       completed: false,
       myDay: false,
+      lastUpdated: DateTime.now(),
     );
 
-    await updateToDo(toDo: newToDo);
+    // if the toDo has subtasks, grab and duplicate.
+    // calculate weight based on task size.
+    if (TaskType.small != toDo.taskType) {
+      List<Subtask> subtasks =
+          await _subtaskRepository.getRepoByTaskID(id: toDo.id);
+      int newWeight = 0;
+      int i = 0;
+      for (Subtask subtask in subtasks) {
+        subtasksToUpdate
+            .add(subtask.copyWith(completed: false, taskID: newToDo.id));
+        if (i < Constants.numTasks[newToDo.taskType]!) {
+          newWeight += subtask.weight;
+          i++;
+        }
+      }
+      newToDo.weight = newWeight;
+    }
+
+    toDo.repeatable = false;
+
+    await _repository.updateBatch([toDo, newToDo]);
+    await _subtaskRepository.updateBatch(subtasksToUpdate);
   }
 
   Future<void> populateCalendar({required DateTime limit}) async {
@@ -111,7 +141,8 @@ class ToDoService {
 
   Future<void> checkRepeating(
       {required DateTime now, List<ToDo>? repeatables}) async {
-    List<ToDo> toUpdate = List.empty(growable: true);
+    List<ToDo> toDosToUpdate = List.empty(growable: true);
+    List<Subtask> subtasksToUpdate = List.empty(growable: true);
 
     repeatables = repeatables ?? await _repository.getRepeatables(now: now);
 
@@ -120,7 +151,7 @@ class ToDoService {
 
       if (null == nextRepeatDate) {
         toDo.repeatable = false;
-        toUpdate.add(toDo);
+        toDosToUpdate.add(toDo);
         continue;
       }
       int offset =
@@ -135,12 +166,33 @@ class ToDoService {
           completed: false,
           myDay: false,
           startDate: nextRepeatDate,
-          dueDate: nextDueDate);
+          dueDate: nextDueDate,
+          lastUpdated: DateTime.now());
+
+      // if the task has subtasks, grab and duplicate.
+      if (TaskType.small != toDo.taskType) {
+        List<Subtask> subtasks =
+            await _subtaskRepository.getRepoByTaskID(id: toDo.id);
+        int newWeight = 0;
+        int i = 0;
+        for (Subtask subtask in subtasks) {
+          subtasksToUpdate
+              .add(subtask.copyWith(completed: false, taskID: newToDo.id));
+          if (i < Constants.numTasks[newToDo.taskType]!) {
+            newWeight += subtask.weight;
+            i++;
+          }
+        }
+
+        newToDo.weight = newWeight;
+      }
+
       toDo.repeatable = false;
-      toUpdate.add(newToDo);
-      toUpdate.add(toDo);
+      toDosToUpdate.add(newToDo);
+      toDosToUpdate.add(toDo);
     }
-    await updateBatch(toDos: toUpdate);
+    await _repository.updateBatch(toDosToUpdate);
+    await _subtaskRepository.updateBatch(subtasksToUpdate);
   }
 
   DateTime? getCustom({required ToDo toDo}) {
@@ -245,7 +297,8 @@ class ToDoService {
 
   Future<void> syncRepo() async => await _repository.syncRepo();
 
-  // This is for my day.
+  // This is for my day && listview screens.
+  // preserves relative order for both screens.
   Future<List<ToDo>> reorderTodos(
       {required List<ToDo> toDos,
       required int oldIndex,
