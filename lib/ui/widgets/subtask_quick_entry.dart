@@ -18,14 +18,21 @@ class SubtaskQuickEntry extends StatefulWidget {
       this.weight = 0.0,
       this.innerPadding = EdgeInsets.zero,
       this.outerPadding = EdgeInsets.zero,
+      this.menuController,
+      this.onOpen,
+      this.onClose,
       this.hintText = ""});
 
+  final MenuController? menuController;
   final EdgeInsetsGeometry outerPadding;
   final EdgeInsetsGeometry innerPadding;
   final int taskID;
   final int? taskIndex;
   final String hintText;
   final double weight;
+
+  final void Function()? onOpen;
+  final void Function()? onClose;
 
   @override
   State<SubtaskQuickEntry> createState() => _SubtaskQuickEntry();
@@ -56,7 +63,7 @@ class _SubtaskQuickEntry extends State<SubtaskQuickEntry> {
           nameEditingController.text, Directionality.of(context));
     });
 
-    menuController = MenuController();
+    menuController = widget.menuController ?? MenuController();
   }
 
   @override
@@ -106,6 +113,8 @@ class _SubtaskQuickEntry extends State<SubtaskQuickEntry> {
             Tiles.weightAnchor(
                 controller: menuController,
                 weight: weight,
+                onOpen: widget.onOpen,
+                onClose: widget.onClose,
                 onChangeEnd: (value) {
                   menuController.close();
                 },

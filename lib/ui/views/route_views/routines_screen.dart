@@ -70,9 +70,10 @@ class _RoutinesListScreen extends State<RoutinesListScreen> {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.all(Constants.innerPadding),
+      padding: const EdgeInsets.all(Constants.padding),
       child: Column(mainAxisSize: MainAxisSize.min, children: [
         ListViewHeader<Routine>(
+            outerPadding: const EdgeInsets.all(Constants.padding),
             header: "Routines",
             sorter: routineProvider.sorter,
             leadingIcon: const Icon(Icons.repeat_rounded),
@@ -87,6 +88,8 @@ class _RoutinesListScreen extends State<RoutinesListScreen> {
               }
             }),
         Tiles.createNew(
+          outerPadding:
+              const EdgeInsets.symmetric(vertical: Constants.halfPadding),
           context: context,
           onTap: () async => await showDialog(
             barrierDismissible: false,

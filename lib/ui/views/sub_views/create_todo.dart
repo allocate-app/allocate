@@ -47,6 +47,9 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
   late final ScrollController desktopScrollController;
   late final ScrollPhysics scrollPhysics;
 
+  // Subtasks controller
+  late final MenuController subtasksAnchorController;
+
   // Param fields.
   late TaskType taskType;
 
@@ -172,10 +175,9 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
     repeatSkipEditingController.addListener(() {
       String newText = descriptionEditingController.text;
       SemanticsService.announce(newText, Directionality.of(context));
-      // I don't think these are req'd.
-      // repeatSkip = int.tryParse(newText) ?? repeatSkip;
-      // repeatSkip = max(repeatSkip, 1);
     });
+
+    subtasksAnchorController = MenuController();
   }
 
   void initializeProviders() {
@@ -226,7 +228,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
 
   Future<void> handleGroupSelection({required int id}) async {
     if (mounted) {
-      return setState(() {
+      setState(() {
         checkClose = userProvider.curUser?.checkClose ?? true;
         groupID = id;
       });
@@ -328,13 +330,13 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
     }
 
     if (mounted) {
-      return setState(() => checkClose = false);
+      setState(() => checkClose = false);
     }
   }
 
   void clearNameField() {
     if (mounted) {
-      return setState(() {
+      setState(() {
         checkClose = userProvider.curUser?.checkClose ?? true;
         nameEditingController.clear();
         name = "";
@@ -362,7 +364,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
 
   void completeToDo(bool? value) {
     if (mounted) {
-      return setState(() {
+      setState(() {
         checkClose = userProvider.curUser?.checkClose ?? true;
         completed = value!;
       });
@@ -374,7 +376,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
       return;
     }
     if (mounted) {
-      return setState(() {
+      setState(() {
         checkClose = userProvider.curUser?.checkClose ?? true;
         weight = value.toInt();
         realDuration = toDoProvider.calculateRealDuration(
@@ -385,7 +387,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
 
   void toggleMyDay() {
     if (mounted) {
-      return setState(() {
+      setState(() {
         checkClose = userProvider.curUser?.checkClose ?? true;
         myDay = !myDay;
       });
@@ -394,7 +396,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
 
   void changePriority(Set<Priority> newSelection) {
     if (mounted) {
-      return setState(() {
+      setState(() {
         checkClose = userProvider.curUser?.checkClose ?? true;
         priority = newSelection.first;
       });
@@ -403,7 +405,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
 
   void updateDuration(int? value) {
     if (mounted) {
-      return setState(() {
+      setState(() {
         checkClose = userProvider.curUser?.checkClose ?? true;
         expectedDuration = value ?? expectedDuration;
         realDuration = toDoProvider.calculateRealDuration(
@@ -415,7 +417,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
 
   void clearDuration() {
     if (mounted) {
-      return setState(() {
+      setState(() {
         checkClose = userProvider.curUser?.checkClose ?? true;
         expectedDuration = 0;
         realDuration = 0;
@@ -425,7 +427,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
 
   void clearDates() {
     if (mounted) {
-      return setState(() {
+      setState(() {
         checkClose = userProvider.curUser?.checkClose ?? true;
         startDate = null;
         dueDate = null;
@@ -435,7 +437,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
 
   void updateDates({bool? checkClose, DateTime? newStart, DateTime? newDue}) {
     if (mounted) {
-      return setState(() {
+      setState(() {
         checkClose = checkClose ?? this.checkClose;
         this.checkClose = (checkClose!)
             ? userProvider.curUser?.checkClose ?? checkClose!
@@ -454,7 +456,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
 
   void clearTimes() {
     if (mounted) {
-      return setState(() {
+      setState(() {
         checkClose = userProvider.curUser?.checkClose ?? true;
         startTime = null;
         dueTime = null;
@@ -464,7 +466,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
 
   void updateTimes({bool? checkClose, TimeOfDay? newStart, TimeOfDay? newDue}) {
     if (mounted) {
-      return setState(() {
+      setState(() {
         checkClose = checkClose ?? this.checkClose;
         this.checkClose = (checkClose!)
             ? userProvider.curUser?.checkClose ?? checkClose!
@@ -477,7 +479,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
 
   void clearRepeatable() {
     if (mounted) {
-      return setState(() {
+      setState(() {
         checkClose = userProvider.curUser?.checkClose ?? true;
         frequency = Frequency.once;
         weekdayList.clear();
@@ -492,7 +494,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
       required Set<int> newWeekdays,
       required int newSkip}) {
     if (mounted) {
-      return setState(() {
+      setState(() {
         checkClose = checkClose ?? this.checkClose;
         this.checkClose = (checkClose!)
             ? userProvider.curUser?.checkClose ?? checkClose!
@@ -530,11 +532,27 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
     }
   }
 
+  void onAnchorOpen() {
+    print("adding listener");
+    desktopScrollController.addListener(_closeMenuAnchor);
+    mobileScrollController.addListener(_closeMenuAnchor);
+  }
+
+  void onAnchorClose() {
+    print("removing listener");
+    desktopScrollController.removeListener(_closeMenuAnchor);
+    mobileScrollController.removeListener(_closeMenuAnchor);
+  }
+
+  void _closeMenuAnchor() {
+    print("closing anchor");
+    subtasksAnchorController.close();
+  }
+
   @override
   Widget build(BuildContext context) {
     // The query still needs to be performed to force a build.
-    // Consuming UserProvider throws an error.
-    MediaQuery.of(context).size.width;
+    MediaQuery.sizeOf(context);
 
     bool showTimeTile = null != startDate || null != dueDate;
     bool showRepeatTile = null != dueDate && null != startDate;
@@ -634,9 +652,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                                     },
                                     slider: (taskType == TaskType.small)
                                         ? Tiles.weightSlider(
-                                            weight: (taskType == TaskType.small)
-                                                ? weight.toDouble()
-                                                : sumWeight.toDouble(),
+                                            weight: weight.toDouble(),
                                             handleWeightChange:
                                                 handleWeightChange,
                                           )
@@ -775,6 +791,10 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                                           context: context,
                                           id: Constants.intMax,
                                           limit: Constants.numTasks[taskType]!,
+                                          subtasksAnchorController:
+                                              subtasksAnchorController,
+                                          onAnchorOpen: onAnchorOpen,
+                                          onAnchorClose: onAnchorClose,
                                           onRemove: (userProvider
                                                       .curUser?.reduceMotion ??
                                                   false)
@@ -889,9 +909,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                       },
                       slider: (taskType == TaskType.small)
                           ? Tiles.weightSlider(
-                              weight: (taskType == TaskType.small)
-                                  ? weight.toDouble()
-                                  : sumWeight.toDouble(),
+                              weight: weight.toDouble(),
                               handleWeightChange: handleWeightChange,
                             )
                           : null,
@@ -914,6 +932,13 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                     (taskType != TaskType.small)
                         ? Tiles.subtasksTile(
                             context: context,
+                            subtasksAnchorController: subtasksAnchorController,
+                            onAnchorOpen: onAnchorOpen,
+                            onAnchorClose: onAnchorClose,
+                            onRemove:
+                                (userProvider.curUser?.reduceMotion ?? false)
+                                    ? null
+                                    : onRemove,
                             limit: Constants.numTasks[taskType]!,
                             subtasks: subtasks,
                             subtaskCount: toDoProvider.getSubtaskCount(
@@ -1074,7 +1099,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
             TaskType newType = newSelection.first;
             if (taskType != newType) {
               if (mounted) {
-                return setState(() {
+                setState(() {
                   checkClose = userProvider.curUser?.checkClose ?? true;
                   taskType = newSelection.first;
                   realDuration = toDoProvider.calculateRealDuration(

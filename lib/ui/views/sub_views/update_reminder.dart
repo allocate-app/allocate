@@ -375,7 +375,7 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
 
   @override
   Widget build(BuildContext context) {
-    MediaQuery.of(context).size;
+    MediaQuery.sizeOf(context);
     return Dialog(
         insetPadding: EdgeInsets.all((userProvider.smallScreen)
             ? Constants.mobileDialogPadding

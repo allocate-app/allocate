@@ -39,7 +39,7 @@ class _DurationDialog extends State<DurationDialog> {
 
   @override
   Widget build(context) {
-    MediaQuery.of(context).size;
+    MediaQuery.sizeOf(context);
     return Dialog(
         insetPadding: EdgeInsets.all((userProvider.smallScreen)
             ? Constants.mobileDialogPadding

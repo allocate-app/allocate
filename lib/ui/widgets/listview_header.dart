@@ -2,7 +2,9 @@ import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 
+import '../../providers/user_provider.dart';
 import '../../util/constants.dart';
 import '../../util/enums.dart';
 import '../../util/interfaces/sortable.dart';
@@ -15,11 +17,11 @@ class ListViewHeader<T> extends StatefulWidget {
       this.sorter,
       this.showSorter = true,
       this.leadingIcon,
-      this.subTitle,
+      this.subtitle,
       this.onChanged});
 
   final Widget? leadingIcon;
-  final Widget? subTitle;
+  final Widget? subtitle;
   final EdgeInsetsGeometry outerPadding;
   final String header;
   final SortableView<T>? sorter;
@@ -37,6 +39,8 @@ class _ListViewHeader<T> extends State<ListViewHeader<T>> {
 
   late final TextEditingController dropdownController;
 
+  late final UserProvider userProvider;
+
   @override
   void initState() {
     super.initState();
@@ -47,6 +51,7 @@ class _ListViewHeader<T> extends State<ListViewHeader<T>> {
       String newText = dropdownController.text;
       SemanticsService.announce(newText, Directionality.of(context));
     });
+    userProvider = Provider.of<UserProvider>(context, listen: false);
   }
 
   @override
@@ -56,14 +61,13 @@ class _ListViewHeader<T> extends State<ListViewHeader<T>> {
 
   @override
   Widget build(context) {
-    double width = MediaQuery.of(context).size.width;
-    bool smallScreen = (width <= Constants.smallScreen);
+    MediaQuery.sizeOf(context);
     return Padding(
         padding: widget.outerPadding,
         child: ListTile(
           contentPadding: EdgeInsets.zero,
           leading: widget.leadingIcon,
-          subtitle: widget.subTitle,
+          subtitle: widget.subtitle,
           title: AutoSizeText(
             header,
             style: Constants.largeHeaderStyle,
@@ -73,7 +77,7 @@ class _ListViewHeader<T> extends State<ListViewHeader<T>> {
             minFontSize: Constants.huge,
           ),
           trailing: (null != sorter && widget.showSorter)
-              ? (smallScreen)
+              ? (userProvider.smallScreen)
                   ? MenuAnchor(
                       style: const MenuStyle(
                           visualDensity: VisualDensity(

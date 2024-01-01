@@ -15,10 +15,11 @@ enum Effect {
   transparent,
   aero,
   acrylic,
+  mica,
   sidebar,
 }
 
-enum ThemeType { system, light, dark, hi_contrast_light, hi_contrast_dark }
+enum ThemeType { system, light, dark }
 
 enum ToneMapping {
   system,

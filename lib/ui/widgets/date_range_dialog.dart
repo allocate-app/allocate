@@ -43,7 +43,7 @@ class _DateRangeDialog extends State<DateRangeDialog> {
   @override
   Widget build(context) {
     // This still has to run to repaint the screen
-    MediaQuery.of(context).size;
+    MediaQuery.sizeOf(context);
     return Dialog(
         insetPadding: EdgeInsets.all((userProvider.smallScreen)
             ? Constants.mobileDialogPadding

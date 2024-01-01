@@ -31,7 +31,7 @@ class _TimeDialog extends State<TimeDialog> {
 
   @override
   Widget build(context) {
-    MediaQuery.of(context).size;
+    MediaQuery.sizeOf(context);
     return Dialog(
         insetPadding: EdgeInsets.all((userProvider.smallScreen)
             ? Constants.mobileDialogPadding

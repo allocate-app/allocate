@@ -65,7 +65,7 @@ class _FrequencyDialog extends State<FrequencyDialog> {
 
   @override
   Widget build(context) {
-    MediaQuery.of(context).size.width;
+    MediaQuery.sizeOf(context);
 
     return Dialog(
         insetPadding: EdgeInsets.all((userProvider.smallScreen)

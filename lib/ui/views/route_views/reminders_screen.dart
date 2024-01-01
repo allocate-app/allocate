@@ -69,9 +69,10 @@ class _RemindersListScreen extends State<RemindersListScreen> {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.all(Constants.innerPadding),
+      padding: const EdgeInsets.all(Constants.padding),
       child: Column(mainAxisSize: MainAxisSize.min, children: [
         ListViewHeader<Reminder>(
+            outerPadding: const EdgeInsets.all(Constants.padding),
             header: "Reminders",
             leadingIcon: const Icon(Icons.push_pin_outlined),
             sorter: reminderProvider.sorter,
@@ -86,6 +87,8 @@ class _RemindersListScreen extends State<RemindersListScreen> {
               }
             }),
         Tiles.createNew(
+          outerPadding:
+              const EdgeInsets.symmetric(vertical: Constants.halfPadding),
           context: context,
           onTap: () async => await showDialog(
             barrierDismissible: false,

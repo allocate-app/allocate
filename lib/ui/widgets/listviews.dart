@@ -19,10 +19,7 @@ import '../../util/enums.dart';
 import 'custom_drag_start.dart';
 import 'tiles.dart';
 
-// TODO: Implement crossfading between lists?
-// fadeIn req's same value key.
-// paginatinglistview needs to set the ptr in the listview constructor.
-class ListViews {
+abstract class ListViews {
   // This is for dragging
   static Widget proxyDecorator(
           Widget child, int index, Animation<double> animation) =>
@@ -42,7 +39,11 @@ class ListViews {
             );
           });
 
-  static Widget fade({Key? key, Fade fade = Fade.fadeIn, Widget? child}) =>
+  static Widget fade(
+          {Key? key,
+          Fade fade = Fade.fadeIn,
+          Widget? child,
+          void Function()? onEnd}) =>
       TweenAnimationBuilder(
           key: key,
           duration: switch (fade) {
@@ -60,9 +61,9 @@ class ListViews {
             Fade.fadeOut => Curves.linear,
             Fade.none => Curves.linear,
           },
+          onEnd: onEnd,
           child: child,
           builder: (BuildContext context, double opacity, Widget? child) {
-            //print("opacity: $opacity");
             return Opacity(opacity: opacity, child: child);
           });
 
@@ -90,6 +91,9 @@ class ListViews {
           itemCount: toDos.length,
           itemBuilder: (BuildContext context, int index) {
             Widget child = fade(
+              onEnd: () {
+                toDos[index].fade = Fade.none;
+              },
               key: ValueKey(toDos[index].id),
               fade: toDos[index].fade,
               child: Tiles.toDoListTile(
@@ -133,6 +137,9 @@ class ListViews {
           itemBuilder: (BuildContext context, int index) {
             return fade(
               key: ValueKey(toDos[index].id),
+              onEnd: () {
+                toDos[index].fade = Fade.none;
+              },
               fade: toDos[index].fade,
               child: Tiles.toDoListTile(
                 checkboxAnimateBeforeUpdate: checkboxAnimateBeforeUpdate,
@@ -173,6 +180,9 @@ class ListViews {
             // Key is id ^ index. and I don't know why...
             Widget child = fade(
               key: ValueKey(toDos[index].id ^ index),
+              onEnd: () {
+                toDos[index].fade = Fade.none;
+              },
               fade: toDos[index].fade,
               child: Tiles.toDoMyDayTile(
                 checkboxAnimateBeforeUpdate: checkboxAnimateBeforeUpdate,
@@ -213,6 +223,9 @@ class ListViews {
           itemBuilder: (BuildContext context, int index) {
             return fade(
               key: ValueKey(toDos[index].id ^ index),
+              onEnd: () {
+                toDos[index].fade = Fade.none;
+              },
               fade: toDos[index].fade,
               child: Tiles.toDoMyDayTile(
                 checkboxAnimateBeforeUpdate: checkboxAnimateBeforeUpdate,
@@ -247,6 +260,9 @@ class ListViews {
           itemBuilder: (BuildContext context, int index) {
             Widget child = fade(
               key: ValueKey(routines[index].id),
+              onEnd: () {
+                routines[index].fade = Fade.none;
+              },
               fade: routines[index].fade,
               child: Tiles.routineListTile(
                 context: context,
@@ -283,6 +299,9 @@ class ListViews {
           itemBuilder: (BuildContext context, int index) {
             return fade(
               key: ValueKey(routines[index].id),
+              onEnd: () {
+                routines[index].fade = Fade.none;
+              },
               fade: routines[index].fade,
               child: Tiles.routineListTile(
                 context: context,
@@ -316,6 +335,9 @@ class ListViews {
           itemBuilder: (BuildContext context, int index) {
             Widget child = fade(
               key: ValueKey(deadlines[index].id),
+              onEnd: () {
+                deadlines[index].fade = Fade.none;
+              },
               fade: deadlines[index].fade,
               child: Tiles.deadlineListTile(
                 context: context,
@@ -355,6 +377,9 @@ class ListViews {
           itemBuilder: (BuildContext context, int index) {
             return fade(
               key: ValueKey(deadlines[index].id),
+              onEnd: () {
+                deadlines[index].fade = Fade.none;
+              },
               fade: deadlines[index].fade,
               child: Tiles.deadlineListTile(
                 context: context,
@@ -390,6 +415,9 @@ class ListViews {
           itemBuilder: (BuildContext context, int index) {
             Widget child = fade(
               key: ValueKey(reminders[index].id),
+              onEnd: () {
+                reminders[index].fade = Fade.none;
+              },
               fade: reminders[index].fade,
               child: Tiles.reminderListTile(
                 context: context,
@@ -429,6 +457,9 @@ class ListViews {
           itemBuilder: (BuildContext context, int index) {
             return fade(
               key: ValueKey(reminders[index].id),
+              onEnd: () {
+                reminders[index].fade = Fade.none;
+              },
               fade: reminders[index].fade,
               child: Tiles.reminderListTile(
                 context: context,
@@ -465,6 +496,9 @@ class ListViews {
           itemBuilder: (BuildContext context, int index) {
             Widget child = fade(
               key: ValueKey(groups[index].id),
+              onEnd: () {
+                groups[index].fade = Fade.none;
+              },
               fade: groups[index].fade,
               child: Tiles.groupListTile(
                 context: context,
@@ -506,6 +540,9 @@ class ListViews {
           itemBuilder: (BuildContext context, int index) {
             return fade(
               key: ValueKey(groups[index].id),
+              onEnd: () {
+                groups[index].fade = Fade.none;
+              },
               fade: groups[index].fade,
               child: Tiles.groupListTile(
                 context: context,
@@ -545,6 +582,9 @@ class ListViews {
         itemBuilder: (BuildContext context, int index) {
           Widget child = fade(
             key: ValueKey(toDos[index].id),
+            onEnd: () {
+              toDos[index].fade = Fade.none;
+            },
             fade: toDos[index].fade,
             child: Tiles.toDoCheckTile(
               index: index,
@@ -619,6 +659,9 @@ class ListViews {
                 key: ValueKey(subtasks[index].id),
                 child: fade(
                   key: ValueKey(subtasks[index].id),
+                  onEnd: () {
+                    subtasks[index].fade = Fade.none;
+                  },
                   fade: subtasks[index].fade,
                   child: Tiles.subtaskCheckboxTile(
                     index: index,
@@ -651,6 +694,9 @@ class ListViews {
                 itemBuilder: (BuildContext context, int index) {
                   return fade(
                     fade: value[index].model.fade,
+                    onEnd: () {
+                      value[index].model.fade = Fade.none;
+                    },
                     child: Tiles.eventTile(
                       event: value[index],
                       context: context,

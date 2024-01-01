@@ -64,13 +64,13 @@ class UserModel extends ChangeNotifier with EquatableMixin {
     notifyListeners();
   }
 
-  String? get userName => _user?.userName;
+  String? get userName => _user?.username;
 
   set userName(String? userName) {
     if (null == userName) {
       return;
     }
-    _user?.userName = userName;
+    _user?.username = userName;
     notifyListeners();
   }
 

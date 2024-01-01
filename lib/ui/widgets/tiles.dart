@@ -37,10 +37,10 @@ import '../views/sub_views/update_reminder.dart';
 import '../views/sub_views/update_routine.dart';
 import '../views/sub_views/update_subtask.dart';
 import '../views/sub_views/update_todo.dart';
+import 'battery_meter.dart';
 import 'check_delete_dialog.dart';
 import 'date_range_dialog.dart';
 import 'date_time_dialog.dart';
-import 'drain_bar.dart';
 import 'duration_dialog.dart';
 import 'expanded_listtile.dart';
 import 'flushbars.dart';
@@ -49,7 +49,7 @@ import 'listtile_widgets.dart';
 import 'listviews.dart';
 import 'search_recents_bar.dart';
 
-class Tiles {
+abstract class Tiles {
   /// ListView Tiles
   static Widget toDoListTile(
       {required BuildContext context,
@@ -72,7 +72,7 @@ class Tiles {
             ? Theme.of(context)
                 .colorScheme
                 .primaryContainer
-                .withOpacity(Constants.myDayOpacity)
+                .withOpacity(Constants.tabBarOpacity)
             : null,
         contentPadding:
             const EdgeInsets.symmetric(horizontal: Constants.padding),
@@ -154,10 +154,9 @@ class Tiles {
                   });
                 },
               )),
-          (showHandle)
-              ? ReorderableDragStartListener(
-                  index: index, child: const Icon(Icons.drag_handle_rounded))
-              : const SizedBox.shrink(),
+          if (showHandle)
+            ReorderableDragStartListener(
+                index: index, child: const Icon(Icons.drag_handle_rounded))
         ]));
   }
 
@@ -295,27 +294,6 @@ class Tiles {
         },
         trailing: Row(mainAxisSize: MainAxisSize.min, children: [
           ListTileWidgets.toDoBatteryRow(toDo: toDo),
-          // Row(mainAxisSize: MainAxisSize.min, children: [
-          //   Constants.batteryIcons[(toDo.taskType == TaskType.small)
-          //       ? toDo.weight
-          //       : clamp(
-          //               x: remap(
-          //                   x: toDo.weight,
-          //                   inMin: 0,
-          //                   inMax: Constants.medianWeight,
-          //                   outMin: 0,
-          //                   outMax: 5),
-          //               ll: 0,
-          //               ul: 5)
-          //           .toInt()]!,
-          //   AutoSizeText(
-          //     "${toDo.weight}",
-          //     overflow: TextOverflow.visible,
-          //     minFontSize: Constants.medium,
-          //     softWrap: false,
-          //     maxLines: 1,
-          //   ),
-          // ]),
           Padding(
               padding: EdgeInsets.zero,
               child: IconButton(
@@ -329,10 +307,9 @@ class Tiles {
                   await toDoProvider.updateToDo(toDo: toDo);
                 },
               )),
-          (showHandle)
-              ? ReorderableDragStartListener(
-                  index: index, child: const Icon(Icons.drag_handle_rounded))
-              : const SizedBox.shrink(),
+          if (showHandle)
+            ReorderableDragStartListener(
+                index: index, child: const Icon(Icons.drag_handle_rounded))
         ]));
   }
 
@@ -456,10 +433,9 @@ class Tiles {
                   });
                 },
               )),
-          (showHandle)
-              ? ReorderableDragStartListener(
-                  index: index, child: const Icon(Icons.drag_handle_rounded))
-              : const SizedBox.shrink(),
+          if (showHandle)
+            ReorderableDragStartListener(
+                index: index, child: const Icon(Icons.drag_handle_rounded))
         ]));
   }
 
@@ -550,10 +526,9 @@ class Tiles {
                   });
                 },
               )),
-          (showHandle)
-              ? ReorderableDragStartListener(
-                  index: index, child: const Icon(Icons.drag_handle_rounded))
-              : const SizedBox.shrink(),
+          if (showHandle)
+            ReorderableDragStartListener(
+                index: index, child: const Icon(Icons.drag_handle_rounded))
         ]));
   }
 
@@ -714,10 +689,9 @@ class Tiles {
                   });
                 },
               )),
-          (showHandle)
-              ? ReorderableDragStartListener(
-                  index: index, child: const Icon(Icons.drag_handle_rounded))
-              : const SizedBox.shrink(),
+          if (showHandle)
+            ReorderableDragStartListener(
+                index: index, child: const Icon(Icons.drag_handle_rounded))
         ]));
   }
 
@@ -859,10 +833,9 @@ class Tiles {
                   });
                 },
               )),
-          (showHandle)
-              ? ReorderableDragStartListener(
-                  index: index, child: const Icon(Icons.drag_handle_rounded))
-              : const SizedBox.shrink(),
+          if (showHandle)
+            ReorderableDragStartListener(
+                index: index, child: const Icon(Icons.drag_handle_rounded))
         ]),
         title: AutoSizeText(
           group.name,
@@ -1123,11 +1096,9 @@ class Tiles {
                     icon: const Icon(Icons.remove_circle_outline_rounded),
                     onPressed: onRemoved),
               ),
-              (showHandle)
-                  ? ReorderableDragStartListener(
-                      index: index,
-                      child: const Icon(Icons.drag_handle_rounded))
-                  : const SizedBox.shrink(),
+              if (showHandle)
+                ReorderableDragStartListener(
+                    index: index, child: const Icon(Icons.drag_handle_rounded))
             ],
           ));
 
@@ -1176,10 +1147,9 @@ class Tiles {
                 icon: const Icon(Icons.remove_circle_outline_rounded),
                 onPressed: handleRemove,
               )),
-          (showHandle)
-              ? ReorderableDragStartListener(
-                  index: index, child: const Icon(Icons.drag_handle_rounded))
-              : const SizedBox.shrink(),
+          if (showHandle)
+            ReorderableDragStartListener(
+                index: index, child: const Icon(Icons.drag_handle_rounded))
         ]));
   }
 
@@ -1194,6 +1164,9 @@ class Tiles {
     required List<Subtask> subtasks,
     required ValueNotifier<int> subtaskCount,
     Future<void> Function({Subtask? item})? onRemove,
+    MenuController? subtasksAnchorController,
+    void Function()? onAnchorOpen,
+    void Function()? onAnchorClose,
     ScrollPhysics physics = const NeverScrollableScrollPhysics(),
     EdgeInsetsGeometry outerPadding = EdgeInsets.zero,
   }) {
@@ -1290,16 +1263,18 @@ class Tiles {
                             e is FailureToUpdateException ||
                             e is FailureToUploadException);
               }),
-          (subtasks.length < limit)
-              ? SubtaskQuickEntry(
-                  taskID: id,
-                  taskIndex: subtasks.length,
-                  outerPadding: const EdgeInsets.all(Constants.padding),
-                  innerPadding: const EdgeInsets.symmetric(
-                      horizontal: Constants.innerPadding),
-                  hintText: "Add step",
-                )
-              : const SizedBox.shrink()
+          if (subtasks.length < limit)
+            SubtaskQuickEntry(
+              taskID: id,
+              taskIndex: subtasks.length,
+              outerPadding: const EdgeInsets.all(Constants.padding),
+              innerPadding: const EdgeInsets.symmetric(
+                  horizontal: Constants.innerPadding),
+              hintText: "Add step",
+              menuController: subtasksAnchorController,
+              onOpen: onAnchorOpen,
+              onClose: onAnchorClose,
+            )
         ]);
   }
 
@@ -1427,7 +1402,7 @@ class Tiles {
         padding: outerPadding,
         child: Row(
           children: [
-            leading ?? const SizedBox.shrink(),
+            if (null != leading) leading,
             Expanded(
               child: Padding(
                 padding: textFieldPadding,
@@ -1494,7 +1469,7 @@ class Tiles {
               Flexible(
                 child: Padding(
                   padding: batteryPadding,
-                  child: DrainBar(
+                  child: BatteryMeter(
                     weight: weight,
                     max: max,
                     constraints: constraints,
@@ -1504,12 +1479,14 @@ class Tiles {
             ],
           ),
         ),
-        slider ?? const SizedBox.shrink(),
+        if (null != slider) slider,
       ]);
 
   // WEIGHT SLIDERS
   static Widget weightSlider(
           {required double weight,
+          int? divisions = Constants.maxTaskWeight,
+          double max = Constants.maxTaskWeightDouble,
           void Function(double? value)? handleWeightChange,
           void Function(double? value)? onChangeEnd}) =>
       Row(
@@ -1519,10 +1496,10 @@ class Tiles {
           Expanded(
             child: Slider(
               value: weight,
-              max: Constants.maxTaskWeight.toDouble(),
+              max: max,
               label:
                   "${weight.toInt()} ${(weight > (Constants.maxTaskWeight / 2).floor()) ? Constants.lowBattery : Constants.fullBattery}",
-              divisions: Constants.maxTaskWeight,
+              divisions: divisions,
               onChanged: handleWeightChange,
               onChangeEnd: onChangeEnd,
             ),
@@ -1532,12 +1509,19 @@ class Tiles {
       );
 
   // TODO: on focus, number key might be a good shortcut?
-  static Widget weightAnchor(
-      {required double weight,
-      MenuController? controller,
-      void Function(double? value)? handleWeightChange,
-      void Function(double? value)? onChangeEnd}) {
+  static Widget weightAnchor({
+    required double weight,
+    double max = Constants.maxTaskWeightDouble,
+    int? divisions = Constants.maxTaskWeight,
+    MenuController? controller,
+    void Function(double? value)? handleWeightChange,
+    void Function(double? value)? onChangeEnd,
+    void Function()? onOpen,
+    void Function()? onClose,
+  }) {
     return MenuAnchor(
+        onOpen: onOpen,
+        onClose: onClose,
         style: const MenuStyle(
             alignment: AlignmentDirectional(-10, 1.1),
             shape: MaterialStatePropertyAll(RoundedRectangleBorder(
@@ -1549,6 +1533,8 @@ class Tiles {
             padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
             child: weightSlider(
                 weight: weight,
+                max: max,
+                divisions: divisions,
                 handleWeightChange: handleWeightChange,
                 onChangeEnd: onChangeEnd),
           )
@@ -1559,10 +1545,9 @@ class Tiles {
               icon: Constants.batteryIcons[weight.toInt()]!,
               onPressed: () {
                 if (controller.isOpen) {
-                  controller.close();
-                } else {
-                  controller.open();
+                  return controller.close();
                 }
+                controller.open();
               });
         });
   }
@@ -1671,7 +1656,7 @@ class Tiles {
         trailing: (expectedDuration > 0)
             ? IconButton(
                 icon: const Icon(Icons.clear_rounded), onPressed: handleClear)
-            : const SizedBox.shrink(),
+            : null,
         onTap: () async => await showDialog<int>(
             context: context,
             builder: (BuildContext context) =>
@@ -2252,7 +2237,7 @@ class Tiles {
       ),
       trailing: (Frequency.once != event.model.frequency)
           ? const Icon(Icons.restart_alt_rounded)
-          : const SizedBox.shrink(),
+          : null,
     );
   }
 
@@ -2278,7 +2263,7 @@ class Tiles {
           trailing: trailing);
 
   // I am unsure about a leading widget atm.
-  static Widget searchTile({
+  static Widget searchItemTile({
     Widget? leading,
     Widget? trailing,
     String title = "",
@@ -2302,27 +2287,31 @@ class Tiles {
 
   // BASIC CREATE LISTTILE
   static Widget createNew({
+    EdgeInsetsGeometry outerPadding = EdgeInsets.zero,
     required void Function() onTap,
     required BuildContext context,
   }) =>
-      ListTile(
-        leading: CircleAvatar(
-          child: Icon(Icons.add_rounded,
-              color: Theme.of(context).colorScheme.onSurfaceVariant),
+      Padding(
+        padding: outerPadding,
+        child: ListTile(
+          leading: CircleAvatar(
+            child: Icon(Icons.add_rounded,
+                color: Theme.of(context).colorScheme.onSurfaceVariant),
+          ),
+          title: const AutoSizeText(
+            "Create New",
+            overflow: TextOverflow.visible,
+            softWrap: false,
+            maxLines: 1,
+            minFontSize: Constants.large,
+          ),
+          contentPadding: const EdgeInsets.all(Constants.padding),
+          shape: const RoundedRectangleBorder(
+            borderRadius:
+                BorderRadius.all(Radius.circular(Constants.semiCircular)),
+          ),
+          onTap: onTap,
         ),
-        title: const AutoSizeText(
-          "Create New",
-          overflow: TextOverflow.visible,
-          softWrap: false,
-          maxLines: 1,
-          minFontSize: Constants.medium,
-        ),
-        contentPadding: const EdgeInsets.all(Constants.padding),
-        shape: const RoundedRectangleBorder(
-          borderRadius:
-              BorderRadius.all(Radius.circular(Constants.semiCircular)),
-        ),
-        onTap: onTap,
       );
 
   // BASIC ADD BUTTON

@@ -7,7 +7,7 @@ import '../../util/constants.dart';
 import '../../util/enums.dart';
 import '../../util/numbers.dart';
 
-class ListTileWidgets {
+abstract class ListTileWidgets {
   static Widget outlinedIcon(
           {required BuildContext currentContext,
           EdgeInsetsGeometry iconPadding = EdgeInsets.zero,
@@ -398,28 +398,8 @@ class ListTileWidgets {
               outMax: Constants.maxTaskWeight * 3)
           .toInt(),
     };
-    print(scaledWeight);
 
     return batteryRow(weight: toDo.weight, scaledWeight: scaledWeight);
-
-    // while (scaledWeight > Constants.maxTaskWeight) {
-    //   batteries.add(Constants.batteryIcons[Constants.maxTaskWeight]!);
-    //   scaledWeight -= Constants.maxTaskWeight;
-    // }
-    // batteries.add(Constants.batteryIcons[scaledWeight]!);
-    // return Row(
-    //   mainAxisSize: MainAxisSize.min,
-    //   children: [
-    //     ...batteries,
-    //     AutoSizeText(
-    //       "${toDo.weight}",
-    //       overflow: TextOverflow.visible,
-    //       minFontSize: Constants.medium,
-    //       softWrap: false,
-    //       maxLines: 1,
-    //     )
-    //   ],
-    // );
   }
 
   static Widget routineBatteryRow({required Routine routine}) {

@@ -9,7 +9,6 @@ import '../util/constants.dart';
 import '../util/enums.dart';
 
 class ThemeProvider extends ChangeNotifier {
-  ThemeData? _themeData;
   ThemeData? _lightTheme;
   ThemeData? _darkTheme;
   ThemeData? _hiLight;
@@ -25,14 +24,14 @@ class ThemeProvider extends ChangeNotifier {
   late ToneMapping _toneMapping;
   late Effect _windowEffect;
 
+  late bool _useUltraHighContrast;
+  late bool _reduceMotion;
+
+  late double _scaffoldOpacity;
+  late double _sidebarOpacity;
+  late bool _useTransparency;
+
   User? user;
-
-  ThemeData? get themeData => _themeData;
-
-  set themeData(ThemeData? newTheme) {
-    _themeData = newTheme;
-    notifyListeners();
-  }
 
   ThemeData? get lightTheme => _lightTheme;
 
@@ -44,12 +43,11 @@ class ThemeProvider extends ChangeNotifier {
 
   Color get primarySeed => _primarySeed;
 
-  //Notifies.
   set primarySeed(Color newColor) {
     _primarySeed = newColor;
     user?.primarySeed = newColor.value;
     generateThemes();
-    setTheme(theme: _themeType);
+    notifyListeners();
   }
 
   Color? get secondarySeed => _secondarySeed;
@@ -59,7 +57,7 @@ class ThemeProvider extends ChangeNotifier {
     _secondarySeed = newColor;
     user?.secondarySeed = newColor?.value;
     generateThemes();
-    setTheme(theme: _themeType);
+    notifyListeners();
   }
 
   Color? get tertiarySeed => _tertiarySeed;
@@ -69,7 +67,7 @@ class ThemeProvider extends ChangeNotifier {
     _tertiarySeed = newColor;
     user?.tertiarySeed = newColor?.value;
     generateThemes();
-    setTheme(theme: _themeType);
+    notifyListeners();
   }
 
   ThemeType get themeType => _themeType;
@@ -78,26 +76,79 @@ class ThemeProvider extends ChangeNotifier {
   set themeType(ThemeType newThemeType) {
     _themeType = newThemeType;
     user?.themeType = newThemeType;
-    setTheme(theme: _themeType);
+    notifyListeners();
   }
 
   ToneMapping get toneMapping => _toneMapping;
 
-  //Notifies.
   set toneMapping(ToneMapping newToneMapping) {
     _toneMapping = newToneMapping;
     user?.toneMapping = newToneMapping;
+    _setToneMapping(tone: _toneMapping);
     generateThemes();
-    setTheme(theme: _themeType);
+    notifyListeners();
   }
 
   Effect get windowEffect => _windowEffect;
 
-  //Notifies.
   set windowEffect(Effect newEffect) {
     _windowEffect = newEffect;
     user?.windowEffect = newEffect;
-    setWindowEffect(effect: _windowEffect);
+    _setWindowEffect(effect: _windowEffect);
+    notifyListeners();
+  }
+
+  bool get useUltraHighContrast => _useUltraHighContrast;
+
+  set useUltraHighContrast(bool hiContrast) {
+    _useUltraHighContrast = hiContrast;
+    user?.useUltraHighContrast = hiContrast;
+    generateThemes();
+    notifyListeners();
+  }
+
+  bool get reduceMotion => _reduceMotion;
+
+  set reduceMotion(bool reduceMotion) {
+    _reduceMotion = reduceMotion;
+    user?.reduceMotion = reduceMotion;
+    notifyListeners();
+  }
+
+  bool get useTransparency => _useTransparency;
+
+  set useTransparency(bool transparency) {
+    bool changed = (transparency ^ _useTransparency);
+    _useTransparency = transparency;
+    user?.useTransparency = transparency;
+    if (changed) {
+      notifyListeners();
+    }
+  }
+
+  double get scaffoldOpacity => (_useTransparency) ? _scaffoldOpacity : 1.0;
+
+  // Because these are continuous & modified by slider, updating the user in a separate setter
+  set scaffoldOpacitySavePref(double newOpacity) {
+    user?.scaffoldOpacity = newOpacity;
+    scaffoldOpacity = newOpacity;
+  }
+
+  set scaffoldOpacity(double newOpacity) {
+    _scaffoldOpacity = newOpacity;
+    notifyListeners();
+  }
+
+  double get sidebarOpacity => (_useTransparency) ? _sidebarOpacity : 1.0;
+
+  set sidebarOpacitySavePref(double newOpacity) {
+    user?.sidebarOpacity = newOpacity;
+    sidebarOpacity = newOpacity;
+  }
+
+  set sidebarOpacity(double newOpacity) {
+    _sidebarOpacity = newOpacity;
+    notifyListeners();
   }
 
   void setUser({User? newUser}) {
@@ -105,7 +156,7 @@ class ThemeProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  ThemeProvider({this.user, ThemeData? themeData}) : _themeData = themeData {
+  ThemeProvider({this.user}) {
     init();
   }
 
@@ -122,24 +173,26 @@ class ThemeProvider extends ChangeNotifier {
     _themeType = user?.themeType ?? ThemeType.system;
     _toneMapping = user?.toneMapping ?? ToneMapping.system;
     _windowEffect = user?.windowEffect ?? Effect.disabled;
+    _useUltraHighContrast = user?.useUltraHighContrast ?? false;
+    _reduceMotion = user?.reduceMotion ?? false;
+    _scaffoldOpacity =
+        user?.scaffoldOpacity ?? Constants.defaultScaffoldOpacity;
+    _sidebarOpacity = user?.sidebarOpacity ?? Constants.defaultSidebarOpacity;
+    _useTransparency = user?.useTransparency ?? false;
 
     // Get tonemapping.
-    setToneMapping(tone: _toneMapping);
+    _setToneMapping(tone: _toneMapping);
 
     // Generate Themes.
     generateThemes();
 
-    // Set the theme, fall back to system.
-    _themeData = getTheme(theme: _themeType);
-
     // Set the window effect for desktop. Runs asynchronously, should be set by the time
     // the splash screen is done.
     if (!Platform.isIOS || !Platform.isAndroid) {
-      setWindowEffect(effect: _windowEffect);
+      _setWindowEffect(effect: _windowEffect);
     }
   }
 
-  // Doesn't notify.
   void generateThemes() {
     _lightTheme = ThemeData(
       colorScheme: SeedColorScheme.fromSeeds(
@@ -185,23 +238,6 @@ class ThemeProvider extends ChangeNotifier {
   }
 
   // Doesn't notify.
-  ThemeData? getTheme({ThemeType? theme = ThemeType.system}) {
-    theme = theme ?? ThemeType.system;
-    return switch (theme) {
-      ThemeType.system => null,
-      ThemeType.light => _lightTheme,
-      ThemeType.dark => _darkTheme,
-      ThemeType.hi_contrast_light => _hiLight,
-      ThemeType.hi_contrast_dark => _hiDark,
-    };
-  }
-
-  // Notifies
-  void setTheme({ThemeType? theme = ThemeType.system}) {
-    themeData = getTheme(theme: theme);
-  }
-
-  // Doesn't notify.
   FlexTones Function(Brightness brightness) getToneMapping(
       {ToneMapping? tone = ToneMapping.system}) {
     tone = tone ?? ToneMapping.system;
@@ -216,7 +252,7 @@ class ThemeProvider extends ChangeNotifier {
   }
 
   // Doesn't notify.
-  void setToneMapping({ToneMapping? tone = ToneMapping.system}) {
+  void _setToneMapping({ToneMapping? tone = ToneMapping.system}) {
     _flexTone = getToneMapping(tone: tone);
   }
 
@@ -224,50 +260,23 @@ class ThemeProvider extends ChangeNotifier {
     return switch (_themeType) {
       ThemeType.system =>
         WidgetsBinding.instance.platformDispatcher.platformBrightness,
-      ThemeType.light || ThemeType.hi_contrast_light => Brightness.light,
-      ThemeType.dark || ThemeType.hi_contrast_dark => Brightness.dark,
+      ThemeType.light => Brightness.light,
+      ThemeType.dark => Brightness.dark,
     };
   }
 
-  Future<void> setWindowEffect({Effect effect = Effect.disabled}) async {
-    if (Platform.isIOS || Platform.isAndroid || Platform.isLinux) {
+  Future<void> _setWindowEffect({Effect effect = Effect.disabled}) async {
+    if (Platform.isIOS || Platform.isAndroid) {
       return;
     }
-    switch (effect) {
-      case Effect.disabled:
-        // if (Platform.isLinux) {
-        //   break;
-        // }
-        await _setWinMacWindow(effect: WindowEffect.disabled);
-        break;
-      case Effect.transparent:
-        // if (Platform.isLinux) {
-        //   break;
-        // }
-        await _setWinMacWindow(effect: WindowEffect.transparent);
-        break;
-      case Effect.aero:
-        // if (Platform.isLinux) {
-        //   break;
-        // }
 
-        await _setWinMacWindow(effect: WindowEffect.aero);
+    useTransparency = (Effect.disabled != effect);
 
-        break;
-      case Effect.acrylic:
-        // if (Platform.isLinux) {
-        //   break;
-        // }
-        await _setWinMacWindow(effect: WindowEffect.acrylic);
-        break;
-      case Effect.sidebar:
-        if (!Platform.isMacOS) {
-          break;
-        }
-        await _setWinMacWindow(effect: WindowEffect.sidebar);
-        break;
+    if (Platform.isLinux) {
+      return;
     }
-    notifyListeners();
+
+    await _setWinMacWindow(effect: WindowEffect.sidebar);
   }
 
   Future<void> _setWinMacWindow({

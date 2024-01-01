@@ -142,7 +142,7 @@ class _SearchRecents<T extends IModel> extends State<SearchRecentsBar<T>> {
                   physics: const NeverScrollableScrollPhysics(),
                   itemCount: data.length,
                   itemBuilder: (BuildContext context, int index) {
-                    return Tiles.searchTile(
+                    return Tiles.searchItemTile(
                         title: data[index].name,
                         onTap: () async {
                           FocusScope.of(context).unfocus();
@@ -157,7 +157,7 @@ class _SearchRecents<T extends IModel> extends State<SearchRecentsBar<T>> {
             }
             // Render peristent entry on an empty query
             return (null != widget.persistentEntry)
-                ? Tiles.searchTile(
+                ? Tiles.searchItemTile(
                     leading: const Icon(Icons.manage_history_rounded),
                     title: widget.persistentEntry!.key,
                     onTap: () async {

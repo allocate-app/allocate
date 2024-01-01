@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:ui';
 
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -30,7 +31,6 @@ import '../util/enums.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   DartPluginRegistrant.ensureInitialized();
-
   if (kReleaseMode) {
     print("RELEASEMODE");
   }
@@ -160,6 +160,7 @@ class LocalTester extends StatefulWidget {
 
 class _LocalTester extends State<LocalTester> with WindowListener {
   // late ThemeProvider themeProvider;
+  late UserProvider userProvider;
 
   @override
   void initState() {
@@ -171,7 +172,23 @@ class _LocalTester extends State<LocalTester> with WindowListener {
     // testListView();
 
     // themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+
+    userProvider = Provider.of<UserProvider>(context, listen: false);
+
+    if (Platform.isWindows) {
+      checkWindowsPlatform();
+    }
     super.initState();
+  }
+
+  Future<void> checkWindowsPlatform() async {
+    DeviceInfoPlugin deviceInfoPlugin = DeviceInfoPlugin();
+    WindowsDeviceInfo deviceInfo = await deviceInfoPlugin.windowsInfo;
+
+    userProvider.win11 = deviceInfo.buildNumber >= 22000;
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   @override
@@ -237,13 +254,15 @@ class _LocalTester extends State<LocalTester> with WindowListener {
       builder: (BuildContext context, ThemeProvider value, Widget? child) {
         return TitlebarSafeArea(
           child: MaterialApp(
-            theme: value.themeData,
+            theme: value.lightTheme,
             darkTheme: value.darkTheme,
             highContrastTheme: value.highContrastLight,
             highContrastDarkTheme: value.highContrastDark,
-            themeMode: (ThemeType.system == value.themeType)
-                ? ThemeMode.system
-                : ThemeMode.light,
+            themeMode: switch (value.themeType) {
+              ThemeType.light => ThemeMode.light,
+              ThemeType.dark => ThemeMode.dark,
+              ThemeType.system => ThemeMode.system,
+            },
             home: const HomeScreen(),
           ),
         );

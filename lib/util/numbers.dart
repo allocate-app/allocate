@@ -6,7 +6,7 @@ num remap(
         num inMax = 1,
         num outMin = 0,
         num outMax = 1}) =>
-    x * (outMax - outMin) / (inMax - inMin) + outMin;
+    (outMax - outMin) * (x - inMin) / (inMax - inMin) + outMin;
 
 num lerp({num v0 = 0, num v1 = 1, num t = 0}) => (1 - t) * v0 + t * v1;
 

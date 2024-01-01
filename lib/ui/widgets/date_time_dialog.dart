@@ -34,7 +34,7 @@ class _DateTimeDialog extends State<DateTimeDialog> {
 
   @override
   Widget build(context) {
-    MediaQuery.of(context).size;
+    MediaQuery.sizeOf(context);
     return Dialog(
         insetPadding: (userProvider.smallScreen)
             ? const EdgeInsets.all(Constants.mobileDialogPadding)

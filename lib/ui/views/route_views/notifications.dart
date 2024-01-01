@@ -122,7 +122,7 @@ class _NotificationsScreen extends State<NotificationsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    MediaQuery.of(context).size;
+    MediaQuery.sizeOf(context);
     return Padding(
         padding: const EdgeInsets.all(Constants.innerPadding),
         child: Column(mainAxisSize: MainAxisSize.min, children: [

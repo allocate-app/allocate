@@ -29,7 +29,7 @@ class User with EquatableMixin implements Copyable<User> {
   bool checkClose;
 
   @Index()
-  String userName;
+  String username;
 
   // Emotional bandwidth
   int bandwidth;
@@ -55,6 +55,7 @@ class User with EquatableMixin implements Copyable<User> {
 
   bool useUltraHighContrast;
   bool reduceMotion;
+  bool useTransparency;
 
   int? curMornID;
   int? curAftID;
@@ -82,7 +83,7 @@ class User with EquatableMixin implements Copyable<User> {
   DateTime lastOpened;
 
   User(
-      {required this.userName,
+      {required this.username,
       this.checkDelete = true,
       this.checkClose = true,
       this.bandwidth = 100,
@@ -97,6 +98,7 @@ class User with EquatableMixin implements Copyable<User> {
       this.tertiarySeed,
       this.useUltraHighContrast = false,
       this.reduceMotion = false,
+      this.useTransparency = false,
       this.curMornID,
       this.curAftID,
       this.curEveID,
@@ -119,7 +121,7 @@ class User with EquatableMixin implements Copyable<User> {
   User.fromEntity({required Map<String, dynamic> entity})
       : id = entity["id"] as int,
         uuid = entity["uuid"] as String,
-        userName = entity["userName"] as String,
+        username = entity["userName"] as String,
         bandwidth = entity["bandwidth"] as int,
         dayCost = entity["dayCost"] as int,
         checkDelete = entity["checkDelete"],
@@ -135,6 +137,8 @@ class User with EquatableMixin implements Copyable<User> {
         tertiarySeed = entity["tertiarySeed"] as int?,
         useUltraHighContrast = entity["useUltraHighContrast"] as bool,
         reduceMotion = entity["reduceMotion"] as bool,
+        // This is a local parameter.
+        useTransparency = false,
         groupSorter = (null != entity["groupSort"])
             ? GroupSorter(
                 descending: entity["groupDesc"],
@@ -170,7 +174,7 @@ class User with EquatableMixin implements Copyable<User> {
 
   Map<String, dynamic> toEntity() => {
         "id": id,
-        "userName": userName,
+        "userName": username,
         "bandwidth": bandwidth,
         "dayCost": dayCost,
         "checkDelete": checkDelete,
@@ -203,7 +207,7 @@ class User with EquatableMixin implements Copyable<User> {
 
   @override
   User copy() => User(
-        userName: userName,
+        username: username,
         bandwidth: bandwidth,
         dayCost: dayCost,
         checkDelete: checkDelete,
@@ -221,6 +225,7 @@ class User with EquatableMixin implements Copyable<User> {
         sidebarOpacity: sidebarOpacity,
         useUltraHighContrast: useUltraHighContrast,
         reduceMotion: reduceMotion,
+        useTransparency: useTransparency,
         groupSorter: groupSorter,
         deadlineSorter: deadlineSorter,
         reminderSorter: reminderSorter,
@@ -253,6 +258,7 @@ class User with EquatableMixin implements Copyable<User> {
           double? sidebarOpacity,
           bool? useUltraHighContrast,
           bool? reduceMotion,
+          bool? useTransparency,
           ToDoSorter? toDoSorter,
           GroupSorter? groupSorter,
           DeadlineSorter? deadlineSorter,
@@ -264,7 +270,7 @@ class User with EquatableMixin implements Copyable<User> {
           DateTime? lastOpened,
           DateTime? lastUpdated}) =>
       User(
-          userName: userName ?? this.userName,
+          username: userName ?? username,
           bandwidth: bandwidth ?? this.bandwidth,
           dayCost: dayCost ?? this.dayCost,
           checkDelete: checkDelete ?? this.checkDelete,
@@ -282,6 +288,7 @@ class User with EquatableMixin implements Copyable<User> {
           sidebarOpacity: sidebarOpacity ?? this.sidebarOpacity,
           useUltraHighContrast:
               useUltraHighContrast ?? this.useUltraHighContrast,
+          useTransparency: useTransparency ?? this.useTransparency,
           reduceMotion: reduceMotion ?? this.reduceMotion,
           toDoSorter: toDoSorter ?? this.toDoSorter,
           groupSorter: groupSorter ?? this.groupSorter,
@@ -300,7 +307,7 @@ class User with EquatableMixin implements Copyable<User> {
 
   @override
   toString() =>
-      "id: $id, uuid: $uuid, userName: $userName, syncOnline: $syncOnline, bandwidth: $bandwidth, "
+      "id: $id, uuid: $uuid, userName: $username, syncOnline: $syncOnline, bandwidth: $bandwidth, "
       "curTheme: ${themeType.name}, curMornID: $curMornID, curAftID: $curAftID, curEveID: $curEveID,"
       "groupSorter: $groupSorter, deadlineSorter: $deadlineSorter,"
       "reminderSorter: $reminderSorter, routineSorter: $routineSorter, "

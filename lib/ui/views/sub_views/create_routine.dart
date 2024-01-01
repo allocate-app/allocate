@@ -261,7 +261,7 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
 
   @override
   Widget build(BuildContext context) {
-    MediaQuery.of(context).size;
+    MediaQuery.sizeOf(context);
 
     return (userProvider.largeScreen)
         ? buildDesktopDialog(

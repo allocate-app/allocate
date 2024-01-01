@@ -599,7 +599,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
 
   @override
   Widget build(BuildContext context) {
-    MediaQuery.of(context).size;
+    MediaQuery.sizeOf(context);
 
     bool showTimeTile = null != toDo.startDate || null != toDo.dueDate;
     bool showRepeatTile = null != toDo.startDate && null != toDo.dueDate;

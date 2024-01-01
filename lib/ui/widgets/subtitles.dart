@@ -12,7 +12,7 @@ import '../../util/enums.dart';
 import '../../util/exceptions.dart';
 import '../../util/interfaces/i_repeatable.dart';
 
-class Subtitles {
+abstract class Subtitles {
   static Widget toDoSubtitle(
           {required BuildContext context,
           int? id,

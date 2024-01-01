@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../../util/constants.dart';
 
-class Flushbars {
+abstract class Flushbars {
   static Flushbar createError({
     required String message,
     required BuildContext context,

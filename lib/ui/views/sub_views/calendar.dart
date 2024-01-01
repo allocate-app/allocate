@@ -241,7 +241,7 @@ class _CalendarScreen extends State<CalendarScreen> {
 
   @override
   Widget build(BuildContext context) {
-    MediaQuery.of(context).size;
+    MediaQuery.sizeOf(context);
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [

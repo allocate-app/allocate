@@ -76,7 +76,7 @@ class _UpdateSubtaskScreen extends State<UpdateSubtaskScreen> {
 
   @override
   Widget build(context) {
-    MediaQuery.of(context).size;
+    MediaQuery.sizeOf(context);
 
     return Dialog(
         insetPadding: (userProvider.smallScreen)

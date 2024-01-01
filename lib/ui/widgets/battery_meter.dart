@@ -3,13 +3,15 @@ import "package:flutter/material.dart";
 
 import "../../util/constants.dart";
 
-class DrainBar extends StatefulWidget {
-  const DrainBar({
+class BatteryMeter extends StatefulWidget {
+  const BatteryMeter({
     super.key,
     this.weight = 0,
     this.scale = 1.0,
-    this.max = Constants.maxDoubleBandwidth,
+    this.max = Constants.maxBandwidthDouble,
     this.showDifference = false,
+    this.forward = false,
+    this.alertUser = true,
     this.constraints = const BoxConstraints(),
   });
 
@@ -17,13 +19,15 @@ class DrainBar extends StatefulWidget {
   final double weight;
   final double max;
   final bool showDifference;
+  final bool forward;
+  final bool alertUser;
   final BoxConstraints constraints;
 
   @override
-  State<DrainBar> createState() => _DrainBar();
+  State<BatteryMeter> createState() => _BatteryMeter();
 }
 
-class _DrainBar extends State<DrainBar> {
+class _BatteryMeter extends State<BatteryMeter> {
   @override
   Widget build(context) {
     double offset = widget.weight / widget.max;
@@ -49,11 +53,12 @@ class _DrainBar extends State<DrainBar> {
                   borderRadius: const BorderRadius.all(
                       Radius.circular(Constants.curvedCorners)),
                   child: LinearProgressIndicator(
-                    color: (offset < 0.6)
+                    color: (((offset < 0.6) ^ (widget.forward)) ||
+                            !widget.alertUser)
                         ? Theme.of(context).colorScheme.inversePrimary
                         : Colors.redAccent,
                     minHeight: 50,
-                    value: 1 - offset,
+                    value: (widget.forward) ? offset : 1 - offset,
                     // Possibly remove
                   ),
                 ),

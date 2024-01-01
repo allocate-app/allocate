@@ -85,9 +85,10 @@ class _GroupsListScreen extends State<GroupsListScreen> {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.all(Constants.innerPadding),
+      padding: const EdgeInsets.all(Constants.padding),
       child: Column(mainAxisSize: MainAxisSize.min, children: [
         ListViewHeader<Group>(
+            outerPadding: const EdgeInsets.all(Constants.padding),
             header: "Groups",
             leadingIcon: const Icon(Icons.table_view_rounded),
             sorter: groupProvider.sorter,
@@ -102,6 +103,8 @@ class _GroupsListScreen extends State<GroupsListScreen> {
               }
             }),
         Tiles.createNew(
+          outerPadding:
+              const EdgeInsets.symmetric(vertical: Constants.halfPadding),
           context: context,
           onTap: () async => await showDialog(
             barrierDismissible: false,

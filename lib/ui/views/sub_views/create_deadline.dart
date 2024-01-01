@@ -130,8 +130,6 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
     repeatSkipEditingController.addListener(() {
       String newText = descriptionEditingController.text;
       SemanticsService.announce(newText, Directionality.of(context));
-      // repeatSkip = int.tryParse(newText) ?? repeatSkip;
-      // repeatSkip = max(repeatSkip, 1);
     });
   }
 
@@ -383,7 +381,7 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
 
   @override
   Widget build(BuildContext context) {
-    MediaQuery.of(context).size;
+    MediaQuery.sizeOf(context);
 
     bool showTimeTile = null != startDate || null != dueDate;
     bool showRepeatTile = null != startDate && null != dueDate;
@@ -512,42 +510,38 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
                                         handleClear: clearDates,
                                         handleUpdate: updateDates,
                                       ),
-                                      (showTimeTile)
-                                          ? const PaddedDivider(
-                                              padding: Constants.padding)
-                                          : const SizedBox.shrink(),
-                                      (showTimeTile)
-                                          ? Tiles.timeTile(
-                                              outerPadding:
-                                                  const EdgeInsets.symmetric(
-                                                      horizontal:
-                                                          Constants.padding),
-                                              startTime: startTime,
-                                              dueTime: dueTime,
-                                              context: context,
-                                              handleClear: clearTimes,
-                                              handleUpdate: updateTimes,
-                                            )
-                                          : const SizedBox.shrink(),
-                                      (showRepeatTile)
-                                          ? const PaddedDivider(
-                                              padding: Constants.padding)
-                                          : const SizedBox.shrink(),
-                                      (showRepeatTile)
-                                          ? Tiles.repeatableTile(
-                                              context: context,
-                                              outerPadding:
-                                                  const EdgeInsets.symmetric(
-                                                      horizontal:
-                                                          Constants.padding),
-                                              frequency: frequency,
-                                              weekdays: weekdayList,
-                                              repeatSkip: repeatSkip,
-                                              startDate: startDate,
-                                              handleUpdate: updateRepeatable,
-                                              handleClear: clearRepeatable,
-                                            )
-                                          : const SizedBox.shrink(),
+                                      if (showTimeTile) ...[
+                                        const PaddedDivider(
+                                            padding: Constants.padding),
+                                        Tiles.timeTile(
+                                          outerPadding:
+                                              const EdgeInsets.symmetric(
+                                                  horizontal:
+                                                      Constants.padding),
+                                          startTime: startTime,
+                                          dueTime: dueTime,
+                                          context: context,
+                                          handleClear: clearTimes,
+                                          handleUpdate: updateTimes,
+                                        ),
+                                      ],
+                                      if (showRepeatTile) ...[
+                                        const PaddedDivider(
+                                            padding: Constants.padding),
+                                        Tiles.repeatableTile(
+                                          context: context,
+                                          outerPadding:
+                                              const EdgeInsets.symmetric(
+                                                  horizontal:
+                                                      Constants.padding),
+                                          frequency: frequency,
+                                          weekdays: weekdayList,
+                                          repeatSkip: repeatSkip,
+                                          startDate: startDate,
+                                          handleUpdate: updateRepeatable,
+                                          handleClear: clearRepeatable,
+                                        )
+                                      ],
                                     ]),
                               ),
                               Flexible(
@@ -685,39 +679,32 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
                       handleClear: clearDates,
                       handleUpdate: updateDates,
                     ),
-
-                    (showTimeTile)
-                        ? const PaddedDivider(padding: Constants.padding)
-                        : const SizedBox.shrink(),
-                    // Time
-                    (showTimeTile)
-                        ? Tiles.timeTile(
-                            outerPadding: const EdgeInsets.symmetric(
-                                horizontal: Constants.padding),
-                            startTime: startTime,
-                            dueTime: dueTime,
-                            context: context,
-                            handleClear: clearTimes,
-                            handleUpdate: updateTimes,
-                          )
-                        : const SizedBox.shrink(),
-                    (showRepeatTile)
-                        ? const PaddedDivider(padding: Constants.padding)
-                        : const SizedBox.shrink(),
-                    // Repeatable Stuff -> Show status, on click, open a dialog.
-                    (showRepeatTile)
-                        ? Tiles.repeatableTile(
-                            context: context,
-                            outerPadding: const EdgeInsets.symmetric(
-                                horizontal: Constants.padding),
-                            frequency: frequency,
-                            weekdays: weekdayList,
-                            repeatSkip: repeatSkip,
-                            startDate: startDate,
-                            handleUpdate: updateRepeatable,
-                            handleClear: clearRepeatable,
-                          )
-                        : const SizedBox.shrink(),
+                    if (showTimeTile) ...[
+                      const PaddedDivider(padding: Constants.padding),
+                      Tiles.timeTile(
+                        outerPadding: const EdgeInsets.symmetric(
+                            horizontal: Constants.padding),
+                        startTime: startTime,
+                        dueTime: dueTime,
+                        context: context,
+                        handleClear: clearTimes,
+                        handleUpdate: updateTimes,
+                      )
+                    ],
+                    if (showRepeatTile) ...[
+                      const PaddedDivider(padding: Constants.padding),
+                      Tiles.repeatableTile(
+                        context: context,
+                        outerPadding: const EdgeInsets.symmetric(
+                            horizontal: Constants.padding),
+                        frequency: frequency,
+                        weekdays: weekdayList,
+                        repeatSkip: repeatSkip,
+                        startDate: startDate,
+                        handleUpdate: updateRepeatable,
+                        handleClear: clearRepeatable,
+                      ),
+                    ],
                   ],
                 ),
               ),

@@ -30,7 +30,7 @@ class _CheckDeleteDialog extends State<CheckDeleteDialog> {
 
   @override
   Widget build(context) {
-    MediaQuery.of(context).size;
+    MediaQuery.sizeOf(context);
     return Dialog(
         insetPadding: EdgeInsets.all((userProvider.smallScreen)
             ? Constants.mobileDialogPadding

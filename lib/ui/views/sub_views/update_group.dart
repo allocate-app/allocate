@@ -299,7 +299,7 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
 
   @override
   Widget build(BuildContext context) {
-    MediaQuery.of(context).size;
+    MediaQuery.sizeOf(context);
     return (userProvider.largeScreen)
         ? buildDesktopDialog(
             context: context, smallScreen: userProvider.smallScreen)

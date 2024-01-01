@@ -70,9 +70,10 @@ class _ToDosListScreen extends State<ToDosListScreen> {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.all(Constants.innerPadding),
+      padding: const EdgeInsets.all(Constants.padding),
       child: Column(mainAxisSize: MainAxisSize.min, children: [
         ListViewHeader<ToDo>(
+            outerPadding: const EdgeInsets.all(Constants.padding),
             header: "Tasks",
             sorter: toDoProvider.sorter,
             leadingIcon: const Icon(Icons.task_outlined),
@@ -87,6 +88,8 @@ class _ToDosListScreen extends State<ToDosListScreen> {
               }
             }),
         Tiles.createNew(
+          outerPadding:
+              const EdgeInsets.symmetric(vertical: Constants.halfPadding),
           context: context,
           onTap: () async => await showDialog(
             barrierDismissible: false,

@@ -22,41 +22,41 @@ const UserSchema = CollectionSchema(
       name: r'bandwidth',
       type: IsarType.long,
     ),
-    r'checkDelete': PropertySchema(
+    r'checkClose': PropertySchema(
       id: 1,
+      name: r'checkClose',
+      type: IsarType.bool,
+    ),
+    r'checkDelete': PropertySchema(
+      id: 2,
       name: r'checkDelete',
       type: IsarType.bool,
     ),
     r'curAftID': PropertySchema(
-      id: 2,
+      id: 3,
       name: r'curAftID',
       type: IsarType.long,
     ),
     r'curEveID': PropertySchema(
-      id: 3,
+      id: 4,
       name: r'curEveID',
       type: IsarType.long,
     ),
     r'curMornID': PropertySchema(
-      id: 4,
+      id: 5,
       name: r'curMornID',
       type: IsarType.long,
     ),
     r'dayCost': PropertySchema(
-      id: 5,
+      id: 6,
       name: r'dayCost',
       type: IsarType.long,
     ),
     r'deleteSchedule': PropertySchema(
-      id: 6,
+      id: 7,
       name: r'deleteSchedule',
       type: IsarType.byte,
       enumMap: _UserdeleteScheduleEnumValueMap,
-    ),
-    r'dontAsk': PropertySchema(
-      id: 7,
-      name: r'dontAsk',
-      type: IsarType.bool,
     ),
     r'isSynced': PropertySchema(
       id: 8,
@@ -125,9 +125,9 @@ const UserSchema = CollectionSchema(
       name: r'useUltraHighContrast',
       type: IsarType.bool,
     ),
-    r'userName': PropertySchema(
+    r'username': PropertySchema(
       id: 21,
-      name: r'userName',
+      name: r'username',
       type: IsarType.string,
     ),
     r'uuid': PropertySchema(
@@ -161,14 +161,14 @@ const UserSchema = CollectionSchema(
         )
       ],
     ),
-    r'userName': IndexSchema(
-      id: -1677712070637581736,
-      name: r'userName',
+    r'username': IndexSchema(
+      id: -2899563114555695793,
+      name: r'username',
       unique: false,
       replace: false,
       properties: [
         IndexPropertySchema(
-          name: r'userName',
+          name: r'username',
           type: IndexType.hash,
           caseSensitive: true,
         )
@@ -189,7 +189,7 @@ int _userEstimateSize(
   Map<Type, List<int>> allOffsets,
 ) {
   var bytesCount = offsets.last;
-  bytesCount += 3 + object.userName.length * 3;
+  bytesCount += 3 + object.username.length * 3;
   {
     final value = object.uuid;
     if (value != null) {
@@ -206,13 +206,13 @@ void _userSerialize(
   Map<Type, List<int>> allOffsets,
 ) {
   writer.writeLong(offsets[0], object.bandwidth);
-  writer.writeBool(offsets[1], object.checkDelete);
-  writer.writeLong(offsets[2], object.curAftID);
-  writer.writeLong(offsets[3], object.curEveID);
-  writer.writeLong(offsets[4], object.curMornID);
-  writer.writeLong(offsets[5], object.dayCost);
-  writer.writeByte(offsets[6], object.deleteSchedule.index);
-  writer.writeBool(offsets[7], object.checkClose);
+  writer.writeBool(offsets[1], object.checkClose);
+  writer.writeBool(offsets[2], object.checkDelete);
+  writer.writeLong(offsets[3], object.curAftID);
+  writer.writeLong(offsets[4], object.curEveID);
+  writer.writeLong(offsets[5], object.curMornID);
+  writer.writeLong(offsets[6], object.dayCost);
+  writer.writeByte(offsets[7], object.deleteSchedule.index);
   writer.writeBool(offsets[8], object.isSynced);
   writer.writeDateTime(offsets[9], object.lastOpened);
   writer.writeDateTime(offsets[10], object.lastUpdated);
@@ -226,7 +226,7 @@ void _userSerialize(
   writer.writeByte(offsets[18], object.themeType.index);
   writer.writeByte(offsets[19], object.toneMapping.index);
   writer.writeBool(offsets[20], object.useUltraHighContrast);
-  writer.writeString(offsets[21], object.userName);
+  writer.writeString(offsets[21], object.username);
   writer.writeString(offsets[22], object.uuid);
   writer.writeByte(offsets[23], object.windowEffect.index);
 }
@@ -239,15 +239,15 @@ User _userDeserialize(
 ) {
   final object = User(
     bandwidth: reader.readLongOrNull(offsets[0]) ?? 100,
-    checkDelete: reader.readBoolOrNull(offsets[1]) ?? true,
-    curAftID: reader.readLongOrNull(offsets[2]),
-    curEveID: reader.readLongOrNull(offsets[3]),
-    curMornID: reader.readLongOrNull(offsets[4]),
-    dayCost: reader.readLongOrNull(offsets[5]) ?? 0,
+    checkClose: reader.readBoolOrNull(offsets[1]) ?? true,
+    checkDelete: reader.readBoolOrNull(offsets[2]) ?? true,
+    curAftID: reader.readLongOrNull(offsets[3]),
+    curEveID: reader.readLongOrNull(offsets[4]),
+    curMornID: reader.readLongOrNull(offsets[5]),
+    dayCost: reader.readLongOrNull(offsets[6]) ?? 0,
     deleteSchedule:
-        _UserdeleteScheduleValueEnumMap[reader.readByteOrNull(offsets[6])] ??
+        _UserdeleteScheduleValueEnumMap[reader.readByteOrNull(offsets[7])] ??
             DeleteSchedule.never,
-    checkClose: reader.readBoolOrNull(offsets[7]) ?? false,
     isSynced: reader.readBoolOrNull(offsets[8]) ?? false,
     lastOpened: reader.readDateTime(offsets[9]),
     lastUpdated: reader.readDateTime(offsets[10]),
@@ -264,7 +264,7 @@ User _userDeserialize(
         _UsertoneMappingValueEnumMap[reader.readByteOrNull(offsets[19])] ??
             ToneMapping.system,
     useUltraHighContrast: reader.readBoolOrNull(offsets[20]) ?? false,
-    userName: reader.readString(offsets[21]),
+    username: reader.readString(offsets[21]),
     windowEffect:
         _UserwindowEffectValueEnumMap[reader.readByteOrNull(offsets[23])] ??
             Effect.disabled,
@@ -286,18 +286,18 @@ P _userDeserializeProp<P>(
     case 1:
       return (reader.readBoolOrNull(offset) ?? true) as P;
     case 2:
-      return (reader.readLongOrNull(offset)) as P;
+      return (reader.readBoolOrNull(offset) ?? true) as P;
     case 3:
       return (reader.readLongOrNull(offset)) as P;
     case 4:
       return (reader.readLongOrNull(offset)) as P;
     case 5:
-      return (reader.readLongOrNull(offset) ?? 0) as P;
+      return (reader.readLongOrNull(offset)) as P;
     case 6:
+      return (reader.readLongOrNull(offset) ?? 0) as P;
+    case 7:
       return (_UserdeleteScheduleValueEnumMap[reader.readByteOrNull(offset)] ??
           DeleteSchedule.never) as P;
-    case 7:
-      return (reader.readBoolOrNull(offset) ?? false) as P;
     case 8:
       return (reader.readBoolOrNull(offset) ?? false) as P;
     case 9:
@@ -352,15 +352,11 @@ const _UserthemeTypeEnumValueMap = {
   'system': 0,
   'light': 1,
   'dark': 2,
-  'hi_contrast_light': 3,
-  'hi_contrast_dark': 4,
 };
 const _UserthemeTypeValueEnumMap = {
   0: ThemeType.system,
   1: ThemeType.light,
   2: ThemeType.dark,
-  3: ThemeType.hi_contrast_light,
-  4: ThemeType.hi_contrast_dark,
 };
 const _UsertoneMappingEnumValueMap = {
   'system': 0,
@@ -542,44 +538,44 @@ extension UserQueryWhere on QueryBuilder<User, User, QWhereClause> {
     });
   }
 
-  QueryBuilder<User, User, QAfterWhereClause> userNameEqualTo(String userName) {
+  QueryBuilder<User, User, QAfterWhereClause> usernameEqualTo(String username) {
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(IndexWhereClause.equalTo(
-        indexName: r'userName',
-        value: [userName],
+        indexName: r'username',
+        value: [username],
       ));
     });
   }
 
-  QueryBuilder<User, User, QAfterWhereClause> userNameNotEqualTo(
-      String userName) {
+  QueryBuilder<User, User, QAfterWhereClause> usernameNotEqualTo(
+      String username) {
     return QueryBuilder.apply(this, (query) {
       if (query.whereSort == Sort.asc) {
         return query
             .addWhereClause(IndexWhereClause.between(
-              indexName: r'userName',
+              indexName: r'username',
               lower: [],
-              upper: [userName],
+              upper: [username],
               includeUpper: false,
             ))
             .addWhereClause(IndexWhereClause.between(
-              indexName: r'userName',
-              lower: [userName],
+              indexName: r'username',
+              lower: [username],
               includeLower: false,
               upper: [],
             ));
       } else {
         return query
             .addWhereClause(IndexWhereClause.between(
-              indexName: r'userName',
-              lower: [userName],
+              indexName: r'username',
+              lower: [username],
               includeLower: false,
               upper: [],
             ))
             .addWhereClause(IndexWhereClause.between(
-              indexName: r'userName',
+              indexName: r'username',
               lower: [],
-              upper: [userName],
+              upper: [username],
               includeUpper: false,
             ));
       }
@@ -636,6 +632,16 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
         includeLower: includeLower,
         upper: upper,
         includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<User, User, QAfterFilterCondition> checkCloseEqualTo(
+      bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'checkClose',
+        value: value,
       ));
     });
   }
@@ -955,15 +961,6 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
         includeLower: includeLower,
         upper: upper,
         includeUpper: includeUpper,
-      ));
-    });
-  }
-
-  QueryBuilder<User, User, QAfterFilterCondition> dontAskEqualTo(bool value) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'dontAsk',
-        value: value,
       ));
     });
   }
@@ -1618,20 +1615,20 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> userNameEqualTo(
+  QueryBuilder<User, User, QAfterFilterCondition> usernameEqualTo(
     String value, {
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'userName',
+        property: r'username',
         value: value,
         caseSensitive: caseSensitive,
       ));
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> userNameGreaterThan(
+  QueryBuilder<User, User, QAfterFilterCondition> usernameGreaterThan(
     String value, {
     bool include = false,
     bool caseSensitive = true,
@@ -1639,14 +1636,14 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.greaterThan(
         include: include,
-        property: r'userName',
+        property: r'username',
         value: value,
         caseSensitive: caseSensitive,
       ));
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> userNameLessThan(
+  QueryBuilder<User, User, QAfterFilterCondition> usernameLessThan(
     String value, {
     bool include = false,
     bool caseSensitive = true,
@@ -1654,14 +1651,14 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.lessThan(
         include: include,
-        property: r'userName',
+        property: r'username',
         value: value,
         caseSensitive: caseSensitive,
       ));
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> userNameBetween(
+  QueryBuilder<User, User, QAfterFilterCondition> usernameBetween(
     String lower,
     String upper, {
     bool includeLower = true,
@@ -1670,7 +1667,7 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
   }) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.between(
-        property: r'userName',
+        property: r'username',
         lower: lower,
         includeLower: includeLower,
         upper: upper,
@@ -1680,68 +1677,68 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> userNameStartsWith(
+  QueryBuilder<User, User, QAfterFilterCondition> usernameStartsWith(
     String value, {
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.startsWith(
-        property: r'userName',
+        property: r'username',
         value: value,
         caseSensitive: caseSensitive,
       ));
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> userNameEndsWith(
+  QueryBuilder<User, User, QAfterFilterCondition> usernameEndsWith(
     String value, {
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.endsWith(
-        property: r'userName',
+        property: r'username',
         value: value,
         caseSensitive: caseSensitive,
       ));
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> userNameContains(String value,
+  QueryBuilder<User, User, QAfterFilterCondition> usernameContains(String value,
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.contains(
-        property: r'userName',
+        property: r'username',
         value: value,
         caseSensitive: caseSensitive,
       ));
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> userNameMatches(
+  QueryBuilder<User, User, QAfterFilterCondition> usernameMatches(
       String pattern,
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.matches(
-        property: r'userName',
+        property: r'username',
         wildcard: pattern,
         caseSensitive: caseSensitive,
       ));
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> userNameIsEmpty() {
+  QueryBuilder<User, User, QAfterFilterCondition> usernameIsEmpty() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'userName',
+        property: r'username',
         value: '',
       ));
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> userNameIsNotEmpty() {
+  QueryBuilder<User, User, QAfterFilterCondition> usernameIsNotEmpty() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.greaterThan(
-        property: r'userName',
+        property: r'username',
         value: '',
       ));
     });
@@ -1962,6 +1959,18 @@ extension UserQuerySortBy on QueryBuilder<User, User, QSortBy> {
     });
   }
 
+  QueryBuilder<User, User, QAfterSortBy> sortByCheckClose() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'checkClose', Sort.asc);
+    });
+  }
+
+  QueryBuilder<User, User, QAfterSortBy> sortByCheckCloseDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'checkClose', Sort.desc);
+    });
+  }
+
   QueryBuilder<User, User, QAfterSortBy> sortByCheckDelete() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'checkDelete', Sort.asc);
@@ -2031,18 +2040,6 @@ extension UserQuerySortBy on QueryBuilder<User, User, QSortBy> {
   QueryBuilder<User, User, QAfterSortBy> sortByDeleteScheduleDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'deleteSchedule', Sort.desc);
-    });
-  }
-
-  QueryBuilder<User, User, QAfterSortBy> sortByDontAsk() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'dontAsk', Sort.asc);
-    });
-  }
-
-  QueryBuilder<User, User, QAfterSortBy> sortByDontAskDesc() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'dontAsk', Sort.desc);
     });
   }
 
@@ -2202,15 +2199,15 @@ extension UserQuerySortBy on QueryBuilder<User, User, QSortBy> {
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> sortByUserName() {
+  QueryBuilder<User, User, QAfterSortBy> sortByUsername() {
     return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'userName', Sort.asc);
+      return query.addSortBy(r'username', Sort.asc);
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> sortByUserNameDesc() {
+  QueryBuilder<User, User, QAfterSortBy> sortByUsernameDesc() {
     return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'userName', Sort.desc);
+      return query.addSortBy(r'username', Sort.desc);
     });
   }
 
@@ -2249,6 +2246,18 @@ extension UserQuerySortThenBy on QueryBuilder<User, User, QSortThenBy> {
   QueryBuilder<User, User, QAfterSortBy> thenByBandwidthDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'bandwidth', Sort.desc);
+    });
+  }
+
+  QueryBuilder<User, User, QAfterSortBy> thenByCheckClose() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'checkClose', Sort.asc);
+    });
+  }
+
+  QueryBuilder<User, User, QAfterSortBy> thenByCheckCloseDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'checkClose', Sort.desc);
     });
   }
 
@@ -2321,18 +2330,6 @@ extension UserQuerySortThenBy on QueryBuilder<User, User, QSortThenBy> {
   QueryBuilder<User, User, QAfterSortBy> thenByDeleteScheduleDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'deleteSchedule', Sort.desc);
-    });
-  }
-
-  QueryBuilder<User, User, QAfterSortBy> thenByDontAsk() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'dontAsk', Sort.asc);
-    });
-  }
-
-  QueryBuilder<User, User, QAfterSortBy> thenByDontAskDesc() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'dontAsk', Sort.desc);
     });
   }
 
@@ -2504,15 +2501,15 @@ extension UserQuerySortThenBy on QueryBuilder<User, User, QSortThenBy> {
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> thenByUserName() {
+  QueryBuilder<User, User, QAfterSortBy> thenByUsername() {
     return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'userName', Sort.asc);
+      return query.addSortBy(r'username', Sort.asc);
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> thenByUserNameDesc() {
+  QueryBuilder<User, User, QAfterSortBy> thenByUsernameDesc() {
     return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'userName', Sort.desc);
+      return query.addSortBy(r'username', Sort.desc);
     });
   }
 
@@ -2545,6 +2542,12 @@ extension UserQueryWhereDistinct on QueryBuilder<User, User, QDistinct> {
   QueryBuilder<User, User, QDistinct> distinctByBandwidth() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'bandwidth');
+    });
+  }
+
+  QueryBuilder<User, User, QDistinct> distinctByCheckClose() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'checkClose');
     });
   }
 
@@ -2581,12 +2584,6 @@ extension UserQueryWhereDistinct on QueryBuilder<User, User, QDistinct> {
   QueryBuilder<User, User, QDistinct> distinctByDeleteSchedule() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'deleteSchedule');
-    });
-  }
-
-  QueryBuilder<User, User, QDistinct> distinctByDontAsk() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addDistinctBy(r'dontAsk');
     });
   }
 
@@ -2668,10 +2665,10 @@ extension UserQueryWhereDistinct on QueryBuilder<User, User, QDistinct> {
     });
   }
 
-  QueryBuilder<User, User, QDistinct> distinctByUserName(
+  QueryBuilder<User, User, QDistinct> distinctByUsername(
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
-      return query.addDistinctBy(r'userName', caseSensitive: caseSensitive);
+      return query.addDistinctBy(r'username', caseSensitive: caseSensitive);
     });
   }
 
@@ -2699,6 +2696,12 @@ extension UserQueryProperty on QueryBuilder<User, User, QQueryProperty> {
   QueryBuilder<User, int, QQueryOperations> bandwidthProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'bandwidth');
+    });
+  }
+
+  QueryBuilder<User, bool, QQueryOperations> checkCloseProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'checkClose');
     });
   }
 
@@ -2736,12 +2739,6 @@ extension UserQueryProperty on QueryBuilder<User, User, QQueryProperty> {
       deleteScheduleProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'deleteSchedule');
-    });
-  }
-
-  QueryBuilder<User, bool, QQueryOperations> dontAskProperty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addPropertyName(r'dontAsk');
     });
   }
 
@@ -2823,9 +2820,9 @@ extension UserQueryProperty on QueryBuilder<User, User, QQueryProperty> {
     });
   }
 
-  QueryBuilder<User, String, QQueryOperations> userNameProperty() {
+  QueryBuilder<User, String, QQueryOperations> usernameProperty() {
     return QueryBuilder.apply(this, (query) {
-      return query.addPropertyName(r'userName');
+      return query.addPropertyName(r'username');
     });
   }
 

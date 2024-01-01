@@ -70,9 +70,10 @@ class _DeadlinesListScreen extends State<DeadlinesListScreen> {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.all(Constants.innerPadding),
+      padding: const EdgeInsets.all(Constants.padding),
       child: Column(mainAxisSize: MainAxisSize.min, children: [
         ListViewHeader<Deadline>(
+            outerPadding: const EdgeInsets.all(Constants.halfPadding),
             header: "Deadlines",
             sorter: deadlineProvider.sorter,
             leadingIcon: const Icon(Icons.announcement_outlined),
@@ -87,6 +88,8 @@ class _DeadlinesListScreen extends State<DeadlinesListScreen> {
               }
             }),
         Tiles.createNew(
+          outerPadding:
+              const EdgeInsets.symmetric(vertical: Constants.halfPadding),
           context: context,
           onTap: () async => await showDialog(
             barrierDismissible: false,

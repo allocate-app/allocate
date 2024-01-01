@@ -248,7 +248,7 @@ class _CreateReminderScreen extends State<CreateReminderScreen> {
 
   @override
   Widget build(BuildContext context) {
-    MediaQuery.of(context).size;
+    MediaQuery.sizeOf(context);
 
     return Dialog(
         insetPadding: EdgeInsets.all((userProvider.smallScreen)

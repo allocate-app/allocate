@@ -70,13 +70,13 @@ class _CompletedListScreen extends State<CompletedListScreen> {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.all(Constants.innerPadding),
+      padding: const EdgeInsets.all(Constants.padding),
       child: Column(mainAxisSize: MainAxisSize.min, children: [
         ListViewHeader<ToDo>(
             header: "Completed",
             sorter: toDoProvider.sorter,
             leadingIcon: const Icon(Icons.check_circle_outline_rounded),
-            outerPadding: const EdgeInsets.only(bottom: Constants.padding),
+            outerPadding: const EdgeInsets.all(Constants.padding),
             onChanged: ({SortMethod? sortMethod}) {
               if (null == sortMethod) {
                 return;

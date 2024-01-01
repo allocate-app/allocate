@@ -64,7 +64,6 @@ doc/api/
 
 .flutter-plugins
 .flutter-plugins-dependencies
-/lib/util/constants.dart
 /run.sh
 /assets/
 /android/app/src/main/res/

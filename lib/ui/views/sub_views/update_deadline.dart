@@ -494,7 +494,7 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
 
   @override
   Widget build(BuildContext context) {
-    MediaQuery.of(context).size;
+    MediaQuery.sizeOf(context);
 
     bool showTimeTile = null != deadline.startDate || null != deadline.dueDate;
     bool showRepeatTile =

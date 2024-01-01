@@ -40,35 +40,32 @@ class _MyDayScreen extends State<MyDayScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (userProvider.myDayIndex == Constants.tabs.length - 1 &&
-        userProvider.hugeScreen) {
-      userProvider.myDayIndex = 0;
-    }
-    MediaQuery.of(context).size;
-
-    return (userProvider.hugeScreen)
-        ? buildHuge(context: context)
-        : Padding(
-            padding: const EdgeInsets.all(Constants.innerPadding),
-            child: buildRegular(
-                context: context,
-                buildCalendar: true,
-                smallScreen: userProvider.smallScreen),
-          );
+    MediaQuery.sizeOf(context);
+    return Consumer<UserProvider>(
+      builder: (BuildContext context, UserProvider value, Widget? child) {
+        return (userProvider.wideView)
+            ? buildHuge(context: context)
+            : Padding(
+                padding: const EdgeInsets.all(Constants.padding),
+                child: buildRegular(
+                    context: context,
+                    buildCalendar: true,
+                    smallScreen: userProvider.smallScreen),
+              );
+      },
+    );
   }
 
   Widget buildRegular(
       {required BuildContext context,
       bool buildCalendar = false,
       bool smallScreen = false}) {
-    // Structure:
-    // Header
-    // Navigation bar: ToDos / Routines / Calendar
     return Column(children: [
       ListViewHeader<ToDo>(
+          outerPadding: const EdgeInsets.all(Constants.padding),
           sorter: toDoProvider.sorter,
           leadingIcon: const Icon(Icons.wb_sunny_outlined),
-          subTitle: AutoSizeText(
+          subtitle: AutoSizeText(
               Jiffy.now().format(pattern: "EEEE, MMMM d, yyyy"),
               style: Constants.headerStyle,
               softWrap: false,
@@ -94,6 +91,7 @@ class _MyDayScreen extends State<MyDayScreen> {
             }
           }),
       Expanded(
+        // TODO: consider moving to tiles class.
         child: DefaultTabController(
             initialIndex: userProvider.myDayIndex,
             length: (buildCalendar) ? 3 : 2,
@@ -110,13 +108,11 @@ class _MyDayScreen extends State<MyDayScreen> {
                         color: Theme.of(context)
                             .colorScheme
                             .surfaceVariant
-                            .withOpacity(Constants.myDayOpacity),
+                            .withOpacity(Constants.tabBarOpacity),
                       ),
                       child: TabBar(
                         onTap: (int newIndex) {
-                          setState(() {
-                            userProvider.myDayIndex = newIndex;
-                          });
+                          userProvider.myDayIndex = newIndex;
                         },
                         indicatorSize: TabBarIndicatorSize.tab,
                         indicator: BoxDecoration(
