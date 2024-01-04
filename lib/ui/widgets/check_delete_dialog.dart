@@ -4,12 +4,20 @@ import 'package:provider/provider.dart';
 
 import '../../providers/user_provider.dart';
 import '../../util/constants.dart';
+import '../../util/enums.dart';
 
 class CheckDeleteDialog extends StatefulWidget {
-  const CheckDeleteDialog({super.key, this.dontAsk = false, this.type = ""});
+  const CheckDeleteDialog(
+      {super.key,
+      this.dontAsk = false,
+      this.type = "",
+      this.deleteSchedule,
+      this.showCheckbox = true});
 
   final bool dontAsk;
   final String type;
+  final bool showCheckbox;
+  final DeleteSchedule? deleteSchedule;
 
   @override
   State<CheckDeleteDialog> createState() => _CheckDeleteDialog();
@@ -40,7 +48,7 @@ class _CheckDeleteDialog extends State<CheckDeleteDialog> {
               maxHeight: Constants.smallLandscapeDialogHeight,
               maxWidth: Constants.smallLandscapeDialogWidth),
           child: Padding(
-            padding: const EdgeInsets.all(Constants.innerPadding),
+            padding: const EdgeInsets.all(Constants.doublePadding),
             child: Column(
                 mainAxisSize: MainAxisSize.min,
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -59,13 +67,15 @@ class _CheckDeleteDialog extends State<CheckDeleteDialog> {
                           ),
                         )
                       ]),
-                  const Row(
+                  Row(
                     mainAxisSize: MainAxisSize.min,
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Expanded(
                         child: AutoSizeText(
-                          "This cannot be undone.",
+                          (null != widget.deleteSchedule)
+                              ? "Deleted items are recoverable for: ${Constants.deleteScheduleType(widget.deleteSchedule)}"
+                              : "This cannot be undone.",
                           style: Constants.largeHeaderStyle,
                           overflow: TextOverflow.visible,
                           maxLines: 1,
@@ -76,7 +86,7 @@ class _CheckDeleteDialog extends State<CheckDeleteDialog> {
                   ),
                   Padding(
                     padding: const EdgeInsets.symmetric(
-                        vertical: Constants.innerPadding),
+                        vertical: Constants.doublePadding),
                     child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         mainAxisSize: MainAxisSize.min,
@@ -116,24 +126,25 @@ class _CheckDeleteDialog extends State<CheckDeleteDialog> {
                           )
                         ]),
                   ),
-                  CheckboxListTile(
-                      value: dontAsk,
-                      shape: const RoundedRectangleBorder(
-                          borderRadius: BorderRadius.all(
-                              Radius.circular(Constants.semiCircular))),
-                      checkboxShape: const CircleBorder(),
-                      title: const AutoSizeText(
-                        "Delete without checking",
-                        overflow: TextOverflow.visible,
-                        softWrap: false,
-                        maxLines: 1,
-                        minFontSize: Constants.large,
-                      ),
-                      onChanged: (value) {
-                        setState(() {
-                          dontAsk = value!;
-                        });
-                      })
+                  if (widget.showCheckbox)
+                    CheckboxListTile(
+                        value: dontAsk,
+                        shape: const RoundedRectangleBorder(
+                            borderRadius: BorderRadius.all(
+                                Radius.circular(Constants.semiCircular))),
+                        checkboxShape: const CircleBorder(),
+                        title: const AutoSizeText(
+                          "Delete without checking",
+                          overflow: TextOverflow.visible,
+                          softWrap: false,
+                          maxLines: 1,
+                          minFontSize: Constants.large,
+                        ),
+                        onChanged: (value) {
+                          setState(() {
+                            dontAsk = value!;
+                          });
+                        })
                 ]),
           ),
         ));

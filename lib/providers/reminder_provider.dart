@@ -200,17 +200,17 @@ class ReminderProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> checkRepeating({DateTime? now}) async {
-    try {
-      await _reminderService.checkRepeating(now: now ?? DateTime.now());
-    } on FailureToUpdateException catch (e) {
-      log(e.cause);
-      return Future.error(e);
-    } on FailureToUploadException catch (e) {
-      log(e.cause);
-      return Future.error(e);
-    }
-  }
+  // Future<void> checkRepeating({DateTime? now}) async {
+  //   try {
+  //     await _reminderService.checkRepeating(now: now ?? DateTime.now());
+  //   } on FailureToUpdateException catch (e) {
+  //     log(e.cause);
+  //     return Future.error(e);
+  //   } on FailureToUploadException catch (e) {
+  //     log(e.cause);
+  //     return Future.error(e);
+  //   }
+  // }
 
   Future<void> nextRepeat({Reminder? reminder}) async {
     try {
@@ -224,7 +224,7 @@ class ReminderProvider extends ChangeNotifier {
     }
   }
 
-  Future<List<Reminder>> deleteFutures({Reminder? reminder}) async {
+  Future<List<int>> deleteFutures({Reminder? reminder}) async {
     try {
       return await _reminderService.deleteFutures(
           reminder: reminder ?? curReminder!);
@@ -238,24 +238,23 @@ class ReminderProvider extends ChangeNotifier {
   }
 
   Future<void> deleteAndCancelFutures({Reminder? reminder}) async {
-    await deleteFutures(reminder: reminder).then((toDelete) async {
-      List<int?> cancelIDs =
-          toDelete.map((reminder) => reminder.notificationID).toList();
-      return await _notificationService.cancelFutures(ids: cancelIDs);
-    });
+    List<int> cancelIDs = await deleteFutures(reminder: reminder);
+    await _notificationService.cancelFutures(ids: cancelIDs);
   }
 
+  // TODO: REIMPLEMENT ONCE REPEATABLE API.
   Future<void> populateCalendar({DateTime? limit}) async {
-    try {
-      return await _reminderService.populateCalendar(
-          limit: limit ?? DateTime.now());
-    } on FailureToUpdateException catch (e) {
-      log(e.cause);
-      return Future.error(e);
-    } on FailureToUploadException catch (e) {
-      log(e.cause);
-      return Future.error(e);
-    }
+    return;
+    // try {
+    //   return await _reminderService.populateCalendar(
+    //       limit: limit ?? DateTime.now());
+    // } on FailureToUpdateException catch (e) {
+    //   log(e.cause);
+    //   return Future.error(e);
+    // } on FailureToUploadException catch (e) {
+    //   log(e.cause);
+    //   return Future.error(e);
+    // }
   }
 
   Future<List<Reminder>> getReminders({int limit = 50, int offset = 0}) async =>

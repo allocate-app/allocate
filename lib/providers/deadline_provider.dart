@@ -180,8 +180,11 @@ class DeadlineProvider extends ChangeNotifier {
     deadline.lastUpdated = DateTime.now();
 
     try {
-      curDeadline =
-          await _deadlineService.updateDeadline(deadline: curDeadline!);
+      curDeadline = await _deadlineService
+          .updateDeadline(deadline: curDeadline!)
+          .whenComplete(() {
+        print("update done");
+      });
       await cancelNotification(deadline: curDeadline);
       if (deadline.warnMe &&
           validateWarnDate(warnDate: curDeadline!.warnDate)) {
@@ -207,7 +210,11 @@ class DeadlineProvider extends ChangeNotifier {
     deadline = deadline ?? curDeadline!;
     await cancelNotification(deadline: deadline);
     try {
-      await _deadlineService.deleteDeadline(deadline: deadline);
+      await _deadlineService
+          .deleteDeadline(deadline: deadline)
+          .whenComplete(() {
+        print("Delete done");
+      });
     } on FailureToDeleteException catch (e) {
       log(e.cause);
       return Future.error(e);
@@ -234,21 +241,26 @@ class DeadlineProvider extends ChangeNotifier {
   }
 
   // This also schedules notifications.
-  Future<void> checkRepeating({DateTime? now}) async {
-    try {
-      await _deadlineService.checkRepeating(now: now ?? DateTime.now());
-    } on FailureToUpdateException catch (e) {
-      log(e.cause);
-      return Future.error(e);
-    } on FailureToUploadException catch (e) {
-      log(e.cause);
-      return Future.error(e);
-    }
-  }
+  // Future<void> checkRepeating({DateTime? now}) async {
+  //   try {
+  //     await _deadlineService.checkRepeating(now: now ?? DateTime.now());
+  //   } on FailureToUpdateException catch (e) {
+  //     log(e.cause);
+  //     return Future.error(e);
+  //   } on FailureToUploadException catch (e) {
+  //     log(e.cause);
+  //     return Future.error(e);
+  //   }
+  // }
 
   Future<void> nextRepeat({Deadline? deadline}) async {
+    print("calling internal repeat");
     try {
-      await _deadlineService.nextRepeatable(deadline: deadline ?? curDeadline!);
+      await _deadlineService
+          .nextRepeatable(deadline: deadline ?? curDeadline!)
+          .whenComplete(() {
+        print("internal repeat done");
+      });
     } on FailureToUpdateException catch (e) {
       log(e.cause);
       return Future.error(e);
@@ -258,7 +270,7 @@ class DeadlineProvider extends ChangeNotifier {
     }
   }
 
-  Future<List<Deadline>> deleteFutures({Deadline? deadline}) async {
+  Future<List<int>> deleteFutures({Deadline? deadline}) async {
     try {
       return await _deadlineService.deleteFutures(
           deadline: deadline ?? curDeadline!);
@@ -272,24 +284,22 @@ class DeadlineProvider extends ChangeNotifier {
   }
 
   Future<void> deleteAndCancelFutures({Deadline? deadline}) async {
-    await deleteFutures(deadline: deadline).then((toDelete) async {
-      List<int?> cancelIDs =
-          toDelete.map((deadline) => deadline.notificationID).toList();
-      return await _notificationService.cancelFutures(ids: cancelIDs);
-    });
+    List<int> cancelIDs = await deleteFutures(deadline: deadline);
+    await _notificationService.cancelFutures(ids: cancelIDs);
   }
 
   Future<void> populateCalendar({DateTime? limit}) async {
-    try {
-      return await _deadlineService.populateCalendar(
-          limit: limit ?? DateTime.now());
-    } on FailureToUpdateException catch (e) {
-      log(e.cause);
-      return Future.error(e);
-    } on FailureToUploadException catch (e) {
-      log(e.cause);
-      return Future.error(e);
-    }
+    return;
+    // try {
+    //   return await _deadlineService.populateCalendar(
+    //       limit: limit ?? DateTime.now());
+    // } on FailureToUpdateException catch (e) {
+    //   log(e.cause);
+    //   return Future.error(e);
+    // } on FailureToUploadException catch (e) {
+    //   log(e.cause);
+    //   return Future.error(e);
+    // }
   }
 
   Future<List<Deadline>> getDeadlines(

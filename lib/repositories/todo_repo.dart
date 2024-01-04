@@ -107,7 +107,7 @@ class ToDoRepo implements ToDoRepository {
     if (null != _supabaseClient.auth.currentSession) {
       ids.clear();
       List<Map<String, dynamic>> toDoEntities =
-          toDos.map((toDo) => toDo.toEntity()).toList();
+          (toDos).map((toDo) => toDo.toEntity()).toList();
       final List<Map<String, dynamic>> responses =
           await _supabaseClient.from("toDos").upsert(toDoEntities).select("id");
 
@@ -146,7 +146,7 @@ class ToDoRepo implements ToDoRepository {
   // This is a "Set stuff up for the next delete on sync" kind of delete.
   // They will be hidden from the view, and removed in the background.
   @override
-  Future<List<ToDo>> deleteFutures({required ToDo deleteFrom}) async {
+  Future<List<int>> deleteFutures({required ToDo deleteFrom}) async {
     List<ToDo> toDelete = await _isarClient.toDos
         .where()
         .repeatIDEqualTo(deleteFrom.repeatID)
@@ -156,9 +156,13 @@ class ToDoRepo implements ToDoRepository {
 
     // This is to prevent a race condition.
     toDelete.remove(deleteFrom);
-    toDelete.map((ToDo toDo) => toDo.toDelete = true).toList(growable: false);
+    List<int> ids = List.empty(growable: true);
+    for (ToDo toDo in toDelete) {
+      toDo.toDelete = true;
+      ids.add(toDo.id);
+    }
     await updateBatch(toDelete);
-    return toDelete;
+    return ids;
   }
 
   @override
@@ -587,6 +591,25 @@ class ToDoRepo implements ToDoRepository {
           .toDeleteEqualTo(false)
           .dueDateLessThan(now ?? Constants.today)
           .findAll();
+
+  @override
+  Future<ToDo?> getDelta(
+          {required DateTime onDate, required int repeatID}) async =>
+      await _isarClient.toDos
+          .where()
+          .repeatableStateEqualTo(RepeatableState.delta)
+          .filter()
+          .originalStartEqualTo(onDate)
+          .findFirst();
+
+  @override
+  Future<ToDo?> getTemplate({required int repeatID}) async =>
+      await _isarClient.toDos
+          .where()
+          .repeatableStateEqualTo(RepeatableState.template)
+          .filter()
+          .repeatIDEqualTo(repeatID)
+          .findFirst();
 
   Future<List<int>> getDeleteIds() async => await _isarClient.toDos
       .where()

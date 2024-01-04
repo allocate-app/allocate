@@ -124,7 +124,7 @@ class _NotificationsScreen extends State<NotificationsScreen> {
   Widget build(BuildContext context) {
     MediaQuery.sizeOf(context);
     return Padding(
-        padding: const EdgeInsets.all(Constants.innerPadding),
+        padding: const EdgeInsets.all(Constants.doublePadding),
         child: Column(mainAxisSize: MainAxisSize.min, children: [
           const ListViewHeader<IRepeatable>(
             header: "Notifications",

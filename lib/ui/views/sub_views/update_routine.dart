@@ -340,7 +340,7 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
                                   onEditingComplete: updateName),
                               Tiles.weightTile(
                                 outerPadding: const EdgeInsets.all(
-                                    Constants.innerPadding),
+                                    Constants.doublePadding),
                                 batteryPadding: const EdgeInsets.symmetric(
                                     horizontal: Constants.padding),
                                 constraints:
@@ -452,7 +452,7 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
                         onEditingComplete: updateName),
                     Tiles.weightTile(
                       outerPadding:
-                          const EdgeInsets.all(Constants.innerPadding),
+                          const EdgeInsets.all(Constants.doublePadding),
                       batteryPadding: const EdgeInsets.symmetric(
                           horizontal: Constants.padding),
                       constraints: const BoxConstraints(maxWidth: 200),

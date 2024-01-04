@@ -17,10 +17,6 @@ class ToDo with EquatableMixin implements Copyable<ToDo>, IRepeatable {
 
   @override
   @ignore
-  ModelType get repeatableType => modelType;
-
-  @override
-  @ignore
   Fade fade = Fade.none;
 
   @override
@@ -28,9 +24,7 @@ class ToDo with EquatableMixin implements Copyable<ToDo>, IRepeatable {
 
   @Index()
   int? groupID;
-  @Index()
   int groupIndex;
-  @Index()
   int customViewIndex;
 
   @Enumerated(EnumType.ordinal)
@@ -43,43 +37,56 @@ class ToDo with EquatableMixin implements Copyable<ToDo>, IRepeatable {
   @Index()
   String name;
   String description;
-  @Index()
   int weight;
 
   // Stored in seconds.
   int expectedDuration;
-  @Index()
   int realDuration;
   @Enumerated(EnumType.ordinal)
   Priority priority;
   @Index()
   bool completed;
+  @Index()
   @override
   DateTime? startDate;
+  @Index()
+  @override
+  DateTime? originalStart;
+  @override
+  DateTime? originalDue;
   @Index()
   @override
   DateTime? dueDate;
   @Index()
   bool myDay;
 
+  @override
   @Index()
   bool repeatable;
 
+  @override
   @Index()
   int? repeatID;
 
   @Enumerated(EnumType.ordinal)
   @override
   Frequency frequency;
+  @override
+  @Index()
+  @Enumerated(EnumType.ordinal)
+  RepeatableState repeatableState;
+  @override
   final List<bool> repeatDays;
+  @override
   int repeatSkip;
+  @override
   @Index()
   bool isSynced = false;
+  @override
   @Index()
   bool toDelete = false;
 
   @override
-  @Index()
   DateTime lastUpdated;
 
   ToDo(
@@ -96,19 +103,17 @@ class ToDo with EquatableMixin implements Copyable<ToDo>, IRepeatable {
       this.priority = Priority.low,
       this.startDate,
       this.dueDate,
+      this.originalStart,
+      this.originalDue,
       this.myDay = false,
       this.completed = false,
       this.repeatable = false,
+      this.repeatableState = RepeatableState.normal,
       this.frequency = Frequency.once,
       required this.repeatDays,
       this.repeatSkip = 1,
       this.subtasks = const [],
-      required this.lastUpdated}) {
-    // Constants.intMax is reserved, generate until the id is different.
-    while (Constants.intMax == id) {
-      id = Constants.generateID();
-    }
-  }
+      required this.lastUpdated});
 
   // -> From Entitiy.
   ToDo.fromEntity({required Map<String, dynamic> entity})
@@ -125,10 +130,13 @@ class ToDo with EquatableMixin implements Copyable<ToDo>, IRepeatable {
         realDuration = entity["realDuration"] as int,
         priority = Priority.values[entity["priority"]],
         startDate = DateTime.tryParse(entity["startDate"]),
+        originalStart = DateTime.tryParse(entity["originalStart"]),
+        originalDue = DateTime.tryParse(entity["originalDue"]),
         dueDate = DateTime.tryParse(entity["dueDate"]),
         myDay = entity["myDay"] as bool,
         completed = entity["completed"] as bool,
         repeatable = entity["repeatable"] as bool,
+        repeatableState = RepeatableState.values[entity["repeatableState"]],
         frequency = Frequency.values[entity["frequency"]],
         repeatDays = entity["repeatDays"] as List<bool>,
         repeatSkip = entity["repeatSkip"] as int,
@@ -152,11 +160,18 @@ class ToDo with EquatableMixin implements Copyable<ToDo>, IRepeatable {
         "priority": priority.index,
         "startDate":
             (null != startDate) ? startDate?.toIso8601String() : startDate,
+        "originalStart": (null != originalStart)
+            ? originalStart!.toIso8601String()
+            : originalStart,
+        "originalDue": (null != originalDue)
+            ? originalDue!.toIso8601String()
+            : originalDue,
         "dueDate": (null != dueDate) ? dueDate?.toIso8601String() : dueDate,
         "myDay": myDay,
         "completed": completed,
         "repeatable": repeatable,
         "frequency": frequency.index,
+        "repeatableState": repeatableState.index,
         "repeatDays": repeatDays,
         "repeatSkip": repeatSkip,
         "lastUpdated": lastUpdated.toIso8601String(),
@@ -177,11 +192,14 @@ class ToDo with EquatableMixin implements Copyable<ToDo>, IRepeatable {
         priority: priority,
         startDate: startDate,
         dueDate: dueDate,
+        originalStart: originalStart,
+        originalDue: originalDue,
         myDay: myDay,
         completed: completed,
         repeatable: repeatable,
         frequency: frequency,
-        repeatDays: List.from(repeatDays),
+        repeatableState: repeatableState,
+        repeatDays: List.generate(repeatDays.length, (i) => repeatDays[i]),
         repeatSkip: repeatSkip,
         lastUpdated: lastUpdated,
       );
@@ -201,10 +219,13 @@ class ToDo with EquatableMixin implements Copyable<ToDo>, IRepeatable {
     Priority? priority,
     DateTime? startDate,
     DateTime? dueDate,
+    DateTime? originalStart,
+    DateTime? originalDue,
     bool? myDay,
     bool? completed,
     bool? repeatable,
     Frequency? frequency,
+    RepeatableState? repeatableState,
     List<bool>? repeatDays,
     int? repeatSkip,
     DateTime? lastUpdated,
@@ -223,11 +244,16 @@ class ToDo with EquatableMixin implements Copyable<ToDo>, IRepeatable {
         priority: priority ?? this.priority,
         startDate: startDate ?? this.startDate,
         dueDate: dueDate ?? this.dueDate,
+        originalStart: originalStart ?? this.originalStart,
+        originalDue: originalDue ?? this.originalDue,
         myDay: myDay ?? this.myDay,
         completed: completed ?? this.completed,
         repeatable: repeatable ?? this.repeatable,
         frequency: frequency ?? this.frequency,
-        repeatDays: List.from(repeatDays ?? this.repeatDays),
+        repeatableState: repeatableState ?? this.repeatableState,
+        repeatDays: (null != repeatDays)
+            ? List.generate(repeatDays.length, (i) => repeatDays[i])
+            : List.generate(this.repeatDays.length, (i) => this.repeatDays[i]),
         repeatSkip: repeatSkip ?? this.repeatSkip,
         lastUpdated: lastUpdated ?? this.lastUpdated,
       );
@@ -242,8 +268,8 @@ class ToDo with EquatableMixin implements Copyable<ToDo>, IRepeatable {
   String toString() =>
       "ToDo(id: $id, taskType: ${taskType.name} repeatID: $repeatID customViewIndex: $customViewIndex, groupID: $groupID, groupIndex: $groupIndex,"
       " name: $name, description: $description, weight: $weight, expectedDuration: $expectedDuration,"
-      " priority: ${priority.name}, completed: $completed, startDate: $startDate, dueDate: $dueDate, myDay: $myDay,"
-      "repeatable: $repeatable, frequency: ${frequency.name},  repeatDays: $repeatDays,"
+      " priority: ${priority.name}, completed: $completed, startDate: $startDate, dueDate: $dueDate, originalStart: $originalStart, originalDue: $originalDue myDay: $myDay,"
+      "repeatable: $repeatable, frequency: ${frequency.name}, repeatableState ${repeatableState.name}  repeatDays: $repeatDays,"
       "repeatSkip: $repeatSkip, isSynced: $isSynced, subtasks: $subtasks,"
       "toDelete: $toDelete), lastUpdated: $lastUpdated";
 }

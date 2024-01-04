@@ -31,6 +31,9 @@ class ThemeProvider extends ChangeNotifier {
   late double _sidebarOpacity;
   late bool _useTransparency;
 
+  // Make private as necessary.
+  late List<Color> recentColors;
+
   User? user;
 
   ThemeData? get lightTheme => _lightTheme;
@@ -151,6 +154,11 @@ class ThemeProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  double get sidebarElevation =>
+      (Effect.disabled == _windowEffect || Effect.transparent == _windowEffect)
+          ? 1
+          : 0;
+
   void setUser({User? newUser}) {
     user = newUser;
     notifyListeners();
@@ -179,6 +187,8 @@ class ThemeProvider extends ChangeNotifier {
         user?.scaffoldOpacity ?? Constants.defaultScaffoldOpacity;
     _sidebarOpacity = user?.sidebarOpacity ?? Constants.defaultSidebarOpacity;
     _useTransparency = user?.useTransparency ?? false;
+
+    recentColors = List.empty(growable: true);
 
     // Get tonemapping.
     _setToneMapping(tone: _toneMapping);
@@ -245,9 +255,11 @@ class ThemeProvider extends ChangeNotifier {
       ToneMapping.system => FlexTones.material,
       ToneMapping.soft => FlexTones.soft,
       ToneMapping.vivid => FlexTones.vivid,
+      ToneMapping.jolly => FlexTones.jolly,
+      ToneMapping.candy => FlexTones.candyPop,
       ToneMapping.monochromatic => FlexTones.oneHue,
-      ToneMapping.hi_contrast => FlexTones.highContrast,
-      ToneMapping.ultra_hi_contrast => FlexTones.ultraContrast,
+      ToneMapping.high_contrast => FlexTones.highContrast,
+      ToneMapping.ultra_high_contrast => FlexTones.ultraContrast,
     };
   }
 

@@ -633,9 +633,9 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                                       onEditingComplete: updateName),
                                   Tiles.weightTile(
                                     outerPadding: const EdgeInsets.all(
-                                        Constants.innerPadding),
+                                        Constants.doublePadding),
                                     batteryPadding: const EdgeInsets.symmetric(
-                                        horizontal: Constants.innerPadding),
+                                        horizontal: Constants.doublePadding),
                                     constraints: const BoxConstraints(
                                       maxWidth: 200,
                                     ),
@@ -895,7 +895,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
 
                     Tiles.weightTile(
                       outerPadding:
-                          const EdgeInsets.all(Constants.innerPadding),
+                          const EdgeInsets.all(Constants.doublePadding),
                       batteryPadding: const EdgeInsets.symmetric(
                           horizontal: Constants.padding),
                       constraints: const BoxConstraints(maxWidth: 200),

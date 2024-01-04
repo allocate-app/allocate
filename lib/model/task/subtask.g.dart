@@ -103,19 +103,6 @@ const SubtaskSchema = CollectionSchema(
         )
       ],
     ),
-    r'customViewIndex': IndexSchema(
-      id: -5365858424493440132,
-      name: r'customViewIndex',
-      unique: false,
-      replace: false,
-      properties: [
-        IndexPropertySchema(
-          name: r'customViewIndex',
-          type: IndexType.value,
-          caseSensitive: false,
-        )
-      ],
-    ),
     r'isSynced': IndexSchema(
       id: -39763503327887510,
       name: r'isSynced',
@@ -137,19 +124,6 @@ const SubtaskSchema = CollectionSchema(
       properties: [
         IndexPropertySchema(
           name: r'toDelete',
-          type: IndexType.value,
-          caseSensitive: false,
-        )
-      ],
-    ),
-    r'lastUpdated': IndexSchema(
-      id: 8989359681631629925,
-      name: r'lastUpdated',
-      unique: false,
-      replace: false,
-      properties: [
-        IndexPropertySchema(
-          name: r'lastUpdated',
           type: IndexType.value,
           caseSensitive: false,
         )
@@ -273,14 +247,6 @@ extension SubtaskQueryWhereSort on QueryBuilder<Subtask, Subtask, QWhere> {
     });
   }
 
-  QueryBuilder<Subtask, Subtask, QAfterWhere> anyCustomViewIndex() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(
-        const IndexWhereClause.any(indexName: r'customViewIndex'),
-      );
-    });
-  }
-
   QueryBuilder<Subtask, Subtask, QAfterWhere> anyIsSynced() {
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(
@@ -293,14 +259,6 @@ extension SubtaskQueryWhereSort on QueryBuilder<Subtask, Subtask, QWhere> {
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(
         const IndexWhereClause.any(indexName: r'toDelete'),
-      );
-    });
-  }
-
-  QueryBuilder<Subtask, Subtask, QAfterWhere> anyLastUpdated() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(
-        const IndexWhereClause.any(indexName: r'lastUpdated'),
       );
     });
   }
@@ -570,96 +528,6 @@ extension SubtaskQueryWhere on QueryBuilder<Subtask, Subtask, QWhereClause> {
     });
   }
 
-  QueryBuilder<Subtask, Subtask, QAfterWhereClause> customViewIndexEqualTo(
-      int customViewIndex) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(IndexWhereClause.equalTo(
-        indexName: r'customViewIndex',
-        value: [customViewIndex],
-      ));
-    });
-  }
-
-  QueryBuilder<Subtask, Subtask, QAfterWhereClause> customViewIndexNotEqualTo(
-      int customViewIndex) {
-    return QueryBuilder.apply(this, (query) {
-      if (query.whereSort == Sort.asc) {
-        return query
-            .addWhereClause(IndexWhereClause.between(
-              indexName: r'customViewIndex',
-              lower: [],
-              upper: [customViewIndex],
-              includeUpper: false,
-            ))
-            .addWhereClause(IndexWhereClause.between(
-              indexName: r'customViewIndex',
-              lower: [customViewIndex],
-              includeLower: false,
-              upper: [],
-            ));
-      } else {
-        return query
-            .addWhereClause(IndexWhereClause.between(
-              indexName: r'customViewIndex',
-              lower: [customViewIndex],
-              includeLower: false,
-              upper: [],
-            ))
-            .addWhereClause(IndexWhereClause.between(
-              indexName: r'customViewIndex',
-              lower: [],
-              upper: [customViewIndex],
-              includeUpper: false,
-            ));
-      }
-    });
-  }
-
-  QueryBuilder<Subtask, Subtask, QAfterWhereClause> customViewIndexGreaterThan(
-    int customViewIndex, {
-    bool include = false,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(IndexWhereClause.between(
-        indexName: r'customViewIndex',
-        lower: [customViewIndex],
-        includeLower: include,
-        upper: [],
-      ));
-    });
-  }
-
-  QueryBuilder<Subtask, Subtask, QAfterWhereClause> customViewIndexLessThan(
-    int customViewIndex, {
-    bool include = false,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(IndexWhereClause.between(
-        indexName: r'customViewIndex',
-        lower: [],
-        upper: [customViewIndex],
-        includeUpper: include,
-      ));
-    });
-  }
-
-  QueryBuilder<Subtask, Subtask, QAfterWhereClause> customViewIndexBetween(
-    int lowerCustomViewIndex,
-    int upperCustomViewIndex, {
-    bool includeLower = true,
-    bool includeUpper = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(IndexWhereClause.between(
-        indexName: r'customViewIndex',
-        lower: [lowerCustomViewIndex],
-        includeLower: includeLower,
-        upper: [upperCustomViewIndex],
-        includeUpper: includeUpper,
-      ));
-    });
-  }
-
   QueryBuilder<Subtask, Subtask, QAfterWhereClause> isSyncedEqualTo(
       bool isSynced) {
     return QueryBuilder.apply(this, (query) {
@@ -747,96 +615,6 @@ extension SubtaskQueryWhere on QueryBuilder<Subtask, Subtask, QWhereClause> {
               includeUpper: false,
             ));
       }
-    });
-  }
-
-  QueryBuilder<Subtask, Subtask, QAfterWhereClause> lastUpdatedEqualTo(
-      DateTime lastUpdated) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(IndexWhereClause.equalTo(
-        indexName: r'lastUpdated',
-        value: [lastUpdated],
-      ));
-    });
-  }
-
-  QueryBuilder<Subtask, Subtask, QAfterWhereClause> lastUpdatedNotEqualTo(
-      DateTime lastUpdated) {
-    return QueryBuilder.apply(this, (query) {
-      if (query.whereSort == Sort.asc) {
-        return query
-            .addWhereClause(IndexWhereClause.between(
-              indexName: r'lastUpdated',
-              lower: [],
-              upper: [lastUpdated],
-              includeUpper: false,
-            ))
-            .addWhereClause(IndexWhereClause.between(
-              indexName: r'lastUpdated',
-              lower: [lastUpdated],
-              includeLower: false,
-              upper: [],
-            ));
-      } else {
-        return query
-            .addWhereClause(IndexWhereClause.between(
-              indexName: r'lastUpdated',
-              lower: [lastUpdated],
-              includeLower: false,
-              upper: [],
-            ))
-            .addWhereClause(IndexWhereClause.between(
-              indexName: r'lastUpdated',
-              lower: [],
-              upper: [lastUpdated],
-              includeUpper: false,
-            ));
-      }
-    });
-  }
-
-  QueryBuilder<Subtask, Subtask, QAfterWhereClause> lastUpdatedGreaterThan(
-    DateTime lastUpdated, {
-    bool include = false,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(IndexWhereClause.between(
-        indexName: r'lastUpdated',
-        lower: [lastUpdated],
-        includeLower: include,
-        upper: [],
-      ));
-    });
-  }
-
-  QueryBuilder<Subtask, Subtask, QAfterWhereClause> lastUpdatedLessThan(
-    DateTime lastUpdated, {
-    bool include = false,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(IndexWhereClause.between(
-        indexName: r'lastUpdated',
-        lower: [],
-        upper: [lastUpdated],
-        includeUpper: include,
-      ));
-    });
-  }
-
-  QueryBuilder<Subtask, Subtask, QAfterWhereClause> lastUpdatedBetween(
-    DateTime lowerLastUpdated,
-    DateTime upperLastUpdated, {
-    bool includeLower = true,
-    bool includeUpper = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(IndexWhereClause.between(
-        indexName: r'lastUpdated',
-        lower: [lowerLastUpdated],
-        includeLower: includeLower,
-        upper: [upperLastUpdated],
-        includeUpper: includeUpper,
-      ));
     });
   }
 }

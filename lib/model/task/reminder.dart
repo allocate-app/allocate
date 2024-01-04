@@ -21,14 +21,10 @@ class Reminder with EquatableMixin implements Copyable<Reminder>, IRepeatable {
   Fade fade = Fade.none;
 
   @override
-  @ignore
-  ModelType get repeatableType => ModelType.reminder;
-
-  @override
   @Index()
   Id id = Constants.generateID();
-  @Index()
   int customViewIndex = -1;
+  @override
   @Index()
   int? repeatID;
   @Index()
@@ -45,23 +41,42 @@ class Reminder with EquatableMixin implements Copyable<Reminder>, IRepeatable {
   @override
   set startDate(DateTime? newDate) => dueDate = newDate;
 
+  @override
+  DateTime? get originalStart => originalDue;
+
+  @override
+  set originalStart(DateTime? newDate) => originalDue = newDate;
+
+  @Index()
+  @override
+  DateTime? originalDue;
+
   @Index()
   @override
   DateTime? dueDate;
+
+  @override
   @Index()
   bool repeatable;
   @override
   @Enumerated(EnumType.ordinal)
   Frequency frequency;
+  @override
+  @Index()
+  @Enumerated(EnumType.ordinal)
+  RepeatableState repeatableState;
+  @override
   List<bool> repeatDays;
+  @override
   int repeatSkip;
+  @override
   @Index()
   bool isSynced = false;
+  @override
   @Index()
   bool toDelete = false;
 
   @override
-  @Index()
   DateTime lastUpdated;
 
   Reminder(
@@ -69,15 +84,14 @@ class Reminder with EquatableMixin implements Copyable<Reminder>, IRepeatable {
       this.notificationID,
       required this.name,
       this.repeatable = false,
-      required this.dueDate,
+      this.repeatableState = RepeatableState.template,
+      this.dueDate,
+      this.originalStart,
+      this.originalDue,
       required this.repeatDays,
       this.repeatSkip = 1,
       this.frequency = Frequency.once,
-      required this.lastUpdated}) {
-    while (Constants.intMax == id) {
-      id = Constants.generateID();
-    }
-  }
+      required this.lastUpdated});
 
   @override
   Reminder copy() => Reminder(
@@ -85,10 +99,13 @@ class Reminder with EquatableMixin implements Copyable<Reminder>, IRepeatable {
       notificationID: notificationID,
       name: name,
       dueDate: dueDate,
+      originalStart: originalStart,
+      originalDue: originalDue,
       repeatable: repeatable,
-      repeatDays: List.from(repeatDays),
+      repeatDays: List.generate(repeatDays.length, (i) => repeatDays[i]),
       repeatSkip: repeatSkip,
       frequency: frequency,
+      repeatableState: repeatableState,
       lastUpdated: lastUpdated);
 
   @override
@@ -97,18 +114,26 @@ class Reminder with EquatableMixin implements Copyable<Reminder>, IRepeatable {
           int? notificationID,
           String? name,
           DateTime? dueDate,
+          DateTime? originalStart,
+          DateTime? originalDue,
           bool? repeatable,
           List<bool>? repeatDays,
           int? repeatSkip,
           Frequency? frequency,
+          RepeatableState? repeatableState,
           DateTime? lastUpdated}) =>
       Reminder(
           repeatID: repeatID ?? this.repeatID,
           notificationID: notificationID ?? this.notificationID,
           name: name ?? this.name,
           dueDate: dueDate ?? this.dueDate,
+          originalDue: originalDue ?? this.originalDue,
           repeatable: repeatable ?? this.repeatable,
-          repeatDays: List.from(repeatDays ?? this.repeatDays),
+          repeatDays: (null != repeatDays)
+              ? List.generate(repeatDays.length, (i) => repeatDays[i])
+              : List.generate(
+                  this.repeatDays.length, (i) => this.repeatDays[i]),
+          repeatableState: repeatableState ?? this.repeatableState,
           repeatSkip: repeatSkip ?? this.repeatSkip,
           frequency: frequency ?? this.frequency,
           lastUpdated: lastUpdated ?? this.lastUpdated);
@@ -120,7 +145,9 @@ class Reminder with EquatableMixin implements Copyable<Reminder>, IRepeatable {
         notificationID = entity["notificationID"] as int?,
         name = entity["name"] as String,
         dueDate = DateTime.tryParse(entity["dueDate"]),
+        originalDue = DateTime.tryParse(entity["originalDue"]),
         frequency = Frequency.values[entity["frequency"]],
+        repeatableState = RepeatableState.values[entity["repeatableState"]],
         repeatable = entity["repeatable"] as bool,
         repeatDays = entity["repeatDays"] as List<bool>,
         repeatSkip = entity["repeatSkip"] as int,
@@ -135,8 +162,12 @@ class Reminder with EquatableMixin implements Copyable<Reminder>, IRepeatable {
         "notificationID": notificationID,
         "name": name,
         "dueDate": (null != dueDate) ? dueDate!.toIso8601String() : dueDate,
+        "originalDue": (null != originalDue)
+            ? originalDue!.toIso8601String()
+            : originalDue,
         "frequency": frequency.index,
         "repeatable": repeatable,
+        "repeatableState": repeatableState.index,
         "repeatDays": repeatDays,
         "repeatSkip": repeatSkip,
         "lastUpdated": lastUpdated
@@ -151,7 +182,7 @@ class Reminder with EquatableMixin implements Copyable<Reminder>, IRepeatable {
       "repeatID: $repeatID,"
       "customViewIndex: $customViewIndex, name: $name,"
       "dueDate: $dueDate "
-      "frequency: ${frequency.name}, "
+      "frequency: ${frequency.name},  originalDue: $originalDue"
       " repeatable: $repeatable, repeatDays: $repeatDays,"
       " repeatSkip: $repeatSkip,"
       " isSynced: $isSynced, toDelete: $toDelete)";

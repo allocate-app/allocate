@@ -13,8 +13,8 @@ I hope that, one day, this app will be fully accessible, at the moment, it is no
 ## Installation:
 
 This is not yet ready for release, but if you would like to play with the project,
-feel free to clone the project and build using Flutter. You will be required to implement the
-Constants class before this will run.
+feel free to clone the project and build using Flutter. You will require a supabase api key
+(and a full online implementation).
 
 Main has not been fully implemented, but the application can be run using
 the NavigationTester class, used for Integration testing. The database will delete on a graceful

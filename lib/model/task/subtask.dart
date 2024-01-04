@@ -32,15 +32,15 @@ class Subtask
   int weight;
   @Index()
   int? taskID;
-  @Index()
   int customViewIndex;
+  @override
   @Index()
   bool isSynced = false;
+  @override
   @Index()
   bool toDelete = false;
 
   @override
-  @Index()
   DateTime lastUpdated;
 
   Subtask(
@@ -49,11 +49,7 @@ class Subtask
       this.weight = 0,
       this.completed = false,
       this.taskID,
-      required this.lastUpdated}) {
-    while (Constants.intMax == id) {
-      id = Constants.generateID();
-    }
-  }
+      required this.lastUpdated});
 
   Subtask.fromEntity({required Map<String, dynamic> entity})
       : id = entity["id"] as int,

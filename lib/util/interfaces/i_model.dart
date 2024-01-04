@@ -7,4 +7,6 @@ abstract interface class IModel {
   late ModelType modelType;
   late Fade fade;
   late DateTime lastUpdated;
+  late bool toDelete;
+  late bool isSynced;
 }

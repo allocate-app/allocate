@@ -21,17 +21,22 @@ enum Effect {
 
 enum ThemeType { system, light, dark }
 
+enum RepeatableState { normal, template, delta }
+
 enum ToneMapping {
   system,
   soft,
   vivid,
+  jolly,
+  candy,
   monochromatic,
-  hi_contrast,
-  ultra_hi_contrast,
+  high_contrast,
+  ultra_high_contrast,
 }
 
 enum DeleteSchedule {
   never,
-  monthly,
-  yearly,
+  day,
+  month,
+  year,
 }

@@ -20,6 +20,8 @@ import '../../../util/interfaces/i_repeatable.dart';
 import '../../widgets/flushbars.dart';
 import '../../widgets/listviews.dart';
 
+// TODO: UPDATE THIS TO ONLY SHOW IN GUI, NOT UPDATE DB.
+// TODO: UPDATE MAX CALENDAR DATE TO (THIS YEAR + 1 or 2);
 class CalendarScreen extends StatefulWidget {
   const CalendarScreen({super.key});
 
@@ -145,8 +147,8 @@ class _CalendarScreen extends State<CalendarScreen> {
     limit = limit ?? startDay.copyWith(month: startDay.month + 1);
     await Future.wait([
       toDoProvider.populateCalendar(limit: limit),
-      deadlineProvider.populateCalendar(limit: limit),
-      reminderProvider.populateCalendar(limit: limit),
+      // deadlineProvider.populateCalendar(limit: limit),
+      // reminderProvider.populateCalendar(limit: limit),
     ]).whenComplete(() async {
       await getEvents(day: startDay, end: limit).whenComplete(() {
         if (mounted) {

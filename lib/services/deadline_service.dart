@@ -43,6 +43,7 @@ class DeadlineService {
     DateTime? nextRepeatDate = getRepeatDate(deadline: deadline);
 
     if (null == nextRepeatDate) {
+      print("null rpeat date");
       return;
     }
 
@@ -70,59 +71,60 @@ class DeadlineService {
     await _repository.updateBatch([deadline, newDeadline]);
   }
 
-  Future<void> populateCalendar({required DateTime limit}) async {
-    DateTime startTime = DateTime.now();
-    while (startTime.isBefore(limit)) {
-      List<Deadline> repeatables =
-          await _repository.getRepeatables(now: startTime);
-
-      await checkRepeating(now: startTime, repeatables: repeatables)
-          .whenComplete(() {
-        startTime = startTime.copyWith(day: startTime.day + 1);
-      });
-    }
-  }
-
-  Future<void> checkRepeating(
-      {required DateTime now, List<Deadline>? repeatables}) async {
-    List<Deadline> toUpdate = List.empty(growable: true);
-
-    repeatables = repeatables ?? await _repository.getRepeatables(now: now);
-
-    for (Deadline deadline in repeatables) {
-      DateTime? nextRepeatDate = getRepeatDate(deadline: deadline);
-
-      if (null == nextRepeatDate) {
-        deadline.repeatable = false;
-        toUpdate.add(deadline);
-        continue;
-      }
-
-      int dueOffset = getDateTimeDayOffset(
-          start: deadline.startDate!, end: deadline.dueDate!);
-
-      int warnOffset = getDateTimeDayOffset(
-          start: deadline.startDate!, end: deadline.warnDate!);
-
-      Deadline newDeadline = deadline.copyWith(
-          startDate: nextRepeatDate,
-          dueDate: nextRepeatDate.copyWith(
-              day: nextRepeatDate.day + dueOffset,
-              hour: deadline.dueDate!.hour,
-              minute: deadline.dueDate!.minute),
-          warnDate: nextRepeatDate.copyWith(
-              day: nextRepeatDate.day + warnOffset,
-              hour: deadline.warnDate!.hour,
-              minute: deadline.warnDate!.minute));
-
-      newDeadline.notificationID = Constants.generateID();
-
-      deadline.repeatable = false;
-      toUpdate.add(newDeadline);
-      toUpdate.add(deadline);
-    }
-    await _repository.updateBatch(toUpdate);
-  }
+  // Future<void> populateCalendar({required DateTime limit}) async {
+  //   DateTime startTime = DateTime.now();
+  //   while (startTime.isBefore(limit)) {
+  //     List<Deadline> repeatables =
+  //         await _repository.getRepeatables(now: startTime);
+  //
+  //     await checkRepeating(now: startTime, repeatables: repeatables)
+  //         .whenComplete(() {
+  //       startTime = startTime.copyWith(day: startTime.day + 1);
+  //     });
+  //   }
+  // }
+  //
+  // Future<void> checkRepeating(
+  //     {required DateTime now, List<Deadline>? repeatables}) async {
+  //   List<Deadline> toUpdate = List.empty(growable: true);
+  //
+  //   repeatables = repeatables ?? await _repository.getRepeatables(now: now);
+  //
+  //   for (Deadline deadline in repeatables) {
+  //     DateTime? nextRepeatDate = getRepeatDate(deadline: deadline);
+  //
+  //     if (null == nextRepeatDate) {
+  //       deadline.repeatable = false;
+  //       toUpdate.add(deadline);
+  //       continue;
+  //     }
+  //
+  //     int dueOffset = getDateTimeDayOffset(
+  //         start: deadline.startDate!, end: deadline.dueDate!);
+  //
+  //     int warnOffset = getDateTimeDayOffset(
+  //         start: deadline.startDate!, end: deadline.warnDate!);
+  //
+  //     Deadline newDeadline = deadline.copyWith(
+  //         startDate: nextRepeatDate,
+  //         dueDate: nextRepeatDate.copyWith(
+  //             day: nextRepeatDate.day + dueOffset,
+  //             hour: deadline.dueDate!.hour,
+  //             minute: deadline.dueDate!.minute),
+  //         warnDate: nextRepeatDate.copyWith(
+  //             day: nextRepeatDate.day + warnOffset,
+  //             hour: deadline.warnDate!.hour,
+  //             minute: deadline.warnDate!.minute),
+  //         lastUpdated: DateTime.now());
+  //
+  //     newDeadline.notificationID = Constants.generateID();
+  //
+  //     deadline.repeatable = false;
+  //     toUpdate.add(newDeadline);
+  //     toUpdate.add(deadline);
+  //   }
+  //   await _repository.updateBatch(toUpdate);
+  // }
 
   DateTime? getCustom({required Deadline deadline}) {
     int start = deadline.startDate!.weekday - 1;
@@ -199,7 +201,7 @@ class DeadlineService {
 
   Future<void> clearDeletesLocalRepo() async => await _repository.deleteLocal();
 
-  Future<List<Deadline>> deleteFutures({required Deadline deadline}) async =>
+  Future<List<int>> deleteFutures({required Deadline deadline}) async =>
       await _repository.deleteFutures(deleteFrom: deadline);
 
   Future<void> syncRepo() async => await _repository.syncRepo();

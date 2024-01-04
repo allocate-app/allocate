@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'dart:ui';
 
-import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -175,20 +174,7 @@ class _LocalTester extends State<LocalTester> with WindowListener {
 
     userProvider = Provider.of<UserProvider>(context, listen: false);
 
-    if (Platform.isWindows) {
-      checkWindowsPlatform();
-    }
     super.initState();
-  }
-
-  Future<void> checkWindowsPlatform() async {
-    DeviceInfoPlugin deviceInfoPlugin = DeviceInfoPlugin();
-    WindowsDeviceInfo deviceInfo = await deviceInfoPlugin.windowsInfo;
-
-    userProvider.win11 = deviceInfo.buildNumber >= 22000;
-    if (mounted) {
-      setState(() {});
-    }
   }
 
   @override

@@ -614,20 +614,19 @@ abstract class ListViews {
     required BuildContext context,
     required List<Group> groups,
     int? itemCount,
-    EdgeInsetsGeometry outerPadding = EdgeInsets.zero,
-    EdgeInsetsGeometry innerPadding = EdgeInsets.zero,
+    EdgeInsetsGeometry tilePadding = EdgeInsets.zero,
     ScrollPhysics physics = const NeverScrollableScrollPhysics(),
   }) =>
-      ListView.builder(
-          physics: physics,
-          itemCount: itemCount ?? groups.length,
-          padding: outerPadding,
-          shrinkWrap: true,
-          itemBuilder: (BuildContext context, int index) =>
-              Tiles.navDrawerGroupTile(
-                  context: context,
-                  padding: innerPadding,
-                  group: groups[index]));
+      Padding(
+        padding: tilePadding,
+        child: ListView.builder(
+            physics: physics,
+            itemCount: itemCount ?? groups.length,
+            shrinkWrap: true,
+            itemBuilder: (BuildContext context, int index) =>
+                Tiles.navDrawerGroupTile(
+                    context: context, group: groups[index])),
+      );
 
   static Widget reorderableSubtasks({
     Key? key,

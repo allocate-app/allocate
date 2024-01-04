@@ -120,23 +120,28 @@ const UserSchema = CollectionSchema(
       type: IsarType.byte,
       enumMap: _UsertoneMappingEnumValueMap,
     ),
-    r'useUltraHighContrast': PropertySchema(
+    r'useTransparency': PropertySchema(
       id: 20,
+      name: r'useTransparency',
+      type: IsarType.bool,
+    ),
+    r'useUltraHighContrast': PropertySchema(
+      id: 21,
       name: r'useUltraHighContrast',
       type: IsarType.bool,
     ),
     r'username': PropertySchema(
-      id: 21,
+      id: 22,
       name: r'username',
       type: IsarType.string,
     ),
     r'uuid': PropertySchema(
-      id: 22,
+      id: 23,
       name: r'uuid',
       type: IsarType.string,
     ),
     r'windowEffect': PropertySchema(
-      id: 23,
+      id: 24,
       name: r'windowEffect',
       type: IsarType.byte,
       enumMap: _UserwindowEffectEnumValueMap,
@@ -225,10 +230,11 @@ void _userSerialize(
   writer.writeLong(offsets[17], object.tertiarySeed);
   writer.writeByte(offsets[18], object.themeType.index);
   writer.writeByte(offsets[19], object.toneMapping.index);
-  writer.writeBool(offsets[20], object.useUltraHighContrast);
-  writer.writeString(offsets[21], object.username);
-  writer.writeString(offsets[22], object.uuid);
-  writer.writeByte(offsets[23], object.windowEffect.index);
+  writer.writeBool(offsets[20], object.useTransparency);
+  writer.writeBool(offsets[21], object.useUltraHighContrast);
+  writer.writeString(offsets[22], object.username);
+  writer.writeString(offsets[23], object.uuid);
+  writer.writeByte(offsets[24], object.windowEffect.index);
 }
 
 User _userDeserialize(
@@ -263,14 +269,15 @@ User _userDeserialize(
     toneMapping:
         _UsertoneMappingValueEnumMap[reader.readByteOrNull(offsets[19])] ??
             ToneMapping.system,
-    useUltraHighContrast: reader.readBoolOrNull(offsets[20]) ?? false,
-    username: reader.readString(offsets[21]),
+    useTransparency: reader.readBoolOrNull(offsets[20]) ?? false,
+    useUltraHighContrast: reader.readBoolOrNull(offsets[21]) ?? false,
+    username: reader.readString(offsets[22]),
     windowEffect:
-        _UserwindowEffectValueEnumMap[reader.readByteOrNull(offsets[23])] ??
+        _UserwindowEffectValueEnumMap[reader.readByteOrNull(offsets[24])] ??
             Effect.disabled,
   );
   object.id = id;
-  object.uuid = reader.readStringOrNull(offsets[22]);
+  object.uuid = reader.readStringOrNull(offsets[23]);
   return object;
 }
 
@@ -327,10 +334,12 @@ P _userDeserializeProp<P>(
     case 20:
       return (reader.readBoolOrNull(offset) ?? false) as P;
     case 21:
-      return (reader.readString(offset)) as P;
+      return (reader.readBoolOrNull(offset) ?? false) as P;
     case 22:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 23:
+      return (reader.readStringOrNull(offset)) as P;
+    case 24:
       return (_UserwindowEffectValueEnumMap[reader.readByteOrNull(offset)] ??
           Effect.disabled) as P;
     default:
@@ -340,13 +349,15 @@ P _userDeserializeProp<P>(
 
 const _UserdeleteScheduleEnumValueMap = {
   'never': 0,
-  'monthly': 1,
-  'yearly': 2,
+  'day': 1,
+  'month': 2,
+  'year': 3,
 };
 const _UserdeleteScheduleValueEnumMap = {
   0: DeleteSchedule.never,
-  1: DeleteSchedule.monthly,
-  2: DeleteSchedule.yearly,
+  1: DeleteSchedule.day,
+  2: DeleteSchedule.month,
+  3: DeleteSchedule.year,
 };
 const _UserthemeTypeEnumValueMap = {
   'system': 0,
@@ -362,31 +373,37 @@ const _UsertoneMappingEnumValueMap = {
   'system': 0,
   'soft': 1,
   'vivid': 2,
-  'monochromatic': 3,
-  'hi_contrast': 4,
-  'ultra_hi_contrast': 5,
+  'jolly': 3,
+  'candy': 4,
+  'monochromatic': 5,
+  'high_contrast': 6,
+  'ultra_high_contrast': 7,
 };
 const _UsertoneMappingValueEnumMap = {
   0: ToneMapping.system,
   1: ToneMapping.soft,
   2: ToneMapping.vivid,
-  3: ToneMapping.monochromatic,
-  4: ToneMapping.hi_contrast,
-  5: ToneMapping.ultra_hi_contrast,
+  3: ToneMapping.jolly,
+  4: ToneMapping.candy,
+  5: ToneMapping.monochromatic,
+  6: ToneMapping.high_contrast,
+  7: ToneMapping.ultra_high_contrast,
 };
 const _UserwindowEffectEnumValueMap = {
   'disabled': 0,
   'transparent': 1,
   'aero': 2,
   'acrylic': 3,
-  'sidebar': 4,
+  'mica': 4,
+  'sidebar': 5,
 };
 const _UserwindowEffectValueEnumMap = {
   0: Effect.disabled,
   1: Effect.transparent,
   2: Effect.aero,
   3: Effect.acrylic,
-  4: Effect.sidebar,
+  4: Effect.mica,
+  5: Effect.sidebar,
 };
 
 Id _userGetId(User object) {
@@ -1605,6 +1622,16 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
+  QueryBuilder<User, User, QAfterFilterCondition> useTransparencyEqualTo(
+      bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'useTransparency',
+        value: value,
+      ));
+    });
+  }
+
   QueryBuilder<User, User, QAfterFilterCondition> useUltraHighContrastEqualTo(
       bool value) {
     return QueryBuilder.apply(this, (query) {
@@ -2187,6 +2214,18 @@ extension UserQuerySortBy on QueryBuilder<User, User, QSortBy> {
     });
   }
 
+  QueryBuilder<User, User, QAfterSortBy> sortByUseTransparency() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'useTransparency', Sort.asc);
+    });
+  }
+
+  QueryBuilder<User, User, QAfterSortBy> sortByUseTransparencyDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'useTransparency', Sort.desc);
+    });
+  }
+
   QueryBuilder<User, User, QAfterSortBy> sortByUseUltraHighContrast() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'useUltraHighContrast', Sort.asc);
@@ -2489,6 +2528,18 @@ extension UserQuerySortThenBy on QueryBuilder<User, User, QSortThenBy> {
     });
   }
 
+  QueryBuilder<User, User, QAfterSortBy> thenByUseTransparency() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'useTransparency', Sort.asc);
+    });
+  }
+
+  QueryBuilder<User, User, QAfterSortBy> thenByUseTransparencyDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'useTransparency', Sort.desc);
+    });
+  }
+
   QueryBuilder<User, User, QAfterSortBy> thenByUseUltraHighContrast() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'useUltraHighContrast', Sort.asc);
@@ -2659,6 +2710,12 @@ extension UserQueryWhereDistinct on QueryBuilder<User, User, QDistinct> {
     });
   }
 
+  QueryBuilder<User, User, QDistinct> distinctByUseTransparency() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'useTransparency');
+    });
+  }
+
   QueryBuilder<User, User, QDistinct> distinctByUseUltraHighContrast() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'useUltraHighContrast');
@@ -2811,6 +2868,12 @@ extension UserQueryProperty on QueryBuilder<User, User, QQueryProperty> {
   QueryBuilder<User, ToneMapping, QQueryOperations> toneMappingProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'toneMapping');
+    });
+  }
+
+  QueryBuilder<User, bool, QQueryOperations> useTransparencyProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'useTransparency');
     });
   }
 

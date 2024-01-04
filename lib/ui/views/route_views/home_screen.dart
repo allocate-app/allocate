@@ -71,7 +71,7 @@ class _HomeScreen extends State<HomeScreen> {
 
   double get tileSpace =>
       (Constants.viewRoutes.length + 2) * Constants.navDestinationHeight +
-      2 * Constants.innerPadding;
+      2 * Constants.doublePadding;
 
   double get tileSpaceOpened =>
       (Constants.viewRoutes.length +
@@ -192,6 +192,7 @@ class _HomeScreen extends State<HomeScreen> {
                 child: Consumer<ThemeProvider>(builder:
                     (BuildContext context, ThemeProvider value, Widget? child) {
                   return DesktopDrawerWrapper(
+                    elevation: value.sidebarElevation,
                     drawer: buildNavigationDrawer(
                         context: context, largeScreen: true),
                   );
@@ -199,7 +200,6 @@ class _HomeScreen extends State<HomeScreen> {
               ),
             ));
           }),
-      // Possibly only render this on open.
       if (_opened)
         MouseRegion(
           hitTestBehavior: HitTestBehavior.translucent,
@@ -227,32 +227,11 @@ class _HomeScreen extends State<HomeScreen> {
                 });
               }
             },
-            // TODO: remove row. Too jittery.
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // VerticalDivider(
-                //   color: Theme.of(context)
-                //       .colorScheme
-                //       .surface
-                //       .withOpacity(sidebarOpacity),
-                //   thickness: Constants.verticalDividerThickness,
-                //   width: Constants.verticalDividerThickness,
-                // ),
-                VerticalDivider(
-                  color: Theme.of(context).colorScheme.outlineVariant,
-                  thickness: Constants.verticalDividerThickness,
-                  width: Constants.verticalDividerThickness,
-                ),
-                // VerticalDivider(
-                //   color: Theme.of(context)
-                //       .scaffoldBackgroundColor
-                //       .withOpacity(scaffoldOpacity),
-                //   thickness: Constants.verticalDividerThickness,
-                //   width: Constants.verticalDividerThickness,
-                // )
-              ],
+            // TODO: Implement AnimatedCrossFade
+            child: VerticalDivider(
+              color: Theme.of(context).colorScheme.outlineVariant,
+              thickness: Constants.verticalDividerThickness,
+              width: Constants.verticalDividerThickness,
             ),
           ),
         ),
@@ -263,7 +242,7 @@ class _HomeScreen extends State<HomeScreen> {
             return Scaffold(
                 backgroundColor: Theme.of(context)
                     .scaffoldBackgroundColor
-                    .withOpacity(themeProvider.scaffoldOpacity),
+                    .withOpacity(value.scaffoldOpacity),
                 appBar: buildAppBar(mobile: false),
                 body: SafeArea(
                     child: Constants.viewRoutes[selectedPageIndex].view));
@@ -274,18 +253,23 @@ class _HomeScreen extends State<HomeScreen> {
   }
 
   Widget buildMobile({required BuildContext context}) {
-    return Scaffold(
-        backgroundColor: Theme.of(context)
-            .scaffoldBackgroundColor
-            .withOpacity(themeProvider.scaffoldOpacity),
-        appBar: buildAppBar(mobile: true),
-        drawer: buildNavigationDrawer(context: context, largeScreen: false),
-        body: SafeArea(child: Constants.viewRoutes[selectedPageIndex].view));
+    return Consumer<ThemeProvider>(
+      builder: (BuildContext context, ThemeProvider value, Widget? child) {
+        return Scaffold(
+            backgroundColor: Theme.of(context)
+                .scaffoldBackgroundColor
+                .withOpacity(value.scaffoldOpacity),
+            appBar: buildAppBar(mobile: true),
+            drawer: buildNavigationDrawer(context: context, largeScreen: false),
+            body:
+                SafeArea(child: Constants.viewRoutes[selectedPageIndex].view));
+      },
+    );
   }
 
   AppBar buildAppBar({bool mobile = false}) {
     return AppBar(
-      // elevation: 1.0,
+      backgroundColor: Colors.transparent,
       leading: getAppBarLeading(mobile: mobile),
       automaticallyImplyLeading: false,
       title: Row(
@@ -352,7 +336,6 @@ class _HomeScreen extends State<HomeScreen> {
         });
   }
 
-  // TODO: include index -within- the constants class
   NavigationDrawer buildNavigationDrawer(
       {required BuildContext context, bool largeScreen = false}) {
     return NavigationDrawer(
@@ -379,7 +362,7 @@ class _HomeScreen extends State<HomeScreen> {
           // Possible stretch Goal: add user images?
           Padding(
             padding: const EdgeInsets.symmetric(
-                vertical: Constants.innerPadding,
+                vertical: Constants.doublePadding,
                 horizontal: Constants.padding),
             child: ListTile(
               shape: const RoundedRectangleBorder(
@@ -458,14 +441,16 @@ class _HomeScreen extends State<HomeScreen> {
               ),
             ),
           ),
-          const PaddedDivider(padding: Constants.innerPadding),
+          const PaddedDivider(padding: Constants.doublePadding),
 
           ...Constants.viewRoutes
               .where((view) => view.inMainNav)
               .map((view) => view.destination),
-          const PaddedDivider(padding: Constants.innerPadding),
+          const PaddedDivider(padding: Constants.doublePadding),
           // Drop down menu for Groups.
           ExpandedListTile(
+              outerPadding:
+                  const EdgeInsets.symmetric(horizontal: Constants.padding),
               title: const AutoSizeText(
                 "Groups",
                 maxLines: 1,
@@ -489,7 +474,7 @@ class _HomeScreen extends State<HomeScreen> {
               children: [
                 ListTile(
                     contentPadding: const EdgeInsets.symmetric(
-                        horizontal: Constants.innerPadding),
+                        horizontal: Constants.doublePadding),
                     shape: const RoundedRectangleBorder(
                         borderRadius: BorderRadius.all(
                             Radius.circular(Constants.semiCircular))),
@@ -526,15 +511,12 @@ class _HomeScreen extends State<HomeScreen> {
                 ListViews.navDrawerGroups(
                   context: context,
                   groups: groupProvider.secondaryGroups,
-                  // TODO: tweak
-                  outerPadding:
-                      const EdgeInsets.symmetric(horizontal: Constants.padding),
-                  innerPadding:
-                      const EdgeInsets.symmetric(horizontal: Constants.padding),
+                  tilePadding: const EdgeInsets.symmetric(
+                      horizontal: Constants.doublePadding),
                 ),
                 // refactor listview
               ]),
-          const PaddedDivider(padding: Constants.innerPadding),
+          const PaddedDivider(padding: Constants.doublePadding),
           (_footerTween)
               ? TweenAnimationBuilder<double>(
                   duration: const Duration(milliseconds: Constants.footerTime),

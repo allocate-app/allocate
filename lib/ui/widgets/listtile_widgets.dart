@@ -182,7 +182,7 @@ abstract class ListTileWidgets {
       scale: scale,
       child: OutlinedButton(
         style: OutlinedButton.styleFrom(
-          padding: const EdgeInsets.all(Constants.innerPadding),
+          padding: const EdgeInsets.all(Constants.doublePadding),
           shape: const CircleBorder(),
           side: BorderSide(
             color: Theme.of(currentContext).colorScheme.outlineVariant,
@@ -197,7 +197,7 @@ abstract class ListTileWidgets {
                 constraints: const BoxConstraints(
                     maxWidth: Constants.smallLandscapeDialogWidth),
                 child: Padding(
-                  padding: const EdgeInsets.all(Constants.innerPadding),
+                  padding: const EdgeInsets.all(Constants.doublePadding),
                   child: Column(
                       mainAxisSize: MainAxisSize.min,
                       mainAxisAlignment: MainAxisAlignment.center,

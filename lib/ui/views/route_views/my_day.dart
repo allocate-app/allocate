@@ -145,7 +145,7 @@ class _MyDayScreen extends State<MyDayScreen> {
 
   Widget buildHuge({required BuildContext context}) {
     return Padding(
-        padding: const EdgeInsets.all(Constants.innerPadding),
+        padding: const EdgeInsets.all(Constants.doublePadding),
         child: Row(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,

@@ -1,8 +1,7 @@
 import "dart:io";
-import "dart:math";
 
+import "package:allocate/ui/widgets/check_delete_dialog.dart";
 import "package:auto_size_text/auto_size_text.dart";
-import "package:flex_color_picker/flex_color_picker.dart";
 import "package:flutter/foundation.dart";
 import "package:flutter/material.dart";
 import "package:intl/intl.dart";
@@ -13,7 +12,6 @@ import "../../../providers/user_provider.dart";
 import "../../../util/constants.dart";
 import "../../../util/enums.dart";
 import "../../../util/numbers.dart";
-import "../../widgets/expanded_listtile.dart";
 import "../../widgets/settings_screen_widgets.dart";
 
 class UserSettingsScreen extends StatefulWidget {
@@ -26,17 +24,22 @@ class UserSettingsScreen extends StatefulWidget {
 class _UserSettingsScreen extends State<UserSettingsScreen> {
   // For testing
   late bool _mockOnline;
+  late bool _checkClose;
+  late bool _checkDelete;
+  late DeleteSchedule _deleteSchedule;
 
   late final UserProvider userProvider;
   late final ThemeProvider themeProvider;
 
-  late final ScrollController scrollController;
+  late final ScrollController mobileScrollController;
+  late final ScrollController desktopScrollController;
   late final ScrollPhysics scrollPhysics;
 
   late double _testWeight;
 
   late bool _toneMappingOpened;
   late bool _windowEffectOpened;
+  late bool _deleteScheduleOpened;
 
   late MenuController _scaffoldController;
   late MenuController _sidebarController;
@@ -51,11 +54,16 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
     _mockOnline = true;
     _toneMappingOpened = false;
     _windowEffectOpened = false;
+    _deleteScheduleOpened = false;
+    _checkClose = true;
+    _checkDelete = true;
+    _deleteSchedule = DeleteSchedule.never;
 
     _scaffoldController = MenuController();
     _sidebarController = MenuController();
 
-    scrollController = ScrollController();
+    mobileScrollController = ScrollController();
+    desktopScrollController = ScrollController();
     ScrollPhysics scrollBehaviour = (Platform.isMacOS || Platform.isIOS)
         ? const BouncingScrollPhysics()
         : const ClampingScrollPhysics();
@@ -68,6 +76,7 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
     super.dispose();
   }
 
+  // TODO: REMOVE THIS ONCE USER FINISHED.
   void handleWeightChange(double? value) {
     if (null == value) {
       return;
@@ -80,555 +89,149 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
     }
   }
 
-  // This will need two layouts.
-  // TODO: consume userProvider?
+  void anchorWatchScroll() {
+    _scaffoldController.close();
+    _sidebarController.close();
+  }
+
+  // TODO: refactor consumer to use AppProvider once written
   @override
   Widget build(BuildContext context) {
     MediaQuery.sizeOf(context);
+
+    return Consumer<UserProvider>(
+        builder: (BuildContext context, UserProvider value, Widget? child) {
+      return (userProvider.wideView)
+          ? buildWide(context: context)
+          : buildRegular(context: context);
+    });
+  }
+
+  Widget buildWide({required BuildContext context}) {
+    return Padding(
+      padding: const EdgeInsets.all(Constants.padding),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          buildHeader(),
+          Flexible(
+            child: Scrollbar(
+              controller: desktopScrollController,
+              thumbVisibility: true,
+              child: ListView(
+                padding: const EdgeInsets.only(
+                    left: Constants.halfPadding,
+                    right: Constants.doublePadding),
+                shrinkWrap: true,
+                controller: desktopScrollController,
+                physics: scrollPhysics,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Flexible(
+                        child: ListView(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.only(
+                                  top: Constants.quadPadding +
+                                      Constants.doublePadding +
+                                      Constants.padding),
+                              child: buildEnergyTile(),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.only(
+                                top: Constants.quadPadding,
+                                bottom: Constants.doublePadding,
+                              ),
+                              child: buildQuickInfo(),
+                            ),
+                            const Padding(
+                              padding:
+                                  EdgeInsets.all(Constants.halfPadding - 1),
+                              child: SizedBox.shrink(),
+                            ),
+                            buildAccountSection(),
+                            buildSignOut(),
+                            buildDeleteAccount(),
+                          ],
+                        ),
+                      ),
+                      Flexible(
+                        flex: 2,
+                        child: Padding(
+                          padding: const EdgeInsets.only(
+                              left: Constants.doublePadding),
+                          child: ListView(
+                            physics: const NeverScrollableScrollPhysics(),
+                            shrinkWrap: true,
+                            children: [
+                              buildGeneralSection(),
+                              buildAccessibilitySection(),
+                              buildThemeSection(),
+                              const Padding(
+                                padding: EdgeInsets.all(Constants.padding),
+                                child: SizedBox.shrink(),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget buildRegular({required BuildContext context}) {
     return Padding(
         padding: const EdgeInsets.all(Constants.padding),
-        // Mobile Layout.
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            ListTile(
-              contentPadding: const EdgeInsets.all(Constants.padding),
-              leading: const Icon(Icons.settings_rounded),
-              title: const AutoSizeText(
-                "Settings",
-                style: Constants.largeHeaderStyle,
-                softWrap: false,
-                maxLines: 1,
-                overflow: TextOverflow.visible,
-                minFontSize: Constants.huge,
-              ),
-              // TODO: factor this into a method.
-              // As follows: connected => outlined online status, syncOnline => signIn button, none => signUp button
-              trailing: (userProvider.curUser?.syncOnline ?? _mockOnline)
-                  ? FilledButton(
-                      onPressed: () {
-                        if (mounted && kDebugMode) {
-                          setState(() {
-                            _mockOnline = !_mockOnline;
-                          });
-                        }
-                      },
-                      child: const AutoSizeText("Sign in"),
-                    )
-                  : FilledButton(
-                      onPressed: () {
-                        if (mounted && kDebugMode) {
-                          setState(() {
-                            _mockOnline = !_mockOnline;
-                          });
-                        }
-                      },
-                      child: const AutoSizeText("Sign up"),
-                    ),
-            ),
+            // Header.
+            buildHeader(),
             Flexible(
               child: Scrollbar(
-                controller: scrollController,
+                controller: mobileScrollController,
                 thumbVisibility: true,
                 child: ListView(
                   padding: const EdgeInsets.symmetric(
                       horizontal: Constants.halfPadding),
                   shrinkWrap: true,
                   physics: scrollPhysics,
-                  controller: scrollController,
+                  controller: mobileScrollController,
                   children: [
-                    SettingsScreenWidgets.energyTile(
-                      weight: userProvider.curUser?.bandwidth.toDouble() ??
-                          _testWeight,
-                      batteryScale: remap(
-                              x: userProvider.width.clamp(
-                                  Constants.smallScreen, Constants.largeScreen),
-                              inMin: Constants.smallScreen,
-                              inMax: Constants.largeScreen,
-                              outMin: 1,
-                              outMax: 1.5)
-                          .toDouble(),
-                      handleWeightChange: handleWeightChange,
-                    ),
-                    SettingsScreenWidgets.userQuickInfo(
-                        outerPadding: const EdgeInsets.only(
-                            bottom: Constants.halfPadding),
-                        user: userProvider.curUser),
+                    buildEnergyTile(),
+                    buildQuickInfo(),
+                    // ACCOUNT SETTNIGS
+                    buildAccountSection(),
                     // GENERAL SETTINGS
-                    SettingsScreenWidgets.settingsSection(
-                      context: context,
-                      title: "General",
-                      entries: [
-                        (userProvider.curUser?.syncOnline ?? _mockOnline)
-                            ? ListTile(
-                                leading: const Icon(Icons.sync_rounded),
-                                title: const AutoSizeText("Sync now",
-                                    minFontSize: Constants.large,
-                                    maxLines: 1,
-                                    softWrap: true,
-                                    overflow: TextOverflow.visible),
-                                onTap: () {
-                                  print("Sync now");
-                                })
-                            : ListTile(
-                                leading: const Icon(Icons.cloud_sync_rounded),
-                                title: const AutoSizeText("Cloud backup",
-                                    minFontSize: Constants.large,
-                                    maxLines: 1,
-                                    softWrap: true,
-                                    overflow: TextOverflow.visible),
-                                onTap: () {
-                                  print("Sign up");
-                                }),
-                        if (userProvider.curUser?.syncOnline ?? _mockOnline)
-                          ListTile(
-                              leading: const Icon(Icons.email_rounded),
-                              title: const AutoSizeText("Change email",
-                                  minFontSize: Constants.large,
-                                  maxLines: 1,
-                                  softWrap: true,
-                                  overflow: TextOverflow.visible),
-                              onTap: () {
-                                print("Edit Email");
-                              }),
-                        if (userProvider.curUser?.syncOnline ?? _mockOnline)
-                          ListTile(
-                              leading: const Icon(Icons.lock_reset_rounded),
-                              title: const AutoSizeText("Reset password",
-                                  minFontSize: Constants.large,
-                                  maxLines: 1,
-                                  softWrap: true,
-                                  overflow: TextOverflow.visible),
-                              onTap: () {
-                                print("Edit Password");
-                              }),
-                        ListTile(
-                            leading: const Icon(Icons.account_circle_rounded),
-                            title: const AutoSizeText("Add new account",
-                                minFontSize: Constants.large,
-                                maxLines: 1,
-                                softWrap: true,
-                                overflow: TextOverflow.visible),
-                            onTap: () {
-                              print("Edit Password");
-                            }),
-                      ],
-                    ),
-
+                    buildGeneralSection(),
+                    // ACCESSIBILITY
+                    buildAccessibilitySection(),
                     // THEME
-                    SettingsScreenWidgets.settingsSection(
-                        context: context,
-                        title: "Theme",
-                        entries: [
-                          // ThemeType
-                          DefaultTabController(
-                            initialIndex: themeProvider.themeType.index,
-                            length: ThemeType.values.length,
-                            child: Padding(
-                              padding: const EdgeInsets.only(
-                                  bottom: Constants.padding),
-                              child: DecoratedBox(
-                                decoration: BoxDecoration(
-                                  borderRadius: const BorderRadius.all(
-                                      Radius.circular(
-                                          Constants.roundedCorners)),
-                                  color:
-                                      Theme.of(context).colorScheme.onSecondary,
-                                ),
-                                child: TabBar(
-                                  onTap: (newIndex) {
-                                    themeProvider.themeType =
-                                        ThemeType.values[newIndex];
-                                  },
-                                  indicatorSize: TabBarIndicatorSize.tab,
-                                  indicator: BoxDecoration(
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .primaryContainer,
-                                      borderRadius: const BorderRadius.all(
-                                          Radius.circular(
-                                              Constants.roundedCorners))),
-                                  splashBorderRadius: const BorderRadius.all(
-                                      Radius.circular(
-                                          Constants.roundedCorners)),
-                                  dividerColor: Colors.transparent,
-                                  tabs: ThemeType.values
-                                      .map((ThemeType type) => Tab(
-                                            text: toBeginningOfSentenceCase(
-                                                type.name),
-                                          ))
-                                      .toList(),
-                                ),
-                              ),
-                            ),
-                          ),
+                    buildThemeSection(),
+                    // ABOUT
+                    buildAboutSection(),
+                    // SIGN OUT
+                    buildSignOut(),
 
-                          // Color seeds.
-                          ListTile(
-                              leading: CircleAvatar(
-                                  backgroundColor: themeProvider.primarySeed),
-                              title: const AutoSizeText(
-                                  "Use ultra high contrast",
-                                  minFontSize: Constants.large,
-                                  maxLines: 1,
-                                  softWrap: true,
-                                  overflow: TextOverflow.visible),
-                              // Testing. I dunno what this is.
-                              trailing: ColorIndicator(
-                                  color: themeProvider.primarySeed)),
-                          ListTile(
-                              leading: CircleAvatar(
-                                backgroundColor: themeProvider.secondarySeed ??
-                                    Colors.transparent,
-                              ),
-                              title: const AutoSizeText("Secondary color seed",
-                                  minFontSize: Constants.large,
-                                  maxLines: 1,
-                                  softWrap: true,
-                                  overflow: TextOverflow.visible),
-                              trailing: IconButton(
-                                  icon: const Icon(Icons.clear_rounded),
-                                  onPressed: () {
-                                    themeProvider.secondarySeed = null;
-                                  })),
-                          ListTile(
-                              leading: CircleAvatar(
-                                backgroundColor: themeProvider.tertiarySeed ??
-                                    Colors.transparent,
-                              ),
-                              title: const AutoSizeText("Tertiary color seed",
-                                  minFontSize: Constants.large,
-                                  maxLines: 1,
-                                  softWrap: true,
-                                  overflow: TextOverflow.visible),
-                              trailing: IconButton(
-                                  icon: const Icon(Icons.clear_rounded),
-                                  onPressed: () {
-                                    themeProvider.tertiarySeed = null;
-                                  })),
-
-                          // Use Ultra high Contrast.
-                          ListTile(
-                            leading: const Icon(Icons.contrast_rounded),
-                            title: const AutoSizeText("Use ultra high contrast",
-                                minFontSize: Constants.large,
-                                maxLines: 1,
-                                softWrap: true,
-                                overflow: TextOverflow.visible),
-                            trailing: Consumer<ThemeProvider>(builder:
-                                (BuildContext context, ThemeProvider value,
-                                    Widget? child) {
-                              return Switch(
-                                  value: themeProvider.useUltraHighContrast,
-                                  onChanged: (bool? value) {
-                                    if (null == value) {
-                                      return;
-                                    }
-
-                                    themeProvider.useUltraHighContrast = value;
-                                  });
-                            }),
-                          ),
-
-                          // Reduce motion.
-                          ListTile(
-                            leading:
-                                const Icon(Icons.slow_motion_video_rounded),
-                            title: const AutoSizeText("Reduce motion",
-                                minFontSize: Constants.large,
-                                maxLines: 1,
-                                softWrap: true,
-                                overflow: TextOverflow.visible),
-                            trailing: Consumer<ThemeProvider>(builder:
-                                (BuildContext context, ThemeProvider value,
-                                    Widget? child) {
-                              return Switch(
-                                  value: themeProvider.reduceMotion,
-                                  onChanged: (bool? value) {
-                                    if (null == value) {
-                                      return;
-                                    }
-                                    themeProvider.reduceMotion = value;
-                                  });
-                            }),
-                          ),
-
-                          // Tonemapping radiobutton
-                          ExpandedListTile(
-                            leading: const Icon(Icons.colorize_rounded),
-                            title: const AutoSizeText("Tonemapping",
-                                minFontSize: Constants.large,
-                                maxLines: 1,
-                                softWrap: true,
-                                overflow: TextOverflow.visible),
-                            initiallyExpanded: _toneMappingOpened,
-                            onExpansionChanged: ({bool expanded = false}) =>
-                                _toneMappingOpened = expanded,
-                            children: ToneMapping.values
-                                .map((toneMap) => Radio<ToneMapping>(
-                                    value: toneMap,
-                                    groupValue: themeProvider.toneMapping,
-                                    onChanged: (ToneMapping? newMap) {
-                                      if (null == newMap) {
-                                        return;
-                                      }
-                                      themeProvider.toneMapping = newMap;
-                                      if (mounted) {
-                                        setState(() {
-                                          _toneMappingOpened = false;
-                                        });
-                                      }
-                                    }))
-                                .toList(),
-                          ),
-
-                          // Window effects
-                          if (!userProvider.isMobile)
-                            ExpandedListTile(
-                                initiallyExpanded: _windowEffectOpened,
-                                leading: const Icon(Icons.color_lens_outlined),
-                                title: const AutoSizeText("Window effect",
-                                    minFontSize: Constants.large,
-                                    maxLines: 1,
-                                    softWrap: true,
-                                    overflow: TextOverflow.visible),
-                                children: getAvailableWindowEffects()),
-
-                          // Transparency - use the dropdown slider.
-                          if (!userProvider.isMobile)
-                            MenuAnchor(
-                                onOpen: () {
-                                  scrollController.addListener(() {
-                                    _sidebarController.close();
-                                  });
-                                },
-                                onClose: () {
-                                  scrollController.removeListener(() {
-                                    _sidebarController.close();
-                                  });
-                                },
-                                style: const MenuStyle(
-                                    padding: MaterialStatePropertyAll(
-                                        EdgeInsets.all(Constants.padding)),
-                                    shape: MaterialStatePropertyAll(
-                                        RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.all(
-                                                Radius.circular(
-                                                    Constants.semiCircular))))),
-                                controller: _sidebarController,
-                                menuChildren: [
-                                  Consumer<ThemeProvider>(builder:
-                                      (BuildContext context,
-                                          ThemeProvider value, Widget? child) {
-                                    return SizedBox(
-                                      width:
-                                          min(userProvider.width * 0.75, 300),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Expanded(
-                                            child: Slider(
-                                                min: 0,
-                                                max: 1,
-                                                value: themeProvider
-                                                    .sidebarOpacity,
-                                                onChangeEnd: (value) {
-                                                  themeProvider
-                                                          .sidebarOpacitySavePref =
-                                                      value;
-                                                  _sidebarController.close();
-                                                },
-                                                onChanged: (themeProvider
-                                                        .useTransparency)
-                                                    ? (value) {
-                                                        themeProvider
-                                                                .sidebarOpacity =
-                                                            value;
-                                                      }
-                                                    : null),
-                                          ),
-                                          Padding(
-                                            padding: const EdgeInsets.only(
-                                                right: Constants.padding),
-                                            child: Text(
-                                                "${(100 * themeProvider.sidebarOpacity).toInt()}",
-                                                maxLines: 1,
-                                                softWrap: true,
-                                                overflow: TextOverflow.visible),
-                                          ),
-                                        ],
-                                      ),
-                                    );
-                                  }),
-                                ],
-                                builder: (BuildContext context,
-                                    MenuController controller, Widget? child) {
-                                  return ListTile(
-                                      leading:
-                                          const Icon(Icons.gradient_rounded),
-                                      title: const AutoSizeText(
-                                          "Sidebar opacity",
-                                          minFontSize: Constants.large,
-                                          maxLines: 1,
-                                          softWrap: true,
-                                          overflow: TextOverflow.visible),
-                                      onTap: () {
-                                        if (_sidebarController.isOpen) {
-                                          return _sidebarController.close();
-                                        }
-                                        _sidebarController.open();
-                                      });
-                                }),
-
-                          if (!userProvider.isMobile)
-                            MenuAnchor(
-                                onOpen: () {
-                                  scrollController.addListener(() {
-                                    _scaffoldController.close();
-                                  });
-                                },
-                                onClose: () {
-                                  scrollController.removeListener(() {
-                                    _scaffoldController.close();
-                                  });
-                                },
-                                style: const MenuStyle(
-                                    padding: MaterialStatePropertyAll(
-                                        EdgeInsets.all(Constants.padding)),
-                                    shape: MaterialStatePropertyAll(
-                                        RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.all(
-                                                Radius.circular(
-                                                    Constants.circular))))),
-                                controller: _scaffoldController,
-                                menuChildren: [
-                                  Consumer<ThemeProvider>(builder:
-                                      (BuildContext context,
-                                          ThemeProvider value, Widget? child) {
-                                    return SizedBox(
-                                      width:
-                                          min(userProvider.width * 0.75, 300),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Expanded(
-                                            child: Slider(
-                                                min: 0,
-                                                max: 1,
-                                                value: themeProvider
-                                                    .scaffoldOpacity,
-                                                onChangeEnd: (value) {
-                                                  themeProvider
-                                                          .scaffoldOpacitySavePref =
-                                                      value;
-                                                  _scaffoldController.close();
-                                                },
-                                                onChanged: (themeProvider
-                                                        .useTransparency)
-                                                    ? (value) {
-                                                        themeProvider
-                                                                .scaffoldOpacity =
-                                                            value;
-                                                      }
-                                                    : null),
-                                          ),
-                                          Padding(
-                                            padding: const EdgeInsets.only(
-                                                right: Constants.padding),
-                                            child: Text(
-                                                "${(100 * themeProvider.scaffoldOpacity).toInt()}",
-                                                maxLines: 1,
-                                                softWrap: true,
-                                                overflow: TextOverflow.visible),
-                                          ),
-                                        ],
-                                      ),
-                                    );
-                                  }),
-                                ],
-                                builder: (BuildContext context,
-                                    MenuController controller, Widget? child) {
-                                  return ListTile(
-                                      leading:
-                                          const Icon(Icons.gradient_rounded),
-                                      title: const AutoSizeText(
-                                          "Window opacity",
-                                          minFontSize: Constants.large,
-                                          maxLines: 1,
-                                          softWrap: true,
-                                          overflow: TextOverflow.visible),
-                                      onTap: () {
-                                        if (_scaffoldController.isOpen) {
-                                          return _scaffoldController.close();
-                                        }
-                                        _scaffoldController.open();
-                                      });
-                                }),
-                        ]),
-                    SettingsScreenWidgets.settingsSection(
-                        context: context,
-                        title: "About",
-                        entries: [
-                          ListTile(
-                              leading: const Icon(Icons.info_outline_rounded),
-                              title: const AutoSizeText("About",
-                                  minFontSize: Constants.large,
-                                  maxLines: 1,
-                                  softWrap: true,
-                                  overflow: TextOverflow.visible),
-                              onTap: () {
-                                print("About the app");
-                              }),
-                          ListTile(
-                              leading: const Icon(Icons.add_road_rounded),
-                              title: const AutoSizeText("Roadmap",
-                                  minFontSize: Constants.large,
-                                  maxLines: 1,
-                                  softWrap: true,
-                                  overflow: TextOverflow.visible),
-                              onTap: () {
-                                print("Roadmap");
-                              }),
-                        ]),
-                    SettingsScreenWidgets.settingsSection(
-                      context: context,
-                      title: "",
-                      entries: [
-                        ListTile(
-                            leading: Icon(Icons.highlight_off_rounded,
-                                color: Theme.of(context).colorScheme.tertiary),
-                            title: AutoSizeText("Sign out",
-                                style: TextStyle(
-                                  color: Theme.of(context).colorScheme.tertiary,
-                                ),
-                                minFontSize: Constants.large,
-                                maxLines: 1,
-                                softWrap: true,
-                                overflow: TextOverflow.visible),
-                            onTap: () {
-                              print("Sign Out");
-                            }),
-                      ],
-                    ),
-                    SettingsScreenWidgets.settingsSection(
-                      context: context,
-                      title: "",
-                      entries: [
-                        ListTile(
-                            leading: Icon(Icons.delete_forever_rounded,
-                                color: Theme.of(context).colorScheme.error),
-                            title: AutoSizeText("Delete account",
-                                style: TextStyle(
-                                  color: Theme.of(context).colorScheme.error,
-                                ),
-                                minFontSize: Constants.large,
-                                maxLines: 1,
-                                softWrap: true,
-                                overflow: TextOverflow.visible),
-                            onTap: () {
-                              print("Delete user");
-                            }),
-                      ],
+                    // DELETE ACCOUNT
+                    buildDeleteAccount(),
+                    const Padding(
+                      padding: EdgeInsets.all(Constants.padding),
+                      child: SizedBox.shrink(),
                     ),
                   ],
                 ),
@@ -638,8 +241,689 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
         ));
   }
 
+  Widget buildQuickInfo() {
+    return SettingsScreenWidgets.userQuickInfo(
+        outerPadding: const EdgeInsets.only(bottom: Constants.halfPadding),
+        user: userProvider.curUser);
+  }
+
+  Widget buildEnergyTile({double maxScale = 1.5}) {
+    return SettingsScreenWidgets.energyTile(
+      weight: userProvider.curUser?.bandwidth.toDouble() ?? _testWeight,
+      batteryScale: remap(
+              x: userProvider.width
+                  .clamp(Constants.smallScreen, Constants.largeScreen),
+              inMin: Constants.smallScreen,
+              inMax: Constants.largeScreen,
+              outMin: 1,
+              outMax: maxScale)
+          .toDouble(),
+      handleWeightChange: handleWeightChange,
+    );
+  }
+
+  Widget buildHeader() {
+    return ListTile(
+      contentPadding: const EdgeInsets.all(Constants.padding),
+      leading: const Icon(Icons.settings_rounded),
+      title: const AutoSizeText(
+        "Settings",
+        style: Constants.largeHeaderStyle,
+        softWrap: false,
+        maxLines: 1,
+        overflow: TextOverflow.visible,
+        minFontSize: Constants.huge,
+      ),
+      // TODO: factor this into a method.
+      // As follows: connected => outlined online status, syncOnline => signIn button, none => signUp button
+      trailing: (userProvider.curUser?.syncOnline ?? _mockOnline)
+          ? FilledButton(
+              onPressed: () {
+                if (mounted && kDebugMode) {
+                  setState(() {
+                    _mockOnline = !_mockOnline;
+                  });
+                }
+              },
+              child: const AutoSizeText("Sign in"),
+            )
+          : FilledButton(
+              onPressed: () {
+                if (mounted && kDebugMode) {
+                  setState(() {
+                    _mockOnline = !_mockOnline;
+                  });
+                }
+              },
+              child: const AutoSizeText("Sign up"),
+            ),
+    );
+  }
+
+  Widget buildAccountSection() {
+    return SettingsScreenWidgets.settingsSection(
+      context: context,
+      title: "Account",
+      entries: [
+        (userProvider.curUser?.syncOnline ?? _mockOnline)
+            ? SettingsScreenWidgets.tapTile(
+                leading: const Icon(Icons.sync_rounded),
+                title: "Sync now",
+                onTap: () async {
+                  //
+                  print("Sync now");
+                })
+            : SettingsScreenWidgets.tapTile(
+                leading: const Icon(Icons.cloud_sync_rounded),
+                title: "Cloud backup",
+                onTap: () {
+                  print("Sign up");
+                }),
+        if (userProvider.curUser?.syncOnline ?? _mockOnline)
+          SettingsScreenWidgets.tapTile(
+            leading: const Icon(Icons.email_rounded),
+            title: "Change email",
+            onTap: () {
+              print("Edit Email");
+            },
+          ),
+        if (userProvider.curUser?.syncOnline ?? _mockOnline)
+          SettingsScreenWidgets.tapTile(
+              leading: const Icon(Icons.lock_reset_rounded),
+              title: "Reset password",
+              onTap: () {
+                print("Edit Password");
+              }),
+        SettingsScreenWidgets.tapTile(
+            leading: const Icon(Icons.account_circle_rounded),
+            title: "Add new account",
+            onTap: () {
+              print("New Account");
+            }),
+      ],
+    );
+  }
+
+  Widget buildGeneralSection() {
+    return SettingsScreenWidgets.settingsSection(
+      context: context,
+      title: "General",
+      entries: [
+        //  Check close.
+        SettingsScreenWidgets.toggleTile(
+            leading: const Icon(Icons.close_rounded),
+            value: userProvider.curUser?.checkClose ?? _checkClose,
+            title: "Ask before closing",
+            onChanged: (bool value) {
+              userProvider.curUser?.checkClose = value;
+              if (mounted) {
+                setState(() {
+                  _checkClose = value;
+                });
+              }
+            }),
+
+        SettingsScreenWidgets.toggleTile(
+            leading: const Icon(Icons.delete_outline_rounded),
+            title: "Ask before deleting",
+            value: userProvider.curUser?.checkDelete ?? _checkDelete,
+            onChanged: (bool value) {
+              userProvider.curUser?.checkDelete = value;
+              if (mounted) {
+                setState(() {
+                  _checkDelete = value;
+                });
+              }
+            }),
+        SettingsScreenWidgets.radioDropDown(
+            groupMember:
+                userProvider.curUser?.deleteSchedule ?? _deleteSchedule,
+            values: DeleteSchedule.values,
+            title: "Keep deleted items:",
+            getName: Constants.deleteScheduleType,
+            initiallyExpanded: _deleteScheduleOpened,
+            onExpansionChanged: ({bool expanded = false}) {
+              if (mounted) {
+                _deleteScheduleOpened = expanded;
+              }
+            },
+            onChanged: (DeleteSchedule? newSchedule) {
+              if (null == newSchedule) {
+                return;
+              }
+              userProvider.curUser?.deleteSchedule = newSchedule;
+              if (mounted) {
+                setState(() {
+                  _deleteSchedule = newSchedule;
+                });
+              }
+            }),
+      ],
+    );
+  }
+
+  Widget buildAccessibilitySection() {
+    return SettingsScreenWidgets.settingsSection(
+      context: context,
+      title: "Accessibility",
+      entries: [
+        // Reduce motion.
+        SettingsScreenWidgets.toggleTile(
+            leading: const Icon(Icons.slow_motion_video_rounded),
+            title: "Reduce motion",
+            value: themeProvider.reduceMotion,
+            onChanged: (bool value) {
+              themeProvider.reduceMotion = value;
+              if (mounted) {
+                setState(() {});
+              }
+            }),
+        // Use Ultra high Contrast.
+        SettingsScreenWidgets.toggleTile(
+            leading: const Icon(Icons.contrast_rounded),
+            title: "Ultra contrast",
+            value: themeProvider.useUltraHighContrast,
+            onChanged: (bool value) {
+              themeProvider.useUltraHighContrast = value;
+              if (mounted) {
+                setState(() {});
+              }
+            }),
+      ],
+    );
+  }
+
+  Widget buildThemeHuge() {
+    return Flexible(
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Flexible(
+            child: SettingsScreenWidgets
+                .settingsSection(title: "Theme", context: context, entries: [
+              // ThemeType
+              DefaultTabController(
+                initialIndex: themeProvider.themeType.index,
+                length: ThemeType.values.length,
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: Constants.padding),
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      borderRadius: const BorderRadius.all(
+                          Radius.circular(Constants.roundedCorners)),
+                      color: Theme.of(context).colorScheme.onSecondary,
+                    ),
+                    child: TabBar(
+                      onTap: (newIndex) {
+                        themeProvider.themeType = ThemeType.values[newIndex];
+                      },
+                      indicatorSize: TabBarIndicatorSize.tab,
+                      indicator: BoxDecoration(
+                          color: Theme.of(context).colorScheme.primaryContainer,
+                          borderRadius: const BorderRadius.all(
+                              Radius.circular(Constants.roundedCorners))),
+                      splashBorderRadius: const BorderRadius.all(
+                          Radius.circular(Constants.roundedCorners)),
+                      dividerColor: Colors.transparent,
+                      tabs: ThemeType.values
+                          .map((ThemeType type) => Tab(
+                                text: toBeginningOfSentenceCase(type.name),
+                              ))
+                          .toList(),
+                    ),
+                  ),
+                ),
+              ),
+
+              // Color seeds.
+              SettingsScreenWidgets.colorSeedTile(
+                  context: context,
+                  recentColors: themeProvider.recentColors,
+                  color: themeProvider.primarySeed,
+                  onColorChanged: (Color newColor) {
+                    themeProvider.primarySeed = newColor;
+                    if (mounted) {
+                      setState(() {});
+                    }
+                  },
+                  colorType: "Primary color",
+                  icon: const Icon(Icons.eject_rounded),
+                  showTrailing: Constants.defaultPrimaryColorSeed !=
+                      themeProvider.primarySeed.value,
+                  restoreDefault: () {
+                    themeProvider.primarySeed =
+                        const Color(Constants.defaultPrimaryColorSeed);
+                    if (mounted) {
+                      setState(() {});
+                    }
+                  }),
+              SettingsScreenWidgets.colorSeedTile(
+                  context: context,
+                  recentColors: themeProvider.recentColors,
+                  onColorChanged: (Color newColor) {
+                    themeProvider.secondarySeed = newColor;
+                    if (mounted) {
+                      setState(() {});
+                    }
+                  },
+                  color: themeProvider.secondarySeed,
+                  colorType: "Secondary color",
+                  showTrailing: null != themeProvider.secondarySeed,
+                  restoreDefault: () {
+                    themeProvider.secondarySeed = null;
+                    if (mounted) {
+                      setState(() {});
+                    }
+                  }),
+              SettingsScreenWidgets.colorSeedTile(
+                  context: context,
+                  recentColors: themeProvider.recentColors,
+                  onColorChanged: (Color newColor) {
+                    themeProvider.tertiarySeed = newColor;
+                    if (mounted) {
+                      setState(() {});
+                    }
+                  },
+                  color: themeProvider.tertiarySeed,
+                  colorType: "Tertiary color",
+                  showTrailing: null != themeProvider.tertiarySeed,
+                  restoreDefault: () {
+                    themeProvider.tertiarySeed = null;
+                    if (mounted) {
+                      setState(() {});
+                    }
+                  }),
+            ]),
+          ),
+          Flexible(
+            child: SettingsScreenWidgets.settingsSection(
+              title: " ",
+              context: context,
+              entries: [
+                // Tonemapping radiobutton
+                SettingsScreenWidgets.radioDropDown(
+                    leading: const Icon(Icons.colorize_rounded),
+                    title: "Tonemapping",
+                    groupMember: themeProvider.toneMapping,
+                    values: ToneMapping.values,
+                    initiallyExpanded: _toneMappingOpened,
+                    onExpansionChanged: ({bool expanded = false}) {
+                      if (mounted) {
+                        _toneMappingOpened = expanded;
+                      }
+                    },
+                    onChanged: (ToneMapping? newMap) {
+                      if (null == newMap) {
+                        return;
+                      }
+                      themeProvider.toneMapping = newMap;
+                      if (mounted) {
+                        setState(() {
+                          _toneMappingOpened = false;
+                        });
+                      }
+                    }),
+
+                // Window effects
+                if (!userProvider.isMobile) ...[
+                  SettingsScreenWidgets.radioDropDown(
+                    initiallyExpanded: _windowEffectOpened,
+                    leading: const Icon(Icons.color_lens_outlined),
+                    title: "Window effect",
+                    children: getAvailableWindowEffects(),
+                    groupMember: themeProvider.windowEffect,
+                    values: Effect.values,
+                  ),
+                  // Transparency - use the dropdown slider.
+                  SettingsScreenWidgets.sliderTile(
+                    title: "Sidebar opacity",
+                    leading: const Icon(Icons.gradient_rounded),
+                    label: "${(100 * themeProvider.sidebarOpacity).toInt()}",
+                    onOpen: () {
+                      mobileScrollController.addListener(anchorWatchScroll);
+                    },
+                    onClose: () {
+                      mobileScrollController.removeListener(anchorWatchScroll);
+                    },
+                    onChanged: (themeProvider.useTransparency)
+                        ? (double value) {
+                            themeProvider.sidebarOpacity = value;
+                            if (mounted) {
+                              setState(() {});
+                            }
+                          }
+                        : null,
+                    onChangeEnd: (double value) {
+                      themeProvider.sidebarOpacitySavePref = value;
+                      _sidebarController.close();
+                      if (mounted) {
+                        setState(() {});
+                      }
+                    },
+                    value: themeProvider.sidebarOpacity,
+                    controller: _sidebarController,
+                  ),
+
+                  SettingsScreenWidgets.sliderTile(
+                    title: "Window opacity",
+                    leading: const Icon(Icons.gradient_rounded),
+                    label: "${(100 * themeProvider.scaffoldOpacity).toInt()}",
+                    onOpen: () {
+                      mobileScrollController.addListener(anchorWatchScroll);
+                    },
+                    onClose: () {
+                      mobileScrollController.removeListener(anchorWatchScroll);
+                    },
+                    onChanged: (themeProvider.useTransparency)
+                        ? (double value) {
+                            themeProvider.scaffoldOpacity = value;
+                            if (mounted) {
+                              setState(() {});
+                            }
+                          }
+                        : null,
+                    onChangeEnd: (double value) {
+                      themeProvider.scaffoldOpacitySavePref = value;
+                      _scaffoldController.close();
+                      if (mounted) {
+                        setState(() {});
+                      }
+                    },
+                    value: themeProvider.scaffoldOpacity,
+                    controller: _scaffoldController,
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget buildThemeSection() {
+    return SettingsScreenWidgets.settingsSection(
+        context: context,
+        title: "Theme",
+        entries: [
+          // ThemeType
+          DefaultTabController(
+            initialIndex: themeProvider.themeType.index,
+            length: ThemeType.values.length,
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: Constants.padding),
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  borderRadius: const BorderRadius.all(
+                      Radius.circular(Constants.roundedCorners)),
+                  color: Theme.of(context).colorScheme.onSecondary,
+                ),
+                child: TabBar(
+                  onTap: (newIndex) {
+                    themeProvider.themeType = ThemeType.values[newIndex];
+                  },
+                  indicatorSize: TabBarIndicatorSize.tab,
+                  indicator: BoxDecoration(
+                      color: Theme.of(context).colorScheme.primaryContainer,
+                      borderRadius: const BorderRadius.all(
+                          Radius.circular(Constants.roundedCorners))),
+                  splashBorderRadius: const BorderRadius.all(
+                      Radius.circular(Constants.roundedCorners)),
+                  dividerColor: Colors.transparent,
+                  tabs: ThemeType.values
+                      .map((ThemeType type) => Tab(
+                            text: toBeginningOfSentenceCase(type.name),
+                          ))
+                      .toList(),
+                ),
+              ),
+            ),
+          ),
+
+          // Color seeds.
+          SettingsScreenWidgets.colorSeedTile(
+              context: context,
+              recentColors: themeProvider.recentColors,
+              color: themeProvider.primarySeed,
+              onColorChanged: (Color newColor) {
+                themeProvider.primarySeed = newColor;
+                if (mounted) {
+                  setState(() {});
+                }
+              },
+              colorType: "Primary color",
+              icon: const Icon(Icons.eject_rounded),
+              showTrailing: Constants.defaultPrimaryColorSeed !=
+                  themeProvider.primarySeed.value,
+              restoreDefault: () {
+                themeProvider.primarySeed =
+                    const Color(Constants.defaultPrimaryColorSeed);
+                if (mounted) {
+                  setState(() {});
+                }
+              }),
+          SettingsScreenWidgets.colorSeedTile(
+              context: context,
+              recentColors: themeProvider.recentColors,
+              onColorChanged: (Color newColor) {
+                themeProvider.secondarySeed = newColor;
+                if (mounted) {
+                  setState(() {});
+                }
+              },
+              color: themeProvider.secondarySeed,
+              colorType: "Secondary color",
+              showTrailing: null != themeProvider.secondarySeed,
+              restoreDefault: () {
+                themeProvider.secondarySeed = null;
+                if (mounted) {
+                  setState(() {});
+                }
+              }),
+          SettingsScreenWidgets.colorSeedTile(
+              context: context,
+              recentColors: themeProvider.recentColors,
+              onColorChanged: (Color newColor) {
+                themeProvider.tertiarySeed = newColor;
+                if (mounted) {
+                  setState(() {});
+                }
+              },
+              color: themeProvider.tertiarySeed,
+              colorType: "Tertiary color",
+              showTrailing: null != themeProvider.tertiarySeed,
+              restoreDefault: () {
+                themeProvider.tertiarySeed = null;
+                if (mounted) {
+                  setState(() {});
+                }
+              }),
+
+          // Tonemapping radiobutton
+          SettingsScreenWidgets.radioDropDown(
+              leading: const Icon(Icons.colorize_rounded),
+              title: "Tonemapping",
+              groupMember: themeProvider.toneMapping,
+              values: ToneMapping.values,
+              initiallyExpanded: _toneMappingOpened,
+              onExpansionChanged: ({bool expanded = false}) {
+                if (mounted) {
+                  _toneMappingOpened = expanded;
+                }
+              },
+              onChanged: (ToneMapping? newMap) {
+                if (null == newMap) {
+                  return;
+                }
+                themeProvider.toneMapping = newMap;
+                if (mounted) {
+                  setState(() {
+                    _toneMappingOpened = false;
+                  });
+                }
+              }),
+
+          // Window effects
+          if (!userProvider.isMobile) ...[
+            SettingsScreenWidgets.radioDropDown(
+              initiallyExpanded: _windowEffectOpened,
+              leading: const Icon(Icons.color_lens_outlined),
+              title: "Window effect",
+              children: getAvailableWindowEffects(),
+              groupMember: themeProvider.windowEffect,
+              values: Effect.values,
+            ),
+            // Transparency - use the dropdown slider.
+            SettingsScreenWidgets.sliderTile(
+              title: "Sidebar opacity",
+              leading: const Icon(Icons.gradient_rounded),
+              label: "${(100 * themeProvider.sidebarOpacity).toInt()}",
+              onOpen: () {
+                mobileScrollController.addListener(anchorWatchScroll);
+              },
+              onClose: () {
+                mobileScrollController.removeListener(anchorWatchScroll);
+              },
+              onChanged: (themeProvider.useTransparency)
+                  ? (double value) {
+                      themeProvider.sidebarOpacity = value;
+                      if (mounted) {
+                        setState(() {});
+                      }
+                    }
+                  : null,
+              onChangeEnd: (double value) {
+                themeProvider.sidebarOpacitySavePref = value;
+                _sidebarController.close();
+                if (mounted) {
+                  setState(() {});
+                }
+              },
+              value: themeProvider.sidebarOpacity,
+              controller: _sidebarController,
+            ),
+
+            SettingsScreenWidgets.sliderTile(
+              title: "Window opacity",
+              leading: const Icon(Icons.gradient_rounded),
+              label: "${(100 * themeProvider.scaffoldOpacity).toInt()}",
+              onOpen: () {
+                mobileScrollController.addListener(anchorWatchScroll);
+              },
+              onClose: () {
+                mobileScrollController.removeListener(anchorWatchScroll);
+              },
+              onChanged: (themeProvider.useTransparency)
+                  ? (double value) {
+                      themeProvider.scaffoldOpacity = value;
+                      if (mounted) {
+                        setState(() {});
+                      }
+                    }
+                  : null,
+              onChangeEnd: (double value) {
+                themeProvider.scaffoldOpacitySavePref = value;
+                _scaffoldController.close();
+                if (mounted) {
+                  setState(() {});
+                }
+              },
+              value: themeProvider.scaffoldOpacity,
+              controller: _scaffoldController,
+            ),
+          ],
+        ]);
+  }
+
+  Widget buildAboutSection() {
+    return SettingsScreenWidgets.settingsSection(
+        context: context,
+        title: "About",
+        entries: [
+          SettingsScreenWidgets.tapTile(
+              leading: const Icon(Icons.info_outline_rounded),
+              title: "About",
+              onTap: () async {
+                // Future TODO: Implement MacOS specific code for opening "about" window.
+                await showDialog(
+                    context: context,
+                    useRootNavigator: false,
+                    builder: (BuildContext context) {
+                      return SettingsScreenWidgets.aboutDialog(
+                        packageInfo: userProvider.packageInfo,
+                      );
+                    });
+              }),
+          SettingsScreenWidgets.tapTile(
+              leading: const Icon(Icons.add_road_rounded),
+              title: "Roadmap",
+              onTap: () async {
+                await showDialog(
+                    context: context,
+                    useRootNavigator: false,
+                    builder: (BuildContext context) {
+                      return SettingsScreenWidgets.roadmapDialog();
+                    });
+              }),
+          // TODO: THIS MAY NEED AN EXTERNAL LICENSING SECTION.
+        ]);
+  }
+
+  Widget buildSignOut() {
+    return SettingsScreenWidgets.settingsSection(
+      context: context,
+      title: "",
+      entries: [
+        SettingsScreenWidgets.tapTile(
+            leading: Icon(Icons.highlight_off_rounded,
+                color: Theme.of(context).colorScheme.tertiary),
+            title: "Sign out",
+            onTap: () async {
+              print("Sign out");
+              // Sign out of supabase, then push to account switcher.
+            }),
+      ],
+    );
+  }
+
+  buildDeleteAccount() {
+    return SettingsScreenWidgets.settingsSection(
+      context: context,
+      title: "",
+      entries: [
+        SettingsScreenWidgets.tapTile(
+            leading: Icon(Icons.delete_forever_rounded,
+                color: Theme.of(context).colorScheme.error),
+            textColor: Theme.of(context).colorScheme.error,
+            title: "Delete account",
+            onTap: () async {
+              await showDialog<List<bool>?>(
+                  context: context,
+                  useRootNavigator: false,
+                  builder: (BuildContext context) {
+                    return const CheckDeleteDialog(
+                      type: "Account",
+                      showCheckbox: false,
+                    );
+                  }).then((deleteInfo) async {
+                if (null == deleteInfo) {
+                  return;
+                }
+                bool delete = deleteInfo[0];
+                if (delete) {
+                  print("Deleted Acount");
+                  //await userProvider.deleteUser();
+                  // Push to Login screen/user switcher.
+                }
+              });
+            }),
+      ],
+    );
+  }
+
   List<Widget> getAvailableWindowEffects() {
-    List<Radio> validEffects = List.empty(growable: true);
+    List<Widget> validEffects = List.empty(growable: true);
 
     bool filterWindows = (Platform.isWindows && !userProvider.win11);
     for (Effect effect in Effect.values) {
@@ -659,21 +943,29 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
             continue;
           }
           break;
+        case Effect.sidebar:
+          if (!Platform.isMacOS) {
+            continue;
+          }
+          break;
         default:
           break;
       }
 
       validEffects.add(
-        Radio<Effect>(
-            value: effect,
+        SettingsScreenWidgets.radioTile<Effect>(
+            member: effect,
             groupValue: themeProvider.windowEffect,
-            onChanged: (Effect? newEffect) {
+            onChanged: (newEffect) {
               if (null == newEffect) {
                 return;
               }
+
               themeProvider.windowEffect = newEffect;
               if (mounted) {
-                setState(() => _windowEffectOpened = false);
+                setState(() {
+                  _windowEffectOpened = false;
+                });
               }
             }),
       );

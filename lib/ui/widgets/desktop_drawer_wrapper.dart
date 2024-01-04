@@ -3,9 +3,11 @@
 import 'package:flutter/material.dart';
 
 class DesktopDrawerWrapper extends StatelessWidget {
-  const DesktopDrawerWrapper({super.key, required this.drawer});
+  const DesktopDrawerWrapper(
+      {super.key, required this.drawer, this.elevation = 0});
 
   final NavigationDrawer drawer;
+  final double elevation;
 
   @override
   Widget build(BuildContext context) {
@@ -17,11 +19,11 @@ class DesktopDrawerWrapper extends StatelessWidget {
         removeRight: true,
         child: Theme(
             data: Theme.of(context).copyWith(
-                drawerTheme: const DrawerThemeData(
-              elevation: 0,
+                drawerTheme: DrawerThemeData(
               // These are for zero border radius
-              shape: RoundedRectangleBorder(),
-              endShape: RoundedRectangleBorder(),
+              elevation: elevation,
+              shape: const RoundedRectangleBorder(),
+              endShape: const RoundedRectangleBorder(),
             )),
             child: drawer));
   }

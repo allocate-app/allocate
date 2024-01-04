@@ -7,6 +7,7 @@ import '../services/supabase_service.dart';
 import '../util/constants.dart';
 import '../util/enums.dart';
 import '../util/exceptions.dart';
+import '../util/interfaces/i_repeatable.dart';
 import '../util/interfaces/repository/model/deadline_repository.dart';
 import '../util/interfaces/sortable.dart';
 
@@ -143,7 +144,7 @@ class DeadlineRepo implements DeadlineRepository {
   }
 
   @override
-  Future<List<Deadline>> deleteFutures({required Deadline deleteFrom}) async {
+  Future<List<int>> deleteFutures({required IRepeatable deleteFrom}) async {
     List<Deadline> toDelete = await _isarClient.deadlines
         .where()
         .repeatIDEqualTo(deleteFrom.repeatID)
@@ -153,10 +154,13 @@ class DeadlineRepo implements DeadlineRepository {
 
     // This is to prevent a race condition & accidentally deleting a notification.
     toDelete.remove(deleteFrom);
-    toDelete.map((Deadline deadline) => deadline.toDelete = true).toList();
-
+    List<int> ids = List.empty(growable: true);
+    for (Deadline deadline in toDelete) {
+      deadline.toDelete = true;
+      ids.add(deadline.id);
+    }
     await updateBatch(toDelete);
-    return toDelete;
+    return ids;
   }
 
   @override
@@ -367,6 +371,25 @@ class DeadlineRepo implements DeadlineRepository {
           .toDeleteEqualTo(false)
           .dueDateLessThan(now ?? Constants.today)
           .findAll();
+
+  @override
+  Future<Deadline?> getDelta(
+          {required DateTime onDate, required int repeatID}) async =>
+      await _isarClient.deadlines
+          .where()
+          .repeatableStateEqualTo(RepeatableState.delta)
+          .filter()
+          .originalStartEqualTo(onDate)
+          .findFirst();
+
+  @override
+  Future<Deadline?> getTemplate({required int repeatID}) async =>
+      await _isarClient.deadlines
+          .where()
+          .repeatableStateEqualTo(RepeatableState.template)
+          .filter()
+          .repeatIDEqualTo(repeatID)
+          .findFirst();
 
   Future<List<int>> getDeleteIds() async => await _isarClient.deadlines
       .where()

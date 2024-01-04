@@ -73,6 +73,7 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
   void initializeParameters() {
     checkClose = false;
     prevDeadline = deadline.copy();
+    prevDeadline.id = deadline.id;
 
     showStartTime = null != deadline.startDate;
     showDueTime = null != deadline.dueDate;
@@ -192,44 +193,37 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
     }
   }
 
-  Future<void> handleUpdate() async {
-    // in case the usr doesn't submit to the textfields
-    deadline.name = nameEditingController.text;
-    deadline.description = descriptionEditingController.text;
-
+  Future<void> handleRepeating(
+      {String action = "", bool delete = false}) async {
     if (prevDeadline.frequency != Frequency.once && checkClose) {
-      bool? updateSingle = await showModalBottomSheet<bool?>(
+      bool? modifySingle = await showModalBottomSheet<bool?>(
           showDragHandle: true,
           context: context,
           builder: (BuildContext context) {
-            return const HandleRepeatableModal(
-              action: "Update",
-            );
+            return HandleRepeatableModal(action: action);
           });
+
       // If the modal is discarded.
-      if (null == updateSingle) {
+      if (null == modifySingle) {
         return;
       }
 
-      await deadlineProvider
-          .deleteAndCancelFutures(deadline: prevDeadline)
-          .catchError((e) {
-        Flushbar? error;
+      if (modifySingle) {
+        // This implies the next deadline has already been generated.
+        if (!prevDeadline.repeatable) {
+          return;
+        }
 
-        error = Flushbars.createError(
-          message: e.cause,
-          context: context,
-          dismissCallback: () => error?.dismiss(),
-        );
+        if (delete) {
+          prevDeadline.toDelete = true;
+        }
 
-        error.show(context);
-      }, test: (e) => e is FailureToDeleteException);
+        deadline.repeatID = Constants.generateID();
+        while (deadline.repeatID == Constants.intMax) {
+          deadline.repeatID = Constants.generateID();
+        }
 
-      if (updateSingle) {
-        prevDeadline.repeatable = true;
-        // Need to sever the connection to future repeating events.
-        deadline.repeatID = deadline.hashCode;
-
+        // Generate the next repeating event to keep the chain going.
         await deadlineProvider.nextRepeat(deadline: prevDeadline).catchError(
             (e) {
           Flushbar? error;
@@ -241,18 +235,39 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
           );
 
           error.show(context);
-        },
-            test: (e) =>
-                e is FailureToCreateException || e is FailureToUploadException);
-        deadline.repeatable = false;
-        deadline.frequency = Frequency.once;
+        }, test: (e) => e is FailureToDeleteException).whenComplete(() {
+          print("repeat complete");
+        });
       } else {
-        deadline.repeatable = (deadline.frequency != Frequency.once);
+        // Currently, there is no way to batch update fields with ISAR, until v4.
+        // This is also easier than computing the difference between objects, esp dates.
+        await deadlineProvider
+            .deleteAndCancelFutures(deadline: prevDeadline)
+            .catchError((e) {
+          Flushbar? error;
+
+          error = Flushbars.createError(
+            message: e.cause,
+            context: context,
+            dismissCallback: () => error?.dismiss(),
+          );
+
+          error.show(context);
+        }, test: (e) => e is FailureToDeleteException).whenComplete(() {
+          print("delete all complete");
+        });
       }
-    } else {
-      deadline.repeatable = (deadline.frequency != Frequency.once);
     }
 
+    // There is a race condition.
+    await Future.delayed(const Duration(microseconds: 3000)).whenComplete(() {
+      print("dorp dorp");
+    });
+    print("dorp");
+  }
+
+  Future<void> handleUpdate() async {
+    await handleRepeating(action: "Update");
     return await deadlineProvider.updateDeadline().whenComplete(() {
       Navigator.pop(context);
     }).catchError((e) {
@@ -271,53 +286,8 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
   }
 
   Future<void> handleDelete() async {
-    if (prevDeadline.frequency != Frequency.once) {
-      bool? deleteSingle = await showModalBottomSheet<bool?>(
-          showDragHandle: true,
-          context: context,
-          builder: (BuildContext context) {
-            return const HandleRepeatableModal(action: "Delete");
-          });
-      // If the modal is discarded.
-      if (null == deleteSingle) {
-        return;
-      }
-
-      await deadlineProvider
-          .deleteAndCancelFutures(deadline: prevDeadline)
-          .catchError((e) {
-        Flushbar? error;
-
-        error = Flushbars.createError(
-          message: e.cause,
-          context: context,
-          dismissCallback: () => error?.dismiss(),
-        );
-
-        error.show(context);
-      }, test: (e) => e is FailureToDeleteException);
-
-      if (deleteSingle) {
-        prevDeadline.repeatable = true;
-        // Need to sever the connection to future repeating events.
-        deadline.repeatID = deadline.hashCode;
-
-        await deadlineProvider.nextRepeat(deadline: prevDeadline).catchError(
-            (e) {
-          Flushbar? error;
-
-          error = Flushbars.createError(
-            message: e.cause,
-            context: context,
-            dismissCallback: () => error?.dismiss(),
-          );
-
-          error.show(context);
-        },
-            test: (e) =>
-                e is FailureToCreateException || e is FailureToUploadException);
-      }
-    }
+    checkClose = userProvider.curUser?.checkClose ?? true;
+    await handleRepeating(action: "Delete", delete: true);
 
     return await deadlineProvider.deleteDeadline().whenComplete(() {
       Navigator.pop(context);
@@ -335,6 +305,9 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
   }
 
   Future<void> updateAndValidate() async {
+    deadline.name = nameEditingController.text;
+    deadline.description = descriptionEditingController.text;
+
     if (validateData()) {
       await handleUpdate();
     }
@@ -592,7 +565,7 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                                             const EdgeInsets.symmetric(
                                                 horizontal: Constants.padding,
                                                 vertical:
-                                                    Constants.innerPadding),
+                                                    Constants.doublePadding),
                                         priority: deadline.priority,
                                         onSelectionChanged: changePriority,
                                       ),
@@ -636,49 +609,45 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                                         handleClear: clearDates,
                                         handleUpdate: updateDates,
                                       ),
-                                      (showTimeTile)
-                                          ? const PaddedDivider(
-                                              padding: Constants.padding)
-                                          : const SizedBox.shrink(),
+                                      if (showTimeTile) ...[
+                                        const PaddedDivider(
+                                            padding: Constants.padding),
+                                        Tiles.timeTile(
+                                          outerPadding:
+                                              const EdgeInsets.symmetric(
+                                                  horizontal:
+                                                      Constants.padding),
+                                          startTime: (showStartTime)
+                                              ? TimeOfDay.fromDateTime(
+                                                  deadline.startDate!)
+                                              : null,
+                                          dueTime: (showDueTime)
+                                              ? TimeOfDay.fromDateTime(
+                                                  deadline.dueDate!)
+                                              : null,
+                                          context: context,
+                                          handleClear: clearTimes,
+                                          handleUpdate: updateTimes,
+                                        ),
+                                      ],
 
-                                      (showTimeTile)
-                                          ? Tiles.timeTile(
-                                              outerPadding:
-                                                  const EdgeInsets.symmetric(
-                                                      horizontal:
-                                                          Constants.padding),
-                                              startTime: (showStartTime)
-                                                  ? TimeOfDay.fromDateTime(
-                                                      deadline.startDate!)
-                                                  : null,
-                                              dueTime: (showDueTime)
-                                                  ? TimeOfDay.fromDateTime(
-                                                      deadline.dueDate!)
-                                                  : null,
-                                              context: context,
-                                              handleClear: clearTimes,
-                                              handleUpdate: updateTimes,
-                                            )
-                                          : const SizedBox.shrink(),
-                                      (showRepeatTile)
-                                          ? const PaddedDivider(
-                                              padding: Constants.padding)
-                                          : const SizedBox.shrink(),
-                                      (showRepeatTile)
-                                          ? Tiles.repeatableTile(
-                                              context: context,
-                                              outerPadding:
-                                                  const EdgeInsets.symmetric(
-                                                      horizontal:
-                                                          Constants.padding),
-                                              frequency: deadline.frequency,
-                                              weekdays: weekdayList,
-                                              repeatSkip: deadline.repeatSkip,
-                                              startDate: deadline.startDate,
-                                              handleUpdate: updateRepeatable,
-                                              handleClear: clearRepeatable,
-                                            )
-                                          : const SizedBox.shrink(),
+                                      if (showRepeatTile) ...[
+                                        const PaddedDivider(
+                                            padding: Constants.padding),
+                                        Tiles.repeatableTile(
+                                          context: context,
+                                          outerPadding:
+                                              const EdgeInsets.symmetric(
+                                                  horizontal:
+                                                      Constants.padding),
+                                          frequency: deadline.frequency,
+                                          weekdays: weekdayList,
+                                          repeatSkip: deadline.repeatSkip,
+                                          startDate: deadline.startDate,
+                                          handleUpdate: updateRepeatable,
+                                          handleClear: clearRepeatable,
+                                        )
+                                      ],
                                     ]),
                               ),
                               Flexible(
@@ -777,7 +746,7 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                       context: context,
                       outerPadding: const EdgeInsets.symmetric(
                           horizontal: Constants.padding,
-                          vertical: Constants.innerPadding),
+                          vertical: Constants.doublePadding),
                       priority: deadline.priority,
                       onSelectionChanged: changePriority,
                     ),
@@ -824,42 +793,38 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                       handleUpdate: updateDates,
                     ),
 
-                    (showTimeTile)
-                        ? const PaddedDivider(padding: Constants.padding)
-                        : const SizedBox.shrink(),
                     // Time
-                    (showTimeTile)
-                        ? Tiles.timeTile(
-                            outerPadding: const EdgeInsets.symmetric(
-                                horizontal: Constants.padding),
-                            startTime: (showStartTime)
-                                ? TimeOfDay.fromDateTime(deadline.startDate!)
-                                : null,
-                            dueTime: (showDueTime)
-                                ? TimeOfDay.fromDateTime(deadline.dueDate!)
-                                : null,
-                            context: context,
-                            handleClear: clearTimes,
-                            handleUpdate: updateTimes,
-                          )
-                        : const SizedBox.shrink(),
-                    (showRepeatTile)
-                        ? const PaddedDivider(padding: Constants.padding)
-                        : const SizedBox.shrink(),
+                    if (showTimeTile) ...[
+                      const PaddedDivider(padding: Constants.padding),
+                      Tiles.timeTile(
+                        outerPadding: const EdgeInsets.symmetric(
+                            horizontal: Constants.padding),
+                        startTime: (showStartTime)
+                            ? TimeOfDay.fromDateTime(deadline.startDate!)
+                            : null,
+                        dueTime: (showDueTime)
+                            ? TimeOfDay.fromDateTime(deadline.dueDate!)
+                            : null,
+                        context: context,
+                        handleClear: clearTimes,
+                        handleUpdate: updateTimes,
+                      ),
+                    ],
                     // Repeatable Stuff -> Show status, on click, open a dialog.
-                    (showRepeatTile)
-                        ? Tiles.repeatableTile(
-                            context: context,
-                            outerPadding: const EdgeInsets.symmetric(
-                                horizontal: Constants.padding),
-                            frequency: deadline.frequency,
-                            weekdays: weekdayList,
-                            repeatSkip: deadline.repeatSkip,
-                            startDate: deadline.startDate,
-                            handleUpdate: updateRepeatable,
-                            handleClear: clearRepeatable,
-                          )
-                        : const SizedBox.shrink(),
+                    if (showRepeatTile) ...[
+                      const PaddedDivider(padding: Constants.padding),
+                      Tiles.repeatableTile(
+                        context: context,
+                        outerPadding: const EdgeInsets.symmetric(
+                            horizontal: Constants.padding),
+                        frequency: deadline.frequency,
+                        weekdays: weekdayList,
+                        repeatSkip: deadline.repeatSkip,
+                        startDate: deadline.startDate,
+                        handleUpdate: updateRepeatable,
+                        handleClear: clearRepeatable,
+                      ),
+                    ],
                   ],
                 ),
               ),

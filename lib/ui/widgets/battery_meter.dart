@@ -56,7 +56,7 @@ class _BatteryMeter extends State<BatteryMeter> {
                     color: (((offset < 0.6) ^ (widget.forward)) ||
                             !widget.alertUser)
                         ? Theme.of(context).colorScheme.inversePrimary
-                        : Colors.redAccent,
+                        : Theme.of(context).colorScheme.tertiary,
                     minHeight: 50,
                     value: (widget.forward) ? offset : 1 - offset,
                     // Possibly remove

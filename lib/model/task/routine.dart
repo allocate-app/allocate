@@ -27,28 +27,26 @@ class Routine with EquatableMixin implements Copyable<Routine>, IModel {
   @Index()
   String name;
 
-  @Index()
   int weight;
 
   int expectedDuration;
 
-  @Index()
   int realDuration;
 
   @ignore
   late List<Subtask> subtasks;
 
-  @Index()
   int customViewIndex = -1;
 
+  @override
   @Index()
   bool isSynced = false;
 
+  @override
   @Index()
   bool toDelete = false;
 
   @override
-  @Index()
   DateTime lastUpdated;
 
   Routine({
@@ -58,11 +56,7 @@ class Routine with EquatableMixin implements Copyable<Routine>, IModel {
     required this.realDuration,
     this.subtasks = const <Subtask>[],
     required this.lastUpdated,
-  }) {
-    while (Constants.intMax == id) {
-      id = Constants.generateID();
-    }
-  }
+  });
 
   Routine.fromEntity({required Map<String, dynamic> entity})
       : id = entity["id"] as Id,

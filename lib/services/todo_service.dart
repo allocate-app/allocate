@@ -127,73 +127,73 @@ class ToDoService {
     await _subtaskRepository.updateBatch(subtasksToUpdate);
   }
 
-  Future<void> populateCalendar({required DateTime limit}) async {
-    DateTime startTime = DateTime.now();
-    while (startTime.isBefore(limit)) {
-      List<ToDo> repeatables = await _repository.getRepeatables(now: startTime);
+  // Future<void> populateCalendar({required DateTime limit}) async {
+  //   DateTime startTime = DateTime.now();
+  //   while (startTime.isBefore(limit)) {
+  //     List<ToDo> repeatables = await _repository.getRepeatables(now: startTime);
+  //
+  //     await checkRepeating(now: startTime, repeatables: repeatables)
+  //         .whenComplete(() {
+  //       startTime = startTime.copyWith(day: startTime.day + 1);
+  //     });
+  //   }
+  // }
 
-      await checkRepeating(now: startTime, repeatables: repeatables)
-          .whenComplete(() {
-        startTime = startTime.copyWith(day: startTime.day + 1);
-      });
-    }
-  }
-
-  Future<void> checkRepeating(
-      {required DateTime now, List<ToDo>? repeatables}) async {
-    List<ToDo> toDosToUpdate = List.empty(growable: true);
-    List<Subtask> subtasksToUpdate = List.empty(growable: true);
-
-    repeatables = repeatables ?? await _repository.getRepeatables(now: now);
-
-    for (ToDo toDo in repeatables) {
-      DateTime? nextRepeatDate = getRepeatDate(toDo: toDo);
-
-      if (null == nextRepeatDate) {
-        toDo.repeatable = false;
-        toDosToUpdate.add(toDo);
-        continue;
-      }
-      int offset =
-          getDateTimeDayOffset(start: toDo.startDate!, end: toDo.dueDate!);
-
-      DateTime nextDueDate = nextRepeatDate.copyWith(
-          hour: toDo.dueDate!.hour,
-          minute: toDo.dueDate!.minute,
-          day: nextRepeatDate.day + offset);
-
-      ToDo newToDo = toDo.copyWith(
-          completed: false,
-          myDay: false,
-          startDate: nextRepeatDate,
-          dueDate: nextDueDate,
-          lastUpdated: DateTime.now());
-
-      // if the task has subtasks, grab and duplicate.
-      if (TaskType.small != toDo.taskType) {
-        List<Subtask> subtasks =
-            await _subtaskRepository.getRepoByTaskID(id: toDo.id);
-        int newWeight = 0;
-        int i = 0;
-        for (Subtask subtask in subtasks) {
-          subtasksToUpdate
-              .add(subtask.copyWith(completed: false, taskID: newToDo.id));
-          if (i < Constants.numTasks[newToDo.taskType]!) {
-            newWeight += subtask.weight;
-            i++;
-          }
-        }
-
-        newToDo.weight = newWeight;
-      }
-
-      toDo.repeatable = false;
-      toDosToUpdate.add(newToDo);
-      toDosToUpdate.add(toDo);
-    }
-    await _repository.updateBatch(toDosToUpdate);
-    await _subtaskRepository.updateBatch(subtasksToUpdate);
-  }
+  // Future<void> checkRepeating(
+  //     {required DateTime now, List<ToDo>? repeatables}) async {
+  //   List<ToDo> toDosToUpdate = List.empty(growable: true);
+  //   List<Subtask> subtasksToUpdate = List.empty(growable: true);
+  //
+  //   repeatables = repeatables ?? await _repository.getRepeatables(now: now);
+  //
+  //   for (ToDo toDo in repeatables) {
+  //     DateTime? nextRepeatDate = getRepeatDate(toDo: toDo);
+  //
+  //     if (null == nextRepeatDate) {
+  //       toDo.repeatable = false;
+  //       toDosToUpdate.add(toDo);
+  //       continue;
+  //     }
+  //     int offset =
+  //         getDateTimeDayOffset(start: toDo.startDate!, end: toDo.dueDate!);
+  //
+  //     DateTime nextDueDate = nextRepeatDate.copyWith(
+  //         hour: toDo.dueDate!.hour,
+  //         minute: toDo.dueDate!.minute,
+  //         day: nextRepeatDate.day + offset);
+  //
+  //     ToDo newToDo = toDo.copyWith(
+  //         completed: false,
+  //         myDay: false,
+  //         startDate: nextRepeatDate,
+  //         dueDate: nextDueDate,
+  //         lastUpdated: DateTime.now());
+  //
+  //     // if the task has subtasks, grab and duplicate.
+  //     if (TaskType.small != toDo.taskType) {
+  //       List<Subtask> subtasks =
+  //           await _subtaskRepository.getRepoByTaskID(id: toDo.id);
+  //       int newWeight = 0;
+  //       int i = 0;
+  //       for (Subtask subtask in subtasks) {
+  //         subtasksToUpdate
+  //             .add(subtask.copyWith(completed: false, taskID: newToDo.id));
+  //         if (i < Constants.numTasks[newToDo.taskType]!) {
+  //           newWeight += subtask.weight;
+  //           i++;
+  //         }
+  //       }
+  //
+  //       newToDo.weight = newWeight;
+  //     }
+  //
+  //     toDo.repeatable = false;
+  //     toDosToUpdate.add(newToDo);
+  //     toDosToUpdate.add(toDo);
+  //   }
+  //   await _repository.updateBatch(toDosToUpdate);
+  //   await _subtaskRepository.updateBatch(subtasksToUpdate);
+  // }
 
   DateTime? getCustom({required ToDo toDo}) {
     int start = toDo.startDate!.weekday - 1;
@@ -228,20 +228,20 @@ class ToDoService {
   }
 
   Future<ToDo> createToDo({required ToDo toDo}) async =>
-      await _repository.create(toDo);
+      await _repository.create(toDo) as ToDo;
 
   Future<List<ToDo>> searchToDos({required String searchString}) async =>
       await _repository.search(searchString: searchString);
 
   Future<List<ToDo>> getToDos({int limit = 50, int offset = 0}) async =>
-      await _repository.getRepoList(limit: limit, offset: offset);
+      await _repository.getRepoList(limit: limit, offset: offset) as List<ToDo>;
 
   Future<List<ToDo>> getToDosBy(
           {required SortableView<ToDo> toDoSorter,
           int limit = 50,
           int offset = 0}) async =>
       await _repository.getRepoListBy(
-          sorter: toDoSorter, limit: limit, offset: offset);
+          sorter: toDoSorter, limit: limit, offset: offset) as List<ToDo>;
 
   Future<List<ToDo>> getRange({DateTime? start, DateTime? end}) async =>
       await _repository.getRange(start: start, end: end);
@@ -253,7 +253,7 @@ class ToDoService {
       await _repository.getUpcoming(limit: limit, offset: offset);
 
   Future<ToDo?> getToDoByID({int? id}) async =>
-      (null != id) ? await _repository.getByID(id: id) : null;
+      (null != id) ? await _repository.getByID(id: id) as ToDo? : null;
 
   Future<List<ToDo>> mostRecent({int limit = 5}) async =>
       await _repository.mostRecent(limit: limit);
@@ -282,7 +282,7 @@ class ToDoService {
           sorter: toDoSorter, limit: limit, offset: offset);
 
   Future<ToDo> updateToDo({required ToDo toDo}) async =>
-      await _repository.update(toDo);
+      await _repository.update(toDo) as ToDo;
 
   Future<void> updateBatch({required List<ToDo> toDos}) async =>
       await _repository.updateBatch(toDos);
@@ -292,7 +292,7 @@ class ToDoService {
 
   Future<void> clearDeletesLocalRepo() async => _repository.deleteLocal();
 
-  Future<List<ToDo>> deleteFutures({required ToDo toDo}) async =>
+  Future<List<int>> deleteFutures({required ToDo toDo}) async =>
       await _repository.deleteFutures(deleteFrom: toDo);
 
   Future<void> syncRepo() async => await _repository.syncRepo();

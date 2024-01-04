@@ -20,7 +20,7 @@ abstract class Flushbars {
           message: message,
           flushbarPosition: FlushbarPosition.TOP,
           margin: const EdgeInsets.symmetric(
-              horizontal: Constants.padding, vertical: Constants.innerPadding),
+              horizontal: Constants.padding, vertical: Constants.doublePadding),
           padding: const EdgeInsets.all(Constants.padding),
           borderRadius:
               const BorderRadius.all(Radius.circular(Constants.semiCircular)),
@@ -54,7 +54,7 @@ abstract class Flushbars {
           message: message,
           flushbarPosition: FlushbarPosition.TOP,
           margin: const EdgeInsets.symmetric(
-              horizontal: Constants.padding, vertical: Constants.innerPadding),
+              horizontal: Constants.padding, vertical: Constants.doublePadding),
           padding: const EdgeInsets.all(Constants.padding),
           borderRadius:
               const BorderRadius.all(Radius.circular(Constants.semiCircular)),

@@ -1,5 +1,11 @@
-abstract interface class Repeatable<T> {
+import '../../i_repeatable.dart';
+
+abstract interface class Repeatable<T extends IRepeatable> {
   Future<List<T>> getRepeatables({DateTime? now});
 
-  Future<List<T>> deleteFutures({required T deleteFrom});
+  Future<T?> getDelta({required DateTime onDate, required int repeatID});
+
+  Future<T?> getTemplate({required int repeatID});
+
+  Future<List<int>> deleteFutures({required T deleteFrom});
 }

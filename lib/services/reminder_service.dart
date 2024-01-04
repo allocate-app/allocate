@@ -50,6 +50,7 @@ class ReminderService {
 
     Reminder newReminder = reminder.copyWith(
       dueDate: nextRepeatDate,
+      lastUpdated: DateTime.now(),
     );
 
     newReminder.notificationID = Constants.generateID();
@@ -57,46 +58,47 @@ class ReminderService {
     await _repository.updateBatch([reminder, newReminder]);
   }
 
-  Future<void> populateCalendar({required DateTime limit}) async {
-    DateTime startTime = DateTime.now();
-    while (startTime.isBefore(limit)) {
-      List<Reminder> repeatables =
-          await _repository.getRepeatables(now: startTime);
-
-      await checkRepeating(now: startTime, repeatables: repeatables)
-          .whenComplete(() {
-        startTime = startTime.copyWith(day: startTime.day + 1);
-      });
-    }
-  }
-
-  Future<void> checkRepeating(
-      {required DateTime now, List<Reminder>? repeatables}) async {
-    List<Reminder> toUpdate = List.empty(growable: true);
-
-    repeatables = repeatables ?? await _repository.getRepeatables(now: now);
-
-    for (Reminder reminder in repeatables) {
-      DateTime? nextRepeatDate = getRepeatDate(reminder: reminder);
-
-      if (null == nextRepeatDate) {
-        reminder.repeatable = false;
-        toUpdate.add(reminder);
-        continue;
-      }
-
-      Reminder newReminder = reminder.copyWith(
-        dueDate: nextRepeatDate,
-      );
-
-      newReminder.notificationID = Constants.generateID();
-
-      reminder.repeatable = false;
-      toUpdate.add(newReminder);
-      toUpdate.add(reminder);
-    }
-    await _repository.updateBatch(toUpdate);
-  }
+  // Future<void> populateCalendar({required DateTime limit}) async {
+  //   DateTime startTime = DateTime.now();
+  //   while (startTime.isBefore(limit)) {
+  //     List<Reminder> repeatables =
+  //         await _repository.getRepeatables(now: startTime);
+  //
+  //     await checkRepeating(now: startTime, repeatables: repeatables)
+  //         .whenComplete(() {
+  //       startTime = startTime.copyWith(day: startTime.day + 1);
+  //     });
+  //   }
+  // }
+  //
+  // Future<void> checkRepeating(
+  //     {required DateTime now, List<Reminder>? repeatables}) async {
+  //   List<Reminder> toUpdate = List.empty(growable: true);
+  //
+  //   repeatables = repeatables ?? await _repository.getRepeatables(now: now);
+  //
+  //   for (Reminder reminder in repeatables) {
+  //     DateTime? nextRepeatDate = getRepeatDate(reminder: reminder);
+  //
+  //     if (null == nextRepeatDate) {
+  //       reminder.repeatable = false;
+  //       toUpdate.add(reminder);
+  //       continue;
+  //     }
+  //
+  //     Reminder newReminder = reminder.copyWith(
+  //       dueDate: nextRepeatDate,
+  //       lastUpdated: DateTime.now(),
+  //     );
+  //
+  //     newReminder.notificationID = Constants.generateID();
+  //
+  //     reminder.repeatable = false;
+  //     toUpdate.add(newReminder);
+  //     toUpdate.add(reminder);
+  //   }
+  //   await _repository.updateBatch(toUpdate);
+  // }
 
   DateTime? getCustom({required Reminder reminder}) {
     int start = reminder.dueDate!.weekday - 1;
@@ -173,7 +175,7 @@ class ReminderService {
 
   Future<void> clearDeletesLocalRepo() async => await _repository.deleteLocal();
 
-  Future<List<Reminder>> deleteFutures({required Reminder reminder}) async =>
+  Future<List<int>> deleteFutures({required Reminder reminder}) async =>
       await _repository.deleteFutures(deleteFrom: reminder);
 
   Future<void> syncRepo() async => await _repository.syncRepo();

@@ -43,7 +43,7 @@ abstract class Subtitles {
                     AutoSizeText(
                       Jiffy.parseFromDateTime(dueDate)
                           .toLocal()
-                          .format(pattern: "MMM d"),
+                          .format(pattern: "MMM d y"),
                       softWrap: false,
                       overflow: TextOverflow.visible,
                       maxLines: 2,
@@ -92,7 +92,7 @@ abstract class Subtitles {
                     AutoSizeText(
                       Jiffy.parseFromDateTime(dueDate)
                           .toLocal()
-                          .format(pattern: "MMM d"),
+                          .format(pattern: "MMM d y"),
                       softWrap: false,
                       overflow: TextOverflow.visible,
                       maxLines: 2,
@@ -109,7 +109,7 @@ abstract class Subtitles {
                     AutoSizeText(
                       Jiffy.parseFromDateTime(warnDate)
                           .toLocal()
-                          .format(pattern: "MMM d"),
+                          .format(pattern: "MMM d y"),
                       softWrap: false,
                       overflow: TextOverflow.visible,
                       maxLines: 2,
@@ -299,7 +299,7 @@ abstract class Subtitles {
       {required BuildContext context,
       required IRepeatable model,
       bool smallScreen = false}) {
-    switch (model.repeatableType) {
+    switch (model.modelType) {
       case ModelType.task:
         return toDoSubtitle(
             context: context,

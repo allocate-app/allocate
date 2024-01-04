@@ -48,7 +48,7 @@ class _DurationDialog extends State<DurationDialog> {
           constraints: const BoxConstraints(
               maxWidth: Constants.smallLandscapeDialogWidth),
           child: Padding(
-              padding: const EdgeInsets.all(Constants.innerPadding),
+              padding: const EdgeInsets.all(Constants.doublePadding),
               child: Column(
                   mainAxisSize: MainAxisSize.min,
                   mainAxisAlignment: MainAxisAlignment.center,

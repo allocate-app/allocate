@@ -78,55 +78,71 @@ const ToDoSchema = CollectionSchema(
       name: r'name',
       type: IsarType.string,
     ),
-    r'priority': PropertySchema(
+    r'originalDue': PropertySchema(
       id: 12,
+      name: r'originalDue',
+      type: IsarType.dateTime,
+    ),
+    r'originalStart': PropertySchema(
+      id: 13,
+      name: r'originalStart',
+      type: IsarType.dateTime,
+    ),
+    r'priority': PropertySchema(
+      id: 14,
       name: r'priority',
       type: IsarType.byte,
       enumMap: _ToDopriorityEnumValueMap,
     ),
     r'realDuration': PropertySchema(
-      id: 13,
+      id: 15,
       name: r'realDuration',
       type: IsarType.long,
     ),
     r'repeatDays': PropertySchema(
-      id: 14,
+      id: 16,
       name: r'repeatDays',
       type: IsarType.boolList,
     ),
     r'repeatID': PropertySchema(
-      id: 15,
+      id: 17,
       name: r'repeatID',
       type: IsarType.long,
     ),
     r'repeatSkip': PropertySchema(
-      id: 16,
+      id: 18,
       name: r'repeatSkip',
       type: IsarType.long,
     ),
     r'repeatable': PropertySchema(
-      id: 17,
+      id: 19,
       name: r'repeatable',
       type: IsarType.bool,
     ),
+    r'repeatableState': PropertySchema(
+      id: 20,
+      name: r'repeatableState',
+      type: IsarType.byte,
+      enumMap: _ToDorepeatableStateEnumValueMap,
+    ),
     r'startDate': PropertySchema(
-      id: 18,
+      id: 21,
       name: r'startDate',
       type: IsarType.dateTime,
     ),
     r'taskType': PropertySchema(
-      id: 19,
+      id: 22,
       name: r'taskType',
       type: IsarType.byte,
       enumMap: _ToDotaskTypeEnumValueMap,
     ),
     r'toDelete': PropertySchema(
-      id: 20,
+      id: 23,
       name: r'toDelete',
       type: IsarType.bool,
     ),
     r'weight': PropertySchema(
-      id: 21,
+      id: 24,
       name: r'weight',
       type: IsarType.long,
     )
@@ -150,32 +166,6 @@ const ToDoSchema = CollectionSchema(
         )
       ],
     ),
-    r'groupIndex': IndexSchema(
-      id: 6999630015778111931,
-      name: r'groupIndex',
-      unique: false,
-      replace: false,
-      properties: [
-        IndexPropertySchema(
-          name: r'groupIndex',
-          type: IndexType.value,
-          caseSensitive: false,
-        )
-      ],
-    ),
-    r'customViewIndex': IndexSchema(
-      id: -5365858424493440132,
-      name: r'customViewIndex',
-      unique: false,
-      replace: false,
-      properties: [
-        IndexPropertySchema(
-          name: r'customViewIndex',
-          type: IndexType.value,
-          caseSensitive: false,
-        )
-      ],
-    ),
     r'name': IndexSchema(
       id: 879695947855722453,
       name: r'name',
@@ -189,32 +179,6 @@ const ToDoSchema = CollectionSchema(
         )
       ],
     ),
-    r'weight': IndexSchema(
-      id: 2378601697443572121,
-      name: r'weight',
-      unique: false,
-      replace: false,
-      properties: [
-        IndexPropertySchema(
-          name: r'weight',
-          type: IndexType.value,
-          caseSensitive: false,
-        )
-      ],
-    ),
-    r'realDuration': IndexSchema(
-      id: -2452281714036687218,
-      name: r'realDuration',
-      unique: false,
-      replace: false,
-      properties: [
-        IndexPropertySchema(
-          name: r'realDuration',
-          type: IndexType.value,
-          caseSensitive: false,
-        )
-      ],
-    ),
     r'completed': IndexSchema(
       id: -1755850151728404861,
       name: r'completed',
@@ -223,6 +187,32 @@ const ToDoSchema = CollectionSchema(
       properties: [
         IndexPropertySchema(
           name: r'completed',
+          type: IndexType.value,
+          caseSensitive: false,
+        )
+      ],
+    ),
+    r'startDate': IndexSchema(
+      id: 7723980484494730382,
+      name: r'startDate',
+      unique: false,
+      replace: false,
+      properties: [
+        IndexPropertySchema(
+          name: r'startDate',
+          type: IndexType.value,
+          caseSensitive: false,
+        )
+      ],
+    ),
+    r'originalStart': IndexSchema(
+      id: 7011030668398527848,
+      name: r'originalStart',
+      unique: false,
+      replace: false,
+      properties: [
+        IndexPropertySchema(
+          name: r'originalStart',
           type: IndexType.value,
           caseSensitive: false,
         )
@@ -280,6 +270,19 @@ const ToDoSchema = CollectionSchema(
         )
       ],
     ),
+    r'repeatableState': IndexSchema(
+      id: 7598622448942463528,
+      name: r'repeatableState',
+      unique: false,
+      replace: false,
+      properties: [
+        IndexPropertySchema(
+          name: r'repeatableState',
+          type: IndexType.value,
+          caseSensitive: false,
+        )
+      ],
+    ),
     r'isSynced': IndexSchema(
       id: -39763503327887510,
       name: r'isSynced',
@@ -301,19 +304,6 @@ const ToDoSchema = CollectionSchema(
       properties: [
         IndexPropertySchema(
           name: r'toDelete',
-          type: IndexType.value,
-          caseSensitive: false,
-        )
-      ],
-    ),
-    r'lastUpdated': IndexSchema(
-      id: 8989359681631629925,
-      name: r'lastUpdated',
-      unique: false,
-      replace: false,
-      properties: [
-        IndexPropertySchema(
-          name: r'lastUpdated',
           type: IndexType.value,
           caseSensitive: false,
         )
@@ -358,16 +348,19 @@ void _toDoSerialize(
   writer.writeDateTime(offsets[9], object.lastUpdated);
   writer.writeBool(offsets[10], object.myDay);
   writer.writeString(offsets[11], object.name);
-  writer.writeByte(offsets[12], object.priority.index);
-  writer.writeLong(offsets[13], object.realDuration);
-  writer.writeBoolList(offsets[14], object.repeatDays);
-  writer.writeLong(offsets[15], object.repeatID);
-  writer.writeLong(offsets[16], object.repeatSkip);
-  writer.writeBool(offsets[17], object.repeatable);
-  writer.writeDateTime(offsets[18], object.startDate);
-  writer.writeByte(offsets[19], object.taskType.index);
-  writer.writeBool(offsets[20], object.toDelete);
-  writer.writeLong(offsets[21], object.weight);
+  writer.writeDateTime(offsets[12], object.originalDue);
+  writer.writeDateTime(offsets[13], object.originalStart);
+  writer.writeByte(offsets[14], object.priority.index);
+  writer.writeLong(offsets[15], object.realDuration);
+  writer.writeBoolList(offsets[16], object.repeatDays);
+  writer.writeLong(offsets[17], object.repeatID);
+  writer.writeLong(offsets[18], object.repeatSkip);
+  writer.writeBool(offsets[19], object.repeatable);
+  writer.writeByte(offsets[20], object.repeatableState.index);
+  writer.writeDateTime(offsets[21], object.startDate);
+  writer.writeByte(offsets[22], object.taskType.index);
+  writer.writeBool(offsets[23], object.toDelete);
+  writer.writeLong(offsets[24], object.weight);
 }
 
 ToDo _toDoDeserialize(
@@ -389,21 +382,26 @@ ToDo _toDoDeserialize(
     lastUpdated: reader.readDateTime(offsets[9]),
     myDay: reader.readBoolOrNull(offsets[10]) ?? false,
     name: reader.readString(offsets[11]),
-    priority: _ToDopriorityValueEnumMap[reader.readByteOrNull(offsets[12])] ??
+    originalDue: reader.readDateTimeOrNull(offsets[12]),
+    originalStart: reader.readDateTimeOrNull(offsets[13]),
+    priority: _ToDopriorityValueEnumMap[reader.readByteOrNull(offsets[14])] ??
         Priority.low,
-    realDuration: reader.readLong(offsets[13]),
-    repeatDays: reader.readBoolList(offsets[14]) ?? [],
-    repeatID: reader.readLongOrNull(offsets[15]),
-    repeatSkip: reader.readLongOrNull(offsets[16]) ?? 1,
-    repeatable: reader.readBoolOrNull(offsets[17]) ?? false,
-    startDate: reader.readDateTimeOrNull(offsets[18]),
-    taskType: _ToDotaskTypeValueEnumMap[reader.readByteOrNull(offsets[19])] ??
+    realDuration: reader.readLong(offsets[15]),
+    repeatDays: reader.readBoolList(offsets[16]) ?? [],
+    repeatID: reader.readLongOrNull(offsets[17]),
+    repeatSkip: reader.readLongOrNull(offsets[18]) ?? 1,
+    repeatable: reader.readBoolOrNull(offsets[19]) ?? false,
+    repeatableState:
+        _ToDorepeatableStateValueEnumMap[reader.readByteOrNull(offsets[20])] ??
+            RepeatableState.normal,
+    startDate: reader.readDateTimeOrNull(offsets[21]),
+    taskType: _ToDotaskTypeValueEnumMap[reader.readByteOrNull(offsets[22])] ??
         TaskType.small,
-    weight: reader.readLongOrNull(offsets[21]) ?? 0,
+    weight: reader.readLongOrNull(offsets[24]) ?? 0,
   );
   object.id = id;
   object.isSynced = reader.readBool(offsets[8]);
-  object.toDelete = reader.readBool(offsets[20]);
+  object.toDelete = reader.readBool(offsets[23]);
   return object;
 }
 
@@ -440,26 +438,33 @@ P _toDoDeserializeProp<P>(
     case 11:
       return (reader.readString(offset)) as P;
     case 12:
+      return (reader.readDateTimeOrNull(offset)) as P;
+    case 13:
+      return (reader.readDateTimeOrNull(offset)) as P;
+    case 14:
       return (_ToDopriorityValueEnumMap[reader.readByteOrNull(offset)] ??
           Priority.low) as P;
-    case 13:
-      return (reader.readLong(offset)) as P;
-    case 14:
-      return (reader.readBoolList(offset) ?? []) as P;
     case 15:
-      return (reader.readLongOrNull(offset)) as P;
+      return (reader.readLong(offset)) as P;
     case 16:
-      return (reader.readLongOrNull(offset) ?? 1) as P;
+      return (reader.readBoolList(offset) ?? []) as P;
     case 17:
-      return (reader.readBoolOrNull(offset) ?? false) as P;
+      return (reader.readLongOrNull(offset)) as P;
     case 18:
-      return (reader.readDateTimeOrNull(offset)) as P;
+      return (reader.readLongOrNull(offset) ?? 1) as P;
     case 19:
+      return (reader.readBoolOrNull(offset) ?? false) as P;
+    case 20:
+      return (_ToDorepeatableStateValueEnumMap[reader.readByteOrNull(offset)] ??
+          RepeatableState.normal) as P;
+    case 21:
+      return (reader.readDateTimeOrNull(offset)) as P;
+    case 22:
       return (_ToDotaskTypeValueEnumMap[reader.readByteOrNull(offset)] ??
           TaskType.small) as P;
-    case 20:
+    case 23:
       return (reader.readBool(offset)) as P;
-    case 21:
+    case 24:
       return (reader.readLongOrNull(offset) ?? 0) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -491,6 +496,16 @@ const _ToDopriorityValueEnumMap = {
   0: Priority.low,
   1: Priority.medium,
   2: Priority.high,
+};
+const _ToDorepeatableStateEnumValueMap = {
+  'normal': 0,
+  'template': 1,
+  'delta': 2,
+};
+const _ToDorepeatableStateValueEnumMap = {
+  0: RepeatableState.normal,
+  1: RepeatableState.template,
+  2: RepeatableState.delta,
 };
 const _ToDotaskTypeEnumValueMap = {
   'small': 0,
@@ -530,42 +545,26 @@ extension ToDoQueryWhereSort on QueryBuilder<ToDo, ToDo, QWhere> {
     });
   }
 
-  QueryBuilder<ToDo, ToDo, QAfterWhere> anyGroupIndex() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(
-        const IndexWhereClause.any(indexName: r'groupIndex'),
-      );
-    });
-  }
-
-  QueryBuilder<ToDo, ToDo, QAfterWhere> anyCustomViewIndex() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(
-        const IndexWhereClause.any(indexName: r'customViewIndex'),
-      );
-    });
-  }
-
-  QueryBuilder<ToDo, ToDo, QAfterWhere> anyWeight() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(
-        const IndexWhereClause.any(indexName: r'weight'),
-      );
-    });
-  }
-
-  QueryBuilder<ToDo, ToDo, QAfterWhere> anyRealDuration() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(
-        const IndexWhereClause.any(indexName: r'realDuration'),
-      );
-    });
-  }
-
   QueryBuilder<ToDo, ToDo, QAfterWhere> anyCompleted() {
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(
         const IndexWhereClause.any(indexName: r'completed'),
+      );
+    });
+  }
+
+  QueryBuilder<ToDo, ToDo, QAfterWhere> anyStartDate() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(
+        const IndexWhereClause.any(indexName: r'startDate'),
+      );
+    });
+  }
+
+  QueryBuilder<ToDo, ToDo, QAfterWhere> anyOriginalStart() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(
+        const IndexWhereClause.any(indexName: r'originalStart'),
       );
     });
   }
@@ -602,6 +601,14 @@ extension ToDoQueryWhereSort on QueryBuilder<ToDo, ToDo, QWhere> {
     });
   }
 
+  QueryBuilder<ToDo, ToDo, QAfterWhere> anyRepeatableState() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(
+        const IndexWhereClause.any(indexName: r'repeatableState'),
+      );
+    });
+  }
+
   QueryBuilder<ToDo, ToDo, QAfterWhere> anyIsSynced() {
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(
@@ -614,14 +621,6 @@ extension ToDoQueryWhereSort on QueryBuilder<ToDo, ToDo, QWhere> {
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(
         const IndexWhereClause.any(indexName: r'toDelete'),
-      );
-    });
-  }
-
-  QueryBuilder<ToDo, ToDo, QAfterWhere> anyLastUpdated() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(
-        const IndexWhereClause.any(indexName: r'lastUpdated'),
       );
     });
   }
@@ -801,186 +800,6 @@ extension ToDoQueryWhere on QueryBuilder<ToDo, ToDo, QWhereClause> {
     });
   }
 
-  QueryBuilder<ToDo, ToDo, QAfterWhereClause> groupIndexEqualTo(
-      int groupIndex) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(IndexWhereClause.equalTo(
-        indexName: r'groupIndex',
-        value: [groupIndex],
-      ));
-    });
-  }
-
-  QueryBuilder<ToDo, ToDo, QAfterWhereClause> groupIndexNotEqualTo(
-      int groupIndex) {
-    return QueryBuilder.apply(this, (query) {
-      if (query.whereSort == Sort.asc) {
-        return query
-            .addWhereClause(IndexWhereClause.between(
-              indexName: r'groupIndex',
-              lower: [],
-              upper: [groupIndex],
-              includeUpper: false,
-            ))
-            .addWhereClause(IndexWhereClause.between(
-              indexName: r'groupIndex',
-              lower: [groupIndex],
-              includeLower: false,
-              upper: [],
-            ));
-      } else {
-        return query
-            .addWhereClause(IndexWhereClause.between(
-              indexName: r'groupIndex',
-              lower: [groupIndex],
-              includeLower: false,
-              upper: [],
-            ))
-            .addWhereClause(IndexWhereClause.between(
-              indexName: r'groupIndex',
-              lower: [],
-              upper: [groupIndex],
-              includeUpper: false,
-            ));
-      }
-    });
-  }
-
-  QueryBuilder<ToDo, ToDo, QAfterWhereClause> groupIndexGreaterThan(
-    int groupIndex, {
-    bool include = false,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(IndexWhereClause.between(
-        indexName: r'groupIndex',
-        lower: [groupIndex],
-        includeLower: include,
-        upper: [],
-      ));
-    });
-  }
-
-  QueryBuilder<ToDo, ToDo, QAfterWhereClause> groupIndexLessThan(
-    int groupIndex, {
-    bool include = false,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(IndexWhereClause.between(
-        indexName: r'groupIndex',
-        lower: [],
-        upper: [groupIndex],
-        includeUpper: include,
-      ));
-    });
-  }
-
-  QueryBuilder<ToDo, ToDo, QAfterWhereClause> groupIndexBetween(
-    int lowerGroupIndex,
-    int upperGroupIndex, {
-    bool includeLower = true,
-    bool includeUpper = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(IndexWhereClause.between(
-        indexName: r'groupIndex',
-        lower: [lowerGroupIndex],
-        includeLower: includeLower,
-        upper: [upperGroupIndex],
-        includeUpper: includeUpper,
-      ));
-    });
-  }
-
-  QueryBuilder<ToDo, ToDo, QAfterWhereClause> customViewIndexEqualTo(
-      int customViewIndex) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(IndexWhereClause.equalTo(
-        indexName: r'customViewIndex',
-        value: [customViewIndex],
-      ));
-    });
-  }
-
-  QueryBuilder<ToDo, ToDo, QAfterWhereClause> customViewIndexNotEqualTo(
-      int customViewIndex) {
-    return QueryBuilder.apply(this, (query) {
-      if (query.whereSort == Sort.asc) {
-        return query
-            .addWhereClause(IndexWhereClause.between(
-              indexName: r'customViewIndex',
-              lower: [],
-              upper: [customViewIndex],
-              includeUpper: false,
-            ))
-            .addWhereClause(IndexWhereClause.between(
-              indexName: r'customViewIndex',
-              lower: [customViewIndex],
-              includeLower: false,
-              upper: [],
-            ));
-      } else {
-        return query
-            .addWhereClause(IndexWhereClause.between(
-              indexName: r'customViewIndex',
-              lower: [customViewIndex],
-              includeLower: false,
-              upper: [],
-            ))
-            .addWhereClause(IndexWhereClause.between(
-              indexName: r'customViewIndex',
-              lower: [],
-              upper: [customViewIndex],
-              includeUpper: false,
-            ));
-      }
-    });
-  }
-
-  QueryBuilder<ToDo, ToDo, QAfterWhereClause> customViewIndexGreaterThan(
-    int customViewIndex, {
-    bool include = false,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(IndexWhereClause.between(
-        indexName: r'customViewIndex',
-        lower: [customViewIndex],
-        includeLower: include,
-        upper: [],
-      ));
-    });
-  }
-
-  QueryBuilder<ToDo, ToDo, QAfterWhereClause> customViewIndexLessThan(
-    int customViewIndex, {
-    bool include = false,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(IndexWhereClause.between(
-        indexName: r'customViewIndex',
-        lower: [],
-        upper: [customViewIndex],
-        includeUpper: include,
-      ));
-    });
-  }
-
-  QueryBuilder<ToDo, ToDo, QAfterWhereClause> customViewIndexBetween(
-    int lowerCustomViewIndex,
-    int upperCustomViewIndex, {
-    bool includeLower = true,
-    bool includeUpper = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(IndexWhereClause.between(
-        indexName: r'customViewIndex',
-        lower: [lowerCustomViewIndex],
-        includeLower: includeLower,
-        upper: [upperCustomViewIndex],
-        includeUpper: includeUpper,
-      ));
-    });
-  }
-
   QueryBuilder<ToDo, ToDo, QAfterWhereClause> nameEqualTo(String name) {
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(IndexWhereClause.equalTo(
@@ -1021,184 +840,6 @@ extension ToDoQueryWhere on QueryBuilder<ToDo, ToDo, QWhereClause> {
               includeUpper: false,
             ));
       }
-    });
-  }
-
-  QueryBuilder<ToDo, ToDo, QAfterWhereClause> weightEqualTo(int weight) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(IndexWhereClause.equalTo(
-        indexName: r'weight',
-        value: [weight],
-      ));
-    });
-  }
-
-  QueryBuilder<ToDo, ToDo, QAfterWhereClause> weightNotEqualTo(int weight) {
-    return QueryBuilder.apply(this, (query) {
-      if (query.whereSort == Sort.asc) {
-        return query
-            .addWhereClause(IndexWhereClause.between(
-              indexName: r'weight',
-              lower: [],
-              upper: [weight],
-              includeUpper: false,
-            ))
-            .addWhereClause(IndexWhereClause.between(
-              indexName: r'weight',
-              lower: [weight],
-              includeLower: false,
-              upper: [],
-            ));
-      } else {
-        return query
-            .addWhereClause(IndexWhereClause.between(
-              indexName: r'weight',
-              lower: [weight],
-              includeLower: false,
-              upper: [],
-            ))
-            .addWhereClause(IndexWhereClause.between(
-              indexName: r'weight',
-              lower: [],
-              upper: [weight],
-              includeUpper: false,
-            ));
-      }
-    });
-  }
-
-  QueryBuilder<ToDo, ToDo, QAfterWhereClause> weightGreaterThan(
-    int weight, {
-    bool include = false,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(IndexWhereClause.between(
-        indexName: r'weight',
-        lower: [weight],
-        includeLower: include,
-        upper: [],
-      ));
-    });
-  }
-
-  QueryBuilder<ToDo, ToDo, QAfterWhereClause> weightLessThan(
-    int weight, {
-    bool include = false,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(IndexWhereClause.between(
-        indexName: r'weight',
-        lower: [],
-        upper: [weight],
-        includeUpper: include,
-      ));
-    });
-  }
-
-  QueryBuilder<ToDo, ToDo, QAfterWhereClause> weightBetween(
-    int lowerWeight,
-    int upperWeight, {
-    bool includeLower = true,
-    bool includeUpper = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(IndexWhereClause.between(
-        indexName: r'weight',
-        lower: [lowerWeight],
-        includeLower: includeLower,
-        upper: [upperWeight],
-        includeUpper: includeUpper,
-      ));
-    });
-  }
-
-  QueryBuilder<ToDo, ToDo, QAfterWhereClause> realDurationEqualTo(
-      int realDuration) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(IndexWhereClause.equalTo(
-        indexName: r'realDuration',
-        value: [realDuration],
-      ));
-    });
-  }
-
-  QueryBuilder<ToDo, ToDo, QAfterWhereClause> realDurationNotEqualTo(
-      int realDuration) {
-    return QueryBuilder.apply(this, (query) {
-      if (query.whereSort == Sort.asc) {
-        return query
-            .addWhereClause(IndexWhereClause.between(
-              indexName: r'realDuration',
-              lower: [],
-              upper: [realDuration],
-              includeUpper: false,
-            ))
-            .addWhereClause(IndexWhereClause.between(
-              indexName: r'realDuration',
-              lower: [realDuration],
-              includeLower: false,
-              upper: [],
-            ));
-      } else {
-        return query
-            .addWhereClause(IndexWhereClause.between(
-              indexName: r'realDuration',
-              lower: [realDuration],
-              includeLower: false,
-              upper: [],
-            ))
-            .addWhereClause(IndexWhereClause.between(
-              indexName: r'realDuration',
-              lower: [],
-              upper: [realDuration],
-              includeUpper: false,
-            ));
-      }
-    });
-  }
-
-  QueryBuilder<ToDo, ToDo, QAfterWhereClause> realDurationGreaterThan(
-    int realDuration, {
-    bool include = false,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(IndexWhereClause.between(
-        indexName: r'realDuration',
-        lower: [realDuration],
-        includeLower: include,
-        upper: [],
-      ));
-    });
-  }
-
-  QueryBuilder<ToDo, ToDo, QAfterWhereClause> realDurationLessThan(
-    int realDuration, {
-    bool include = false,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(IndexWhereClause.between(
-        indexName: r'realDuration',
-        lower: [],
-        upper: [realDuration],
-        includeUpper: include,
-      ));
-    });
-  }
-
-  QueryBuilder<ToDo, ToDo, QAfterWhereClause> realDurationBetween(
-    int lowerRealDuration,
-    int upperRealDuration, {
-    bool includeLower = true,
-    bool includeUpper = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(IndexWhereClause.between(
-        indexName: r'realDuration',
-        lower: [lowerRealDuration],
-        includeLower: includeLower,
-        upper: [upperRealDuration],
-        includeUpper: includeUpper,
-      ));
     });
   }
 
@@ -1243,6 +884,226 @@ extension ToDoQueryWhere on QueryBuilder<ToDo, ToDo, QWhereClause> {
               includeUpper: false,
             ));
       }
+    });
+  }
+
+  QueryBuilder<ToDo, ToDo, QAfterWhereClause> startDateIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'startDate',
+        value: [null],
+      ));
+    });
+  }
+
+  QueryBuilder<ToDo, ToDo, QAfterWhereClause> startDateIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'startDate',
+        lower: [null],
+        includeLower: false,
+        upper: [],
+      ));
+    });
+  }
+
+  QueryBuilder<ToDo, ToDo, QAfterWhereClause> startDateEqualTo(
+      DateTime? startDate) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'startDate',
+        value: [startDate],
+      ));
+    });
+  }
+
+  QueryBuilder<ToDo, ToDo, QAfterWhereClause> startDateNotEqualTo(
+      DateTime? startDate) {
+    return QueryBuilder.apply(this, (query) {
+      if (query.whereSort == Sort.asc) {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'startDate',
+              lower: [],
+              upper: [startDate],
+              includeUpper: false,
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'startDate',
+              lower: [startDate],
+              includeLower: false,
+              upper: [],
+            ));
+      } else {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'startDate',
+              lower: [startDate],
+              includeLower: false,
+              upper: [],
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'startDate',
+              lower: [],
+              upper: [startDate],
+              includeUpper: false,
+            ));
+      }
+    });
+  }
+
+  QueryBuilder<ToDo, ToDo, QAfterWhereClause> startDateGreaterThan(
+    DateTime? startDate, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'startDate',
+        lower: [startDate],
+        includeLower: include,
+        upper: [],
+      ));
+    });
+  }
+
+  QueryBuilder<ToDo, ToDo, QAfterWhereClause> startDateLessThan(
+    DateTime? startDate, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'startDate',
+        lower: [],
+        upper: [startDate],
+        includeUpper: include,
+      ));
+    });
+  }
+
+  QueryBuilder<ToDo, ToDo, QAfterWhereClause> startDateBetween(
+    DateTime? lowerStartDate,
+    DateTime? upperStartDate, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'startDate',
+        lower: [lowerStartDate],
+        includeLower: includeLower,
+        upper: [upperStartDate],
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<ToDo, ToDo, QAfterWhereClause> originalStartIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'originalStart',
+        value: [null],
+      ));
+    });
+  }
+
+  QueryBuilder<ToDo, ToDo, QAfterWhereClause> originalStartIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'originalStart',
+        lower: [null],
+        includeLower: false,
+        upper: [],
+      ));
+    });
+  }
+
+  QueryBuilder<ToDo, ToDo, QAfterWhereClause> originalStartEqualTo(
+      DateTime? originalStart) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'originalStart',
+        value: [originalStart],
+      ));
+    });
+  }
+
+  QueryBuilder<ToDo, ToDo, QAfterWhereClause> originalStartNotEqualTo(
+      DateTime? originalStart) {
+    return QueryBuilder.apply(this, (query) {
+      if (query.whereSort == Sort.asc) {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'originalStart',
+              lower: [],
+              upper: [originalStart],
+              includeUpper: false,
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'originalStart',
+              lower: [originalStart],
+              includeLower: false,
+              upper: [],
+            ));
+      } else {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'originalStart',
+              lower: [originalStart],
+              includeLower: false,
+              upper: [],
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'originalStart',
+              lower: [],
+              upper: [originalStart],
+              includeUpper: false,
+            ));
+      }
+    });
+  }
+
+  QueryBuilder<ToDo, ToDo, QAfterWhereClause> originalStartGreaterThan(
+    DateTime? originalStart, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'originalStart',
+        lower: [originalStart],
+        includeLower: include,
+        upper: [],
+      ));
+    });
+  }
+
+  QueryBuilder<ToDo, ToDo, QAfterWhereClause> originalStartLessThan(
+    DateTime? originalStart, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'originalStart',
+        lower: [],
+        upper: [originalStart],
+        includeUpper: include,
+      ));
+    });
+  }
+
+  QueryBuilder<ToDo, ToDo, QAfterWhereClause> originalStartBetween(
+    DateTime? lowerOriginalStart,
+    DateTime? upperOriginalStart, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'originalStart',
+        lower: [lowerOriginalStart],
+        includeLower: includeLower,
+        upper: [upperOriginalStart],
+        includeUpper: includeUpper,
+      ));
     });
   }
 
@@ -1553,6 +1414,96 @@ extension ToDoQueryWhere on QueryBuilder<ToDo, ToDo, QWhereClause> {
     });
   }
 
+  QueryBuilder<ToDo, ToDo, QAfterWhereClause> repeatableStateEqualTo(
+      RepeatableState repeatableState) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'repeatableState',
+        value: [repeatableState],
+      ));
+    });
+  }
+
+  QueryBuilder<ToDo, ToDo, QAfterWhereClause> repeatableStateNotEqualTo(
+      RepeatableState repeatableState) {
+    return QueryBuilder.apply(this, (query) {
+      if (query.whereSort == Sort.asc) {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'repeatableState',
+              lower: [],
+              upper: [repeatableState],
+              includeUpper: false,
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'repeatableState',
+              lower: [repeatableState],
+              includeLower: false,
+              upper: [],
+            ));
+      } else {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'repeatableState',
+              lower: [repeatableState],
+              includeLower: false,
+              upper: [],
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'repeatableState',
+              lower: [],
+              upper: [repeatableState],
+              includeUpper: false,
+            ));
+      }
+    });
+  }
+
+  QueryBuilder<ToDo, ToDo, QAfterWhereClause> repeatableStateGreaterThan(
+    RepeatableState repeatableState, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'repeatableState',
+        lower: [repeatableState],
+        includeLower: include,
+        upper: [],
+      ));
+    });
+  }
+
+  QueryBuilder<ToDo, ToDo, QAfterWhereClause> repeatableStateLessThan(
+    RepeatableState repeatableState, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'repeatableState',
+        lower: [],
+        upper: [repeatableState],
+        includeUpper: include,
+      ));
+    });
+  }
+
+  QueryBuilder<ToDo, ToDo, QAfterWhereClause> repeatableStateBetween(
+    RepeatableState lowerRepeatableState,
+    RepeatableState upperRepeatableState, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.between(
+        indexName: r'repeatableState',
+        lower: [lowerRepeatableState],
+        includeLower: includeLower,
+        upper: [upperRepeatableState],
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
   QueryBuilder<ToDo, ToDo, QAfterWhereClause> isSyncedEqualTo(bool isSynced) {
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(IndexWhereClause.equalTo(
@@ -1638,96 +1589,6 @@ extension ToDoQueryWhere on QueryBuilder<ToDo, ToDo, QWhereClause> {
               includeUpper: false,
             ));
       }
-    });
-  }
-
-  QueryBuilder<ToDo, ToDo, QAfterWhereClause> lastUpdatedEqualTo(
-      DateTime lastUpdated) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(IndexWhereClause.equalTo(
-        indexName: r'lastUpdated',
-        value: [lastUpdated],
-      ));
-    });
-  }
-
-  QueryBuilder<ToDo, ToDo, QAfterWhereClause> lastUpdatedNotEqualTo(
-      DateTime lastUpdated) {
-    return QueryBuilder.apply(this, (query) {
-      if (query.whereSort == Sort.asc) {
-        return query
-            .addWhereClause(IndexWhereClause.between(
-              indexName: r'lastUpdated',
-              lower: [],
-              upper: [lastUpdated],
-              includeUpper: false,
-            ))
-            .addWhereClause(IndexWhereClause.between(
-              indexName: r'lastUpdated',
-              lower: [lastUpdated],
-              includeLower: false,
-              upper: [],
-            ));
-      } else {
-        return query
-            .addWhereClause(IndexWhereClause.between(
-              indexName: r'lastUpdated',
-              lower: [lastUpdated],
-              includeLower: false,
-              upper: [],
-            ))
-            .addWhereClause(IndexWhereClause.between(
-              indexName: r'lastUpdated',
-              lower: [],
-              upper: [lastUpdated],
-              includeUpper: false,
-            ));
-      }
-    });
-  }
-
-  QueryBuilder<ToDo, ToDo, QAfterWhereClause> lastUpdatedGreaterThan(
-    DateTime lastUpdated, {
-    bool include = false,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(IndexWhereClause.between(
-        indexName: r'lastUpdated',
-        lower: [lastUpdated],
-        includeLower: include,
-        upper: [],
-      ));
-    });
-  }
-
-  QueryBuilder<ToDo, ToDo, QAfterWhereClause> lastUpdatedLessThan(
-    DateTime lastUpdated, {
-    bool include = false,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(IndexWhereClause.between(
-        indexName: r'lastUpdated',
-        lower: [],
-        upper: [lastUpdated],
-        includeUpper: include,
-      ));
-    });
-  }
-
-  QueryBuilder<ToDo, ToDo, QAfterWhereClause> lastUpdatedBetween(
-    DateTime lowerLastUpdated,
-    DateTime upperLastUpdated, {
-    bool includeLower = true,
-    bool includeUpper = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(IndexWhereClause.between(
-        indexName: r'lastUpdated',
-        lower: [lowerLastUpdated],
-        includeLower: includeLower,
-        upper: [upperLastUpdated],
-        includeUpper: includeUpper,
-      ));
     });
   }
 }
@@ -2471,6 +2332,144 @@ extension ToDoQueryFilter on QueryBuilder<ToDo, ToDo, QFilterCondition> {
     });
   }
 
+  QueryBuilder<ToDo, ToDo, QAfterFilterCondition> originalDueIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'originalDue',
+      ));
+    });
+  }
+
+  QueryBuilder<ToDo, ToDo, QAfterFilterCondition> originalDueIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'originalDue',
+      ));
+    });
+  }
+
+  QueryBuilder<ToDo, ToDo, QAfterFilterCondition> originalDueEqualTo(
+      DateTime? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'originalDue',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<ToDo, ToDo, QAfterFilterCondition> originalDueGreaterThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'originalDue',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<ToDo, ToDo, QAfterFilterCondition> originalDueLessThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'originalDue',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<ToDo, ToDo, QAfterFilterCondition> originalDueBetween(
+    DateTime? lower,
+    DateTime? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'originalDue',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<ToDo, ToDo, QAfterFilterCondition> originalStartIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'originalStart',
+      ));
+    });
+  }
+
+  QueryBuilder<ToDo, ToDo, QAfterFilterCondition> originalStartIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'originalStart',
+      ));
+    });
+  }
+
+  QueryBuilder<ToDo, ToDo, QAfterFilterCondition> originalStartEqualTo(
+      DateTime? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'originalStart',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<ToDo, ToDo, QAfterFilterCondition> originalStartGreaterThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'originalStart',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<ToDo, ToDo, QAfterFilterCondition> originalStartLessThan(
+    DateTime? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'originalStart',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<ToDo, ToDo, QAfterFilterCondition> originalStartBetween(
+    DateTime? lower,
+    DateTime? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'originalStart',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
   QueryBuilder<ToDo, ToDo, QAfterFilterCondition> priorityEqualTo(
       Priority value) {
     return QueryBuilder.apply(this, (query) {
@@ -2797,6 +2796,59 @@ extension ToDoQueryFilter on QueryBuilder<ToDo, ToDo, QFilterCondition> {
       return query.addFilterCondition(FilterCondition.equalTo(
         property: r'repeatable',
         value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<ToDo, ToDo, QAfterFilterCondition> repeatableStateEqualTo(
+      RepeatableState value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'repeatableState',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<ToDo, ToDo, QAfterFilterCondition> repeatableStateGreaterThan(
+    RepeatableState value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'repeatableState',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<ToDo, ToDo, QAfterFilterCondition> repeatableStateLessThan(
+    RepeatableState value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'repeatableState',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<ToDo, ToDo, QAfterFilterCondition> repeatableStateBetween(
+    RepeatableState lower,
+    RepeatableState upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'repeatableState',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
       ));
     });
   }
@@ -3134,6 +3186,30 @@ extension ToDoQuerySortBy on QueryBuilder<ToDo, ToDo, QSortBy> {
     });
   }
 
+  QueryBuilder<ToDo, ToDo, QAfterSortBy> sortByOriginalDue() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'originalDue', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ToDo, ToDo, QAfterSortBy> sortByOriginalDueDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'originalDue', Sort.desc);
+    });
+  }
+
+  QueryBuilder<ToDo, ToDo, QAfterSortBy> sortByOriginalStart() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'originalStart', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ToDo, ToDo, QAfterSortBy> sortByOriginalStartDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'originalStart', Sort.desc);
+    });
+  }
+
   QueryBuilder<ToDo, ToDo, QAfterSortBy> sortByPriority() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'priority', Sort.asc);
@@ -3191,6 +3267,18 @@ extension ToDoQuerySortBy on QueryBuilder<ToDo, ToDo, QSortBy> {
   QueryBuilder<ToDo, ToDo, QAfterSortBy> sortByRepeatableDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'repeatable', Sort.desc);
+    });
+  }
+
+  QueryBuilder<ToDo, ToDo, QAfterSortBy> sortByRepeatableState() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'repeatableState', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ToDo, ToDo, QAfterSortBy> sortByRepeatableStateDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'repeatableState', Sort.desc);
     });
   }
 
@@ -3400,6 +3488,30 @@ extension ToDoQuerySortThenBy on QueryBuilder<ToDo, ToDo, QSortThenBy> {
     });
   }
 
+  QueryBuilder<ToDo, ToDo, QAfterSortBy> thenByOriginalDue() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'originalDue', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ToDo, ToDo, QAfterSortBy> thenByOriginalDueDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'originalDue', Sort.desc);
+    });
+  }
+
+  QueryBuilder<ToDo, ToDo, QAfterSortBy> thenByOriginalStart() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'originalStart', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ToDo, ToDo, QAfterSortBy> thenByOriginalStartDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'originalStart', Sort.desc);
+    });
+  }
+
   QueryBuilder<ToDo, ToDo, QAfterSortBy> thenByPriority() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'priority', Sort.asc);
@@ -3457,6 +3569,18 @@ extension ToDoQuerySortThenBy on QueryBuilder<ToDo, ToDo, QSortThenBy> {
   QueryBuilder<ToDo, ToDo, QAfterSortBy> thenByRepeatableDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'repeatable', Sort.desc);
+    });
+  }
+
+  QueryBuilder<ToDo, ToDo, QAfterSortBy> thenByRepeatableState() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'repeatableState', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ToDo, ToDo, QAfterSortBy> thenByRepeatableStateDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'repeatableState', Sort.desc);
     });
   }
 
@@ -3584,6 +3708,18 @@ extension ToDoQueryWhereDistinct on QueryBuilder<ToDo, ToDo, QDistinct> {
     });
   }
 
+  QueryBuilder<ToDo, ToDo, QDistinct> distinctByOriginalDue() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'originalDue');
+    });
+  }
+
+  QueryBuilder<ToDo, ToDo, QDistinct> distinctByOriginalStart() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'originalStart');
+    });
+  }
+
   QueryBuilder<ToDo, ToDo, QDistinct> distinctByPriority() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'priority');
@@ -3617,6 +3753,12 @@ extension ToDoQueryWhereDistinct on QueryBuilder<ToDo, ToDo, QDistinct> {
   QueryBuilder<ToDo, ToDo, QDistinct> distinctByRepeatable() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'repeatable');
+    });
+  }
+
+  QueryBuilder<ToDo, ToDo, QDistinct> distinctByRepeatableState() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'repeatableState');
     });
   }
 
@@ -3724,6 +3866,18 @@ extension ToDoQueryProperty on QueryBuilder<ToDo, ToDo, QQueryProperty> {
     });
   }
 
+  QueryBuilder<ToDo, DateTime?, QQueryOperations> originalDueProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'originalDue');
+    });
+  }
+
+  QueryBuilder<ToDo, DateTime?, QQueryOperations> originalStartProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'originalStart');
+    });
+  }
+
   QueryBuilder<ToDo, Priority, QQueryOperations> priorityProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'priority');
@@ -3757,6 +3911,13 @@ extension ToDoQueryProperty on QueryBuilder<ToDo, ToDo, QQueryProperty> {
   QueryBuilder<ToDo, bool, QQueryOperations> repeatableProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'repeatable');
+    });
+  }
+
+  QueryBuilder<ToDo, RepeatableState, QQueryOperations>
+      repeatableStateProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'repeatableState');
     });
   }
 

@@ -174,67 +174,23 @@ abstract class Tiles {
         groupProvider ?? Provider.of<GroupProvider>(context, listen: false);
     // For repeating ToDos.
     if (toDo.frequency != Frequency.once) {
-      await showModalBottomSheet<bool?>(
+      bool? updateSingle = await showModalBottomSheet<bool?>(
           showDragHandle: true,
           context: context,
           builder: (BuildContext context) {
             return const HandleRepeatableModal(action: "Delete");
-          }).then((deleteSingle) async {
-        if (null == deleteSingle) {
-          return;
-        }
+          });
 
-        // If delete all.
-        if (!deleteSingle) {
-          return await toDoProvider!.deleteFutures(toDo: toDo).catchError((e) {
-            Flushbar? error;
-
-            error = Flushbars.createError(
-              message: e.cause,
-              context: context,
-              dismissCallback: () => error?.dismiss(),
-            );
-
-            error.show(context);
-          }, test: (e) => e is FailureToDeleteException);
-        }
-
-        // If delete one.
-        await toDoProvider!.nextRepeat(toDo: toDo).catchError((e) {
-          Flushbar? error;
-
-          error = Flushbars.createError(
-            message: e.cause,
-            context: context,
-            dismissCallback: () => error?.dismiss(),
-          );
-
-          error.show(context);
-        },
-            test: (e) =>
-                e is FailureToCreateException || e is FailureToUploadException);
-      });
-    }
-
-    if (null != onRemove) {
-      await onRemove(item: toDo);
+      await toDoProvider.handleRepeating(
+          toDo: toDo, single: updateSingle, delete: true);
     }
 
     return await toDoProvider.deleteToDo(toDo: toDo).whenComplete(() {
       if (null != toDo.groupID) {
         groupProvider!.setToDoCount(id: toDo.groupID!);
       }
-    }).catchError((e) {
-      Flushbar? error;
-
-      error = Flushbars.createError(
-        message: e.cause,
-        context: context,
-        dismissCallback: () => error?.dismiss(),
-      );
-
-      error.show(context);
-    }, test: (e) => e is FailureToDeleteException);
+    }).catchError((e) => displayError(context: context, e: e),
+        test: (e) => e is FailureToDeleteException);
   }
 
   static Widget toDoMyDayTile({
@@ -354,25 +310,8 @@ abstract class Tiles {
               builder: (BuildContext context) =>
                   UpdateRoutineScreen(initialRoutine: routine));
         },
-        // TODO: refactor this.
         trailing: Row(mainAxisSize: MainAxisSize.min, children: [
           ListTileWidgets.routineBatteryRow(routine: routine),
-          // Row(mainAxisSize: MainAxisSize.min, children: [
-          //   Constants.batteryIcons[remap(
-          //           x: routine.weight,
-          //           inMin: 0,
-          //           inMax: Constants.medianWeight,
-          //           outMin: 0,
-          //           outMax: 5)
-          //       .toInt()]!,
-          //   AutoSizeText(
-          //     "${routine.weight}",
-          //     overflow: TextOverflow.visible,
-          //     minFontSize: Constants.large,
-          //     softWrap: false,
-          //     maxLines: 1,
-          //   ),
-          // ]),
           Padding(
               padding: EdgeInsets.zero,
               child: IconButton(
@@ -1014,7 +953,11 @@ abstract class Tiles {
     GroupProvider groupProvider =
         Provider.of<GroupProvider>(context, listen: false);
     return ListTile(
+      leading: const Icon(Icons.collections_bookmark_outlined),
       contentPadding: padding,
+      shape: const RoundedRectangleBorder(
+          borderRadius:
+              BorderRadius.all(Radius.circular(Constants.semiCircular))),
       title: AutoSizeText(
         group.name,
         maxLines: 1,
@@ -1112,7 +1055,7 @@ abstract class Tiles {
   }) {
     return checkboxListTile(
         contentPadding:
-            const EdgeInsets.symmetric(horizontal: Constants.innerPadding),
+            const EdgeInsets.symmetric(horizontal: Constants.doublePadding),
         key: ValueKey(toDo.id),
         value: toDo.completed,
         onChanged: onChanged,
@@ -1269,7 +1212,7 @@ abstract class Tiles {
               taskIndex: subtasks.length,
               outerPadding: const EdgeInsets.all(Constants.padding),
               innerPadding: const EdgeInsets.symmetric(
-                  horizontal: Constants.innerPadding),
+                  horizontal: Constants.doublePadding),
               hintText: "Add step",
               menuController: subtasksAnchorController,
               onOpen: onAnchorOpen,
@@ -1416,7 +1359,7 @@ abstract class Tiles {
                             onPressed: handleClear)
                         : null,
                     contentPadding:
-                        const EdgeInsets.all(Constants.innerPadding),
+                        const EdgeInsets.all(Constants.doublePadding),
                     enabledBorder: OutlineInputBorder(
                         borderRadius: const BorderRadius.all(
                             Radius.circular(Constants.semiCircular)),
@@ -1572,7 +1515,7 @@ abstract class Tiles {
             minFontSize: minFontSize ?? Constants.large,
             decoration: InputDecoration(
               isDense: isDense,
-              contentPadding: const EdgeInsets.all(Constants.innerPadding),
+              contentPadding: const EdgeInsets.all(Constants.doublePadding),
               hintText: hintText,
               enabledBorder: OutlineInputBorder(
                   borderRadius: const BorderRadius.all(
@@ -1603,7 +1546,7 @@ abstract class Tiles {
     return Padding(
       padding: outerPadding,
       child: ListTile(
-        contentPadding: const EdgeInsets.only(left: Constants.innerPadding),
+        contentPadding: const EdgeInsets.only(left: Constants.doublePadding),
         leading: const Icon(Icons.timer_outlined),
         shape: const RoundedRectangleBorder(
             borderRadius:
@@ -1679,7 +1622,7 @@ abstract class Tiles {
       Padding(
         padding: outerPadding,
         child: ListTile(
-          contentPadding: const EdgeInsets.only(left: Constants.innerPadding),
+          contentPadding: const EdgeInsets.only(left: Constants.doublePadding),
           leading: const Icon(Icons.today_rounded),
           shape: const RoundedRectangleBorder(
               borderRadius:
@@ -1793,7 +1736,8 @@ abstract class Tiles {
       Padding(
         padding: outerPadding,
         child: ListTile(
-            contentPadding: const EdgeInsets.only(left: Constants.innerPadding),
+            contentPadding:
+                const EdgeInsets.only(left: Constants.doublePadding),
             leading: const Icon(Icons.schedule_rounded),
             shape: const RoundedRectangleBorder(
                 borderRadius:
@@ -1917,7 +1861,8 @@ abstract class Tiles {
       Padding(
         padding: outerPadding,
         child: ListTile(
-            contentPadding: const EdgeInsets.only(left: Constants.innerPadding),
+            contentPadding:
+                const EdgeInsets.only(left: Constants.doublePadding),
             shape: const RoundedRectangleBorder(
                 borderRadius:
                     BorderRadius.all(Radius.circular(Constants.semiCircular))),
@@ -2042,7 +1987,7 @@ abstract class Tiles {
     return Padding(
       padding: outerPadding,
       child: ListTile(
-          contentPadding: const EdgeInsets.only(left: Constants.innerPadding),
+          contentPadding: const EdgeInsets.only(left: Constants.doublePadding),
           leading: const Icon(Icons.event_repeat_rounded),
           shape: const RoundedRectangleBorder(
               borderRadius:
@@ -2191,7 +2136,7 @@ abstract class Tiles {
       bool smallScreen = false}) {
     return ListTile(
       leading: ListTileWidgets.eventIcon(
-          type: event.model.repeatableType,
+          type: event.model.modelType,
           currentContext: context,
           outerPadding:
               const EdgeInsets.symmetric(horizontal: Constants.halfPadding),
@@ -2208,7 +2153,7 @@ abstract class Tiles {
       ),
       onTap: () async {
         late Widget dialog;
-        switch (event.model.repeatableType) {
+        switch (event.model.modelType) {
           case ModelType.task:
             dialog = UpdateToDoScreen(initialToDo: event.model as ToDo);
             break;
@@ -2419,4 +2364,17 @@ abstract class Tiles {
                   handleCreate: handleUpdate)
             ]),
       );
+
+  // ERRORS:
+
+  static displayError<T>({required BuildContext context, Exception? e}) {
+    Flushbar? error;
+    error = Flushbars.createError(
+      context: context,
+      message: e.toString(),
+      dismissCallback: () => error?.dismiss(),
+    );
+
+    error.show(context);
+  }
 }

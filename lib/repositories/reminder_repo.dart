@@ -7,6 +7,7 @@ import '../services/supabase_service.dart';
 import '../util/constants.dart';
 import '../util/enums.dart';
 import '../util/exceptions.dart';
+import '../util/interfaces/i_repeatable.dart';
 import '../util/interfaces/repository/model/reminder_repository.dart';
 import '../util/interfaces/sortable.dart';
 
@@ -114,7 +115,7 @@ class ReminderRepo implements ReminderRepository {
 
       if (ids.any((id) => null == id)) {
         throw FailureToUploadException("Failed to sync reminders on update \n"
-            "ToDo: ${reminders.toString()}\n"
+            "Reminder: ${reminders.toString()}\n"
             "Time: ${DateTime.now()}\n"
             "Supabase Open: ${null != _supabaseClient.auth.currentSession}");
       }
@@ -140,7 +141,7 @@ class ReminderRepo implements ReminderRepository {
   }
 
   @override
-  Future<List<Reminder>> deleteFutures({required Reminder deleteFrom}) async {
+  Future<List<int>> deleteFutures({required IRepeatable deleteFrom}) async {
     List<Reminder> toDelete = await _isarClient.reminders
         .where()
         .repeatIDEqualTo(deleteFrom.repeatID)
@@ -150,12 +151,14 @@ class ReminderRepo implements ReminderRepository {
 
     // This is to prevent a race condition & accidentally deleting a notification.
     toDelete.remove(deleteFrom);
-    toDelete
-        .map((Reminder reminder) => reminder.toDelete = true)
-        .toList(growable: false);
+    List<int> ids = List.empty(growable: true);
+    for (Reminder reminder in toDelete) {
+      reminder.toDelete = true;
+      ids.add(reminder.id);
+    }
 
     await updateBatch(toDelete);
-    return toDelete;
+    return ids;
   }
 
   @override
@@ -346,6 +349,25 @@ class ReminderRepo implements ReminderRepository {
           .toDeleteEqualTo(false)
           .dueDateLessThan(now ?? Constants.today)
           .findAll();
+
+  @override
+  Future<Reminder?> getDelta(
+          {required DateTime onDate, required int repeatID}) async =>
+      await _isarClient.reminders
+          .where()
+          .repeatableStateEqualTo(RepeatableState.delta)
+          .filter()
+          .originalDueEqualTo(onDate)
+          .findFirst();
+
+  @override
+  Future<Reminder?> getTemplate({required int repeatID}) async =>
+      await _isarClient.reminders
+          .where()
+          .repeatableStateEqualTo(RepeatableState.template)
+          .filter()
+          .repeatIDEqualTo(repeatID)
+          .findFirst();
 
   Future<List<int>> getDeleteIds() async => await _isarClient.reminders
       .where()

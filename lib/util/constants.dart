@@ -23,7 +23,31 @@ abstract class Constants {
     defaultValue: "",
   );
 
-  static int generateID() => fastHash(uuid.v4());
+  static File appIcon = File("assets/placeholder.png");
+  static File roadMap = File("ROADMAP.md");
+
+  // TODO: change as appropriate.
+  static const String licenseInfo =
+      "Copyright © 2024 Jordan Clayton.\n Licensed under MIT.";
+
+  // Windows notifications appID needs to be null in packaged mode.
+  static String? get windowsApplicationID =>
+      (const String.fromEnvironment("MSIX", defaultValue: "").toUpperCase() ==
+              "Y")
+          ? null
+          : applicationName;
+  static const String applicationName = "Allocate";
+  static const String channelID = "1";
+  static const String channelDescription =
+      "To warn you of upcoming reminders and deadlines.";
+
+  static int generateID() {
+    int newID = fastHash(uuid.v4());
+    while (newID == intMax) {
+      newID = fastHash(uuid.v4());
+    }
+    return newID;
+  }
 
   static int generate32ID() => fast32Hash(uuid.v4());
 
@@ -192,17 +216,6 @@ abstract class Constants {
     CalendarScreen(),
   ];
 
-  // Windows notifications appID needs to be null in packaged mode.
-  static String? get windowsApplicationID =>
-      (const String.fromEnvironment("MSIX", defaultValue: "").toUpperCase() ==
-              "Y")
-          ? null
-          : applicationName;
-  static const String applicationName = "Allocate";
-  static const String channelID = "1";
-  static const String channelDescription =
-      "To warn you of upcoming reminders and deadlines.";
-
   // Test these.
   static const minBandwidth = 0;
   static const maxBandwidth = 200;
@@ -240,7 +253,8 @@ abstract class Constants {
   // Placeholder int value, "MAX INT"
   static const int intMax = -1 >>> 1;
 
-  static const Size minDesktopSize = Size(700, 700);
+  // In LP
+  static const Size minDesktopSize = Size(500, 500);
 
   // This is just for testing mobile formats.
   // On my main machine, this works out to 320 x 320 logical pixels.
@@ -255,7 +269,7 @@ abstract class Constants {
   static Color errorColor({required BuildContext context}) =>
       Theme.of(context).colorScheme.error;
 
-  static int defaultPrimaryColorSeed = 0xFF6750A4;
+  static const int defaultPrimaryColorSeed = 0xFF6750A4;
 
   static const Color windowsDefaultLight = Color(0x22DDDDDD);
   static const Color windowsDefaultDark = Color(0xCC222222);
@@ -273,6 +287,7 @@ abstract class Constants {
   static const double medIconSize = 35;
   static const double lgIconSize = 50;
   static const double hugeIconSize = 100;
+  static const double appIconSize = 400;
 
   // Text styles
   static TextStyle numberPickerSecondary({required BuildContext context}) =>
@@ -280,6 +295,9 @@ abstract class Constants {
 
   static TextStyle numberPickerPrimary({required BuildContext context}) =>
       TextStyle(fontSize: 36, color: Theme.of(context).colorScheme.secondary);
+
+  static const TextStyle timeColon =
+      TextStyle(fontWeight: FontWeight.bold, fontSize: 32);
 
   static const TextStyle minBodyText = TextStyle(fontSize: 11);
   static const TextStyle medBodyText = TextStyle(fontSize: 12);
@@ -306,15 +324,13 @@ abstract class Constants {
   static const TextStyle hugeHeaderStyle =
       TextStyle(fontWeight: FontWeight.bold, fontSize: 36);
 
-  static const TextStyle timeColon =
-      TextStyle(fontWeight: FontWeight.bold, fontSize: 32);
-
   // Tweak as necessary
   static const double maxSearchSideBeforeScroll = 300;
   static const double maxListHeightBeforeScroll = 500;
   static const double maxDesktopDialogSide = 700;
   static const double smallLandscapeDialogHeight = 500;
   static const double smallLandscapeDialogWidth = 700;
+  static const double roadmapWidth = 500;
 
   // This is using _kWidth from Drawer. Atm it's 304, should be 360 according to M3.
   // I don't know if I wanna change it
@@ -331,10 +347,9 @@ abstract class Constants {
   static const double hugeScreen = 1000;
   static const double largeScreen = 700;
 
-  // tbh, should probably just make 500.
   static const double smallScreen = 450;
 
-  // USE THIS IN MAIN.
+  // For determining tablet
   static const double phoneSize = 550;
 
   static const double largeCheckboxScale = 1.5;
@@ -345,16 +360,14 @@ abstract class Constants {
   static const double halfPadding = padding / 2;
   static const double quarterPadding = padding / 4;
   static const double padding = 8;
-  static const double innerPadding = padding * 2;
+  static const double doublePadding = padding * 2;
+  static const double triplePadding = padding * 3;
+  static const double quadPadding = padding * 4;
   static const double outerDialogPadding = 30;
   static const double mobileDialogPadding = 10;
-  static const double smallOuterDialogPadding = 60;
-
-  // Not quite sure about this yet.
-  static const double innerDialogPadding = 80;
 
   static const int historyLength = 5;
-  static const double circular = 70;
+  static const double circular = 50;
   static const double curvedCorners = 15;
   static const double roundedCorners = 20;
   static const double semiCircular = 30;
@@ -403,6 +416,14 @@ abstract class Constants {
     MapEntry("Fri", 4),
     MapEntry("Sat", 5)
   ];
+
+  static String deleteScheduleType(DeleteSchedule? schedule) =>
+      switch (schedule) {
+        DeleteSchedule.day => "15 days",
+        DeleteSchedule.month => "30 days",
+        DeleteSchedule.year => "1 year",
+        _ => "Forever"
+      };
 
   // This is for timezones.
   static const Map timezoneNames = {

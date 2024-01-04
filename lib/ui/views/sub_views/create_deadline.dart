@@ -186,10 +186,6 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
       weekdays[index] = true;
     }
 
-    // in case the usr doesn't submit to the textfields
-    name = nameEditingController.text;
-    description = descriptionEditingController.text;
-
     await deadlineProvider
         .createDeadline(
           name: name,
@@ -373,6 +369,10 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
   }
 
   Future<void> createAndValidate() async {
+    // in case the usr doesn't submit to the textfields
+    name = nameEditingController.text;
+    description = descriptionEditingController.text;
+
     mergeDateTimes();
     if (validateData()) {
       await handleCreate();
@@ -476,7 +476,7 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
                                             const EdgeInsets.symmetric(
                                                 horizontal: Constants.padding,
                                                 vertical:
-                                                    Constants.innerPadding),
+                                                    Constants.doublePadding),
                                         priority: priority,
                                         onSelectionChanged: changePriority,
                                       ),
@@ -639,7 +639,7 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
                       context: context,
                       outerPadding: const EdgeInsets.symmetric(
                           horizontal: Constants.padding,
-                          vertical: Constants.innerPadding),
+                          vertical: Constants.doublePadding),
                       priority: priority,
                       onSelectionChanged: changePriority,
                     ),

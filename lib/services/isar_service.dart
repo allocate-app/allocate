@@ -48,6 +48,7 @@ class IsarService {
 
   Future<void> dispose() async {
     await _isarClient.close(deleteFromDisk: _debug);
+    print("should be delet");
   }
 
   IsarService._internal();

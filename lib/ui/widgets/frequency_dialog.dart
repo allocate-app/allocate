@@ -75,7 +75,7 @@ class _FrequencyDialog extends State<FrequencyDialog> {
           constraints: const BoxConstraints(
               maxWidth: Constants.smallLandscapeDialogWidth),
           child: Padding(
-              padding: const EdgeInsets.all(Constants.innerPadding),
+              padding: const EdgeInsets.all(Constants.doublePadding),
               child: Column(
                   mainAxisSize: MainAxisSize.min,
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -118,10 +118,10 @@ class _FrequencyDialog extends State<FrequencyDialog> {
                       ],
                     ),
                     Padding(
-                      padding: const EdgeInsets.all(Constants.innerPadding),
+                      padding: const EdgeInsets.all(Constants.doublePadding),
                       child: DropdownMenu<Frequency>(
                           expandedInsets:
-                              const EdgeInsets.all(Constants.innerPadding),
+                              const EdgeInsets.all(Constants.doublePadding),
                           textStyle: Constants.largeHeaderStyle,
                           menuStyle: const MenuStyle(
                               visualDensity: VisualDensity(
@@ -139,7 +139,7 @@ class _FrequencyDialog extends State<FrequencyDialog> {
                               .inputDecorationTheme
                               .copyWith(
                                   contentPadding: const EdgeInsets.all(
-                                      Constants.innerPadding),
+                                      Constants.doublePadding),
                                   enabledBorder: OutlineInputBorder(
                                       borderRadius: const BorderRadius.all(
                                           Radius.circular(Constants.circular)),

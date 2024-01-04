@@ -43,7 +43,7 @@ class _DateTimeDialog extends State<DateTimeDialog> {
           constraints: const BoxConstraints(
               maxWidth: Constants.smallLandscapeDialogWidth),
           child: Padding(
-              padding: const EdgeInsets.all(Constants.innerPadding),
+              padding: const EdgeInsets.all(Constants.doublePadding),
               child: Column(
                   mainAxisSize: MainAxisSize.min,
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -91,7 +91,7 @@ class _DateTimeDialog extends State<DateTimeDialog> {
 
                     Padding(
                       padding: const EdgeInsets.symmetric(
-                          vertical: Constants.innerPadding),
+                          vertical: Constants.doublePadding),
                       child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           mainAxisSize: MainAxisSize.max,

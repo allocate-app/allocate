@@ -426,9 +426,9 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
                                       errorText: nameErrorText,
                                       controller: nameEditingController,
                                       outerPadding: const EdgeInsets.only(
-                                          left: Constants.innerPadding,
-                                          right: Constants.innerPadding,
-                                          bottom: Constants.innerPadding),
+                                          left: Constants.doublePadding,
+                                          right: Constants.doublePadding,
+                                          bottom: Constants.doublePadding),
                                       textFieldPadding:
                                           const EdgeInsets.symmetric(
                                         horizontal: Constants.halfPadding,

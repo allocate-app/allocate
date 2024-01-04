@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import '../model/task/subtask.dart';
 import '../model/task/todo.dart';
 import '../model/user/user.dart';
+import '../services/repeatable_service.dart';
 import '../services/subtask_service.dart';
 import '../services/todo_service.dart';
 import '../util/constants.dart';
@@ -13,6 +14,7 @@ import '../util/enums.dart';
 import '../util/exceptions.dart';
 import '../util/sorting/todo_sorter.dart';
 
+// TODO: IMPLEMENT PROPER GUI ERROR MSGS.
 class ToDoProvider extends ChangeNotifier {
   bool _rebuild = true;
 
@@ -32,8 +34,10 @@ class ToDoProvider extends ChangeNotifier {
   // TODO: change timer.
   late Timer syncTimer;
 
+  // TODO: refactor services out && just use repositories.
   final ToDoService _toDoService;
   final SubtaskService _subtaskService;
+  final RepeatableService _repeatService;
 
   ToDo? curToDo;
 
@@ -50,9 +54,14 @@ class ToDoProvider extends ChangeNotifier {
   };
 
   ToDoProvider(
-      {this.user, ToDoService? toDoService, SubtaskService? subtaskService})
+      {this.user,
+      ToDoService? toDoService,
+      SubtaskService? subtaskService,
+      RepeatableService? repeatService})
       : _toDoService = toDoService ?? ToDoService(),
-        _subtaskService = subtaskService ?? SubtaskService() {
+        _subtaskService = subtaskService ?? SubtaskService(),
+        _repeatService = repeatService ?? RepeatableService(),
+        sorter = user?.toDoSorter ?? ToDoSorter() {
     sorter = user?.toDoSorter ?? ToDoSorter();
     init();
   }
@@ -316,21 +325,21 @@ class ToDoProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> checkRepeating({DateTime? now}) async {
-    try {
-      await _toDoService.checkRepeating(now: now ?? DateTime.now());
-    } on FailureToUpdateException catch (e) {
-      log(e.cause);
-      return Future.error(e);
-    } on FailureToUploadException catch (e) {
-      log(e.cause);
-      return Future.error(e);
-    }
-  }
+  // Future<void> checkRepeating({DateTime? now}) async {
+  //   try {
+  //     await _toDoService.checkRepeating(now: now ?? DateTime.now());
+  //   } on FailureToUpdateException catch (e) {
+  //     log(e.cause);
+  //     return Future.error(e);
+  //   } on FailureToUploadException catch (e) {
+  //     log(e.cause);
+  //     return Future.error(e);
+  //   }
+  // }
 
   Future<void> nextRepeat({ToDo? toDo}) async {
     try {
-      await _toDoService.nextRepeatable(toDo: toDo ?? curToDo!);
+      return await _repeatService.nextRepeat(model: toDo ?? curToDo);
     } on FailureToUpdateException catch (e) {
       log(e.cause);
       return Future.error(e);
@@ -340,9 +349,20 @@ class ToDoProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> deleteFutures({ToDo? toDo}) async {
+  Future<void> handleRepeating(
+      {ToDo? toDo, bool? single = false, bool delete = false}) async {
     try {
-      await _toDoService.deleteFutures(toDo: toDo ?? curToDo!);
+      return await _repeatService.handleRepeating(
+          model: toDo, single: single, delete: delete);
+    } on InvalidRepeatingException catch (e) {
+      log(e.cause);
+      return Future.error(e);
+    }
+  }
+
+  Future<List<int>> deleteFutures({ToDo? toDo}) async {
+    try {
+      return await _repeatService.deleteFutures(model: toDo ?? curToDo!);
     } on FailureToUpdateException catch (e) {
       log(e.cause);
       return Future.error(e);
@@ -354,8 +374,8 @@ class ToDoProvider extends ChangeNotifier {
 
   Future<void> populateCalendar({DateTime? limit}) async {
     try {
-      return await _toDoService.populateCalendar(
-          limit: limit ?? DateTime.now());
+      return await _repeatService.populateCalendar(
+          limit: limit ?? DateTime.now(), modelType: ModelType.task);
     } on FailureToUpdateException catch (e) {
       log(e.cause);
       return Future.error(e);

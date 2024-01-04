@@ -52,7 +52,7 @@ class _DateRangeDialog extends State<DateRangeDialog> {
           constraints: const BoxConstraints(
               maxWidth: Constants.smallLandscapeDialogWidth),
           child: Padding(
-            padding: const EdgeInsets.all(Constants.innerPadding),
+            padding: const EdgeInsets.all(Constants.doublePadding),
             child: Column(
                 mainAxisSize: MainAxisSize.min,
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -65,7 +65,7 @@ class _DateRangeDialog extends State<DateRangeDialog> {
                           child: AutoSizeText(
                             "Select Dates",
                             style: Constants.largeHeaderStyle,
-                            softWrap: true,
+                            softWrap: false,
                             overflow: TextOverflow.visible,
                             maxLines: 2,
                             minFontSize: Constants.huge,
@@ -81,7 +81,7 @@ class _DateRangeDialog extends State<DateRangeDialog> {
                             child: AutoSizeText(
                           "Start | Due ",
                           style: Constants.hugeHeaderStyle,
-                          softWrap: true,
+                          softWrap: false,
                           overflow: TextOverflow.visible,
                           maxLines: 1,
                           minFontSize: Constants.huge,
@@ -97,7 +97,7 @@ class _DateRangeDialog extends State<DateRangeDialog> {
                   ),
                   Padding(
                     padding: const EdgeInsets.symmetric(
-                        vertical: Constants.innerPadding),
+                        vertical: Constants.doublePadding),
                     child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         mainAxisSize: MainAxisSize.max,
@@ -159,23 +159,21 @@ class _DateRangeDialog extends State<DateRangeDialog> {
                                                   )
                                                 : const AutoSizeText(
                                                     "Start Date",
-                                                    softWrap: true,
+                                                    softWrap: false,
                                                     overflow:
                                                         TextOverflow.visible,
                                                     maxLines: 1,
                                                     minFontSize:
                                                         Constants.huge)),
                                       ),
-                                      (startDate != null)
-                                          ? IconButton(
-                                              icon: const Icon(
-                                                  Icons.clear_rounded),
-                                              onPressed: () => setState(() {
-                                                showDates.remove(startDate);
-                                                startDate = null;
-                                              }),
-                                            )
-                                          : const SizedBox.shrink(),
+                                      if (startDate != null)
+                                        IconButton(
+                                          icon: const Icon(Icons.clear_rounded),
+                                          onPressed: () => setState(() {
+                                            showDates.remove(startDate);
+                                            startDate = null;
+                                          }),
+                                        )
                                     ]),
                               ),
                             ),
@@ -236,23 +234,21 @@ class _DateRangeDialog extends State<DateRangeDialog> {
                                                     minFontSize: Constants.huge,
                                                   )
                                                 : const AutoSizeText("Due Date",
-                                                    softWrap: true,
+                                                    softWrap: false,
                                                     overflow:
                                                         TextOverflow.visible,
                                                     maxLines: 1,
                                                     minFontSize:
                                                         Constants.huge)),
                                       ),
-                                      (dueDate != null)
-                                          ? IconButton(
-                                              icon: const Icon(
-                                                  Icons.clear_rounded),
-                                              onPressed: () => setState(() {
-                                                showDates.remove(dueDate);
-                                                dueDate = null;
-                                              }),
-                                            )
-                                          : const SizedBox.shrink(),
+                                      if (dueDate != null)
+                                        IconButton(
+                                          icon: const Icon(Icons.clear_rounded),
+                                          onPressed: () => setState(() {
+                                            showDates.remove(dueDate);
+                                            dueDate = null;
+                                          }),
+                                        )
                                     ]),
                               ),
                             ),

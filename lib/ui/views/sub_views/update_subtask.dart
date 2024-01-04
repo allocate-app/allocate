@@ -144,7 +144,7 @@ class _UpdateSubtaskScreen extends State<UpdateSubtaskScreen> {
                       }
                     }),
                 Tiles.weightTile(
-                  outerPadding: const EdgeInsets.all(Constants.innerPadding),
+                  outerPadding: const EdgeInsets.all(Constants.doublePadding),
                   batteryPadding:
                       const EdgeInsets.symmetric(horizontal: Constants.padding),
                   constraints: const BoxConstraints(maxWidth: 200),

@@ -109,7 +109,7 @@ class _ListViewHeader<T> extends State<ListViewHeader<T>> {
                           .map((SortMethod method) => MenuItemButton(
                                 style: const ButtonStyle(
                                   padding: MaterialStatePropertyAll(
-                                      EdgeInsets.all(Constants.innerPadding)),
+                                      EdgeInsets.all(Constants.doublePadding)),
                                   textStyle: MaterialStatePropertyAll(
                                       Constants.smDropdownStyle),
                                   shape: MaterialStatePropertyAll(
@@ -175,7 +175,7 @@ class _ListViewHeader<T> extends State<ListViewHeader<T>> {
                           .map((SortMethod method) => DropdownMenuEntry(
                               style: const ButtonStyle(
                                 padding: MaterialStatePropertyAll(
-                                    EdgeInsets.all(Constants.innerPadding)),
+                                    EdgeInsets.all(Constants.doublePadding)),
                                 textStyle: MaterialStatePropertyAll(
                                     Constants.smDropdownStyle),
                                 shape: MaterialStatePropertyAll(
