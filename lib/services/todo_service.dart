@@ -228,20 +228,20 @@ class ToDoService {
   }
 
   Future<ToDo> createToDo({required ToDo toDo}) async =>
-      await _repository.create(toDo) as ToDo;
+      await _repository.create(toDo);
 
   Future<List<ToDo>> searchToDos({required String searchString}) async =>
       await _repository.search(searchString: searchString);
 
   Future<List<ToDo>> getToDos({int limit = 50, int offset = 0}) async =>
-      await _repository.getRepoList(limit: limit, offset: offset) as List<ToDo>;
+      await _repository.getRepoList(limit: limit, offset: offset);
 
   Future<List<ToDo>> getToDosBy(
           {required SortableView<ToDo> toDoSorter,
           int limit = 50,
           int offset = 0}) async =>
       await _repository.getRepoListBy(
-          sorter: toDoSorter, limit: limit, offset: offset) as List<ToDo>;
+          sorter: toDoSorter, limit: limit, offset: offset);
 
   Future<List<ToDo>> getRange({DateTime? start, DateTime? end}) async =>
       await _repository.getRange(start: start, end: end);
@@ -253,7 +253,7 @@ class ToDoService {
       await _repository.getUpcoming(limit: limit, offset: offset);
 
   Future<ToDo?> getToDoByID({int? id}) async =>
-      (null != id) ? await _repository.getByID(id: id) as ToDo? : null;
+      (null != id) ? await _repository.getByID(id: id) : null;
 
   Future<List<ToDo>> mostRecent({int limit = 5}) async =>
       await _repository.mostRecent(limit: limit);
@@ -282,7 +282,7 @@ class ToDoService {
           sorter: toDoSorter, limit: limit, offset: offset);
 
   Future<ToDo> updateToDo({required ToDo toDo}) async =>
-      await _repository.update(toDo) as ToDo;
+      await _repository.update(toDo);
 
   Future<void> updateBatch({required List<ToDo> toDos}) async =>
       await _repository.updateBatch(toDos);

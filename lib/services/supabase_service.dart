@@ -19,7 +19,6 @@ class SupabaseService {
       _supabaseClient = client;
       return;
     }
-
     await Supabase.initialize(url: supabaseUrl, anonKey: anonKey);
     _supabaseClient = Supabase.instance.client;
   }

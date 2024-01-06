@@ -1,13 +1,13 @@
-import 'package:allocate/model/task/subtask.dart';
-import 'package:allocate/util/interfaces/sortable.dart';
 import 'package:isar/isar.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../model/task/subtask.dart';
 import '../services/isar_service.dart';
 import '../services/supabase_service.dart';
 import '../util/constants.dart';
 import '../util/exceptions.dart';
 import '../util/interfaces/repository/model/subtask_repository.dart';
+import '../util/interfaces/sortable.dart';
 
 class SubtaskRepo implements SubtaskRepository {
   final SupabaseClient _supabaseClient =
@@ -15,22 +15,22 @@ class SubtaskRepo implements SubtaskRepository {
   final Isar _isarClient = IsarService.instance.isarClient;
 
   @override
-  Future<Subtask> create(Subtask subTask) async {
-    subTask.isSynced = (null != _supabaseClient.auth.currentSession);
+  Future<Subtask> create(Subtask subtask) async {
+    subtask.isSynced = (null != _supabaseClient.auth.currentSession);
     late int? id;
     await _isarClient.writeTxn(() async {
-      id = await _isarClient.subtasks.put(subTask);
+      id = await _isarClient.subtasks.put(subtask);
     });
 
     if (null == id) {
       throw FailureToCreateException("Failed to create Subtask locally \n"
-          "Subtask: ${subTask.toString()}\n"
+          "Subtask: ${subtask.toString()}\n"
           "Time: ${DateTime.now()}\n"
           "Isar Open: ${_isarClient.isOpen}");
     }
 
     if (null != _supabaseClient.auth.currentSession) {
-      Map<String, dynamic> subtaskEntity = subTask.toEntity();
+      Map<String, dynamic> subtaskEntity = subtask.toEntity();
       final List<Map<String, dynamic>> response =
           await _supabaseClient.from("ts").insert(subtaskEntity).select("id");
 
@@ -38,31 +38,31 @@ class SubtaskRepo implements SubtaskRepository {
 
       if (null == id) {
         throw FailureToUploadException("Failed to sync Subtask on create\n"
-            "Subtask: ${subTask.toString()}\n"
+            "Subtask: ${subtask.toString()}\n"
             "Time: ${DateTime.now()}\n\n"
             "Supabase Open: ${null != _supabaseClient.auth.currentSession}");
       }
     }
 
-    return subTask;
+    return subtask;
   }
 
   @override
-  Future<void> delete(Subtask subTask) async {
+  Future<void> delete(Subtask subtask) async {
     if (null == _supabaseClient.auth.currentSession) {
-      subTask.toDelete = true;
-      await update(subTask);
+      subtask.toDelete = true;
+      await update(subtask);
       return;
     }
 
     try {
-      await _supabaseClient.from("subtasks").delete().eq("id", subTask.id);
+      await _supabaseClient.from("subtasks").delete().eq("id", subtask.id);
       await _isarClient.writeTxn(() async {
-        await _isarClient.subtasks.delete(subTask.id);
+        await _isarClient.subtasks.delete(subtask.id);
       });
     } catch (error) {
       throw FailureToDeleteException("Failed to delete Subtask online\n"
-          "Subtask: ${subTask.toString()}\n"
+          "Subtask: ${subtask.toString()}\n"
           "Time: ${DateTime.now()}\n"
           "Supabase Open: ${null != _supabaseClient.auth.currentSession}");
     }
@@ -78,25 +78,25 @@ class SubtaskRepo implements SubtaskRepository {
 
   @override
   Future<void> fetchRepo() async {
-    late List<Map<String, dynamic>> subTaskEntities;
+    late List<Map<String, dynamic>> subtaskEntities;
 
     await Future.delayed(const Duration(seconds: 1)).then((value) async {
       if (null == _supabaseClient.auth.currentSession) {
         return;
       }
-      subTaskEntities = await _supabaseClient.from("subtasks").select();
+      subtaskEntities = await _supabaseClient.from("subtasks").select();
 
-      if (subTaskEntities.isEmpty) {
+      if (subtaskEntities.isEmpty) {
         return;
       }
 
-      List<Subtask> subtasks = subTaskEntities
-          .map((subTask) => Subtask.fromEntity(entity: subTask))
+      List<Subtask> subtasks = subtaskEntities
+          .map((subtask) => Subtask.fromEntity(entity: subtask))
           .toList();
       await _isarClient.writeTxn(() async {
         await _isarClient.subtasks.clear();
-        for (Subtask subTask in subtasks) {
-          await _isarClient.subtasks.put(subTask);
+        for (Subtask subtask in subtasks) {
+          await _isarClient.subtasks.put(subtask);
         }
       });
     });
@@ -184,9 +184,9 @@ class SubtaskRepo implements SubtaskRepository {
     List<Subtask> unsyncedSubtasks = await getUnsynced();
 
     if (unsyncedSubtasks.isNotEmpty) {
-      List<Map<String, dynamic>> syncEntities = unsyncedSubtasks.map((subTask) {
-        subTask.isSynced = true;
-        return subTask.toEntity();
+      List<Map<String, dynamic>> syncEntities = unsyncedSubtasks.map((subtask) {
+        subtask.isSynced = true;
+        return subtask.toEntity();
       }).toList();
 
       final List<Map<String, dynamic>> responses = await _supabaseClient
@@ -198,7 +198,7 @@ class SubtaskRepo implements SubtaskRepository {
           responses.map((response) => response["id"] as int?).toList();
 
       if (ids.any((id) => null == id)) {
-        unsyncedSubtasks.map((subTask) => subTask.isSynced = false);
+        unsyncedSubtasks.map((subtask) => subtask.isSynced = false);
         throw FailureToUploadException("Failed to sync subtasks\n"
             "Subtasks: ${unsyncedSubtasks.toString()}\n"
             "Time: ${DateTime.now()}\n"
@@ -209,36 +209,36 @@ class SubtaskRepo implements SubtaskRepository {
   }
 
   @override
-  Future<Subtask> update(Subtask subTask) async {
-    subTask.isSynced = (null != _supabaseClient.auth.currentSession);
+  Future<Subtask> update(Subtask subtask) async {
+    subtask.isSynced = (null != _supabaseClient.auth.currentSession);
 
     // This is just for error checking.
     late int? id;
     await _isarClient.writeTxn(() async {
-      id = await _isarClient.subtasks.put(subTask);
+      id = await _isarClient.subtasks.put(subtask);
     });
 
     if (null == id) {
       throw FailureToUpdateException("Failed to update Subtask locally\n"
-          "Subtask: ${subTask.toString()}\n"
+          "Subtask: ${subtask.toString()}\n"
           "Time: ${DateTime.now()}\n"
           "Isar Open: ${_isarClient.isOpen}");
     }
 
     if (null != _supabaseClient.auth.currentSession) {
-      Map<String, dynamic> subtaskEntity = subTask.toEntity();
+      Map<String, dynamic> subtaskEntity = subtask.toEntity();
       final List<Map<String, dynamic>> response =
           await _supabaseClient.from("ts").upsert(subtaskEntity).select("id");
 
       id = response.last["id"];
       if (null == id) {
         throw FailureToUploadException("Failed to sync Subtask on update\n"
-            "Subtask: ${subTask.toString()}\n"
+            "Subtask: ${subtask.toString()}\n"
             "Time: ${DateTime.now()}\n"
             "Supabase Open: ${null != _supabaseClient.auth.currentSession}");
       }
     }
-    return subTask;
+    return subtask;
   }
 
   @override
@@ -248,9 +248,9 @@ class SubtaskRepo implements SubtaskRepository {
 
     await _isarClient.writeTxn(() async {
       ids = List<int?>.empty(growable: true);
-      for (Subtask subTask in subtasks) {
-        subTask.isSynced = (null != _supabaseClient.auth.currentSession);
-        id = await _isarClient.subtasks.put(subTask);
+      for (Subtask subtask in subtasks) {
+        subtask.isSynced = (null != _supabaseClient.auth.currentSession);
+        id = await _isarClient.subtasks.put(subtask);
         ids.add(id);
       }
     });
@@ -263,11 +263,11 @@ class SubtaskRepo implements SubtaskRepository {
 
     if (null != _supabaseClient.auth.currentSession) {
       ids.clear();
-      List<Map<String, dynamic>> subTaskEntities =
-          subtasks.map((subTask) => subTask.toEntity()).toList();
+      List<Map<String, dynamic>> subtaskEntities =
+          subtasks.map((subtask) => subtask.toEntity()).toList();
       final List<Map<String, dynamic>> responses = await _supabaseClient
           .from("subtasks")
-          .upsert(subTaskEntities)
+          .upsert(subtaskEntities)
           .select("id");
 
       ids = responses.map((response) => response["id"] as int?).toList();

@@ -463,13 +463,15 @@ const _DeadlinepriorityValueEnumMap = {
 };
 const _DeadlinerepeatableStateEnumValueMap = {
   'normal': 0,
-  'template': 1,
-  'delta': 2,
+  'projected': 1,
+  'template': 2,
+  'delta': 3,
 };
 const _DeadlinerepeatableStateValueEnumMap = {
   0: RepeatableState.normal,
-  1: RepeatableState.template,
-  2: RepeatableState.delta,
+  1: RepeatableState.projected,
+  2: RepeatableState.template,
+  3: RepeatableState.delta,
 };
 
 Id _deadlineGetId(Deadline object) {

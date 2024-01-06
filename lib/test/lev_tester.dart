@@ -1,5 +1,6 @@
-import "package:allocate/util/strings.dart";
 import "package:test/test.dart";
+
+import "../util/strings.dart";
 
 void main() {
   group("Levenshtein Distance Test", () {
@@ -33,7 +34,12 @@ void main() {
     });
 
     test("abcd, ab", () {
-      expect(levenshteinDistance(s1: "abcd", s2: "ab",), 2);
+      expect(
+          levenshteinDistance(
+            s1: "abcd",
+            s2: "ab",
+          ),
+          2);
     });
   });
 }

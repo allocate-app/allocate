@@ -6,9 +6,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:provider/provider.dart';
 
-import '../../../../providers/group_provider.dart';
 import '../../../model/task/group.dart';
 import '../../../model/task/todo.dart';
+import '../../../providers/group_provider.dart';
 import '../../../providers/todo_provider.dart';
 import '../../../providers/user_provider.dart';
 import '../../../util/constants.dart';

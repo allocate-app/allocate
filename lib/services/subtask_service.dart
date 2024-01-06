@@ -1,8 +1,7 @@
-import 'package:allocate/util/enums.dart';
-
 import '../model/task/subtask.dart';
 import '../repositories/subtask_repo.dart';
 import '../util/constants.dart';
+import '../util/enums.dart';
 import '../util/interfaces/repository/model/subtask_repository.dart';
 import '../util/interfaces/sortable.dart';
 

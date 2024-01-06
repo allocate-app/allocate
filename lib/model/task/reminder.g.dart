@@ -276,18 +276,18 @@ Reminder _reminderDeserialize(
     name: reader.readString(offsets[5]),
     notificationID: reader.readLongOrNull(offsets[6]),
     originalDue: reader.readDateTimeOrNull(offsets[7]),
-    originalStart: reader.readDateTimeOrNull(offsets[8]),
     repeatDays: reader.readBoolList(offsets[9]) ?? [],
     repeatID: reader.readLongOrNull(offsets[10]),
     repeatSkip: reader.readLongOrNull(offsets[11]) ?? 1,
     repeatable: reader.readBoolOrNull(offsets[12]) ?? false,
     repeatableState: _ReminderrepeatableStateValueEnumMap[
             reader.readByteOrNull(offsets[13])] ??
-        RepeatableState.template,
+        RepeatableState.normal,
   );
   object.customViewIndex = reader.readLong(offsets[0]);
   object.id = id;
   object.isSynced = reader.readBool(offsets[3]);
+  object.originalStart = reader.readDateTimeOrNull(offsets[8]);
   object.toDelete = reader.readBool(offsets[14]);
   return object;
 }
@@ -329,7 +329,7 @@ P _reminderDeserializeProp<P>(
     case 13:
       return (_ReminderrepeatableStateValueEnumMap[
               reader.readByteOrNull(offset)] ??
-          RepeatableState.template) as P;
+          RepeatableState.normal) as P;
     case 14:
       return (reader.readBool(offset)) as P;
     default:
@@ -355,13 +355,15 @@ const _ReminderfrequencyValueEnumMap = {
 };
 const _ReminderrepeatableStateEnumValueMap = {
   'normal': 0,
-  'template': 1,
-  'delta': 2,
+  'projected': 1,
+  'template': 2,
+  'delta': 3,
 };
 const _ReminderrepeatableStateValueEnumMap = {
   0: RepeatableState.normal,
-  1: RepeatableState.template,
-  2: RepeatableState.delta,
+  1: RepeatableState.projected,
+  2: RepeatableState.template,
+  3: RepeatableState.delta,
 };
 
 Id _reminderGetId(Reminder object) {

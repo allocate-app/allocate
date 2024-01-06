@@ -30,6 +30,7 @@ class Group with EquatableMixin implements Copyable<Group>, IModel {
   @Index()
   String name;
   String description;
+  @override
   @Index()
   bool isSynced = false;
   @override

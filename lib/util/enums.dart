@@ -21,7 +21,7 @@ enum Effect {
 
 enum ThemeType { system, light, dark }
 
-enum RepeatableState { normal, template, delta }
+enum RepeatableState { normal, projected, template, delta }
 
 enum ToneMapping {
   system,

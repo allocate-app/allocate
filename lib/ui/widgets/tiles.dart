@@ -1,7 +1,3 @@
-import 'package:allocate/ui/widgets/handle_repeatable_modal.dart';
-import 'package:allocate/ui/widgets/paginating_listview.dart';
-import 'package:allocate/ui/widgets/subtask_quick_entry.dart';
-import 'package:allocate/ui/widgets/subtitles.dart';
 import 'package:another_flushbar/flushbar.dart';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:auto_size_text_field/auto_size_text_field.dart';
@@ -45,9 +41,13 @@ import 'duration_dialog.dart';
 import 'expanded_listtile.dart';
 import 'flushbars.dart';
 import 'frequency_dialog.dart';
+import 'handle_repeatable_modal.dart';
 import 'listtile_widgets.dart';
 import 'listviews.dart';
+import 'paginating_listview.dart';
 import 'search_recents_bar.dart';
+import 'subtask_quick_entry.dart';
+import 'subtitles.dart';
 
 abstract class Tiles {
   /// ListView Tiles

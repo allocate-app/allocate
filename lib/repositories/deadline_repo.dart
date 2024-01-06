@@ -273,6 +273,8 @@ class DeadlineRepo implements DeadlineRepository {
       await _isarClient.deadlines
           .where()
           .toDeleteEqualTo(false)
+          .filter()
+          .repeatableStateEqualTo(RepeatableState.normal)
           .sortByCustomViewIndex()
           .thenByLastUpdatedDesc()
           .offset(offset)
@@ -290,6 +292,8 @@ class DeadlineRepo implements DeadlineRepository {
           return await _isarClient.deadlines
               .where()
               .toDeleteEqualTo(false)
+              .filter()
+              .repeatableStateEqualTo(RepeatableState.normal)
               .sortByNameDesc()
               .thenByLastUpdatedDesc()
               .offset(offset)
@@ -299,6 +303,8 @@ class DeadlineRepo implements DeadlineRepository {
           return await _isarClient.deadlines
               .where()
               .toDeleteEqualTo(false)
+              .filter()
+              .repeatableStateEqualTo(RepeatableState.normal)
               .sortByName()
               .thenByLastUpdatedDesc()
               .offset(offset)
@@ -310,6 +316,8 @@ class DeadlineRepo implements DeadlineRepository {
           return await _isarClient.deadlines
               .where()
               .toDeleteEqualTo(false)
+              .filter()
+              .repeatableStateEqualTo(RepeatableState.normal)
               .sortByPriorityDesc()
               .thenByLastUpdatedDesc()
               .offset(offset)
@@ -319,6 +327,8 @@ class DeadlineRepo implements DeadlineRepository {
           return await _isarClient.deadlines
               .where()
               .toDeleteEqualTo(false)
+              .filter()
+              .repeatableStateEqualTo(RepeatableState.normal)
               .sortByPriority()
               .thenByLastUpdatedDesc()
               .offset(offset)
@@ -330,6 +340,8 @@ class DeadlineRepo implements DeadlineRepository {
           return await _isarClient.deadlines
               .where()
               .toDeleteEqualTo(false)
+              .filter()
+              .repeatableStateEqualTo(RepeatableState.normal)
               .sortByDueDateDesc()
               .thenByLastUpdatedDesc()
               .offset(offset)
@@ -339,6 +351,8 @@ class DeadlineRepo implements DeadlineRepository {
           return await _isarClient.deadlines
               .where()
               .toDeleteEqualTo(false)
+              .filter()
+              .repeatableStateEqualTo(RepeatableState.normal)
               .sortByDueDate()
               .thenByLastUpdatedDesc()
               .offset(offset)
@@ -357,6 +371,7 @@ class DeadlineRepo implements DeadlineRepository {
           .warnMeEqualTo(true)
           .filter()
           .toDeleteEqualTo(false)
+          .repeatableStateEqualTo(RepeatableState.normal)
           .dueDateGreaterThan(now ?? Constants.today)
           .sortByDueDate()
           .limit(limit)
@@ -369,7 +384,8 @@ class DeadlineRepo implements DeadlineRepository {
           .repeatableEqualTo(true)
           .filter()
           .toDeleteEqualTo(false)
-          .dueDateLessThan(now ?? Constants.today)
+          .repeatableStateEqualTo(RepeatableState.normal)
+          .startDateLessThan(now ?? Constants.today)
           .findAll();
 
   @override
@@ -409,6 +425,7 @@ class DeadlineRepo implements DeadlineRepository {
         .dueDateBetween(start, end)
         .filter()
         .toDeleteEqualTo(false)
+        .repeatableStateEqualTo(RepeatableState.normal)
         .findAll();
   }
 

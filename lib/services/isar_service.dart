@@ -21,7 +21,6 @@ class IsarService {
 
   static IsarService get instance => _instance;
 
-  // This will eventually should be refactored using DI.
   bool _debug = false;
 
   late Isar _isarClient;
@@ -48,7 +47,6 @@ class IsarService {
 
   Future<void> dispose() async {
     await _isarClient.close(deleteFromDisk: _debug);
-    print("should be delet");
   }
 
   IsarService._internal();
