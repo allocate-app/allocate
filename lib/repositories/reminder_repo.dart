@@ -351,15 +351,15 @@ class ReminderRepo implements ReminderRepository {
           .limit(limit)
           .findAll();
 
+  // Needs to be able to pick up deleted bc delta
   @override
   Future<List<Reminder>> getRepeatables({DateTime? now}) async =>
       await _isarClient.reminders
           .where()
           .repeatableEqualTo(true)
           .filter()
-          .toDeleteEqualTo(false)
           .repeatableStateEqualTo(RepeatableState.normal)
-          .dueDateLessThan(now ?? Constants.today)
+          .originalDueLessThan(now ?? Constants.today)
           .findAll();
 
   @override
@@ -379,6 +379,7 @@ class ReminderRepo implements ReminderRepository {
           .repeatableStateEqualTo(RepeatableState.template)
           .filter()
           .repeatIDEqualTo(repeatID)
+          .toDeleteEqualTo(false)
           .findFirst();
 
   Future<List<int>> getDeleteIds() async => await _isarClient.reminders

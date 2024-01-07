@@ -9,6 +9,7 @@ import "subtask.dart";
 
 part "todo.g.dart";
 
+// TODO: toDelete is no longer concretely local, edit model to copy fromEntity
 @Collection(inheritance: false)
 class ToDo with EquatableMixin implements Copyable<ToDo>, IRepeatable {
   @override

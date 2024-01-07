@@ -149,7 +149,7 @@ class DeadlineRepo implements DeadlineRepository {
         .where()
         .repeatIDEqualTo(deleteFrom.repeatID)
         .filter()
-        .dueDateGreaterThan(deleteFrom.dueDate!)
+        .startDateGreaterThan(deleteFrom.startDate!)
         .findAll();
 
     // This is to prevent a race condition & accidentally deleting a notification.
@@ -383,9 +383,8 @@ class DeadlineRepo implements DeadlineRepository {
           .where()
           .repeatableEqualTo(true)
           .filter()
-          .toDeleteEqualTo(false)
           .repeatableStateEqualTo(RepeatableState.normal)
-          .startDateLessThan(now ?? Constants.today)
+          .originalStartLessThan(now ?? Constants.today)
           .findAll();
 
   @override
@@ -405,6 +404,7 @@ class DeadlineRepo implements DeadlineRepository {
           .repeatableStateEqualTo(RepeatableState.template)
           .filter()
           .repeatIDEqualTo(repeatID)
+          .toDeleteEqualTo(false)
           .findFirst();
 
   Future<List<int>> getDeleteIds() async => await _isarClient.deadlines
