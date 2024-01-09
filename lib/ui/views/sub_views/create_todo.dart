@@ -1,3 +1,4 @@
+import "dart:io";
 import "dart:math";
 
 import "package:another_flushbar/flushbar.dart";
@@ -148,8 +149,10 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
     mobileScrollController = ScrollController();
     desktopScrollController = ScrollController();
 
-    scrollPhysics =
-        const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics());
+    ScrollPhysics parentPhysics = (Platform.isIOS || Platform.isMacOS)
+        ? const BouncingScrollPhysics()
+        : const ClampingScrollPhysics();
+    scrollPhysics = AlwaysScrollableScrollPhysics(parent: parentPhysics);
     nameEditingController = TextEditingController();
     nameEditingController.addListener(() {
       if (null != nameErrorText && mounted) {
@@ -191,6 +194,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
 
   @override
   void dispose() {
+    print("disposing");
     nameEditingController.dispose();
     descriptionEditingController.dispose();
     repeatSkipEditingController.dispose();
@@ -533,19 +537,16 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
   }
 
   void onAnchorOpen() {
-    print("adding listener");
     desktopScrollController.addListener(_closeMenuAnchor);
     mobileScrollController.addListener(_closeMenuAnchor);
   }
 
   void onAnchorClose() {
-    print("removing listener");
     desktopScrollController.removeListener(_closeMenuAnchor);
     mobileScrollController.removeListener(_closeMenuAnchor);
   }
 
   void _closeMenuAnchor() {
-    print("closing anchor");
     subtasksAnchorController.close();
   }
 
@@ -624,10 +625,10 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                                       hintText: "Task Name",
                                       errorText: nameErrorText,
                                       controller: nameEditingController,
-                                      outerPadding: const EdgeInsets.all(
-                                          Constants.padding),
+                                      outerPadding: const EdgeInsets.symmetric(
+                                          vertical: Constants.padding),
                                       textFieldPadding: const EdgeInsets.only(
-                                        left: Constants.halfPadding,
+                                        left: Constants.padding,
                                       ),
                                       handleClear: clearNameField,
                                       onEditingComplete: updateName),
@@ -710,46 +711,37 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                                     handleClear: clearDates,
                                     handleUpdate: updateDates,
                                   ),
-                                  (showTimeTile)
-                                      ? const PaddedDivider(
-                                          padding: Constants.padding)
-                                      : const SizedBox.shrink(),
                                   // Time
-
-                                  (showTimeTile)
-                                      ? Tiles.timeTile(
-                                          outerPadding:
-                                              const EdgeInsets.symmetric(
-                                                  horizontal:
-                                                      Constants.padding),
-                                          startTime: startTime,
-                                          dueTime: dueTime,
-                                          context: context,
-                                          handleClear: clearTimes,
-                                          handleUpdate: updateTimes,
-                                        )
-                                      : const SizedBox.shrink(),
-                                  (showRepeatTile)
-                                      ? const PaddedDivider(
-                                          padding: Constants.padding)
-                                      : const SizedBox.shrink(),
+                                  if (showTimeTile) ...[
+                                    const PaddedDivider(
+                                        padding: Constants.padding),
+                                    Tiles.timeTile(
+                                      outerPadding: const EdgeInsets.symmetric(
+                                          horizontal: Constants.padding),
+                                      startTime: startTime,
+                                      dueTime: dueTime,
+                                      context: context,
+                                      handleClear: clearTimes,
+                                      handleUpdate: updateTimes,
+                                    ),
+                                  ],
 
                                   // Repeatable Stuff -> Show status, on click, open a dialog.
-                                  (showRepeatTile)
-                                      ? Tiles.repeatableTile(
-                                          context: context,
-                                          outerPadding:
-                                              const EdgeInsets.symmetric(
-                                                  horizontal:
-                                                      Constants.padding),
-                                          frequency: frequency,
-                                          weekdays: weekdayList,
-                                          repeatSkip: repeatSkip,
-                                          startDate: startDate,
-                                          handleUpdate: updateRepeatable,
-                                          handleClear: clearRepeatable,
-                                        )
-                                      : const SizedBox.shrink(),
+                                  if (showRepeatTile) ...[
+                                    const PaddedDivider(
+                                        padding: Constants.padding),
+                                    Tiles.repeatableTile(
+                                      context: context,
+                                      outerPadding: const EdgeInsets.symmetric(
+                                          horizontal: Constants.padding),
+                                      frequency: frequency,
+                                      weekdays: weekdayList,
+                                      repeatSkip: repeatSkip,
+                                      startDate: startDate,
+                                      handleUpdate: updateRepeatable,
+                                      handleClear: clearRepeatable,
+                                    ),
+                                  ],
                                 ]),
                           ),
                           Flexible(
@@ -785,28 +777,30 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                                     )
                                   ]),
                                   buildTaskTypeButton(),
-                                  // Subtasks -- Factory Widget. == UH, why does this have padding?
-                                  (taskType != TaskType.small)
-                                      ? Tiles.subtasksTile(
-                                          context: context,
-                                          id: Constants.intMax,
-                                          limit: Constants.numTasks[taskType]!,
-                                          subtasksAnchorController:
-                                              subtasksAnchorController,
-                                          onAnchorOpen: onAnchorOpen,
-                                          onAnchorClose: onAnchorClose,
-                                          onRemove: (userProvider
-                                                      .curUser?.reduceMotion ??
-                                                  false)
-                                              ? null
-                                              : onRemove,
-                                          subtasks: subtasks,
-                                          subtaskCount:
-                                              toDoProvider.getSubtaskCount(
-                                                  id: Constants.intMax,
-                                                  limit: Constants
-                                                      .numTasks[taskType]!))
-                                      : const SizedBox.shrink(),
+                                  // Subtasks -- Factory Widget.
+                                  if (taskType != TaskType.small) ...[
+                                    const PaddedDivider(
+                                        padding: Constants.padding),
+                                    Tiles.subtasksTile(
+                                        context: context,
+                                        id: Constants.intMax,
+                                        limit: Constants.numTasks[taskType]!,
+                                        subtasksAnchorController:
+                                            subtasksAnchorController,
+                                        onAnchorOpen: onAnchorOpen,
+                                        onAnchorClose: onAnchorClose,
+                                        onRemove: (userProvider
+                                                    .curUser?.reduceMotion ??
+                                                false)
+                                            ? null
+                                            : onRemove,
+                                        subtasks: subtasks,
+                                        subtaskCount:
+                                            toDoProvider.getSubtaskCount(
+                                                id: Constants.intMax,
+                                                limit: Constants
+                                                    .numTasks[taskType]!))
+                                  ],
 
                                   const PaddedDivider(
                                       padding: Constants.padding),
@@ -886,9 +880,10 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                         hintText: "Task Name",
                         errorText: nameErrorText,
                         controller: nameEditingController,
-                        outerPadding: const EdgeInsets.all(Constants.padding),
+                        outerPadding: const EdgeInsets.symmetric(
+                            vertical: Constants.padding),
                         textFieldPadding: const EdgeInsets.only(
-                          left: Constants.halfPadding,
+                          left: Constants.padding,
                         ),
                         handleClear: clearNameField,
                         onEditingComplete: updateName),
@@ -929,23 +924,24 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                     buildTaskTypeButton(),
 
                     // Subtasks
-                    (taskType != TaskType.small)
-                        ? Tiles.subtasksTile(
-                            context: context,
-                            subtasksAnchorController: subtasksAnchorController,
-                            onAnchorOpen: onAnchorOpen,
-                            onAnchorClose: onAnchorClose,
-                            onRemove:
-                                (userProvider.curUser?.reduceMotion ?? false)
-                                    ? null
-                                    : onRemove,
-                            limit: Constants.numTasks[taskType]!,
-                            subtasks: subtasks,
-                            subtaskCount: toDoProvider.getSubtaskCount(
-                                id: Constants.intMax,
-                                limit: Constants.numTasks[taskType]!),
-                            id: Constants.intMax)
-                        : const SizedBox.shrink(),
+                    if (taskType != TaskType.small) ...[
+                      const PaddedDivider(padding: Constants.padding),
+                      Tiles.subtasksTile(
+                          context: context,
+                          subtasksAnchorController: subtasksAnchorController,
+                          onAnchorOpen: onAnchorOpen,
+                          onAnchorClose: onAnchorClose,
+                          onRemove:
+                              (userProvider.curUser?.reduceMotion ?? false)
+                                  ? null
+                                  : onRemove,
+                          limit: Constants.numTasks[taskType]!,
+                          subtasks: subtasks,
+                          subtaskCount: toDoProvider.getSubtaskCount(
+                              id: Constants.intMax,
+                              limit: Constants.numTasks[taskType]!),
+                          id: Constants.intMax),
+                    ],
 
                     const PaddedDivider(padding: Constants.padding),
                     // My Day
@@ -1026,38 +1022,35 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                       handleUpdate: updateDates,
                     ),
 
-                    (showTimeTile)
-                        ? const PaddedDivider(padding: Constants.padding)
-                        : const SizedBox.shrink(),
                     // Time
-                    (showTimeTile)
-                        ? Tiles.timeTile(
-                            outerPadding: const EdgeInsets.symmetric(
-                                horizontal: Constants.padding),
-                            startTime: startTime,
-                            dueTime: dueTime,
-                            context: context,
-                            handleClear: clearTimes,
-                            handleUpdate: updateTimes,
-                          )
-                        : const SizedBox.shrink(),
-                    (showRepeatTile)
-                        ? const PaddedDivider(padding: Constants.padding)
-                        : const SizedBox.shrink(),
+                    if (showTimeTile) ...[
+                      const PaddedDivider(padding: Constants.padding),
+                      Tiles.timeTile(
+                        outerPadding: const EdgeInsets.symmetric(
+                            horizontal: Constants.padding),
+                        startTime: startTime,
+                        dueTime: dueTime,
+                        context: context,
+                        handleClear: clearTimes,
+                        handleUpdate: updateTimes,
+                      ),
+                    ],
+
                     // Repeatable Stuff -> Show status, on click, open a dialog.
-                    (showRepeatTile)
-                        ? Tiles.repeatableTile(
-                            context: context,
-                            outerPadding: const EdgeInsets.symmetric(
-                                horizontal: Constants.padding),
-                            frequency: frequency,
-                            weekdays: weekdayList,
-                            repeatSkip: repeatSkip,
-                            startDate: startDate,
-                            handleUpdate: updateRepeatable,
-                            handleClear: clearRepeatable,
-                          )
-                        : const SizedBox.shrink(),
+                    if (showRepeatTile) ...[
+                      const PaddedDivider(padding: Constants.padding),
+                      Tiles.repeatableTile(
+                        context: context,
+                        outerPadding: const EdgeInsets.symmetric(
+                            horizontal: Constants.padding),
+                        frequency: frequency,
+                        weekdays: weekdayList,
+                        repeatSkip: repeatSkip,
+                        startDate: startDate,
+                        handleUpdate: updateRepeatable,
+                        handleClear: clearRepeatable,
+                      ),
+                    ],
                   ],
                 ),
               ),

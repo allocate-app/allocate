@@ -6,12 +6,15 @@ import 'package:flutter/foundation.dart';
 import '../model/task/subtask.dart';
 import '../model/task/todo.dart';
 import '../model/user/user.dart';
+import '../repositories/subtask_repo.dart';
+import '../repositories/todo_repo.dart';
 import '../services/repeatable_service.dart';
-import '../services/subtask_service.dart';
-import '../services/todo_service.dart';
 import '../util/constants.dart';
 import '../util/enums.dart';
 import '../util/exceptions.dart';
+import '../util/interfaces/repository/model/subtask_repository.dart';
+import '../util/interfaces/repository/model/todo_repository.dart';
+import '../util/numbers.dart';
 import '../util/sorting/todo_sorter.dart';
 
 // TODO: IMPLEMENT PROPER GUI ERROR MSGS.
@@ -23,20 +26,23 @@ class ToDoProvider extends ChangeNotifier {
   set rebuild(bool rebuild) {
     _rebuild = rebuild;
     if (_rebuild) {
+      toDos = [];
+      secondaryToDos = [];
       notifyListeners();
     }
   }
 
   set softRebuild(bool rebuild) {
     _rebuild = rebuild;
+
+    if (_rebuild) {
+      toDos = [];
+      secondaryToDos = [];
+    }
   }
 
-  // TODO: change timer.
-  late Timer syncTimer;
-
-  // TODO: refactor services out && just use repositories.
-  final ToDoService _toDoService;
-  final SubtaskService _subtaskService;
+  final ToDoRepository _toDoRepo;
+  final SubtaskRepository _subtaskRepo;
   final RepeatableService _repeatService;
 
   ToDo? curToDo;
@@ -53,32 +59,28 @@ class ToDoProvider extends ChangeNotifier {
     Constants.intMax: ValueNotifier<int>(0),
   };
 
-  ToDoProvider(
-      {this.user,
-      ToDoService? toDoService,
-      SubtaskService? subtaskService,
-      RepeatableService? repeatService})
-      : _toDoService = toDoService ?? ToDoService(),
-        _subtaskService = subtaskService ?? SubtaskService(),
-        _repeatService = repeatService ?? RepeatableService(),
+  // This is to hold repeating events for the calendar.
+  // TODO: figure out structure, might be smarter to do it by day, then ID.
+  final Map<int, Map<DateTime, Set<ToDo>>> calendarItems = {};
+
+  // CONSTRUCTOR
+  ToDoProvider({
+    this.user,
+    RepeatableService? repeatService,
+    ToDoRepository? toDoRepository,
+    SubtaskRepository? subtaskRepository,
+  })  : _toDoRepo = toDoRepository ?? ToDoRepo.instance,
+        _subtaskRepo = subtaskRepository ?? SubtaskRepo.instance,
+        _repeatService = repeatService ?? RepeatableService.instance,
         sorter = user?.toDoSorter ?? ToDoSorter() {
-    sorter = user?.toDoSorter ?? ToDoSorter();
     init();
   }
 
   Future<void> init() async {
-    startTimer();
-  }
+    // startTimer();
 
-  // This is just for testing atm.
-  void startTimer() {
-    syncTimer = Timer.periodic(const Duration(seconds: 10), (timer) async {
-      if (user?.syncOnline ?? false) {
-        _syncRepo();
-      } else {
-        _toDoService.clearDeletesLocalRepo();
-      }
-    });
+    // TODO: fill the hashmap with repeating events.
+    // repeatable subroutine
   }
 
   void setUser({User? newUser}) {
@@ -102,26 +104,22 @@ class ToDoProvider extends ChangeNotifier {
 
   bool get descending => sorter.descending;
 
-  int calculateRealDuration({int? weight, int? duration}) =>
-      _toDoService.calculateRealDuration(weight: weight, duration: duration);
+  int calculateRealDuration({int? weight, int? duration}) => (remap(
+              x: weight ?? 0,
+              inMin: 0,
+              inMax: Constants.medianWeight,
+              outMin: Constants.lowerBound,
+              outMax: Constants.upperBound) *
+          (duration ?? 0))
+      .toInt();
 
   Future<int> getWeight(
           {required int taskID, int limit = Constants.maxNumTasks}) async =>
-      await _subtaskService.getTaskSubtaskWeight(taskID: taskID, limit: limit);
+      await _subtaskRepo.getTaskSubtaskWeight(taskID: taskID, limit: limit);
 
   List<SortMethod> get sortMethods => sorter.sortMethods;
 
-  Future<int> getMyDayWeight() async => await _toDoService.getMyDayWeight();
-
-  Future<void> recalculateWeight() async {
-    _toDoService.recalculateWeight(toDo: curToDo!);
-    await updateToDo();
-  }
-
-  Future<void> recalculateRealDuration() async {
-    _toDoService.setRealDuration(toDo: curToDo!);
-    await updateToDo();
-  }
+  Future<int> getMyDayWeight() async => await _toDoRepo.getMyDayWeight();
 
   ValueNotifier<int> getSubtaskCount(
       {required int id, int limit = Constants.maxNumTasks}) {
@@ -137,7 +135,7 @@ class ToDoProvider extends ChangeNotifier {
   Future<void> setSubtaskCount(
       {required int id, int limit = Constants.maxNumTasks, int? count}) async {
     count = count ??
-        await _subtaskService.getTaskSubtasksCount(taskID: id, limit: limit);
+        await _subtaskRepo.getTaskSubtasksCount(taskID: id, limit: limit);
     if (toDoSubtaskCounts.containsKey(id)) {
       toDoSubtaskCounts[id]?.value = count;
     } else {
@@ -147,7 +145,7 @@ class ToDoProvider extends ChangeNotifier {
 
   Future<void> _syncRepo() async {
     try {
-      await _toDoService.syncRepo();
+      await _toDoRepo.syncRepo();
     } on FailureToDeleteException catch (e) {
       log(e.cause);
       return Future.error(e);
@@ -158,6 +156,7 @@ class ToDoProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  // TODO: on successful creation, add to hashmap.
   Future<void> createToDo({
     required TaskType taskType,
     required String name,
@@ -183,10 +182,9 @@ class ToDoProvider extends ChangeNotifier {
             taskID: Constants.intMax, limit: Constants.numTasks[taskType]!);
     expectedDuration = expectedDuration ?? (const Duration(hours: 1)).inSeconds;
     realDuration = realDuration ??
-        _toDoService.calculateRealDuration(
-            weight: weight, duration: expectedDuration);
+        calculateRealDuration(weight: weight, duration: expectedDuration);
     subtasks =
-        subtasks ?? await _subtaskService.getTaskSubtasks(id: Constants.intMax);
+        subtasks ?? await _subtaskRepo.getRepoByTaskID(id: Constants.intMax);
 
     if (null != startDate && null != dueDate && startDate.isAfter(dueDate)) {
       dueDate = startDate.copyWith(minute: startDate.minute + 15);
@@ -213,15 +211,13 @@ class ToDoProvider extends ChangeNotifier {
         subtasks: subtasks,
         lastUpdated: DateTime.now());
 
+    curToDo!.repeatID = Constants.generateID();
+
     try {
-      curToDo = await _toDoService.createToDo(toDo: curToDo!);
+      curToDo = await _toDoRepo.create(curToDo!);
 
       await _updateSubtasks(subtasks: subtasks, taskID: curToDo!.id);
       toDoSubtaskCounts[Constants.intMax]!.value = 0;
-      if (repeatable ?? false) {
-        curToDo!.repeatID = Constants.generateID();
-        await nextRepeat(toDo: curToDo);
-      }
     } on FailureToCreateException catch (e) {
       log(e.cause);
       return Future.error(e);
@@ -243,12 +239,12 @@ class ToDoProvider extends ChangeNotifier {
     toDo = toDo ?? curToDo!;
     toDo.lastUpdated = DateTime.now();
 
+    if (toDo.repeatable && null == toDo.repeatID) {
+      toDo.repeatID = Constants.generateID();
+    }
+
     try {
-      curToDo = await _toDoService.updateToDo(toDo: toDo);
-      if (toDo.repeatable && null == toDo.repeatID) {
-        toDo.repeatID = Constants.generateID();
-        await nextRepeat(toDo: toDo);
-      }
+      curToDo = await _toDoRepo.update(toDo);
     } on FailureToUploadException catch (e) {
       log(e.cause);
       return Future.error(e);
@@ -272,7 +268,7 @@ class ToDoProvider extends ChangeNotifier {
       }
     }
     try {
-      await _subtaskService.updateBatch(subtasks: subtasks);
+      await _subtaskRepo.updateBatch(subtasks);
     } on FailureToUploadException catch (e) {
       log(e.cause);
       return Future.error(e);
@@ -288,7 +284,7 @@ class ToDoProvider extends ChangeNotifier {
       toDo.lastUpdated = DateTime.now();
     }
     try {
-      await _toDoService.updateBatch(toDos: toDos);
+      await _toDoRepo.updateBatch(toDos);
     } on FailureToUploadException catch (e) {
       log(e.cause);
       return Future.error(e);
@@ -300,9 +296,11 @@ class ToDoProvider extends ChangeNotifier {
   }
 
   Future<void> deleteToDo({ToDo? toDo}) async {
-    toDo = toDo ?? curToDo!;
+    if (null == toDo) {
+      return;
+    }
     try {
-      await _toDoService.deleteToDo(toDo: toDo);
+      await _toDoRepo.delete(toDo);
     } on FailureToDeleteException catch (e) {
       log(e.cause);
       return Future.error(e);
@@ -311,11 +309,71 @@ class ToDoProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> removeToDo({ToDo? toDo}) async {
+    if (null == toDo) {
+      return;
+    }
+    try {
+      await _toDoRepo.remove(toDo);
+    } on FailureToDeleteException catch (e) {
+      log(e.cause);
+      return Future.error(e);
+    }
+
+    notifyListeners();
+  }
+
+  Future<void> restoreToDo({ToDo? toDo}) async {
+    if (null == toDo) {
+      return;
+    }
+    toDo.repeatable = false;
+    toDo.frequency = Frequency.once;
+    toDo.toDelete = false;
+    try {
+      curToDo = await _toDoRepo.update(toDo);
+    } on FailureToUploadException catch (e) {
+      log(e.cause);
+      return Future.error(e);
+    } on FailureToUpdateException catch (e) {
+      log(e.cause);
+      return Future.error(e);
+    }
+    notifyListeners();
+  }
+
+  Future<void> emptyTrash() async {
+    try {
+      List<int> ids = await _toDoRepo.emptyTrash();
+      for (int id in ids) {
+        List<Subtask> subtasks = await _subtaskRepo.getRepoByTaskID(id: id);
+        for (Subtask subtask in subtasks) {
+          subtask.toDelete = true;
+        }
+        await _subtaskRepo.updateBatch(subtasks);
+        toDoSubtaskCounts.remove(id);
+      }
+    } on FailureToDeleteException catch (e) {
+      log(e.cause);
+      return Future.error(e);
+    }
+    notifyListeners();
+  }
+
   Future<List<ToDo>> reorderToDos(
       {required int oldIndex, required int newIndex, List<ToDo>? toDos}) async {
+    toDos = toDos ?? this.toDos;
+    if (oldIndex < newIndex) {
+      newIndex--;
+    }
+    ToDo toDo = toDos.removeAt(oldIndex);
+    toDos.insert(newIndex, toDo);
+    for (int i = 0; i < toDos.length; i++) {
+      toDos[i].customViewIndex = i;
+    }
     try {
-      return await _toDoService.reorderTodos(
-          toDos: toDos ?? this.toDos, oldIndex: oldIndex, newIndex: newIndex);
+      await _toDoRepo.updateBatch(toDos);
+      return toDos;
     } on FailureToUpdateException catch (e) {
       log(e.cause);
       return Future.error(e);
@@ -324,18 +382,6 @@ class ToDoProvider extends ChangeNotifier {
       return Future.error(e);
     }
   }
-
-  // Future<void> checkRepeating({DateTime? now}) async {
-  //   try {
-  //     await _toDoService.checkRepeating(now: now ?? DateTime.now());
-  //   } on FailureToUpdateException catch (e) {
-  //     log(e.cause);
-  //     return Future.error(e);
-  //   } on FailureToUploadException catch (e) {
-  //     log(e.cause);
-  //     return Future.error(e);
-  //   }
-  // }
 
   Future<void> nextRepeat({ToDo? toDo}) async {
     try {
@@ -354,6 +400,8 @@ class ToDoProvider extends ChangeNotifier {
     try {
       return await _repeatService.handleRepeating(
           model: toDo, single: single, delete: delete);
+
+      //TODO: Clear key -> run repeat routine.
     } on InvalidRepeatingException catch (e) {
       log(e.cause);
       return Future.error(e);
@@ -385,66 +433,56 @@ class ToDoProvider extends ChangeNotifier {
     }
   }
 
-  Future<List<ToDo>> getOverdues({int limit = 50, int offset = 0}) async =>
-      await _toDoService.getOverdues(limit: limit, offset: offset);
+  Future<List<ToDo>> getDeleted(
+          {int limit = Constants.minLimitPerQuery, int offset = 0}) async =>
+      await _toDoRepo.getDeleted(limit: limit, offset: offset);
+
+  Future<List<ToDo>> getOverdues(
+          {int limit = Constants.minLimitPerQuery, int offset = 0}) async =>
+      await _toDoRepo.getOverdues(limit: limit, offset: offset);
 
   Future<List<ToDo>> getUpcoming({int limit = 5, int offset = 0}) async =>
-      await _toDoService.getUpcoming(limit: limit, offset: offset);
+      await _toDoRepo.getUpcoming(limit: limit, offset: offset);
 
-  Future<List<ToDo>> searchToDos({required String searchString}) async =>
-      _toDoService.searchToDos(searchString: searchString);
+  Future<List<ToDo>> searchToDos(
+          {required String searchString, bool toDelete = false}) async =>
+      _toDoRepo.search(searchString: searchString, toDelete: toDelete);
 
   Future<List<ToDo>> mostRecent({int limit = 5}) async =>
-      await _toDoService.mostRecent(limit: 5);
+      await _toDoRepo.mostRecent(limit: 5);
 
-  Future<ToDo?> getToDoByID({int? id}) async =>
-      await _toDoService.getToDoByID(id: id);
-
-  Future<void> setToDoByID({required int id}) async =>
-      curToDo = await _toDoService.getToDoByID(id: id);
-
-  Future<List<ToDo>> getToDos({int limit = 50, int offset = 0}) async =>
-      await _toDoService.getToDos(limit: limit, offset: offset);
-
-  Future<void> setToDos({int limit = 50, int offset = 0}) async {
-    toDos = await _toDoService.getToDos(limit: limit, offset: offset);
+  Future<ToDo?> getToDoByID({int? id}) async {
+    if (null == id) {
+      return null;
+    }
+    return await _toDoRepo.getByID(id: id);
   }
 
-  Future<List<ToDo>> getToDosBy({int limit = 50, int offset = 0}) async =>
-      _toDoService.getToDosBy(toDoSorter: sorter, limit: limit, offset: offset);
+  Future<List<ToDo>> getToDos(
+          {int limit = Constants.minLimitPerQuery, int offset = 0}) async =>
+      await _toDoRepo.getRepoList(limit: limit, offset: offset);
 
-  Future<void> setToDosBy({int limit = 50, int offset = 0}) async {
-    toDos = await _toDoService.getToDosBy(
-        toDoSorter: sorter, limit: limit, offset: offset);
-  }
+  Future<List<ToDo>> getToDosBy(
+          {int limit = Constants.minLimitPerQuery, int offset = 0}) async =>
+      _toDoRepo.getRepoListBy(sorter: sorter, limit: limit, offset: offset);
 
-  Future<List<ToDo>> getMyDay({int limit = 50, int offset = 0}) async =>
-      await _toDoService.getMyDay(
-          toDoSorter: sorter, limit: limit, offset: offset);
-
-  Future<void> setMyDay({int limit = 50, int offset = 0}) async {
-    toDos = await _toDoService.getMyDay(
-        toDoSorter: sorter, limit: limit, offset: offset);
-  }
+  Future<List<ToDo>> getMyDay(
+          {int limit = Constants.minLimitPerQuery, int offset = 0}) async =>
+      await _toDoRepo.getMyDay(sorter: sorter, limit: limit, offset: offset);
 
   Future<List<ToDo>> getCompletedToDos(
-          {int limit = 50, int offset = 0}) async =>
-      await _toDoService.getCompleted(
-          toDoSorter: sorter, limit: limit, offset: offset);
-
-  Future<void> setToDosCompleted({int limit = 50, int offset = 0}) async {
-    toDos = await _toDoService.getCompleted(
-        toDoSorter: sorter, limit: limit, offset: offset);
-  }
+          {int limit = Constants.minLimitPerQuery, int offset = 0}) async =>
+      await _toDoRepo.getCompleted(
+          sorter: sorter, limit: limit, offset: offset);
 
   Future<List<ToDo>> getToDosBetween({DateTime? start, DateTime? end}) async =>
-      await _toDoService.getRange(start: start, end: end);
+      await _toDoRepo.getRange(start: start, end: end);
 
   Future<List<Subtask>> getSubtasks({
     required int id,
     int limit = Constants.maxNumTasks,
     ToDo? toDo,
   }) async {
-    return await _subtaskService.getTaskSubtasks(id: id, limit: limit);
+    return await _subtaskRepo.getRepoByTaskID(id: id, limit: limit);
   }
 }

@@ -1,3 +1,5 @@
+import "dart:io";
+
 import "package:another_flushbar/flushbar.dart";
 import "package:flutter/material.dart";
 import "package:flutter/semantics.dart";
@@ -39,6 +41,9 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
   late final ScrollController desktopScrollController;
   late final ScrollPhysics scrollPhysics;
 
+  // Subtasks controller
+  late final MenuController subtasksAnchorController;
+
   late final TextEditingController nameEditingController;
   String? nameErrorText;
 
@@ -72,8 +77,10 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
   void initializeControllers() {
     mobileScrollController = ScrollController();
     desktopScrollController = ScrollController();
-    scrollPhysics =
-        const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics());
+    ScrollPhysics parentPhysics = (Platform.isIOS || Platform.isMacOS)
+        ? const BouncingScrollPhysics()
+        : const ClampingScrollPhysics();
+    scrollPhysics = AlwaysScrollableScrollPhysics(parent: parentPhysics);
     nameEditingController = TextEditingController(text: routine.name);
     nameEditingController.addListener(() {
       if (null != nameErrorText && mounted) {
@@ -85,6 +92,8 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
       String newText = nameEditingController.text;
       SemanticsService.announce(newText, Directionality.of(context));
     });
+
+    subtasksAnchorController = MenuController();
   }
 
   void initializeProviders() {
@@ -261,6 +270,20 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
     }
   }
 
+  void onAnchorOpen() {
+    desktopScrollController.addListener(_closeMenuAnchor);
+    mobileScrollController.addListener(_closeMenuAnchor);
+  }
+
+  void onAnchorClose() {
+    desktopScrollController.removeListener(_closeMenuAnchor);
+    mobileScrollController.removeListener(_closeMenuAnchor);
+  }
+
+  void _closeMenuAnchor() {
+    subtasksAnchorController.close();
+  }
+
   @override
   Widget build(BuildContext context) {
     MediaQuery.sizeOf(context);
@@ -331,10 +354,10 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
                                   hintText: "Routine Name",
                                   errorText: nameErrorText,
                                   controller: nameEditingController,
-                                  outerPadding:
-                                      const EdgeInsets.all(Constants.padding),
-                                  textFieldPadding: const EdgeInsets.symmetric(
-                                    horizontal: Constants.halfPadding,
+                                  outerPadding: const EdgeInsets.symmetric(
+                                      vertical: Constants.padding),
+                                  textFieldPadding: const EdgeInsets.only(
+                                    left: Constants.padding,
                                   ),
                                   handleClear: clearNameField,
                                   onEditingComplete: updateName),
@@ -371,6 +394,10 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
                                 outerPadding:
                                     const EdgeInsets.all(Constants.halfPadding),
                                 id: routine.id,
+                                subtasksAnchorController:
+                                    subtasksAnchorController,
+                                onAnchorOpen: onAnchorOpen,
+                                onAnchorClose: onAnchorClose,
                                 onRemove: (userProvider.curUser?.reduceMotion ??
                                         false)
                                     ? null
@@ -444,9 +471,10 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
                         hintText: "Routine Name",
                         errorText: nameErrorText,
                         controller: nameEditingController,
-                        outerPadding: const EdgeInsets.all(Constants.padding),
+                        outerPadding: const EdgeInsets.symmetric(
+                            vertical: Constants.padding),
                         textFieldPadding: const EdgeInsets.only(
-                          left: Constants.halfPadding,
+                          left: Constants.padding,
                         ),
                         handleClear: clearNameField,
                         onEditingComplete: updateName),
@@ -476,6 +504,9 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
                     Tiles.subtasksTile(
                         context: context,
                         id: routine.id,
+                        subtasksAnchorController: subtasksAnchorController,
+                        onAnchorOpen: onAnchorOpen,
+                        onAnchorClose: onAnchorClose,
                         subtasks: routine.subtasks,
                         subtaskCount:
                             routineProvider.getSubtaskCount(id: routine.id)),

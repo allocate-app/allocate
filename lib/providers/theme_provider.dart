@@ -135,6 +135,7 @@ class ThemeProvider extends ChangeNotifier {
   set scaffoldOpacitySavePref(double newOpacity) {
     user?.scaffoldOpacity = newOpacity;
     scaffoldOpacity = newOpacity;
+    notifyListeners();
   }
 
   set scaffoldOpacity(double newOpacity) {
@@ -147,6 +148,7 @@ class ThemeProvider extends ChangeNotifier {
   set sidebarOpacitySavePref(double newOpacity) {
     user?.sidebarOpacity = newOpacity;
     sidebarOpacity = newOpacity;
+    notifyListeners();
   }
 
   set sidebarOpacity(double newOpacity) {

@@ -24,52 +24,49 @@ abstract class Subtitles {
           spacing: (smallScreen) ? Constants.halfPadding : Constants.padding,
           runSpacing: (smallScreen) ? Constants.halfPadding : Constants.padding,
           children: [
-            // Group Name - Fix Accordingly
-            (null != id)
-                ? groupNameIcon(
-                    id: id,
-                    context: context,
-                    onError: onError,
-                  )
-                : const SizedBox.shrink(),
+            // Group Name
+            if (null != id)
+              groupNameIcon(
+                id: id,
+                context: context,
+                onError: onError,
+              ),
 
             // Due Date - Fix accordingly
-            (null != dueDate)
-                ? Wrap(spacing: Constants.halfPadding, children: [
-                    Icon(Icons.event_rounded,
-                        size: (smallScreen)
-                            ? Constants.minIconSize
-                            : Constants.smIconSize),
-                    AutoSizeText(
-                      Jiffy.parseFromDateTime(dueDate)
-                          .toLocal()
-                          .format(pattern: "MMM d y"),
-                      softWrap: false,
-                      overflow: TextOverflow.visible,
-                      maxLines: 2,
-                      maxFontSize: Constants.large,
-                      minFontSize: Constants.medium,
-                    )
-                  ])
-                : const SizedBox.shrink(),
+            if (null != dueDate)
+              Wrap(spacing: Constants.halfPadding, children: [
+                Icon(Icons.event_rounded,
+                    size: (smallScreen)
+                        ? Constants.minIconSize
+                        : Constants.smIconSize),
+                AutoSizeText(
+                  Jiffy.parseFromDateTime(dueDate)
+                      .toLocal()
+                      .format(pattern: "MMM d y"),
+                  softWrap: false,
+                  overflow: TextOverflow.visible,
+                  maxLines: 2,
+                  maxFontSize: Constants.large,
+                  minFontSize: Constants.medium,
+                )
+              ]),
 
             // Priority Icon.
-            (!smallScreen || null == id)
-                ? switch (priority) {
-                    Priority.low => const Tooltip(
-                        message: "Low",
-                        child: Icon(Icons.low_priority_rounded,
-                            size: Constants.smIconSize)),
-                    Priority.medium => const Tooltip(
-                        message: "Medium",
-                        child: Icon(Icons.outlined_flag_rounded,
-                            size: Constants.smIconSize)),
-                    Priority.high => const Tooltip(
-                        message: "High",
-                        child: Icon(Icons.priority_high_rounded,
-                            size: Constants.smIconSize)),
-                  }
-                : const SizedBox.shrink(),
+            if (!smallScreen || null == id)
+              switch (priority) {
+                Priority.low => const Tooltip(
+                    message: "Low",
+                    child: Icon(Icons.low_priority_rounded,
+                        size: Constants.smIconSize)),
+                Priority.medium => const Tooltip(
+                    message: "Medium",
+                    child: Icon(Icons.outlined_flag_rounded,
+                        size: Constants.smIconSize)),
+                Priority.high => const Tooltip(
+                    message: "High",
+                    child: Icon(Icons.priority_high_rounded,
+                        size: Constants.smIconSize)),
+              },
           ]);
 
   static Widget deadlineSubtitle(
@@ -83,58 +80,55 @@ abstract class Subtitles {
           runSpacing: Constants.halfPadding,
           children: [
             // Due-Date
-            (null != dueDate)
-                ? Wrap(spacing: Constants.halfPadding, children: [
-                    Icon(Icons.event_rounded,
-                        size: (smallScreen)
-                            ? Constants.minIconSize
-                            : Constants.smIconSize),
-                    AutoSizeText(
-                      Jiffy.parseFromDateTime(dueDate)
-                          .toLocal()
-                          .format(pattern: "MMM d y"),
-                      softWrap: false,
-                      overflow: TextOverflow.visible,
-                      maxLines: 2,
-                      maxFontSize: Constants.large,
-                      minFontSize: Constants.medium,
-                    )
-                  ])
-                : const SizedBox.shrink(),
+            if (null != dueDate)
+              Wrap(spacing: Constants.halfPadding, children: [
+                Icon(Icons.event_rounded,
+                    size: (smallScreen)
+                        ? Constants.minIconSize
+                        : Constants.smIconSize),
+                AutoSizeText(
+                  Jiffy.parseFromDateTime(dueDate)
+                      .toLocal()
+                      .format(pattern: "MMM d y"),
+                  softWrap: false,
+                  overflow: TextOverflow.visible,
+                  maxLines: 2,
+                  maxFontSize: Constants.large,
+                  minFontSize: Constants.medium,
+                )
+              ]),
 
-            (null != warnDate)
-                ? Wrap(spacing: Constants.halfPadding, children: [
-                    const Icon(Icons.notifications_on_rounded,
-                        size: Constants.minIconSize),
-                    AutoSizeText(
-                      Jiffy.parseFromDateTime(warnDate)
-                          .toLocal()
-                          .format(pattern: "MMM d y"),
-                      softWrap: false,
-                      overflow: TextOverflow.visible,
-                      maxLines: 2,
-                      maxFontSize: Constants.large,
-                      minFontSize: Constants.medium,
-                    )
-                  ])
-                : const SizedBox.shrink(),
+            if (null != warnDate)
+              Wrap(spacing: Constants.halfPadding, children: [
+                const Icon(Icons.notifications_on_rounded,
+                    size: Constants.minIconSize),
+                AutoSizeText(
+                  Jiffy.parseFromDateTime(warnDate)
+                      .toLocal()
+                      .format(pattern: "MMM d y"),
+                  softWrap: false,
+                  overflow: TextOverflow.visible,
+                  maxLines: 2,
+                  maxFontSize: Constants.large,
+                  minFontSize: Constants.medium,
+                )
+              ]),
             // Priority Icon.
-            (!smallScreen || null == warnDate)
-                ? switch (priority) {
-                    Priority.low => const Tooltip(
-                        message: "Low",
-                        child: Icon(Icons.low_priority_rounded,
-                            size: Constants.smIconSize)),
-                    Priority.medium => const Tooltip(
-                        message: "Medium",
-                        child: Icon(Icons.outlined_flag_rounded,
-                            size: Constants.smIconSize)),
-                    Priority.high => const Tooltip(
-                        message: "High",
-                        child: Icon(Icons.priority_high_rounded,
-                            size: Constants.smIconSize)),
-                  }
-                : const SizedBox.shrink(),
+            if (!smallScreen || null == warnDate)
+              switch (priority) {
+                Priority.low => const Tooltip(
+                    message: "Low",
+                    child: Icon(Icons.low_priority_rounded,
+                        size: Constants.smIconSize)),
+                Priority.medium => const Tooltip(
+                    message: "Medium",
+                    child: Icon(Icons.outlined_flag_rounded,
+                        size: Constants.smIconSize)),
+                Priority.high => const Tooltip(
+                    message: "High",
+                    child: Icon(Icons.priority_high_rounded,
+                        size: Constants.smIconSize)),
+              },
           ]);
 
   static Widget reminderSubtitle({
@@ -147,44 +141,42 @@ abstract class Subtitles {
           runSpacing: Constants.halfPadding,
           children: [
             // Due-Date
-            (null != dueDate)
-                ? Wrap(spacing: Constants.halfPadding, children: [
-                    Icon(Icons.event_rounded,
-                        size: (smallScreen)
-                            ? Constants.minIconSize
-                            : Constants.smIconSize),
-                    AutoSizeText(
-                      Jiffy.parseFromDateTime(dueDate)
-                          .toLocal()
-                          .format(pattern: "MMM d"),
-                      softWrap: false,
-                      overflow: TextOverflow.visible,
-                      maxLines: 2,
-                      maxFontSize: Constants.large,
-                      minFontSize: Constants.medium,
-                    )
-                  ])
-                : const SizedBox.shrink(),
+            if (null != dueDate)
+              Wrap(spacing: Constants.halfPadding, children: [
+                Icon(Icons.event_rounded,
+                    size: (smallScreen)
+                        ? Constants.minIconSize
+                        : Constants.smIconSize),
+                AutoSizeText(
+                  Jiffy.parseFromDateTime(dueDate)
+                      .toLocal()
+                      .format(pattern: "MMM d"),
+                  softWrap: false,
+                  overflow: TextOverflow.visible,
+                  maxLines: 2,
+                  maxFontSize: Constants.large,
+                  minFontSize: Constants.medium,
+                )
+              ]),
 
             // Due-Time
-            (null != dueDate)
-                ? Wrap(spacing: Constants.halfPadding, children: [
-                    Icon(Icons.access_time_rounded,
-                        size: (smallScreen)
-                            ? Constants.minIconSize
-                            : Constants.smIconSize),
-                    AutoSizeText(
-                      Jiffy.parseFromDateTime(dueDate)
-                          .toLocal()
-                          .format(pattern: "hh:mm a"),
-                      softWrap: false,
-                      overflow: TextOverflow.visible,
-                      maxLines: 2,
-                      maxFontSize: Constants.large,
-                      minFontSize: Constants.medium,
-                    )
-                  ])
-                : const SizedBox.shrink(),
+            if (null != dueDate)
+              Wrap(spacing: Constants.halfPadding, children: [
+                Icon(Icons.access_time_rounded,
+                    size: (smallScreen)
+                        ? Constants.minIconSize
+                        : Constants.smIconSize),
+                AutoSizeText(
+                  Jiffy.parseFromDateTime(dueDate)
+                      .toLocal()
+                      .format(pattern: "hh:mm a"),
+                  softWrap: false,
+                  overflow: TextOverflow.visible,
+                  maxLines: 2,
+                  maxFontSize: Constants.large,
+                  minFontSize: Constants.medium,
+                )
+              ]),
           ]);
 
   static Widget groupNameIcon(

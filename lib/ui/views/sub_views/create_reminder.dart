@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:another_flushbar/flushbar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -73,8 +75,10 @@ class _CreateReminderScreen extends State<CreateReminderScreen> {
 
   void initializeControllers() {
     mainScrollController = ScrollController();
-    scrollPhysics =
-        const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics());
+    ScrollPhysics parentPhysics = (Platform.isIOS || Platform.isMacOS)
+        ? const BouncingScrollPhysics()
+        : const ClampingScrollPhysics();
+    scrollPhysics = AlwaysScrollableScrollPhysics(parent: parentPhysics);
     nameEditingController = TextEditingController();
     nameEditingController.addListener(() {
       if (null != nameErrorText && mounted) {
@@ -300,12 +304,10 @@ class _CreateReminderScreen extends State<CreateReminderScreen> {
                                       hintText: "Reminder Name",
                                       errorText: nameErrorText,
                                       controller: nameEditingController,
-                                      outerPadding: const EdgeInsets.all(
-                                        Constants.padding,
-                                      ),
-                                      textFieldPadding:
-                                          const EdgeInsets.symmetric(
-                                        horizontal: Constants.halfPadding,
+                                      outerPadding: const EdgeInsets.symmetric(
+                                          vertical: Constants.padding),
+                                      textFieldPadding: const EdgeInsets.only(
+                                        left: Constants.padding,
                                       ),
                                       handleClear: clearNameField,
                                       onEditingComplete: updateName),
@@ -327,27 +329,22 @@ class _CreateReminderScreen extends State<CreateReminderScreen> {
                                     handleUpdate: updateDue,
                                   ),
 
-                                  (null != dueDate)
-                                      ? const PaddedDivider(
-                                          padding: Constants.padding)
-                                      : const SizedBox.shrink(),
-
                                   // Repeatable Stuff -> Show status, on click, open a dialog.
-                                  (null != dueDate)
-                                      ? Tiles.repeatableTile(
-                                          context: context,
-                                          outerPadding:
-                                              const EdgeInsets.symmetric(
-                                                  horizontal:
-                                                      Constants.padding),
-                                          frequency: frequency,
-                                          weekdays: weekdayList,
-                                          repeatSkip: repeatSkip,
-                                          startDate: dueDate,
-                                          handleUpdate: updateRepeatable,
-                                          handleClear: clearRepeatable,
-                                        )
-                                      : const SizedBox.shrink(),
+                                  if (null != dueDate) ...[
+                                    const PaddedDivider(
+                                        padding: Constants.padding),
+                                    Tiles.repeatableTile(
+                                      context: context,
+                                      outerPadding: const EdgeInsets.symmetric(
+                                          horizontal: Constants.padding),
+                                      frequency: frequency,
+                                      weekdays: weekdayList,
+                                      repeatSkip: repeatSkip,
+                                      startDate: dueDate,
+                                      handleUpdate: updateRepeatable,
+                                      handleClear: clearRepeatable,
+                                    ),
+                                  ],
                                 ]))),
                     const PaddedDivider(padding: Constants.halfPadding),
                     Tiles.createButton(

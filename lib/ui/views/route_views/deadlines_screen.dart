@@ -31,9 +31,6 @@ class _DeadlinesListScreen extends State<DeadlinesListScreen> {
 
   void initializeProviders() {
     deadlineProvider = Provider.of<DeadlineProvider>(context, listen: false);
-    if (deadlineProvider.rebuild) {
-      deadlineProvider.deadlines = [];
-    }
 
     userProvider = Provider.of<UserProvider>(context, listen: false);
   }
@@ -73,7 +70,7 @@ class _DeadlinesListScreen extends State<DeadlinesListScreen> {
       padding: const EdgeInsets.all(Constants.padding),
       child: Column(mainAxisSize: MainAxisSize.min, children: [
         ListViewHeader<Deadline>(
-            outerPadding: const EdgeInsets.all(Constants.halfPadding),
+            outerPadding: const EdgeInsets.all(Constants.padding),
             header: "Deadlines",
             sorter: deadlineProvider.sorter,
             leadingIcon: const Icon(Icons.announcement_outlined),
@@ -137,7 +134,6 @@ class _DeadlinesListScreen extends State<DeadlinesListScreen> {
                 }
                 return ListViews.immutableDeadlines(
                   key: key,
-                  context: context,
                   deadlines: items,
                   checkDelete: userProvider.curUser?.checkDelete ?? true,
                   smallScreen: userProvider.smallScreen,

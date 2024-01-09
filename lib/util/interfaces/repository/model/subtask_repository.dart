@@ -9,6 +9,6 @@ abstract interface class SubtaskRepository implements Repository<Subtask> {
   Future<int> getTaskSubtasksCount(
       {required int taskID, int limit = Constants.maxNumTasks});
 
-  Future<int> getTotalSubtaskWeight(
+  Future<int> getTaskSubtaskWeight(
       {required int taskID, int limit = Constants.maxNumTasks});
 }

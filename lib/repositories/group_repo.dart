@@ -4,12 +4,17 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../model/task/group.dart';
 import '../services/isar_service.dart';
 import '../services/supabase_service.dart';
+import '../util/constants.dart';
 import '../util/enums.dart';
 import '../util/exceptions.dart';
 import '../util/interfaces/repository/model/group_repository.dart';
 import '../util/interfaces/sortable.dart';
 
 class GroupRepo implements GroupRepository {
+  static final GroupRepo _instance = GroupRepo._internal();
+
+  static GroupRepo get instance => _instance;
+
   final SupabaseClient _supabaseClient =
       SupabaseService.instance.supabaseClient;
   final Isar _isarClient = IsarService.instance.isarClient;
@@ -117,25 +122,55 @@ class GroupRepo implements GroupRepository {
 
   @override
   Future<void> delete(Group group) async {
-    if (null == _supabaseClient.auth.currentSession) {
-      group.toDelete = true;
-      await update(group);
-      return;
-    }
-
-    try {
-      await _supabaseClient.from("groups").delete().eq("id", group.id);
-    } catch (error) {
-      throw FailureToDeleteException("Failed to delete group online\n"
-          "Group: ${group.toString()}\n"
-          "Time: ${DateTime.now()}\n\n"
-          "Supabase Open: ${null != _supabaseClient.auth.currentSession}");
-    }
+    group.toDelete = true;
+    await update(group);
   }
 
   @override
-  Future<void> deleteLocal() async {
-    List<int> toDeletes = await getDeleteIds();
+  Future<void> remove(Group group) async {
+    // Delete online
+    if (null != _supabaseClient.auth.currentSession) {
+      try {
+        await _supabaseClient.from("groups").delete().eq("id", group.id);
+      } catch (error) {
+        throw FailureToDeleteException("Failed to delete Group online\n"
+            "Group: ${group.toString()}\n"
+            "Time: ${DateTime.now()}\n"
+            "Supabase Open: ${null != _supabaseClient.auth.currentSession}");
+      }
+    }
+    // Delete local
+    await _isarClient.writeTxn(() async {
+      await _isarClient.groups.delete(group.id);
+    });
+  }
+
+  @override
+  Future<List<int>> emptyTrash() async {
+    if (null != _supabaseClient.auth.currentSession) {
+      try {
+        await _supabaseClient.from("groups").delete().eq("toDelete", true);
+      } catch (error) {
+        throw FailureToDeleteException("Failed to empty trash online\n"
+            "Time: ${DateTime.now()}\n"
+            "Supabase Open: ${null != _supabaseClient.auth.currentSession}");
+      }
+    }
+    late List<int> deleteIDs;
+    await _isarClient.writeTxn(() async {
+      deleteIDs = await _isarClient.groups
+          .where()
+          .toDeleteEqualTo(true)
+          .idProperty()
+          .findAll();
+      await _isarClient.groups.deleteAll(deleteIDs);
+    });
+    return deleteIDs;
+  }
+
+  @override
+  Future<void> deleteSweep() async {
+    List<int> toDeletes = await getDeleteIDs();
     await _isarClient.writeTxn(() async {
       await _isarClient.groups.deleteAll(toDeletes);
     });
@@ -147,7 +182,7 @@ class GroupRepo implements GroupRepository {
       return fetchRepo();
     }
     // Get the non-deleted stuff from Isar
-    List<int> toDeletes = await getDeleteIds();
+    List<int> toDeletes = await getDeleteIDs();
     if (toDeletes.isNotEmpty) {
       try {
         await _supabaseClient.from("groups").delete().inFilter("id", toDeletes);
@@ -215,8 +250,11 @@ class GroupRepo implements GroupRepository {
   }
 
   @override
-  Future<List<Group>> search({required String searchString}) async =>
+  Future<List<Group>> search(
+          {required String searchString, bool toDelete = false}) async =>
       await _isarClient.groups
+          .where()
+          .toDeleteEqualTo(toDelete)
           .filter()
           .nameContains(searchString, caseSensitive: false)
           .limit(5)
@@ -282,12 +320,29 @@ class GroupRepo implements GroupRepository {
     }
   }
 
-  Future<List<int>> getDeleteIds() async => await _isarClient.groups
-      .filter()
-      .toDeleteEqualTo(true)
-      .idProperty()
-      .findAll();
+  @override
+  Future<List<Group>> getDeleted({int limit = 50, int offset = 0}) async =>
+      await _isarClient.groups
+          .where()
+          .toDeleteEqualTo(true)
+          .sortByLastUpdatedDesc()
+          .offset(offset)
+          .limit(limit)
+          .findAll();
+
+  Future<List<int>> getDeleteIDs({DateTime? deleteLimit}) async {
+    deleteLimit = deleteLimit ?? Constants.today;
+    return await _isarClient.groups
+        .where()
+        .toDeleteEqualTo(true)
+        .filter()
+        .lastUpdatedLessThan(deleteLimit)
+        .idProperty()
+        .findAll();
+  }
 
   Future<List<Group>> getUnsynced() async =>
       await _isarClient.groups.filter().isSyncedEqualTo(false).findAll();
+
+  GroupRepo._internal();
 }

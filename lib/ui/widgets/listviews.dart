@@ -16,6 +16,7 @@ import '../../providers/routine_provider.dart';
 import '../../providers/todo_provider.dart';
 import '../../util/constants.dart';
 import '../../util/enums.dart';
+import '../../util/interfaces/i_model.dart';
 import 'custom_drag_start.dart';
 import 'tiles.dart';
 
@@ -120,7 +121,6 @@ abstract class ListViews {
 
   static Widget immutableToDos({
     Key? key,
-    required BuildContext context,
     required List<ToDo> toDos,
     bool checkDelete = false,
     bool smallScreen = false,
@@ -207,7 +207,6 @@ abstract class ListViews {
 
   static Widget immutableMyDay({
     Key? key,
-    required BuildContext context,
     required List<ToDo> toDos,
     bool smallScreen = false,
     Future<void> Function({required ToDo toDo, required int index})?
@@ -285,7 +284,6 @@ abstract class ListViews {
 
   static Widget immutableRoutines({
     Key? key,
-    required BuildContext context,
     required List<Routine> routines,
     bool checkDelete = false,
     ScrollPhysics physics = const NeverScrollableScrollPhysics(),
@@ -362,7 +360,6 @@ abstract class ListViews {
 
   static Widget immutableDeadlines({
     Key? key,
-    required BuildContext context,
     required List<Deadline> deadlines,
     bool checkDelete = false,
     smallScreen = false,
@@ -442,7 +439,6 @@ abstract class ListViews {
 
   static Widget immutableReminders({
     Key? key,
-    required BuildContext context,
     required List<Reminder> reminders,
     bool checkDelete = false,
     bool smallScreen = false,
@@ -524,7 +520,6 @@ abstract class ListViews {
 
   static Widget immutableGroups({
     Key? key,
-    required BuildContext context,
     required List<Group> groups,
     bool checkDelete = false,
     ScrollPhysics physics = const NeverScrollableScrollPhysics(),
@@ -611,22 +606,26 @@ abstract class ListViews {
 
   static Widget navDrawerGroups({
     Key? key,
-    required BuildContext context,
     required List<Group> groups,
     int? itemCount,
     EdgeInsetsGeometry tilePadding = EdgeInsets.zero,
     ScrollPhysics physics = const NeverScrollableScrollPhysics(),
   }) =>
-      Padding(
-        padding: tilePadding,
-        child: ListView.builder(
-            physics: physics,
-            itemCount: itemCount ?? groups.length,
-            shrinkWrap: true,
-            itemBuilder: (BuildContext context, int index) =>
-                Tiles.navDrawerGroupTile(
-                    context: context, group: groups[index])),
-      );
+      ListView.builder(
+          padding: tilePadding,
+          physics: physics,
+          itemCount: itemCount ?? groups.length,
+          shrinkWrap: true,
+          itemBuilder: (BuildContext context, int index) {
+            return fade(
+                key: ValueKey(groups[index].id),
+                fade: groups[index].fade,
+                onEnd: () {
+                  groups[index].fade = Fade.none;
+                },
+                child: Tiles.navDrawerGroupTile(
+                    context: context, group: groups[index]));
+          });
 
   static Widget reorderableSubtasks({
     Key? key,
@@ -678,6 +677,47 @@ abstract class ListViews {
                 ));
           });
 
+  static Widget trashList({
+    Key? key,
+    required List<IModel> models,
+    ScrollPhysics physics = const NeverScrollableScrollPhysics(),
+    void Function({required IModel model})? restoreModel,
+    void Function({required IModel model})? deleteModel,
+    void Function({required IModel model})? onTap,
+    Future<void> Function({IModel? item})? onRemove,
+    bool smallScreen = false,
+    bool showCategory = false,
+  }) =>
+      ListView.builder(
+          key: key,
+          shrinkWrap: true,
+          physics: physics,
+          itemCount: models.length,
+          itemBuilder: (BuildContext context, int index) {
+            return fade(
+              key: ValueKey(models[index].id),
+              onEnd: () {
+                models[index].fade = Fade.none;
+              },
+              fade: models[index].fade,
+              child: Tiles.trashTile(
+                context: context,
+                model: models[index],
+                showCategory: showCategory,
+                smallScreen: smallScreen,
+                onRemove: onRemove,
+                onTap:
+                    (null != onTap) ? () => onTap(model: models[index]) : null,
+                restoreModel: (null != restoreModel)
+                    ? () => restoreModel(model: models[index])
+                    : null,
+                deleteModel: (null != deleteModel)
+                    ? () => deleteModel(model: models[index])
+                    : null,
+              ),
+            );
+          });
+
   static Widget eventList({
     required ValueListenable<List<CalendarEvent>> selectedEvents,
     bool smallScreen = false,
@@ -692,6 +732,7 @@ abstract class ListViews {
                 itemCount: value.length,
                 itemBuilder: (BuildContext context, int index) {
                   return fade(
+                    key: ValueKey(value[index].model.id),
                     fade: value[index].model.fade,
                     onEnd: () {
                       value[index].model.fade = Fade.none;

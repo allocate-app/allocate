@@ -17,10 +17,13 @@ import '../util/interfaces/repository/model/subtask_repository.dart';
 import '../util/interfaces/repository/model/todo_repository.dart';
 
 class RepeatableService {
-  final ToDoRepository _toDoRepository = ToDoRepo();
-  final SubtaskRepository _subtaskRepository = SubtaskRepo();
-  final DeadlineRepository _deadlineRepository = DeadlineRepo();
-  final ReminderRepository _reminderRepository = ReminderRepo();
+  static final RepeatableService _instance = RepeatableService._internal();
+  static RepeatableService get instance => _instance;
+
+  final ToDoRepository _toDoRepository = ToDoRepo.instance;
+  final SubtaskRepository _subtaskRepository = SubtaskRepo.instance;
+  final DeadlineRepository _deadlineRepository = DeadlineRepo.instance;
+  final ReminderRepository _reminderRepository = ReminderRepo.instance;
 
   // NOTE: THIS THROWS
   Future<void> handleRepeating(
@@ -80,7 +83,8 @@ class RepeatableService {
       switch (model.modelType) {
         case ModelType.task:
           ToDo toDo = model as ToDo;
-          ToDo delta = toDo.copyWith(repeatableState: RepeatableState.delta);
+          ToDo delta = toDo.copyWith(
+              repeatableState: RepeatableState.delta, myDay: false);
           delta.toDelete = delete;
           await _toDoRepository.update(delta);
           return;
@@ -185,6 +189,7 @@ class RepeatableService {
             repeatableState: RepeatableState.normal,
             completed: false,
             repeatable: true,
+            myDay: false,
             lastUpdated: DateTime.now(),
           );
         } else {
@@ -192,6 +197,7 @@ class RepeatableService {
               originalStart: nextRepeatDate,
               originalDue: newDue,
               repeatableState: RepeatableState.normal,
+              myDay: false,
               lastUpdated: DateTime.now());
 
           newToDo.toDelete = delta.toDelete;
@@ -424,6 +430,7 @@ class RepeatableService {
           originalStart: toDo.startDate,
           originalDue: toDo.dueDate,
           repeatable: true,
+          myDay: false,
           repeatableState: RepeatableState.template,
         );
 
@@ -619,4 +626,6 @@ class RepeatableService {
     return model.originalStart!
         .copyWith(day: model.originalStart!.day + offset);
   }
+
+  RepeatableService._internal();
 }

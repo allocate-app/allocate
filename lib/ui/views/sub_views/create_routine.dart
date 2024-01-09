@@ -1,3 +1,5 @@
+import "dart:io";
+
 import "package:another_flushbar/flushbar.dart";
 import "package:flutter/material.dart";
 import "package:flutter/semantics.dart";
@@ -39,6 +41,9 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
   late final ScrollController desktopScrollController;
   late final ScrollPhysics scrollPhysics;
 
+  // Subtasks controller
+  late final MenuController subtasksAnchorController;
+
   late String name;
   late final TextEditingController nameEditingController;
   String? nameErrorText;
@@ -79,8 +84,10 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
   void initializeControllers() {
     mobileScrollController = ScrollController();
     desktopScrollController = ScrollController();
-    scrollPhysics =
-        const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics());
+    ScrollPhysics parentPhysics = (Platform.isIOS || Platform.isMacOS)
+        ? const BouncingScrollPhysics()
+        : const ClampingScrollPhysics();
+    scrollPhysics = AlwaysScrollableScrollPhysics(parent: parentPhysics);
     nameEditingController = TextEditingController();
     nameEditingController.addListener(() {
       if (null != nameErrorText && mounted) {
@@ -91,6 +98,7 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
       SemanticsService.announce(
           nameEditingController.text, Directionality.of(context));
     });
+    subtasksAnchorController = MenuController();
   }
 
   void initializeProviders() {
@@ -259,6 +267,20 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
     }
   }
 
+  void onAnchorOpen() {
+    desktopScrollController.addListener(_closeMenuAnchor);
+    mobileScrollController.addListener(_closeMenuAnchor);
+  }
+
+  void onAnchorClose() {
+    desktopScrollController.removeListener(_closeMenuAnchor);
+    mobileScrollController.removeListener(_closeMenuAnchor);
+  }
+
+  void _closeMenuAnchor() {
+    subtasksAnchorController.close();
+  }
+
   @override
   Widget build(BuildContext context) {
     MediaQuery.sizeOf(context);
@@ -330,10 +352,11 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
                                     hintText: "Routine Name",
                                     errorText: nameErrorText,
                                     controller: nameEditingController,
-                                    outerPadding:
-                                        const EdgeInsets.all(Constants.padding),
+                                    outerPadding: const EdgeInsets.symmetric(
+                                        vertical: Constants.padding),
                                     textFieldPadding: const EdgeInsets.only(
-                                        left: Constants.halfPadding),
+                                      left: Constants.padding,
+                                    ),
                                     handleClear: clearNameField,
                                     onEditingComplete: updateName),
                                 Tiles.weightTile(
@@ -369,6 +392,10 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
                                   outerPadding: const EdgeInsets.all(
                                       Constants.halfPadding),
                                   id: Constants.intMax,
+                                  subtasksAnchorController:
+                                      subtasksAnchorController,
+                                  onAnchorOpen: onAnchorOpen,
+                                  onAnchorClose: onAnchorClose,
                                   onRemove:
                                       (userProvider.curUser?.reduceMotion ??
                                               false)
@@ -439,9 +466,11 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
                         hintText: "Routine Name",
                         errorText: nameErrorText,
                         controller: nameEditingController,
-                        outerPadding: const EdgeInsets.all(Constants.padding),
-                        textFieldPadding:
-                            const EdgeInsets.only(left: Constants.halfPadding),
+                        outerPadding: const EdgeInsets.symmetric(
+                            vertical: Constants.padding),
+                        textFieldPadding: const EdgeInsets.only(
+                          left: Constants.padding,
+                        ),
                         handleClear: clearNameField,
                         onEditingComplete: updateName),
                     Tiles.weightTile(
@@ -471,6 +500,9 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
                         context: context,
                         id: Constants.intMax,
                         subtasks: subtasks,
+                        subtasksAnchorController: subtasksAnchorController,
+                        onAnchorOpen: onAnchorOpen,
+                        onAnchorClose: onAnchorClose,
                         subtaskCount: routineProvider.getSubtaskCount(
                             id: Constants.intMax)),
                   ],
@@ -487,42 +519,4 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
       ),
     );
   }
-
-// Widget buildRoutineTasksTile(
-//     {ScrollPhysics physics = const NeverScrollableScrollPhysics(),
-//     EdgeInsetsGeometry outerPadding = EdgeInsets.zero}) {
-//   return ExpandedListTile(
-//     outerPadding: outerPadding,
-//     title: const AutoSizeText("Steps",
-//         maxLines: 1,
-//         overflow: TextOverflow.visible,
-//         softWrap: false,
-//         minFontSize: Constants.small),
-//     subtitle: AutoSizeText(
-//         "${min(shownTasks, Constants.maxNumTasks)}/${Constants.maxNumTasks} Steps",
-//         maxLines: 1,
-//         overflow: TextOverflow.visible,
-//         softWrap: false,
-//         minFontSize: Constants.small),
-//     children: [
-//       ListViews.reorderableSubtasks(
-//         physics: physics,
-//         context: context,
-//         subtasks: subtasks,
-//         itemCount: min(Constants.maxNumTasks, shownTasks),
-//         onRemoved: removeRoutineTask,
-//         onReorder: reorderRoutineTasks,
-//         updateSubTask: onDataChange,
-//         onSubtaskWeightChanged: onRoutineTaskWeightChanged,
-//         showHandle: shownTasks > 1,
-//       ),
-//       (shownTasks < Constants.maxNumTasks)
-//           ? Tiles.addTile(
-//               title: "Add a step",
-//               onTap: addRoutineTask,
-//             )
-//           : const SizedBox.shrink(),
-//     ],
-//   );
-// }
 }

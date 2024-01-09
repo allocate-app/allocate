@@ -24,6 +24,7 @@ import '../../ui/widgets/time_dialog.dart';
 import '../../util/constants.dart';
 import '../../util/enums.dart';
 import '../../util/exceptions.dart';
+import '../../util/interfaces/i_model.dart';
 import '../../util/numbers.dart';
 import '../views/sub_views/create_routine.dart';
 import '../views/sub_views/create_todo.dart';
@@ -51,6 +52,7 @@ import 'subtitles.dart';
 
 abstract class Tiles {
   /// ListView Tiles
+  // TODO: REFACTOR DELETE FN TO TAKE PROVIDER -> Get rid of buildcontext.
   static Widget toDoListTile(
       {required BuildContext context,
       required int index,
@@ -68,12 +70,12 @@ abstract class Tiles {
     GroupProvider groupProvider = Provider.of(context, listen: false);
 
     return ListTile(
-        tileColor: (toDo.myDay)
-            ? Theme.of(context)
-                .colorScheme
-                .primaryContainer
-                .withOpacity(Constants.tabBarOpacity)
-            : null,
+        // tileColor: (toDo.myDay)
+        //     ? Theme.of(context)
+        //         .colorScheme
+        //         .primaryContainer
+        //         .withOpacity(Constants.tabBarOpacity)
+        //     : null,
         contentPadding:
             const EdgeInsets.symmetric(horizontal: Constants.padding),
         key: ValueKey(toDo.id),
@@ -94,11 +96,27 @@ abstract class Tiles {
 
               await toDoProvider.updateToDo(toDo: toDo);
             }),
-        title: AutoSizeText(toDo.name,
-            overflow: TextOverflow.ellipsis,
-            minFontSize: Constants.large,
-            softWrap: false,
-            maxLines: 2),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: [
+            if (toDo.myDay)
+              Padding(
+                padding: const EdgeInsets.only(right: Constants.padding),
+                child: Icon(
+                  Icons.wb_sunny_outlined,
+                  size: smallScreen
+                      ? Constants.minIconSize
+                      : Constants.smIconSize,
+                ),
+              ),
+            AutoSizeText(toDo.name,
+                overflow: TextOverflow.ellipsis,
+                minFontSize: Constants.large,
+                softWrap: false,
+                maxLines: 2),
+          ],
+        ),
         subtitle: Subtitles.toDoSubtitle(
             smallScreen: smallScreen,
             context: context,
@@ -125,6 +143,10 @@ abstract class Tiles {
                 icon: const Icon(Icons.delete_forever_rounded),
                 onPressed: () async {
                   if (!checkDelete) {
+                    if (null != onRemove) {
+                      await onRemove(item: toDo);
+                    }
+
                     return await deleteToDo(
                         toDo: toDo, context: context, onRemove: onRemove);
                   }
@@ -145,7 +167,11 @@ abstract class Tiles {
                       return;
                     }
 
-                    await deleteToDo(
+                    if (null != onRemove) {
+                      await onRemove(item: toDo);
+                    }
+
+                    return await deleteToDo(
                         toDo: toDo,
                         context: context,
                         onRemove: onRemove,
@@ -944,17 +970,17 @@ abstract class Tiles {
     await toDoProvider.updateToDo(toDo: toDo);
   }
 
-  // Leading?
   static Widget navDrawerGroupTile({
     required BuildContext context,
     required Group group,
-    EdgeInsetsGeometry padding = EdgeInsets.zero,
+    EdgeInsetsGeometry innerTilePadding =
+        const EdgeInsets.symmetric(horizontal: Constants.doublePadding),
   }) {
     GroupProvider groupProvider =
         Provider.of<GroupProvider>(context, listen: false);
     return ListTile(
+      contentPadding: innerTilePadding,
       leading: const Icon(Icons.collections_bookmark_outlined),
-      contentPadding: padding,
       shape: const RoundedRectangleBorder(
           borderRadius:
               BorderRadius.all(Radius.circular(Constants.semiCircular))),
@@ -1327,6 +1353,96 @@ abstract class Tiles {
       ),
     );
   }
+
+  static Widget trashTile({
+    required BuildContext context,
+    required IModel model,
+    bool smallScreen = false,
+    bool showCategory = false,
+    void Function()? onTap,
+    void Function()? restoreModel,
+    void Function()? deleteModel,
+    Future<void> Function({IModel? item})? onRemove,
+  }) =>
+      ListTile(
+        shape: const RoundedRectangleBorder(
+            borderRadius:
+                BorderRadius.all(Radius.circular(Constants.semiCircular))),
+        leading: IconButton.outlined(
+          tooltip: "Restore item",
+          icon: const Icon(Icons.settings_backup_restore_rounded),
+          onPressed: () async {
+            if (null != onRemove) {
+              await onRemove(item: model);
+            }
+            if (null != restoreModel) {
+              restoreModel();
+            }
+          },
+        ),
+        title: AutoSizeText(
+            "${(showCategory) ? "${toBeginningOfSentenceCase(model.modelType.name)}: " : ""}${model.name}",
+            maxLines: 1,
+            overflow: TextOverflow.visible,
+            softWrap: false,
+            minFontSize: Constants.large),
+        subtitle: switch (model.modelType) {
+          ModelType.task => Subtitles.toDoSubtitle(
+              id: (model as ToDo).groupID,
+              dueDate: model.dueDate,
+              smallScreen: smallScreen,
+              context: context,
+              onError: () async {
+                model.groupID = null;
+                await Provider.of<ToDoProvider>(context, listen: false)
+                    .updateToDo(toDo: model);
+              },
+              priority: model.priority),
+          ModelType.routine => Subtitles.subtaskSubtitle(
+              subtaskCount: Provider.of<RoutineProvider>(context, listen: false)
+                  .getSubtaskCount(id: model.id),
+            ),
+          ModelType.deadline => Subtitles.deadlineSubtitle(
+              context: context,
+              dueDate: (model as Deadline).dueDate,
+              smallScreen: smallScreen,
+              warnDate: model.warnDate,
+              priority: model.priority,
+            ),
+          ModelType.reminder => Subtitles.reminderSubtitle(
+              context: context,
+              dueDate: (model as Reminder).dueDate,
+              smallScreen: smallScreen,
+            ),
+          ModelType.group => Subtitles.groupSubtitle(
+              toDoCount: Provider.of<GroupProvider>(context, listen: false)
+                  .getToDoCount(id: model.id)!,
+            ),
+          _ => null,
+        },
+        onTap: onTap,
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (ModelType.task == model.modelType)
+              ListTileWidgets.toDoBatteryRow(toDo: model as ToDo),
+            if (ModelType.routine == model.modelType)
+              ListTileWidgets.routineBatteryRow(routine: model as Routine),
+            IconButton(
+              tooltip: "Delete permanently",
+              icon: const Icon(Icons.delete_forever_rounded),
+              onPressed: () async {
+                if (null != onRemove) {
+                  await onRemove(item: model);
+                }
+                if (null != deleteModel) {
+                  deleteModel();
+                }
+              },
+            ),
+          ],
+        ),
+      );
 
   /// Model Parameter Tiles
   // NAME

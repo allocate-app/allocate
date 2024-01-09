@@ -2,7 +2,7 @@
 export "route_views/completed_screen.dart";
 export 'route_views/create_user.dart';
 export "route_views/deadlines_screen.dart";
-export "route_views/group_screen.dart";
+export "route_views/groups_screen.dart";
 export 'route_views/home_screen.dart';
 export "route_views/init_user.dart";
 export 'route_views/login_screen.dart';

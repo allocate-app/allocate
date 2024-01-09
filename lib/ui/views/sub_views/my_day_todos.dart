@@ -30,9 +30,6 @@ class _MyDayToDos extends State<MyDayToDos> {
 
   void initializeProviders() {
     toDoProvider = Provider.of<ToDoProvider>(context, listen: false);
-    if (toDoProvider.rebuild) {
-      toDoProvider.toDos = [];
-    }
 
     userProvider = Provider.of<UserProvider>(context, listen: false);
     groupProvider = Provider.of<GroupProvider>(context, listen: false);
@@ -69,6 +66,7 @@ class _MyDayToDos extends State<MyDayToDos> {
 
   @override
   Widget build(BuildContext context) {
+    MediaQuery.sizeOf(context);
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -104,6 +102,7 @@ class _MyDayToDos extends State<MyDayToDos> {
                     key: key,
                     context: context,
                     toDos: items,
+                    smallScreen: userProvider.smallScreen,
                     onRemove: onRemove,
                     checkboxAnimateBeforeUpdate: (
                         {required ToDo toDo, required int index}) async {
@@ -122,8 +121,8 @@ class _MyDayToDos extends State<MyDayToDos> {
                 }
                 return ListViews.immutableMyDay(
                   key: key,
-                  context: context,
                   toDos: items,
+                  smallScreen: userProvider.smallScreen,
                   onRemove: onRemove,
                   checkboxAnimateBeforeUpdate: (
                       {required ToDo toDo, required int index}) async {

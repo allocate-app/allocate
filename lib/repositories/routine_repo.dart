@@ -6,12 +6,17 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../model/task/routine.dart';
 import '../services/isar_service.dart';
 import '../services/supabase_service.dart';
+import '../util/constants.dart';
 import '../util/enums.dart';
 import '../util/exceptions.dart';
 import '../util/interfaces/repository/model/routine_repository.dart';
 import '../util/interfaces/sortable.dart';
 
 class RoutineRepo implements RoutineRepository {
+  static final RoutineRepo _instance = RoutineRepo._internal();
+
+  static RoutineRepo get instance => _instance;
+
   // DB Clients.
   final SupabaseClient _supabaseClient =
       SupabaseService.instance.supabaseClient;
@@ -134,25 +139,55 @@ class RoutineRepo implements RoutineRepository {
 
   @override
   Future<void> delete(Routine routine) async {
-    if (null == _supabaseClient.auth.currentSession) {
-      routine.toDelete = true;
-      await update(routine);
-      return;
-    }
-
-    try {
-      await _supabaseClient.from("routines").delete().eq("id", routine.id);
-    } catch (error) {
-      throw FailureToDeleteException("Failed to delete routine online\n"
-          "Routine: ${routine.toString()}\n"
-          "Time: ${DateTime.now()}\n\n"
-          "Supabase Open: ${null != _supabaseClient.auth.currentSession}");
-    }
+    routine.toDelete = true;
+    await update(routine);
   }
 
   @override
-  Future<void> deleteLocal() async {
-    List<int> toDeletes = await getDeleteIds();
+  Future<void> remove(Routine routine) async {
+    // Delete online
+    if (null != _supabaseClient.auth.currentSession) {
+      try {
+        await _supabaseClient.from("routines").delete().eq("id", routine.id);
+      } catch (error) {
+        throw FailureToDeleteException("Failed to delete Routine online\n"
+            "Routine: ${routine.toString()}\n"
+            "Time: ${DateTime.now()}\n"
+            "Supabase Open: ${null != _supabaseClient.auth.currentSession}");
+      }
+    }
+    // Delete local
+    await _isarClient.writeTxn(() async {
+      await _isarClient.routines.delete(routine.id);
+    });
+  }
+
+  @override
+  Future<List<int>> emptyTrash() async {
+    if (null != _supabaseClient.auth.currentSession) {
+      try {
+        await _supabaseClient.from("routines").delete().eq("toDelete", true);
+      } catch (error) {
+        throw FailureToDeleteException("Failed to empty trash online\n"
+            "Time: ${DateTime.now()}\n"
+            "Supabase Open: ${null != _supabaseClient.auth.currentSession}");
+      }
+    }
+    late List<int> deleteIDs;
+    await _isarClient.writeTxn(() async {
+      deleteIDs = await _isarClient.routines
+          .where()
+          .toDeleteEqualTo(true)
+          .idProperty()
+          .findAll();
+      await _isarClient.routines.deleteAll(deleteIDs);
+    });
+    return deleteIDs;
+  }
+
+  @override
+  Future<void> deleteSweep() async {
+    List<int> toDeletes = await getDeleteIDs();
     await _isarClient.writeTxn(() async {
       await _isarClient.routines.deleteAll(toDeletes);
     });
@@ -164,7 +199,7 @@ class RoutineRepo implements RoutineRepository {
       return fetchRepo();
     }
 
-    List<int> toDeletes = await getDeleteIds();
+    List<int> toDeletes = await getDeleteIDs();
     if (toDeletes.isNotEmpty) {
       try {
         await _supabaseClient
@@ -234,8 +269,11 @@ class RoutineRepo implements RoutineRepository {
 
   // TODO: possibly factor the magic number out.
   @override
-  Future<List<Routine>> search({required String searchString}) async =>
+  Future<List<Routine>> search(
+          {required String searchString, bool toDelete = false}) async =>
       await _isarClient.routines
+          .where()
+          .toDeleteEqualTo(toDelete)
           .filter()
           .nameContains(searchString, caseSensitive: false)
           .limit(5)
@@ -333,13 +371,30 @@ class RoutineRepo implements RoutineRepository {
     }
   }
 
-  // This needs to be from local.
-  Future<List<int>> getDeleteIds() async => await _isarClient.routines
-      .where()
-      .toDeleteEqualTo(true)
-      .idProperty()
-      .findAll();
+  @override
+  Future<List<Routine>> getDeleted({int limit = 50, int offset = 0}) async =>
+      await _isarClient.routines
+          .where()
+          .toDeleteEqualTo(true)
+          .sortByLastUpdatedDesc()
+          .offset(offset)
+          .limit(limit)
+          .findAll();
+
+  // TODO: Migrate to other repositories
+  Future<List<int>> getDeleteIDs({DateTime? deleteLimit}) async {
+    deleteLimit = deleteLimit ?? Constants.today;
+    return await _isarClient.routines
+        .where()
+        .toDeleteEqualTo(true)
+        .filter()
+        .lastUpdatedLessThan(deleteLimit)
+        .idProperty()
+        .findAll();
+  }
 
   Future<List<Routine>> getUnsynced() async =>
       await _isarClient.routines.where().isSyncedEqualTo(false).findAll();
+
+  RoutineRepo._internal();
 }

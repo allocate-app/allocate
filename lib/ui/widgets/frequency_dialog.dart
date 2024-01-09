@@ -194,128 +194,123 @@ class _FrequencyDialog extends State<FrequencyDialog> {
                           }),
                     ),
 
-                    (frequency == Frequency.custom)
-                        ? Column(
-                            children: [
-                              // Days of the week - Wrap in padding and a container
-                              Padding(
-                                padding:
-                                    const EdgeInsets.all(Constants.halfPadding),
-                                child: Wrap(
-                                    spacing: 15,
-                                    runSpacing: 15,
-                                    alignment: WrapAlignment.center,
-                                    runAlignment: WrapAlignment.center,
-                                    children: Constants.weekdays
-                                        .map((weekDay) => InputChip(
-                                            backgroundColor: Theme.of(context)
-                                                .colorScheme
-                                                .surfaceVariant,
-                                            side: BorderSide(
-                                              width: 2,
-                                              color: Theme.of(context)
-                                                  .colorScheme
-                                                  .outlineVariant,
-                                              strokeAlign:
-                                                  BorderSide.strokeAlignOutside,
-                                            ),
-                                            shape: const RoundedRectangleBorder(
-                                              borderRadius: BorderRadius.all(
-                                                  Radius.circular(
-                                                      Constants.circular)),
-                                            ),
-                                            label: AutoSizeText(weekDay.key,
-                                                style: Constants.headerStyle,
-                                                minFontSize: Constants.large,
-                                                maxLines: 1,
-                                                softWrap: false,
-                                                overflow:
-                                                    TextOverflow.ellipsis),
-                                            selected: weekdays
-                                                .contains(weekDay.value),
-                                            onSelected: (bool selected) {
-                                              if (mounted) {
-                                                setState(() {
-                                                  if (selected) {
-                                                    weekdays.add(weekDay.value);
-                                                  } else {
-                                                    weekdays
-                                                        .remove(weekDay.value);
-                                                    if (weekdays.isEmpty) {
-                                                      weekdays.add(max(
-                                                          startDate.weekday - 1,
-                                                          0));
-                                                    }
-                                                  }
-                                                });
+                    if (frequency == Frequency.custom)
+                      Column(
+                        children: [
+                          // Days of the week - Wrap in padding and a container
+                          Padding(
+                            padding:
+                                const EdgeInsets.all(Constants.halfPadding),
+                            child: Wrap(
+                                spacing: 15,
+                                runSpacing: 15,
+                                alignment: WrapAlignment.center,
+                                runAlignment: WrapAlignment.center,
+                                children: Constants.weekdays
+                                    .map((weekDay) => InputChip(
+                                        backgroundColor: Theme.of(context)
+                                            .colorScheme
+                                            .surfaceVariant,
+                                        side: BorderSide(
+                                          width: 2,
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .outlineVariant,
+                                          strokeAlign:
+                                              BorderSide.strokeAlignOutside,
+                                        ),
+                                        shape: const RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.all(
+                                              Radius.circular(
+                                                  Constants.circular)),
+                                        ),
+                                        label: AutoSizeText(weekDay.key,
+                                            style: Constants.headerStyle,
+                                            minFontSize: Constants.large,
+                                            maxLines: 1,
+                                            softWrap: false,
+                                            overflow: TextOverflow.ellipsis),
+                                        selected:
+                                            weekdays.contains(weekDay.value),
+                                        onSelected: (bool selected) {
+                                          if (mounted) {
+                                            setState(() {
+                                              if (selected) {
+                                                weekdays.add(weekDay.value);
+                                              } else {
+                                                weekdays.remove(weekDay.value);
+                                                if (weekdays.isEmpty) {
+                                                  weekdays.add(max(
+                                                      startDate.weekday - 1,
+                                                      0));
+                                                }
                                               }
-                                            }))
-                                        .toList()),
-                              ),
-                            ],
-                          )
-                        : const SizedBox.shrink(),
+                                            });
+                                          }
+                                        }))
+                                    .toList()),
+                          ),
+                        ],
+                      ),
 
                     // Repeat Skip
-                    (frequency != Frequency.once &&
-                            frequency != Frequency.daily)
-                        ? ConstrainedBox(
-                            constraints: const BoxConstraints(maxHeight: 100),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const Flexible(
-                                    child: AutoSizeText(
-                                  "Every",
-                                  minFontSize: Constants.huge,
-                                  style: Constants.largeHeaderStyle,
-                                  overflow: TextOverflow.visible,
-                                  softWrap: false,
-                                  maxLines: 1,
-                                )),
-                                Flexible(
-                                    child: FittedBox(
-                                  fit: BoxFit.fill,
-                                  child: NumberPicker(
-                                      itemCount: 3,
-                                      textStyle:
-                                          Constants.numberPickerSecondary(
-                                              context: context),
-                                      selectedTextStyle:
-                                          Constants.numberPickerPrimary(
-                                              context: context),
-                                      minValue: 1,
-                                      maxValue: 100,
-                                      value: repeatSkip,
-                                      haptics: true,
-                                      onChanged: (value) {
-                                        SemanticsService.announce(
-                                            "Skip value: $value",
-                                            Directionality.of(context));
-                                        if (mounted) {
-                                          setState(() => repeatSkip = value);
-                                        }
-                                      }),
-                                )),
-                                Flexible(
-                                  child: AutoSizeText(
-                                    (frequency == Frequency.custom)
-                                        ? "week${(repeatSkip > 1) ? "s." : "."}"
-                                        : frequency.name.replaceAll("ly",
-                                            (repeatSkip > 1) ? "s." : "."),
-                                    minFontSize: Constants.large,
-                                    style: Constants.largeHeaderStyle,
-                                    overflow: TextOverflow.visible,
-                                    softWrap: false,
-                                    maxLines: 1,
-                                    textAlign: TextAlign.end,
-                                  ),
-                                )
-                              ],
-                            ),
-                          )
-                        : const SizedBox.shrink(),
+                    if (frequency != Frequency.once &&
+                        frequency != Frequency.daily)
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(maxHeight: 100),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Flexible(
+                                child: AutoSizeText(
+                              "Every",
+                              minFontSize: Constants.huge,
+                              style: Constants.largeHeaderStyle,
+                              overflow: TextOverflow.visible,
+                              softWrap: false,
+                              maxLines: 1,
+                            )),
+                            Flexible(
+                                child: FittedBox(
+                              fit: BoxFit.fill,
+                              child: NumberPicker(
+                                  itemCount: 3,
+                                  textStyle: Constants.numberPickerSecondary(
+                                      context: context),
+                                  selectedTextStyle:
+                                      Constants.numberPickerPrimary(
+                                          context: context),
+                                  minValue: 1,
+                                  maxValue: 100,
+                                  value: repeatSkip,
+                                  haptics: true,
+                                  onChanged: (value) {
+                                    SemanticsService.announce(
+                                        "Skip value: $value",
+                                        Directionality.of(context));
+                                    if (mounted) {
+                                      setState(() => repeatSkip = value);
+                                    }
+                                  }),
+                            )),
+                            Flexible(
+                              child: AutoSizeText(
+                                (frequency == Frequency.custom)
+                                    ? "week${(repeatSkip > 1) ? "s." : "."}"
+                                    : frequency.name.replaceAll(
+                                        "ly", (repeatSkip > 1) ? "s." : "."),
+                                minFontSize: Constants.large,
+                                style: Constants.largeHeaderStyle,
+                                overflow: TextOverflow.visible,
+                                softWrap: false,
+                                maxLines: 1,
+                                textAlign: TextAlign.end,
+                              ),
+                            )
+                          ],
+                        ),
+                      ),
 
                     Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,

@@ -34,9 +34,6 @@ class _GroupsListScreen extends State<GroupsListScreen> {
 
   void initializeProviders() {
     groupProvider = Provider.of<GroupProvider>(context, listen: false);
-    if (groupProvider.rebuild) {
-      groupProvider.groups = [];
-    }
     toDoProvider = Provider.of<ToDoProvider>(context, listen: false);
     userProvider = Provider.of<UserProvider>(context, listen: false);
   }
@@ -151,7 +148,6 @@ class _GroupsListScreen extends State<GroupsListScreen> {
                 }
                 return ListViews.immutableGroups(
                     key: key,
-                    context: context,
                     groups: items,
                     checkDelete: userProvider.curUser?.checkDelete ?? true,
                     onRemove: onRemove,

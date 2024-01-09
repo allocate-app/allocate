@@ -12,6 +12,7 @@ import "../../../providers/user_provider.dart";
 import "../../../util/constants.dart";
 import "../../../util/enums.dart";
 import "../../../util/numbers.dart";
+import "../../widgets/screen_header.dart";
 import "../../widgets/settings_screen_widgets.dart";
 
 class UserSettingsScreen extends StatefulWidget {
@@ -95,6 +96,7 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
   }
 
   // TODO: refactor consumer to use AppProvider once written
+  // TODO: refactor to also consume UserModel/UserProvider, and themeProvider.
   @override
   Widget build(BuildContext context) {
     MediaQuery.sizeOf(context);
@@ -114,78 +116,94 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
         mainAxisSize: MainAxisSize.min,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          buildHeader(),
+          // Header.
+          // TODO: CONSUME USERMODEL once USERMODEL
+          ScreenHeader(
+            outerPadding: const EdgeInsets.all(Constants.padding),
+            leadingIcon: const Icon(Icons.settings_rounded),
+            header: "Settings",
+            trailing: (userProvider.curUser?.syncOnline ?? _mockOnline)
+                ? FilledButton(
+                    onPressed: () {
+                      if (mounted && kDebugMode) {
+                        setState(() {
+                          _mockOnline = !_mockOnline;
+                        });
+                      }
+                    },
+                    child: const AutoSizeText("Sign in"),
+                  )
+                : FilledButton(
+                    onPressed: () {
+                      if (mounted && kDebugMode) {
+                        setState(() {
+                          _mockOnline = !_mockOnline;
+                        });
+                      }
+                    },
+                    child: const AutoSizeText("Sign up"),
+                  ),
+          ),
           Flexible(
-            child: Scrollbar(
-              controller: desktopScrollController,
-              thumbVisibility: true,
-              child: ListView(
-                padding: const EdgeInsets.only(
-                    left: Constants.halfPadding,
-                    right: Constants.doublePadding),
-                shrinkWrap: true,
-                controller: desktopScrollController,
-                physics: scrollPhysics,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Flexible(
+                  child: ListView(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
                     children: [
-                      Flexible(
-                        child: ListView(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          children: [
-                            Padding(
-                              padding: const EdgeInsets.only(
-                                  top: Constants.quadPadding +
-                                      Constants.doublePadding +
-                                      Constants.padding),
-                              child: buildEnergyTile(),
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.only(
-                                top: Constants.quadPadding,
-                                bottom: Constants.doublePadding,
-                              ),
-                              child: buildQuickInfo(),
-                            ),
-                            const Padding(
-                              padding:
-                                  EdgeInsets.all(Constants.halfPadding - 1),
-                              child: SizedBox.shrink(),
-                            ),
-                            buildAccountSection(),
-                            buildSignOut(),
-                            buildDeleteAccount(),
-                          ],
-                        ),
+                      Padding(
+                        padding: const EdgeInsets.only(
+                            top: Constants.quadPadding +
+                                Constants.doublePadding +
+                                Constants.padding),
+                        child: buildEnergyTile(),
                       ),
-                      Flexible(
-                        flex: 2,
-                        child: Padding(
-                          padding: const EdgeInsets.only(
-                              left: Constants.doublePadding),
-                          child: ListView(
-                            physics: const NeverScrollableScrollPhysics(),
-                            shrinkWrap: true,
-                            children: [
-                              buildGeneralSection(),
-                              buildAccessibilitySection(),
-                              buildThemeSection(),
-                              const Padding(
-                                padding: EdgeInsets.all(Constants.padding),
-                                child: SizedBox.shrink(),
-                              ),
-                            ],
-                          ),
+                      Padding(
+                        padding: const EdgeInsets.only(
+                          top: Constants.quadPadding,
+                          bottom: Constants.doublePadding,
                         ),
+                        child: buildQuickInfo(),
                       ),
+                      const Padding(
+                        padding: EdgeInsets.all(Constants.halfPadding - 1),
+                        child: SizedBox.shrink(),
+                      ),
+                      buildSignOut(),
+                      buildDeleteAccount(),
                     ],
                   ),
-                ],
-              ),
+                ),
+                Flexible(
+                  flex: 2,
+                  child: Scrollbar(
+                    thumbVisibility: true,
+                    controller: desktopScrollController,
+                    child: ListView(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: Constants.doublePadding),
+                      controller: desktopScrollController,
+                      physics: scrollPhysics,
+                      shrinkWrap: true,
+                      children: [
+                        buildAccountSection(),
+                        buildGeneralSection(),
+                        buildAccessibilitySection(),
+                        buildThemeSection(),
+                        buildAboutSection(),
+                        const Padding(
+                          padding: EdgeInsets.all(Constants.padding),
+                          child: SizedBox.shrink(),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -200,7 +218,33 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             // Header.
-            buildHeader(),
+            // TODO: CONSUME USERMODEL once USERMODEL
+            ScreenHeader(
+              outerPadding: const EdgeInsets.all(Constants.padding),
+              leadingIcon: const Icon(Icons.settings_rounded),
+              header: "Settings",
+              trailing: (userProvider.curUser?.syncOnline ?? _mockOnline)
+                  ? FilledButton(
+                      onPressed: () {
+                        if (mounted && kDebugMode) {
+                          setState(() {
+                            _mockOnline = !_mockOnline;
+                          });
+                        }
+                      },
+                      child: const AutoSizeText("Sign in"),
+                    )
+                  : FilledButton(
+                      onPressed: () {
+                        if (mounted && kDebugMode) {
+                          setState(() {
+                            _mockOnline = !_mockOnline;
+                          });
+                        }
+                      },
+                      child: const AutoSizeText("Sign up"),
+                    ),
+            ),
             Flexible(
               child: Scrollbar(
                 controller: mobileScrollController,
@@ -241,12 +285,18 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
         ));
   }
 
+  // TODO: finish User switcher
   Widget buildQuickInfo() {
-    return SettingsScreenWidgets.userQuickInfo(
-        outerPadding: const EdgeInsets.only(bottom: Constants.halfPadding),
-        user: userProvider.curUser);
+    return Consumer<UserProvider>(
+      builder: (BuildContext context, UserProvider value, Widget? child) {
+        return SettingsScreenWidgets.userQuickInfo(
+            outerPadding: const EdgeInsets.only(bottom: Constants.halfPadding),
+            user: userProvider.curUser);
+      },
+    );
   }
 
+  // TODO: CONSUME USERMODEL once USERMODEL
   Widget buildEnergyTile({double maxScale = 1.5}) {
     return SettingsScreenWidgets.energyTile(
       weight: userProvider.curUser?.bandwidth.toDouble() ?? _testWeight,
@@ -262,44 +312,7 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
     );
   }
 
-  Widget buildHeader() {
-    return ListTile(
-      contentPadding: const EdgeInsets.all(Constants.padding),
-      leading: const Icon(Icons.settings_rounded),
-      title: const AutoSizeText(
-        "Settings",
-        style: Constants.largeHeaderStyle,
-        softWrap: false,
-        maxLines: 1,
-        overflow: TextOverflow.visible,
-        minFontSize: Constants.huge,
-      ),
-      // TODO: factor this into a method.
-      // As follows: connected => outlined online status, syncOnline => signIn button, none => signUp button
-      trailing: (userProvider.curUser?.syncOnline ?? _mockOnline)
-          ? FilledButton(
-              onPressed: () {
-                if (mounted && kDebugMode) {
-                  setState(() {
-                    _mockOnline = !_mockOnline;
-                  });
-                }
-              },
-              child: const AutoSizeText("Sign in"),
-            )
-          : FilledButton(
-              onPressed: () {
-                if (mounted && kDebugMode) {
-                  setState(() {
-                    _mockOnline = !_mockOnline;
-                  });
-                }
-              },
-              child: const AutoSizeText("Sign up"),
-            ),
-    );
-  }
-
+  // TODO: CONSUME USERMODEL once USERMODEL
   Widget buildAccountSection() {
     return SettingsScreenWidgets.settingsSection(
       context: context,
@@ -344,6 +357,7 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
     );
   }
 
+  // TODO: CONSUME USERMODEL once USERMODEL
   Widget buildGeneralSection() {
     return SettingsScreenWidgets.settingsSection(
       context: context,
@@ -403,439 +417,205 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
   }
 
   Widget buildAccessibilitySection() {
-    return SettingsScreenWidgets.settingsSection(
-      context: context,
-      title: "Accessibility",
-      entries: [
-        // Reduce motion.
-        SettingsScreenWidgets.toggleTile(
-            leading: const Icon(Icons.slow_motion_video_rounded),
-            title: "Reduce motion",
-            value: themeProvider.reduceMotion,
-            onChanged: (bool value) {
-              themeProvider.reduceMotion = value;
-              if (mounted) {
-                setState(() {});
-              }
-            }),
-        // Use Ultra high Contrast.
-        SettingsScreenWidgets.toggleTile(
-            leading: const Icon(Icons.contrast_rounded),
-            title: "Ultra contrast",
-            value: themeProvider.useUltraHighContrast,
-            onChanged: (bool value) {
-              themeProvider.useUltraHighContrast = value;
-              if (mounted) {
-                setState(() {});
-              }
-            }),
-      ],
-    );
-  }
-
-  Widget buildThemeHuge() {
-    return Flexible(
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Flexible(
-            child: SettingsScreenWidgets
-                .settingsSection(title: "Theme", context: context, entries: [
-              // ThemeType
-              DefaultTabController(
-                initialIndex: themeProvider.themeType.index,
-                length: ThemeType.values.length,
-                child: Padding(
-                  padding: const EdgeInsets.only(bottom: Constants.padding),
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      borderRadius: const BorderRadius.all(
-                          Radius.circular(Constants.roundedCorners)),
-                      color: Theme.of(context).colorScheme.onSecondary,
-                    ),
-                    child: TabBar(
-                      onTap: (newIndex) {
-                        themeProvider.themeType = ThemeType.values[newIndex];
-                      },
-                      indicatorSize: TabBarIndicatorSize.tab,
-                      indicator: BoxDecoration(
-                          color: Theme.of(context).colorScheme.primaryContainer,
-                          borderRadius: const BorderRadius.all(
-                              Radius.circular(Constants.roundedCorners))),
-                      splashBorderRadius: const BorderRadius.all(
-                          Radius.circular(Constants.roundedCorners)),
-                      dividerColor: Colors.transparent,
-                      tabs: ThemeType.values
-                          .map((ThemeType type) => Tab(
-                                text: toBeginningOfSentenceCase(type.name),
-                              ))
-                          .toList(),
-                    ),
-                  ),
-                ),
-              ),
-
-              // Color seeds.
-              SettingsScreenWidgets.colorSeedTile(
-                  context: context,
-                  recentColors: themeProvider.recentColors,
-                  color: themeProvider.primarySeed,
-                  onColorChanged: (Color newColor) {
-                    themeProvider.primarySeed = newColor;
-                    if (mounted) {
-                      setState(() {});
-                    }
-                  },
-                  colorType: "Primary color",
-                  icon: const Icon(Icons.eject_rounded),
-                  showTrailing: Constants.defaultPrimaryColorSeed !=
-                      themeProvider.primarySeed.value,
-                  restoreDefault: () {
-                    themeProvider.primarySeed =
-                        const Color(Constants.defaultPrimaryColorSeed);
-                    if (mounted) {
-                      setState(() {});
-                    }
-                  }),
-              SettingsScreenWidgets.colorSeedTile(
-                  context: context,
-                  recentColors: themeProvider.recentColors,
-                  onColorChanged: (Color newColor) {
-                    themeProvider.secondarySeed = newColor;
-                    if (mounted) {
-                      setState(() {});
-                    }
-                  },
-                  color: themeProvider.secondarySeed,
-                  colorType: "Secondary color",
-                  showTrailing: null != themeProvider.secondarySeed,
-                  restoreDefault: () {
-                    themeProvider.secondarySeed = null;
-                    if (mounted) {
-                      setState(() {});
-                    }
-                  }),
-              SettingsScreenWidgets.colorSeedTile(
-                  context: context,
-                  recentColors: themeProvider.recentColors,
-                  onColorChanged: (Color newColor) {
-                    themeProvider.tertiarySeed = newColor;
-                    if (mounted) {
-                      setState(() {});
-                    }
-                  },
-                  color: themeProvider.tertiarySeed,
-                  colorType: "Tertiary color",
-                  showTrailing: null != themeProvider.tertiarySeed,
-                  restoreDefault: () {
-                    themeProvider.tertiarySeed = null;
-                    if (mounted) {
-                      setState(() {});
-                    }
-                  }),
-            ]),
-          ),
-          Flexible(
-            child: SettingsScreenWidgets.settingsSection(
-              title: " ",
-              context: context,
-              entries: [
-                // Tonemapping radiobutton
-                SettingsScreenWidgets.radioDropDown(
-                    leading: const Icon(Icons.colorize_rounded),
-                    title: "Tonemapping",
-                    groupMember: themeProvider.toneMapping,
-                    values: ToneMapping.values,
-                    initiallyExpanded: _toneMappingOpened,
-                    onExpansionChanged: ({bool expanded = false}) {
-                      if (mounted) {
-                        _toneMappingOpened = expanded;
-                      }
-                    },
-                    onChanged: (ToneMapping? newMap) {
-                      if (null == newMap) {
-                        return;
-                      }
-                      themeProvider.toneMapping = newMap;
-                      if (mounted) {
-                        setState(() {
-                          _toneMappingOpened = false;
-                        });
-                      }
-                    }),
-
-                // Window effects
-                if (!userProvider.isMobile) ...[
-                  SettingsScreenWidgets.radioDropDown(
-                    initiallyExpanded: _windowEffectOpened,
-                    leading: const Icon(Icons.color_lens_outlined),
-                    title: "Window effect",
-                    children: getAvailableWindowEffects(),
-                    groupMember: themeProvider.windowEffect,
-                    values: Effect.values,
-                  ),
-                  // Transparency - use the dropdown slider.
-                  SettingsScreenWidgets.sliderTile(
-                    title: "Sidebar opacity",
-                    leading: const Icon(Icons.gradient_rounded),
-                    label: "${(100 * themeProvider.sidebarOpacity).toInt()}",
-                    onOpen: () {
-                      mobileScrollController.addListener(anchorWatchScroll);
-                    },
-                    onClose: () {
-                      mobileScrollController.removeListener(anchorWatchScroll);
-                    },
-                    onChanged: (themeProvider.useTransparency)
-                        ? (double value) {
-                            themeProvider.sidebarOpacity = value;
-                            if (mounted) {
-                              setState(() {});
-                            }
-                          }
-                        : null,
-                    onChangeEnd: (double value) {
-                      themeProvider.sidebarOpacitySavePref = value;
-                      _sidebarController.close();
-                      if (mounted) {
-                        setState(() {});
-                      }
-                    },
-                    value: themeProvider.sidebarOpacity,
-                    controller: _sidebarController,
-                  ),
-
-                  SettingsScreenWidgets.sliderTile(
-                    title: "Window opacity",
-                    leading: const Icon(Icons.gradient_rounded),
-                    label: "${(100 * themeProvider.scaffoldOpacity).toInt()}",
-                    onOpen: () {
-                      mobileScrollController.addListener(anchorWatchScroll);
-                    },
-                    onClose: () {
-                      mobileScrollController.removeListener(anchorWatchScroll);
-                    },
-                    onChanged: (themeProvider.useTransparency)
-                        ? (double value) {
-                            themeProvider.scaffoldOpacity = value;
-                            if (mounted) {
-                              setState(() {});
-                            }
-                          }
-                        : null,
-                    onChangeEnd: (double value) {
-                      themeProvider.scaffoldOpacitySavePref = value;
-                      _scaffoldController.close();
-                      if (mounted) {
-                        setState(() {});
-                      }
-                    },
-                    value: themeProvider.scaffoldOpacity,
-                    controller: _scaffoldController,
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ],
-      ),
+    return Consumer<ThemeProvider>(
+      builder: (BuildContext context, ThemeProvider value, Widget? child) {
+        return SettingsScreenWidgets.settingsSection(
+          context: context,
+          title: "Accessibility",
+          entries: [
+            // Reduce motion.
+            SettingsScreenWidgets.toggleTile(
+                leading: const Icon(Icons.slow_motion_video_rounded),
+                title: "Reduce motion",
+                value: value.reduceMotion,
+                onChanged: (bool reduceMotion) {
+                  value.reduceMotion = reduceMotion;
+                }),
+            // Use Ultra high Contrast.
+            SettingsScreenWidgets.toggleTile(
+                leading: const Icon(Icons.contrast_rounded),
+                title: "Ultra contrast",
+                value: value.useUltraHighContrast,
+                onChanged: (bool useHi) {
+                  value.useUltraHighContrast = useHi;
+                }),
+          ],
+        );
+      },
     );
   }
 
   Widget buildThemeSection() {
-    return SettingsScreenWidgets.settingsSection(
-        context: context,
-        title: "Theme",
-        entries: [
-          // ThemeType
-          DefaultTabController(
-            initialIndex: themeProvider.themeType.index,
-            length: ThemeType.values.length,
-            child: Padding(
-              padding: const EdgeInsets.only(bottom: Constants.padding),
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  borderRadius: const BorderRadius.all(
-                      Radius.circular(Constants.roundedCorners)),
-                  color: Theme.of(context).colorScheme.onSecondary,
-                ),
-                child: TabBar(
-                  onTap: (newIndex) {
-                    themeProvider.themeType = ThemeType.values[newIndex];
-                  },
-                  indicatorSize: TabBarIndicatorSize.tab,
-                  indicator: BoxDecoration(
-                      color: Theme.of(context).colorScheme.primaryContainer,
-                      borderRadius: const BorderRadius.all(
-                          Radius.circular(Constants.roundedCorners))),
-                  splashBorderRadius: const BorderRadius.all(
-                      Radius.circular(Constants.roundedCorners)),
-                  dividerColor: Colors.transparent,
-                  tabs: ThemeType.values
-                      .map((ThemeType type) => Tab(
-                            text: toBeginningOfSentenceCase(type.name),
-                          ))
-                      .toList(),
+    return Consumer<ThemeProvider>(
+        builder: (BuildContext context, ThemeProvider value, Widget? child) {
+      return SettingsScreenWidgets.settingsSection(
+          context: context,
+          title: "Theme",
+          entries: [
+            // ThemeType
+            DefaultTabController(
+              initialIndex: value.themeType.index,
+              length: ThemeType.values.length,
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: Constants.padding),
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    borderRadius: const BorderRadius.all(
+                        Radius.circular(Constants.roundedCorners)),
+                    color: Theme.of(context).colorScheme.onSecondary,
+                  ),
+                  child: TabBar(
+                    onTap: (newIndex) {
+                      value.themeType = ThemeType.values[newIndex];
+                    },
+                    indicatorSize: TabBarIndicatorSize.tab,
+                    indicator: BoxDecoration(
+                        color: Theme.of(context).colorScheme.primaryContainer,
+                        borderRadius: const BorderRadius.all(
+                            Radius.circular(Constants.roundedCorners))),
+                    splashBorderRadius: const BorderRadius.all(
+                        Radius.circular(Constants.roundedCorners)),
+                    dividerColor: Colors.transparent,
+                    tabs: ThemeType.values
+                        .map((ThemeType type) => Tab(
+                              text: toBeginningOfSentenceCase(type.name),
+                            ))
+                        .toList(),
+                  ),
                 ),
               ),
             ),
-          ),
 
-          // Color seeds.
-          SettingsScreenWidgets.colorSeedTile(
-              context: context,
-              recentColors: themeProvider.recentColors,
-              color: themeProvider.primarySeed,
-              onColorChanged: (Color newColor) {
-                themeProvider.primarySeed = newColor;
-                if (mounted) {
-                  setState(() {});
-                }
-              },
-              colorType: "Primary color",
-              icon: const Icon(Icons.eject_rounded),
-              showTrailing: Constants.defaultPrimaryColorSeed !=
-                  themeProvider.primarySeed.value,
-              restoreDefault: () {
-                themeProvider.primarySeed =
-                    const Color(Constants.defaultPrimaryColorSeed);
-                if (mounted) {
-                  setState(() {});
-                }
-              }),
-          SettingsScreenWidgets.colorSeedTile(
-              context: context,
-              recentColors: themeProvider.recentColors,
-              onColorChanged: (Color newColor) {
-                themeProvider.secondarySeed = newColor;
-                if (mounted) {
-                  setState(() {});
-                }
-              },
-              color: themeProvider.secondarySeed,
-              colorType: "Secondary color",
-              showTrailing: null != themeProvider.secondarySeed,
-              restoreDefault: () {
-                themeProvider.secondarySeed = null;
-                if (mounted) {
-                  setState(() {});
-                }
-              }),
-          SettingsScreenWidgets.colorSeedTile(
-              context: context,
-              recentColors: themeProvider.recentColors,
-              onColorChanged: (Color newColor) {
-                themeProvider.tertiarySeed = newColor;
-                if (mounted) {
-                  setState(() {});
-                }
-              },
-              color: themeProvider.tertiarySeed,
-              colorType: "Tertiary color",
-              showTrailing: null != themeProvider.tertiarySeed,
-              restoreDefault: () {
-                themeProvider.tertiarySeed = null;
-                if (mounted) {
-                  setState(() {});
-                }
-              }),
+            // Color seeds.
+            SettingsScreenWidgets.colorSeedTile(
+                context: context,
+                recentColors: value.recentColors,
+                color: value.primarySeed,
+                onColorChanged: (Color newColor) {
+                  value.primarySeed = newColor;
+                },
+                colorType: "Primary color",
+                icon: const Icon(Icons.eject_rounded),
+                showTrailing: Constants.defaultPrimaryColorSeed !=
+                    value.primarySeed.value,
+                restoreDefault: () {
+                  Tooltip.dismissAllToolTips();
+                  value.primarySeed =
+                      const Color(Constants.defaultPrimaryColorSeed);
+                }),
+            SettingsScreenWidgets.colorSeedTile(
+                context: context,
+                recentColors: value.recentColors,
+                onColorChanged: (Color newColor) {
+                  value.secondarySeed = newColor;
+                },
+                color: value.secondarySeed,
+                colorType: "Secondary color",
+                showTrailing: null != value.secondarySeed,
+                restoreDefault: () {
+                  Tooltip.dismissAllToolTips();
+                  value.secondarySeed = null;
+                }),
+            SettingsScreenWidgets.colorSeedTile(
+                context: context,
+                recentColors: value.recentColors,
+                onColorChanged: (Color newColor) {
+                  value.tertiarySeed = newColor;
+                },
+                color: value.tertiarySeed,
+                colorType: "Tertiary color",
+                showTrailing: null != value.tertiarySeed,
+                restoreDefault: () {
+                  Tooltip.dismissAllToolTips();
+                  value.tertiarySeed = null;
+                }),
 
-          // Tonemapping radiobutton
-          SettingsScreenWidgets.radioDropDown(
-              leading: const Icon(Icons.colorize_rounded),
-              title: "Tonemapping",
-              groupMember: themeProvider.toneMapping,
-              values: ToneMapping.values,
-              initiallyExpanded: _toneMappingOpened,
-              onExpansionChanged: ({bool expanded = false}) {
-                if (mounted) {
-                  _toneMappingOpened = expanded;
-                }
-              },
-              onChanged: (ToneMapping? newMap) {
-                if (null == newMap) {
-                  return;
-                }
-                themeProvider.toneMapping = newMap;
-                if (mounted) {
-                  setState(() {
-                    _toneMappingOpened = false;
-                  });
-                }
-              }),
-
-          // Window effects
-          if (!userProvider.isMobile) ...[
+            // Tonemapping radiobutton
             SettingsScreenWidgets.radioDropDown(
-              initiallyExpanded: _windowEffectOpened,
-              leading: const Icon(Icons.color_lens_outlined),
-              title: "Window effect",
-              children: getAvailableWindowEffects(),
-              groupMember: themeProvider.windowEffect,
-              values: Effect.values,
-            ),
-            // Transparency - use the dropdown slider.
-            SettingsScreenWidgets.sliderTile(
-              title: "Sidebar opacity",
-              leading: const Icon(Icons.gradient_rounded),
-              label: "${(100 * themeProvider.sidebarOpacity).toInt()}",
-              onOpen: () {
-                mobileScrollController.addListener(anchorWatchScroll);
-              },
-              onClose: () {
-                mobileScrollController.removeListener(anchorWatchScroll);
-              },
-              onChanged: (themeProvider.useTransparency)
-                  ? (double value) {
-                      themeProvider.sidebarOpacity = value;
-                      if (mounted) {
-                        setState(() {});
-                      }
-                    }
-                  : null,
-              onChangeEnd: (double value) {
-                themeProvider.sidebarOpacitySavePref = value;
-                _sidebarController.close();
-                if (mounted) {
-                  setState(() {});
-                }
-              },
-              value: themeProvider.sidebarOpacity,
-              controller: _sidebarController,
-            ),
+                leading: const Icon(Icons.colorize_rounded),
+                title: "Tonemapping",
+                groupMember: value.toneMapping,
+                values: ToneMapping.values,
+                initiallyExpanded: _toneMappingOpened,
+                onExpansionChanged: ({bool expanded = false}) {
+                  if (mounted) {
+                    _toneMappingOpened = expanded;
+                  }
+                },
+                onChanged: (ToneMapping? newMap) {
+                  if (null == newMap) {
+                    return;
+                  }
+                  value.toneMapping = newMap;
+                  if (mounted) {
+                    setState(() {
+                      _toneMappingOpened = false;
+                    });
+                  }
+                }),
 
-            SettingsScreenWidgets.sliderTile(
-              title: "Window opacity",
-              leading: const Icon(Icons.gradient_rounded),
-              label: "${(100 * themeProvider.scaffoldOpacity).toInt()}",
-              onOpen: () {
-                mobileScrollController.addListener(anchorWatchScroll);
-              },
-              onClose: () {
-                mobileScrollController.removeListener(anchorWatchScroll);
-              },
-              onChanged: (themeProvider.useTransparency)
-                  ? (double value) {
-                      themeProvider.scaffoldOpacity = value;
-                      if (mounted) {
-                        setState(() {});
+            // Window effects
+            if (!userProvider.isMobile) ...[
+              SettingsScreenWidgets.radioDropDown(
+                initiallyExpanded: _windowEffectOpened,
+                leading: const Icon(Icons.color_lens_outlined),
+                title: "Window effect",
+                children: getAvailableWindowEffects(),
+                groupMember: value.windowEffect,
+                values: Effect.values,
+              ),
+              // Transparency - use the dropdown slider.
+              SettingsScreenWidgets.sliderTile(
+                title: "Sidebar opacity",
+                leading: const Icon(Icons.gradient_rounded),
+                label: "${(100 * value.sidebarOpacity).toInt()}",
+                onOpen: () {
+                  mobileScrollController.addListener(anchorWatchScroll);
+                },
+                onClose: () {
+                  mobileScrollController.removeListener(anchorWatchScroll);
+                },
+                onChanged: (value.useTransparency)
+                    ? (double newOpacity) {
+                        value.sidebarOpacity = newOpacity;
                       }
-                    }
-                  : null,
-              onChangeEnd: (double value) {
-                themeProvider.scaffoldOpacitySavePref = value;
-                _scaffoldController.close();
-                if (mounted) {
-                  setState(() {});
-                }
-              },
-              value: themeProvider.scaffoldOpacity,
-              controller: _scaffoldController,
-            ),
-          ],
-        ]);
+                    : null,
+                onChangeEnd: (double newOpacity) {
+                  value.sidebarOpacitySavePref = newOpacity;
+                  _sidebarController.close();
+                },
+                value: value.sidebarOpacity,
+                controller: _sidebarController,
+              ),
+
+              SettingsScreenWidgets.sliderTile(
+                title: "Window opacity",
+                leading: const Icon(Icons.gradient_rounded),
+                label: "${(100 * value.scaffoldOpacity).toInt()}",
+                onOpen: () {
+                  mobileScrollController.addListener(anchorWatchScroll);
+                },
+                onClose: () {
+                  mobileScrollController.removeListener(anchorWatchScroll);
+                },
+                onChanged: (value.useTransparency)
+                    ? (double newOpacity) {
+                        value.scaffoldOpacity = newOpacity;
+                      }
+                    : null,
+                onChangeEnd: (double newOpacity) {
+                  value.scaffoldOpacitySavePref = newOpacity;
+                  _scaffoldController.close();
+                },
+                value: value.scaffoldOpacity,
+                controller: _scaffoldController,
+              ),
+            ],
+          ]);
+    });
   }
 
+  // TODO: refactor to AppProvider once AppProvider
   Widget buildAboutSection() {
     return SettingsScreenWidgets.settingsSection(
         context: context,

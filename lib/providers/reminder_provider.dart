@@ -6,11 +6,13 @@ import 'package:jiffy/jiffy.dart';
 
 import '../model/task/reminder.dart';
 import '../model/user/user.dart';
+import '../repositories/reminder_repo.dart';
 import '../services/notification_service.dart';
-import '../services/reminder_service.dart';
+import '../services/repeatable_service.dart';
 import '../util/constants.dart';
 import '../util/enums.dart';
 import '../util/exceptions.dart';
+import '../util/interfaces/repository/model/reminder_repository.dart';
 import '../util/sorting/reminder_sorter.dart';
 
 class ReminderProvider extends ChangeNotifier {
@@ -21,19 +23,24 @@ class ReminderProvider extends ChangeNotifier {
   set rebuild(bool rebuild) {
     _rebuild = rebuild;
     if (_rebuild) {
+      reminders = [];
+      secondaryReminders = [];
       notifyListeners();
     }
   }
 
   set softRebuild(bool rebuild) {
     _rebuild = rebuild;
+
+    if (_rebuild) {
+      reminders = [];
+      secondaryReminders = [];
+    }
   }
 
-  late Timer syncTimer;
+  late final ReminderRepository _reminderRepo;
+  late final RepeatableService _repeatService;
 
-  final ReminderService _reminderService;
-
-  // Singleton for now. DI later.
   final NotificationService _notificationService = NotificationService.instance;
 
   Reminder? curReminder;
@@ -45,21 +52,14 @@ class ReminderProvider extends ChangeNotifier {
 
   User? user;
 
-  ReminderProvider({this.user, ReminderService? service})
-      : _reminderService = service ?? ReminderService() {
-    sorter = user?.reminderSorter ?? ReminderSorter();
-    startTimer();
-  }
-
-  void startTimer() {
-    syncTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
-      if (user?.syncOnline ?? false) {
-        _syncRepo();
-      } else {
-        _reminderService.clearDeletesLocalRepo();
-      }
-    });
-  }
+  // CONSTRUCTOR
+  ReminderProvider(
+      {this.user,
+      RepeatableService? repeatableService,
+      ReminderRepository? reminderRepository})
+      : sorter = user?.reminderSorter ?? ReminderSorter(),
+        _repeatService = repeatableService ?? RepeatableService.instance,
+        _reminderRepo = reminderRepository ?? ReminderRepo.instance;
 
   void setUser({User? newUser}) {
     user = newUser;
@@ -83,20 +83,6 @@ class ReminderProvider extends ChangeNotifier {
   bool get descending => sorter.descending;
 
   List<SortMethod> get sortMethods => sorter.sortMethods;
-
-  Future<void> _syncRepo() async {
-    // Not quite sure how to handle this outside of gui warning.
-    try {
-      await _reminderService.syncRepo();
-    } on FailureToDeleteException catch (e) {
-      log(e.cause);
-      return Future.error(e);
-    } on FailureToUploadException catch (e) {
-      log(e.cause);
-      return Future.error(e);
-    }
-    notifyListeners();
-  }
 
   Future<void> createReminder({
     required String name,
@@ -123,8 +109,7 @@ class ReminderProvider extends ChangeNotifier {
     curReminder!.notificationID = Constants.generate32ID();
 
     try {
-      curReminder =
-          await _reminderService.createReminder(reminder: curReminder!);
+      curReminder = await _reminderRepo.create(curReminder!);
 
       await scheduleNotification(reminder: curReminder);
       if (curReminder!.repeatable) {
@@ -152,17 +137,14 @@ class ReminderProvider extends ChangeNotifier {
     reminder = reminder ?? curReminder!;
     reminder.lastUpdated = DateTime.now();
 
+    if (reminder.repeatable && null == reminder.repeatID) {
+      reminder.repeatID = Constants.generateID();
+    }
     try {
-      curReminder =
-          await _reminderService.updateReminder(reminder: curReminder!);
+      curReminder = await _reminderRepo.update(curReminder!);
       await cancelNotification(reminder: curReminder);
       if (validateDueDate(dueDate: curReminder!.dueDate)) {
         await scheduleNotification(reminder: curReminder);
-      }
-
-      if (reminder.repeatable && null == reminder.repeatID) {
-        reminder.repeatID = Constants.generateID();
-        await nextRepeat(reminder: reminder);
       }
     } on FailureToUploadException catch (e) {
       log(e.cause);
@@ -178,7 +160,51 @@ class ReminderProvider extends ChangeNotifier {
     reminder = reminder ?? curReminder!;
     await cancelNotification(reminder: reminder);
     try {
-      await _reminderService.deleteReminder(reminder: reminder);
+      await _reminderRepo.delete(reminder);
+    } on FailureToDeleteException catch (e) {
+      log(e.cause);
+      return Future.error(e);
+    }
+    notifyListeners();
+  }
+
+  Future<void> removeReminder({Reminder? reminder}) async {
+    if (null == reminder) {
+      return;
+    }
+    try {
+      await _reminderRepo.remove(reminder);
+    } on FailureToDeleteException catch (e) {
+      log(e.cause);
+      return Future.error(e);
+    }
+
+    notifyListeners();
+  }
+
+  Future<void> restoreReminder({Reminder? reminder}) async {
+    if (null == reminder) {
+      return;
+    }
+    reminder.toDelete = false;
+    reminder.repeatable = false;
+    reminder.frequency = Frequency.once;
+    try {
+      curReminder = await _reminderRepo.update(reminder);
+    } on FailureToUploadException catch (e) {
+      log(e.cause);
+      return Future.error(e);
+    } on FailureToUpdateException catch (e) {
+      log(e.cause);
+      return Future.error(e);
+    }
+    notifyListeners();
+  }
+
+  Future<void> emptyTrash() async {
+    try {
+      List<int> ids = await _reminderRepo.emptyTrash();
+      await _notificationService.cancelMultiple(ids: ids);
     } on FailureToDeleteException catch (e) {
       log(e.cause);
       return Future.error(e);
@@ -187,10 +213,22 @@ class ReminderProvider extends ChangeNotifier {
   }
 
   Future<List<Reminder>> reorderReminders(
-      {required int oldIndex, required int newIndex}) async {
+      {List<Reminder>? reminders,
+      required int oldIndex,
+      required int newIndex}) async {
+    reminders = reminders ?? this.reminders;
+
+    if (oldIndex < newIndex) {
+      newIndex--;
+    }
+    Reminder reminder = reminders.removeAt(oldIndex);
+    reminders.insert(newIndex, reminder);
+    for (int i = 0; i < reminders.length; i++) {
+      reminders[i].customViewIndex = i;
+    }
     try {
-      return await _reminderService.reorderReminders(
-          reminders: reminders, oldIndex: oldIndex, newIndex: newIndex);
+      await _reminderRepo.updateBatch(reminders);
+      return reminders;
     } on FailureToUpdateException catch (e) {
       log(e.cause);
       return Future.error(e);
@@ -200,21 +238,9 @@ class ReminderProvider extends ChangeNotifier {
     }
   }
 
-  // Future<void> checkRepeating({DateTime? now}) async {
-  //   try {
-  //     await _reminderService.checkRepeating(now: now ?? DateTime.now());
-  //   } on FailureToUpdateException catch (e) {
-  //     log(e.cause);
-  //     return Future.error(e);
-  //   } on FailureToUploadException catch (e) {
-  //     log(e.cause);
-  //     return Future.error(e);
-  //   }
-  // }
-
   Future<void> nextRepeat({Reminder? reminder}) async {
     try {
-      await _reminderService.nextRepeatable(reminder: reminder ?? curReminder!);
+      await _repeatService.nextRepeat(model: reminder ?? curReminder!);
     } on FailureToUpdateException catch (e) {
       log(e.cause);
       return Future.error(e);
@@ -226,8 +252,8 @@ class ReminderProvider extends ChangeNotifier {
 
   Future<List<int>> deleteFutures({Reminder? reminder}) async {
     try {
-      return await _reminderService.deleteFutures(
-          reminder: reminder ?? curReminder!);
+      return await _repeatService.deleteFutures(
+          model: reminder ?? curReminder!);
     } on FailureToUpdateException catch (e) {
       log(e.cause);
       return Future.error(e);
@@ -239,65 +265,56 @@ class ReminderProvider extends ChangeNotifier {
 
   Future<void> deleteAndCancelFutures({Reminder? reminder}) async {
     List<int> cancelIDs = await deleteFutures(reminder: reminder);
-    await _notificationService.cancelFutures(ids: cancelIDs);
+    await _notificationService.cancelMultiple(ids: cancelIDs);
   }
 
   // TODO: REIMPLEMENT ONCE REPEATABLE API.
-  Future<void> populateCalendar({DateTime? limit}) async {
-    return;
-    // try {
-    //   return await _reminderService.populateCalendar(
-    //       limit: limit ?? DateTime.now());
-    // } on FailureToUpdateException catch (e) {
-    //   log(e.cause);
-    //   return Future.error(e);
-    // } on FailureToUploadException catch (e) {
-    //   log(e.cause);
-    //   return Future.error(e);
-    // }
-  }
+  // Future<void> populateCalendar({DateTime? limit}) async {
+  //   return;
+  //   // try {
+  //   //   return await _reminderService.populateCalendar(
+  //   //       limit: limit ?? DateTime.now());
+  //   // } on FailureToUpdateException catch (e) {
+  //   //   log(e.cause);
+  //   //   return Future.error(e);
+  //   // } on FailureToUploadException catch (e) {
+  //   //   log(e.cause);
+  //   //   return Future.error(e);
+  //   // }
+  // }
 
   Future<List<Reminder>> getReminders({int limit = 50, int offset = 0}) async =>
-      await _reminderService.getReminders(limit: limit, offset: offset);
-
-  Future<void> setReminders({int limit = 50, int offset = 0}) async =>
-      reminders =
-          await _reminderService.getReminders(limit: limit, offset: offset);
+      await _reminderRepo.getRepoList(limit: limit, offset: offset);
 
   Future<List<Reminder>> getRemindersBy(
           {int limit = 50, int offset = 0}) async =>
-      await _reminderService.getRemindersBy(
+      await _reminderRepo.getRepoListBy(
           sorter: sorter, limit: limit, offset: offset);
 
-  Future<void> setRemindersBy({int limit = 50, int offset = 0}) async =>
-      reminders = await _reminderService.getRemindersBy(
-          sorter: sorter, limit: limit, offset: offset);
+  Future<List<Reminder>> getDeleted(
+          {int limit = Constants.minLimitPerQuery, int offset = 0}) async =>
+      await _reminderRepo.getDeleted(limit: limit, offset: offset);
 
   Future<List<Reminder>> getOverdues({int limit = 50, int offset = 0}) async =>
-      await _reminderService.getOverdues(limit: limit, offset: offset);
+      await _reminderRepo.getOverdues(limit: limit, offset: offset);
 
   Future<List<Reminder>> getUpcoming({int limit = 5, int offset = 0}) async =>
-      await _reminderService.getUpcoming(limit: limit, offset: offset);
+      await _reminderRepo.getUpcoming(limit: limit, offset: offset);
 
   Future<List<Reminder>> searchReminders(
-          {required String searchString}) async =>
-      await _reminderService.searchReminders(searchString: searchString);
+          {required String searchString, bool toDelete = false}) async =>
+      await _reminderRepo.search(
+          searchString: searchString, toDelete: toDelete);
 
   Future<List<Reminder>> mostRecent({int limit = 5}) async =>
-      await _reminderService.mostRecent(limit: 5);
+      await _reminderRepo.mostRecent(limit: 5);
 
-  Future<Reminder?> getReminderByID({int? id}) async =>
-      await _reminderService.getReminderByID(id: id);
-
-  Future<void> setReminderByID({required int id}) async =>
-      curReminder = await _reminderService.getReminderByID(id: id) ??
-          Reminder(
-              name: '',
-              dueDate: DateTime.now().copyWith(
-                  hour: Constants.midnight.hour,
-                  minute: Constants.midnight.minute),
-              repeatDays: List.filled(7, false),
-              lastUpdated: DateTime.now());
+  Future<Reminder?> getReminderByID({int? id}) async {
+    if (null == id) {
+      return null;
+    }
+    return await _reminderRepo.getByID(id: id);
+  }
 
   Future<void> scheduleNotification({Reminder? reminder}) async {
     reminder = reminder ?? curReminder!;
@@ -326,5 +343,5 @@ class ReminderProvider extends ChangeNotifier {
 
   Future<List<Reminder>> getRemindersBetween(
           {DateTime? start, DateTime? end}) async =>
-      await _reminderService.getRange(start: start, end: end);
+      await _reminderRepo.getRange(start: start, end: end);
 }

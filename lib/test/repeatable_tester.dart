@@ -43,6 +43,10 @@ void main() async {
   BackgroundIsolateBinaryMessenger.ensureInitialized(rootIsolateToken);
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  setUpAll(initIsar);
+  setUp(clearIsar);
+  tearDownAll(disposeIsar);
+
   // Date arithmetic.
   group("Get repeat date", () {
     ToDo toDo = ToDo(
@@ -1927,8 +1931,6 @@ void main() async {
     });
   });
 
-  setUp(initIsar);
-  tearDown(disposeIsar);
   // Isar tests
   group("Current Model, mutate single", () {
     // Tasks
@@ -4394,10 +4396,10 @@ Future<void> initIsar() async {
 
   client = IsarService.instance.isarClient;
   supabaseClient = SupabaseService.instance.supabaseClient;
-  repeatableService = RepeatableService();
-  toDoRepo = ToDoRepo();
-  deadlineRepo = DeadlineRepo();
-  reminderRepo = ReminderRepo();
+  repeatableService = RepeatableService.instance;
+  toDoRepo = ToDoRepo.instance;
+  deadlineRepo = DeadlineRepo.instance;
+  reminderRepo = ReminderRepo.instance;
   await clearIsar();
 }
 

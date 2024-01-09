@@ -43,22 +43,22 @@ class _SearchRecents<T extends IModel> extends State<SearchRecentsBar<T>> {
   void initState() {
     super.initState();
     searchController = widget.searchController ?? SearchController();
-    searchController.addListener(() {
+    searchController.addListener(announceText);
+  }
+
+  void announceText() {
+    if (mounted) {
       String newText = searchController.text;
       SemanticsService.announce(newText, Directionality.of(context));
-    });
+    }
   }
 
   @override
   void dispose() {
     if (widget.dispose) {
-      // For the life of me, I cannot figure out why this throws
-      // when called synced.
-      // This will dispose properly if, and only if there is a minute delay
-      // DO NOT CHANGE THIS.
       disposeController();
     }
-
+    searchController.removeListener(announceText);
     super.dispose();
   }
 

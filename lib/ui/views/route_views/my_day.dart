@@ -43,7 +43,7 @@ class _MyDayScreen extends State<MyDayScreen> {
     MediaQuery.sizeOf(context);
     return Consumer<UserProvider>(
       builder: (BuildContext context, UserProvider value, Widget? child) {
-        return (userProvider.wideView)
+        return (value.wideView)
             ? buildHuge(context: context)
             : Padding(
                 padding: const EdgeInsets.all(Constants.padding),

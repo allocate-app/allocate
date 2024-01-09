@@ -231,6 +231,7 @@ abstract class Constants {
       .subtract(const Duration(days: 1));
 
   static DateTime get today => DateTime.now().copyWith(hour: 0, minute: 0);
+  static int yearOffset = 5;
 
   // GUI constants.
   static const Duration dragDelayTime = Duration(milliseconds: 225);
@@ -241,6 +242,7 @@ abstract class Constants {
   static const int animationDelay = 200;
   static const int hitDelay = 150;
   static const int fadeInTime = 1000;
+  static const int drawerSlideTime = 500;
   static const int slideInTime = 300;
   static const int footerTime = 600;
   static const int footerDelay = 100;
@@ -248,6 +250,10 @@ abstract class Constants {
 
   // Pagination:
   static const int minLimitPerQuery = 50;
+
+  // This is approximately 2Million elements;
+  // change accordingly
+  static const int maxLimitPerQuery = 2 << 19;
   static const double loadOffset = 50;
 
   // Placeholder int value, "MAX INT"

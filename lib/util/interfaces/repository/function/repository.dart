@@ -10,8 +10,13 @@ abstract interface class Repository<T extends IModel> {
 
   Future<void> delete(T t);
 
-  // Future: deleteLocal should probably be an external interface.
-  Future<void> deleteLocal();
+  Future<void> deleteSweep();
+
+  // This is for permanent deletion
+  Future<void> remove(T t);
+
+  // This is also for permanent deletion
+  Future<List<int>> emptyTrash();
 
   Future<void> syncRepo();
 
@@ -23,4 +28,6 @@ abstract interface class Repository<T extends IModel> {
       {int limit = 50, int offset = 0, required SortableView<T> sorter});
 
   Future<T?> getByID({required int id});
+
+  Future<List<T>> getDeleted({int limit = 50, int offset = 0});
 }

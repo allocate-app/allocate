@@ -35,9 +35,6 @@ class _ToDosListScreen extends State<ToDosListScreen> {
 
   void initializeProviders() {
     toDoProvider = Provider.of<ToDoProvider>(context, listen: false);
-    if (toDoProvider.rebuild) {
-      toDoProvider.toDos = [];
-    }
 
     userProvider = Provider.of<UserProvider>(context, listen: false);
     groupProvider = Provider.of<GroupProvider>(context, listen: false);
@@ -148,7 +145,6 @@ class _ToDosListScreen extends State<ToDosListScreen> {
                 }
                 return ListViews.immutableToDos(
                   key: key,
-                  context: context,
                   toDos: items,
                   checkDelete: userProvider.curUser?.checkDelete ?? true,
                   onRemove: onRemove,

@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:another_flushbar/flushbar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -67,8 +69,10 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
 
   void initializeControllers() {
     mainScrollController = ScrollController();
-    scrollPhysics =
-        const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics());
+    ScrollPhysics parentPhysics = (Platform.isIOS || Platform.isMacOS)
+        ? const BouncingScrollPhysics()
+        : const ClampingScrollPhysics();
+    scrollPhysics = AlwaysScrollableScrollPhysics(parent: parentPhysics);
     nameEditingController = TextEditingController(text: reminder.name);
     nameEditingController.addListener(() {
       if (null != nameErrorText && mounted) {
@@ -425,13 +429,10 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
                                       hintText: "Reminder Name",
                                       errorText: nameErrorText,
                                       controller: nameEditingController,
-                                      outerPadding: const EdgeInsets.only(
-                                          left: Constants.doublePadding,
-                                          right: Constants.doublePadding,
-                                          bottom: Constants.doublePadding),
-                                      textFieldPadding:
-                                          const EdgeInsets.symmetric(
-                                        horizontal: Constants.halfPadding,
+                                      outerPadding: const EdgeInsets.symmetric(
+                                          vertical: Constants.padding),
+                                      textFieldPadding: const EdgeInsets.only(
+                                        left: Constants.padding,
                                       ),
                                       handleClear: clearNameField,
                                       onEditingComplete: updateName),
@@ -456,27 +457,22 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
                                     handleUpdate: updateDue,
                                   ),
 
-                                  (null != reminder.dueDate)
-                                      ? const PaddedDivider(
-                                          padding: Constants.padding)
-                                      : const SizedBox.shrink(),
-
                                   // Repeatable Stuff -> Show status, on click, open a dialog.
-                                  (null != reminder.dueDate)
-                                      ? Tiles.repeatableTile(
-                                          context: context,
-                                          outerPadding:
-                                              const EdgeInsets.symmetric(
-                                                  horizontal:
-                                                      Constants.padding),
-                                          frequency: reminder.frequency,
-                                          weekdays: weekdayList,
-                                          repeatSkip: reminder.repeatSkip,
-                                          startDate: reminder.dueDate,
-                                          handleUpdate: updateRepeatable,
-                                          handleClear: clearRepeatable,
-                                        )
-                                      : const SizedBox.shrink(),
+                                  if (null != reminder.dueDate) ...[
+                                    const PaddedDivider(
+                                        padding: Constants.padding),
+                                    Tiles.repeatableTile(
+                                      context: context,
+                                      outerPadding: const EdgeInsets.symmetric(
+                                          horizontal: Constants.padding),
+                                      frequency: reminder.frequency,
+                                      weekdays: weekdayList,
+                                      repeatSkip: reminder.repeatSkip,
+                                      startDate: reminder.dueDate,
+                                      handleUpdate: updateRepeatable,
+                                      handleClear: clearRepeatable,
+                                    ),
+                                  ],
                                 ]))),
                     const PaddedDivider(padding: Constants.halfPadding),
                     Tiles.updateAndDeleteButtons(

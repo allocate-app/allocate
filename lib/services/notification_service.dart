@@ -222,7 +222,7 @@ class NotificationService {
     return await flutterLocalNotificationsPlugin.cancel(id);
   }
 
-  Future<void> cancelFutures({required List<int?> ids}) async {
+  Future<void> cancelMultiple({required List<int?> ids}) async {
     for (int? id in ids) {
       await cancelNotification(id: id);
     }

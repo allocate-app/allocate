@@ -21,7 +21,7 @@ import '../../widgets/flushbars.dart';
 import '../../widgets/listviews.dart';
 
 // TODO: UPDATE THIS TO ONLY SHOW IN GUI, NOT UPDATE DB.
-// TODO: UPDATE MAX CALENDAR DATE TO (THIS YEAR + 1 or 2);
+// TODO: REFACTOR EVENTPROVIDER
 class CalendarScreen extends StatefulWidget {
   const CalendarScreen({super.key});
 
@@ -39,11 +39,13 @@ class _CalendarScreen extends State<CalendarScreen> {
 
   late DateTime latest;
 
+  // TODO: migrate to constants.
   late final HeaderStyle headerStyle = const HeaderStyle(
       titleCentered: true,
       formatButtonVisible: false,
       titleTextStyle: Constants.headerStyle);
 
+  // TODO: migrate to constants.
   late final CalendarStyle calendarStyle = CalendarStyle(
       selectedDecoration: BoxDecoration(
         color: Theme.of(context).colorScheme.primary,
@@ -257,8 +259,10 @@ class _CalendarScreen extends State<CalendarScreen> {
               controller: mainScrollController,
               children: [
                 TableCalendar(
-                    firstDay: DateTime(1970),
-                    lastDay: DateTime(3000),
+                    firstDay: Constants.today.copyWith(
+                        year: Constants.today.year - Constants.yearOffset),
+                    lastDay: Constants.today.copyWith(
+                        year: Constants.today.year + Constants.yearOffset),
                     focusedDay: _focusedDay,
                     headerStyle: headerStyle,
                     calendarStyle: calendarStyle,

@@ -9,17 +9,19 @@ import "package:flutter/material.dart";
 import 'package:macos_window_utils/widgets/transparent_macos_sidebar.dart';
 import "package:provider/provider.dart";
 
+import '../../../model/task/group.dart';
 import '../../../providers/deadline_provider.dart';
 import '../../../providers/group_provider.dart';
 import '../../../providers/reminder_provider.dart';
 import '../../../providers/routine_provider.dart';
+import '../../../providers/search_provider.dart';
 import '../../../providers/theme_provider.dart';
 import '../../../providers/todo_provider.dart';
 import '../../../providers/user_provider.dart';
 import '../../../services/supabase_service.dart';
 import '../../../util/constants.dart';
+import '../../../util/enums.dart';
 import '../../../util/interfaces/i_model.dart';
-import '../../../util/strings.dart';
 import '../../widgets/battery_meter.dart';
 import '../../widgets/desktop_drawer_wrapper.dart';
 import '../../widgets/expanded_listtile.dart';
@@ -39,7 +41,8 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreen();
 }
 
-// TODO: remove all the setstate and just use consumer
+// TODO: clean up setState
+// TODO: read UserModel.reduceMotion and set tween duration.
 class _HomeScreen extends State<HomeScreen> {
   late int selectedPageIndex;
 
@@ -50,6 +53,7 @@ class _HomeScreen extends State<HomeScreen> {
   late final UserProvider userProvider;
   late final GroupProvider groupProvider;
   late final ThemeProvider themeProvider;
+  late final SearchProvider searchProvider;
 
   late final ScrollController navScrollController;
 
@@ -60,6 +64,7 @@ class _HomeScreen extends State<HomeScreen> {
   late bool _navDrawerExpanded;
   late bool _footerTween;
   late double _navDrawerWidth;
+  late bool _dragging;
 
   // This is a hacky, hacky way of creating a footer.
   // ie. number of tiles + user tile + room for 1 extra tile *
@@ -71,7 +76,7 @@ class _HomeScreen extends State<HomeScreen> {
 
   double get tileSpace =>
       (Constants.viewRoutes.length + 2) * Constants.navDestinationHeight +
-      2 * Constants.doublePadding;
+      2.5 * Constants.doublePadding;
 
   double get tileSpaceOpened =>
       (Constants.viewRoutes.length +
@@ -79,7 +84,7 @@ class _HomeScreen extends State<HomeScreen> {
               groupProvider.secondaryGroups.length +
               2) *
           Constants.navDestinationHeight +
-      2 * Constants.padding;
+      3 * Constants.padding;
 
   // I haven't fully thought this through yet. => Also, should probably just BE a double
   // + userProvider.curUser?.dayCost;
@@ -106,6 +111,7 @@ class _HomeScreen extends State<HomeScreen> {
     userProvider = Provider.of<UserProvider>(context, listen: false);
     groupProvider = Provider.of<GroupProvider>(context, listen: false);
     themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+    searchProvider = Provider.of<SearchProvider>(context, listen: false);
 
     toDoProvider.addListener(updateMyDayWeight);
     groupProvider.addListener(resetNavGroups);
@@ -123,6 +129,7 @@ class _HomeScreen extends State<HomeScreen> {
     selectedPageIndex = widget.index ?? 0;
     _navDrawerWidth = Constants.navigationDrawerMaxWidth;
     _opened = userProvider.drawerOpened;
+    _dragging = false;
     _navDrawerExpanded = false;
     _footerTween = false;
   }
@@ -139,6 +146,13 @@ class _HomeScreen extends State<HomeScreen> {
 
   Future<void> resetNavGroups() async {
     groupProvider.secondaryGroups = await groupProvider.mostRecent();
+
+    if (!(userProvider.curUser?.reduceMotion ?? false)) {
+      for (Group group in groupProvider.secondaryGroups) {
+        group.fade = Fade.fadeIn;
+      }
+    }
+
     if (mounted) {
       setState(() {});
     }
@@ -174,8 +188,9 @@ class _HomeScreen extends State<HomeScreen> {
       // This is a workaround for a standard navigation drawer
       // until m3 spec is fully implemented in flutter.
       TweenAnimationBuilder<double>(
-          duration: const Duration(milliseconds: 1000),
-          curve: Curves.fastLinearToSlowEaseIn,
+          duration: Duration(
+              milliseconds: (_dragging) ? 0 : Constants.drawerSlideTime),
+          curve: Curves.easeOutQuint,
           tween: Tween<double>(
             begin: _opened ? _navDrawerWidth : 0.0,
             end: _opened ? _navDrawerWidth : 0.0,
@@ -200,41 +215,77 @@ class _HomeScreen extends State<HomeScreen> {
               ),
             ));
           }),
-      if (_opened)
-        MouseRegion(
-          hitTestBehavior: HitTestBehavior.translucent,
-          cursor: SystemMouseCursors.resizeLeftRight,
-          child: GestureDetector(
-            behavior: HitTestBehavior.translucent,
-            supportedDevices: PointerDeviceKind.values.toSet(),
-            onHorizontalDragEnd: (DragEndDetails details) {
-              if ((0 - _navDrawerWidth).abs() <= precisionErrorTolerance) {
-                _opened = false;
-                userProvider.drawerOpened = _opened;
-                _navDrawerWidth = Constants.navigationDrawerMaxWidth;
-                userProvider.navDrawerWidth = _navDrawerWidth;
-                if (mounted) {
-                  setState(() {});
-                }
-              }
-            },
-            onHorizontalDragUpdate: (DragUpdateDetails details) {
-              if (mounted) {
-                setState(() {
-                  _navDrawerWidth = (_navDrawerWidth + details.delta.dx)
-                      .clamp(0, Constants.navigationDrawerMaxWidth);
-                  userProvider.navDrawerWidth = _navDrawerWidth;
-                });
-              }
-            },
-            // TODO: Implement AnimatedCrossFade
-            child: VerticalDivider(
-              color: Theme.of(context).colorScheme.outlineVariant,
-              thickness: Constants.verticalDividerThickness,
-              width: Constants.verticalDividerThickness,
+      GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        supportedDevices: PointerDeviceKind.values.toSet(),
+        onHorizontalDragEnd: (DragEndDetails details) {
+          _dragging = false;
+          if ((0 - _navDrawerWidth).abs() <= precisionErrorTolerance) {
+            _opened = false;
+            userProvider.drawerOpened = _opened;
+            // _navDrawerWidth = Constants.navigationDrawerMaxWidth;
+            userProvider.navDrawerWidth = _navDrawerWidth;
+            if (mounted) {
+              setState(() {});
+            }
+          }
+        },
+        onHorizontalDragUpdate: (DragUpdateDetails details) {
+          if (!_opened) {
+            _opened = !_opened;
+            userProvider.drawerOpened = _opened;
+          }
+          _dragging = true;
+          _navDrawerWidth = (_navDrawerWidth + details.delta.dx)
+              .clamp(0, Constants.navigationDrawerMaxWidth);
+          userProvider.navDrawerWidth = _navDrawerWidth;
+          if (mounted) {
+            setState(() {});
+          }
+        },
+        child: TweenAnimationBuilder<double>(
+            duration: const Duration(milliseconds: Constants.drawerSlideTime),
+            curve: Curves.easeInQuint,
+            tween: Tween<double>(
+              begin: _opened ? 1 : 0.0,
+              end: _opened ? 1 : 0.0,
             ),
-          ),
-        ),
+            builder: (BuildContext context, double value, Widget? child) {
+              return Material(
+                child: Ink(
+                  color: Color.lerp(Theme.of(context).colorScheme.surface,
+                      Theme.of(context).colorScheme.outlineVariant, value),
+                  child: InkWell(
+                    mouseCursor: SystemMouseCursors.resizeLeftRight,
+                    onHover: (value) {},
+                    onTapUp: (TapUpDetails details) {
+                      if (!_opened) {
+                        _navDrawerWidth = Constants.navigationDrawerMaxWidth;
+                        userProvider.navDrawerWidth = _navDrawerWidth;
+                      } else {
+                        _navDrawerWidth = 0;
+                        userProvider.navDrawerWidth = _navDrawerWidth;
+                      }
+                      _opened = !_opened;
+                      userProvider.drawerOpened = _opened;
+                      if (mounted) {
+                        setState(() {});
+                      }
+                    },
+                    child: VerticalDivider(
+                      width: lerpDouble(Constants.verticalDividerThickness * 3,
+                          Constants.verticalDividerThickness, value),
+                      thickness: lerpDouble(
+                          Constants.verticalDividerThickness * 3,
+                          Constants.verticalDividerThickness,
+                          value),
+                      color: Colors.transparent,
+                    ),
+                  ),
+                ),
+              );
+            }),
+      ),
 
       Expanded(
         child: Consumer<ThemeProvider>(
@@ -315,22 +366,25 @@ class _HomeScreen extends State<HomeScreen> {
     if (_opened) {
       return IconButton(
           icon: const Icon(Icons.arrow_back_rounded),
-          onPressed: () async {
+          onPressed: () {
+            _opened = false;
+            userProvider.drawerOpened = _opened;
+            _navDrawerWidth = 1.0;
+            userProvider.navDrawerWidth = _navDrawerWidth;
             if (mounted) {
-              setState(() {
-                _opened = false;
-                userProvider.drawerOpened = _opened;
-              });
+              setState(() {});
             }
           });
     }
     return IconButton(
         icon: const Icon(Icons.menu_rounded),
-        onPressed: () async {
+        onPressed: () {
           if (mounted) {
             setState(() {
               _opened = true;
               userProvider.drawerOpened = _opened;
+              _navDrawerWidth = Constants.navigationDrawerMaxWidth;
+              userProvider.navDrawerWidth = _navDrawerWidth;
             });
           }
         });
@@ -361,9 +415,12 @@ class _HomeScreen extends State<HomeScreen> {
           // User name bar
           // Possible stretch Goal: add user images?
           Padding(
-            padding: const EdgeInsets.symmetric(
-                vertical: Constants.doublePadding,
-                horizontal: Constants.padding),
+            padding: const EdgeInsets.only(
+              top: Constants.doublePadding,
+              bottom: Constants.padding,
+              right: Constants.padding,
+              left: Constants.padding,
+            ),
             child: ListTile(
               shape: const RoundedRectangleBorder(
                   borderRadius:
@@ -383,6 +440,7 @@ class _HomeScreen extends State<HomeScreen> {
               onTap: () {
                 setState(() {
                   resetProviders();
+                  // TODO: come up with a clever way to avoid looping.
                   selectedPageIndex =
                       Constants.viewRoutes.indexOf(Constants.settingsScreen);
                 });
@@ -392,24 +450,18 @@ class _HomeScreen extends State<HomeScreen> {
               },
               trailing: GlobalModelSearch(
                 mostRecent: () async {
-                  List<IModel> modelCollection = [];
-                  await Future.wait([
+                  List<List<IModel>> models = await Future.wait([
                     toDoProvider.mostRecent(),
                     routineProvider.mostRecent(),
                     reminderProvider.mostRecent(),
                     deadlineProvider.mostRecent(),
                     groupProvider.mostRecent(),
-                  ]).then((model) {
-                    for (List<IModel> list in model.cast<List<IModel>>()) {
-                      modelCollection.addAll(list);
-                    }
-                  });
+                  ]);
 
-                  return modelCollection;
+                  return searchProvider.batchProcess(models: models.cast());
                 },
                 search: ({required String searchString}) async {
-                  List<IModel> modelCollection = [];
-                  await Future.wait([
+                  List<List<IModel>> models = await Future.wait([
                     toDoProvider.searchToDos(searchString: searchString),
                     routineProvider.searchRoutines(searchString: searchString),
                     reminderProvider.searchReminders(
@@ -417,26 +469,10 @@ class _HomeScreen extends State<HomeScreen> {
                     deadlineProvider.searchDeadlines(
                         searchString: searchString),
                     groupProvider.searchGroups(searchString: searchString),
-                  ]).then((model) {
-                    for (List<IModel> list in model.cast<List<IModel>>()) {
-                      modelCollection.addAll(list);
-                    }
-                  });
+                  ]);
 
-                  return modelCollection
-                    ..sort((m1, m2) =>
-                        levenshteinDistance(s1: m1.name, s2: searchString)
-                            .compareTo(levenshteinDistance(
-                                s1: m2.name, s2: searchString)));
-                  // For now, going with string distance.
-                  // ..sort((m1, m2) {
-                  //   if (m1.lastUpdated.isBefore(m2.lastUpdated)) {
-                  //     return -1;
-                  //   } else if (m1.lastUpdated.isAfter(m2.lastUpdated)) {
-                  //     return 1;
-                  //   }
-                  //   return 0;
-                  // });
+                  return searchProvider.batchProcess(
+                      models: models.cast(), searchString: searchString);
                 },
               ),
             ),
@@ -490,7 +526,6 @@ class _HomeScreen extends State<HomeScreen> {
                     onTap: () {
                       groupProvider.softRebuild = true;
                       selectedPageIndex = Constants.viewRoutes.length - 1;
-                      // Constants.viewRoutes.indexOf(Constants.groupScreen);
                       if (mounted) {
                         setState(() {});
                       }
@@ -509,10 +544,7 @@ class _HomeScreen extends State<HomeScreen> {
                               const CreateGroupScreen());
                     }),
                 ListViews.navDrawerGroups(
-                  context: context,
                   groups: groupProvider.secondaryGroups,
-                  tilePadding: const EdgeInsets.symmetric(
-                      horizontal: Constants.doublePadding),
                 ),
                 // refactor listview
               ]),
@@ -545,6 +577,11 @@ class _HomeScreen extends State<HomeScreen> {
                   child: const SizedBox.shrink()),
           Constants.settingsScreen.destination,
           Constants.trashScreen.destination,
+          const Padding(
+              padding: EdgeInsets.symmetric(
+                vertical: Constants.padding,
+              ),
+              child: SizedBox.shrink()),
         ]);
   }
 }

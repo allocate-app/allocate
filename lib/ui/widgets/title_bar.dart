@@ -117,7 +117,7 @@ class _TitleBar extends State<TitleBar> {
             softWrap: true,
             maxLines: 2,
           )),
-          widget.centerWidget ?? const SizedBox.shrink(),
+          if (null != widget.centerWidget) widget.centerWidget!,
           IconButton(
               onPressed: () async {
                 await handleClose();

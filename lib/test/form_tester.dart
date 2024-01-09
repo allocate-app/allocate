@@ -48,46 +48,39 @@ void main() async {
     ChangeNotifierProvider<UserProvider>(create: (_) => UserProvider()),
     ChangeNotifierProxyProvider<UserProvider, ToDoProvider>(
         create: (BuildContext context) => ToDoProvider(
-            user: Provider.of<UserProvider>(context, listen: false).curUser,
-            toDoService: null),
+              user: Provider.of<UserProvider>(context, listen: false).curUser,
+            ),
         update: (BuildContext context, UserProvider up, ToDoProvider? tp) {
           tp?.setUser(newUser: up.curUser);
-          return tp ?? ToDoProvider(user: up.curUser, toDoService: null);
+          return tp ?? ToDoProvider(user: up.curUser);
         }),
     ChangeNotifierProxyProvider<UserProvider, RoutineProvider>(
         create: (BuildContext context) => RoutineProvider(
-            user: Provider.of<UserProvider>(context, listen: false).curUser,
-            routineService: null),
+            user: Provider.of<UserProvider>(context, listen: false).curUser),
         update: (BuildContext context, UserProvider up, RoutineProvider? rp) {
           rp?.setUser(newUser: up.curUser);
-          return rp ?? RoutineProvider(user: up.curUser, routineService: null);
+          return rp ?? RoutineProvider(user: up.curUser);
         }),
     ChangeNotifierProxyProvider<UserProvider, ReminderProvider>(
         create: (BuildContext context) => ReminderProvider(
-            user: Provider.of<UserProvider>(context, listen: false).curUser,
-            service: null),
+            user: Provider.of<UserProvider>(context, listen: false).curUser),
         update: (BuildContext context, UserProvider up, ReminderProvider? rp) {
           rp?.setUser(newUser: up.curUser);
-          return rp ?? ReminderProvider(user: up.curUser, service: null);
+          return rp ?? ReminderProvider(user: up.curUser);
         }),
     ChangeNotifierProxyProvider<UserProvider, DeadlineProvider>(
         create: (BuildContext context) => DeadlineProvider(
-            user: Provider.of<UserProvider>(context, listen: false).curUser,
-            service: null),
+            user: Provider.of<UserProvider>(context, listen: false).curUser),
         update: (BuildContext context, UserProvider up, DeadlineProvider? dp) {
           dp?.setUser(newUser: up.curUser);
-          return dp ?? DeadlineProvider(user: up.curUser, service: null);
+          return dp ?? DeadlineProvider(user: up.curUser);
         }),
     ChangeNotifierProxyProvider<UserProvider, GroupProvider>(
         create: (BuildContext context) => GroupProvider(
-            user: Provider.of<UserProvider>(context, listen: false).curUser,
-            groupService: null,
-            toDoService: null),
+            user: Provider.of<UserProvider>(context, listen: false).curUser),
         update: (BuildContext context, UserProvider up, GroupProvider? gp) {
           gp?.setUser(newUser: up.curUser);
-          return gp ??
-              GroupProvider(
-                  user: up.curUser, groupService: null, toDoService: null);
+          return gp ?? GroupProvider(user: up.curUser);
         })
   ], child: UITester()));
 }

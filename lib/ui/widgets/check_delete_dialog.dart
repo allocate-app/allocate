@@ -11,11 +11,13 @@ class CheckDeleteDialog extends StatefulWidget {
       {super.key,
       this.dontAsk = false,
       this.type = "",
+      this.headerOverride,
       this.deleteSchedule,
       this.showCheckbox = true});
 
   final bool dontAsk;
   final String type;
+  final String? headerOverride;
   final bool showCheckbox;
   final DeleteSchedule? deleteSchedule;
 
@@ -59,7 +61,7 @@ class _CheckDeleteDialog extends State<CheckDeleteDialog> {
                       children: [
                         Expanded(
                           child: AutoSizeText(
-                            "Delete $type?",
+                            widget.headerOverride ?? "Delete $type?",
                             style: Constants.hugeHeaderStyle,
                             maxLines: 1,
                             overflow: TextOverflow.visible,

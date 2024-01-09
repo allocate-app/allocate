@@ -36,9 +36,6 @@ class _CompletedListScreen extends State<CompletedListScreen> {
 
   void initializeProviders() {
     toDoProvider = Provider.of<ToDoProvider>(context, listen: false);
-    if (toDoProvider.rebuild) {
-      toDoProvider.toDos = [];
-    }
     groupProvider = Provider.of<GroupProvider>(context, listen: false);
     userProvider = Provider.of<UserProvider>(context, listen: false);
   }
@@ -139,7 +136,6 @@ class _CompletedListScreen extends State<CompletedListScreen> {
                 }
                 return ListViews.immutableToDos(
                   key: key,
-                  context: context,
                   toDos: items,
                   checkDelete: userProvider.curUser?.checkDelete ?? true,
                   onRemove: onRemove,

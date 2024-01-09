@@ -7,11 +7,13 @@ import '../services/supabase_service.dart';
 import '../util/constants.dart';
 import '../util/enums.dart';
 import '../util/exceptions.dart';
-import '../util/interfaces/i_repeatable.dart';
 import '../util/interfaces/repository/model/reminder_repository.dart';
 import '../util/interfaces/sortable.dart';
 
 class ReminderRepo implements ReminderRepository {
+  static final ReminderRepo _instance = ReminderRepo._internal();
+
+  static ReminderRepo get instance => _instance;
   final SupabaseClient _supabaseClient =
       SupabaseService.instance.supabaseClient;
   final Isar _isarClient = IsarService.instance.isarClient;
@@ -124,46 +126,89 @@ class ReminderRepo implements ReminderRepository {
 
   @override
   Future<void> delete(Reminder reminder) async {
-    if (null == _supabaseClient.auth.currentSession) {
-      reminder.toDelete = true;
-      await update(reminder);
-      return;
-    }
-
-    try {
-      await _supabaseClient.from("reminders").delete().eq("id", reminder.id);
-    } catch (error) {
-      throw FailureToDeleteException("Failed to delete reminder online\n"
-          "Reminder: ${reminder.toString()}\n"
-          "Time: ${DateTime.now()}\n\n"
-          "Supabase Open: ${null != _supabaseClient.auth.currentSession}");
-    }
+    reminder.toDelete = true;
+    await update(reminder);
   }
 
   @override
-  Future<List<int>> deleteFutures({required IRepeatable deleteFrom}) async {
-    List<Reminder> toDelete = await _isarClient.reminders
+  Future<void> remove(Reminder reminder) async {
+    // Delete online
+    if (null != _supabaseClient.auth.currentSession) {
+      try {
+        await _supabaseClient.from("reminders").delete().eq("id", reminder.id);
+      } catch (error) {
+        throw FailureToDeleteException("Failed to delete Reminder online\n"
+            "Reminder: ${reminder.toString()}\n"
+            "Time: ${DateTime.now()}\n"
+            "Supabase Open: ${null != _supabaseClient.auth.currentSession}");
+      }
+    }
+    // Delete local
+    await _isarClient.writeTxn(() async {
+      await _isarClient.reminders.delete(reminder.id);
+    });
+  }
+
+  @override
+  Future<List<int>> emptyTrash() async {
+    if (null != _supabaseClient.auth.currentSession) {
+      try {
+        await _supabaseClient.from("reminders").delete().eq("toDelete", true);
+      } catch (error) {
+        throw FailureToDeleteException("Failed to empty trash online\n"
+            "Time: ${DateTime.now()}\n"
+            "Supabase Open: ${null != _supabaseClient.auth.currentSession}");
+      }
+    }
+    late List<int> deleteIDs;
+    await _isarClient.writeTxn(() async {
+      deleteIDs = await _isarClient.reminders
+          .where()
+          .toDeleteEqualTo(true)
+          .idProperty()
+          .findAll();
+      await _isarClient.reminders.deleteAll(deleteIDs);
+    });
+    return deleteIDs;
+  }
+
+  @override
+  Future<List<int>> deleteFutures({required Reminder deleteFrom}) async {
+    List<int> toDelete = await _isarClient.reminders
         .where()
         .repeatIDEqualTo(deleteFrom.repeatID)
         .filter()
         .dueDateGreaterThan(deleteFrom.dueDate!)
+        .idProperty()
         .findAll();
 
-    // This is to prevent a race condition & accidentally deleting a notification.
-    toDelete.remove(deleteFrom);
-    List<int> ids = List.empty(growable: true);
-    for (Reminder reminder in toDelete) {
-      reminder.toDelete = true;
-      ids.add(reminder.id);
+    // Online
+    if (null != _supabaseClient.auth.currentSession) {
+      try {
+        await _supabaseClient
+            .from("reminders")
+            .delete()
+            .inFilter("id", toDelete);
+      } catch (error) {
+        throw FailureToDeleteException(
+            "Failed to delete future events online \n"
+            "Reminder: ${deleteFrom.toString()}\n"
+            "Time: ${DateTime.now()}\n"
+            "Supabase Open: ${null != _supabaseClient.auth.currentSession}");
+      }
     }
 
-    await updateBatch(toDelete);
-    return ids;
+    // Offline
+    await _isarClient.writeTxn(() async {
+      await _isarClient.reminders.deleteAll(toDelete);
+    });
+
+    return toDelete;
   }
 
   @override
-  Future<void> deleteLocal() async {
-    List<int> toDeletes = await getDeleteIds();
+  Future<void> deleteSweep() async {
+    List<int> toDeletes = await getDeleteIDs();
     await _isarClient.writeTxn(() async {
       await _isarClient.reminders.deleteAll(toDeletes);
     });
@@ -175,7 +220,7 @@ class ReminderRepo implements ReminderRepository {
       return fetchRepo();
     }
 
-    List<int> toDeletes = await getDeleteIds();
+    List<int> toDeletes = await getDeleteIDs();
     if (toDeletes.isNotEmpty) {
       try {
         await _supabaseClient
@@ -248,8 +293,11 @@ class ReminderRepo implements ReminderRepository {
   }
 
   @override
-  Future<List<Reminder>> search({required String searchString}) async =>
+  Future<List<Reminder>> search(
+          {required String searchString, bool toDelete = false}) async =>
       await _isarClient.reminders
+          .where()
+          .toDeleteEqualTo(toDelete)
           .filter()
           .nameContains(searchString, caseSensitive: false)
           .limit(5)
@@ -340,6 +388,18 @@ class ReminderRepo implements ReminderRepository {
   }
 
   @override
+  Future<List<Reminder>> getDeleted({int limit = 50, int offset = 0}) async =>
+      await _isarClient.reminders
+          .where()
+          .toDeleteEqualTo(true)
+          .filter()
+          .repeatableStateEqualTo(RepeatableState.normal)
+          .sortByLastUpdatedDesc()
+          .offset(offset)
+          .limit(limit)
+          .findAll();
+
+  @override
   Future<List<Reminder>> getWarnMes({DateTime? now, int limit = 10}) async =>
       await _isarClient.reminders
           .where()
@@ -382,11 +442,16 @@ class ReminderRepo implements ReminderRepository {
           .toDeleteEqualTo(false)
           .findFirst();
 
-  Future<List<int>> getDeleteIds() async => await _isarClient.reminders
-      .where()
-      .toDeleteEqualTo(true)
-      .idProperty()
-      .findAll();
+  Future<List<int>> getDeleteIDs({DateTime? deleteLimit}) async {
+    deleteLimit = deleteLimit ?? Constants.today;
+    return await _isarClient.reminders
+        .where()
+        .toDeleteEqualTo(true)
+        .filter()
+        .lastUpdatedLessThan(deleteLimit)
+        .idProperty()
+        .findAll();
+  }
 
   Future<List<Reminder>> getUnsynced() async =>
       await _isarClient.reminders.where().isSyncedEqualTo(false).findAll();
@@ -431,4 +496,6 @@ class ReminderRepo implements ReminderRepository {
           .offset(offset)
           .limit(limit)
           .findAll();
+
+  ReminderRepo._internal();
 }

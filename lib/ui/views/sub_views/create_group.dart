@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:another_flushbar/flushbar.dart';
 import 'package:auto_size_text/auto_size_text.dart';
@@ -98,8 +99,10 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
     desktopScrollController = ScrollController();
     mobileScrollController = ScrollController();
 
-    scrollPhysics =
-        const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics());
+    ScrollPhysics parentPhysics = (Platform.isIOS || Platform.isMacOS)
+        ? const BouncingScrollPhysics()
+        : const ClampingScrollPhysics();
+    scrollPhysics = AlwaysScrollableScrollPhysics(parent: parentPhysics);
     nameEditingController = TextEditingController();
     nameEditingController.addListener(() {
       if (null != nameErrorText && mounted) {
@@ -342,12 +345,10 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
                                       hintText: "Group Name",
                                       errorText: nameErrorText,
                                       controller: nameEditingController,
-                                      outerPadding: const EdgeInsets.only(
-                                          left: Constants.padding,
-                                          right: Constants.padding,
-                                          bottom: Constants.padding),
+                                      outerPadding: const EdgeInsets.symmetric(
+                                          vertical: Constants.padding),
                                       textFieldPadding: const EdgeInsets.only(
-                                        left: Constants.halfPadding,
+                                        left: Constants.padding,
                                       ),
                                       handleClear: clearNameField,
                                       onEditingComplete: updateName,
@@ -368,9 +369,8 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
                                             .desktopMaxLinesBeforeScroll,
                                         controller:
                                             descriptionEditingController,
-                                        outerPadding:
-                                            const EdgeInsets.symmetric(
-                                                horizontal: Constants.padding),
+                                        outerPadding: const EdgeInsets.all(
+                                            Constants.padding),
                                         context: context,
                                         onEditingComplete: updateDescription,
                                       ),
@@ -434,12 +434,10 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
                           hintText: "Group Name",
                           errorText: nameErrorText,
                           controller: nameEditingController,
-                          outerPadding: const EdgeInsets.only(
-                              left: Constants.padding,
-                              right: Constants.padding,
-                              bottom: Constants.padding),
+                          outerPadding: const EdgeInsets.symmetric(
+                              vertical: Constants.padding),
                           textFieldPadding: const EdgeInsets.only(
-                            left: Constants.halfPadding,
+                            left: Constants.padding,
                           ),
                           handleClear: clearNameField,
                           onEditingComplete: updateName),
@@ -469,7 +467,6 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
   Widget buildToDosTile(
       {ScrollPhysics physics = const NeverScrollableScrollPhysics()}) {
     return ExpandedListTile(
-      outerPadding: const EdgeInsets.symmetric(horizontal: Constants.padding),
       initiallyExpanded: expanded,
       title: const AutoSizeText("Tasks",
           maxLines: 1,

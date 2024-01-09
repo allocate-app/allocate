@@ -31,9 +31,6 @@ class _RoutinesListScreen extends State<RoutinesListScreen> {
 
   void initializeProviders() {
     routineProvider = Provider.of<RoutineProvider>(context, listen: false);
-    if (routineProvider.rebuild) {
-      routineProvider.routines = [];
-    }
 
     userProvider = Provider.of<UserProvider>(context, listen: false);
   }
@@ -137,7 +134,6 @@ class _RoutinesListScreen extends State<RoutinesListScreen> {
                 }
                 return ListViews.immutableRoutines(
                   key: key,
-                  context: context,
                   routines: items,
                   checkDelete: userProvider.curUser?.checkDelete ?? true,
                   onRemove: onRemove,

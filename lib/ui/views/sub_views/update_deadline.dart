@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:another_flushbar/flushbar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
@@ -92,8 +94,10 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
   void initializeControllers() {
     mobileScrollController = ScrollController();
     desktopScrollController = ScrollController();
-    scrollPhysics =
-        const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics());
+    ScrollPhysics parentPhysics = (Platform.isIOS || Platform.isMacOS)
+        ? const BouncingScrollPhysics()
+        : const ClampingScrollPhysics();
+    scrollPhysics = AlwaysScrollableScrollPhysics(parent: parentPhysics);
     nameEditingController = TextEditingController(text: deadline.name);
     nameEditingController.addListener(() {
       if (null != nameErrorText && mounted) {
@@ -550,11 +554,10 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                                           controller: nameEditingController,
                                           outerPadding:
                                               const EdgeInsets.symmetric(
-                                                  horizontal:
-                                                      Constants.padding),
+                                                  vertical: Constants.padding),
                                           textFieldPadding:
-                                              const EdgeInsets.symmetric(
-                                            horizontal: Constants.halfPadding,
+                                              const EdgeInsets.only(
+                                            left: Constants.padding,
                                           ),
                                           handleClear: clearNameField,
                                           onEditingComplete: updateName),
@@ -662,9 +665,8 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                                             .desktopMaxLinesBeforeScroll,
                                         controller:
                                             descriptionEditingController,
-                                        outerPadding:
-                                            const EdgeInsets.symmetric(
-                                                horizontal: Constants.padding),
+                                        outerPadding: const EdgeInsets.all(
+                                            Constants.padding),
                                         context: context,
                                         onEditingComplete: updateDescription,
                                       ),
@@ -734,9 +736,9 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                         errorText: nameErrorText,
                         controller: nameEditingController,
                         outerPadding: const EdgeInsets.symmetric(
-                            horizontal: Constants.padding),
-                        textFieldPadding: const EdgeInsets.symmetric(
-                          horizontal: Constants.halfPadding,
+                            vertical: Constants.padding),
+                        textFieldPadding: const EdgeInsets.only(
+                          left: Constants.padding,
                         ),
                         handleClear: clearNameField,
                         onEditingComplete: updateName),

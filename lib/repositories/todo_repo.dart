@@ -13,6 +13,12 @@ import '../util/interfaces/repository/model/todo_repository.dart';
 import '../util/interfaces/sortable.dart';
 
 class ToDoRepo implements ToDoRepository {
+  // TODO: MAKE THESE IMPLEMENTATIONS SINGLETONS.
+
+  static final ToDoRepo _instance = ToDoRepo._internal();
+
+  static ToDoRepo get instance => _instance;
+
   final SupabaseClient _supabaseClient =
       SupabaseService.instance.supabaseClient;
   final Isar _isarClient = IsarService.instance.isarClient;
@@ -124,50 +130,89 @@ class ToDoRepo implements ToDoRepository {
 
   @override
   Future<void> delete(ToDo toDo) async {
-    if (null == _supabaseClient.auth.currentSession) {
-      toDo.toDelete = true;
-      await update(toDo);
-      return;
-    }
-
-    try {
-      await _supabaseClient.from("toDos").delete().eq("id", toDo.id);
-      await _isarClient.writeTxn(() async {
-        await _isarClient.toDos.delete(toDo.id);
-      });
-    } catch (error) {
-      throw FailureToDeleteException("Failed to delete ToDo online\n"
-          "ToDo: ${toDo.toString()}\n"
-          "Time: ${DateTime.now()}\n"
-          "Supabase Open: ${null != _supabaseClient.auth.currentSession}");
-    }
+    toDo.toDelete = true;
+    await update(toDo);
   }
 
-  // This is a "Set stuff up for the next delete on sync" kind of delete.
-  // They will be hidden from the view, and removed in the background.
+  @override
+  Future<void> remove(ToDo toDo) async {
+    // Delete online
+    if (null != _supabaseClient.auth.currentSession) {
+      try {
+        await _supabaseClient.from("toDos").delete().eq("id", toDo.id);
+      } catch (error) {
+        throw FailureToDeleteException("Failed to delete ToDo online\n"
+            "ToDo: ${toDo.toString()}\n"
+            "Time: ${DateTime.now()}\n"
+            "Supabase Open: ${null != _supabaseClient.auth.currentSession}");
+      }
+    }
+    // Delete local
+    await _isarClient.writeTxn(() async {
+      await _isarClient.toDos.delete(toDo.id);
+    });
+  }
+
+  @override
+  Future<List<int>> emptyTrash() async {
+    if (null != _supabaseClient.auth.currentSession) {
+      try {
+        await _supabaseClient.from("toDos").delete().eq("toDelete", true);
+      } catch (error) {
+        throw FailureToDeleteException("Failed to empty trash online\n"
+            "Time: ${DateTime.now()}\n"
+            "Supabase Open: ${null != _supabaseClient.auth.currentSession}");
+      }
+    }
+
+    late List<int> deleteIDs;
+
+    await _isarClient.writeTxn(() async {
+      deleteIDs = await _isarClient.toDos
+          .where()
+          .toDeleteEqualTo(true)
+          .idProperty()
+          .findAll();
+      await _isarClient.toDos.deleteAll(deleteIDs);
+    });
+    return deleteIDs;
+  }
+
   @override
   Future<List<int>> deleteFutures({required ToDo deleteFrom}) async {
-    List<ToDo> toDelete = await _isarClient.toDos
+    List<int> toDelete = await _isarClient.toDos
         .where()
         .repeatIDEqualTo(deleteFrom.repeatID)
         .filter()
         .startDateGreaterThan(deleteFrom.startDate!)
+        .idProperty()
         .findAll();
 
-    // This is to prevent a race condition.
-    toDelete.remove(deleteFrom);
-    List<int> ids = List.empty(growable: true);
-    for (ToDo toDo in toDelete) {
-      toDo.toDelete = true;
-      ids.add(toDo.id);
+    // Online
+    if (null != _supabaseClient.auth.currentSession) {
+      try {
+        await _supabaseClient.from("toDos").delete().inFilter("id", toDelete);
+      } catch (error) {
+        throw FailureToDeleteException(
+            "Failed to delete future events online \n"
+            "ToDo: ${deleteFrom.toString()}\n"
+            "Time: ${DateTime.now()}\n"
+            "Supabase Open: ${null != _supabaseClient.auth.currentSession}");
+      }
     }
-    await updateBatch(toDelete);
-    return ids;
+
+    // Offline
+    await _isarClient.writeTxn(() async {
+      await _isarClient.toDos.deleteAll(toDelete);
+    });
+
+    return toDelete;
   }
 
+  // TODO: refactor this to take a time limit?.
   @override
-  Future<void> deleteLocal() async {
-    List<int> toDeletes = await getDeleteIds();
+  Future<void> deleteSweep() async {
+    List<int> toDeletes = await getDeleteIDs();
     await _isarClient.writeTxn(() async {
       await _isarClient.toDos.deleteAll(toDeletes);
     });
@@ -178,7 +223,7 @@ class ToDoRepo implements ToDoRepository {
     if (null == _supabaseClient.auth.currentSession) {
       return fetchRepo();
     }
-    List<int> toDeletes = await getDeleteIds();
+    List<int> toDeletes = await getDeleteIDs();
     if (toDeletes.isNotEmpty) {
       try {
         await _supabaseClient.from("toDos").delete().inFilter("id", toDeletes);
@@ -242,8 +287,11 @@ class ToDoRepo implements ToDoRepository {
   }
 
   @override
-  Future<List<ToDo>> search({required String searchString}) async =>
+  Future<List<ToDo>> search(
+          {required String searchString, bool toDelete = false}) async =>
       await _isarClient.toDos
+          .where()
+          .toDeleteEqualTo(toDelete)
           .filter()
           .nameContains(searchString, caseSensitive: false)
           .limit(5)
@@ -413,6 +461,18 @@ class ToDoRepo implements ToDoRepository {
         return getRepoList(limit: limit, offset: offset, completed: completed);
     }
   }
+
+  @override
+  Future<List<ToDo>> getDeleted({int limit = 50, int offset = 0}) async =>
+      await _isarClient.toDos
+          .where()
+          .toDeleteEqualTo(true)
+          .filter()
+          .repeatableStateEqualTo(RepeatableState.normal)
+          .sortByLastUpdatedDesc()
+          .offset(offset)
+          .limit(limit)
+          .findAll();
 
   @override
   Future<List<ToDo>> getCompleted(
@@ -637,11 +697,17 @@ class ToDoRepo implements ToDoRepository {
           .toDeleteEqualTo(false)
           .findFirst();
 
-  Future<List<int>> getDeleteIds() async => await _isarClient.toDos
-      .where()
-      .toDeleteEqualTo(true)
-      .idProperty()
-      .findAll();
+  // TODO: Migrate to other repositories
+  Future<List<int>> getDeleteIDs({DateTime? deleteLimit}) async {
+    deleteLimit = deleteLimit ?? Constants.today;
+    return await _isarClient.toDos
+        .where()
+        .toDeleteEqualTo(true)
+        .filter()
+        .lastUpdatedLessThan(deleteLimit)
+        .idProperty()
+        .findAll();
+  }
 
   Future<List<ToDo>> getUnsynced() async =>
       await _isarClient.toDos.where().isSyncedEqualTo(false).findAll();
@@ -696,4 +762,6 @@ class ToDoRepo implements ToDoRepository {
           .toDeleteEqualTo(false)
           .repeatableStateEqualTo(RepeatableState.normal)
           .count();
+
+  ToDoRepo._internal();
 }

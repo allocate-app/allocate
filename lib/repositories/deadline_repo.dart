@@ -12,6 +12,10 @@ import '../util/interfaces/repository/model/deadline_repository.dart';
 import '../util/interfaces/sortable.dart';
 
 class DeadlineRepo implements DeadlineRepository {
+  static final DeadlineRepo _instance = DeadlineRepo._internal();
+
+  static DeadlineRepo get instance => _instance;
+
   //DB Clients.
   final SupabaseClient _supabaseClient =
       SupabaseService.instance.supabaseClient;
@@ -127,45 +131,89 @@ class DeadlineRepo implements DeadlineRepository {
 
   @override
   Future<void> delete(Deadline deadline) async {
-    if (null == _supabaseClient.auth.currentSession) {
-      deadline.toDelete = true;
-      await update(deadline);
-      return;
-    }
+    deadline.toDelete = true;
+    await update(deadline);
+  }
 
-    try {
-      await _supabaseClient.from("deadlines").delete().eq("id", deadline.id);
-    } catch (error) {
-      throw FailureToDeleteException("Failed to delete deadline online\n"
-          "Deadline: ${deadline.toString()}\n"
-          "Time: ${DateTime.now()}\n\n"
-          "Supabase Open: ${null != _supabaseClient.auth.currentSession}");
+  @override
+  Future<void> remove(Deadline deadline) async {
+    // Delete online
+    if (null != _supabaseClient.auth.currentSession) {
+      try {
+        await _supabaseClient.from("deadlines").delete().eq("id", deadline.id);
+      } catch (error) {
+        throw FailureToDeleteException("Failed to delete Deadline online\n"
+            "Deadline: ${deadline.toString()}\n"
+            "Time: ${DateTime.now()}\n"
+            "Supabase Open: ${null != _supabaseClient.auth.currentSession}");
+      }
     }
+    // Delete local
+    await _isarClient.writeTxn(() async {
+      await _isarClient.deadlines.delete(deadline.id);
+    });
+  }
+
+  @override
+  Future<List<int>> emptyTrash() async {
+    if (null != _supabaseClient.auth.currentSession) {
+      try {
+        await _supabaseClient.from("deadlines").delete().eq("toDelete", true);
+      } catch (error) {
+        throw FailureToDeleteException("Failed to empty trash online\n"
+            "Time: ${DateTime.now()}\n"
+            "Supabase Open: ${null != _supabaseClient.auth.currentSession}");
+      }
+    }
+    late List<int> deleteIDs;
+    await _isarClient.writeTxn(() async {
+      deleteIDs = await _isarClient.deadlines
+          .where()
+          .toDeleteEqualTo(true)
+          .idProperty()
+          .findAll();
+      await _isarClient.deadlines.deleteAll(deleteIDs);
+    });
+    return deleteIDs;
   }
 
   @override
   Future<List<int>> deleteFutures({required IRepeatable deleteFrom}) async {
-    List<Deadline> toDelete = await _isarClient.deadlines
+    List<int> toDelete = await _isarClient.deadlines
         .where()
         .repeatIDEqualTo(deleteFrom.repeatID)
         .filter()
         .startDateGreaterThan(deleteFrom.startDate!)
+        .idProperty()
         .findAll();
 
-    // This is to prevent a race condition & accidentally deleting a notification.
-    toDelete.remove(deleteFrom);
-    List<int> ids = List.empty(growable: true);
-    for (Deadline deadline in toDelete) {
-      deadline.toDelete = true;
-      ids.add(deadline.id);
+    // Online
+    if (null != _supabaseClient.auth.currentSession) {
+      try {
+        await _supabaseClient
+            .from("deadlines")
+            .delete()
+            .inFilter("id", toDelete);
+      } catch (error) {
+        throw FailureToDeleteException(
+            "Failed to delete future events online \n"
+            "Deadline: ${deleteFrom.toString()}\n"
+            "Time: ${DateTime.now()}\n"
+            "Supabase Open: ${null != _supabaseClient.auth.currentSession}");
+      }
     }
-    await updateBatch(toDelete);
-    return ids;
+
+    // Offline
+    await _isarClient.writeTxn(() async {
+      await _isarClient.deadlines.deleteAll(toDelete);
+    });
+
+    return toDelete;
   }
 
   @override
-  Future<void> deleteLocal() async {
-    List<int> toDeletes = await getDeleteIds();
+  Future<void> deleteSweep() async {
+    List<int> toDeletes = await getDeleteIDs();
     await _isarClient.writeTxn(() async {
       await _isarClient.deadlines.deleteAll(toDeletes);
     });
@@ -177,7 +225,7 @@ class DeadlineRepo implements DeadlineRepository {
       return fetchRepo();
     }
 
-    List<int> toDeletes = await getDeleteIds();
+    List<int> toDeletes = await getDeleteIDs();
     if (toDeletes.isNotEmpty) {
       try {
         await _supabaseClient
@@ -249,8 +297,11 @@ class DeadlineRepo implements DeadlineRepository {
 
   // Search + Most Recent
   @override
-  Future<List<Deadline>> search({required String searchString}) async =>
+  Future<List<Deadline>> search(
+          {required String searchString, bool toDelete = false}) async =>
       await _isarClient.deadlines
+          .where()
+          .toDeleteEqualTo(toDelete)
           .filter()
           .nameContains(searchString, caseSensitive: false)
           .limit(5)
@@ -365,6 +416,18 @@ class DeadlineRepo implements DeadlineRepository {
   }
 
   @override
+  Future<List<Deadline>> getDeleted({int limit = 50, int offset = 0}) async =>
+      await _isarClient.deadlines
+          .where()
+          .toDeleteEqualTo(true)
+          .filter()
+          .repeatableStateEqualTo(RepeatableState.normal)
+          .sortByLastUpdatedDesc()
+          .offset(offset)
+          .limit(limit)
+          .findAll();
+
+  @override
   Future<List<Deadline>> getWarnMes({DateTime? now, int limit = 10}) async =>
       await _isarClient.deadlines
           .where()
@@ -407,11 +470,16 @@ class DeadlineRepo implements DeadlineRepository {
           .toDeleteEqualTo(false)
           .findFirst();
 
-  Future<List<int>> getDeleteIds() async => await _isarClient.deadlines
-      .where()
-      .toDeleteEqualTo(true)
-      .idProperty()
-      .findAll();
+  Future<List<int>> getDeleteIDs({DateTime? deleteLimit}) async {
+    deleteLimit = deleteLimit ?? Constants.today;
+    return await _isarClient.deadlines
+        .where()
+        .toDeleteEqualTo(true)
+        .filter()
+        .lastUpdatedLessThan(deleteLimit)
+        .idProperty()
+        .findAll();
+  }
 
   Future<List<Deadline>> getUnsynced() async =>
       await _isarClient.deadlines.where().isSyncedEqualTo(false).findAll();
@@ -454,4 +522,6 @@ class DeadlineRepo implements DeadlineRepository {
           .offset(offset)
           .limit(limit)
           .findAll();
+
+  DeadlineRepo._internal();
 }

@@ -14,11 +14,10 @@ import '../../../providers/user_provider.dart';
 import '../../../util/constants.dart';
 import '../../../util/enums.dart';
 import '../../../util/interfaces/i_model.dart';
-import '../../../util/interfaces/i_repeatable.dart';
 import '../../widgets/expanded_listtile.dart';
-import '../../widgets/listview_header.dart';
 import '../../widgets/listviews.dart';
 import '../../widgets/paginating_listview.dart';
+import '../../widgets/screen_header.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
@@ -35,7 +34,7 @@ class _NotificationsScreen extends State<NotificationsScreen> {
 
   late final ScrollController mainScrollController;
 
-  late final ScrollPhysics parentScrollPhysics;
+  late final ScrollPhysics scrollPhysics;
 
   @override
   void initState() {
@@ -46,38 +45,22 @@ class _NotificationsScreen extends State<NotificationsScreen> {
 
   void initializeProviders() {
     toDoProvider = Provider.of<ToDoProvider>(context, listen: false);
-
-    if (toDoProvider.rebuild) {
-      toDoProvider.toDos = [];
-      toDoProvider.secondaryToDos = [];
-    }
-
     reminderProvider = Provider.of<ReminderProvider>(context, listen: false);
-
-    if (reminderProvider.rebuild) {
-      reminderProvider.reminders = [];
-      reminderProvider.secondaryReminders = [];
-    }
-
     deadlineProvider = Provider.of<DeadlineProvider>(context, listen: false);
-    if (deadlineProvider.rebuild) {
-      deadlineProvider.deadlines = [];
-      deadlineProvider.secondaryDeadlines = [];
-    }
 
     userProvider = Provider.of<UserProvider>(context, listen: false);
   }
 
   void initializeControllers() {
     mainScrollController = ScrollController();
-    ScrollPhysics scrollPhysics = (Platform.isIOS || Platform.isMacOS)
+    ScrollPhysics parentScrollPhysics = (Platform.isIOS || Platform.isMacOS)
         ? const BouncingScrollPhysics()
         : const ClampingScrollPhysics();
-    parentScrollPhysics = AlwaysScrollableScrollPhysics(parent: scrollPhysics);
+    scrollPhysics = AlwaysScrollableScrollPhysics(parent: parentScrollPhysics);
   }
 
   void onFetch({List<IModel>? items}) {
-    if (null == items || items.isEmpty) {
+    if (null == items) {
       return;
     }
 
@@ -89,23 +72,6 @@ class _NotificationsScreen extends State<NotificationsScreen> {
   Future<void> onRemove({IModel? item}) async {
     if (null == item) {
       return;
-    }
-
-    switch (item.modelType) {
-      case ModelType.task:
-        if (toDoProvider.toDos.length < 2) {
-          return;
-        }
-      case ModelType.deadline:
-        if (deadlineProvider.deadlines.length < 2) {
-          return;
-        }
-      case ModelType.reminder:
-        if (reminderProvider.reminders.length < 2) {
-          return;
-        }
-      default:
-        break;
     }
 
     if (mounted) {
@@ -124,14 +90,12 @@ class _NotificationsScreen extends State<NotificationsScreen> {
   Widget build(BuildContext context) {
     MediaQuery.sizeOf(context);
     return Padding(
-        padding: const EdgeInsets.all(Constants.doublePadding),
+        padding: const EdgeInsets.all(Constants.padding),
         child: Column(mainAxisSize: MainAxisSize.min, children: [
-          const ListViewHeader<IRepeatable>(
-            header: "Notifications",
-            leadingIcon: Icon(Icons.notifications_on_rounded),
-            sorter: null,
-            showSorter: false,
-          ),
+          const ScreenHeader(
+              outerPadding: EdgeInsets.all(Constants.padding),
+              header: "Notifications",
+              leadingIcon: Icon(Icons.notifications_on_rounded)),
           Flexible(
             child: Scrollbar(
               thumbVisibility: true,
@@ -139,7 +103,7 @@ class _NotificationsScreen extends State<NotificationsScreen> {
               child: ListView(
                   shrinkWrap: true,
                   controller: mainScrollController,
-                  physics: parentScrollPhysics,
+                  physics: scrollPhysics,
                   children: [
                     ExpandedListTile(
                       initiallyExpanded: true,
@@ -170,6 +134,7 @@ class _NotificationsScreen extends State<NotificationsScreen> {
                             border: BorderSide.none,
                             children: [
                               PaginatingListview<Deadline>(
+                                  indicatorDisplacement: 0,
                                   items: deadlineProvider.deadlines,
                                   limit: 5,
                                   offset: (deadlineProvider.rebuild)
@@ -184,7 +149,6 @@ class _NotificationsScreen extends State<NotificationsScreen> {
                                               onRemove}) =>
                                       ListViews.immutableDeadlines(
                                         key: key,
-                                        context: context,
                                         deadlines: items,
                                         checkDelete:
                                             userProvider.curUser?.checkDelete ??
@@ -224,6 +188,7 @@ class _NotificationsScreen extends State<NotificationsScreen> {
                             border: BorderSide.none,
                             children: [
                               PaginatingListview<Reminder>(
+                                  indicatorDisplacement: 0,
                                   items: reminderProvider.reminders,
                                   limit: 5,
                                   offset: (reminderProvider.rebuild)
@@ -248,7 +213,6 @@ class _NotificationsScreen extends State<NotificationsScreen> {
                                               onRemove}) =>
                                       ListViews.immutableReminders(
                                         key: key,
-                                        context: context,
                                         reminders: items,
                                         checkDelete:
                                             userProvider.curUser?.checkDelete ??
@@ -278,6 +242,7 @@ class _NotificationsScreen extends State<NotificationsScreen> {
                             border: BorderSide.none,
                             children: [
                               PaginatingListview<ToDo>(
+                                  indicatorDisplacement: 0,
                                   items: toDoProvider.toDos,
                                   limit: 5,
                                   offset: (toDoProvider.rebuild)
@@ -301,7 +266,6 @@ class _NotificationsScreen extends State<NotificationsScreen> {
                                               onRemove}) =>
                                       ListViews.immutableToDos(
                                         key: key,
-                                        context: context,
                                         toDos: items,
                                         checkDelete:
                                             userProvider.curUser?.checkDelete ??
@@ -364,6 +328,7 @@ class _NotificationsScreen extends State<NotificationsScreen> {
                               border: BorderSide.none,
                               children: [
                                 PaginatingListview<Deadline>(
+                                    indicatorDisplacement: 0,
                                     items: deadlineProvider.secondaryDeadlines,
                                     limit: 5,
                                     offset: (deadlineProvider.rebuild)
@@ -389,7 +354,6 @@ class _NotificationsScreen extends State<NotificationsScreen> {
                                                 onRemove}) =>
                                         ListViews.immutableDeadlines(
                                           key: key,
-                                          context: context,
                                           deadlines: items,
                                           checkDelete: userProvider
                                                   .curUser?.checkDelete ??
@@ -420,6 +384,7 @@ class _NotificationsScreen extends State<NotificationsScreen> {
                               border: BorderSide.none,
                               children: [
                                 PaginatingListview<Reminder>(
+                                    indicatorDisplacement: 0,
                                     items: reminderProvider.secondaryReminders,
                                     limit: 5,
                                     offset: (reminderProvider.rebuild)
@@ -445,7 +410,6 @@ class _NotificationsScreen extends State<NotificationsScreen> {
                                                 onRemove}) =>
                                         ListViews.immutableReminders(
                                           key: key,
-                                          context: context,
                                           reminders: items,
                                           checkDelete: userProvider
                                                   .curUser?.checkDelete ??
@@ -476,6 +440,7 @@ class _NotificationsScreen extends State<NotificationsScreen> {
                               border: BorderSide.none,
                               children: [
                                 PaginatingListview<ToDo>(
+                                    indicatorDisplacement: 0,
                                     items: toDoProvider.secondaryToDos,
                                     limit: 5,
                                     offset: (toDoProvider.rebuild)
@@ -499,7 +464,6 @@ class _NotificationsScreen extends State<NotificationsScreen> {
                                                 onRemove}) =>
                                         ListViews.immutableToDos(
                                           key: key,
-                                          context: context,
                                           toDos: items,
                                           checkDelete: userProvider
                                                   .curUser?.checkDelete ??

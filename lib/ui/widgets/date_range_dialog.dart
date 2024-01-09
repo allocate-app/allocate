@@ -263,8 +263,12 @@ class _DateRangeDialog extends State<DateRangeDialog> {
                         config: CalendarDatePicker2Config(
                           centerAlignModePicker: true,
                           calendarType: CalendarDatePicker2Type.range,
-                          firstDate: DateTime(1970),
-                          lastDate: DateTime(3000),
+                          firstDate: Constants.today.copyWith(
+                              year:
+                                  Constants.today.year - Constants.yearOffset),
+                          lastDate: Constants.today.copyWith(
+                              year:
+                                  Constants.today.year + Constants.yearOffset),
                         ),
                         value: showDates,
                         onValueChanged: (dates) {

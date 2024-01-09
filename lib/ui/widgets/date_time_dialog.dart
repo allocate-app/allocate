@@ -159,15 +159,14 @@ class _DateTimeDialog extends State<DateTimeDialog> {
                                                       minFontSize:
                                                           Constants.huge)),
                                         ),
-                                        (null != date)
-                                            ? IconButton(
-                                                icon: const Icon(
-                                                    Icons.clear_rounded),
-                                                onPressed: () => setState(() {
-                                                  date = null;
-                                                }),
-                                              )
-                                            : const SizedBox.shrink()
+                                        if (null != date)
+                                          IconButton(
+                                            icon:
+                                                const Icon(Icons.clear_rounded),
+                                            onPressed: () => setState(() {
+                                              date = null;
+                                            }),
+                                          )
                                       ]),
                                 ),
                               ),
@@ -222,15 +221,14 @@ class _DateTimeDialog extends State<DateTimeDialog> {
                                                       minFontSize:
                                                           Constants.huge)),
                                         ),
-                                        (null != time)
-                                            ? IconButton(
-                                                icon: const Icon(
-                                                    Icons.clear_rounded),
-                                                onPressed: () => setState(() {
-                                                  time = null;
-                                                }),
-                                              )
-                                            : const SizedBox.shrink(),
+                                        if (null != time)
+                                          IconButton(
+                                            icon:
+                                                const Icon(Icons.clear_rounded),
+                                            onPressed: () => setState(() {
+                                              time = null;
+                                            }),
+                                          )
                                       ]),
                                 ),
                               ),
@@ -245,8 +243,12 @@ class _DateTimeDialog extends State<DateTimeDialog> {
                           config: CalendarDatePicker2Config(
                             centerAlignModePicker: true,
                             calendarType: CalendarDatePicker2Type.single,
-                            firstDate: DateTime(1970),
-                            lastDate: DateTime(3000),
+                            firstDate: Constants.today.copyWith(
+                                year: Constants.today.year -
+                                    Constants.yearOffset),
+                            lastDate: Constants.today.copyWith(
+                                year: Constants.today.year +
+                                    Constants.yearOffset),
                           ),
                           value: [date],
                           onValueChanged: (dates) {

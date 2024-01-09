@@ -3,8 +3,10 @@ import 'dart:developer';
 import 'package:flutter/foundation.dart';
 
 import '../model/task/subtask.dart';
-import '../services/subtask_service.dart';
+import '../repositories/subtask_repo.dart';
+import '../util/constants.dart';
 import '../util/exceptions.dart';
+import '../util/interfaces/repository/model/subtask_repository.dart';
 
 class SubtaskProvider extends ChangeNotifier {
   bool _rebuild = true;
@@ -22,13 +24,15 @@ class SubtaskProvider extends ChangeNotifier {
     _rebuild = rebuild;
   }
 
-  final SubtaskService _subtaskService;
+  late final SubtaskRepository _subtaskRepo;
 
-  // Not sure if I need a ptr, or a usr pref.
+  // Not sure if I need a ptr, or a usr pref yet.
   Subtask? curSubtask;
   List<Subtask> subtasks = [];
 
-  SubtaskProvider() : _subtaskService = SubtaskService();
+  // CONSTRUCTOR
+  SubtaskProvider({SubtaskRepository? subtaskRepository})
+      : _subtaskRepo = subtaskRepository ?? SubtaskRepo.instance;
 
   Future<void> createSubtask(
       {String? name,
@@ -49,7 +53,7 @@ class SubtaskProvider extends ChangeNotifier {
       curSubtask?.customViewIndex = index;
     }
     try {
-      curSubtask = await _subtaskService.createSubtask(subtask: curSubtask!);
+      curSubtask = await _subtaskRepo.create(curSubtask!);
     } on FailureToUploadException catch (e) {
       log(e.cause);
       return Future.error(e);
@@ -64,7 +68,7 @@ class SubtaskProvider extends ChangeNotifier {
     subtask = subtask ?? curSubtask!;
     subtask.lastUpdated = DateTime.now();
     try {
-      curSubtask = await _subtaskService.updateSubtask(subtask: subtask);
+      curSubtask = await _subtaskRepo.update(subtask);
     } on FailureToUploadException catch (e) {
       log(e.cause);
       return Future.error(e);
@@ -81,7 +85,7 @@ class SubtaskProvider extends ChangeNotifier {
       subtask.lastUpdated = DateTime.now();
     }
     try {
-      await _subtaskService.updateBatch(subtasks: subtasks);
+      await _subtaskRepo.updateBatch(subtasks);
     } on FailureToUploadException catch (e) {
       log(e.cause);
       return Future.error(e);
@@ -94,7 +98,18 @@ class SubtaskProvider extends ChangeNotifier {
 
   Future<void> deleteSubtask({required Subtask subtask}) async {
     try {
-      await _subtaskService.deleteSubtask(subtask: subtask);
+      await _subtaskRepo.delete(subtask);
+    } on FailureToDeleteException catch (e) {
+      log(e.cause);
+      return Future.error(e);
+    }
+    notifyListeners();
+  }
+
+  // ATM, no real need to restore -> Subtasks aren't deleted until parent object is removed
+  Future<void> emptyTrash() async {
+    try {
+      await _subtaskRepo.emptyTrash();
     } on FailureToDeleteException catch (e) {
       log(e.cause);
       return Future.error(e);
@@ -103,12 +118,21 @@ class SubtaskProvider extends ChangeNotifier {
   }
 
   Future<List<Subtask>> reorderSubtasks(
-      {required List<Subtask> subtasks,
+      {List<Subtask>? subtasks,
       required int oldIndex,
       required int newIndex}) async {
+    subtasks = subtasks ?? this.subtasks;
+    if (oldIndex < newIndex) {
+      newIndex--;
+    }
+    Subtask subtask = subtasks.removeAt(oldIndex);
+    subtasks.insert(newIndex, subtask);
+    for (int i = 0; i < subtasks.length; i++) {
+      subtasks[i].customViewIndex = i;
+    }
     try {
-      return await _subtaskService.reorderSubtasks(
-          subtasks: subtasks, oldIndex: oldIndex, newIndex: newIndex);
+      await _subtaskRepo.updateBatch(subtasks);
+      return subtasks;
     } on FailureToUpdateException catch (e) {
       log(e.cause);
       return Future.error(e);
@@ -118,7 +142,11 @@ class SubtaskProvider extends ChangeNotifier {
     }
   }
 
-  // This is going unused atm.
-  Future<List<Subtask>> getSubtasksBy() async =>
-      await _subtaskService.getSubtasksBy();
+  Future<List<Subtask>> getDeleted(
+          {int limit = Constants.minLimitPerQuery, int offset = 0}) async =>
+      await _subtaskRepo.getDeleted(limit: limit, offset: offset);
+
+// This is going unused atm.
+// Future<List<Subtask>> getSubtasksBy() async =>
+//     await _subtaskRepo.getRepoListBy(sorter: SubtaskSorter());
 }

@@ -202,7 +202,7 @@ class _ListViewHeader<T> extends State<ListViewHeader<T>> {
                           widget.onChanged!(sortMethod: sortMethod);
                         }
                       })
-              : const SizedBox.shrink(),
+              : null,
         ));
   }
 

@@ -10,6 +10,10 @@ import '../util/interfaces/repository/model/subtask_repository.dart';
 import '../util/interfaces/sortable.dart';
 
 class SubtaskRepo implements SubtaskRepository {
+  static final SubtaskRepo _instance = SubtaskRepo._internal();
+
+  static SubtaskRepo get instance => _instance;
+
   final SupabaseClient _supabaseClient =
       SupabaseService.instance.supabaseClient;
   final Isar _isarClient = IsarService.instance.isarClient;
@@ -49,27 +53,54 @@ class SubtaskRepo implements SubtaskRepository {
 
   @override
   Future<void> delete(Subtask subtask) async {
-    if (null == _supabaseClient.auth.currentSession) {
-      subtask.toDelete = true;
-      await update(subtask);
-      return;
-    }
-
-    try {
-      await _supabaseClient.from("subtasks").delete().eq("id", subtask.id);
-      await _isarClient.writeTxn(() async {
-        await _isarClient.subtasks.delete(subtask.id);
-      });
-    } catch (error) {
-      throw FailureToDeleteException("Failed to delete Subtask online\n"
-          "Subtask: ${subtask.toString()}\n"
-          "Time: ${DateTime.now()}\n"
-          "Supabase Open: ${null != _supabaseClient.auth.currentSession}");
-    }
+    subtask.toDelete = true;
+    await update(subtask);
   }
 
   @override
-  Future<void> deleteLocal() async {
+  Future<void> remove(Subtask subtask) async {
+    // Delete online
+    if (null != _supabaseClient.auth.currentSession) {
+      try {
+        await _supabaseClient.from("subtasks").delete().eq("id", subtask.id);
+      } catch (error) {
+        throw FailureToDeleteException("Failed to delete Subtask online\n"
+            "Subtask: ${subtask.toString()}\n"
+            "Time: ${DateTime.now()}\n"
+            "Supabase Open: ${null != _supabaseClient.auth.currentSession}");
+      }
+    }
+    // Delete local
+    await _isarClient.writeTxn(() async {
+      await _isarClient.subtasks.delete(subtask.id);
+    });
+  }
+
+  @override
+  Future<List<int>> emptyTrash() async {
+    if (null != _supabaseClient.auth.currentSession) {
+      try {
+        await _supabaseClient.from("subtasks").delete().eq("toDelete", true);
+      } catch (error) {
+        throw FailureToDeleteException("Failed to empty trash online\n"
+            "Time: ${DateTime.now()}\n"
+            "Supabase Open: ${null != _supabaseClient.auth.currentSession}");
+      }
+    }
+    late List<int> deleteIDs;
+    await _isarClient.writeTxn(() async {
+      deleteIDs = await _isarClient.subtasks
+          .where()
+          .toDeleteEqualTo(true)
+          .idProperty()
+          .findAll();
+      await _isarClient.subtasks.deleteAll(deleteIDs);
+    });
+    return deleteIDs;
+  }
+
+  @override
+  Future<void> deleteSweep() async {
     List<int> toDeletes = await getDeleteIds();
     await _isarClient.writeTxn(() async {
       await _isarClient.subtasks.deleteAll(toDeletes);
@@ -132,7 +163,7 @@ class SubtaskRepo implements SubtaskRepository {
           .count();
 
   @override
-  Future<int> getTotalSubtaskWeight(
+  Future<int> getTaskSubtaskWeight(
           {required int taskID, int limit = Constants.maxNumTasks}) async =>
       await _isarClient.subtasks
           .where()
@@ -289,4 +320,15 @@ class SubtaskRepo implements SubtaskRepository {
 
   Future<List<Subtask>> getUnsynced() async =>
       await _isarClient.subtasks.where().isSyncedEqualTo(false).findAll();
+
+  // Not sure whether to use this yet.
+  @override
+  Future<List<Subtask>> getDeleted({int limit = 50, int offset = 0}) async =>
+      await _isarClient.subtasks
+          .where()
+          .toDeleteEqualTo(true)
+          .sortByLastUpdatedDesc()
+          .findAll();
+
+  SubtaskRepo._internal();
 }

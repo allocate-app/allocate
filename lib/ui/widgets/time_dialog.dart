@@ -143,17 +143,14 @@ class _TimeDialog extends State<TimeDialog> {
                                                   maxLines: 1,
                                                   minFontSize: Constants.huge)),
                                     ),
-                                    (startTime != null)
-                                        ? IconButton(
-                                            icon:
-                                                const Icon(Icons.clear_rounded),
-                                            selectedIcon:
-                                                const Icon(Icons.clear),
-                                            onPressed: () => setState(() {
-                                              startTime = null;
-                                            }),
-                                          )
-                                        : const SizedBox.shrink(),
+                                    if (startTime != null)
+                                      IconButton(
+                                        icon: const Icon(Icons.clear_rounded),
+                                        selectedIcon: const Icon(Icons.clear),
+                                        onPressed: () => setState(() {
+                                          startTime = null;
+                                        }),
+                                      )
                                   ],
                                 ),
                               ),
@@ -210,17 +207,14 @@ class _TimeDialog extends State<TimeDialog> {
                                                   maxLines: 1,
                                                   minFontSize: Constants.huge)),
                                     ),
-                                    (dueTime != null)
-                                        ? IconButton(
-                                            icon:
-                                                const Icon(Icons.clear_rounded),
-                                            selectedIcon:
-                                                const Icon(Icons.clear),
-                                            onPressed: () => setState(() {
-                                              dueTime = null;
-                                            }),
-                                          )
-                                        : const SizedBox.shrink(),
+                                    if (dueTime != null)
+                                      IconButton(
+                                        icon: const Icon(Icons.clear_rounded),
+                                        selectedIcon: const Icon(Icons.clear),
+                                        onPressed: () => setState(() {
+                                          dueTime = null;
+                                        }),
+                                      )
                                   ],
                                 ),
                               ),

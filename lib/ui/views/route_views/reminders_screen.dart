@@ -31,9 +31,6 @@ class _RemindersListScreen extends State<RemindersListScreen> {
 
   void initializeProviders() {
     reminderProvider = Provider.of<ReminderProvider>(context, listen: false);
-    if (reminderProvider.rebuild) {
-      reminderProvider.reminders = [];
-    }
     userProvider = Provider.of<UserProvider>(context, listen: false);
   }
 
@@ -137,7 +134,6 @@ class _RemindersListScreen extends State<RemindersListScreen> {
                 }
                 return ListViews.immutableReminders(
                   key: key,
-                  context: context,
                   reminders: items,
                   checkDelete: userProvider.curUser?.checkDelete ?? true,
                   smallScreen: userProvider.smallScreen,

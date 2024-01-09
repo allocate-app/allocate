@@ -11,10 +11,13 @@ import 'package:provider/provider.dart';
 import 'package:window_manager/window_manager.dart';
 
 import '../model/task/todo.dart';
+import '../providers/app_provider.dart';
 import '../providers/deadline_provider.dart';
+import '../providers/event_provider.dart';
 import '../providers/group_provider.dart';
 import '../providers/reminder_provider.dart';
 import '../providers/routine_provider.dart';
+import '../providers/search_provider.dart';
 import '../providers/subtask_provider.dart';
 import '../providers/theme_provider.dart';
 import '../providers/todo_provider.dart';
@@ -25,6 +28,7 @@ import '../services/supabase_service.dart';
 import '../ui/views/route_views/home_screen.dart';
 import '../util/constants.dart';
 import '../util/enums.dart';
+import '../util/interfaces/i_model.dart';
 
 // Async for windowmanager & desktop apps.
 void main() async {
@@ -89,55 +93,58 @@ void main() async {
     NotificationService.instance.init()
   ]).whenComplete(() => runApp(MultiProvider(providers: [
         ChangeNotifierProvider<UserProvider>(create: (_) => UserProvider()),
+        ChangeNotifierProvider<AppProvider>(create: (_) => AppProvider()),
         ChangeNotifierProxyProvider<UserProvider, ToDoProvider>(
             create: (BuildContext context) => ToDoProvider(
-                user: Provider.of<UserProvider>(context, listen: false).curUser,
-                toDoService: null),
+                  user:
+                      Provider.of<UserProvider>(context, listen: false).curUser,
+                ),
             update: (BuildContext context, UserProvider up, ToDoProvider? tp) {
               tp?.setUser(newUser: up.curUser);
-              return tp ?? ToDoProvider(user: up.curUser, toDoService: null);
+              return tp ?? ToDoProvider(user: up.curUser);
             }),
         ChangeNotifierProxyProvider<UserProvider, RoutineProvider>(
             create: (BuildContext context) => RoutineProvider(
-                user: Provider.of<UserProvider>(context, listen: false).curUser,
-                routineService: null),
+                  user:
+                      Provider.of<UserProvider>(context, listen: false).curUser,
+                ),
             update:
                 (BuildContext context, UserProvider up, RoutineProvider? rp) {
               rp?.setUser(newUser: up.curUser);
               return rp ??
-                  RoutineProvider(user: up.curUser, routineService: null);
+                  RoutineProvider(
+                    user: up.curUser,
+                  );
             }),
         ChangeNotifierProvider<SubtaskProvider>(
           create: (BuildContext context) => SubtaskProvider(),
         ),
         ChangeNotifierProxyProvider<UserProvider, ReminderProvider>(
             create: (BuildContext context) => ReminderProvider(
-                user: Provider.of<UserProvider>(context, listen: false).curUser,
-                service: null),
+                  user:
+                      Provider.of<UserProvider>(context, listen: false).curUser,
+                ),
             update:
                 (BuildContext context, UserProvider up, ReminderProvider? rp) {
               rp?.setUser(newUser: up.curUser);
-              return rp ?? ReminderProvider(user: up.curUser, service: null);
+              return rp ?? ReminderProvider(user: up.curUser);
             }),
         ChangeNotifierProxyProvider<UserProvider, DeadlineProvider>(
             create: (BuildContext context) => DeadlineProvider(
-                user: Provider.of<UserProvider>(context, listen: false).curUser,
-                service: null),
+                user:
+                    Provider.of<UserProvider>(context, listen: false).curUser),
             update:
                 (BuildContext context, UserProvider up, DeadlineProvider? dp) {
               dp?.setUser(newUser: up.curUser);
-              return dp ?? DeadlineProvider(user: up.curUser, service: null);
+              return dp ?? DeadlineProvider(user: up.curUser);
             }),
         ChangeNotifierProxyProvider<UserProvider, GroupProvider>(
             create: (BuildContext context) => GroupProvider(
-                user: Provider.of<UserProvider>(context, listen: false).curUser,
-                groupService: null,
-                toDoService: null),
+                user:
+                    Provider.of<UserProvider>(context, listen: false).curUser),
             update: (BuildContext context, UserProvider up, GroupProvider? gp) {
               gp?.setUser(newUser: up.curUser);
-              return gp ??
-                  GroupProvider(
-                      user: up.curUser, groupService: null, toDoService: null);
+              return gp ?? GroupProvider(user: up.curUser);
             }),
         ChangeNotifierProxyProvider<UserProvider, ThemeProvider>(
             create: (BuildContext context) => ThemeProvider(
@@ -146,6 +153,25 @@ void main() async {
             update: (BuildContext context, UserProvider up, ThemeProvider? tp) {
               tp?.setUser(newUser: up.curUser);
               return tp ?? ThemeProvider(user: up.curUser);
+            }),
+        ChangeNotifierProxyProvider<UserProvider, SearchProvider>(
+            create: (BuildContext context) => SearchProvider<IModel>(
+                  userModel: null,
+                ),
+            update:
+                (BuildContext context, UserProvider up, SearchProvider? sp) {
+              sp?.userModel = null;
+              return sp ?? SearchProvider(userModel: null);
+            }),
+        ChangeNotifierProxyProvider<UserProvider, EventProvider>(
+            create: (BuildContext context) => EventProvider(
+                  focusedDay: Constants.today,
+                  userModel: null,
+                ),
+            update: (BuildContext context, UserProvider up, EventProvider? ep) {
+              ep?.userModel = null;
+              return ep ??
+                  EventProvider(focusedDay: Constants.today, userModel: null);
             }),
       ], child: const LocalTester())));
 }

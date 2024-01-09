@@ -1,3 +1,5 @@
+import "dart:io";
+
 import "package:another_flushbar/flushbar.dart";
 import "package:flutter/material.dart";
 import "package:flutter/semantics.dart";
@@ -51,6 +53,9 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
   late final ScrollController mobileScrollController;
   late final ScrollController desktopScrollController;
   late final ScrollPhysics scrollPhysics;
+
+  // Subtasks controller
+  late final MenuController subtasksAnchorController;
 
   // Name
   late final TextEditingController nameEditingController;
@@ -143,8 +148,10 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
   Future<void> initializeControllers() async {
     mobileScrollController = ScrollController();
     desktopScrollController = ScrollController();
-    scrollPhysics =
-        const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics());
+    ScrollPhysics parentPhysics = (Platform.isIOS || Platform.isMacOS)
+        ? const BouncingScrollPhysics()
+        : const ClampingScrollPhysics();
+    scrollPhysics = AlwaysScrollableScrollPhysics(parent: parentPhysics);
 
     nameEditingController = TextEditingController(text: toDo.name);
     nameEditingController.addListener(() {
@@ -192,6 +199,8 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
       String newText = descriptionEditingController.text;
       SemanticsService.announce(newText, Directionality.of(context));
     });
+
+    subtasksAnchorController = MenuController();
   }
 
   Future<void> handleGroupSelection({required int id}) async {
@@ -235,7 +244,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
             return const HandleRepeatableModal(action: "Update");
           });
 
-      // TODO: HANDLE THIS PROPERLY.
+      // TODO: HANDLE THIS PROPERLY - RETURN THE REPEATING FNCTN.
       await toDoProvider
           .handleRepeating(toDo: prevToDo, single: updateSingle, delete: false)
           .catchError((e) => Tiles.displayError(context: context, e: e),
@@ -512,6 +521,20 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
     }
   }
 
+  void onAnchorOpen() {
+    desktopScrollController.addListener(_closeMenuAnchor);
+    mobileScrollController.addListener(_closeMenuAnchor);
+  }
+
+  void onAnchorClose() {
+    desktopScrollController.removeListener(_closeMenuAnchor);
+    mobileScrollController.removeListener(_closeMenuAnchor);
+  }
+
+  void _closeMenuAnchor() {
+    subtasksAnchorController.close();
+  }
+
   @override
   Widget build(BuildContext context) {
     MediaQuery.sizeOf(context);
@@ -586,10 +609,10 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                                       hintText: "Task Name",
                                       errorText: nameErrorText,
                                       controller: nameEditingController,
-                                      outerPadding: const EdgeInsets.all(
-                                          Constants.padding),
+                                      outerPadding: const EdgeInsets.symmetric(
+                                          vertical: Constants.padding),
                                       textFieldPadding: const EdgeInsets.only(
-                                        left: Constants.halfPadding,
+                                        left: Constants.padding,
                                       ),
                                       handleClear: clearNameField,
                                       onEditingComplete: updateName),
@@ -739,6 +762,10 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                                       context: context,
                                       id: toDo.id,
                                       limit: Constants.numTasks[toDo.taskType]!,
+                                      subtasksAnchorController:
+                                          subtasksAnchorController,
+                                      onAnchorOpen: onAnchorOpen,
+                                      onAnchorClose: onAnchorClose,
                                       onRemove:
                                           (userProvider.curUser?.reduceMotion ??
                                                   false)
@@ -836,9 +863,10 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                         hintText: "Task Name",
                         errorText: nameErrorText,
                         controller: nameEditingController,
-                        outerPadding: const EdgeInsets.all(Constants.padding),
+                        outerPadding: const EdgeInsets.symmetric(
+                            vertical: Constants.padding),
                         textFieldPadding: const EdgeInsets.only(
-                          left: Constants.halfPadding,
+                          left: Constants.padding,
                         ),
                         handleClear: clearNameField,
                         onEditingComplete: updateName),
@@ -866,18 +894,20 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                     const PaddedDivider(padding: Constants.padding),
 
                     // Subtasks
-                    (toDo.taskType != TaskType.small)
-                        ? Tiles.subtasksTile(
-                            context: context,
-                            limit: Constants.numTasks[toDo.taskType]!,
-                            subtasks: toDo.subtasks,
-                            subtaskCount: toDoProvider.getSubtaskCount(
-                                id: toDo.id,
-                                limit: Constants.numTasks[toDo.taskType]!),
-                            id: toDo.id)
-                        : const SizedBox.shrink(),
-
-                    const PaddedDivider(padding: Constants.padding),
+                    if (toDo.taskType != TaskType.small) ...[
+                      Tiles.subtasksTile(
+                          context: context,
+                          limit: Constants.numTasks[toDo.taskType]!,
+                          subtasksAnchorController: subtasksAnchorController,
+                          onAnchorOpen: onAnchorOpen,
+                          onAnchorClose: onAnchorClose,
+                          subtasks: toDo.subtasks,
+                          subtaskCount: toDoProvider.getSubtaskCount(
+                              id: toDo.id,
+                              limit: Constants.numTasks[toDo.taskType]!),
+                          id: toDo.id),
+                      const PaddedDivider(padding: Constants.padding),
+                    ],
                     // My Day
                     Tiles.myDayTile(
                         myDay: toDo.myDay,
@@ -954,44 +984,38 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                       handleUpdate: updateDates,
                     ),
 
-                    (showTimeTile)
-                        ? const PaddedDivider(padding: Constants.padding)
-                        : const SizedBox.shrink(),
-                    // Time
-                    (showTimeTile)
-                        ? Tiles.timeTile(
-                            outerPadding: const EdgeInsets.symmetric(
-                                horizontal: Constants.padding),
-                            startTime: (showStartTime)
-                                ? TimeOfDay.fromDateTime(toDo.startDate!)
-                                : null,
-                            dueTime: (showDueTime)
-                                ? TimeOfDay.fromDateTime(toDo.dueDate!)
-                                : null,
-                            context: context,
-                            handleClear: clearTimes,
-                            handleUpdate: updateTimes,
-                          )
-                        : const SizedBox.shrink(),
-                    (showRepeatTile)
-                        ? const PaddedDivider(padding: Constants.padding)
-                        : const SizedBox.shrink(),
-                    // Repeatable Stuff -> Show status, on click, open a dialog.
-                    (showRepeatTile)
-                        ? Tiles.repeatableTile(
-                            context: context,
-                            outerPadding: const EdgeInsets.symmetric(
-                                horizontal: Constants.padding),
-                            frequency: toDo.frequency,
-                            weekdays: weekdayList,
-                            repeatSkip: toDo.repeatSkip,
-                            startDate: (Constants.nullDate != toDo.startDate)
-                                ? toDo.startDate
-                                : null,
-                            handleUpdate: updateRepeatable,
-                            handleClear: clearRepeatable,
-                          )
-                        : const SizedBox.shrink(),
+                    if (showTimeTile) ...[
+                      const PaddedDivider(padding: Constants.padding),
+                      Tiles.timeTile(
+                        outerPadding: const EdgeInsets.symmetric(
+                            horizontal: Constants.padding),
+                        startTime: (showStartTime)
+                            ? TimeOfDay.fromDateTime(toDo.startDate!)
+                            : null,
+                        dueTime: (showDueTime)
+                            ? TimeOfDay.fromDateTime(toDo.dueDate!)
+                            : null,
+                        context: context,
+                        handleClear: clearTimes,
+                        handleUpdate: updateTimes,
+                      ),
+                    ],
+                    if (showRepeatTile) ...[
+                      const PaddedDivider(padding: Constants.padding),
+                      Tiles.repeatableTile(
+                        context: context,
+                        outerPadding: const EdgeInsets.symmetric(
+                            horizontal: Constants.padding),
+                        frequency: toDo.frequency,
+                        weekdays: weekdayList,
+                        repeatSkip: toDo.repeatSkip,
+                        startDate: (Constants.nullDate != toDo.startDate)
+                            ? toDo.startDate
+                            : null,
+                        handleUpdate: updateRepeatable,
+                        handleClear: clearRepeatable,
+                      ),
+                    ],
                   ],
                 ),
               ),
