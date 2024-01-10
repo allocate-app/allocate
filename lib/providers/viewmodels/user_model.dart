@@ -8,7 +8,7 @@ import '../../util/sorting/group_sorter.dart';
 import '../../util/sorting/reminder_sorter.dart';
 import '../../util/sorting/routine_sorter.dart';
 import '../../util/sorting/todo_sorter.dart';
-import 'user.dart';
+import '../../model/user/user.dart';
 
 class UserModel extends ChangeNotifier with EquatableMixin {
   final User? _user;

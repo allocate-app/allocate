@@ -59,10 +59,6 @@ class ToDoProvider extends ChangeNotifier {
     Constants.intMax: ValueNotifier<int>(0),
   };
 
-  // This is to hold repeating events for the calendar.
-  // TODO: figure out structure, might be smarter to do it by day, then ID.
-  final Map<int, Map<DateTime, Set<ToDo>>> calendarItems = {};
-
   // CONSTRUCTOR
   ToDoProvider({
     this.user,
@@ -156,7 +152,6 @@ class ToDoProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // TODO: on successful creation, add to hashmap.
   Future<void> createToDo({
     required TaskType taskType,
     required String name,
@@ -200,6 +195,8 @@ class ToDoProvider extends ChangeNotifier {
         expectedDuration: expectedDuration,
         realDuration: realDuration,
         priority: priority ?? Priority.low,
+        originalStart: startDate,
+        originalDue: dueDate,
         startDate: startDate,
         dueDate: dueDate,
         myDay: myDay ?? false,
@@ -218,6 +215,10 @@ class ToDoProvider extends ChangeNotifier {
 
       await _updateSubtasks(subtasks: subtasks, taskID: curToDo!.id);
       toDoSubtaskCounts[Constants.intMax]!.value = 0;
+
+      if (curToDo!.repeatable) {
+        await createTemplate(toDo: curToDo);
+      }
     } on FailureToCreateException catch (e) {
       log(e.cause);
       return Future.error(e);
@@ -238,13 +239,22 @@ class ToDoProvider extends ChangeNotifier {
   Future<void> updateToDoAsync({ToDo? toDo}) async {
     toDo = toDo ?? curToDo!;
     toDo.lastUpdated = DateTime.now();
-
     if (toDo.repeatable && null == toDo.repeatID) {
       toDo.repeatID = Constants.generateID();
     }
 
     try {
       curToDo = await _toDoRepo.update(toDo);
+      if (curToDo!.repeatable) {
+        // Try for a template.
+        ToDo? template =
+            await _toDoRepo.getTemplate(repeatID: curToDo!.repeatID!);
+        if (null == template) {
+          curToDo!.originalStart = curToDo!.startDate;
+          curToDo!.originalDue = curToDo!.dueDate;
+          await createTemplate(toDo: curToDo!);
+        }
+      }
     } on FailureToUploadException catch (e) {
       log(e.cause);
       return Future.error(e);
@@ -398,7 +408,7 @@ class ToDoProvider extends ChangeNotifier {
   Future<void> handleRepeating(
       {ToDo? toDo, bool? single = false, bool delete = false}) async {
     try {
-      return await _repeatService.handleRepeating(
+      await _repeatService.handleRepeating(
           model: toDo, single: single, delete: delete);
 
       //TODO: Clear key -> run repeat routine.
@@ -406,24 +416,23 @@ class ToDoProvider extends ChangeNotifier {
       log(e.cause);
       return Future.error(e);
     }
+    notifyListeners();
+  }
+
+  Future<void> createTemplate({ToDo? toDo}) async {
+    if (null == toDo) {
+      return;
+    }
+
+    ToDo template = toDo.copyWith(
+        repeatableState: RepeatableState.template, lastUpdated: DateTime.now());
+
+    await _toDoRepo.create(template);
   }
 
   Future<List<int>> deleteFutures({ToDo? toDo}) async {
     try {
       return await _repeatService.deleteFutures(model: toDo ?? curToDo!);
-    } on FailureToUpdateException catch (e) {
-      log(e.cause);
-      return Future.error(e);
-    } on FailureToUploadException catch (e) {
-      log(e.cause);
-      return Future.error(e);
-    }
-  }
-
-  Future<void> populateCalendar({DateTime? limit}) async {
-    try {
-      return await _repeatService.populateCalendar(
-          limit: limit ?? DateTime.now(), modelType: ModelType.task);
     } on FailureToUpdateException catch (e) {
       log(e.cause);
       return Future.error(e);

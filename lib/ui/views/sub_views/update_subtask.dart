@@ -1,4 +1,3 @@
-import 'package:another_flushbar/flushbar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:provider/provider.dart';
@@ -8,16 +7,18 @@ import '../../../providers/subtask_provider.dart';
 import '../../../providers/user_provider.dart';
 import '../../../util/constants.dart';
 import '../../../util/exceptions.dart';
-import '../../widgets/flushbars.dart';
 import '../../widgets/listtile_widgets.dart';
 import '../../widgets/padded_divider.dart';
 import '../../widgets/tiles.dart';
 import '../../widgets/title_bar.dart';
 
 class UpdateSubtaskScreen extends StatefulWidget {
-  const UpdateSubtaskScreen({super.key, this.initialSubtask});
+  const UpdateSubtaskScreen(
+      {super.key, this.initialSubtask, this.handleUpdate, this.handleDelete});
 
   final Subtask? initialSubtask;
+  final void Function({Subtask? subtask})? handleUpdate;
+  final void Function({Subtask? subtask})? handleDelete;
 
   @override
   State<UpdateSubtaskScreen> createState() => _UpdateSubtaskScreen();
@@ -45,8 +46,10 @@ class _UpdateSubtaskScreen extends State<UpdateSubtaskScreen> {
 
     nameEditingController = TextEditingController(text: subtask.name);
     nameEditingController.addListener(() {
-      SemanticsService.announce(
-          nameEditingController.text, Directionality.of(context));
+      checkClose = userProvider.curUser?.checkClose ?? true;
+      String newText = nameEditingController.text;
+      SemanticsService.announce(newText, Directionality.of(context));
+      subtask.name = newText;
       if (null != nameErrorText && mounted) {
         setState(() {
           nameErrorText = null;
@@ -166,40 +169,40 @@ class _UpdateSubtaskScreen extends State<UpdateSubtaskScreen> {
                       }),
                 ),
                 const PaddedDivider(padding: Constants.halfPadding),
-                Tiles.updateAndDeleteButtons(handleDelete: () async {
-                  await subtaskProvider
-                      .deleteSubtask(subtask: subtask)
-                      .whenComplete(() {
-                    Navigator.pop(context);
-                  }).catchError((e) {
-                    Flushbar? error;
-                    error = Flushbars.createError(
-                      message: e.cause,
-                      context: context,
-                      dismissCallback: () => error?.dismiss(),
-                    );
-                    error.show(context);
-                  }, test: (e) => e is FailureToDeleteException);
-                }, handleUpdate: () async {
-                  if (validateData()) {
-                    // in case the usr doesn't submit to the textfields
-                    subtask.name = nameEditingController.text;
+                Tiles.updateAndDeleteButtons(
+                    handleDelete: (null != widget.handleDelete)
+                        ? () async {
+                            widget.handleDelete!(subtask: subtask);
+                            Navigator.pop(context);
+                          }
+                        : () async {
+                            await subtaskProvider
+                                .deleteSubtask(subtask: subtask)
+                                .whenComplete(() {
+                              Navigator.pop(context);
+                            }).catchError(
+                                    (e) => Tiles.displayError(
+                                        context: context, e: e),
+                                    test: (e) => e is FailureToDeleteException);
+                          },
+                    handleUpdate: (null != widget.handleUpdate)
+                        ? () async {
+                            widget.handleUpdate!(subtask: subtask);
+                            Navigator.pop(context);
+                          }
+                        : () async {
+                            if (validateData()) {
+                              // in case the usr doesn't submit to the textfields
+                              subtask.name = nameEditingController.text;
 
-                    await subtaskProvider
-                        .updateSubtask(subtask: subtask)
-                        .whenComplete(() {
-                      Navigator.pop(context);
-                    }).catchError((e) {
-                      Flushbar? error;
-                      error = Flushbars.createError(
-                        message: e.cause,
-                        context: context,
-                        dismissCallback: () => error?.dismiss(),
-                      );
-                      error.show(context);
-                    });
-                  }
-                }),
+                              await subtaskProvider
+                                  .updateSubtask(subtask: subtask)
+                                  .whenComplete(() {
+                                Navigator.pop(context);
+                              }).catchError((e) => Tiles.displayError(
+                                      context: context, e: e));
+                            }
+                          }),
               ])),
         ));
   }

@@ -7,6 +7,7 @@ import 'package:flutter/semantics.dart';
 import 'package:provider/provider.dart';
 
 import '../../../providers/deadline_provider.dart';
+import '../../../providers/event_provider.dart';
 import '../../../providers/user_provider.dart';
 import '../../../util/constants.dart';
 import '../../../util/enums.dart';
@@ -29,6 +30,7 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
 
   late final DeadlineProvider deadlineProvider;
   late final UserProvider userProvider;
+  late final EventProvider eventProvider;
 
   // Scrolling
   late final ScrollController mobileScrollController;
@@ -61,7 +63,6 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
   // Repeatable
   late Frequency frequency;
 
-  late TextEditingController repeatSkipEditingController;
   late int repeatSkip;
 
   late Set<int> weekdayList;
@@ -81,7 +82,6 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
     desktopScrollController.dispose();
     nameEditingController.dispose();
     descriptionEditingController.dispose();
-    repeatSkipEditingController.dispose();
     super.dispose();
   }
 
@@ -103,6 +103,7 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
   void initializeProviders() {
     deadlineProvider = Provider.of<DeadlineProvider>(context, listen: false);
     userProvider = Provider.of<UserProvider>(context, listen: false);
+    eventProvider = Provider.of<EventProvider>(context, listen: false);
   }
 
   void initializeControllers() {
@@ -114,25 +115,21 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
     scrollPhysics = AlwaysScrollableScrollPhysics(parent: parentPhysics);
     nameEditingController = TextEditingController();
     nameEditingController.addListener(() {
+      String newText = nameEditingController.text;
       if (null != nameErrorText && mounted) {
         setState(() {
           nameErrorText = null;
         });
       }
-      SemanticsService.announce(
-          nameEditingController.text, Directionality.of(context));
+      SemanticsService.announce(newText, Directionality.of(context));
+      name = newText;
     });
 
     descriptionEditingController = TextEditingController();
     descriptionEditingController.addListener(() {
       String newText = descriptionEditingController.text;
       SemanticsService.announce(newText, Directionality.of(context));
-    });
-
-    repeatSkipEditingController = TextEditingController();
-    repeatSkipEditingController.addListener(() {
-      String newText = descriptionEditingController.text;
-      SemanticsService.announce(newText, Directionality.of(context));
+      description = newText;
     });
   }
 
@@ -203,20 +200,13 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
           repeatDays: weekdays,
           repeatSkip: repeatSkip,
         )
-        .whenComplete(() => Navigator.pop(context))
-        .catchError((e) {
-      Flushbar? error;
-
-      error = Flushbars.createError(
-        message: e.cause,
-        context: context,
-        dismissCallback: () => error?.dismiss(),
-      );
-
-      error.show(context);
-    },
+        .catchError((e) => Tiles.displayError(context: context, e: e),
             test: (e) =>
                 e is FailureToCreateException || e is FailureToUploadException);
+
+    await eventProvider
+        .insertEventModel(model: deadlineProvider.curDeadline!, notify: true)
+        .whenComplete(() => Navigator.pop(context));
   }
 
   void handleClose({required bool willDiscard}) {

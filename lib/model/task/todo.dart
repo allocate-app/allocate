@@ -142,7 +142,7 @@ class ToDo with EquatableMixin implements Copyable<ToDo>, IRepeatable {
         repeatDays = entity["repeatDays"] as List<bool>,
         repeatSkip = entity["repeatSkip"] as int,
         isSynced = true,
-        toDelete = false,
+        toDelete = entity["toDelete"] as bool,
         lastUpdated = DateTime.parse(entity["lastUpdated"]);
 
   // No id for syncing - assigned via autoincrement online.
@@ -175,6 +175,7 @@ class ToDo with EquatableMixin implements Copyable<ToDo>, IRepeatable {
         "repeatableState": repeatableState.index,
         "repeatDays": repeatDays,
         "repeatSkip": repeatSkip,
+        "toDelete": toDelete,
         "lastUpdated": lastUpdated.toIso8601String(),
       };
 

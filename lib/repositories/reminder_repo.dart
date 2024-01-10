@@ -423,6 +423,18 @@ class ReminderRepo implements ReminderRepository {
           .findAll();
 
   @override
+  Future<Reminder?> getNextRepeat(
+          {required int repeatID, DateTime? now}) async =>
+      await _isarClient.reminders
+          .where()
+          .repeatableEqualTo(true)
+          .filter()
+          .repeatIDEqualTo(repeatID)
+          .repeatableStateEqualTo(RepeatableState.normal)
+          .originalDueLessThan(now ?? Constants.today)
+          .findFirst();
+
+  @override
   Future<Reminder?> getDelta(
           {required DateTime onDate, required int repeatID}) async =>
       await _isarClient.reminders

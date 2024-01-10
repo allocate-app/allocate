@@ -105,19 +105,21 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
     scrollPhysics = AlwaysScrollableScrollPhysics(parent: parentPhysics);
     nameEditingController = TextEditingController();
     nameEditingController.addListener(() {
+      String newText = nameEditingController.text;
       if (null != nameErrorText && mounted) {
         setState(() {
           nameErrorText = null;
         });
       }
 
-      SemanticsService.announce(
-          nameEditingController.text, Directionality.of(context));
+      SemanticsService.announce(newText, Directionality.of(context));
+      name = newText;
     });
     descriptionEditingController = TextEditingController();
     descriptionEditingController.addListener(() {
       String newText = descriptionEditingController.text;
       SemanticsService.announce(newText, Directionality.of(context));
+      description = newText;
     });
 
     toDoSearchController = SearchController();

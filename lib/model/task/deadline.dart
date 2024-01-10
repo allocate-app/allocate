@@ -122,8 +122,8 @@ class Deadline with EquatableMixin implements Copyable<Deadline>, IRepeatable {
         repeatDays = entity["repeatDays"] as List<bool>,
         repeatSkip = entity["repeatSkip"] as int,
         lastUpdated = DateTime.parse(entity["lastUpdated"]),
-        isSynced = true,
-        toDelete = false;
+        toDelete = entity["toDelete"] as bool,
+        isSynced = true;
 
   // No id for syncing - assigned via autoincrement online.
   Map<String, dynamic> toEntity() => {
@@ -153,6 +153,7 @@ class Deadline with EquatableMixin implements Copyable<Deadline>, IRepeatable {
         "frequency": frequency.index,
         "repeatDays": repeatDays,
         "repeatSkip": repeatSkip,
+        "toDelete": toDelete,
         "lastUpdated": lastUpdated.toIso8601String()
       };
 

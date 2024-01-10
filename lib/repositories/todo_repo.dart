@@ -647,7 +647,6 @@ class ToDoRepo implements ToDoRepository {
       .toDeleteEqualTo(false)
       .repeatableStateEqualTo(RepeatableState.normal)
       .completedEqualTo(false)
-      .limit(limit)
       .weightProperty()
       .sum();
 
@@ -676,6 +675,17 @@ class ToDoRepo implements ToDoRepository {
           .repeatableStateEqualTo(RepeatableState.normal)
           .originalStartLessThan(now ?? Constants.today)
           .findAll();
+
+  @override
+  Future<ToDo?> getNextRepeat({required int repeatID, DateTime? now}) async =>
+      await _isarClient.toDos
+          .where()
+          .repeatableEqualTo(true)
+          .filter()
+          .repeatIDEqualTo(repeatID)
+          .repeatableStateEqualTo(RepeatableState.normal)
+          .originalStartLessThan(now ?? Constants.today)
+          .findFirst();
 
   @override
   Future<ToDo?> getDelta(

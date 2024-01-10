@@ -4,31 +4,43 @@ import 'package:flutter/foundation.dart';
 import 'package:table_calendar/table_calendar.dart';
 
 import '../model/calendar_event.dart';
-import '../model/task/todo.dart';
-import '../model/user/user_model.dart';
+import '../repositories/deadline_repo.dart';
+import '../repositories/reminder_repo.dart';
+import '../repositories/todo_repo.dart';
+import '../services/repeatable_service.dart';
 import '../util/constants.dart';
 import '../util/enums.dart';
 import '../util/interfaces/i_repeatable.dart';
+import '../util/interfaces/repository/model/deadline_repository.dart';
+import '../util/interfaces/repository/model/reminder_repository.dart';
+import '../util/interfaces/repository/model/todo_repository.dart';
+import 'viewmodels/user_model.dart';
 
 class EventProvider extends ChangeNotifier {
+  bool generatingEvents = false;
+  bool loadingEvents = false;
+
+  bool get belowEventCap => _events.length < Constants.calendarLimit;
+
+  bool get belowRepeatCap => _repeatingEvents.length < Constants.repeatingLimit;
+
   // TODO: This could just be a list.
   late final ValueNotifier<List<CalendarEvent>> _selectedEvents;
   late DateTime _focusedDay;
   late DateTime? _selectedDay;
 
-  // Bring in the repositories? Or possibly just query.
-  // late final ToDoRepository toDoRepo = ToDoRepo.instance;
-  // Maybe keep a ptr to usrmodel
-
   // TODO: implement USERMODEL, IMPLEMENT PROXYPROVIDERS
   late UserModel? _userModel;
 
+  // This will need to clear & re-init hashmaps.
   set userModel(UserModel? newUserModel) {
     _userModel = newUserModel;
+    _selectedEvents.value = getEventsForDay(_selectedDay);
     notifyListeners();
   }
 
   late DateTime _latest;
+  late DateTime _earliest;
 
   ValueNotifier<List<CalendarEvent>> get selectedEvents => _selectedEvents;
 
@@ -36,15 +48,99 @@ class EventProvider extends ChangeNotifier {
 
   set latest(DateTime newLatest) {
     _latest = newLatest;
+    _selectedEvents.value = getEventsForDay(_selectedDay);
     notifyListeners();
   }
 
-  EventProvider({DateTime? focusedDay, UserModel? userModel})
-      : _focusedDay = focusedDay ?? Constants.today,
-        _selectedDay = focusedDay ?? Constants.today,
-        _latest = (focusedDay ?? Constants.today).copyWith(),
-        _userModel = userModel {
+  DateTime get focusedDay => _focusedDay;
+
+  set focusedDay(DateTime newFocusedDay) {
+    _focusedDay = newFocusedDay;
+    DateTime testLatest = _focusedDay.copyWith(year: _focusedDay.year + 1);
+
+    DateTime testEarliest = _focusedDay.copyWith(year: _focusedDay.year - 1);
+
+    if (!testLatest.isBefore(_latest) && !generatingEvents && belowRepeatCap) {
+      _latest = testLatest;
+      checkRepeating(end: _latest).whenComplete(() {
+        generatingEvents = false;
+        _selectedEvents.value = getEventsForDay(_selectedDay);
+        notifyListeners();
+      });
+      return;
+    }
+
+    if (testEarliest.isBefore(_earliest) && !loadingEvents && belowEventCap) {
+      DateTime previous = _earliest;
+      _earliest = testEarliest;
+      getCalendarEvents(start: _earliest, end: previous).whenComplete(() {
+        loadingEvents = false;
+        _selectedEvents.value = getEventsForDay(_selectedDay);
+        notifyListeners();
+      });
+      return;
+    }
+
+    notifyListeners();
+  }
+
+  DateTime? get selectedDay => _selectedDay;
+
+  set selectedDay(DateTime? newSelectedDay) {
+    _selectedDay = newSelectedDay;
+    _selectedEvents.value = getEventsForDay(_selectedDay);
+    notifyListeners();
+  }
+
+  // CALENDAR EVENTS
+  final Map<DateTime, Set<CalendarEvent>> _events = LinkedHashMap(
+    equals: isSameDay,
+    hashCode: getDateTimeHashCode,
+  );
+
+  // REPEATING EVENTS
+  final Map<int, Map<DateTime, IRepeatable>> _repeatingEvents = {};
+
+  // REPOSITORIES
+  late final ToDoRepository _toDoRepo;
+  late final DeadlineRepository _deadlineRepo;
+  late final ReminderRepository _reminderRepo;
+
+  // REPEATABLE SERVICE
+  late final RepeatableService _repeatService;
+
+  // CONSTRUCTOR
+  EventProvider(
+      {DateTime? focusedDay,
+      UserModel? userModel,
+      ToDoRepository? toDoRepository,
+      DeadlineRepository? deadlineRepository,
+      ReminderRepository? reminderRepository})
+      : _userModel = userModel,
+        _repeatService = RepeatableService.instance,
+        _toDoRepo = toDoRepository ?? ToDoRepo.instance,
+        _deadlineRepo = deadlineRepository ?? DeadlineRepo.instance,
+        _reminderRepo = reminderRepository ?? ReminderRepo.instance {
+    // init dates
+    _focusedDay = focusedDay ?? Constants.today;
+    _selectedDay = _focusedDay;
+    // Latest is 1 Month + 2 weeks at start
+    _latest = _focusedDay.copyWith(year: _focusedDay.year + 1);
+    // earliest is 1 month - 2 weeks before.
+    _earliest = _focusedDay.copyWith(year: _focusedDay.year - 1);
+    // Initialize to empty list
     _selectedEvents = ValueNotifier(getEventsForDay(_selectedDay));
+
+    getCalendarEvents().whenComplete(() {
+      loadingEvents = false;
+      generatingEvents = false;
+      resetSelectedEvents();
+    });
+  }
+
+  void resetSelectedEvents() {
+    _selectedEvents.value = getEventsForDay(_selectedDay);
+    notifyListeners();
   }
 
   void handleDaySelected(DateTime selectedDay, DateTime focusedDay) {
@@ -52,58 +148,239 @@ class EventProvider extends ChangeNotifier {
       _selectedDay = selectedDay;
       _focusedDay = focusedDay;
     }
-    _selectedEvents.value = getEventsForDay(_selectedDay);
-    notifyListeners();
+
+    resetSelectedEvents();
   }
 
-  // TODO: implement a reset function.
-  // ie.
+  Future<void> getCalendarEvents({DateTime? start, DateTime? end}) async {
+    loadingEvents = true;
+    start = start ?? _earliest;
+    end = end ?? _latest;
 
-  // TODO: read reducemotion from userModel
-  void updateEventModel(
-      {List<IRepeatable>? events, bool reduceMotion = false}) {
+    List<List<IRepeatable>> dataModelList = await Future.wait([
+      _toDoRepo.getRange(start: start, end: end),
+      _deadlineRepo.getRange(start: start, end: end),
+      _reminderRepo.getRange(start: start, end: end)
+    ]);
+
+    // This is effectively as fast as batch insertion,
+    // but catches repeating events.
+    for (List<IRepeatable> dataModel in dataModelList) {
+      for (IRepeatable model in dataModel) {
+        await insertEventModel(model: model);
+      }
+    }
+  }
+
+  Future<void> insertEventModel(
+      {IRepeatable? model, bool notify = false}) async {
+    if (!belowEventCap) {
+      return;
+    }
+    if (null == model || null == model.startDate || null == model.dueDate) {
+      return;
+    }
+
+    if (!(_userModel?.reduceMotion ?? false)) {
+      model.fade = Fade.fadeIn;
+    }
+
+    CalendarEvent newEvent = CalendarEvent(model: model);
+
+    if (_events.containsKey(newEvent.startDate)) {
+      _events[newEvent.startDate]!.add(newEvent);
+    } else {
+      _events[newEvent.startDate] = {newEvent};
+    }
+    if (_events.containsKey(newEvent.dueDate)) {
+      _events[newEvent.dueDate]!.add(newEvent);
+    } else {
+      _events[newEvent.dueDate] = {newEvent};
+    }
+    if (model.repeatable) {
+      await insertRepeating(model: model, end: _latest);
+      generatingEvents = false;
+      return;
+    }
+    if (notify) {
+      resetSelectedEvents();
+    }
+  }
+
+  Future<void> updateEventModel(
+      {IRepeatable? oldModel,
+      IRepeatable? newModel,
+      bool notify = false}) async {
+    if (null == oldModel ||
+        null == oldModel.startDate ||
+        null == oldModel.dueDate) {
+      return insertEventModel(model: newModel);
+    }
+
+    if (RepeatableState.projected == oldModel.repeatableState) {
+      return await updateRepeating(model: oldModel);
+    }
+
+    // Remove old - notify on early escape
+    removeEventModel(model: oldModel, notify: (null == newModel));
+
+    // Insert new - repeatables will be caught & notify accordingly
+    return await insertEventModel(model: newModel, notify: notify);
+  }
+
+  void removeEventModel({IRepeatable? model, bool notify = false}) {
+    if (null == model || null == model.startDate || null == model.dueDate) {
+      return;
+    }
+
+    // Remove old
+    CalendarEvent oldEvent = CalendarEvent(model: model);
+    if (_events.containsKey(oldEvent.startDate)) {
+      _events[oldEvent.startDate]!.remove(oldEvent);
+    }
+    if (_events.containsKey(oldEvent.dueDate)) {
+      _events[oldEvent.dueDate]!.remove(oldEvent);
+    }
+
+    if (notify) {
+      resetSelectedEvents();
+    }
+  }
+
+  Future<void> updateRepeating({IRepeatable? model}) async {
+    if (null == model || null == model.repeatID) {
+      return;
+    }
+
+    if (!_repeatingEvents.containsKey(model.repeatID)) {
+      return;
+    }
+
+    removeRepeating(
+      repeatID: model.repeatID,
+    );
+
+    await insertRepeating(model: model);
+    generatingEvents = false;
+    return;
+  }
+
+  Future<void> checkRepeating({DateTime? end}) async {
+    end = end ?? _latest;
+
+    for (int repeatID in _repeatingEvents.keys) {
+      // Get the latest inserted repeating event.
+      IRepeatable? model =
+          _repeatingEvents[repeatID]!.entries.lastOrNull?.value;
+      if (null == model || null == model.originalStart) {
+        continue;
+      }
+
+      DateTime? startDate = model.originalStart;
+
+      // probe from the model's repeat structure until it hits the next empty key.
+      while (startDate!.isBefore(end)) {
+        if (!_repeatingEvents[repeatID]!.containsKey(startDate)) {
+          await insertRepeating(
+            model: model,
+            end: end,
+          );
+          generatingEvents = false;
+          return;
+        }
+
+        model = _repeatingEvents[repeatID]![startDate] ?? model;
+        startDate = _repeatService.getRepeatDate(model: model);
+        if (null == startDate) {
+          return;
+        }
+      }
+    }
+  }
+
+  void removeRepeating({int? repeatID, bool notify = false}) {
+    if (null == repeatID) {
+      return;
+    }
+    // Get previously repeating events.
+    Iterable<IRepeatable> oldModels = _repeatingEvents[repeatID]!.values;
+
+    // Remove from calendar
+    for (IRepeatable oldModel in oldModels) {
+      removeEventModel(model: oldModel);
+    }
+
+    if (notify) {
+      notifyListeners();
+    }
+  }
+
+  Future<void> insertRepeating(
+      {IRepeatable? model,
+      DateTime? start,
+      DateTime? end,
+      ModelType? modelType}) async {
+    generatingEvents = true;
+    if (null == model) {
+      notifyListeners();
+      return;
+    }
+
+    start = start ?? Constants.today;
+    end = end ?? latest;
+
+    if (!_repeatingEvents.containsKey(model.repeatID)) {
+      _repeatingEvents[model.repeatID!] = LinkedHashMap<DateTime, IRepeatable>(
+        equals: isSameDay,
+        hashCode: getDateTimeHashCode,
+      );
+    }
+
+    List<IRepeatable> newEvents =
+        await _repeatService.populateCalendar(model: model, limit: end);
+
+    // Add each repeatable into the repeating hashmap.
+    for (IRepeatable newEvent in newEvents) {
+      // This is never expected to happen
+      if (null == newEvent.startDate || null == newEvent.dueDate) {
+        continue;
+      }
+      DateTime startDate = newEvent.startDate!.copyWith(
+          hour: 0, minute: 0, second: 0, millisecond: 0, microsecond: 0);
+      _repeatingEvents[newEvent.repeatID!]![startDate] = newEvent;
+    }
+
+    // Return the repeating events to the main calendar.
+    return batchUpdateEventModel(events: newEvents);
+  }
+
+  void batchUpdateEventModel({List<IRepeatable>? events}) {
     if (null == events) {
       return;
     }
     for (IRepeatable eventModel in events) {
-      if (ModelType.task == eventModel.modelType &&
-          (eventModel as ToDo).myDay) {
-        eventModel.startDate = eventModel.startDate ?? Constants.today;
-        eventModel.dueDate = eventModel.dueDate ?? Constants.today;
-      }
-
-      DateTime startDay = eventModel.startDate!.copyWith(
-          hour: 0, minute: 0, second: 0, millisecond: 0, microsecond: 0);
-
-      DateTime dueDay = eventModel.dueDate!.copyWith(
-          hour: 0, minute: 0, second: 0, millisecond: 0, microsecond: 0);
-
-      if (!reduceMotion) {
+      if (!(_userModel?.reduceMotion ?? false)) {
         eventModel.fade = Fade.fadeIn;
       }
 
       CalendarEvent event = CalendarEvent(model: eventModel);
 
-      if (_events.containsKey(startDay)) {
-        _events[startDay]!.add(event);
+      if (_events.containsKey(event.startDate)) {
+        _events[event.startDate]!.add(event);
       } else {
-        _events[startDay] = {event};
+        _events[event.startDate] = {event};
       }
 
-      if (_events.containsKey(dueDay)) {
-        _events[dueDay]!.add(event);
+      if (_events.containsKey(event.dueDate)) {
+        _events[event.dueDate]!.add(event);
       } else {
-        _events[dueDay] = {event};
+        _events[event.dueDate] = {event};
       }
     }
+    _selectedEvents.value = getEventsForDay(_selectedDay);
 
     notifyListeners();
   }
-
-  final Map<DateTime, Set<CalendarEvent>> _events = LinkedHashMap(
-    equals: isSameDay,
-    hashCode: getDateTimeHashCode,
-  );
 
   List<CalendarEvent> getEventsForDay(DateTime? day) {
     return _events[day]?.toList() ?? [];

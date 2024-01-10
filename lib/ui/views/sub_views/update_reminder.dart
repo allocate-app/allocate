@@ -6,6 +6,7 @@ import 'package:flutter/rendering.dart';
 import 'package:provider/provider.dart';
 
 import '../../../model/task/reminder.dart';
+import '../../../providers/event_provider.dart';
 import '../../../providers/reminder_provider.dart';
 import '../../../providers/user_provider.dart';
 import '../../../util/constants.dart';
@@ -29,10 +30,12 @@ class UpdateReminderScreen extends StatefulWidget {
 
 class _UpdateReminderScreen extends State<UpdateReminderScreen> {
   late bool checkClose;
+  late bool _checkRepeating;
   late bool showTime;
 
   late final ReminderProvider reminderProvider;
   late final UserProvider userProvider;
+  late final EventProvider eventProvider;
   late final Reminder prevReminder;
 
   // Name
@@ -59,10 +62,12 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
       reminderProvider.curReminder = widget.initialReminder;
     }
     userProvider = Provider.of<UserProvider>(context, listen: false);
+    eventProvider = Provider.of<EventProvider>(context, listen: false);
   }
 
   void initializeParameters() {
     checkClose = false;
+    _checkRepeating = false;
     showTime = null != reminder.dueDate;
     prevReminder = reminder.copy();
   }
@@ -75,13 +80,15 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
     scrollPhysics = AlwaysScrollableScrollPhysics(parent: parentPhysics);
     nameEditingController = TextEditingController(text: reminder.name);
     nameEditingController.addListener(() {
+      _checkRepeating = true;
+      String newText = nameEditingController.text;
+      SemanticsService.announce(newText, Directionality.of(context));
+      reminder.name = newText;
       if (null != nameErrorText && mounted) {
         setState(() {
           nameErrorText = null;
         });
       }
-      SemanticsService.announce(
-          nameEditingController.text, Directionality.of(context));
     });
   }
 
@@ -118,10 +125,7 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
   }
 
   Future<void> handleUpdate() async {
-    // in case the usr doesn't submit to the textfields
-    reminder.name = nameEditingController.text;
-
-    if (prevReminder.frequency != Frequency.once && checkClose) {
+    if (prevReminder.frequency != Frequency.once && _checkRepeating) {
       bool? updateSingle = await showModalBottomSheet<bool?>(
           showDragHandle: true,
           context: context,
@@ -129,76 +133,39 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
             return const HandleRepeatableModal(action: "Update");
           });
 
-      // If the modal is discarded.
       if (null == updateSingle) {
         return;
       }
 
-      // On updating a repeating event, clear all future events
       await reminderProvider
-          .deleteAndCancelFutures(reminder: prevReminder)
-          .catchError((e) {
-        Flushbar? error;
-
-        error = Flushbars.createError(
-          message: e.cause,
-          context: context,
-          dismissCallback: () => error?.dismiss(),
-        );
-
-        error.show(context);
-      },
+          .handleRepeating(
+              reminder: prevReminder, single: updateSingle, delete: false)
+          .catchError((e) => Tiles.displayError(context: context, e: e),
               test: (e) =>
-                  e is FailureToCreateException ||
-                  e is FailureToUploadException);
+                  e is FailureToUpdateException ||
+                  e is FailureToUploadException ||
+                  e is InvalidRepeatingException ||
+                  e is FailureToDeleteException);
 
-      // Updating all future events relies on deleting all future events ->
-      // They are assumed to be re-generated on the next calendar view or day passing.
-      // If only updating the one event, generate the next one in the database.
-
-      if (updateSingle) {
-        prevReminder.repeatable = true;
-        // To prevent getting deleted by editing another repeating event.
-        reminder.repeatID = Constants.generateID();
-
-        await reminderProvider.nextRepeat(reminder: prevReminder).catchError(
-            (e) {
-          Flushbar? error;
-
-          error = Flushbars.createError(
-            message: e.cause,
-            context: context,
-            dismissCallback: () => error?.dismiss(),
-          );
-
-          error.show(context);
-        },
-            test: (e) =>
-                e is FailureToCreateException || e is FailureToUploadException);
-        reminder.repeatable = false;
-        reminder.frequency = Frequency.once;
-      } else {
-        reminder.repeatable = (reminder.frequency != Frequency.once);
+      if (RepeatableState.projected == reminder.repeatableState) {
+        return await eventProvider
+            .updateRepeating(model: reminder)
+            .whenComplete(() => Navigator.pop(context));
       }
-    } else {
-      reminder.repeatable = (reminder.frequency != Frequency.once);
+
+      return await eventProvider
+          .updateEventModel(oldModel: prevReminder, newModel: reminder)
+          .whenComplete(() => Navigator.pop(context));
     }
 
-    return await reminderProvider.updateReminder().whenComplete(() {
-      Navigator.pop(context);
-    }).catchError((e) {
-      Flushbar? error;
-
-      error = Flushbars.createError(
-        message: e.cause,
-        context: context,
-        dismissCallback: () => error?.dismiss(),
-      );
-
-      error.show(context);
-    },
+    await reminderProvider.updateReminder().catchError(
+        (e) => Tiles.displayError(context: context, e: e),
         test: (e) =>
             e is FailureToCreateException || e is FailureToUploadException);
+
+    return await eventProvider
+        .updateEventModel(oldModel: prevReminder, newModel: reminder)
+        .whenComplete(() => Navigator.pop(context));
   }
 
   Future<void> handleDelete() async {
@@ -211,63 +178,38 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
               action: "Delete",
             );
           });
-      // If the modal is discarded.
+
       if (null == deleteSingle) {
         return;
       }
-
       await reminderProvider
-          .deleteAndCancelFutures(reminder: prevReminder)
-          .catchError((e) {
-        Flushbar? error;
+          .handleRepeating(
+              reminder: prevReminder, single: deleteSingle, delete: true)
+          .catchError((e) => Tiles.displayError(context: context, e: e),
+              test: (e) =>
+                  e is FailureToUpdateException ||
+                  e is FailureToUploadException ||
+                  e is InvalidRepeatingException ||
+                  e is FailureToDeleteException);
 
-        error = Flushbars.createError(
-          message: e.cause,
-          context: context,
-          dismissCallback: () => error?.dismiss(),
-        );
-
-        error.show(context);
-      }, test: (e) => e is FailureToDeleteException);
-
-      if (deleteSingle) {
-        prevReminder.repeatable = true;
-
-        // To prevent getting deleted by editing another repeating event.
-        reminder.repeatID = Constants.generateID();
-
-        await reminderProvider.nextRepeat(reminder: prevReminder).catchError(
-            (e) {
-          Flushbar? error;
-
-          error = Flushbars.createError(
-            message: e.cause,
-            context: context,
-            dismissCallback: () => error?.dismiss(),
-          );
-
-          error.show(context);
-        },
-            test: (e) =>
-                e is FailureToCreateException || e is FailureToUploadException);
+      if (RepeatableState.projected == reminder.repeatableState) {
+        return await eventProvider
+            .updateRepeating(model: reminder)
+            .whenComplete(() => Navigator.pop(context));
       }
+      return await eventProvider
+          .updateEventModel(oldModel: prevReminder, newModel: reminder)
+          .whenComplete(() => Navigator.pop(context));
     }
 
-    return await reminderProvider.deleteReminder().whenComplete(() {
-      Navigator.pop(context);
-    }).catchError((e) {
-      Flushbar? error;
-
-      error = Flushbars.createError(
-        message: e.cause,
-        context: context,
-        dismissCallback: () => error?.dismiss(),
-      );
-
-      error.show(context);
-    },
+    await reminderProvider.deleteReminder().catchError(
+        (e) => Tiles.displayError(context: context, e: e),
         test: (e) =>
             e is FailureToCreateException || e is FailureToUploadException);
+
+    return await eventProvider
+        .updateEventModel(oldModel: prevReminder)
+        .whenComplete(() => Navigator.pop(context));
   }
 
   void handleClose({required bool willDiscard}) {
@@ -285,6 +227,7 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
     if (mounted) {
       setState(() {
         checkClose = userProvider.curUser?.checkClose ?? true;
+        _checkRepeating = true;
         nameEditingController.clear();
         reminder.name = "";
       });
@@ -295,6 +238,7 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
     if (mounted) {
       setState(() {
         checkClose = userProvider.curUser?.checkClose ?? true;
+        _checkRepeating = true;
         reminder.name = nameEditingController.text;
       });
     }
@@ -304,6 +248,7 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
     if (mounted) {
       setState(() {
         checkClose = userProvider.curUser?.checkClose ?? true;
+        _checkRepeating = true;
         reminder.dueDate = null;
         showTime = false;
       });
@@ -314,6 +259,7 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
     if (mounted) {
       setState(() {
         checkClose = checkClose ?? this.checkClose;
+        _checkRepeating = true;
         this.checkClose = (checkClose!)
             ? userProvider.curUser?.checkClose ?? checkClose!
             : checkClose!;
@@ -328,6 +274,7 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
     if (mounted) {
       setState(() {
         checkClose = userProvider.curUser?.checkClose ?? true;
+        _checkRepeating = true;
         reminder.frequency = Frequency.once;
         reminder.repeatDays.fillRange(0, reminder.repeatDays.length, false);
         reminder.repeatSkip = 1;
@@ -342,6 +289,7 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
       required int newSkip}) {
     if (mounted) {
       setState(() {
+        _checkRepeating = true;
         checkClose = checkClose ?? this.checkClose;
         this.checkClose = (checkClose!)
             ? userProvider.curUser?.checkClose ?? checkClose!

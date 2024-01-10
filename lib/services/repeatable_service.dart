@@ -10,7 +10,6 @@ import '../util/constants.dart';
 import '../util/enums.dart';
 import '../util/exceptions.dart';
 import '../util/interfaces/i_repeatable.dart';
-import '../util/interfaces/repository/function/repeatable.dart';
 import '../util/interfaces/repository/model/deadline_repository.dart';
 import '../util/interfaces/repository/model/reminder_repository.dart';
 import '../util/interfaces/repository/model/subtask_repository.dart';
@@ -18,6 +17,7 @@ import '../util/interfaces/repository/model/todo_repository.dart';
 
 class RepeatableService {
   static final RepeatableService _instance = RepeatableService._internal();
+
   static RepeatableService get instance => _instance;
 
   final ToDoRepository _toDoRepository = ToDoRepo.instance;
@@ -86,6 +86,27 @@ class RepeatableService {
           ToDo delta = toDo.copyWith(
               repeatableState: RepeatableState.delta, myDay: false);
           delta.toDelete = delete;
+          // if the delta has subtasks, store them.
+          if (TaskType.small != delta.taskType) {
+            List<Subtask> deltaSubtasks = (delta.subtasks.isNotEmpty)
+                ? delta.subtasks
+                : await _subtaskRepository.getRepoByTaskID(
+                    id: toDo.id, limit: Constants.numTasks[toDo.taskType]!);
+
+            int newWeight = 0;
+            for (int i = 0; i < deltaSubtasks.length; i++) {
+              deltaSubtasks[i] = deltaSubtasks[i].copyWith(
+                  completed: false,
+                  taskID: delta.id,
+                  customViewIndex: i,
+                  lastUpdated: DateTime.now());
+              newWeight += deltaSubtasks[i].weight;
+            }
+            delta.weight = newWeight;
+
+            await _subtaskRepository.updateBatch(deltaSubtasks);
+          }
+
           await _toDoRepository.update(delta);
           return;
         case ModelType.deadline:
@@ -147,8 +168,8 @@ class RepeatableService {
 
         // This should probably throw an error.
         if (null == template ||
-            null == template.startDate ||
-            null == template.dueDate) {
+            null == template.originalStart ||
+            null == template.originalDue) {
           toDo.repeatable = false;
           toDo.frequency = Frequency.once;
           await _toDoRepository.update(toDo);
@@ -159,7 +180,7 @@ class RepeatableService {
         // Use the max date between the template and the original to only
         // update future events.
         DateTime? startDate =
-            (toDo.originalStart?.isAfter(template.originalStart!) ?? true)
+            (toDo.originalStart?.isAfter(template.originalStart!) ?? false)
                 ? toDo.originalStart
                 : template.originalStart;
         nextRepeatDate =
@@ -167,6 +188,7 @@ class RepeatableService {
 
         if (null == nextRepeatDate) {
           toDo.repeatable = false;
+          toDo.frequency = Frequency.once;
           await _toDoRepository.update(toDo);
           return;
         }
@@ -230,8 +252,8 @@ class RepeatableService {
 
         // This should probably throw an error.
         if (null == template ||
-            null == template.startDate ||
-            null == template.dueDate) {
+            null == template.originalStart ||
+            null == template.originalDue) {
           deadline.repeatable = false;
           deadline.frequency = Frequency.once;
           await _deadlineRepository.update(deadline);
@@ -242,9 +264,10 @@ class RepeatableService {
         // Use the max date between the template and the original to only
         // update future events.
         DateTime? startDate =
-            (deadline.originalStart?.isAfter(template.originalStart!) ?? true)
+            (deadline.originalStart?.isAfter(template.originalStart!) ?? false)
                 ? deadline.originalStart
                 : template.originalStart;
+
         nextRepeatDate =
             getRepeatDate(model: template.copyWith(originalStart: startDate));
         // Get the next repeat date using the template.
@@ -253,6 +276,7 @@ class RepeatableService {
 
         if (null == nextRepeatDate) {
           deadline.repeatable = false;
+          deadline.frequency = Frequency.once;
           await _deadlineRepository.update(deadline);
           return;
         }
@@ -306,9 +330,7 @@ class RepeatableService {
             await _reminderRepository.getTemplate(repeatID: model.repeatID!);
 
         // This should probably throw an error.
-        if (null == template ||
-            null == template.startDate ||
-            null == template.dueDate) {
+        if (null == template || null == template.originalDue) {
           reminder.repeatable = false;
           reminder.frequency = Frequency.once;
           await _reminderRepository.update(reminder);
@@ -319,7 +341,7 @@ class RepeatableService {
         // Use the max date between the template and the original to only
         // update future events.
         DateTime? dueDate =
-            (reminder.originalDue?.isAfter(template.originalDue!) ?? true)
+            (reminder.originalDue?.isAfter(template.originalDue!) ?? false)
                 ? reminder.originalDue
                 : template.originalDue;
         // Get the next repeat date using the template.
@@ -328,6 +350,7 @@ class RepeatableService {
 
         if (null == nextRepeatDate) {
           reminder.repeatable = false;
+          reminder.frequency = Frequency.once;
           await _reminderRepository.update(reminder);
           return;
         }
@@ -377,9 +400,12 @@ class RepeatableService {
 
         await _toDoRepository.deleteFutures(deleteFrom: model as ToDo);
         if (null == template) {
+          //ALSO DELETE THE MODEL
+          await _toDoRepository.delete(model);
           return;
         }
         await _toDoRepository.delete(template);
+        await _toDoRepository.delete(model);
         return;
       case ModelType.deadline:
         Deadline? template =
@@ -387,9 +413,11 @@ class RepeatableService {
         model.startDate ??= DateTime.now();
         await _deadlineRepository.deleteFutures(deleteFrom: model as Deadline);
         if (null == template) {
+          await _deadlineRepository.delete(model);
           return;
         }
         await _deadlineRepository.delete(template);
+        await _deadlineRepository.delete(model);
         return;
       case ModelType.reminder:
         Reminder? template =
@@ -397,9 +425,11 @@ class RepeatableService {
         model.startDate ??= DateTime.now();
         await _reminderRepository.deleteFutures(deleteFrom: model as Reminder);
         if (null == template) {
+          await _reminderRepository.delete(model);
           return;
         }
         await _reminderRepository.delete(template);
+        await _reminderRepository.delete(model);
         return;
       default:
         return;
@@ -536,24 +566,290 @@ class RepeatableService {
     }
   }
 
-  // TODO: Implement this to return a list of objects instead of generating the database.
-  Future<void> populateCalendar(
-      {required DateTime limit, ModelType modelType = ModelType.task}) async {
-    DateTime startTime = DateTime.now();
-
-    Repeatable<IRepeatable> repo = switch (modelType) {
-      ModelType.reminder => _reminderRepository,
-      ModelType.deadline => _deadlineRepository,
-      _ => _toDoRepository
-    } as Repeatable<IRepeatable>;
-
-    while (startTime.isBefore(limit)) {
-      List<IRepeatable> repeatables = await repo.getRepeatables(now: startTime);
-      for (IRepeatable repeatable in repeatables) {
-        await nextRepeat(model: repeatable);
-      }
-      startTime = startTime.copyWith(day: startTime.day + 1);
+  // TODO: SEND THE -MODEL-.
+  Future<List<IRepeatable>> populateCalendar({
+    DateTime? limit,
+    int? repeatID,
+    ModelType? modelType,
+    IRepeatable? model,
+  }) async {
+    if ((null == repeatID || null == modelType) && null == model) {
+      return [];
     }
+
+    limit = limit ?? Constants.today;
+
+    modelType = modelType ?? model!.modelType;
+    repeatID = repeatID ?? model!.repeatID;
+
+    List<IRepeatable> newRepeatables = List.empty(growable: true);
+    switch (modelType) {
+      case ModelType.task:
+        ToDo? nextRepeating;
+        if (null != model) {
+          nextRepeating = model as ToDo;
+        } else {
+          nextRepeating = await _toDoRepository.getNextRepeat(
+              repeatID: repeatID!, now: limit);
+        }
+        if (null == nextRepeating) {
+          return newRepeatables;
+        }
+        ToDo? template = await _toDoRepository.getTemplate(repeatID: repeatID!);
+        if (null == template ||
+            null == template.originalStart ||
+            null == template.originalDue) {
+          return newRepeatables;
+        }
+
+        DateTime? startDate =
+            (nextRepeating.originalStart?.isAfter(template.originalStart!) ??
+                    false)
+                ? nextRepeating.originalStart
+                : template.originalStart;
+
+        if (null == startDate) {
+          return newRepeatables;
+        }
+
+        List<Subtask> subtasks = [];
+        if (TaskType.small != nextRepeating.taskType) {
+          subtasks = await _subtaskRepository.getRepoByTaskID(
+              id: nextRepeating.id,
+              limit: Constants.numTasks[nextRepeating.taskType]!);
+        }
+
+        while (startDate!.isBefore(limit)) {
+          // get the next repeat date
+          DateTime? nextRepeatDate =
+              getRepeatDate(model: template.copyWith(originalStart: startDate));
+          // if it's somehow null, there's an issue and just return early.
+          if (null == nextRepeatDate) {
+            return newRepeatables;
+          }
+
+          int offset = getDateTimeDayOffset(
+              start: template.startDate, end: template.dueDate);
+          DateTime newDue =
+              nextRepeatDate.copyWith(day: nextRepeatDate.day + offset);
+
+          ToDo? delta = await _toDoRepository.getDelta(
+              onDate: nextRepeatDate, repeatID: repeatID);
+
+          ToDo newToDo;
+          // If there's no delta, create from the template.
+          if (null == delta) {
+            newToDo = template.copyWith(
+              startDate: nextRepeatDate,
+              originalStart: nextRepeatDate,
+              dueDate: newDue,
+              originalDue: newDue,
+              repeatableState: RepeatableState.projected,
+              completed: false,
+              repeatable: true,
+              myDay: false,
+              lastUpdated: DateTime.now(),
+            );
+
+            if (TaskType.small != newToDo.taskType) {
+              int newWeight = 0;
+              newToDo.subtasks = List.empty(growable: true);
+              for (int i = 0; i < subtasks.length; i++) {
+                newToDo.subtasks.add(subtasks[i].copyWith(
+                    customViewIndex: i,
+                    taskID: newToDo.id,
+                    completed: false,
+                    lastUpdated: DateTime.now()));
+                newWeight += subtasks[i].weight;
+              }
+
+              newToDo.weight = newWeight;
+            }
+          } else {
+            // If it's "deleted," just skip it in the calendar.
+            if (!delta.toDelete) {
+              startDate = nextRepeatDate;
+              continue;
+            }
+            newToDo = delta.copyWith(
+              originalStart: nextRepeatDate,
+              originalDue: newDue,
+              myDay: false,
+              lastUpdated: DateTime.now(),
+            );
+
+            // This should preserve the subtasks.
+            newToDo.id = delta.id;
+          }
+
+          newRepeatables.add(newToDo);
+
+          // Increment the loop
+          startDate = nextRepeatDate;
+        }
+        break;
+      case ModelType.deadline:
+        Deadline? nextRepeating;
+        if (null != model) {
+          nextRepeating = model as Deadline;
+        } else {
+          nextRepeating = await _deadlineRepository.getNextRepeat(
+              repeatID: repeatID!, now: limit);
+        }
+        if (null == nextRepeating) {
+          return newRepeatables;
+        }
+
+        Deadline? template =
+            await _deadlineRepository.getTemplate(repeatID: repeatID!);
+        if (null == template ||
+            null == template.originalStart ||
+            null == template.originalDue) {
+          return newRepeatables;
+        }
+
+        DateTime? startDate =
+            (nextRepeating.originalStart?.isAfter(template.originalStart!) ??
+                    false)
+                ? nextRepeating.originalStart
+                : template.originalStart;
+
+        if (null == startDate) {
+          return newRepeatables;
+        }
+
+        while (startDate!.isBefore(limit)) {
+          // get the next repeat date
+          DateTime? nextRepeatDate =
+              getRepeatDate(model: template.copyWith(originalStart: startDate));
+          // if it's somehow null, there's an issue and just return early.
+          if (null == nextRepeatDate) {
+            return newRepeatables;
+          }
+
+          int offset = getDateTimeDayOffset(
+              start: template.startDate, end: template.dueDate);
+          int warnOffset = getDateTimeDayOffset(
+              start: template.startDate, end: template.warnDate);
+
+          DateTime? newDue =
+              nextRepeatDate.copyWith(day: nextRepeatDate.day + offset);
+
+          DateTime? newWarn =
+              nextRepeatDate.copyWith(day: nextRepeatDate.day + warnOffset);
+
+          Deadline? delta = await _deadlineRepository.getDelta(
+              onDate: nextRepeatDate, repeatID: repeatID);
+
+          Deadline newDeadline;
+          // If there's no delta, create from the template.
+          if (null == delta) {
+            newDeadline = template.copyWith(
+              startDate: nextRepeatDate,
+              originalStart: nextRepeatDate,
+              dueDate: newDue,
+              originalDue: newDue,
+              warnDate: newWarn,
+              originalWarn: newWarn,
+              repeatableState: RepeatableState.projected,
+              repeatable: true,
+              lastUpdated: DateTime.now(),
+            );
+          } else {
+            // If it's "deleted," just skip it in the calendar.
+            if (!delta.toDelete) {
+              startDate = nextRepeatDate;
+              continue;
+            }
+            newDeadline = delta.copyWith(
+              originalStart: nextRepeatDate,
+              originalDue: newDue,
+              originalWarn: newWarn,
+              lastUpdated: DateTime.now(),
+            );
+
+            newDeadline.id = delta.id;
+          }
+
+          newRepeatables.add(newDeadline);
+
+          // Increment the loop
+          startDate = nextRepeatDate;
+        }
+
+        break;
+      case ModelType.reminder:
+        Reminder? nextRepeating;
+        if (null != model) {
+          nextRepeating = model as Reminder;
+        } else {
+          nextRepeating = await _reminderRepository.getNextRepeat(
+              repeatID: repeatID!, now: limit);
+        }
+        if (null == nextRepeating) {
+          return newRepeatables;
+        }
+        Reminder? template =
+            await _reminderRepository.getTemplate(repeatID: repeatID!);
+        if (null == template || null == template.originalDue) {
+          return newRepeatables;
+        }
+
+        DateTime? dueDate =
+            (nextRepeating.originalDue?.isAfter(template.originalDue!) ?? false)
+                ? nextRepeating.originalStart
+                : template.originalStart;
+
+        if (null == dueDate) {
+          return newRepeatables;
+        }
+
+        while (dueDate!.isBefore(limit)) {
+          // get the next repeat date
+          DateTime? nextRepeatDate =
+              getRepeatDate(model: template.copyWith(originalDue: dueDate));
+          // if it's somehow null, there's an issue and just return early.
+          if (null == nextRepeatDate) {
+            return newRepeatables;
+          }
+
+          Reminder? delta = await _reminderRepository.getDelta(
+              onDate: nextRepeatDate, repeatID: repeatID);
+          Reminder newReminder;
+          // If there's no delta, create from the template.
+          if (null == delta) {
+            newReminder = template.copyWith(
+              dueDate: nextRepeatDate,
+              originalDue: nextRepeatDate,
+              repeatableState: RepeatableState.projected,
+              repeatable: true,
+              lastUpdated: DateTime.now(),
+            );
+          } else {
+            // If it's "deleted," just skip it in the calendar.
+            if (!delta.toDelete) {
+              dueDate = nextRepeatDate;
+              continue;
+            }
+            newReminder = delta.copyWith(
+              originalDue: nextRepeatDate,
+              lastUpdated: DateTime.now(),
+            );
+
+            newReminder.id = delta.id;
+          }
+
+          newRepeatables.add(newReminder);
+
+          // Increment the loop
+          dueDate = nextRepeatDate;
+        }
+        break;
+      default:
+        return newRepeatables;
+    }
+
+    return newRepeatables;
   }
 
   Future<List<int>> deleteFutures({IRepeatable? model}) async {

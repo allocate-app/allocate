@@ -451,6 +451,18 @@ class DeadlineRepo implements DeadlineRepository {
           .findAll();
 
   @override
+  Future<Deadline?> getNextRepeat(
+          {required int repeatID, DateTime? now}) async =>
+      await _isarClient.deadlines
+          .where()
+          .repeatableEqualTo(true)
+          .filter()
+          .repeatIDEqualTo(repeatID)
+          .repeatableStateEqualTo(RepeatableState.normal)
+          .originalStartLessThan(now ?? Constants.today)
+          .findFirst();
+
+  @override
   Future<Deadline?> getDelta(
           {required DateTime onDate, required int repeatID}) async =>
       await _isarClient.deadlines

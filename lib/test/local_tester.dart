@@ -196,8 +196,6 @@ class _LocalTester extends State<LocalTester> with WindowListener {
     // Test to inject 100 tasks.
     // testListView();
 
-    // themeProvider = Provider.of<ThemeProvider>(context, listen: false);
-
     userProvider = Provider.of<UserProvider>(context, listen: false);
 
     super.initState();
@@ -246,6 +244,8 @@ class _LocalTester extends State<LocalTester> with WindowListener {
               taskType: TaskType.small,
               name: 'Test: $i',
               expectedDuration: 0,
+              weight: 1,
+              myDay: true,
               realDuration: 0,
               startDate: DateTime.now().subtract(const Duration(days: 1)),
               dueDate: DateTime.now().subtract(const Duration(days: 1)),

@@ -120,8 +120,11 @@ class DeadlineProvider extends ChangeNotifier {
     curDeadline = Deadline(
         name: name,
         description: description,
+        originalStart: startDate,
         startDate: startDate,
         dueDate: dueDate,
+        originalDue: dueDate,
+        originalWarn: warnDate,
         warnMe: warnMe,
         warnDate: warnDate,
         priority: priority,
@@ -135,6 +138,9 @@ class DeadlineProvider extends ChangeNotifier {
     curDeadline!.notificationID = Constants.generate32ID();
     try {
       curDeadline = await _deadlineRepo.create(curDeadline!);
+      if (curDeadline!.repeatable) {
+        await createTemplate(deadline: curDeadline!);
+      }
 
       if (curDeadline!.warnMe &&
           validateWarnDate(warnDate: curDeadline!.warnDate)) {
@@ -169,6 +175,16 @@ class DeadlineProvider extends ChangeNotifier {
 
     try {
       curDeadline = await _deadlineRepo.update(curDeadline!);
+      if (curDeadline!.repeatable) {
+        Deadline? template =
+            await _deadlineRepo.getTemplate(repeatID: curDeadline!.repeatID!);
+        if (null == template) {
+          curDeadline!.originalStart = curDeadline!.startDate;
+          curDeadline!.originalDue = curDeadline!.dueDate;
+          curDeadline!.originalWarn = curDeadline!.warnDate;
+          await createTemplate(deadline: curDeadline!);
+        }
+      }
       await cancelNotification(deadline: curDeadline);
       if (deadline.warnMe &&
           validateWarnDate(warnDate: curDeadline!.warnDate)) {
@@ -277,6 +293,28 @@ class DeadlineProvider extends ChangeNotifier {
     }
   }
 
+  Future<void> handleRepeating(
+      {Deadline? deadline, bool? single = false, bool delete = false}) async {
+    try {
+      return await _repeatService.handleRepeating(
+          model: deadline, single: single, delete: delete);
+
+      //TODO: Clear key -> run repeat routine.
+    } on InvalidRepeatingException catch (e) {
+      log(e.cause);
+      return Future.error(e);
+    }
+  }
+
+  Future<void> createTemplate({Deadline? deadline}) async {
+    if (null == deadline) {
+      return;
+    }
+    Deadline template = deadline.copyWith(
+        repeatableState: RepeatableState.template, lastUpdated: DateTime.now());
+    await _deadlineRepo.create(template);
+  }
+
   Future<List<int>> deleteFutures({Deadline? deadline}) async {
     try {
       return await _repeatService.deleteFutures(
@@ -294,20 +332,6 @@ class DeadlineProvider extends ChangeNotifier {
     List<int> cancelIDs = await deleteFutures(deadline: deadline);
     await _notificationService.cancelMultiple(ids: cancelIDs);
   }
-
-  // Future<void> populateCalendar({DateTime? limit}) async {
-  //   return;
-  //   // try {
-  //   //   return await _deadlineService.populateCalendar(
-  //   //       limit: limit ?? DateTime.now());
-  //   // } on FailureToUpdateException catch (e) {
-  //   //   log(e.cause);
-  //   //   return Future.error(e);
-  //   // } on FailureToUploadException catch (e) {
-  //   //   log(e.cause);
-  //   //   return Future.error(e);
-  //   // }
-  // }
 
   Future<List<Deadline>> getDeleted(
           {int limit = Constants.minLimitPerQuery, int offset = 0}) async =>

@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 
 import '../../../model/task/deadline.dart';
 import '../../../providers/deadline_provider.dart';
+import '../../../providers/event_provider.dart';
 import '../../../providers/user_provider.dart';
 import '../../../util/constants.dart';
 import '../../../util/enums.dart';
@@ -29,11 +30,13 @@ class UpdateDeadlineScreen extends StatefulWidget {
 
 class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
   late bool checkClose;
+  late bool _checkRepeating;
 
   late Deadline prevDeadline;
 
   late final DeadlineProvider deadlineProvider;
   late final UserProvider userProvider;
+  late final EventProvider eventProvider;
 
   // Scrolling
   late final ScrollController mobileScrollController;
@@ -45,8 +48,6 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
   String? nameErrorText;
 
   late final TextEditingController descriptionEditingController;
-
-  late TextEditingController repeatSkipEditingController;
 
   Deadline get deadline => deadlineProvider.curDeadline!;
 
@@ -68,12 +69,12 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
     desktopScrollController.dispose();
     nameEditingController.dispose();
     descriptionEditingController.dispose();
-    repeatSkipEditingController.dispose();
     super.dispose();
   }
 
   void initializeParameters() {
     checkClose = false;
+    _checkRepeating = false;
     prevDeadline = deadline.copy();
     prevDeadline.id = deadline.id;
 
@@ -89,6 +90,7 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
     }
 
     userProvider = Provider.of<UserProvider>(context, listen: false);
+    eventProvider = Provider.of<EventProvider>(context, listen: false);
   }
 
   void initializeControllers() {
@@ -100,29 +102,24 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
     scrollPhysics = AlwaysScrollableScrollPhysics(parent: parentPhysics);
     nameEditingController = TextEditingController(text: deadline.name);
     nameEditingController.addListener(() {
+      _checkRepeating = true;
+      String newText = nameEditingController.text;
+      SemanticsService.announce(newText, Directionality.of(context));
+      deadline.name = newText;
       if (null != nameErrorText && mounted) {
         setState(() {
           nameErrorText = null;
         });
       }
-      SemanticsService.announce(
-          nameEditingController.text, Directionality.of(context));
     });
 
     descriptionEditingController =
         TextEditingController(text: deadline.description);
     descriptionEditingController.addListener(() {
+      _checkRepeating = true;
       String newText = descriptionEditingController.text;
       SemanticsService.announce(newText, Directionality.of(context));
-    });
-
-    repeatSkipEditingController =
-        TextEditingController(text: deadline.repeatSkip.toString());
-    repeatSkipEditingController.addListener(() {
-      String newText = descriptionEditingController.text;
-      SemanticsService.announce(newText, Directionality.of(context));
-      // deadline.repeatSkip = int.tryParse(newText) ?? deadline.repeatSkip;
-      // deadline.repeatSkip = max(deadline.repeatSkip, 1);
+      deadline.description = newText;
     });
   }
 
@@ -173,6 +170,7 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
     if (mounted) {
       setState(() {
         checkClose = userProvider.curUser?.checkClose ?? true;
+        _checkRepeating = true;
         nameEditingController.clear();
         deadline.name = "";
       });
@@ -183,6 +181,7 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
     if (mounted) {
       setState(() {
         checkClose = userProvider.curUser?.checkClose ?? true;
+        _checkRepeating = true;
         deadline.name = nameEditingController.text;
       });
     }
@@ -192,6 +191,7 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
     if (mounted) {
       setState(() {
         checkClose = userProvider.curUser?.checkClose ?? true;
+        _checkRepeating = true;
         deadline.description = descriptionEditingController.text;
       });
     }
@@ -199,7 +199,7 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
 
   Future<void> handleRepeating(
       {String action = "", bool delete = false}) async {
-    if (prevDeadline.frequency != Frequency.once && checkClose) {
+    if (prevDeadline.frequency != Frequency.once) {
       bool? modifySingle = await showModalBottomSheet<bool?>(
           showDragHandle: true,
           context: context,
@@ -271,41 +271,85 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
   }
 
   Future<void> handleUpdate() async {
-    await handleRepeating(action: "Update");
-    return await deadlineProvider.updateDeadline().whenComplete(() {
-      Navigator.pop(context);
-    }).catchError((e) {
-      Flushbar? error;
+    if (prevDeadline.frequency != Frequency.once && _checkRepeating) {
+      bool? updateSingle = await showModalBottomSheet<bool?>(
+          showDragHandle: true,
+          context: context,
+          builder: (BuildContext context) {
+            return const HandleRepeatableModal(action: "Update");
+          });
 
-      error = Flushbars.createError(
-        message: e.cause,
-        context: context,
-        dismissCallback: () => error?.dismiss(),
-      );
+      if (null == updateSingle) {
+        return;
+      }
+      await deadlineProvider
+          .handleRepeating(
+              deadline: prevDeadline, single: updateSingle, delete: false)
+          .catchError((e) => Tiles.displayError(context: context, e: e),
+              test: (e) =>
+                  e is FailureToUpdateException ||
+                  e is FailureToUploadException ||
+                  e is InvalidRepeatingException ||
+                  e is FailureToDeleteException);
 
-      error.show(context);
-    },
+      if (RepeatableState.projected == deadline.repeatableState) {
+        return await eventProvider
+            .updateRepeating(model: deadline)
+            .whenComplete(() => Navigator.pop(context));
+      }
+
+      return await eventProvider
+          .updateEventModel(oldModel: prevDeadline, newModel: deadline)
+          .whenComplete(() => Navigator.pop(context));
+    }
+    await deadlineProvider.updateDeadline(deadline: deadline).catchError(
+        (e) => Tiles.displayError(context: context, e: e),
         test: (e) =>
-            e is FailureToCreateException || e is FailureToUploadException);
+            e is FailureToUpdateException || e is FailureToUploadException);
+
+    return await eventProvider
+        .updateEventModel(oldModel: prevDeadline, newModel: deadline)
+        .whenComplete(() => Navigator.pop(context));
   }
 
   Future<void> handleDelete() async {
-    checkClose = userProvider.curUser?.checkClose ?? true;
-    await handleRepeating(action: "Delete", delete: true);
+    if (prevDeadline.frequency != Frequency.once) {
+      bool? deleteSingle = await showModalBottomSheet<bool?>(
+          showDragHandle: true,
+          context: context,
+          builder: (BuildContext context) {
+            return const HandleRepeatableModal(
+              action: "Delete",
+            );
+          });
 
-    return await deadlineProvider.deleteDeadline().whenComplete(() {
-      Navigator.pop(context);
-    }).catchError((e) {
-      Flushbar? error;
+      if (null == deleteSingle) {
+        return;
+      }
+      await deadlineProvider
+          .handleRepeating(
+              deadline: prevDeadline, single: deleteSingle, delete: true)
+          .catchError((e) => Tiles.displayError(context: context, e: e),
+              test: (e) =>
+                  e is InvalidRepeatingException ||
+                  e is FailureToUpdateException ||
+                  e is FailureToUploadException ||
+                  e is FailureToDeleteException);
 
-      error = Flushbars.createError(
-        message: e.cause,
-        context: context,
-        dismissCallback: () => error?.dismiss(),
-      );
+      if (RepeatableState.projected == deadline.repeatableState) {
+        return await eventProvider
+            .updateRepeating(model: deadline)
+            .whenComplete(() => Navigator.pop(context));
+      }
 
-      error.show(context);
-    }, test: (e) => e is FailureToDeleteException);
+      return await eventProvider
+          .updateEventModel(oldModel: prevDeadline)
+          .whenComplete(() => Navigator.pop(context));
+    }
+
+    await deadlineProvider.deleteDeadline(deadline: deadline).catchError(
+        (e) => Tiles.displayError(context: context, e: e),
+        test: (e) => e is FailureToDeleteException);
   }
 
   Future<void> updateAndValidate() async {
@@ -332,6 +376,7 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
     if (mounted) {
       setState(() {
         checkClose = userProvider.curUser?.checkClose ?? true;
+        _checkRepeating = true;
         deadline.priority = newSelection.first;
       });
     }
@@ -341,6 +386,7 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
     if (mounted) {
       setState(() {
         checkClose = userProvider.curUser?.checkClose ?? true;
+        _checkRepeating = true;
         deadline.warnDate = null;
         showWarnTime = false;
         deadline.warnMe = false;
@@ -352,6 +398,7 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
     if (mounted) {
       setState(() {
         checkClose = checkClose ?? this.checkClose;
+        _checkRepeating = true;
         this.checkClose = (checkClose!)
             ? userProvider.curUser?.checkClose ?? checkClose!
             : checkClose!;
@@ -367,6 +414,7 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
     if (mounted) {
       setState(() {
         checkClose = userProvider.curUser?.checkClose ?? true;
+        _checkRepeating = true;
         deadline.startDate = null;
         deadline.dueDate = null;
         showStartTime = false;
@@ -379,6 +427,7 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
     if (mounted) {
       setState(() {
         checkClose = checkClose ?? this.checkClose;
+        _checkRepeating = true;
         this.checkClose = (checkClose!)
             ? userProvider.curUser?.checkClose ?? checkClose!
             : checkClose!;
@@ -397,6 +446,7 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
     if (mounted) {
       setState(() {
         checkClose = userProvider.curUser?.checkClose ?? true;
+        _checkRepeating = true;
         showStartTime = false;
         showDueTime = false;
       });
@@ -407,6 +457,7 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
     if (mounted) {
       setState(() {
         checkClose = checkClose ?? this.checkClose;
+        _checkRepeating = true;
         this.checkClose = (checkClose!)
             ? userProvider.curUser?.checkClose ?? checkClose!
             : checkClose!;
@@ -426,6 +477,7 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
     if (mounted) {
       setState(() {
         checkClose = userProvider.curUser?.checkClose ?? true;
+        _checkRepeating = true;
         deadline.frequency = Frequency.once;
 
         deadline.repeatDays.fillRange(0, deadline.repeatDays.length, false);
@@ -442,6 +494,7 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
     if (mounted) {
       setState(() {
         checkClose = checkClose ?? this.checkClose;
+        _checkRepeating = true;
         this.checkClose = (checkClose!)
             ? userProvider.curUser?.checkClose ?? checkClose!
             : checkClose!;

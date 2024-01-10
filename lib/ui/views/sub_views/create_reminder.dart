@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:provider/provider.dart';
 
+import '../../../providers/event_provider.dart';
 import '../../../providers/reminder_provider.dart';
 import '../../../providers/user_provider.dart';
 import '../../../util/constants.dart';
@@ -28,6 +29,7 @@ class _CreateReminderScreen extends State<CreateReminderScreen> {
 
   late final ReminderProvider reminderProvider;
   late final UserProvider userProvider;
+  late final EventProvider eventProvider;
 
   // Name
   late String name;
@@ -62,6 +64,7 @@ class _CreateReminderScreen extends State<CreateReminderScreen> {
   void initializeProviders() {
     reminderProvider = Provider.of<ReminderProvider>(context, listen: false);
     userProvider = Provider.of<UserProvider>(context, listen: false);
+    eventProvider = Provider.of<EventProvider>(context, listen: false);
   }
 
   void initializeParameters() {
@@ -81,13 +84,14 @@ class _CreateReminderScreen extends State<CreateReminderScreen> {
     scrollPhysics = AlwaysScrollableScrollPhysics(parent: parentPhysics);
     nameEditingController = TextEditingController();
     nameEditingController.addListener(() {
+      String newText = nameEditingController.text;
       if (null != nameErrorText && mounted) {
         setState(() {
           nameErrorText = null;
         });
       }
-      SemanticsService.announce(
-          nameEditingController.text, Directionality.of(context));
+      SemanticsService.announce(newText, Directionality.of(context));
+      name = newText;
     });
   }
 
@@ -135,9 +139,6 @@ class _CreateReminderScreen extends State<CreateReminderScreen> {
       weekdays[index] = true;
     }
 
-    // in case the usr doesn't submit to the textfields
-    name = nameEditingController.text;
-
     await reminderProvider
         .createReminder(
             name: name,
@@ -146,20 +147,13 @@ class _CreateReminderScreen extends State<CreateReminderScreen> {
             frequency: frequency,
             repeatDays: weekdays,
             repeatSkip: repeatSkip)
-        .whenComplete(() => Navigator.pop(context))
-        .catchError((e) {
-      Flushbar? error;
-
-      error = Flushbars.createError(
-        message: e.cause,
-        context: context,
-        dismissCallback: () => error?.dismiss(),
-      );
-
-      error.show(context);
-    },
+        .catchError((e) => Tiles.displayError(context: context, e: e),
             test: (e) =>
                 e is FailureToCreateException || e is FailureToUploadException);
+
+    await eventProvider
+        .insertEventModel(model: reminderProvider.curReminder!, notify: true)
+        .whenComplete(() => Navigator.pop(context));
   }
 
   void handleClose({required bool willDiscard}) {

@@ -1,7 +1,6 @@
 import "dart:io";
 import "dart:math";
 
-import "package:another_flushbar/flushbar.dart";
 import "package:auto_size_text/auto_size_text.dart";
 import "package:flutter/material.dart";
 import "package:flutter/semantics.dart";
@@ -10,6 +9,7 @@ import "package:provider/provider.dart";
 
 import "../../../model/task/group.dart";
 import "../../../model/task/subtask.dart";
+import "../../../providers/event_provider.dart";
 import "../../../providers/group_provider.dart";
 import "../../../providers/subtask_provider.dart";
 import "../../../providers/todo_provider.dart";
@@ -17,7 +17,6 @@ import "../../../providers/user_provider.dart";
 import "../../../util/constants.dart";
 import "../../../util/enums.dart";
 import "../../../util/exceptions.dart";
-import "../../widgets/flushbars.dart";
 import "../../widgets/listtile_widgets.dart";
 import "../../widgets/padded_divider.dart";
 import "../../widgets/search_recents_bar.dart";
@@ -42,6 +41,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
   late final ToDoProvider toDoProvider;
   late final SubtaskProvider subtaskProvider;
   late final GroupProvider groupProvider;
+  late final EventProvider eventProvider;
 
   // Scrolling
   late final ScrollController mobileScrollController;
@@ -95,7 +95,6 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
   // Repeat
   late Frequency frequency;
 
-  late TextEditingController repeatSkipEditingController;
   late int repeatSkip;
 
   late Set<int> weekdayList;
@@ -155,13 +154,15 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
     scrollPhysics = AlwaysScrollableScrollPhysics(parent: parentPhysics);
     nameEditingController = TextEditingController();
     nameEditingController.addListener(() {
+      String newText = nameEditingController.text;
       if (null != nameErrorText && mounted) {
         setState(() {
           nameErrorText = null;
         });
       }
-      SemanticsService.announce(
-          nameEditingController.text, Directionality.of(context));
+      SemanticsService.announce(newText, Directionality.of(context));
+
+      name = newText;
     });
 
     groupEditingController = SearchController();
@@ -172,12 +173,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
     descriptionEditingController.addListener(() {
       String newText = descriptionEditingController.text;
       SemanticsService.announce(newText, Directionality.of(context));
-    });
-
-    repeatSkipEditingController = TextEditingController();
-    repeatSkipEditingController.addListener(() {
-      String newText = descriptionEditingController.text;
-      SemanticsService.announce(newText, Directionality.of(context));
+      description = newText;
     });
 
     subtasksAnchorController = MenuController();
@@ -188,16 +184,15 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
     toDoProvider = Provider.of<ToDoProvider>(context, listen: false);
     subtaskProvider = Provider.of<SubtaskProvider>(context, listen: false);
     groupProvider = Provider.of<GroupProvider>(context, listen: false);
+    eventProvider = Provider.of<EventProvider>(context, listen: false);
 
     subtaskProvider.addListener(resetSubtasks);
   }
 
   @override
   void dispose() {
-    print("disposing");
     nameEditingController.dispose();
     descriptionEditingController.dispose();
-    repeatSkipEditingController.dispose();
     mobileScrollController.dispose();
     desktopScrollController.dispose();
     groupEditingController.dispose();
@@ -267,10 +262,18 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
 
   void mergeDateTimes() {
     startDate = startDate?.copyWith(
-        hour: startTime?.hour ?? 0, minute: startTime?.minute ?? 0);
+        hour: startTime?.hour ?? 0,
+        minute: startTime?.minute ?? 0,
+        second: 0,
+        millisecond: 0,
+        microsecond: 0);
 
     dueDate = dueDate?.copyWith(
-        hour: dueTime?.hour ?? 0, minute: dueTime?.minute ?? 0);
+        hour: dueTime?.hour ?? 0,
+        minute: dueTime?.minute ?? 0,
+        second: 0,
+        millisecond: 0,
+        microsecond: 0);
   }
 
   Future<void> handleCreate() async {
@@ -278,49 +281,40 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
       weekdays[index] = true;
     }
 
-    // in case the usr doesn't submit to the textfields
-    name = nameEditingController.text;
-    description = descriptionEditingController.text;
-
     await toDoProvider
         .createToDo(
-      groupID: groupID,
-      groupIndex: groupProvider.getToDoCount(id: groupID)?.value,
-      taskType: taskType,
-      name: name,
-      description: description,
-      weight: (taskType == TaskType.small) ? weight : sumWeight,
-      expectedDuration: expectedDuration,
-      realDuration: realDuration,
-      priority: priority,
-      startDate: startDate,
-      dueDate: dueDate,
-      myDay: myDay,
-      completed: completed,
-      repeatable: frequency != Frequency.once,
-      frequency: frequency,
-      repeatDays: weekdays,
-      repeatSkip: repeatSkip,
-      subtasks: subtasks,
-    )
-        .whenComplete(() {
-      if (null != groupID) {
-        groupProvider.setToDoCount(id: groupID!);
-      }
-      Navigator.pop(context);
-    }).catchError((e) {
-      Flushbar? error;
-
-      error = Flushbars.createError(
-        message: e.cause,
-        context: context,
-        dismissCallback: () => error?.dismiss(),
-      );
-
-      error.show(context);
-    },
+          groupID: groupID,
+          groupIndex: groupProvider.getToDoCount(id: groupID)?.value,
+          taskType: taskType,
+          name: name,
+          description: description,
+          weight: (taskType == TaskType.small) ? weight : sumWeight,
+          expectedDuration: expectedDuration,
+          realDuration: realDuration,
+          priority: priority,
+          startDate: startDate,
+          dueDate: dueDate,
+          myDay: myDay,
+          completed: completed,
+          repeatable: frequency != Frequency.once,
+          frequency: frequency,
+          repeatDays: weekdays,
+          repeatSkip: repeatSkip,
+          subtasks: subtasks,
+        )
+        .catchError((e) => Tiles.displayError(context: context, e: e),
             test: (e) =>
                 e is FailureToCreateException || e is FailureToUploadException);
+
+    if (null != groupID) {
+      groupProvider.setToDoCount(id: groupID!);
+    }
+
+    await eventProvider
+        .insertEventModel(model: toDoProvider.curToDo!, notify: true)
+        .whenComplete(
+          () => Navigator.pop(context),
+        );
   }
 
   Future<void> handleClose({required bool willDiscard}) async {

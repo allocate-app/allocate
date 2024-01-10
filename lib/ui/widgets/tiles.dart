@@ -14,6 +14,7 @@ import '../../model/task/routine.dart';
 import '../../model/task/subtask.dart';
 import '../../model/task/todo.dart';
 import '../../providers/deadline_provider.dart';
+import '../../providers/event_provider.dart';
 import '../../providers/group_provider.dart';
 import '../../providers/reminder_provider.dart';
 import '../../providers/routine_provider.dart';
@@ -52,7 +53,6 @@ import 'subtitles.dart';
 
 abstract class Tiles {
   /// ListView Tiles
-  // TODO: REFACTOR DELETE FN TO TAKE PROVIDER -> Get rid of buildcontext.
   static Widget toDoListTile(
       {required BuildContext context,
       required int index,
@@ -68,6 +68,7 @@ abstract class Tiles {
     // This is not an ideal solution, but it is to maintain a proper count
     // of linked ToDos.
     GroupProvider groupProvider = Provider.of(context, listen: false);
+    EventProvider eventProvider = Provider.of(context, listen: false);
 
     return ListTile(
         // tileColor: (toDo.myDay)
@@ -144,11 +145,22 @@ abstract class Tiles {
                 onPressed: () async {
                   if (!checkDelete) {
                     if (null != onRemove) {
-                      await onRemove(item: toDo);
+                      return await onRemove(item: toDo).whenComplete(() async {
+                        return await deleteToDo(
+                            toDo: toDo,
+                            context: context,
+                            toDoProvider: toDoProvider,
+                            groupProvider: groupProvider,
+                            eventProvider: eventProvider);
+                      });
                     }
 
                     return await deleteToDo(
-                        toDo: toDo, context: context, onRemove: onRemove);
+                        toDo: toDo,
+                        context: context,
+                        toDoProvider: toDoProvider,
+                        groupProvider: groupProvider,
+                        eventProvider: eventProvider);
                   }
                   return await showDialog<List<bool>?>(
                       barrierDismissible: true,
@@ -168,15 +180,22 @@ abstract class Tiles {
                     }
 
                     if (null != onRemove) {
-                      await onRemove(item: toDo);
+                      return await onRemove(item: toDo).whenComplete(() async {
+                        return await deleteToDo(
+                            toDo: toDo,
+                            context: context,
+                            toDoProvider: toDoProvider,
+                            groupProvider: groupProvider,
+                            eventProvider: eventProvider);
+                      });
                     }
 
                     return await deleteToDo(
                         toDo: toDo,
                         context: context,
-                        onRemove: onRemove,
                         toDoProvider: toDoProvider,
-                        groupProvider: groupProvider);
+                        groupProvider: groupProvider,
+                        eventProvider: eventProvider);
                   });
                 },
               )),
@@ -186,37 +205,55 @@ abstract class Tiles {
         ]));
   }
 
-  // Helper function to delete ToDos ->
+  // Helper function to delete ToDos -> migrate to other repeatables.
   static Future<void> deleteToDo({
-    required ToDo toDo,
     required BuildContext context,
+    required ToDo toDo,
     ToDoProvider? toDoProvider,
     GroupProvider? groupProvider,
-    Future<void> Function({ToDo item})? onRemove,
+    EventProvider? eventProvider,
   }) async {
     toDoProvider =
         toDoProvider ?? Provider.of<ToDoProvider>(context, listen: false);
     groupProvider =
         groupProvider ?? Provider.of<GroupProvider>(context, listen: false);
+    eventProvider =
+        eventProvider ?? Provider.of<EventProvider>(context, listen: false);
     // For repeating ToDos.
     if (toDo.frequency != Frequency.once) {
-      bool? updateSingle = await showModalBottomSheet<bool?>(
+      bool? deleteSingle = await showModalBottomSheet<bool?>(
           showDragHandle: true,
           context: context,
           builder: (BuildContext context) {
             return const HandleRepeatableModal(action: "Delete");
           });
 
-      await toDoProvider.handleRepeating(
-          toDo: toDo, single: updateSingle, delete: true);
+      if (null == deleteSingle) {
+        return;
+      }
+
+      await toDoProvider
+          .handleRepeating(toDo: toDo, single: deleteSingle, delete: true)
+          .catchError((e) => displayError(context: context, e: e),
+              test: (e) =>
+                  e is InvalidRepeatingException ||
+                  e is FailureToUpdateException ||
+                  e is FailureToUploadException ||
+                  e is FailureToDeleteException);
+      if (toDo.repeatable) {
+        await eventProvider.updateRepeating(model: toDo);
+      }
+      return await eventProvider.updateEventModel(oldModel: toDo);
     }
 
-    return await toDoProvider.deleteToDo(toDo: toDo).whenComplete(() {
-      if (null != toDo.groupID) {
-        groupProvider!.setToDoCount(id: toDo.groupID!);
-      }
-    }).catchError((e) => displayError(context: context, e: e),
+    await toDoProvider.deleteToDo(toDo: toDo).catchError(
+        (e) => displayError(context: context, e: e),
         test: (e) => e is FailureToDeleteException);
+    if (null != toDo.groupID) {
+      groupProvider.setToDoCount(id: toDo.groupID!);
+    }
+
+    return await eventProvider.updateEventModel(oldModel: toDo);
   }
 
   static Widget toDoMyDayTile({
@@ -416,6 +453,7 @@ abstract class Tiles {
     DeadlineProvider deadlineProvider =
         Provider.of<DeadlineProvider>(context, listen: false);
     UserProvider userProvider = Provider.of(context, listen: false);
+    EventProvider eventProvider = Provider.of(context, listen: false);
     return ListTile(
         contentPadding:
             // Check the padding.
@@ -462,10 +500,22 @@ abstract class Tiles {
                 icon: const Icon(Icons.delete_forever_rounded),
                 onPressed: () async {
                   if (!checkDelete) {
+                    if (null != onRemove) {
+                      return await onRemove(item: deadline)
+                          .whenComplete(() async {
+                        return await deleteDeadline(
+                          deadline: deadline,
+                          context: context,
+                          deadlineProvider: deadlineProvider,
+                          eventProvider: eventProvider,
+                        );
+                      });
+                    }
                     return await deleteDeadline(
                         deadline: deadline,
                         context: context,
-                        onRemove: onRemove);
+                        deadlineProvider: deadlineProvider,
+                        eventProvider: eventProvider);
                   }
                   return await showDialog<List<bool>?>(
                       barrierDismissible: true,
@@ -483,10 +533,22 @@ abstract class Tiles {
                     if (!results[0]) {
                       return;
                     }
+
+                    if (null != onRemove) {
+                      return await onRemove(item: deadline)
+                          .whenComplete(() async {
+                        return await deleteDeadline(
+                          deadline: deadline,
+                          context: context,
+                          deadlineProvider: deadlineProvider,
+                          eventProvider: eventProvider,
+                        );
+                      });
+                    }
                     await deleteDeadline(
                         deadline: deadline,
                         context: context,
-                        onRemove: onRemove,
+                        eventProvider: eventProvider,
                         deadlineProvider: deadlineProvider);
                   });
                 },
@@ -502,10 +564,12 @@ abstract class Tiles {
     required Deadline deadline,
     required BuildContext context,
     DeadlineProvider? deadlineProvider,
-    Future<void> Function({Deadline? item})? onRemove,
+    EventProvider? eventProvider,
   }) async {
     deadlineProvider = deadlineProvider ??
         Provider.of<DeadlineProvider>(context, listen: false);
+    eventProvider =
+        eventProvider ?? Provider.of<EventProvider>(context, listen: false);
     // For repeating deadlines.
     if (deadline.frequency != Frequency.once) {
       await showModalBottomSheet<bool?>(
@@ -518,56 +582,25 @@ abstract class Tiles {
           return;
         }
 
-        // If delete all.
-        if (!deleteSingle) {
-          return await deadlineProvider!
-              .deleteAndCancelFutures(deadline: deadline)
-              .catchError((e) {
-            Flushbar? error;
+        await deadlineProvider!
+            .handleRepeating(
+                deadline: deadline, single: deleteSingle, delete: true)
+            .catchError((e) => displayError(context: context, e: e),
+                test: (e) =>
+                    e is InvalidRepeatingException ||
+                    e is FailureToUpdateException ||
+                    e is FailureToUploadException ||
+                    e is FailureToDeleteException);
 
-            error = Flushbars.createError(
-              message: e.cause,
-              context: context,
-              dismissCallback: () => error?.dismiss(),
-            );
-
-            error.show(context);
-          }, test: (e) => e is FailureToDeleteException);
-        }
-
-        // If delete one.
-        await deadlineProvider!.nextRepeat(deadline: deadline).catchError((e) {
-          Flushbar? error;
-
-          error = Flushbars.createError(
-            message: e.cause,
-            context: context,
-            dismissCallback: () => error?.dismiss(),
-          );
-
-          error.show(context);
-        },
-            test: (e) =>
-                e is FailureToCreateException || e is FailureToUploadException);
+        return await eventProvider!.updateEventModel(oldModel: deadline);
       });
     }
 
-    if (null != onRemove) {
-      await onRemove(item: deadline);
-    }
+    await deadlineProvider.deleteDeadline(deadline: deadline).catchError(
+        (e) => displayError(context: context, e: e),
+        test: (e) => e is FailureToDeleteException);
 
-    return await deadlineProvider.deleteDeadline(deadline: deadline).catchError(
-        (e) {
-      Flushbar? error;
-
-      error = Flushbars.createError(
-        message: e.cause,
-        context: context,
-        dismissCallback: () => error?.dismiss(),
-      );
-
-      error.show(context);
-    }, test: (e) => e is FailureToDeleteException);
+    return await eventProvider.updateEventModel(oldModel: deadline);
   }
 
   static Widget reminderListTile(
@@ -581,6 +614,7 @@ abstract class Tiles {
     ReminderProvider reminderProvider =
         Provider.of<ReminderProvider>(context, listen: false);
     UserProvider userProvider = Provider.of(context, listen: false);
+    EventProvider eventProvider = Provider.of(context, listen: false);
     return ListTile(
         contentPadding:
             const EdgeInsets.symmetric(horizontal: Constants.padding),
@@ -624,11 +658,22 @@ abstract class Tiles {
                 icon: const Icon(Icons.delete_forever_rounded),
                 onPressed: () async {
                   if (!checkDelete) {
+                    if (null != onRemove) {
+                      return await onRemove(item: reminder)
+                          .whenComplete(() async {
+                        return await deleteReminder(
+                          reminder: reminder,
+                          context: context,
+                          reminderProvider: reminderProvider,
+                          eventProvider: eventProvider,
+                        );
+                      });
+                    }
                     return await deleteReminder(
                         reminder: reminder,
                         context: context,
-                        onRemove: onRemove,
-                        reminderProvider: reminderProvider);
+                        reminderProvider: reminderProvider,
+                        eventProvider: eventProvider);
                   }
                   return await showDialog<List<bool>?>(
                       barrierDismissible: true,
@@ -646,11 +691,22 @@ abstract class Tiles {
                     if (!results[0]) {
                       return;
                     }
+
+                    if (null != onRemove) {
+                      return await onRemove(item: reminder)
+                          .whenComplete(() async {
+                        return await deleteReminder(
+                            reminder: reminder,
+                            context: context,
+                            reminderProvider: reminderProvider,
+                            eventProvider: eventProvider);
+                      });
+                    }
                     await deleteReminder(
                         reminder: reminder,
                         context: context,
-                        onRemove: onRemove,
-                        reminderProvider: reminderProvider);
+                        reminderProvider: reminderProvider,
+                        eventProvider: eventProvider);
                   });
                 },
               )),
@@ -661,13 +717,16 @@ abstract class Tiles {
   }
 
   // Helper function to delete deadlines ->
-  static Future<void> deleteReminder(
-      {required Reminder reminder,
-      required BuildContext context,
-      ReminderProvider? reminderProvider,
-      Future<void> Function({Reminder item})? onRemove}) async {
+  static Future<void> deleteReminder({
+    required Reminder reminder,
+    required BuildContext context,
+    ReminderProvider? reminderProvider,
+    EventProvider? eventProvider,
+  }) async {
     reminderProvider = reminderProvider ??
         Provider.of<ReminderProvider>(context, listen: false);
+    EventProvider eventProvider = Provider.of(context, listen: false);
+
     // For repeating deadlines.
     if (reminder.frequency != Frequency.once) {
       await showModalBottomSheet<bool?>(
@@ -680,42 +739,18 @@ abstract class Tiles {
           return;
         }
 
-        // If delete all.
-        if (!deleteSingle) {
-          return await reminderProvider!
-              .deleteAndCancelFutures(reminder: reminder)
-              .catchError((e) {
-            Flushbar? error;
+        await reminderProvider!
+            .handleRepeating(
+                reminder: reminder, single: deleteSingle, delete: true)
+            .catchError((e) => displayError(context: context, e: e),
+                test: (e) =>
+                    e is InvalidRepeatingException ||
+                    e is FailureToUpdateException ||
+                    e is FailureToUploadException ||
+                    e is FailureToDeleteException);
 
-            error = Flushbars.createError(
-              message: e.cause,
-              context: context,
-              dismissCallback: () => error?.dismiss(),
-            );
-
-            error.show(context);
-          }, test: (e) => e is FailureToDeleteException);
-        }
-
-        // If delete one.
-        await reminderProvider!.nextRepeat(reminder: reminder).catchError((e) {
-          Flushbar? error;
-
-          error = Flushbars.createError(
-            message: e.cause,
-            context: context,
-            dismissCallback: () => error?.dismiss(),
-          );
-
-          error.show(context);
-        },
-            test: (e) =>
-                e is FailureToCreateException || e is FailureToUploadException);
+        return await eventProvider.updateEventModel(oldModel: reminder);
       });
-    }
-
-    if (null != onRemove) {
-      await onRemove(item: reminder);
     }
 
     return await reminderProvider.deleteReminder(reminder: reminder).catchError(
@@ -1136,6 +1171,15 @@ abstract class Tiles {
     MenuController? subtasksAnchorController,
     void Function()? onAnchorOpen,
     void Function()? onAnchorClose,
+    // overrides
+    void Function(int oldIndex, int newIndex)? onReorder,
+    void Function({Subtask? subtask})? onRemoved,
+    void Function({Subtask? subtask, bool? value})? onChanged,
+    void Function({Subtask? subtask})? onSubmit,
+    void Function({Subtask? subtask})? onUpdate,
+    void Function({Subtask? subtask})? onDelete,
+    void Function({Subtask? subtask})? handleUpdate,
+    void Function({Subtask? subtask})? handleDelete,
     ScrollPhysics physics = const NeverScrollableScrollPhysics(),
     EdgeInsetsGeometry outerPadding = EdgeInsets.zero,
   }) {
@@ -1159,79 +1203,64 @@ abstract class Tiles {
               itemCount: subtasks.length,
               onTap: ({Subtask? subtask}) async {
                 await showDialog(
-                        barrierDismissible: true,
-                        useRootNavigator: false,
-                        context: context,
-                        builder: (BuildContext context) =>
-                            UpdateSubtaskScreen(initialSubtask: subtask))
-                    .catchError((e) {
-                  Flushbar? error;
-                  error = Flushbars.createError(
-                    message: e.cause,
+                    barrierDismissible: true,
+                    useRootNavigator: false,
                     context: context,
-                    dismissCallback: () => error?.dismiss(),
-                  );
-                  error.show(context);
-                },
-                        test: (e) =>
-                            e is FailureToUpdateException ||
-                            e is FailureToUploadException);
+                    builder: (BuildContext context) => UpdateSubtaskScreen(
+                        initialSubtask: subtask,
+                        handleDelete: handleDelete,
+                        handleUpdate: handleUpdate)).catchError(
+                    (e) => displayError(context: context, e: e),
+                    test: (e) =>
+                        e is FailureToUpdateException ||
+                        e is FailureToUploadException);
               },
-              onChanged: ({bool? value, Subtask? subtask}) async {
-                if (null == subtask) {
-                  return;
-                }
-                subtask.completed = value!;
-                await subtaskProvider
-                    .updateSubtask(subtask: subtask)
-                    .catchError((e) {
-                  Flushbar? error;
-                  error = Flushbars.createError(
-                      message: e.cause,
-                      context: context,
-                      dismissCallback: () => error?.dismiss());
-                },
-                        test: (e) =>
-                            e is FailureToUpdateException ||
-                            e is FailureToUploadException);
-              },
-              onRemoved: ({Subtask? subtask}) async {
-                if (null == subtask) {
-                  return;
-                }
+              onChanged: (null != onChanged)
+                  ? onChanged
+                  : ({bool? value, Subtask? subtask}) async {
+                      if (null == subtask) {
+                        return;
+                      }
+                      subtask.completed = value!;
+                      await subtaskProvider
+                          .updateSubtask(subtask: subtask)
+                          .catchError(
+                              (e) => displayError(context: context, e: e),
+                              test: (e) =>
+                                  e is FailureToUpdateException ||
+                                  e is FailureToUploadException);
+                    },
+              onRemoved: (null != onRemoved)
+                  ? onRemoved
+                  : ({Subtask? subtask}) async {
+                      if (null == subtask) {
+                        return;
+                      }
 
-                if (null != onRemove) {
-                  await onRemove(item: subtask);
-                }
+                      if (null != onRemove) {
+                        await onRemove(item: subtask);
+                      }
 
-                await subtaskProvider
-                    .deleteSubtask(subtask: subtask)
-                    .catchError((e) {
-                  Flushbar? error;
-                  error = Flushbars.createError(
-                      message: e.cause,
-                      context: context,
-                      dismissCallback: () => error?.dismiss());
-                }, test: (e) => e is FailureToDeleteException);
-              },
-              onReorder: (int oldIndex, int newIndex) async {
-                await subtaskProvider
-                    .reorderSubtasks(
-                        subtasks: subtasks,
-                        oldIndex: oldIndex,
-                        newIndex: newIndex)
-                    .catchError((e) {
-                  Flushbar? error;
-                  error = Flushbars.createError(
-                      message: e.cause,
-                      context: context,
-                      dismissCallback: () => error?.dismiss());
-                  return List<Subtask>.empty(growable: false);
-                },
-                        test: (e) =>
-                            e is FailureToUpdateException ||
-                            e is FailureToUploadException);
-              }),
+                      await subtaskProvider
+                          .deleteSubtask(subtask: subtask)
+                          .catchError(
+                              (e) => displayError(context: context, e: e),
+                              test: (e) => e is FailureToDeleteException);
+                    },
+              onReorder: (null != onReorder)
+                  ? onReorder
+                  : (int oldIndex, int newIndex) async {
+                      await subtaskProvider
+                          .reorderSubtasks(
+                              subtasks: subtasks,
+                              oldIndex: oldIndex,
+                              newIndex: newIndex)
+                          .catchError(
+                              (e) => displayError(context: context, e: e),
+                              test: (e) =>
+                                  e is FailureToUpdateException ||
+                                  e is FailureToUploadException);
+                    }),
           if (subtasks.length < limit)
             SubtaskQuickEntry(
               taskID: id,
@@ -1243,6 +1272,7 @@ abstract class Tiles {
               menuController: subtasksAnchorController,
               onOpen: onAnchorOpen,
               onClose: onAnchorClose,
+              onSubmit: onSubmit,
             )
         ]);
   }
@@ -1455,6 +1485,7 @@ abstract class Tiles {
     String? errorText = "",
     TextEditingController? controller,
     required void Function() handleClear,
+    void Function(String)? onChanged,
     required void Function() onEditingComplete,
   }) =>
       Padding(
@@ -1495,6 +1526,7 @@ abstract class Tiles {
                   ),
                   controller: controller,
                   onEditingComplete: onEditingComplete,
+                  onChanged: onChanged,
                 ),
               ),
             ),

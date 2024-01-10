@@ -59,7 +59,7 @@ class Subtask
         taskID = entity["taskID"] as int?,
         lastUpdated = DateTime.parse(entity["lastUpdated"]),
         isSynced = true,
-        toDelete = false,
+        toDelete = entity["toDelete"] as bool,
         customViewIndex = entity["customViewIndex"] as int;
 
   Map<String, dynamic> toEntity() => {
@@ -69,6 +69,7 @@ class Subtask
         "completed": completed,
         "weight": weight,
         "customViewIndex": customViewIndex,
+        "toDelete": toDelete,
         "lastUpdated": lastUpdated.toIso8601String(),
       };
 

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:provider/provider.dart';
 
+import '../../model/task/subtask.dart';
 import '../../providers/subtask_provider.dart';
 import '../../util/constants.dart';
 import '../../util/exceptions.dart';
@@ -21,7 +22,8 @@ class SubtaskQuickEntry extends StatefulWidget {
       this.menuController,
       this.onOpen,
       this.onClose,
-      this.hintText = ""});
+      this.hintText = "",
+      this.onSubmit});
 
   final MenuController? menuController;
   final EdgeInsetsGeometry outerPadding;
@@ -33,6 +35,7 @@ class SubtaskQuickEntry extends StatefulWidget {
 
   final void Function()? onOpen;
   final void Function()? onClose;
+  final void Function({Subtask? subtask})? onSubmit;
 
   @override
   State<SubtaskQuickEntry> createState() => _SubtaskQuickEntry();
@@ -54,13 +57,12 @@ class _SubtaskQuickEntry extends State<SubtaskQuickEntry> {
     subtaskProvider = Provider.of<SubtaskProvider>(context, listen: false);
     nameEditingController = TextEditingController();
     nameEditingController.addListener(() {
-      if (nameEditingController.text.isEmpty ^ name.isEmpty) {
-        setState(() {
-          name = nameEditingController.text;
-        });
+      String newText = nameEditingController.text;
+      SemanticsService.announce(newText, Directionality.of(context));
+      name = newText;
+      if ((nameEditingController.text.isEmpty ^ name.isEmpty) && mounted) {
+        setState(() {});
       }
-      SemanticsService.announce(
-          nameEditingController.text, Directionality.of(context));
     });
 
     menuController = widget.menuController ?? MenuController();
@@ -103,10 +105,9 @@ class _SubtaskQuickEntry extends State<SubtaskQuickEntry> {
                         ),
                       )),
                   onEditingComplete: () {
+                    name = nameEditingController.text;
                     if (mounted) {
-                      setState(() {
-                        name = nameEditingController.text;
-                      });
+                      setState(() {});
                     }
                   }),
             ),
@@ -129,37 +130,48 @@ class _SubtaskQuickEntry extends State<SubtaskQuickEntry> {
             IconButton.filled(
                 icon: const Icon(Icons.add_rounded),
                 onPressed: (name.isNotEmpty)
-                    ? () async {
-                        // in case the usr doesn't submit to the textfields
-                        name = nameEditingController.text;
+                    ? (null != widget.onSubmit)
+                        ? () {
+                            Subtask newSubtask = Subtask(
+                              name: name,
+                              weight: weight.toInt(),
+                              taskID: widget.taskID,
+                              lastUpdated: DateTime.now(),
+                            );
 
-                        await subtaskProvider
-                            .createSubtask(
-                                name: name,
-                                weight: weight.toInt(),
-                                taskID: widget.taskID,
-                                index: widget.taskIndex)
-                            .whenComplete(() {
-                          if (mounted) {
-                            setState(() {
-                              name = "";
-                              weight = 0;
-                              nameEditingController.value =
-                                  nameEditingController.value
-                                      .copyWith(text: name);
-                            });
+                            return widget.onSubmit!(subtask: newSubtask);
                           }
-                        }).catchError((e) {
-                          Flushbar? error;
-                          error = Flushbars.createError(
-                              message: e.cause,
-                              context: context,
-                              dismissCallback: () => error?.dismiss());
-                        },
-                                test: (e) =>
-                                    e is FailureToCreateException ||
-                                    e is FailureToUploadException);
-                      }
+                        : () async {
+                            // in case the usr doesn't submit to the textfields
+                            name = nameEditingController.text;
+
+                            await subtaskProvider
+                                .createSubtask(
+                                    name: name,
+                                    weight: weight.toInt(),
+                                    taskID: widget.taskID,
+                                    index: widget.taskIndex)
+                                .whenComplete(() {
+                              if (mounted) {
+                                setState(() {
+                                  name = "";
+                                  weight = 0;
+                                  nameEditingController.value =
+                                      nameEditingController.value
+                                          .copyWith(text: name);
+                                });
+                              }
+                            }).catchError((e) {
+                              Flushbar? error;
+                              error = Flushbars.createError(
+                                  message: e.cause,
+                                  context: context,
+                                  dismissCallback: () => error?.dismiss());
+                            },
+                                    test: (e) =>
+                                        e is FailureToCreateException ||
+                                        e is FailureToUploadException);
+                          }
                     : null),
           ]),
     );

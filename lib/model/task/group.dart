@@ -56,12 +56,14 @@ class Group with EquatableMixin implements Copyable<Group>, IModel {
       : id = entity["id"] as Id,
         name = entity["name"] as String,
         description = entity["description"] as String,
+        toDelete = entity["toDelete"] as bool,
         lastUpdated = DateTime.parse(entity["lastUpdated"]);
 
   Map<String, dynamic> toEntity() => {
         "id": id,
         "name": name,
         "description": description,
+        "toDelete": toDelete,
         "lastUpdated": lastUpdated.toIso8601String()
       };
 

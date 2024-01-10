@@ -1,4 +1,5 @@
 import "dart:io";
+import "dart:math";
 
 import "package:another_flushbar/flushbar.dart";
 import "package:flutter/material.dart";
@@ -8,6 +9,7 @@ import "package:provider/provider.dart";
 import "../../../model/task/group.dart";
 import "../../../model/task/subtask.dart";
 import "../../../model/task/todo.dart";
+import "../../../providers/event_provider.dart";
 import "../../../providers/group_provider.dart";
 import "../../../providers/subtask_provider.dart";
 import "../../../providers/todo_provider.dart";
@@ -35,12 +37,16 @@ class UpdateToDoScreen extends StatefulWidget {
 
 class _UpdateToDoScreen extends State<UpdateToDoScreen> {
   late bool checkClose;
+  late bool _checkRepeating;
   late bool expanded;
+  late bool _projection;
+  late ValueNotifier<int> _projectionSubtaskCount;
 
   late final UserProvider userProvider;
   late final ToDoProvider toDoProvider;
   late final SubtaskProvider subtaskProvider;
   late final GroupProvider groupProvider;
+  late final EventProvider eventProvider;
 
   // Cache for repeating events & discard
   late final ToDo prevToDo;
@@ -67,9 +73,6 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
   // Description
   late final TextEditingController descriptionEditingController;
 
-  // Repeat
-  late TextEditingController repeatSkipEditingController;
-
   // This is just a convenience method to avoid extra typing
   ToDo get toDo => toDoProvider.curToDo!;
 
@@ -94,22 +97,35 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
     subtaskProvider = Provider.of<SubtaskProvider>(context, listen: false);
     groupProvider = Provider.of<GroupProvider>(context, listen: false);
 
+    eventProvider = Provider.of<EventProvider>(context, listen: false);
+
     if (null != widget.initialToDo) {
       toDoProvider.curToDo = widget.initialToDo;
     }
 
-    subtaskProvider.addListener(resetSubtasks);
+    _projection = toDo.repeatableState == RepeatableState.projected;
+    if (_projection) {
+      _projectionSubtaskCount = ValueNotifier(toDo.subtasks.length);
+    }
+
+    // Only add the listener when there are subtasks to grab.
+    // Projected events have the subtasks in memory.
+    if (!_projection) {
+      subtaskProvider.addListener(resetSubtasks);
+    }
   }
 
   @override
   void dispose() {
     nameEditingController.dispose();
     descriptionEditingController.dispose();
-    repeatSkipEditingController.dispose();
     mobileScrollController.dispose();
     desktopScrollController.dispose();
     groupEditingController.dispose();
-    subtaskProvider.removeListener(resetSubtasks);
+
+    if (!_projection) {
+      subtaskProvider.removeListener(resetSubtasks);
+    }
     super.dispose();
   }
 
@@ -137,6 +153,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
 
   void initializeParameters() {
     checkClose = false;
+    _checkRepeating = false;
     prevToDo = toDo.copy();
     prevToDo.id = toDo.id;
 
@@ -155,13 +172,15 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
 
     nameEditingController = TextEditingController(text: toDo.name);
     nameEditingController.addListener(() {
+      _checkRepeating = true;
+      String newText = nameEditingController.text;
+      SemanticsService.announce(newText, Directionality.of(context));
+      toDo.name = newText;
       if (null != nameErrorText && mounted) {
         setState(() {
           nameErrorText = null;
         });
       }
-      SemanticsService.announce(
-          nameEditingController.text, Directionality.of(context));
     });
 
     groupEditingController = SearchController();
@@ -189,15 +208,10 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
     descriptionEditingController =
         TextEditingController(text: toDo.description);
     descriptionEditingController.addListener(() {
+      _checkRepeating = true;
       String newText = descriptionEditingController.text;
       SemanticsService.announce(newText, Directionality.of(context));
-    });
-
-    repeatSkipEditingController =
-        TextEditingController(text: toDo.repeatSkip.toString());
-    repeatSkipEditingController.addListener(() {
-      String newText = descriptionEditingController.text;
-      SemanticsService.announce(newText, Directionality.of(context));
+      toDo.description = newText;
     });
 
     subtasksAnchorController = MenuController();
@@ -206,6 +220,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
   Future<void> handleGroupSelection({required int id}) async {
     setState(() {
       checkClose = userProvider.curUser?.checkClose ?? true;
+      _checkRepeating = true;
       toDo.groupID = id;
     });
   }
@@ -236,7 +251,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
   }
 
   Future<void> handleUpdate() async {
-    if (prevToDo.frequency != Frequency.once && checkClose) {
+    if (prevToDo.frequency != Frequency.once && _checkRepeating) {
       bool? updateSingle = await showModalBottomSheet<bool?>(
           showDragHandle: true,
           context: context,
@@ -244,7 +259,9 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
             return const HandleRepeatableModal(action: "Update");
           });
 
-      // TODO: HANDLE THIS PROPERLY - RETURN THE REPEATING FNCTN.
+      if (null == updateSingle) {
+        return;
+      }
       await toDoProvider
           .handleRepeating(toDo: prevToDo, single: updateSingle, delete: false)
           .catchError((e) => Tiles.displayError(context: context, e: e),
@@ -253,13 +270,24 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                   e is FailureToUploadException ||
                   e is InvalidRepeatingException ||
                   e is FailureToDeleteException);
+
+      if (RepeatableState.projected == toDo.repeatableState) {
+        return await eventProvider
+            .updateRepeating(model: toDo)
+            .whenComplete(() => Navigator.pop(context));
+      }
+      return await eventProvider
+          .updateEventModel(oldModel: prevToDo, newModel: toDo)
+          .whenComplete(() => Navigator.pop(context));
     }
-    await toDoProvider
-        .updateToDo(toDo: toDo)
-        .whenComplete(() => Navigator.pop(context))
-        .catchError((e) => Tiles.displayError(context: context, e: e),
-            test: (e) =>
-                e is FailureToUpdateException || e is FailureToUploadException);
+    await toDoProvider.updateToDo(toDo: toDo).catchError(
+        (e) => Tiles.displayError(context: context, e: e),
+        test: (e) =>
+            e is FailureToUpdateException || e is FailureToUploadException);
+
+    return await eventProvider
+        .updateEventModel(oldModel: prevToDo, newModel: toDo)
+        .whenComplete(() => Navigator.pop(context));
   }
 
   Future<void> handleDelete() async {
@@ -273,13 +301,32 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
             );
           });
 
+      if (null == deleteSingle) {
+        return;
+      }
       await toDoProvider
           .handleRepeating(toDo: prevToDo, single: deleteSingle, delete: true)
           .catchError((e) => Tiles.displayError(context: context, e: e),
               test: (e) =>
+                  e is InvalidRepeatingException ||
                   e is FailureToUpdateException ||
                   e is FailureToUploadException ||
                   e is FailureToDeleteException);
+
+      if (RepeatableState.projected == toDo.repeatableState) {
+        return await eventProvider
+            .updateRepeating(model: toDo)
+            .whenComplete(() => Navigator.pop(context));
+      }
+
+      // TODO: this is not working atm. Just clear the key.
+      // Write a method to clear it.
+      if (toDo.repeatable) {
+        await eventProvider.updateRepeating(model: toDo);
+      }
+      return await eventProvider
+          .updateEventModel(oldModel: prevToDo)
+          .whenComplete(() => Navigator.pop(context));
     }
 
     await toDoProvider.deleteToDo(toDo: toDo).whenComplete(() {
@@ -303,6 +350,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
     if (mounted) {
       setState(() {
         checkClose = userProvider.curUser?.checkClose ?? true;
+        _checkRepeating = true;
         nameEditingController.clear();
         toDo.name = "";
       });
@@ -313,6 +361,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
     if (mounted) {
       setState(() {
         checkClose = userProvider.curUser?.checkClose ?? true;
+        _checkRepeating = true;
         toDo.name = nameEditingController.text;
       });
     }
@@ -322,6 +371,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
     if (mounted) {
       setState(() {
         checkClose = userProvider.curUser?.checkClose ?? true;
+        _checkRepeating = true;
         toDo.description = descriptionEditingController.text;
       });
     }
@@ -331,6 +381,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
     if (mounted) {
       setState(() {
         checkClose = userProvider.curUser?.checkClose ?? true;
+        _checkRepeating = true;
         toDo.completed = value!;
       });
     }
@@ -343,6 +394,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
     if (mounted) {
       setState(() {
         checkClose = userProvider.curUser?.checkClose ?? true;
+        _checkRepeating = true;
         toDo.weight = value.toInt();
         toDo.realDuration = toDoProvider.calculateRealDuration(
             weight: toDo.weight, duration: toDo.expectedDuration);
@@ -354,6 +406,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
     if (mounted) {
       setState(() {
         checkClose = userProvider.curUser?.checkClose ?? true;
+        _checkRepeating = true;
         toDo.myDay = !toDo.myDay;
       });
     }
@@ -363,6 +416,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
     if (mounted) {
       setState(() {
         checkClose = userProvider.curUser?.checkClose ?? true;
+        _checkRepeating = true;
         toDo.priority = newSelection.first;
       });
     }
@@ -372,6 +426,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
     if (mounted) {
       setState(() {
         checkClose = userProvider.curUser?.checkClose ?? true;
+        _checkRepeating = true;
         toDo.expectedDuration = value ?? toDo.expectedDuration;
         toDo.realDuration = toDoProvider.calculateRealDuration(
             weight: toDo.weight, duration: toDo.expectedDuration);
@@ -383,6 +438,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
     if (mounted) {
       setState(() {
         checkClose = userProvider.curUser?.checkClose ?? true;
+        _checkRepeating = true;
         toDo.expectedDuration = 0;
         toDo.realDuration = 0;
       });
@@ -393,6 +449,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
     if (mounted) {
       setState(() {
         checkClose = userProvider.curUser?.checkClose ?? true;
+        _checkRepeating = true;
         toDo.startDate = null;
         toDo.dueDate = null;
       });
@@ -403,6 +460,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
     if (mounted) {
       setState(() {
         checkClose = checkClose ?? this.checkClose;
+        _checkRepeating = true;
         this.checkClose = (checkClose!)
             ? userProvider.curUser?.checkClose ?? checkClose!
             : checkClose!;
@@ -421,6 +479,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
     if (mounted) {
       setState(() {
         checkClose = userProvider.curUser?.checkClose ?? true;
+        _checkRepeating = true;
         showStartTime = false;
         showDueTime = false;
       });
@@ -431,6 +490,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
     if (mounted) {
       setState(() {
         checkClose = checkClose ?? this.checkClose;
+        _checkRepeating = true;
         this.checkClose = (checkClose!)
             ? userProvider.curUser?.checkClose ?? checkClose!
             : checkClose!;
@@ -533,6 +593,59 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
 
   void _closeMenuAnchor() {
     subtasksAnchorController.close();
+  }
+
+  // Projected only
+  // Internal "deal with repeating event deltas subtasks" methods.
+  void onReorder(int oldIndex, int newIndex) {
+    if (oldIndex < newIndex) {
+      newIndex--;
+    }
+    Subtask subtask = toDo.subtasks.removeAt(oldIndex);
+    toDo.subtasks.insert(newIndex, subtask);
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  void onSubtaskRemoved({Subtask? subtask}) {
+    if (null == subtask) {
+      return;
+    }
+
+    toDo.subtasks.remove(subtask);
+    _projectionSubtaskCount.value = max(_projectionSubtaskCount.value - 1, 0);
+
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  void onSubtaskChanged({Subtask? subtask, bool? value}) {
+    if (null == subtask || null == value) {
+      return;
+    }
+    subtask.completed = value;
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  void onSubtaskSubmit({Subtask? subtask}) {
+    if (null == subtask) {
+      return;
+    }
+    toDo.subtasks.add(subtask);
+    _projectionSubtaskCount.value += 1;
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  void handleSubtaskUpdate({Subtask? subtask}) {
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   @override
@@ -766,14 +879,35 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                                           subtasksAnchorController,
                                       onAnchorOpen: onAnchorOpen,
                                       onAnchorClose: onAnchorClose,
+                                      onReorder:
+                                          (_projection) ? onReorder : null,
+                                      onRemoved: (_projection)
+                                          ? onSubtaskRemoved
+                                          : null,
+                                      onChanged: (_projection)
+                                          ? onSubtaskChanged
+                                          : null,
+                                      onSubmit: (_projection)
+                                          ? onSubtaskSubmit
+                                          : null,
+                                      onDelete: (_projection)
+                                          ? onSubtaskRemoved
+                                          : null,
+                                      handleUpdate: (_projection)
+                                          ? handleSubtaskUpdate
+                                          : null,
+                                      handleDelete: (_projection)
+                                          ? onSubtaskRemoved
+                                          : null,
                                       onRemove:
                                           (userProvider.curUser?.reduceMotion ??
                                                   false)
                                               ? null
                                               : onRemove,
                                       subtasks: toDo.subtasks,
-                                      subtaskCount:
-                                          toDoProvider.getSubtaskCount(
+                                      subtaskCount: (_projection)
+                                          ? _projectionSubtaskCount
+                                          : toDoProvider.getSubtaskCount(
                                               id: toDo.id,
                                               limit: Constants
                                                   .numTasks[toDo.taskType]!),
@@ -901,10 +1035,20 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                           subtasksAnchorController: subtasksAnchorController,
                           onAnchorOpen: onAnchorOpen,
                           onAnchorClose: onAnchorClose,
+                          onReorder: (_projection) ? onReorder : null,
+                          onRemoved: (_projection) ? onSubtaskRemoved : null,
+                          onChanged: (_projection) ? onSubtaskChanged : null,
+                          onSubmit: (_projection) ? onSubtaskSubmit : null,
+                          onDelete: (_projection) ? onSubtaskRemoved : null,
+                          handleUpdate:
+                              (_projection) ? handleSubtaskUpdate : null,
+                          handleDelete: (_projection) ? onSubtaskRemoved : null,
+                          subtaskCount: (_projection)
+                              ? _projectionSubtaskCount
+                              : toDoProvider.getSubtaskCount(
+                                  id: toDo.id,
+                                  limit: Constants.numTasks[toDo.taskType]!),
                           subtasks: toDo.subtasks,
-                          subtaskCount: toDoProvider.getSubtaskCount(
-                              id: toDo.id,
-                              limit: Constants.numTasks[toDo.taskType]!),
                           id: toDo.id),
                       const PaddedDivider(padding: Constants.padding),
                     ],

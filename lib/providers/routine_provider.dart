@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:developer';
 
-import 'package:allocate/util/interfaces/repository/model/routine_repository.dart';
 import 'package:flutter/foundation.dart';
 
 import "../model/task/routine.dart";
@@ -12,6 +11,7 @@ import '../repositories/subtask_repo.dart';
 import '../util/constants.dart';
 import '../util/enums.dart';
 import "../util/exceptions.dart";
+import '../util/interfaces/repository/model/routine_repository.dart';
 import '../util/interfaces/repository/model/subtask_repository.dart';
 import '../util/numbers.dart';
 import '../util/sorting/routine_sorter.dart';

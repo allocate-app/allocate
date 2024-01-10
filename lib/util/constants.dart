@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:table_calendar/table_calendar.dart';
 import 'package:uuid/uuid.dart';
 
 import '../ui/views/route_views/trash.dart';
@@ -230,8 +231,18 @@ abstract class Constants {
       .copyWith(hour: 0, minute: 0)
       .subtract(const Duration(days: 1));
 
-  static DateTime get today => DateTime.now().copyWith(hour: 0, minute: 0);
+  // Calendar stuff.
+  static DateTime get today => DateTime.now()
+      .copyWith(hour: 0, minute: 0, second: 0, millisecond: 0, microsecond: 0);
   static int yearOffset = 5;
+
+  static DateTime get firstDay => DateTime(today.year - yearOffset, 1, 1);
+
+  static DateTime get lastDay => DateTime(today.year + yearOffset, 2, 0);
+
+  // This amounts to approximately 1.5mb.
+  static const int calendarLimit = 40000;
+  static const int repeatingLimit = calendarLimit ~/ 2;
 
   // GUI constants.
   static const Duration dragDelayTime = Duration(milliseconds: 225);
@@ -294,6 +305,28 @@ abstract class Constants {
   static const double lgIconSize = 50;
   static const double hugeIconSize = 100;
   static const double appIconSize = 400;
+
+  // Calendar
+
+  static const HeaderStyle calendarHeaderStyle = HeaderStyle(
+    titleCentered: true,
+    formatButtonVisible: false,
+    titleTextStyle: headerStyle,
+  );
+
+  static CalendarStyle calendarStyle(BuildContext context) => CalendarStyle(
+        selectedDecoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.primary,
+          shape: BoxShape.circle,
+        ),
+        todayDecoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.primaryContainer,
+          shape: BoxShape.circle,
+        ),
+        todayTextStyle: TextStyle(
+          color: Theme.of(context).colorScheme.primary,
+        ),
+      );
 
   // Text styles
   static TextStyle numberPickerSecondary({required BuildContext context}) =>

@@ -90,13 +90,14 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
     scrollPhysics = AlwaysScrollableScrollPhysics(parent: parentPhysics);
     nameEditingController = TextEditingController();
     nameEditingController.addListener(() {
+      String newText = nameEditingController.text;
       if (null != nameErrorText && mounted) {
         setState(() {
           nameErrorText = null;
         });
       }
-      SemanticsService.announce(
-          nameEditingController.text, Directionality.of(context));
+      SemanticsService.announce(newText, Directionality.of(context));
+      name = newText;
     });
     subtasksAnchorController = MenuController();
   }
@@ -151,8 +152,6 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
   }
 
   Future<void> handleCreate() async {
-    // in case the usr doesn't submit to the textfields
-    name = nameEditingController.text;
     await routineProvider
         .createRoutine(
             name: name,

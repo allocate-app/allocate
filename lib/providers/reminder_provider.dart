@@ -98,6 +98,7 @@ class ReminderProvider extends ChangeNotifier {
 
     curReminder = Reminder(
       name: name,
+      originalDue: dueDate,
       dueDate: dueDate,
       repeatable: repeatable ?? false,
       repeatDays: repeatDays ?? List.filled(7, false, growable: false),
@@ -107,14 +108,14 @@ class ReminderProvider extends ChangeNotifier {
     );
 
     curReminder!.notificationID = Constants.generate32ID();
+    curReminder!.repeatID = Constants.generateID();
 
     try {
       curReminder = await _reminderRepo.create(curReminder!);
 
       await scheduleNotification(reminder: curReminder);
       if (curReminder!.repeatable) {
-        curReminder!.repeatID = Constants.generateID();
-        await nextRepeat(reminder: curReminder);
+        await createTemplate(reminder: curReminder);
       }
     } on FailureToCreateException catch (e) {
       log(e.cause);
@@ -142,6 +143,14 @@ class ReminderProvider extends ChangeNotifier {
     }
     try {
       curReminder = await _reminderRepo.update(curReminder!);
+      if (curReminder!.repeatable) {
+        Reminder? template =
+            await _reminderRepo.getTemplate(repeatID: curReminder!.repeatID!);
+        if (null == template) {
+          curReminder!.originalDue = curReminder!.dueDate;
+          await createTemplate(reminder: curReminder!);
+        }
+      }
       await cancelNotification(reminder: curReminder);
       if (validateDueDate(dueDate: curReminder!.dueDate)) {
         await scheduleNotification(reminder: curReminder);
@@ -250,6 +259,28 @@ class ReminderProvider extends ChangeNotifier {
     }
   }
 
+  Future<void> handleRepeating(
+      {Reminder? reminder, bool? single = false, bool delete = false}) async {
+    try {
+      return await _repeatService.handleRepeating(
+          model: reminder, single: single, delete: delete);
+
+      //TODO: Clear key -> run repeat routine.
+    } on InvalidRepeatingException catch (e) {
+      log(e.cause);
+      return Future.error(e);
+    }
+  }
+
+  Future<void> createTemplate({Reminder? reminder}) async {
+    if (null == reminder) {
+      return;
+    }
+    Reminder template = reminder.copyWith(
+        repeatableState: RepeatableState.template, lastUpdated: DateTime.now());
+    await _reminderRepo.create(template);
+  }
+
   Future<List<int>> deleteFutures({Reminder? reminder}) async {
     try {
       return await _repeatService.deleteFutures(
@@ -267,21 +298,6 @@ class ReminderProvider extends ChangeNotifier {
     List<int> cancelIDs = await deleteFutures(reminder: reminder);
     await _notificationService.cancelMultiple(ids: cancelIDs);
   }
-
-  // TODO: REIMPLEMENT ONCE REPEATABLE API.
-  // Future<void> populateCalendar({DateTime? limit}) async {
-  //   return;
-  //   // try {
-  //   //   return await _reminderService.populateCalendar(
-  //   //       limit: limit ?? DateTime.now());
-  //   // } on FailureToUpdateException catch (e) {
-  //   //   log(e.cause);
-  //   //   return Future.error(e);
-  //   // } on FailureToUploadException catch (e) {
-  //   //   log(e.cause);
-  //   //   return Future.error(e);
-  //   // }
-  // }
 
   Future<List<Reminder>> getReminders({int limit = 50, int offset = 0}) async =>
       await _reminderRepo.getRepoList(limit: limit, offset: offset);

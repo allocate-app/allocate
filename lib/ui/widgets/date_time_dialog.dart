@@ -243,12 +243,8 @@ class _DateTimeDialog extends State<DateTimeDialog> {
                           config: CalendarDatePicker2Config(
                             centerAlignModePicker: true,
                             calendarType: CalendarDatePicker2Type.single,
-                            firstDate: Constants.today.copyWith(
-                                year: Constants.today.year -
-                                    Constants.yearOffset),
-                            lastDate: Constants.today.copyWith(
-                                year: Constants.today.year +
-                                    Constants.yearOffset),
+                            firstDate: Constants.firstDay,
+                            lastDate: Constants.lastDay,
                           ),
                           value: [date],
                           onValueChanged: (dates) {

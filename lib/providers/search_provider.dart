@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 
-import '../model/user/user_model.dart';
+import 'viewmodels/user_model.dart';
 import '../util/enums.dart';
 import "../util/interfaces/i_model.dart";
 import '../util/strings.dart';
