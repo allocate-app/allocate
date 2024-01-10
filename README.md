@@ -18,30 +18,26 @@ feel free to clone the project and build using Flutter. You will require a supab
 
 Main has not been fully implemented, but the application can be run using
 the NavigationTester class, used for Integration testing. The database will delete on a graceful
-application close - modify the testing environment in IsarService.dart to persist the data.
+application close - remove the default flag when Initializing IsarService to persist the data.
 
 ## What has been implemented so far:
 
 Basic offline functionality CRUD:
--Tasks and To-dos
--Routines
--Reminders
--Deadlines
--Task Groups
+-Creating tasks, routines, deadlines, reminders, task grouping
+-Repeating tasks, reminders, deadlines (partially)
+-Theme modifications
+-Accessibility modifications (partially)
 
 ## What still requires implementation:
 
--Main application setup and loop
--GUI refactor to accommodate mobile-views
+-Main Application and routing
 -User accounts
 -Online data synchronization
--Theming & customization
--Use documentation
+-Usage documentation
 
 ## Roadmap and future plans:
 
--Properly accommodate screen readers
--Fully accessible design
+-see [ROADMAP.md]{ROADMAP.md}
 
 ## How to use:
 
