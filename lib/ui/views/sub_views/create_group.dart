@@ -310,76 +310,80 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
                 ),
                 const PaddedDivider(padding: Constants.halfPadding),
                 Flexible(
-                  child: Scrollbar(
-                    thumbVisibility: true,
-                    controller: desktopScrollController,
-                    child: ListView(
-                      shrinkWrap: true,
-                      physics: scrollPhysics,
+                  child: Material(
+                    color: Colors.transparent,
+                    child: Scrollbar(
+                      thumbVisibility: true,
                       controller: desktopScrollController,
-                      children: [
-                        Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Flexible(
-                                  // Name And Description.
+                      child: ListView(
+                        shrinkWrap: true,
+                        physics: scrollPhysics,
+                        controller: desktopScrollController,
+                        children: [
+                          Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Flexible(
+                                    // Name And Description.
+                                    child: ListView(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: Constants.padding),
+                                        shrinkWrap: true,
+                                        physics:
+                                            const NeverScrollableScrollPhysics(),
+                                        children: [
+                                      // Title
+
+                                      Tiles.nameTile(
+                                        context: context,
+                                        leading: ListTileWidgets.groupIcon(
+                                            currentContext: context,
+                                            iconPadding: const EdgeInsets.all(
+                                                Constants.padding),
+                                            outerPadding:
+                                                const EdgeInsets.symmetric(
+                                              horizontal: Constants.halfPadding,
+                                            )),
+                                        hintText: "Group Name",
+                                        errorText: nameErrorText,
+                                        controller: nameEditingController,
+                                        outerPadding:
+                                            const EdgeInsets.symmetric(
+                                                vertical: Constants.padding),
+                                        textFieldPadding: const EdgeInsets.only(
+                                          left: Constants.padding,
+                                        ),
+                                        handleClear: clearNameField,
+                                        onEditingComplete: updateName,
+                                      ),
+                                      buildToDosTile(),
+                                    ])),
+                                Flexible(
                                   child: ListView(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: Constants.padding),
-                                      shrinkWrap: true,
                                       physics:
                                           const NeverScrollableScrollPhysics(),
+                                      shrinkWrap: true,
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: Constants.padding),
                                       children: [
-                                    // Title
-
-                                    Tiles.nameTile(
-                                      context: context,
-                                      leading: ListTileWidgets.groupIcon(
-                                          currentContext: context,
-                                          iconPadding: const EdgeInsets.all(
+                                        Tiles.descriptionTile(
+                                          minLines: Constants.desktopMinLines,
+                                          maxLines: Constants
+                                              .desktopMaxLinesBeforeScroll,
+                                          controller:
+                                              descriptionEditingController,
+                                          outerPadding: const EdgeInsets.all(
                                               Constants.padding),
-                                          outerPadding:
-                                              const EdgeInsets.symmetric(
-                                            horizontal: Constants.halfPadding,
-                                          )),
-                                      hintText: "Group Name",
-                                      errorText: nameErrorText,
-                                      controller: nameEditingController,
-                                      outerPadding: const EdgeInsets.symmetric(
-                                          vertical: Constants.padding),
-                                      textFieldPadding: const EdgeInsets.only(
-                                        left: Constants.padding,
-                                      ),
-                                      handleClear: clearNameField,
-                                      onEditingComplete: updateName,
-                                    ),
-                                    buildToDosTile(),
-                                  ])),
-                              Flexible(
-                                child: ListView(
-                                    physics:
-                                        const NeverScrollableScrollPhysics(),
-                                    shrinkWrap: true,
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: Constants.padding),
-                                    children: [
-                                      Tiles.descriptionTile(
-                                        minLines: Constants.desktopMinLines,
-                                        maxLines: Constants
-                                            .desktopMaxLinesBeforeScroll,
-                                        controller:
-                                            descriptionEditingController,
-                                        outerPadding: const EdgeInsets.all(
-                                            Constants.padding),
-                                        context: context,
-                                        onEditingComplete: updateDescription,
-                                      ),
-                                    ]),
-                              )
-                            ]),
-                      ],
+                                          context: context,
+                                          onEditingComplete: updateDescription,
+                                        ),
+                                      ]),
+                                )
+                              ]),
+                        ],
+                      ),
                     ),
                   ),
                 ),

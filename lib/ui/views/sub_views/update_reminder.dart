@@ -125,7 +125,9 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
   }
 
   Future<void> handleUpdate() async {
-    if (prevReminder.frequency != Frequency.once && _checkRepeating) {
+    if (prevReminder.frequency != Frequency.once &&
+        _checkRepeating &&
+        RepeatableState.delta != prevReminder.repeatableState) {
       bool? updateSingle = await showModalBottomSheet<bool?>(
           showDragHandle: true,
           context: context,
@@ -139,7 +141,10 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
 
       await reminderProvider
           .handleRepeating(
-              reminder: prevReminder, single: updateSingle, delete: false)
+              reminder: prevReminder,
+              delta: reminder,
+              single: updateSingle,
+              delete: false)
           .catchError((e) => Tiles.displayError(context: context, e: e),
               test: (e) =>
                   e is FailureToUpdateException ||
@@ -147,14 +152,9 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
                   e is InvalidRepeatingException ||
                   e is FailureToDeleteException);
 
-      if (RepeatableState.projected == reminder.repeatableState) {
-        return await eventProvider
-            .updateRepeating(model: reminder)
-            .whenComplete(() => Navigator.pop(context));
-      }
-
       return await eventProvider
-          .updateEventModel(oldModel: prevReminder, newModel: reminder)
+          .updateEventModel(
+              oldModel: prevReminder, newModel: reminder, notify: true)
           .whenComplete(() => Navigator.pop(context));
     }
 
@@ -164,12 +164,14 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
             e is FailureToCreateException || e is FailureToUploadException);
 
     return await eventProvider
-        .updateEventModel(oldModel: prevReminder, newModel: reminder)
+        .updateEventModel(
+            oldModel: prevReminder, newModel: reminder, notify: true)
         .whenComplete(() => Navigator.pop(context));
   }
 
   Future<void> handleDelete() async {
-    if (prevReminder.frequency != Frequency.once) {
+    if (prevReminder.frequency != Frequency.once &&
+        RepeatableState.delta != prevReminder.repeatableState) {
       bool? deleteSingle = await showModalBottomSheet<bool?>(
           showDragHandle: true,
           context: context,
@@ -184,7 +186,10 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
       }
       await reminderProvider
           .handleRepeating(
-              reminder: prevReminder, single: deleteSingle, delete: true)
+              reminder: prevReminder,
+              delta: reminder,
+              single: deleteSingle,
+              delete: true)
           .catchError((e) => Tiles.displayError(context: context, e: e),
               test: (e) =>
                   e is FailureToUpdateException ||
@@ -192,13 +197,10 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
                   e is InvalidRepeatingException ||
                   e is FailureToDeleteException);
 
-      if (RepeatableState.projected == reminder.repeatableState) {
-        return await eventProvider
-            .updateRepeating(model: reminder)
-            .whenComplete(() => Navigator.pop(context));
-      }
+      reminder.toDelete = true;
       return await eventProvider
-          .updateEventModel(oldModel: prevReminder, newModel: reminder)
+          .updateEventModel(
+              oldModel: prevReminder, newModel: reminder, notify: true)
           .whenComplete(() => Navigator.pop(context));
     }
 
@@ -207,8 +209,13 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
         test: (e) =>
             e is FailureToCreateException || e is FailureToUploadException);
 
+    reminder.toDelete = true;
     return await eventProvider
-        .updateEventModel(oldModel: prevReminder)
+        .updateEventModel(
+          oldModel: prevReminder,
+          newModel: reminder,
+          notify: true,
+        )
         .whenComplete(() => Navigator.pop(context));
   }
 
@@ -296,6 +303,8 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
             : checkClose!;
         reminder.frequency = newFreq;
         reminder.repeatSkip = newSkip;
+        reminder.repeatable = (Frequency.once != reminder.frequency &&
+            prevReminder.repeatable == false);
 
         if (newWeekdays.isEmpty) {
           newWeekdays

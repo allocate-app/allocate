@@ -27,35 +27,43 @@ class RepeatableService {
 
   // NOTE: THIS THROWS
   Future<void> handleRepeating(
-      {IRepeatable? model, bool? single = false, bool delete = false}) async {
-    if (null == model || null == single) {
+      {IRepeatable? oldModel,
+      IRepeatable? newModel,
+      bool? single = false,
+      bool delete = false}) async {
+    if (null == oldModel || null == single) {
       return;
     }
+
+    // In the event that a delta object is not sent,
+    // this implies a deletion operation is going to happen - From one of the list screens.
+    newModel = newModel ?? oldModel;
 
     // If update all, but no start date/due date from which to update the template.
     if (!single &&
         !delete &&
-        (null == model.startDate || null == model.dueDate)) {
-      throw InvalidRepeatingException("InvalidRepeating: ${model.toString()}");
+        (null == oldModel.startDate || null == oldModel.dueDate)) {
+      throw InvalidRepeatingException(
+          "InvalidRepeating: ${oldModel.toString()}");
     }
 
     // If this is a future event:
-    if (RepeatableState.projected == model.repeatableState) {
-      return await handleDelta(model: model, single: single, delete: delete);
+    if (RepeatableState.projected == oldModel.repeatableState) {
+      return await handleDelta(model: newModel, single: single, delete: delete);
     }
 
     if (single) {
       // In the case that a model is being deleted, update the template date
-      model.toDelete = delete;
-      switch (model.modelType) {
+      newModel.toDelete = delete;
+      switch (oldModel.modelType) {
         case ModelType.task:
-          await _toDoRepository.update(model as ToDo);
+          await _toDoRepository.update(newModel as ToDo);
           return;
         case ModelType.deadline:
-          await _deadlineRepository.update(model as Deadline);
+          await _deadlineRepository.update(newModel as Deadline);
           return;
         case ModelType.reminder:
-          await _reminderRepository.update(model as Reminder);
+          await _reminderRepository.update(newModel as Reminder);
           return;
         default:
           return;
@@ -65,11 +73,11 @@ class RepeatableService {
     // In the case that all future events are being deleted,
     // delete any future events along with the template.
     if (delete) {
-      return await deleteTemplateAndFutures(model: model);
+      return await deleteTemplateAndFutures(model: oldModel);
     }
 
     // In the case that all models are to be updated, update the template.
-    return await updateTemplate(model: model);
+    return await updateTemplate(model: newModel);
   }
 
   Future<void> handleDelta(
@@ -88,15 +96,14 @@ class RepeatableService {
           delta.toDelete = delete;
           // if the delta has subtasks, store them.
           if (TaskType.small != delta.taskType) {
-            List<Subtask> deltaSubtasks = (delta.subtasks.isNotEmpty)
-                ? delta.subtasks
+            List<Subtask> deltaSubtasks = (toDo.subtasks.isNotEmpty)
+                ? toDo.subtasks
                 : await _subtaskRepository.getRepoByTaskID(
                     id: toDo.id, limit: Constants.numTasks[toDo.taskType]!);
 
             int newWeight = 0;
             for (int i = 0; i < deltaSubtasks.length; i++) {
               deltaSubtasks[i] = deltaSubtasks[i].copyWith(
-                  completed: false,
                   taskID: delta.id,
                   customViewIndex: i,
                   lastUpdated: DateTime.now());
@@ -399,43 +406,91 @@ class RepeatableService {
         model.startDate ??= DateTime.now();
 
         await _toDoRepository.deleteFutures(deleteFrom: model as ToDo);
+
+        // get the next repeating
+        ToDo? nextRepeating = await _toDoRepository.getNextRepeat(
+            repeatID: model.repeatID!,
+            now: Constants.today.copyWith(year: Constants.today.year + 1));
+        nextRepeating?.frequency = Frequency.once;
+        nextRepeating?.repeatable = false;
+
+        if (null != nextRepeating) {
+          await _toDoRepository.update(nextRepeating);
+        }
+
         if (null == template) {
-          //ALSO DELETE THE MODEL
-          await _toDoRepository.delete(model);
+          if (RepeatableState.projected != model.repeatableState) {
+            await _toDoRepository.delete(model);
+          }
           return;
         }
         await _toDoRepository.delete(template);
-        await _toDoRepository.delete(model);
+        if (RepeatableState.projected != model.repeatableState) {
+          await _toDoRepository.delete(model);
+        }
         return;
       case ModelType.deadline:
         Deadline? template =
             await _deadlineRepository.getTemplate(repeatID: model.repeatID!);
         model.startDate ??= DateTime.now();
         await _deadlineRepository.deleteFutures(deleteFrom: model as Deadline);
+
+        // get the next repeating
+        Deadline? nextRepeating = await _deadlineRepository.getNextRepeat(
+            repeatID: model.repeatID!,
+            now: Constants.today.copyWith(year: Constants.today.year + 1));
+        nextRepeating?.frequency = Frequency.once;
+        nextRepeating?.repeatable = false;
+
+        if (null != nextRepeating) {
+          await _deadlineRepository.update(nextRepeating);
+        }
+
         if (null == template) {
-          await _deadlineRepository.delete(model);
+          if (RepeatableState.projected != model.repeatableState) {
+            await _deadlineRepository.delete(model);
+          }
           return;
         }
         await _deadlineRepository.delete(template);
-        await _deadlineRepository.delete(model);
+        if (RepeatableState.projected != model.repeatableState) {
+          await _deadlineRepository.delete(model);
+        }
         return;
       case ModelType.reminder:
         Reminder? template =
             await _reminderRepository.getTemplate(repeatID: model.repeatID!);
         model.startDate ??= DateTime.now();
         await _reminderRepository.deleteFutures(deleteFrom: model as Reminder);
+
+        // get the next repeating
+        Reminder? nextRepeating = await _reminderRepository.getNextRepeat(
+            repeatID: model.repeatID!,
+            now: Constants.today.copyWith(year: Constants.today.year + 1));
+        nextRepeating?.frequency = Frequency.once;
+        nextRepeating?.repeatable = false;
+
+        if (null != nextRepeating) {
+          await _reminderRepository.update(nextRepeating);
+        }
+
         if (null == template) {
-          await _reminderRepository.delete(model);
+          if (RepeatableState.projected != model.repeatableState) {
+            await _reminderRepository.delete(model);
+          }
           return;
         }
         await _reminderRepository.delete(template);
-        await _reminderRepository.delete(model);
+        if (RepeatableState.projected != model.repeatableState) {
+          await _reminderRepository.delete(model);
+        }
         return;
       default:
         return;
     }
   }
 
+  // TODO: this has to somehow handle subtasks.
   Future<void> updateTemplate({IRepeatable? model}) async {
     if (null == model) {
       return;
@@ -448,6 +503,7 @@ class RepeatableService {
             await _toDoRepository.getTemplate(repeatID: model.repeatID!);
 
         if (null == template) {
+          await _toDoRepository.update(toDo);
           return;
         }
 
@@ -492,6 +548,7 @@ class RepeatableService {
         Deadline? template =
             await _deadlineRepository.getTemplate(repeatID: model.repeatID!);
         if (null == template) {
+          await _deadlineRepository.update(deadline);
           return;
         }
         int id = template.id;
@@ -531,6 +588,7 @@ class RepeatableService {
         Reminder? template =
             await _reminderRepository.getTemplate(repeatID: model.repeatID!);
         if (null == template) {
+          await _reminderRepository.update(reminder);
           return;
         }
         int id = template.id;
@@ -566,7 +624,6 @@ class RepeatableService {
     }
   }
 
-  // TODO: SEND THE -MODEL-.
   Future<List<IRepeatable>> populateCalendar({
     DateTime? limit,
     int? repeatID,
@@ -665,28 +722,25 @@ class RepeatableService {
 
               newToDo.weight = newWeight;
             }
-          } else {
-            // If it's "deleted," just skip it in the calendar.
-            if (!delta.toDelete) {
-              startDate = nextRepeatDate;
-              continue;
-            }
-            newToDo = delta.copyWith(
-              originalStart: nextRepeatDate,
-              originalDue: newDue,
-              myDay: false,
-              lastUpdated: DateTime.now(),
-            );
 
-            // This should preserve the subtasks.
-            newToDo.id = delta.id;
+            newRepeatables.add(newToDo);
           }
-
-          newRepeatables.add(newToDo);
 
           // Increment the loop
           startDate = nextRepeatDate;
         }
+
+        /// DELTAS.
+
+        List<ToDo> deltas = await _toDoRepository.getDeltas(
+            repeatID: nextRepeating.repeatID!, now: Constants.today);
+
+        for (ToDo delta in deltas) {
+          if (!delta.toDelete) {
+            newRepeatables.add(delta);
+          }
+        }
+
         break;
       case ModelType.deadline:
         Deadline? nextRepeating;
@@ -755,28 +809,23 @@ class RepeatableService {
               repeatable: true,
               lastUpdated: DateTime.now(),
             );
-          } else {
-            // If it's "deleted," just skip it in the calendar.
-            if (!delta.toDelete) {
-              startDate = nextRepeatDate;
-              continue;
-            }
-            newDeadline = delta.copyWith(
-              originalStart: nextRepeatDate,
-              originalDue: newDue,
-              originalWarn: newWarn,
-              lastUpdated: DateTime.now(),
-            );
-
-            newDeadline.id = delta.id;
+            newRepeatables.add(newDeadline);
           }
-
-          newRepeatables.add(newDeadline);
 
           // Increment the loop
           startDate = nextRepeatDate;
         }
 
+        /// DELTAS.
+
+        List<Deadline> deltas = await _deadlineRepository.getDeltas(
+            repeatID: nextRepeating.repeatID!, now: Constants.today);
+
+        for (Deadline delta in deltas) {
+          if (!delta.toDelete) {
+            newRepeatables.add(delta);
+          }
+        }
         break;
       case ModelType.reminder:
         Reminder? nextRepeating;
@@ -825,25 +874,24 @@ class RepeatableService {
               repeatable: true,
               lastUpdated: DateTime.now(),
             );
-          } else {
-            // If it's "deleted," just skip it in the calendar.
-            if (!delta.toDelete) {
-              dueDate = nextRepeatDate;
-              continue;
-            }
-            newReminder = delta.copyWith(
-              originalDue: nextRepeatDate,
-              lastUpdated: DateTime.now(),
-            );
-
-            newReminder.id = delta.id;
+            newRepeatables.add(newReminder);
           }
-
-          newRepeatables.add(newReminder);
 
           // Increment the loop
           dueDate = nextRepeatDate;
         }
+
+        /// DELTAS.
+
+        List<Reminder> deltas = await _reminderRepository.getDeltas(
+            repeatID: nextRepeating.repeatID!, now: Constants.today);
+
+        for (Reminder delta in deltas) {
+          if (!delta.toDelete) {
+            newRepeatables.add(delta);
+          }
+        }
+
         break;
       default:
         return newRepeatables;

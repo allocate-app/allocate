@@ -233,6 +233,8 @@ class DeadlineProvider extends ChangeNotifier {
     deadline.repeatable = false;
     deadline.frequency = Frequency.once;
     deadline.toDelete = false;
+    deadline.notificationID = Constants.generate32ID();
+    deadline.repeatID = Constants.generateID();
     try {
       curDeadline = await _deadlineRepo.update(deadline);
     } on FailureToUploadException catch (e) {
@@ -294,10 +296,13 @@ class DeadlineProvider extends ChangeNotifier {
   }
 
   Future<void> handleRepeating(
-      {Deadline? deadline, bool? single = false, bool delete = false}) async {
+      {Deadline? deadline,
+      Deadline? delta,
+      bool? single = false,
+      bool delete = false}) async {
     try {
       return await _repeatService.handleRepeating(
-          model: deadline, single: single, delete: delete);
+          oldModel: deadline, newModel: delta, single: single, delete: delete);
 
       //TODO: Clear key -> run repeat routine.
     } on InvalidRepeatingException catch (e) {

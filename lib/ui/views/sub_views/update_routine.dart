@@ -321,94 +321,99 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
 
           const PaddedDivider(padding: Constants.halfPadding),
           Flexible(
-            child: Scrollbar(
-              thumbVisibility: true,
-              controller: desktopScrollController,
-              child: ListView(
-                shrinkWrap: true,
+            child: Material(
+              color: Colors.transparent,
+              child: Scrollbar(
+                thumbVisibility: true,
                 controller: desktopScrollController,
-                physics: scrollPhysics,
-                children: [
-                  Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Flexible(
-                            child: ListView(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: Constants.halfPadding),
-                                shrinkWrap: true,
-                                physics: const NeverScrollableScrollPhysics(),
-                                children: [
-                              // Title
+                child: ListView(
+                  shrinkWrap: true,
+                  controller: desktopScrollController,
+                  physics: scrollPhysics,
+                  children: [
+                    Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Flexible(
+                              child: ListView(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: Constants.halfPadding),
+                                  shrinkWrap: true,
+                                  physics: const NeverScrollableScrollPhysics(),
+                                  children: [
+                                // Title
 
-                              Tiles.nameTile(
+                                Tiles.nameTile(
+                                    context: context,
+                                    leading: ListTileWidgets.routineIcon(
+                                      currentContext: context,
+                                      scale: Constants.largeCheckboxMinScale,
+                                      times: times ?? 0,
+                                      handleRoutineTimeChange:
+                                          changeRoutineTime,
+                                    ),
+                                    hintText: "Routine Name",
+                                    errorText: nameErrorText,
+                                    controller: nameEditingController,
+                                    outerPadding: const EdgeInsets.symmetric(
+                                        vertical: Constants.padding),
+                                    textFieldPadding: const EdgeInsets.only(
+                                      left: Constants.padding,
+                                    ),
+                                    handleClear: clearNameField,
+                                    onEditingComplete: updateName),
+                                Tiles.weightTile(
+                                  outerPadding: const EdgeInsets.all(
+                                      Constants.doublePadding),
+                                  batteryPadding: const EdgeInsets.symmetric(
+                                      horizontal: Constants.padding),
+                                  constraints:
+                                      const BoxConstraints(maxWidth: 200),
+                                  weight: routine.weight.toDouble(),
+                                  max: Constants.maxWeight.toDouble(),
+                                ),
+                                const PaddedDivider(padding: Constants.padding),
+                                Tiles.durationTile(
+                                  expectedDuration: routine.expectedDuration,
                                   context: context,
-                                  leading: ListTileWidgets.routineIcon(
-                                    currentContext: context,
-                                    scale: Constants.largeCheckboxMinScale,
-                                    times: times ?? 0,
-                                    handleRoutineTimeChange: changeRoutineTime,
-                                  ),
-                                  hintText: "Routine Name",
-                                  errorText: nameErrorText,
-                                  controller: nameEditingController,
+                                  realDuration: routine.realDuration,
                                   outerPadding: const EdgeInsets.symmetric(
-                                      vertical: Constants.padding),
-                                  textFieldPadding: const EdgeInsets.only(
-                                    left: Constants.padding,
-                                  ),
-                                  handleClear: clearNameField,
-                                  onEditingComplete: updateName),
-                              Tiles.weightTile(
-                                outerPadding: const EdgeInsets.all(
-                                    Constants.doublePadding),
-                                batteryPadding: const EdgeInsets.symmetric(
-                                    horizontal: Constants.padding),
-                                constraints:
-                                    const BoxConstraints(maxWidth: 200),
-                                weight: routine.weight.toDouble(),
-                                max: Constants.maxWeight.toDouble(),
-                              ),
-                              const PaddedDivider(padding: Constants.padding),
-                              Tiles.durationTile(
-                                expectedDuration: routine.expectedDuration,
-                                context: context,
-                                realDuration: routine.realDuration,
-                                outerPadding: const EdgeInsets.symmetric(
-                                    horizontal: Constants.padding),
-                                handleClear: clearDuration,
-                                handleUpdate: updateDuration,
-                              ),
-                            ])),
-                        Flexible(
-                            child: ListView(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: Constants.halfPadding),
-                                physics: const NeverScrollableScrollPhysics(),
-                                shrinkWrap: true,
-                                children: [
-                              Tiles.subtasksTile(
-                                context: context,
-                                outerPadding:
-                                    const EdgeInsets.all(Constants.halfPadding),
-                                id: routine.id,
-                                subtasksAnchorController:
-                                    subtasksAnchorController,
-                                onAnchorOpen: onAnchorOpen,
-                                onAnchorClose: onAnchorClose,
-                                onRemove: (userProvider.curUser?.reduceMotion ??
-                                        false)
-                                    ? null
-                                    : onRemove,
-                                subtasks: routine.subtasks,
-                                subtaskCount: routineProvider.getSubtaskCount(
-                                    id: routine.id),
-                              )
-                            ]))
-                      ]),
-                ],
+                                      horizontal: Constants.padding),
+                                  handleClear: clearDuration,
+                                  handleUpdate: updateDuration,
+                                ),
+                              ])),
+                          Flexible(
+                              child: ListView(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: Constants.halfPadding),
+                                  physics: const NeverScrollableScrollPhysics(),
+                                  shrinkWrap: true,
+                                  children: [
+                                Tiles.subtasksTile(
+                                  context: context,
+                                  outerPadding: const EdgeInsets.all(
+                                      Constants.halfPadding),
+                                  id: routine.id,
+                                  subtasksAnchorController:
+                                      subtasksAnchorController,
+                                  onAnchorOpen: onAnchorOpen,
+                                  onAnchorClose: onAnchorClose,
+                                  onRemove:
+                                      (userProvider.curUser?.reduceMotion ??
+                                              false)
+                                          ? null
+                                          : onRemove,
+                                  subtasks: routine.subtasks,
+                                  subtaskCount: routineProvider.getSubtaskCount(
+                                      id: routine.id),
+                                )
+                              ]))
+                        ]),
+                  ],
+                ),
               ),
             ),
           ),

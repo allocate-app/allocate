@@ -7,6 +7,8 @@ abstract interface class Repeatable<T extends IRepeatable> {
 
   Future<T?> getDelta({required DateTime onDate, required int repeatID});
 
+  Future<List<T>> getDeltas({DateTime? now, required int repeatID});
+
   Future<T?> getTemplate({required int repeatID});
 
   Future<List<int>> deleteFutures({required T deleteFrom});

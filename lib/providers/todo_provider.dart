@@ -109,6 +109,14 @@ class ToDoProvider extends ChangeNotifier {
           (duration ?? 0))
       .toInt();
 
+  int calculateWeight({List<Subtask>? subtasks}) {
+    if (null == subtasks) {
+      return 0;
+    }
+
+    return subtasks.fold(0, (p, e) => p += (e.completed) ? 0 : e.weight);
+  }
+
   Future<int> getWeight(
           {required int taskID, int limit = Constants.maxNumTasks}) async =>
       await _subtaskRepo.getTaskSubtaskWeight(taskID: taskID, limit: limit);
@@ -340,6 +348,7 @@ class ToDoProvider extends ChangeNotifier {
     toDo.repeatable = false;
     toDo.frequency = Frequency.once;
     toDo.toDelete = false;
+    toDo.repeatID = Constants.generateID();
     try {
       curToDo = await _toDoRepo.update(toDo);
     } on FailureToUploadException catch (e) {
@@ -406,10 +415,13 @@ class ToDoProvider extends ChangeNotifier {
   }
 
   Future<void> handleRepeating(
-      {ToDo? toDo, bool? single = false, bool delete = false}) async {
+      {ToDo? toDo,
+      ToDo? delta,
+      bool? single = false,
+      bool delete = false}) async {
     try {
       await _repeatService.handleRepeating(
-          model: toDo, single: single, delete: delete);
+          oldModel: toDo, newModel: delta, single: single, delete: delete);
 
       //TODO: Clear key -> run repeat routine.
     } on InvalidRepeatingException catch (e) {

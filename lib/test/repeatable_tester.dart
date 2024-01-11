@@ -2014,7 +2014,7 @@ void main() async {
       testQuery.realDuration = 1000;
       testQuery.startDate = testQuery.dueDate!;
       await repeatableService!
-          .handleRepeating(model: testQuery, delete: false, single: true);
+          .handleRepeating(oldModel: testQuery, delete: false, single: true);
 
       await toDoRepo!.update(testQuery);
 
@@ -2100,7 +2100,7 @@ void main() async {
       testQuery.startDate = testQuery.dueDate!;
       testQuery.dueDate = limit;
       await repeatableService!
-          .handleRepeating(model: testQuery, delete: false, single: true);
+          .handleRepeating(oldModel: testQuery, delete: false, single: true);
 
       await deadlineRepo!.update(testQuery);
 
@@ -2183,7 +2183,7 @@ void main() async {
       testQuery!.name = "NewTest";
       testQuery.dueDate = limit;
       await repeatableService!
-          .handleRepeating(model: testQuery, delete: false, single: true);
+          .handleRepeating(oldModel: testQuery, delete: false, single: true);
 
       await reminderRepo!.update(testQuery);
 
@@ -2297,7 +2297,7 @@ void main() async {
       // This is functionally equivalent to deleting.
       testQuery!.toDelete = true;
       await repeatableService!
-          .handleRepeating(model: testQuery, delete: true, single: true);
+          .handleRepeating(oldModel: testQuery, delete: true, single: true);
 
       await toDoRepo!.update(testQuery);
 
@@ -2376,7 +2376,7 @@ void main() async {
       expect(null != testQuery, true, reason: "Deadline not properly stored");
 
       await repeatableService!
-          .handleRepeating(model: testQuery, delete: true, single: true);
+          .handleRepeating(oldModel: testQuery, delete: true, single: true);
 
       repeatables = await deadlineRepo!.getRepeatables(now: startDate);
       expect(repeatables.length, 1, reason: "Repeats didn't generate properly");
@@ -2454,7 +2454,7 @@ void main() async {
       expect(null != testQuery, true, reason: "Reminder not properly stored");
 
       await repeatableService!
-          .handleRepeating(model: testQuery, delete: true, single: true);
+          .handleRepeating(oldModel: testQuery, delete: true, single: true);
 
       repeatables = await reminderRepo!.getRepeatables(now: startDate);
       expect(repeatables.length, 1, reason: "Repeats didn't generate properly");
@@ -2567,7 +2567,7 @@ void main() async {
       testQuery.dueDate = limit;
       // update all
       await repeatableService!
-          .handleRepeating(model: testQuery, delete: false, single: false);
+          .handleRepeating(oldModel: testQuery, delete: false, single: false);
 
       // Generate two more.
       startDate = limit.copyWith(day: limit.day + 1);
@@ -2655,7 +2655,7 @@ void main() async {
       testQuery.dueDate = limit;
       // this also updates
       await repeatableService!
-          .handleRepeating(model: testQuery, delete: false, single: false);
+          .handleRepeating(oldModel: testQuery, delete: false, single: false);
 
       for (int i = 0; i < 2; i++) {
         repeatables = await deadlineRepo!.getRepeatables(now: startDate);
@@ -2740,7 +2740,7 @@ void main() async {
 
       // This also updates
       await repeatableService!
-          .handleRepeating(model: testQuery, delete: false, single: false);
+          .handleRepeating(oldModel: testQuery, delete: false, single: false);
 
       startDate = limit.copyWith(day: limit.day + 1);
       for (int i = 0; i < 2; i++) {
@@ -2875,7 +2875,7 @@ void main() async {
       );
       // update all
       await repeatableService!
-          .handleRepeating(model: projection, delete: false, single: true);
+          .handleRepeating(oldModel: projection, delete: false, single: true);
 
       // Generate two more.
       for (int i = 0; i < 2; i++) {
@@ -2968,7 +2968,7 @@ void main() async {
       );
       // update all
       await repeatableService!
-          .handleRepeating(model: projection, delete: false, single: true);
+          .handleRepeating(oldModel: projection, delete: false, single: true);
 
       // Generate two more.
       for (int i = 0; i < 2; i++) {
@@ -3060,7 +3060,7 @@ void main() async {
       );
       // update all
       await repeatableService!
-          .handleRepeating(model: projection, delete: false, single: true);
+          .handleRepeating(oldModel: projection, delete: false, single: true);
 
       // Generate two more.
       for (int i = 0; i < 2; i++) {
@@ -3185,7 +3185,7 @@ void main() async {
       );
       // update all
       await repeatableService!
-          .handleRepeating(model: projection, delete: true, single: true);
+          .handleRepeating(oldModel: projection, delete: true, single: true);
 
       // Generate two more, one should be deleted.
       for (int i = 0; i < 2; i++) {
@@ -3279,7 +3279,7 @@ void main() async {
       );
       // update all
       await repeatableService!
-          .handleRepeating(model: projection, delete: true, single: true);
+          .handleRepeating(oldModel: projection, delete: true, single: true);
 
       // Generate two more, one should be deleted.
       for (int i = 0; i < 2; i++) {
@@ -3365,7 +3365,7 @@ void main() async {
       );
       // update all
       await repeatableService!
-          .handleRepeating(model: projection, delete: true, single: true);
+          .handleRepeating(oldModel: projection, delete: true, single: true);
 
       // Generate two more, one should be deleted.
       for (int i = 0; i < 2; i++) {
@@ -3498,7 +3498,7 @@ void main() async {
 
       // update all - creates the model
       await repeatableService!
-          .handleRepeating(model: projection, delete: false, single: false);
+          .handleRepeating(oldModel: projection, delete: false, single: false);
 
       // Generate one more, from the newly updated date.
       for (int i = 0; i < 2; i++) {
@@ -3592,7 +3592,7 @@ void main() async {
 
       // update all - this creates a new model
       await repeatableService!
-          .handleRepeating(model: projection, delete: false, single: false);
+          .handleRepeating(oldModel: projection, delete: false, single: false);
 
       // Generate one more.
       for (int i = 0; i < 2; i++) {
@@ -3685,7 +3685,7 @@ void main() async {
       );
       // update all - creates a model
       await repeatableService!
-          .handleRepeating(model: projection, delete: false, single: false);
+          .handleRepeating(oldModel: projection, delete: false, single: false);
 
       // Due date bumped to test date to keep repeating going.
       startDate = testDate;
@@ -3817,7 +3817,7 @@ void main() async {
 
       // delete all - deletes the template, preventing new repeating.
       await repeatableService!
-          .handleRepeating(model: projection, delete: true, single: false);
+          .handleRepeating(oldModel: projection, delete: true, single: false);
 
       // Try generating more data.
       for (int i = 0; i < 2; i++) {
@@ -3901,7 +3901,7 @@ void main() async {
 
       // update all - this creates a new model
       await repeatableService!
-          .handleRepeating(model: projection, delete: true, single: false);
+          .handleRepeating(oldModel: projection, delete: true, single: false);
 
       // Test generating.
       for (int i = 0; i < 2; i++) {
@@ -3983,7 +3983,7 @@ void main() async {
       );
       // update all - creates a model
       await repeatableService!
-          .handleRepeating(model: projection, delete: true, single: false);
+          .handleRepeating(oldModel: projection, delete: true, single: false);
 
       // Due date bumped to test date to keep repeating going.
       startDate = testDate;
@@ -4101,7 +4101,7 @@ void main() async {
 
       expect(
         () async => await repeatableService!
-            .handleRepeating(model: testQuery, delete: false, single: false),
+            .handleRepeating(oldModel: testQuery, delete: false, single: false),
         throwsA(const TypeMatcher<InvalidRepeatingException>()),
         reason: "Exception did not throw",
       );
@@ -4154,7 +4154,7 @@ void main() async {
 
       expect(
         () async => await repeatableService!
-            .handleRepeating(model: testQuery, delete: false, single: false),
+            .handleRepeating(oldModel: testQuery, delete: false, single: false),
         throwsA(const TypeMatcher<InvalidRepeatingException>()),
         reason: "Exception did not throw",
       );
@@ -4204,7 +4204,7 @@ void main() async {
       // try updating with invalid data.
       expect(
         () async => await repeatableService!
-            .handleRepeating(model: testQuery, delete: false, single: false),
+            .handleRepeating(oldModel: testQuery, delete: false, single: false),
         throwsA(const TypeMatcher<InvalidRepeatingException>()),
         reason: "Exception did not throw",
       );
@@ -4258,8 +4258,8 @@ void main() async {
 
       // try to update all
       expect(
-        () async => await repeatableService!
-            .handleRepeating(model: projection, delete: false, single: false),
+        () async => await repeatableService!.handleRepeating(
+            oldModel: projection, delete: false, single: false),
         throwsA(const TypeMatcher<InvalidRepeatingException>()),
         reason: "Exception did not throw",
       );
@@ -4315,8 +4315,8 @@ void main() async {
 
       // try to update all
       expect(
-        () async => await repeatableService!
-            .handleRepeating(model: projection, delete: false, single: false),
+        () async => await repeatableService!.handleRepeating(
+            oldModel: projection, delete: false, single: false),
         throwsA(const TypeMatcher<InvalidRepeatingException>()),
         reason: "Exception did not throw",
       );
@@ -4371,8 +4371,8 @@ void main() async {
 
       // try to update all
       expect(
-        () async => await repeatableService!
-            .handleRepeating(model: projection, delete: false, single: false),
+        () async => await repeatableService!.handleRepeating(
+            oldModel: projection, delete: false, single: false),
         throwsA(const TypeMatcher<InvalidRepeatingException>()),
         reason: "Exception did not throw",
       );

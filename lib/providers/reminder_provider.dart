@@ -198,6 +198,8 @@ class ReminderProvider extends ChangeNotifier {
     reminder.toDelete = false;
     reminder.repeatable = false;
     reminder.frequency = Frequency.once;
+    reminder.notificationID = Constants.generate32ID();
+    reminder.repeatID = Constants.generateID();
     try {
       curReminder = await _reminderRepo.update(reminder);
     } on FailureToUploadException catch (e) {
@@ -260,10 +262,13 @@ class ReminderProvider extends ChangeNotifier {
   }
 
   Future<void> handleRepeating(
-      {Reminder? reminder, bool? single = false, bool delete = false}) async {
+      {Reminder? reminder,
+      Reminder? delta,
+      bool? single = false,
+      bool delete = false}) async {
     try {
       return await _repeatService.handleRepeating(
-          model: reminder, single: single, delete: delete);
+          oldModel: reminder, newModel: delta, single: single, delete: delete);
 
       //TODO: Clear key -> run repeat routine.
     } on InvalidRepeatingException catch (e) {

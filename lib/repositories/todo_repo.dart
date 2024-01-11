@@ -698,6 +698,16 @@ class ToDoRepo implements ToDoRepository {
           .findFirst();
 
   @override
+  Future<List<ToDo>> getDeltas({DateTime? now, required int repeatID}) async =>
+      await _isarClient.toDos
+          .where()
+          .repeatableStateEqualTo(RepeatableState.delta)
+          .filter()
+          .repeatIDEqualTo(repeatID)
+          .originalStartGreaterThan(now ?? Constants.today)
+          .findAll();
+
+  @override
   Future<ToDo?> getTemplate({required int repeatID}) async =>
       await _isarClient.toDos
           .where()

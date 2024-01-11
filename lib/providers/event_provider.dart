@@ -184,23 +184,23 @@ class EventProvider extends ChangeNotifier {
     if (!(_userModel?.reduceMotion ?? false)) {
       model.fade = Fade.fadeIn;
     }
+    if (!model.toDelete) {
+      CalendarEvent newEvent = CalendarEvent(model: model);
 
-    CalendarEvent newEvent = CalendarEvent(model: model);
+      if (_events.containsKey(newEvent.startDate)) {
+        _events[newEvent.startDate]!.add(newEvent);
+      } else {
+        _events[newEvent.startDate] = {newEvent};
+      }
+      if (_events.containsKey(newEvent.dueDate)) {
+        _events[newEvent.dueDate]!.add(newEvent);
+      } else {
+        _events[newEvent.dueDate] = {newEvent};
+      }
+    }
 
-    if (_events.containsKey(newEvent.startDate)) {
-      _events[newEvent.startDate]!.add(newEvent);
-    } else {
-      _events[newEvent.startDate] = {newEvent};
-    }
-    if (_events.containsKey(newEvent.dueDate)) {
-      _events[newEvent.dueDate]!.add(newEvent);
-    } else {
-      _events[newEvent.dueDate] = {newEvent};
-    }
     if (model.repeatable) {
       await insertRepeating(model: model, end: _latest);
-      generatingEvents = false;
-      return;
     }
     if (notify) {
       resetSelectedEvents();
@@ -218,7 +218,11 @@ class EventProvider extends ChangeNotifier {
     }
 
     if (RepeatableState.projected == oldModel.repeatableState) {
-      return await updateRepeating(model: oldModel);
+      return await updateRepeating(repeatID: oldModel.repeatID);
+    }
+
+    if (oldModel.repeatable) {
+      clearRepeating(repeatID: oldModel.repeatID, notify: false);
     }
 
     // Remove old - notify on early escape
@@ -247,21 +251,17 @@ class EventProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> updateRepeating({IRepeatable? model}) async {
-    if (null == model || null == model.repeatID) {
+  Future<void> updateRepeating({int? repeatID}) async {
+    if (null == repeatID) {
       return;
     }
 
-    if (!_repeatingEvents.containsKey(model.repeatID)) {
+    if (!_repeatingEvents.containsKey(repeatID)) {
       return;
     }
 
-    removeRepeating(
-      repeatID: model.repeatID,
-    );
-
-    await insertRepeating(model: model);
-    generatingEvents = false;
+    IRepeatable? repeatable = clearRepeating(repeatID: repeatID);
+    await insertRepeating(model: repeatable);
     return;
   }
 
@@ -278,14 +278,12 @@ class EventProvider extends ChangeNotifier {
 
       DateTime? startDate = model.originalStart;
 
-      // probe from the model's repeat structure until it hits the next empty key.
       while (startDate!.isBefore(end)) {
         if (!_repeatingEvents[repeatID]!.containsKey(startDate)) {
           await insertRepeating(
             model: model,
             end: end,
           );
-          generatingEvents = false;
           return;
         }
 
@@ -298,21 +296,43 @@ class EventProvider extends ChangeNotifier {
     }
   }
 
-  void removeRepeating({int? repeatID, bool notify = false}) {
-    if (null == repeatID) {
+  void removeRepeating({IRepeatable? model, bool notify = false}) {
+    if (null == model) {
       return;
     }
     // Get previously repeating events.
-    Iterable<IRepeatable> oldModels = _repeatingEvents[repeatID]!.values;
+    Iterable<IRepeatable> oldModels = _repeatingEvents[model.repeatID]!.values;
 
     // Remove from calendar
     for (IRepeatable oldModel in oldModels) {
+      if (oldModel.startDate!.isBefore(model.startDate!)) {
+        continue;
+      }
       removeEventModel(model: oldModel);
     }
 
     if (notify) {
-      notifyListeners();
+      resetSelectedEvents();
     }
+  }
+
+  IRepeatable? clearRepeating({int? repeatID, bool notify = false}) {
+    if (null == repeatID) {
+      return null;
+    }
+
+    IRepeatable? model = _repeatingEvents[repeatID]!.values.firstOrNull;
+
+    // Clear the calendar, then clear repeating.
+    if (null != model) {
+      removeRepeating(model: model);
+    }
+
+    _repeatingEvents.remove(repeatID);
+    if (notify) {
+      resetSelectedEvents();
+    }
+    return model;
   }
 
   Future<void> insertRepeating(
@@ -326,8 +346,7 @@ class EventProvider extends ChangeNotifier {
       return;
     }
 
-    start = start ?? Constants.today;
-    end = end ?? latest;
+    end = end ?? _latest;
 
     if (!_repeatingEvents.containsKey(model.repeatID)) {
       _repeatingEvents[model.repeatID!] = LinkedHashMap<DateTime, IRepeatable>(
@@ -338,6 +357,7 @@ class EventProvider extends ChangeNotifier {
 
     List<IRepeatable> newEvents =
         await _repeatService.populateCalendar(model: model, limit: end);
+    generatingEvents = false;
 
     // Add each repeatable into the repeating hashmap.
     for (IRepeatable newEvent in newEvents) {

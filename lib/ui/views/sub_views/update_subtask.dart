@@ -170,6 +170,10 @@ class _UpdateSubtaskScreen extends State<UpdateSubtaskScreen> {
                 ),
                 const PaddedDivider(padding: Constants.halfPadding),
                 Tiles.updateAndDeleteButtons(
+                    updateButtonPadding: const EdgeInsets.symmetric(
+                        horizontal: Constants.padding),
+                    deleteButtonPadding: const EdgeInsets.symmetric(
+                        horizontal: Constants.padding),
                     handleDelete: (null != widget.handleDelete)
                         ? () async {
                             widget.handleDelete!(subtask: subtask);

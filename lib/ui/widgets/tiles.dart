@@ -240,9 +240,15 @@ abstract class Tiles {
                   e is FailureToUpdateException ||
                   e is FailureToUploadException ||
                   e is FailureToDeleteException);
-      if (toDo.repeatable) {
-        await eventProvider.updateRepeating(model: toDo);
-      }
+
+      // if (toDo.repeatable) {
+      //   await eventProvider.updateRepeating(model: toDo);
+      // }
+      //
+      // if (!deleteSingle) {
+      //   eventProvider.clearRepeating(repeatID: toDo.repeatID);
+      // }
+
       return await eventProvider.updateEventModel(oldModel: toDo);
     }
 
