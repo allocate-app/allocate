@@ -289,10 +289,6 @@ class _CreateReminderScreen extends State<CreateReminderScreen> {
                                         currentContext: context,
                                         iconPadding: const EdgeInsets.all(
                                             Constants.padding),
-                                        outerPadding:
-                                            const EdgeInsets.symmetric(
-                                                horizontal:
-                                                    Constants.halfPadding),
                                       ),
                                       context: context,
                                       hintText: "Reminder Name",
@@ -306,11 +302,9 @@ class _CreateReminderScreen extends State<CreateReminderScreen> {
                                       handleClear: clearNameField,
                                       onEditingComplete: updateName),
                                   const PaddedDivider(
-                                      padding: Constants.padding),
+                                      padding: Constants.halfPadding),
                                   Tiles.singleDateTimeTile(
                                     leading: const Icon(Icons.today_outlined),
-                                    outerPadding: const EdgeInsets.symmetric(
-                                        horizontal: Constants.padding),
                                     context: context,
                                     date: dueDate,
                                     time: dueTime,
@@ -329,8 +323,6 @@ class _CreateReminderScreen extends State<CreateReminderScreen> {
                                         padding: Constants.padding),
                                     Tiles.repeatableTile(
                                       context: context,
-                                      outerPadding: const EdgeInsets.symmetric(
-                                          horizontal: Constants.padding),
                                       frequency: frequency,
                                       weekdays: weekdayList,
                                       repeatSkip: repeatSkip,

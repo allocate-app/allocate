@@ -1,4 +1,5 @@
 import 'dart:collection';
+import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 import 'package:table_calendar/table_calendar.dart';
@@ -19,10 +20,15 @@ import 'viewmodels/user_model.dart';
 class EventProvider extends ChangeNotifier {
   bool generatingEvents = false;
   bool loadingEvents = false;
+  bool clearing = false;
 
-  bool get belowEventCap => _events.length < Constants.calendarLimit;
+  int _totalStoredEvents = 0;
+  int _totalStoredRepeatingEvents = 0;
 
-  bool get belowRepeatCap => _repeatingEvents.length < Constants.repeatingLimit;
+  bool get belowEventCap => _totalStoredEvents < Constants.calendarLimit;
+
+  bool get belowRepeatCap =>
+      _totalStoredRepeatingEvents < Constants.repeatingLimit;
 
   // TODO: This could just be a list.
   late final ValueNotifier<List<CalendarEvent>> _selectedEvents;
@@ -56,14 +62,16 @@ class EventProvider extends ChangeNotifier {
 
   set focusedDay(DateTime newFocusedDay) {
     _focusedDay = newFocusedDay;
-    DateTime testLatest = _focusedDay.copyWith(year: _focusedDay.year + 1);
 
-    DateTime testEarliest = _focusedDay.copyWith(year: _focusedDay.year - 1);
+    DateTime testLatest =
+        _focusedDay.copyWith(month: _focusedDay.month + 2, day: 0);
+
+    DateTime testEarliest =
+        _focusedDay.copyWith(month: _focusedDay.month - 1, day: 0);
 
     if (!testLatest.isBefore(_latest) && !generatingEvents && belowRepeatCap) {
       _latest = testLatest;
       checkRepeating(end: _latest).whenComplete(() {
-        generatingEvents = false;
         _selectedEvents.value = getEventsForDay(_selectedDay);
         notifyListeners();
       });
@@ -74,9 +82,7 @@ class EventProvider extends ChangeNotifier {
       DateTime previous = _earliest;
       _earliest = testEarliest;
       getCalendarEvents(start: _earliest, end: previous).whenComplete(() {
-        loadingEvents = false;
-        _selectedEvents.value = getEventsForDay(_selectedDay);
-        notifyListeners();
+        resetSelectedEvents();
       });
       return;
     }
@@ -132,10 +138,24 @@ class EventProvider extends ChangeNotifier {
     _selectedEvents = ValueNotifier(getEventsForDay(_selectedDay));
 
     getCalendarEvents().whenComplete(() {
-      loadingEvents = false;
-      generatingEvents = false;
       resetSelectedEvents();
     });
+  }
+
+  Future<void> resetCalendar() async {
+    clearing = true;
+    notifyListeners();
+
+    _events.clear();
+    _repeatingEvents.clear();
+    _totalStoredEvents = 0;
+    _totalStoredRepeatingEvents = 0;
+    _latest = _focusedDay.copyWith(year: _focusedDay.year + 1);
+    _earliest = _focusedDay.copyWith(year: _focusedDay.year - 1);
+    await getCalendarEvents();
+    clearing = false;
+
+    resetSelectedEvents();
   }
 
   void resetSelectedEvents() {
@@ -170,6 +190,7 @@ class EventProvider extends ChangeNotifier {
         await insertEventModel(model: model);
       }
     }
+    loadingEvents = false;
   }
 
   Future<void> insertEventModel(
@@ -188,14 +209,22 @@ class EventProvider extends ChangeNotifier {
       CalendarEvent newEvent = CalendarEvent(model: model);
 
       if (_events.containsKey(newEvent.startDate)) {
+        if (!_events[newEvent.startDate]!.contains(newEvent)) {
+          _totalStoredEvents++;
+        }
         _events[newEvent.startDate]!.add(newEvent);
       } else {
         _events[newEvent.startDate] = {newEvent};
+        _totalStoredEvents++;
       }
       if (_events.containsKey(newEvent.dueDate)) {
+        if (!_events[newEvent.startDate]!.contains(newEvent)) {
+          _totalStoredEvents++;
+        }
         _events[newEvent.dueDate]!.add(newEvent);
       } else {
         _events[newEvent.dueDate] = {newEvent};
+        _totalStoredEvents++;
       }
     }
 
@@ -218,7 +247,7 @@ class EventProvider extends ChangeNotifier {
     }
 
     if (RepeatableState.projected == oldModel.repeatableState) {
-      return await updateRepeating(repeatID: oldModel.repeatID);
+      return await updateRepeating(model: oldModel);
     }
 
     if (oldModel.repeatable) {
@@ -240,28 +269,49 @@ class EventProvider extends ChangeNotifier {
     // Remove old
     CalendarEvent oldEvent = CalendarEvent(model: model);
     if (_events.containsKey(oldEvent.startDate)) {
-      _events[oldEvent.startDate]!.remove(oldEvent);
+      bool removed = _events[oldEvent.startDate]!.remove(oldEvent);
+      if (removed) {
+        _totalStoredEvents--;
+      }
     }
     if (_events.containsKey(oldEvent.dueDate)) {
-      _events[oldEvent.dueDate]!.remove(oldEvent);
+      bool removed = _events[oldEvent.dueDate]!.remove(oldEvent);
+      if (removed) {
+        _totalStoredEvents--;
+      }
     }
+
+    // In case of negative from miscount.
+    _totalStoredEvents = max(_totalStoredEvents, 0);
 
     if (notify) {
       resetSelectedEvents();
     }
   }
 
-  Future<void> updateRepeating({int? repeatID}) async {
-    if (null == repeatID) {
+  Future<void> updateRepeating({IRepeatable? model}) async {
+    if (null == model || null == model.repeatID) {
       return;
     }
 
-    if (!_repeatingEvents.containsKey(repeatID)) {
+    if (!_repeatingEvents.containsKey(model.repeatID!)) {
       return;
     }
 
-    IRepeatable? repeatable = clearRepeating(repeatID: repeatID);
-    await insertRepeating(model: repeatable);
+    clearRepeating(repeatID: model.repeatID);
+
+    IRepeatable? newRepeatable = switch (model.modelType) {
+      ModelType.task =>
+        await _toDoRepo.getNextRepeat(repeatID: model.repeatID!, now: _latest),
+      ModelType.deadline => await _deadlineRepo.getNextRepeat(
+          repeatID: model.repeatID!, now: _latest),
+      ModelType.reminder => await _reminderRepo.getNextRepeat(
+          repeatID: model.repeatID!, now: _latest),
+      _ => null,
+    };
+
+    // Get the new starting
+    await insertEventModel(model: newRepeatable);
     return;
   }
 
@@ -321,14 +371,22 @@ class EventProvider extends ChangeNotifier {
       return null;
     }
 
-    IRepeatable? model = _repeatingEvents[repeatID]!.values.firstOrNull;
+    // Entries preserve their inserted order with linkedhashmap.
+    // The first entry is expected to be the earliest.
+    IRepeatable? model = _repeatingEvents[repeatID]?.values.firstOrNull;
 
     // Clear the calendar, then clear repeating.
     if (null != model) {
       removeRepeating(model: model);
     }
 
-    _repeatingEvents.remove(repeatID);
+    Map<DateTime, IRepeatable>? entry = _repeatingEvents.remove(repeatID);
+    if (null != entry) {
+      _totalStoredRepeatingEvents -= entry.length;
+
+      // In case of <0.
+      _totalStoredRepeatingEvents = max(0, _totalStoredRepeatingEvents);
+    }
     if (notify) {
       resetSelectedEvents();
     }
@@ -357,7 +415,11 @@ class EventProvider extends ChangeNotifier {
 
     List<IRepeatable> newEvents =
         await _repeatService.populateCalendar(model: model, limit: end);
-    generatingEvents = false;
+
+    // This is a case where the hashmap has been cleared.
+    if (RepeatableState.projected == model.repeatableState) {
+      newEvents.insert(0, model);
+    }
 
     // Add each repeatable into the repeating hashmap.
     for (IRepeatable newEvent in newEvents) {
@@ -370,8 +432,14 @@ class EventProvider extends ChangeNotifier {
       _repeatingEvents[newEvent.repeatID!]![startDate] = newEvent;
     }
 
+    // Update the estimated hashmap entries.
+    _totalStoredRepeatingEvents += newEvents.length;
+
     // Return the repeating events to the main calendar.
-    return batchUpdateEventModel(events: newEvents);
+    batchUpdateEventModel(events: newEvents);
+
+    // Allow for regeneration.
+    generatingEvents = false;
   }
 
   void batchUpdateEventModel({List<IRepeatable>? events}) {

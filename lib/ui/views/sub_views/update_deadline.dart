@@ -163,6 +163,10 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
       }
     }
 
+    deadline.repeatable = (Frequency.once != deadline.frequency &&
+        (prevDeadline.repeatable ||
+            !(deadline.startDate?.isBefore(Constants.today) ?? false)));
+
     return valid;
   }
 
@@ -446,9 +450,6 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
             : checkClose!;
         deadline.frequency = newFreq;
         deadline.repeatSkip = newSkip;
-
-        deadline.repeatable = (Frequency.once != deadline.frequency &&
-            prevDeadline.repeatable == false);
 
         if (newWeekdays.isEmpty) {
           newWeekdays

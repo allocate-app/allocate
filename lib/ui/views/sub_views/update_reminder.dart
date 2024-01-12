@@ -121,6 +121,11 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
 
       error.show(context);
     }
+
+    reminder.repeatable = (Frequency.once != reminder.frequency &&
+        (prevReminder.repeatable ||
+            !(reminder.dueDate?.isBefore(Constants.today) ?? false)));
+
     return valid;
   }
 
@@ -289,6 +294,7 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
     }
   }
 
+  // TODO: fix - how to know if something is repeatable again..
   void updateRepeatable(
       {bool? checkClose,
       required Frequency newFreq,
@@ -303,8 +309,6 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
             : checkClose!;
         reminder.frequency = newFreq;
         reminder.repeatSkip = newSkip;
-        reminder.repeatable = (Frequency.once != reminder.frequency &&
-            prevReminder.repeatable == false);
 
         if (newWeekdays.isEmpty) {
           newWeekdays
@@ -377,10 +381,6 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
                                         currentContext: context,
                                         iconPadding: const EdgeInsets.all(
                                             Constants.padding),
-                                        outerPadding:
-                                            const EdgeInsets.symmetric(
-                                                horizontal:
-                                                    Constants.halfPadding),
                                       ),
                                       context: context,
                                       hintText: "Reminder Name",
@@ -394,11 +394,9 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
                                       handleClear: clearNameField,
                                       onEditingComplete: updateName),
                                   const PaddedDivider(
-                                      padding: Constants.padding),
+                                      padding: Constants.halfPadding),
                                   Tiles.singleDateTimeTile(
                                     leading: const Icon(Icons.today_outlined),
-                                    outerPadding: const EdgeInsets.symmetric(
-                                        horizontal: Constants.padding),
                                     context: context,
                                     date: reminder.dueDate,
                                     time: (null != reminder.dueDate && showTime)
@@ -420,8 +418,6 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
                                         padding: Constants.padding),
                                     Tiles.repeatableTile(
                                       context: context,
-                                      outerPadding: const EdgeInsets.symmetric(
-                                          horizontal: Constants.padding),
                                       frequency: reminder.frequency,
                                       weekdays: weekdayList,
                                       repeatSkip: reminder.repeatSkip,

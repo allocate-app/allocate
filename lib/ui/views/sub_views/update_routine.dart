@@ -379,8 +379,6 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
                                   expectedDuration: routine.expectedDuration,
                                   context: context,
                                   realDuration: routine.realDuration,
-                                  outerPadding: const EdgeInsets.symmetric(
-                                      horizontal: Constants.padding),
                                   handleClear: clearDuration,
                                   handleUpdate: updateDuration,
                                 ),
@@ -394,8 +392,6 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
                                   children: [
                                 Tiles.subtasksTile(
                                   context: context,
-                                  outerPadding: const EdgeInsets.all(
-                                      Constants.halfPadding),
                                   id: routine.id,
                                   subtasksAnchorController:
                                       subtasksAnchorController,
@@ -498,8 +494,6 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
                       expectedDuration: routine.expectedDuration,
                       context: context,
                       realDuration: routine.realDuration,
-                      outerPadding: const EdgeInsets.symmetric(
-                          horizontal: Constants.padding),
                       handleClear: clearDuration,
                       handleUpdate: updateDuration,
                     ),

@@ -138,9 +138,6 @@ class ReminderProvider extends ChangeNotifier {
     reminder = reminder ?? curReminder!;
     reminder.lastUpdated = DateTime.now();
 
-    if (reminder.repeatable && null == reminder.repeatID) {
-      reminder.repeatID = Constants.generateID();
-    }
     try {
       curReminder = await _reminderRepo.update(curReminder!);
       if (curReminder!.repeatable) {
@@ -267,14 +264,13 @@ class ReminderProvider extends ChangeNotifier {
       bool? single = false,
       bool delete = false}) async {
     try {
-      return await _repeatService.handleRepeating(
+      await _repeatService.handleRepeating(
           oldModel: reminder, newModel: delta, single: single, delete: delete);
-
-      //TODO: Clear key -> run repeat routine.
     } on InvalidRepeatingException catch (e) {
       log(e.cause);
       return Future.error(e);
     }
+    notifyListeners();
   }
 
   Future<void> createTemplate({Reminder? reminder}) async {

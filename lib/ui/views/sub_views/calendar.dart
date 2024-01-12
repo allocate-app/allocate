@@ -1,6 +1,8 @@
 import 'dart:io';
 
+import 'package:auto_size_text/auto_size_text.dart';
 import "package:flutter/material.dart";
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:table_calendar/table_calendar.dart';
 
@@ -22,16 +24,26 @@ class _CalendarScreen extends State<CalendarScreen> {
   late ScrollController mainScrollController;
   late ScrollPhysics scrollPhysics;
 
+  late final FocusNode _refreshFocusNode;
+  final GlobalKey<RefreshIndicatorState> _refreshIndicatorKey =
+      GlobalKey<RefreshIndicatorState>();
+
   late EventProvider eventProvider;
 
   // TODO: MIGRATE TO APPPROVIDER
   late UserProvider userProvider;
+
+  late bool _showRepeatingLimit;
+  late bool _showEventLimit;
 
   @override
   void initState() {
     super.initState();
     initializeProviders();
     initializeControllers();
+    _showEventLimit = true;
+    _showRepeatingLimit = true;
+    _refreshFocusNode = FocusNode();
   }
 
   @override
@@ -58,43 +70,122 @@ class _CalendarScreen extends State<CalendarScreen> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Consumer<EventProvider>(builder:
-            (BuildContext context, EventProvider value, Widget? child) {
-          return Flexible(
-              child: Scrollbar(
-            thumbVisibility: true,
-            controller: mainScrollController,
-            child: ListView(
-                shrinkWrap: true,
-                physics: AlwaysScrollableScrollPhysics(parent: scrollPhysics),
-                controller: mainScrollController,
-                children: [
-                  TableCalendar(
-                      // January 1st, 5 years ago
-                      firstDay: DateTime(
-                          Constants.today.year - Constants.yearOffset, 1, 1),
-                      // January 31st, 5 years from now.
-                      lastDay: DateTime(
-                          Constants.today.year + Constants.yearOffset, 2, 0),
-                      focusedDay: value.focusedDay,
-                      headerStyle: Constants.calendarHeaderStyle,
-                      calendarStyle: Constants.calendarStyle(context),
-                      calendarFormat: CalendarFormat.month,
-                      pageJumpingEnabled: true,
-                      eventLoader: value.getEventsForDay,
-                      selectedDayPredicate: (day) {
-                        return isSameDay(value.selectedDay, day);
-                      },
-                      onDaySelected: value.handleDaySelected,
-                      onPageChanged: (focusedDay) {
-                        value.focusedDay = focusedDay;
-                      }),
-                  ListViews.eventList(
-                      selectedEvents: value.selectedEvents,
-                      smallScreen: userProvider.smallScreen),
-                ]),
-          ));
-        }),
+        Flexible(
+          child: MouseRegion(
+            onEnter: (PointerEvent details) {
+              _refreshFocusNode.requestFocus();
+            },
+            onExit: (PointerEvent details) {
+              _refreshFocusNode.unfocus();
+            },
+            child: CallbackShortcuts(
+              bindings: <ShortcutActivator, VoidCallback>{
+                const SingleActivator(LogicalKeyboardKey.keyR,
+                    control: true, includeRepeats: false): () {
+                  _refreshIndicatorKey.currentState?.show();
+                }
+              },
+              child: Focus(
+                autofocus: true,
+                focusNode: _refreshFocusNode,
+                descendantsAreFocusable: true,
+                child: RefreshIndicator(
+                  key: _refreshIndicatorKey,
+                  onRefresh: () async {
+                    await eventProvider.resetCalendar();
+                  },
+                  child: Consumer<EventProvider>(builder: (BuildContext context,
+                      EventProvider value, Widget? child) {
+                    return Scrollbar(
+                      thumbVisibility: true,
+                      controller: mainScrollController,
+                      child: ListView(
+                          shrinkWrap: true,
+                          physics: AlwaysScrollableScrollPhysics(
+                              parent: scrollPhysics),
+                          controller: mainScrollController,
+                          children: [
+                            if (!eventProvider.belowEventCap && _showEventLimit)
+                              ListTile(
+                                leading:
+                                    const Icon(Icons.error_outline_rounded),
+                                contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: Constants.padding),
+                                title: const AutoSizeText(
+                                  "Size limit for calendar events exceeded.",
+                                  maxLines: 2,
+                                  overflow: TextOverflow.visible,
+                                  maxFontSize: Constants.large,
+                                  minFontSize: Constants.medium,
+                                  softWrap: false,
+                                ),
+                                trailing: IconButton(
+                                    icon: const Icon(Icons.clear_rounded),
+                                    onPressed: () {
+                                      _showEventLimit = false;
+                                      if (mounted) {
+                                        setState(() {});
+                                      }
+                                    }),
+                              ),
+                            if (!eventProvider.belowRepeatCap &&
+                                _showRepeatingLimit)
+                              ListTile(
+                                  leading:
+                                      const Icon(Icons.error_outline_rounded),
+                                  contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: Constants.padding),
+                                  title: const AutoSizeText(
+                                    "Size limit for repeating events exceeded.",
+                                    maxLines: 2,
+                                    overflow: TextOverflow.visible,
+                                    maxFontSize: Constants.large,
+                                    minFontSize: Constants.medium,
+                                    softWrap: false,
+                                  ),
+                                  trailing: IconButton(
+                                      icon: const Icon(Icons.clear_rounded),
+                                      onPressed: () {
+                                        _showRepeatingLimit = false;
+                                        if (mounted) {
+                                          setState(() {});
+                                        }
+                                      })),
+                            TableCalendar(
+                                // January 1st, 5 years ago
+                                firstDay: DateTime(
+                                    Constants.today.year - Constants.yearOffset,
+                                    1,
+                                    1),
+                                // January 31st, 5 years from now.
+                                lastDay: DateTime(
+                                    Constants.today.year + Constants.yearOffset,
+                                    2,
+                                    0),
+                                focusedDay: value.focusedDay,
+                                headerStyle: Constants.calendarHeaderStyle,
+                                calendarStyle: Constants.calendarStyle(context),
+                                calendarFormat: CalendarFormat.month,
+                                pageJumpingEnabled: true,
+                                eventLoader: value.getEventsForDay,
+                                selectedDayPredicate: (day) {
+                                  return isSameDay(value.selectedDay, day);
+                                },
+                                onDaySelected: value.handleDaySelected,
+                                onPageChanged: (focusedDay) {
+                                  value.focusedDay = focusedDay;
+                                }),
+                            ListViews.eventList(
+                                selectedEvents: value.selectedEvents,
+                                smallScreen: userProvider.smallScreen),
+                          ]),
+                    );
+                  }),
+                ),
+              ),
+            ),
+          ),
+        ),
       ],
     );
   }

@@ -363,14 +363,10 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
                                       Tiles.nameTile(
                                           context: context,
                                           leading: ListTileWidgets.groupIcon(
-                                              currentContext: context,
-                                              iconPadding: const EdgeInsets.all(
-                                                  Constants.padding),
-                                              outerPadding:
-                                                  const EdgeInsets.symmetric(
-                                                horizontal:
-                                                    Constants.halfPadding,
-                                              )),
+                                            currentContext: context,
+                                            iconPadding: const EdgeInsets.all(
+                                                Constants.padding),
+                                          ),
                                           hintText: "Group Name",
                                           errorText: nameErrorText,
                                           controller: nameEditingController,
@@ -399,8 +395,6 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
                                               .desktopMaxLinesBeforeScroll,
                                           controller:
                                               descriptionEditingController,
-                                          outerPadding: const EdgeInsets.all(
-                                              Constants.padding),
                                           context: context,
                                           onEditingComplete: updateDescription,
                                         ),
@@ -459,12 +453,10 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
                       Tiles.nameTile(
                           context: context,
                           leading: ListTileWidgets.groupIcon(
-                              currentContext: context,
-                              iconPadding:
-                                  const EdgeInsets.all(Constants.padding),
-                              outerPadding: const EdgeInsets.symmetric(
-                                horizontal: Constants.halfPadding,
-                              )),
+                            currentContext: context,
+                            iconPadding:
+                                const EdgeInsets.all(Constants.padding),
+                          ),
                           hintText: "Group Name",
                           errorText: nameErrorText,
                           controller: nameEditingController,
@@ -479,8 +471,6 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
                       const PaddedDivider(padding: Constants.padding),
                       Tiles.descriptionTile(
                         controller: descriptionEditingController,
-                        outerPadding: const EdgeInsets.symmetric(
-                            horizontal: Constants.padding),
                         context: context,
                         onEditingComplete: updateDescription,
                       ),

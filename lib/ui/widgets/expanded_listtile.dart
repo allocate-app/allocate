@@ -43,6 +43,7 @@ class _ExpandedListTile extends State<ExpandedListTile> {
     return Padding(
       padding: widget.outerPadding,
       child: Card(
+        margin: EdgeInsets.zero,
         clipBehavior: Clip.antiAlias,
         elevation: 0,
         color: Colors.transparent,

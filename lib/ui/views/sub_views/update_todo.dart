@@ -1,5 +1,4 @@
 import "dart:io";
-import "dart:math";
 
 import "package:another_flushbar/flushbar.dart";
 import "package:flutter/material.dart";
@@ -39,8 +38,6 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
   late bool checkClose;
   late bool _checkRepeating;
   late bool expanded;
-  late bool _projection;
-  late ValueNotifier<int> _projectionSubtaskCount;
 
   late final UserProvider userProvider;
   late final ToDoProvider toDoProvider;
@@ -87,9 +84,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
     initializeProviders();
     initializeParameters();
     initializeControllers();
-    if (!_projection) {
-      resetSubtasks();
-    }
+    resetSubtasks();
     expanded = false;
   }
 
@@ -105,16 +100,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
       toDoProvider.curToDo = widget.initialToDo;
     }
 
-    _projection = toDo.repeatableState == RepeatableState.projected;
-    if (_projection) {
-      _projectionSubtaskCount = ValueNotifier(toDo.subtasks.length);
-    }
-
-    // Only add the listener when there are subtasks to grab.
-    // Projected events have the subtasks in memory.
-    if (!_projection) {
-      subtaskProvider.addListener(resetSubtasks);
-    }
+    subtaskProvider.addListener(resetSubtasks);
   }
 
   @override
@@ -125,9 +111,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
     desktopScrollController.dispose();
     groupEditingController.dispose();
 
-    if (!_projection) {
-      subtaskProvider.removeListener(resetSubtasks);
-    }
+    subtaskProvider.removeListener(resetSubtasks);
     super.dispose();
   }
 
@@ -248,6 +232,10 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
         }
       }
     }
+
+    toDo.repeatable = (Frequency.once != toDo.frequency &&
+        (prevToDo.repeatable ||
+            !(toDo.startDate?.isBefore(Constants.today) ?? false)));
 
     return valid;
   }
@@ -545,9 +533,6 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
         toDo.frequency = newFreq;
         toDo.repeatSkip = newSkip;
 
-        toDo.repeatable =
-            (Frequency.once != toDo.frequency && prevToDo.repeatable == false);
-
         if (newWeekdays.isEmpty) {
           newWeekdays
               .add((toDo.startDate?.weekday ?? DateTime.now().weekday) - 1);
@@ -570,10 +555,12 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
   }
 
   Future<void> updateAndValidate() async {
-    // in case the usr doesn't submit to the textfields
-    toDo.name = nameEditingController.text;
-    toDo.description = descriptionEditingController.text;
     if (validateData()) {
+      // If projected has subtasks, check repeating to create a delta.
+      if (RepeatableState.projected == toDo.repeatableState &&
+          toDo.subtasks.isNotEmpty) {
+        _checkRepeating = true;
+      }
       await handleUpdate();
     }
   }
@@ -609,73 +596,6 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
 
   void _closeMenuAnchor() {
     subtasksAnchorController.close();
-  }
-
-  // Projected only
-  // Internal "deal with repeating event deltas subtasks" methods.
-  void onReorder(int oldIndex, int newIndex) {
-    if (oldIndex < newIndex) {
-      newIndex--;
-    }
-    _checkRepeating = true;
-    Subtask subtask = toDo.subtasks.removeAt(oldIndex);
-    toDo.subtasks.insert(newIndex, subtask);
-    if (mounted) {
-      setState(() {});
-    }
-  }
-
-  void onSubtaskRemoved({Subtask? subtask}) {
-    if (null == subtask) {
-      return;
-    }
-
-    _checkRepeating = true;
-    toDo.subtasks.remove(subtask);
-    _projectionSubtaskCount.value = max(_projectionSubtaskCount.value - 1, 0);
-    toDo.weight = toDoProvider.calculateWeight(subtasks: toDo.subtasks);
-    toDo.realDuration = toDoProvider.calculateRealDuration(
-        weight: toDo.weight, duration: toDo.expectedDuration);
-    if (mounted) {
-      setState(() {});
-    }
-  }
-
-  void onSubtaskChanged({Subtask? subtask, bool? value}) {
-    if (null == subtask || null == value) {
-      return;
-    }
-
-    _checkRepeating = true;
-    subtask.completed = value;
-    toDo.weight = toDoProvider.calculateWeight(subtasks: toDo.subtasks);
-    toDo.realDuration = toDoProvider.calculateRealDuration(
-        weight: toDo.weight, duration: toDo.expectedDuration);
-    if (mounted) {
-      setState(() {});
-    }
-  }
-
-  void onSubtaskSubmit({Subtask? subtask}) {
-    if (null == subtask) {
-      return;
-    }
-
-    _checkRepeating = true;
-    toDo.subtasks.add(subtask);
-    _projectionSubtaskCount.value += 1;
-    toDo.weight = toDoProvider.calculateWeight(subtasks: toDo.subtasks);
-    toDo.realDuration = toDoProvider.calculateRealDuration(
-        weight: toDo.weight, duration: toDo.expectedDuration);
-    if (mounted) {
-      setState(() {});
-    }
-  }
-
-  void handleSubtaskUpdate({Subtask? subtask}) {
-    if (mounted) {
-      setState(() {});
-    }
   }
 
   @override
@@ -801,8 +721,6 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                                     // Priority
                                     Tiles.priorityTile(
                                       context: context,
-                                      outerPadding: const EdgeInsets.symmetric(
-                                          horizontal: Constants.padding),
                                       priority: toDo.priority,
                                       onSelectionChanged: changePriority,
                                     ),
@@ -817,8 +735,6 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                                       expectedDuration: toDo.expectedDuration,
                                       context: context,
                                       realDuration: toDo.realDuration,
-                                      outerPadding: const EdgeInsets.symmetric(
-                                          horizontal: Constants.padding),
                                       handleClear: clearDuration,
                                       handleUpdate: updateDuration,
                                     ),
@@ -828,8 +744,6 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                                     // DateTime -> Show status, on click, open a dialog.
                                     Tiles.dateRangeTile(
                                       context: context,
-                                      outerPadding: const EdgeInsets.symmetric(
-                                          horizontal: Constants.padding),
                                       startDate:
                                           (Constants.nullDate != toDo.startDate)
                                               ? toDo.startDate
@@ -847,9 +761,6 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                                       const PaddedDivider(
                                           padding: Constants.padding),
                                       Tiles.timeTile(
-                                        outerPadding:
-                                            const EdgeInsets.symmetric(
-                                                horizontal: Constants.padding),
                                         startTime: (showStartTime)
                                             ? TimeOfDay.fromDateTime(
                                                 toDo.startDate!)
@@ -870,9 +781,6 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                                           padding: Constants.padding),
                                       Tiles.repeatableTile(
                                         context: context,
-                                        outerPadding:
-                                            const EdgeInsets.symmetric(
-                                                horizontal: Constants.padding),
                                         frequency: toDo.frequency,
                                         weekdays: weekdayList,
                                         repeatSkip: toDo.repeatSkip,
@@ -918,35 +826,14 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                                             subtasksAnchorController,
                                         onAnchorOpen: onAnchorOpen,
                                         onAnchorClose: onAnchorClose,
-                                        onReorder:
-                                            (_projection) ? onReorder : null,
-                                        onRemoved: (_projection)
-                                            ? onSubtaskRemoved
-                                            : null,
-                                        onChanged: (_projection)
-                                            ? onSubtaskChanged
-                                            : null,
-                                        onSubmit: (_projection)
-                                            ? onSubtaskSubmit
-                                            : null,
-                                        onDelete: (_projection)
-                                            ? onSubtaskRemoved
-                                            : null,
-                                        handleUpdate: (_projection)
-                                            ? handleSubtaskUpdate
-                                            : null,
-                                        handleDelete: (_projection)
-                                            ? onSubtaskRemoved
-                                            : null,
                                         onRemove: (userProvider
                                                     .curUser?.reduceMotion ??
                                                 false)
                                             ? null
                                             : onRemove,
                                         subtasks: toDo.subtasks,
-                                        subtaskCount: (_projection)
-                                            ? _projectionSubtaskCount
-                                            : toDoProvider.getSubtaskCount(
+                                        subtaskCount:
+                                            toDoProvider.getSubtaskCount(
                                                 id: toDo.id,
                                                 limit: Constants
                                                     .numTasks[toDo.taskType]!),
@@ -963,8 +850,6 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                                       maxLines:
                                           Constants.desktopMaxLinesBeforeScroll,
                                       controller: descriptionEditingController,
-                                      outerPadding: const EdgeInsets.symmetric(
-                                          horizontal: Constants.padding),
                                       context: context,
                                       onEditingComplete: updateDescription,
                                     ),
@@ -1075,19 +960,9 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                           subtasksAnchorController: subtasksAnchorController,
                           onAnchorOpen: onAnchorOpen,
                           onAnchorClose: onAnchorClose,
-                          onReorder: (_projection) ? onReorder : null,
-                          onRemoved: (_projection) ? onSubtaskRemoved : null,
-                          onChanged: (_projection) ? onSubtaskChanged : null,
-                          onSubmit: (_projection) ? onSubtaskSubmit : null,
-                          onDelete: (_projection) ? onSubtaskRemoved : null,
-                          handleUpdate:
-                              (_projection) ? handleSubtaskUpdate : null,
-                          handleDelete: (_projection) ? onSubtaskRemoved : null,
-                          subtaskCount: (_projection)
-                              ? _projectionSubtaskCount
-                              : toDoProvider.getSubtaskCount(
-                                  id: toDo.id,
-                                  limit: Constants.numTasks[toDo.taskType]!),
+                          subtaskCount: toDoProvider.getSubtaskCount(
+                              id: toDo.id,
+                              limit: Constants.numTasks[toDo.taskType]!),
                           subtasks: toDo.subtasks,
                           id: toDo.id),
                       const PaddedDivider(padding: Constants.padding),
@@ -1102,8 +977,6 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                     Tiles.priorityTile(
                       mobile: smallScreen,
                       context: context,
-                      outerPadding: const EdgeInsets.symmetric(
-                          horizontal: Constants.padding),
                       priority: toDo.priority,
                       onSelectionChanged: changePriority,
                     ),
@@ -1116,7 +989,6 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
 
                     SearchRecentsBar<Group>(
                       hintText: "Search Groups",
-                      padding: const EdgeInsets.all(Constants.padding),
                       handleDataSelection: handleGroupSelection,
                       searchController: groupEditingController,
                       dispose: false,
@@ -1134,8 +1006,6 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                     Tiles.descriptionTile(
                       hintText: "Notes",
                       controller: descriptionEditingController,
-                      outerPadding: const EdgeInsets.symmetric(
-                          horizontal: Constants.padding),
                       context: context,
                       onEditingComplete: updateDescription,
                     ),
@@ -1146,8 +1016,6 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                       expectedDuration: toDo.expectedDuration,
                       context: context,
                       realDuration: toDo.realDuration,
-                      outerPadding: const EdgeInsets.symmetric(
-                          horizontal: Constants.padding),
                       handleClear: clearDuration,
                       handleUpdate: updateDuration,
                     ),
@@ -1156,8 +1024,6 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                     // DateTime -> Show status, on click, open a dialog.
                     Tiles.dateRangeTile(
                       context: context,
-                      outerPadding: const EdgeInsets.symmetric(
-                          horizontal: Constants.padding),
                       startDate: (Constants.nullDate != toDo.startDate)
                           ? toDo.startDate
                           : null,
@@ -1171,8 +1037,6 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                     if (showTimeTile) ...[
                       const PaddedDivider(padding: Constants.padding),
                       Tiles.timeTile(
-                        outerPadding: const EdgeInsets.symmetric(
-                            horizontal: Constants.padding),
                         startTime: (showStartTime)
                             ? TimeOfDay.fromDateTime(toDo.startDate!)
                             : null,
@@ -1188,8 +1052,6 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                       const PaddedDivider(padding: Constants.padding),
                       Tiles.repeatableTile(
                         context: context,
-                        outerPadding: const EdgeInsets.symmetric(
-                            horizontal: Constants.padding),
                         frequency: toDo.frequency,
                         weekdays: weekdayList,
                         repeatSkip: toDo.repeatSkip,

@@ -101,9 +101,14 @@ abstract class Tiles {
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.start,
           children: [
+            if (Frequency.once != toDo.frequency)
+              const Padding(
+                padding: EdgeInsets.only(right: Constants.halfPadding),
+                child: Icon(Icons.restart_alt_rounded),
+              ),
             if (toDo.myDay)
               Padding(
-                padding: const EdgeInsets.only(right: Constants.padding),
+                padding: const EdgeInsets.only(right: Constants.halfPadding),
                 child: Icon(
                   Icons.wb_sunny_outlined,
                   size: smallScreen
@@ -241,14 +246,6 @@ abstract class Tiles {
                   e is FailureToUploadException ||
                   e is FailureToDeleteException);
 
-      // if (toDo.repeatable) {
-      //   await eventProvider.updateRepeating(model: toDo);
-      // }
-      //
-      // if (!deleteSingle) {
-      //   eventProvider.clearRepeating(repeatID: toDo.repeatID);
-      // }
-
       return await eventProvider.updateEventModel(oldModel: toDo);
     }
 
@@ -294,11 +291,18 @@ abstract class Tiles {
 
               await toDoProvider.updateToDo(toDo: toDo);
             }),
-        title: AutoSizeText(toDo.name,
-            overflow: TextOverflow.ellipsis,
-            minFontSize: Constants.large,
-            softWrap: false,
-            maxLines: 2),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (Frequency.once != toDo.frequency)
+              const Icon(Icons.restart_alt_rounded),
+            AutoSizeText(toDo.name,
+                overflow: TextOverflow.ellipsis,
+                minFontSize: Constants.large,
+                softWrap: false,
+                maxLines: 2),
+          ],
+        ),
         subtitle: Subtitles.toDoSubtitle(
             smallScreen: smallScreen,
             context: context,
@@ -479,11 +483,21 @@ abstract class Tiles {
                 outerPadding: const EdgeInsets.symmetric(
                     horizontal: Constants.halfPadding),
                 iconPadding: const EdgeInsets.all(Constants.halfPadding)),
-        title: AutoSizeText(deadline.name,
-            overflow: TextOverflow.ellipsis,
-            minFontSize: Constants.large,
-            softWrap: false,
-            maxLines: 2),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (Frequency.once != deadline.frequency)
+              const Padding(
+                padding: EdgeInsets.only(right: Constants.halfPadding),
+                child: Icon(Icons.restart_alt_rounded),
+              ),
+            AutoSizeText(deadline.name,
+                overflow: TextOverflow.ellipsis,
+                minFontSize: Constants.large,
+                softWrap: false,
+                maxLines: 2),
+          ],
+        ),
         subtitle: Subtitles.deadlineSubtitle(
           context: context,
           smallScreen: smallScreen,
@@ -578,28 +592,28 @@ abstract class Tiles {
         eventProvider ?? Provider.of<EventProvider>(context, listen: false);
     // For repeating deadlines.
     if (deadline.frequency != Frequency.once) {
-      await showModalBottomSheet<bool?>(
+      bool? deleteSingle = await showModalBottomSheet<bool?>(
           showDragHandle: true,
           context: context,
           builder: (BuildContext context) {
             return const HandleRepeatableModal(action: "Delete");
-          }).then((deleteSingle) async {
-        if (null == deleteSingle) {
-          return;
-        }
+          });
 
-        await deadlineProvider!
-            .handleRepeating(
-                deadline: deadline, single: deleteSingle, delete: true)
-            .catchError((e) => displayError(context: context, e: e),
-                test: (e) =>
-                    e is InvalidRepeatingException ||
-                    e is FailureToUpdateException ||
-                    e is FailureToUploadException ||
-                    e is FailureToDeleteException);
+      if (null == deleteSingle) {
+        return;
+      }
 
-        return await eventProvider!.updateEventModel(oldModel: deadline);
-      });
+      await deadlineProvider
+          .handleRepeating(
+              deadline: deadline, single: deleteSingle, delete: true)
+          .catchError((e) => displayError(context: context, e: e),
+              test: (e) =>
+                  e is InvalidRepeatingException ||
+                  e is FailureToUpdateException ||
+                  e is FailureToUploadException ||
+                  e is FailureToDeleteException);
+
+      return await eventProvider.updateEventModel(oldModel: deadline);
     }
 
     await deadlineProvider.deleteDeadline(deadline: deadline).catchError(
@@ -639,11 +653,21 @@ abstract class Tiles {
                 outerPadding: const EdgeInsets.symmetric(
                     horizontal: Constants.halfPadding),
                 iconPadding: const EdgeInsets.all(Constants.halfPadding)),
-        title: AutoSizeText(reminder.name,
-            overflow: TextOverflow.ellipsis,
-            minFontSize: Constants.large,
-            softWrap: false,
-            maxLines: 2),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (Frequency.once != reminder.frequency)
+              const Padding(
+                padding: EdgeInsets.only(right: Constants.halfPadding),
+                child: Icon(Icons.restart_alt_rounded),
+              ),
+            AutoSizeText(reminder.name,
+                overflow: TextOverflow.ellipsis,
+                minFontSize: Constants.large,
+                softWrap: false,
+                maxLines: 2),
+          ],
+        ),
         subtitle: Subtitles.reminderSubtitle(
           smallScreen: smallScreen,
           context: context,
@@ -735,42 +759,35 @@ abstract class Tiles {
 
     // For repeating deadlines.
     if (reminder.frequency != Frequency.once) {
-      await showModalBottomSheet<bool?>(
+      bool? deleteSingle = await showModalBottomSheet<bool?>(
           showDragHandle: true,
           context: context,
           builder: (BuildContext context) {
             return const HandleRepeatableModal(action: "Delete");
-          }).then((deleteSingle) async {
-        if (null == deleteSingle) {
-          return;
-        }
+          });
 
-        await reminderProvider!
-            .handleRepeating(
-                reminder: reminder, single: deleteSingle, delete: true)
-            .catchError((e) => displayError(context: context, e: e),
-                test: (e) =>
-                    e is InvalidRepeatingException ||
-                    e is FailureToUpdateException ||
-                    e is FailureToUploadException ||
-                    e is FailureToDeleteException);
+      if (null == deleteSingle) {
+        return;
+      }
 
-        return await eventProvider.updateEventModel(oldModel: reminder);
-      });
+      await reminderProvider
+          .handleRepeating(
+              reminder: reminder, single: deleteSingle, delete: true)
+          .catchError((e) => displayError(context: context, e: e),
+              test: (e) =>
+                  e is InvalidRepeatingException ||
+                  e is FailureToUpdateException ||
+                  e is FailureToUploadException ||
+                  e is FailureToDeleteException);
+
+      return await eventProvider.updateEventModel(oldModel: reminder);
     }
 
-    return await reminderProvider.deleteReminder(reminder: reminder).catchError(
-        (e) {
-      Flushbar? error;
+    await reminderProvider.deleteReminder(reminder: reminder).catchError(
+        (e) => displayError(context: context, e: e),
+        test: (e) => e is FailureToDeleteException);
 
-      error = Flushbars.createError(
-        message: e.cause,
-        context: context,
-        dismissCallback: () => error?.dismiss(),
-      );
-
-      error.show(context);
-    }, test: (e) => e is FailureToDeleteException);
+    return await eventProvider.updateEventModel(oldModel: reminder);
   }
 
   static Widget groupListTile(
@@ -1177,15 +1194,6 @@ abstract class Tiles {
     MenuController? subtasksAnchorController,
     void Function()? onAnchorOpen,
     void Function()? onAnchorClose,
-    // overrides
-    void Function(int oldIndex, int newIndex)? onReorder,
-    void Function({Subtask? subtask})? onRemoved,
-    void Function({Subtask? subtask, bool? value})? onChanged,
-    void Function({Subtask? subtask})? onSubmit,
-    void Function({Subtask? subtask})? onUpdate,
-    void Function({Subtask? subtask})? onDelete,
-    void Function({Subtask? subtask})? handleUpdate,
-    void Function({Subtask? subtask})? handleDelete,
     ScrollPhysics physics = const NeverScrollableScrollPhysics(),
     EdgeInsetsGeometry outerPadding = EdgeInsets.zero,
   }) {
@@ -1213,60 +1221,50 @@ abstract class Tiles {
                     useRootNavigator: false,
                     context: context,
                     builder: (BuildContext context) => UpdateSubtaskScreen(
-                        initialSubtask: subtask,
-                        handleDelete: handleDelete,
-                        handleUpdate: handleUpdate)).catchError(
+                          initialSubtask: subtask,
+                        )).catchError(
                     (e) => displayError(context: context, e: e),
                     test: (e) =>
                         e is FailureToUpdateException ||
                         e is FailureToUploadException);
               },
-              onChanged: (null != onChanged)
-                  ? onChanged
-                  : ({bool? value, Subtask? subtask}) async {
-                      if (null == subtask) {
-                        return;
-                      }
-                      subtask.completed = value!;
-                      await subtaskProvider
-                          .updateSubtask(subtask: subtask)
-                          .catchError(
-                              (e) => displayError(context: context, e: e),
-                              test: (e) =>
-                                  e is FailureToUpdateException ||
-                                  e is FailureToUploadException);
-                    },
-              onRemoved: (null != onRemoved)
-                  ? onRemoved
-                  : ({Subtask? subtask}) async {
-                      if (null == subtask) {
-                        return;
-                      }
+              onChanged: ({bool? value, Subtask? subtask}) async {
+                if (null == subtask) {
+                  return;
+                }
+                subtask.completed = value!;
+                await subtaskProvider
+                    .updateSubtask(subtask: subtask)
+                    .catchError((e) => displayError(context: context, e: e),
+                        test: (e) =>
+                            e is FailureToUpdateException ||
+                            e is FailureToUploadException);
+              },
+              onRemoved: ({Subtask? subtask}) async {
+                if (null == subtask) {
+                  return;
+                }
 
-                      if (null != onRemove) {
-                        await onRemove(item: subtask);
-                      }
+                if (null != onRemove) {
+                  await onRemove(item: subtask);
+                }
 
-                      await subtaskProvider
-                          .deleteSubtask(subtask: subtask)
-                          .catchError(
-                              (e) => displayError(context: context, e: e),
-                              test: (e) => e is FailureToDeleteException);
-                    },
-              onReorder: (null != onReorder)
-                  ? onReorder
-                  : (int oldIndex, int newIndex) async {
-                      await subtaskProvider
-                          .reorderSubtasks(
-                              subtasks: subtasks,
-                              oldIndex: oldIndex,
-                              newIndex: newIndex)
-                          .catchError(
-                              (e) => displayError(context: context, e: e),
-                              test: (e) =>
-                                  e is FailureToUpdateException ||
-                                  e is FailureToUploadException);
-                    }),
+                await subtaskProvider
+                    .deleteSubtask(subtask: subtask)
+                    .catchError((e) => displayError(context: context, e: e),
+                        test: (e) => e is FailureToDeleteException);
+              },
+              onReorder: (int oldIndex, int newIndex) async {
+                await subtaskProvider
+                    .reorderSubtasks(
+                        subtasks: subtasks,
+                        oldIndex: oldIndex,
+                        newIndex: newIndex)
+                    .catchError((e) => displayError(context: context, e: e),
+                        test: (e) =>
+                            e is FailureToUpdateException ||
+                            e is FailureToUploadException);
+              }),
           if (subtasks.length < limit)
             SubtaskQuickEntry(
               taskID: id,
@@ -1278,7 +1276,6 @@ abstract class Tiles {
               menuController: subtasksAnchorController,
               onOpen: onAnchorOpen,
               onClose: onAnchorClose,
-              onSubmit: onSubmit,
             )
         ]);
   }

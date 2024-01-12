@@ -13,6 +13,7 @@ import "../../../model/task/reminder.dart";
 import "../../../model/task/routine.dart";
 import "../../../model/task/todo.dart";
 import "../../../providers/deadline_provider.dart";
+import "../../../providers/event_provider.dart";
 import "../../../providers/group_provider.dart";
 import "../../../providers/reminder_provider.dart";
 import "../../../providers/routine_provider.dart";
@@ -46,6 +47,7 @@ class _TrashScreen extends State<TrashScreen> {
   late final GroupProvider groupProvider;
   late final UserProvider userProvider;
   late final SubtaskProvider subtaskProvider;
+  late final EventProvider eventProvider;
 
   late final ScrollController mainScrollController;
   late final ScrollPhysics scrollPhysics;
@@ -78,6 +80,7 @@ class _TrashScreen extends State<TrashScreen> {
     userProvider = Provider.of<UserProvider>(context, listen: false);
 
     searchProvider = Provider.of<SearchProvider>(context, listen: false);
+    eventProvider = Provider.of<EventProvider>(context, listen: false);
   }
 
   void initializeControllers() {
@@ -125,15 +128,18 @@ class _TrashScreen extends State<TrashScreen> {
     switch (model.modelType) {
       case ModelType.task:
         await toDoProvider.restoreToDo(toDo: model as ToDo);
+        await eventProvider.insertEventModel(model: model);
         break;
       case ModelType.routine:
         await routineProvider.restoreRoutine(routine: model as Routine);
         break;
       case ModelType.reminder:
         await reminderProvider.restoreReminder(reminder: model as Reminder);
+        await eventProvider.insertEventModel(model: model);
         break;
       case ModelType.deadline:
         await deadlineProvider.restoreDeadline(deadline: model as Deadline);
+        await eventProvider.insertEventModel(model: model);
         break;
       case ModelType.group:
         await groupProvider.restoreGroup(group: model as Group);

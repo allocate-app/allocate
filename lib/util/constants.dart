@@ -29,7 +29,7 @@ abstract class Constants {
 
   // TODO: change as appropriate.
   static const String licenseInfo =
-      "Copyright © 2024 Jordan Clayton.\n Licensed under MIT.";
+      "Copyright © 2024 Jordan Clayton.\n Planning to be Licensed under MIT.";
 
   // Windows notifications appID needs to be null in packaged mode.
   static String? get windowsApplicationID =>

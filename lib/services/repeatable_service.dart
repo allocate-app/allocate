@@ -94,11 +94,11 @@ class RepeatableService {
           ToDo delta = toDo.copyWith(
               repeatableState: RepeatableState.delta, myDay: false);
           delta.toDelete = delete;
-          // if the delta has subtasks, store them.
+
+          // if the delta has subtasks, update the id.
           if (TaskType.small != delta.taskType) {
-            List<Subtask> deltaSubtasks = (toDo.subtasks.isNotEmpty)
-                ? toDo.subtasks
-                : await _subtaskRepository.getRepoByTaskID(
+            List<Subtask> deltaSubtasks =
+                await _subtaskRepository.getRepoByTaskID(
                     id: toDo.id, limit: Constants.numTasks[toDo.taskType]!);
 
             int newWeight = 0;
@@ -490,7 +490,6 @@ class RepeatableService {
     }
   }
 
-  // TODO: this has to somehow handle subtasks.
   Future<void> updateTemplate({IRepeatable? model}) async {
     if (null == model) {
       return;
@@ -499,28 +498,29 @@ class RepeatableService {
     switch (model.modelType) {
       case ModelType.task:
         ToDo toDo = model as ToDo;
+
+        toDo.repeatableState = RepeatableState.normal;
         ToDo? template =
             await _toDoRepository.getTemplate(repeatID: model.repeatID!);
 
         if (null == template) {
+          toDo.frequency = Frequency.once;
+          toDo.repeatable = false;
           await _toDoRepository.update(toDo);
           return;
         }
 
         int id = template.id;
 
-        // In the case that an update is sent with null dates,
-        // set the frequency to once and catch in the next generation.
-
         template = toDo.copyWith(
           originalStart: toDo.startDate,
           originalDue: toDo.dueDate,
-          repeatable: true,
+          repeatable: (Frequency.once != toDo.frequency),
           myDay: false,
           repeatableState: RepeatableState.template,
         );
+        template.toDelete = (Frequency.once != toDo.frequency);
 
-        toDo.repeatableState = RepeatableState.normal;
         toDo.originalStart = toDo.startDate;
         toDo.originalDue = toDo.dueDate;
 
@@ -537,6 +537,7 @@ class RepeatableService {
 
         for (ToDo repeatable in repeatables) {
           repeatable.repeatable = false;
+          repeatable.frequency = Frequency.once;
         }
 
         await _toDoRepository.updateBatch(repeatables);
@@ -545,9 +546,12 @@ class RepeatableService {
         return;
       case ModelType.deadline:
         Deadline deadline = model as Deadline;
+        deadline.repeatableState = RepeatableState.normal;
         Deadline? template =
             await _deadlineRepository.getTemplate(repeatID: model.repeatID!);
         if (null == template) {
+          deadline.frequency = Frequency.once;
+          deadline.repeatable = false;
           await _deadlineRepository.update(deadline);
           return;
         }
@@ -557,12 +561,14 @@ class RepeatableService {
           originalStart: deadline.startDate,
           originalDue: deadline.dueDate,
           originalWarn: deadline.warnDate,
-          repeatable: true,
+          repeatable: (Frequency.once != deadline.frequency),
           repeatableState: RepeatableState.template,
         );
+
+        template.toDelete = (Frequency.once != deadline.frequency);
+
         template.id = id;
 
-        deadline.repeatableState = RepeatableState.normal;
         deadline.originalStart = deadline.startDate;
         deadline.originalDue = deadline.dueDate;
         deadline.originalWarn = deadline.warnDate;
@@ -576,6 +582,7 @@ class RepeatableService {
 
         for (Deadline repeatable in repeatables) {
           repeatable.repeatable = false;
+          repeatable.frequency = Frequency.once;
         }
 
         await _deadlineRepository.updateBatch(repeatables);
@@ -585,9 +592,12 @@ class RepeatableService {
         return;
       case ModelType.reminder:
         Reminder reminder = model as Reminder;
+        reminder.repeatableState = RepeatableState.normal;
         Reminder? template =
             await _reminderRepository.getTemplate(repeatID: model.repeatID!);
         if (null == template) {
+          reminder.frequency = Frequency.once;
+          reminder.repeatable = false;
           await _reminderRepository.update(reminder);
           return;
         }
@@ -595,9 +605,11 @@ class RepeatableService {
 
         template = reminder.copyWith(
           originalDue: reminder.dueDate,
-          repeatable: true,
+          repeatable: (Frequency.once != reminder.frequency),
           repeatableState: RepeatableState.template,
         );
+
+        template.toDelete = (Frequency.once != reminder.frequency);
 
         template.id = id;
 
@@ -613,6 +625,7 @@ class RepeatableService {
 
         for (Reminder repeatable in repeatables) {
           repeatable.repeatable = false;
+          repeatable.frequency = Frequency.once;
         }
 
         await _reminderRepository.updateBatch(repeatables);
@@ -669,13 +682,6 @@ class RepeatableService {
           return newRepeatables;
         }
 
-        List<Subtask> subtasks = [];
-        if (TaskType.small != nextRepeating.taskType) {
-          subtasks = await _subtaskRepository.getRepoByTaskID(
-              id: nextRepeating.id,
-              limit: Constants.numTasks[nextRepeating.taskType]!);
-        }
-
         while (startDate!.isBefore(limit)) {
           // get the next repeat date
           DateTime? nextRepeatDate =
@@ -709,18 +715,7 @@ class RepeatableService {
             );
 
             if (TaskType.small != newToDo.taskType) {
-              int newWeight = 0;
-              newToDo.subtasks = List.empty(growable: true);
-              for (int i = 0; i < subtasks.length; i++) {
-                newToDo.subtasks.add(subtasks[i].copyWith(
-                    customViewIndex: i,
-                    taskID: newToDo.id,
-                    completed: false,
-                    lastUpdated: DateTime.now()));
-                newWeight += subtasks[i].weight;
-              }
-
-              newToDo.weight = newWeight;
+              newToDo.weight = 0;
             }
 
             newRepeatables.add(newToDo);

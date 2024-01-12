@@ -339,13 +339,10 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
                                       Tiles.nameTile(
                                         context: context,
                                         leading: ListTileWidgets.groupIcon(
-                                            currentContext: context,
-                                            iconPadding: const EdgeInsets.all(
-                                                Constants.padding),
-                                            outerPadding:
-                                                const EdgeInsets.symmetric(
-                                              horizontal: Constants.halfPadding,
-                                            )),
+                                          currentContext: context,
+                                          iconPadding: const EdgeInsets.all(
+                                              Constants.padding),
+                                        ),
                                         hintText: "Group Name",
                                         errorText: nameErrorText,
                                         controller: nameEditingController,
@@ -374,8 +371,6 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
                                               .desktopMaxLinesBeforeScroll,
                                           controller:
                                               descriptionEditingController,
-                                          outerPadding: const EdgeInsets.all(
-                                              Constants.padding),
                                           context: context,
                                           onEditingComplete: updateDescription,
                                         ),
@@ -452,8 +447,6 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
                       Tiles.descriptionTile(
                         controller: descriptionEditingController,
                         onEditingComplete: updateDescription,
-                        outerPadding: const EdgeInsets.symmetric(
-                            horizontal: Constants.padding),
                         context: context,
                       ),
                     ]),

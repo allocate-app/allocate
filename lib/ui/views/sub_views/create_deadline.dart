@@ -645,8 +645,6 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
 
                     const PaddedDivider(padding: Constants.padding),
                     Tiles.singleDateTimeTile(
-                      outerPadding: const EdgeInsets.symmetric(
-                          horizontal: Constants.padding),
                       context: context,
                       date: warnDate,
                       time: warnTime,
@@ -663,7 +661,7 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
                     Tiles.descriptionTile(
                       controller: descriptionEditingController,
                       outerPadding: const EdgeInsets.symmetric(
-                          horizontal: Constants.padding),
+                          horizontal: Constants.halfPadding),
                       context: context,
                       onEditingComplete: updateDescription,
                     ),
@@ -671,18 +669,14 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
 
                     Tiles.dateRangeTile(
                       context: context,
-                      outerPadding: const EdgeInsets.symmetric(
-                          horizontal: Constants.padding),
                       startDate: startDate,
                       dueDate: dueDate,
                       handleClear: clearDates,
                       handleUpdate: updateDates,
                     ),
                     if (showTimeTile) ...[
-                      const PaddedDivider(padding: Constants.padding),
+                      const PaddedDivider(padding: Constants.halfPadding),
                       Tiles.timeTile(
-                        outerPadding: const EdgeInsets.symmetric(
-                            horizontal: Constants.padding),
                         startTime: startTime,
                         dueTime: dueTime,
                         context: context,
@@ -691,11 +685,9 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
                       )
                     ],
                     if (showRepeatTile) ...[
-                      const PaddedDivider(padding: Constants.padding),
+                      const PaddedDivider(padding: Constants.halfPadding),
                       Tiles.repeatableTile(
                         context: context,
-                        outerPadding: const EdgeInsets.symmetric(
-                            horizontal: Constants.padding),
                         frequency: frequency,
                         weekdays: weekdayList,
                         repeatSkip: repeatSkip,

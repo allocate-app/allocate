@@ -247,9 +247,6 @@ class ToDoProvider extends ChangeNotifier {
   Future<void> updateToDoAsync({ToDo? toDo}) async {
     toDo = toDo ?? curToDo!;
     toDo.lastUpdated = DateTime.now();
-    if (toDo.repeatable && null == toDo.repeatID) {
-      toDo.repeatID = Constants.generateID();
-    }
 
     try {
       curToDo = await _toDoRepo.update(toDo);
@@ -422,8 +419,6 @@ class ToDoProvider extends ChangeNotifier {
     try {
       await _repeatService.handleRepeating(
           oldModel: toDo, newModel: delta, single: single, delete: delete);
-
-      //TODO: Clear key -> run repeat routine.
     } on InvalidRepeatingException catch (e) {
       log(e.cause);
       return Future.error(e);

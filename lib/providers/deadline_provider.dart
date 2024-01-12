@@ -169,9 +169,6 @@ class DeadlineProvider extends ChangeNotifier {
     if (deadline.warnMe && null == deadline.notificationID) {
       deadline.notificationID = Constants.generate32ID();
     }
-    if (deadline.repeatable && null == deadline.repeatID) {
-      deadline.repeatID = Constants.generateID();
-    }
 
     try {
       curDeadline = await _deadlineRepo.update(curDeadline!);
@@ -301,14 +298,13 @@ class DeadlineProvider extends ChangeNotifier {
       bool? single = false,
       bool delete = false}) async {
     try {
-      return await _repeatService.handleRepeating(
+      await _repeatService.handleRepeating(
           oldModel: deadline, newModel: delta, single: single, delete: delete);
-
-      //TODO: Clear key -> run repeat routine.
     } on InvalidRepeatingException catch (e) {
       log(e.cause);
       return Future.error(e);
     }
+    notifyListeners();
   }
 
   Future<void> createTemplate({Deadline? deadline}) async {

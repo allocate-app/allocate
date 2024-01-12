@@ -105,6 +105,10 @@ class _DateTimeDialog extends State<DateTimeDialog> {
                                     borderRadius: BorderRadius.circular(
                                         Constants.roundedCorners),
                                     border: Border.all(
+                                        width: 2,
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .outlineVariant,
                                         strokeAlign:
                                             BorderSide.strokeAlignOutside),
                                   ),
@@ -180,6 +184,10 @@ class _DateTimeDialog extends State<DateTimeDialog> {
                                     borderRadius: BorderRadius.circular(
                                         Constants.roundedCorners),
                                     border: Border.all(
+                                        width: 2,
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .outlineVariant,
                                         strokeAlign:
                                             BorderSide.strokeAlignOutside),
                                   ),

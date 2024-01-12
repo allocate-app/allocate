@@ -717,7 +717,6 @@ class ToDoRepo implements ToDoRepository {
           .toDeleteEqualTo(false)
           .findFirst();
 
-  // TODO: Migrate to other repositories
   Future<List<int>> getDeleteIDs({DateTime? deleteLimit}) async {
     deleteLimit = deleteLimit ?? Constants.today;
     return await _isarClient.toDos

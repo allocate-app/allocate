@@ -376,8 +376,6 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
                                     expectedDuration: expectedDuration,
                                     context: context,
                                     realDuration: realDuration,
-                                    outerPadding: const EdgeInsets.symmetric(
-                                        horizontal: Constants.padding),
                                     handleClear: clearDuration,
                                     handleUpdate: updateDuration,
                                   ),
@@ -392,8 +390,6 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
                                     children: [
                                   Tiles.subtasksTile(
                                     context: context,
-                                    outerPadding: const EdgeInsets.all(
-                                        Constants.halfPadding),
                                     id: Constants.intMax,
                                     subtasksAnchorController:
                                         subtasksAnchorController,
@@ -492,8 +488,6 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
                       expectedDuration: expectedDuration,
                       context: context,
                       realDuration: realDuration,
-                      outerPadding: const EdgeInsets.symmetric(
-                          horizontal: Constants.padding),
                       handleClear: clearDuration,
                       handleUpdate: updateDuration,
                     ),

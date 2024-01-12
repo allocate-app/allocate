@@ -13,12 +13,9 @@ import '../../widgets/tiles.dart';
 import '../../widgets/title_bar.dart';
 
 class UpdateSubtaskScreen extends StatefulWidget {
-  const UpdateSubtaskScreen(
-      {super.key, this.initialSubtask, this.handleUpdate, this.handleDelete});
+  const UpdateSubtaskScreen({super.key, this.initialSubtask});
 
   final Subtask? initialSubtask;
-  final void Function({Subtask? subtask})? handleUpdate;
-  final void Function({Subtask? subtask})? handleDelete;
 
   @override
   State<UpdateSubtaskScreen> createState() => _UpdateSubtaskScreen();
@@ -174,39 +171,28 @@ class _UpdateSubtaskScreen extends State<UpdateSubtaskScreen> {
                         horizontal: Constants.padding),
                     deleteButtonPadding: const EdgeInsets.symmetric(
                         horizontal: Constants.padding),
-                    handleDelete: (null != widget.handleDelete)
-                        ? () async {
-                            widget.handleDelete!(subtask: subtask);
-                            Navigator.pop(context);
-                          }
-                        : () async {
-                            await subtaskProvider
-                                .deleteSubtask(subtask: subtask)
-                                .whenComplete(() {
-                              Navigator.pop(context);
-                            }).catchError(
-                                    (e) => Tiles.displayError(
-                                        context: context, e: e),
-                                    test: (e) => e is FailureToDeleteException);
-                          },
-                    handleUpdate: (null != widget.handleUpdate)
-                        ? () async {
-                            widget.handleUpdate!(subtask: subtask);
-                            Navigator.pop(context);
-                          }
-                        : () async {
-                            if (validateData()) {
-                              // in case the usr doesn't submit to the textfields
-                              subtask.name = nameEditingController.text;
+                    handleDelete: () async {
+                      await subtaskProvider
+                          .deleteSubtask(subtask: subtask)
+                          .whenComplete(() {
+                        Navigator.pop(context);
+                      }).catchError(
+                              (e) => Tiles.displayError(context: context, e: e),
+                              test: (e) => e is FailureToDeleteException);
+                    },
+                    handleUpdate: () async {
+                      if (validateData()) {
+                        // in case the usr doesn't submit to the textfields
+                        subtask.name = nameEditingController.text;
 
-                              await subtaskProvider
-                                  .updateSubtask(subtask: subtask)
-                                  .whenComplete(() {
-                                Navigator.pop(context);
-                              }).catchError((e) => Tiles.displayError(
-                                      context: context, e: e));
-                            }
-                          }),
+                        await subtaskProvider
+                            .updateSubtask(subtask: subtask)
+                            .whenComplete(() {
+                          Navigator.pop(context);
+                        }).catchError((e) =>
+                                Tiles.displayError(context: context, e: e));
+                      }
+                    }),
               ])),
         ));
   }

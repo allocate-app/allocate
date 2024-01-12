@@ -675,8 +675,6 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                                     // Priority
                                     Tiles.priorityTile(
                                       context: context,
-                                      outerPadding: const EdgeInsets.symmetric(
-                                          horizontal: Constants.padding),
                                       priority: priority,
                                       onSelectionChanged: changePriority,
                                     ),
@@ -691,8 +689,6 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                                       expectedDuration: expectedDuration,
                                       context: context,
                                       realDuration: realDuration,
-                                      outerPadding: const EdgeInsets.symmetric(
-                                          horizontal: Constants.padding),
                                       handleClear: clearDuration,
                                       handleUpdate: updateDuration,
                                     ),
@@ -703,8 +699,6 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                                     //startDate
                                     Tiles.dateRangeTile(
                                       context: context,
-                                      outerPadding: const EdgeInsets.symmetric(
-                                          horizontal: Constants.padding),
                                       startDate: startDate,
                                       dueDate: dueDate,
                                       handleClear: clearDates,
@@ -715,9 +709,6 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                                       const PaddedDivider(
                                           padding: Constants.padding),
                                       Tiles.timeTile(
-                                        outerPadding:
-                                            const EdgeInsets.symmetric(
-                                                horizontal: Constants.padding),
                                         startTime: startTime,
                                         dueTime: dueTime,
                                         context: context,
@@ -732,9 +723,6 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                                           padding: Constants.padding),
                                       Tiles.repeatableTile(
                                         context: context,
-                                        outerPadding:
-                                            const EdgeInsets.symmetric(
-                                                horizontal: Constants.padding),
                                         frequency: frequency,
                                         weekdays: weekdayList,
                                         repeatSkip: repeatSkip,
@@ -812,8 +800,6 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                                       maxLines:
                                           Constants.desktopMaxLinesBeforeScroll,
                                       controller: descriptionEditingController,
-                                      outerPadding: const EdgeInsets.symmetric(
-                                          horizontal: Constants.padding),
                                       context: context,
                                       onEditingComplete: updateDescription,
                                     ),
@@ -959,8 +945,6 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                     Tiles.priorityTile(
                       mobile: smallScreen,
                       context: context,
-                      outerPadding: const EdgeInsets.symmetric(
-                          horizontal: Constants.padding),
                       priority: priority,
                       onSelectionChanged: changePriority,
                     ),
@@ -974,8 +958,6 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                     // Group Picker
                     SearchRecentsBar<Group>(
                       hintText: "Search Groups",
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: Constants.padding),
                       searchController: groupEditingController,
                       dispose: false,
                       mostRecent: groupProvider.mostRecent,
@@ -993,8 +975,6 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                     Tiles.descriptionTile(
                         hintText: "Notes",
                         controller: descriptionEditingController,
-                        outerPadding: const EdgeInsets.symmetric(
-                            horizontal: Constants.padding),
                         isDense: true,
                         context: context,
                         onEditingComplete: updateDescription),
@@ -1005,8 +985,6 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                       expectedDuration: expectedDuration,
                       context: context,
                       realDuration: realDuration,
-                      outerPadding: const EdgeInsets.symmetric(
-                          horizontal: Constants.padding),
                       handleClear: clearDuration,
                       handleUpdate: updateDuration,
                     ),
@@ -1016,8 +994,6 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                     //startDate
                     Tiles.dateRangeTile(
                       context: context,
-                      outerPadding: const EdgeInsets.symmetric(
-                          horizontal: Constants.padding),
                       startDate: startDate,
                       dueDate: dueDate,
                       handleClear: clearDates,
@@ -1028,8 +1004,6 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                     if (showTimeTile) ...[
                       const PaddedDivider(padding: Constants.padding),
                       Tiles.timeTile(
-                        outerPadding: const EdgeInsets.symmetric(
-                            horizontal: Constants.padding),
                         startTime: startTime,
                         dueTime: dueTime,
                         context: context,
@@ -1043,8 +1017,6 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                       const PaddedDivider(padding: Constants.padding),
                       Tiles.repeatableTile(
                         context: context,
-                        outerPadding: const EdgeInsets.symmetric(
-                            horizontal: Constants.padding),
                         frequency: frequency,
                         weekdays: weekdayList,
                         repeatSkip: repeatSkip,
