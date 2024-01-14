@@ -4,12 +4,12 @@ import 'package:flutter/material.dart';
 import "package:provider/provider.dart";
 import "package:supabase_flutter/supabase_flutter.dart";
 
-import "providers/deadline_provider.dart";
-import "providers/group_provider.dart";
-import "providers/reminder_provider.dart";
-import "providers/routine_provider.dart";
-import "providers/todo_provider.dart";
-import "providers/user_provider.dart";
+import 'providers/model/deadline_provider.dart';
+import 'providers/model/group_provider.dart';
+import 'providers/model/reminder_provider.dart';
+import "providers/model/routine_provider.dart";
+import 'providers/model/todo_provider.dart';
+import 'providers/model/user_provider.dart';
 import "services/isar_service.dart";
 import "services/supabase_service.dart";
 import "ui/app_router.dart";
@@ -24,11 +24,12 @@ void main() {
       ChangeNotifierProvider<UserProvider>(create: (_) => UserProvider()),
       ChangeNotifierProxyProvider<UserProvider, ToDoProvider>(
           create: (BuildContext context) => ToDoProvider(
-                user: Provider.of<UserProvider>(context, listen: false).curUser,
+                userViewModel:
+                    Provider.of<UserProvider>(context, listen: false).viewModel,
               ),
           update: (BuildContext context, UserProvider up, ToDoProvider? tp) {
-            tp?.setUser(newUser: up.curUser);
-            return tp ?? ToDoProvider(user: up.curUser);
+            tp?.setUser(newUser: up.viewModel);
+            return tp ?? ToDoProvider(userViewModel: up.viewModel);
           }),
       ChangeNotifierProxyProvider<UserProvider, RoutineProvider>(
           create: (BuildContext context) => RoutineProvider(

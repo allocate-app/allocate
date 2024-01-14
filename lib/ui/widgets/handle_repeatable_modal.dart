@@ -28,7 +28,11 @@ class HandleRepeatableModal extends StatelessWidget {
                     onPressed: () => Navigator.pop(context, false),
                     label: Text("$action All"),
                     icon: const Icon(Icons.repeat_rounded),
-                  ))
+                  )),
+              const Padding(
+                padding: EdgeInsets.only(bottom: Constants.padding),
+                child: SizedBox.shrink(),
+              ),
             ]));
   }
 }

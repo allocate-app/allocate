@@ -9,11 +9,13 @@ import "package:provider/provider.dart";
 
 import "../../../model/task/group.dart";
 import "../../../model/task/subtask.dart";
-import "../../../providers/event_provider.dart";
-import "../../../providers/group_provider.dart";
-import "../../../providers/subtask_provider.dart";
-import "../../../providers/todo_provider.dart";
-import "../../../providers/user_provider.dart";
+import '../../../providers/application/event_provider.dart';
+import "../../../providers/application/layout_provider.dart";
+import '../../../providers/model/group_provider.dart';
+import '../../../providers/model/subtask_provider.dart';
+import '../../../providers/model/todo_provider.dart';
+import '../../../providers/model/user_provider.dart';
+import "../../../providers/viewmodels/todo_viewmodel.dart";
 import "../../../util/constants.dart";
 import "../../../util/enums.dart";
 import "../../../util/exceptions.dart";
@@ -33,15 +35,16 @@ class CreateToDoScreen extends StatefulWidget {
 }
 
 class _CreateToDoScreen extends State<CreateToDoScreen> {
-  late bool checkClose;
-  late bool expanded;
+  late ValueNotifier<bool> _checkClose;
+  late ValueNotifier<String?> _nameErrorText;
 
-  // Provider (Needs user values) -> Refactor to DI for testing.
   late final UserProvider userProvider;
   late final ToDoProvider toDoProvider;
+  late final ToDoViewModel vm;
   late final SubtaskProvider subtaskProvider;
   late final GroupProvider groupProvider;
   late final EventProvider eventProvider;
+  late final LayoutProvider layoutProvider;
 
   // Scrolling
   late final ScrollController mobileScrollController;
@@ -51,57 +54,12 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
   // Subtasks controller
   late final MenuController subtasksAnchorController;
 
-  // Param fields.
-  late TaskType taskType;
-
-  late String name;
+  //Text controller
   late final TextEditingController nameEditingController;
-  String? nameErrorText;
-
-  late final SearchController groupEditingController;
-  late List<MapEntry<String, int>> searchHistory;
-  int? groupID;
-
-  // Description
-  late String description;
   late final TextEditingController descriptionEditingController;
 
-  // Weight
-  late int weight;
-
-  // Only update this on subtask weight change
-  late int sumWeight;
-
-  // ExpectedDuration & Real Duration
-  late int expectedDuration;
-  late int realDuration;
-
-  late int hours;
-  late int minutes;
-  late int seconds;
-
-  late Priority priority;
-
-  // Status
-  late bool completed;
-  late bool myDay;
-
-  // DateTimes
-  DateTime? startDate;
-  TimeOfDay? startTime;
-  DateTime? dueDate;
-  TimeOfDay? dueTime;
-
-  // Repeat
-  late Frequency frequency;
-
-  late int repeatSkip;
-
-  late Set<int> weekdayList;
-  late List<bool> weekdays;
-
-  late List<Subtask> subtasks;
-  late int shownTasks;
+  //Search controller
+  late final SearchController groupEditingController;
 
   @override
   void initState() {
@@ -114,34 +72,8 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
   }
 
   void initializeParameters() {
-    checkClose = false;
-    expanded = false;
-    taskType = TaskType.small;
-
-    name = "";
-    description = "";
-
-    weight = 0;
-    sumWeight = 0;
-
-    priority = Priority.low;
-
-    completed = false;
-    myDay = false;
-    expectedDuration = 0;
-    realDuration = 0;
-
-    searchHistory = List.empty(growable: true);
-
-    frequency = Frequency.once;
-
-    repeatSkip = 1;
-
-    shownTasks = 0;
-    weekdayList = {};
-    weekdays = List.generate(7, (_) => false);
-    groupID = widget.initialGroup?.value;
-    subtasks = List.empty();
+    _checkClose = ValueNotifier(false);
+    _nameErrorText = ValueNotifier(null);
   }
 
   void initializeControllers() async {
@@ -153,45 +85,38 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
         : const ClampingScrollPhysics();
     scrollPhysics = AlwaysScrollableScrollPhysics(parent: parentPhysics);
     nameEditingController = TextEditingController();
-    nameEditingController.addListener(() {
-      String newText = nameEditingController.text;
-      if (null != nameErrorText && mounted) {
-        setState(() {
-          nameErrorText = null;
-        });
-      }
-      SemanticsService.announce(newText, Directionality.of(context));
-
-      name = newText;
-    });
+    nameEditingController.addListener(watchName);
 
     groupEditingController = SearchController();
     groupEditingController.value = groupEditingController.value
         .copyWith(text: widget.initialGroup?.key ?? "");
 
     descriptionEditingController = TextEditingController();
-    descriptionEditingController.addListener(() {
-      String newText = descriptionEditingController.text;
-      SemanticsService.announce(newText, Directionality.of(context));
-      description = newText;
-    });
+    descriptionEditingController.addListener(watchDescription);
 
     subtasksAnchorController = MenuController();
   }
 
   void initializeProviders() {
+    vm = Provider.of<ToDoViewModel>(context, listen: false);
+
+    vm.initGroupID = widget.initialGroup?.value;
+
     userProvider = Provider.of<UserProvider>(context, listen: false);
     toDoProvider = Provider.of<ToDoProvider>(context, listen: false);
     subtaskProvider = Provider.of<SubtaskProvider>(context, listen: false);
     groupProvider = Provider.of<GroupProvider>(context, listen: false);
     eventProvider = Provider.of<EventProvider>(context, listen: false);
 
+    layoutProvider = Provider.of<LayoutProvider>(context, listen: false);
     subtaskProvider.addListener(resetSubtasks);
   }
 
   @override
   void dispose() {
+    nameEditingController.removeListener(watchName);
     nameEditingController.dispose();
+    descriptionEditingController.removeListener(watchDescription);
     descriptionEditingController.dispose();
     mobileScrollController.dispose();
     desktopScrollController.dispose();
@@ -201,311 +126,106 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
   }
 
   Future<void> resetSubtasks() async {
-    if (taskType == TaskType.small) {
+    if (vm.taskType == TaskType.small) {
       return;
     }
     List<Subtask> newSubtasks = await toDoProvider.getSubtasks(
-        id: Constants.intMax, limit: Constants.numTasks[taskType]!);
+        id: vm.id, limit: Constants.numTasks[vm.taskType]!);
 
-    if (!(userProvider.curUser?.reduceMotion ?? false)) {
+    if (!(toDoProvider.userViewModel?.reduceMotion ?? false)) {
       onFetch(items: newSubtasks);
     }
 
-    subtasks = newSubtasks;
-    toDoProvider.setSubtaskCount(id: Constants.intMax, count: subtasks.length);
-    sumWeight = await toDoProvider.getWeight(
-        taskID: Constants.intMax, limit: Constants.numTasks[taskType]!);
-    realDuration = toDoProvider.calculateRealDuration(
-        weight: sumWeight, duration: expectedDuration);
+    vm.subtasks = newSubtasks;
+    toDoProvider.setSubtaskCount(id: vm.id, count: vm.subtasks.length);
+    vm.weight = await toDoProvider.getWeight(
+        taskID: vm.id, limit: Constants.numTasks[vm.taskType]!);
 
     subtaskProvider.rebuild = false;
+  }
 
-    if (mounted) {
-      setState(() {});
+  void watchName() {
+    _checkClose.value = toDoProvider.userViewModel?.checkClose ?? true;
+    String newText = nameEditingController.text;
+    SemanticsService.announce(newText, Directionality.of(context));
+    vm.name = newText;
+    if (null != _nameErrorText.value) {
+      _nameErrorText.value = null;
     }
   }
 
-  Future<void> handleGroupSelection({required int id}) async {
-    if (mounted) {
-      setState(() {
-        checkClose = userProvider.curUser?.checkClose ?? true;
-        groupID = id;
-      });
-    }
+  void watchDescription() {
+    _checkClose.value = toDoProvider.userViewModel?.checkClose ?? true;
+    String newText = descriptionEditingController.text;
+    SemanticsService.announce(newText, Directionality.of(context));
+    vm.description = newText;
   }
 
   bool validateData() {
     bool valid = true;
     if (groupEditingController.text.isEmpty) {
-      groupID = null;
+      vm.groupID = null;
     }
     if (nameEditingController.text.isEmpty) {
       valid = false;
-      if (mounted) {
-        setState(() => nameErrorText = "Enter Task Name");
+      _nameErrorText.value = "Enter Task Name";
+      if (desktopScrollController.hasClients) {
+        desktopScrollController.jumpTo(0);
+      }
+      if (mobileScrollController.hasClients) {
+        mobileScrollController.jumpTo(0);
       }
     }
 
-    if (null == startDate || null == dueDate) {
-      frequency = Frequency.once;
+    if (null == vm.startDate || null == vm.dueDate) {
+      vm.frequency = Frequency.once;
     }
 
-    if (frequency == Frequency.custom) {
-      if (weekdayList.isEmpty) {
-        weekdayList
-            .add(min(((startDate?.weekday ?? DateTime.now().weekday) - 1), 0));
+    if (vm.frequency == Frequency.custom) {
+      if (vm.weekdayList.isEmpty) {
+        vm.weekdayList.add(
+            min(((vm.startDate?.weekday ?? Constants.today.weekday) - 1), 0));
       }
     }
 
     return valid;
   }
 
-  void mergeDateTimes() {
-    startDate = startDate?.copyWith(
-        hour: startTime?.hour ?? 0,
-        minute: startTime?.minute ?? 0,
-        second: 0,
-        millisecond: 0,
-        microsecond: 0);
-
-    dueDate = dueDate?.copyWith(
-        hour: dueTime?.hour ?? 0,
-        minute: dueTime?.minute ?? 0,
-        second: 0,
-        millisecond: 0,
-        microsecond: 0);
-  }
-
   Future<void> handleCreate() async {
-    for (int index in weekdayList) {
-      weekdays[index] = true;
-    }
+    vm.repeatable = Frequency.once != vm.frequency;
+    await toDoProvider.createToDo(vm.toModel()).catchError(
+        (e) => Tiles.displayError(context: context, e: e),
+        test: (e) =>
+            e is FailureToCreateException || e is FailureToUploadException);
 
-    await toDoProvider
-        .createToDo(
-          groupID: groupID,
-          groupIndex: groupProvider.getToDoCount(id: groupID)?.value,
-          taskType: taskType,
-          name: name,
-          description: description,
-          weight: (taskType == TaskType.small) ? weight : sumWeight,
-          expectedDuration: expectedDuration,
-          realDuration: realDuration,
-          priority: priority,
-          startDate: startDate,
-          dueDate: dueDate,
-          myDay: myDay,
-          completed: completed,
-          repeatable: frequency != Frequency.once,
-          frequency: frequency,
-          repeatDays: weekdays,
-          repeatSkip: repeatSkip,
-          subtasks: subtasks,
-        )
-        .catchError((e) => Tiles.displayError(context: context, e: e),
-            test: (e) =>
-                e is FailureToCreateException || e is FailureToUploadException);
-
-    if (null != groupID) {
-      groupProvider.setToDoCount(id: groupID!);
+    if (null != vm.groupID) {
+      groupProvider.setToDoCount(id: vm.groupID!);
     }
 
     await eventProvider
         .insertEventModel(model: toDoProvider.curToDo!, notify: true)
         .whenComplete(
-          () => Navigator.pop(context),
-        );
+      () {
+        vm.clear();
+        Navigator.pop(context);
+      },
+    );
   }
 
   Future<void> handleClose({required bool willDiscard}) async {
     if (willDiscard) {
-      for (Subtask st in subtasks) {
+      for (Subtask st in vm.subtasks) {
         st.toDelete = true;
       }
-      await subtaskProvider.updateBatch(subtasks: subtasks).whenComplete(() {
+      await subtaskProvider.updateBatch(subtasks: vm.subtasks).whenComplete(() {
+        vm.clear();
         Navigator.pop(context);
       });
     }
-
-    if (mounted) {
-      setState(() => checkClose = false);
-    }
-  }
-
-  void clearNameField() {
-    if (mounted) {
-      setState(() {
-        checkClose = userProvider.curUser?.checkClose ?? true;
-        nameEditingController.clear();
-        name = "";
-      });
-    }
-  }
-
-  void updateName() {
-    if (mounted) {
-      setState(() {
-        checkClose = userProvider.curUser?.checkClose ?? true;
-        name = nameEditingController.text;
-      });
-    }
-  }
-
-  void updateDescription() {
-    if (mounted) {
-      setState(() {
-        checkClose = userProvider.curUser?.checkClose ?? true;
-        description = descriptionEditingController.text;
-      });
-    }
-  }
-
-  void completeToDo(bool? value) {
-    if (mounted) {
-      setState(() {
-        checkClose = userProvider.curUser?.checkClose ?? true;
-        completed = value!;
-      });
-    }
-  }
-
-  void handleWeightChange(double? value) {
-    if (null == value) {
-      return;
-    }
-    if (mounted) {
-      setState(() {
-        checkClose = userProvider.curUser?.checkClose ?? true;
-        weight = value.toInt();
-        realDuration = toDoProvider.calculateRealDuration(
-            weight: weight, duration: expectedDuration);
-      });
-    }
-  }
-
-  void toggleMyDay() {
-    if (mounted) {
-      setState(() {
-        checkClose = userProvider.curUser?.checkClose ?? true;
-        myDay = !myDay;
-      });
-    }
-  }
-
-  void changePriority(Set<Priority> newSelection) {
-    if (mounted) {
-      setState(() {
-        checkClose = userProvider.curUser?.checkClose ?? true;
-        priority = newSelection.first;
-      });
-    }
-  }
-
-  void updateDuration(int? value) {
-    if (mounted) {
-      setState(() {
-        checkClose = userProvider.curUser?.checkClose ?? true;
-        expectedDuration = value ?? expectedDuration;
-        realDuration = toDoProvider.calculateRealDuration(
-            weight: (taskType == TaskType.small) ? weight : sumWeight,
-            duration: expectedDuration);
-      });
-    }
-  }
-
-  void clearDuration() {
-    if (mounted) {
-      setState(() {
-        checkClose = userProvider.curUser?.checkClose ?? true;
-        expectedDuration = 0;
-        realDuration = 0;
-      });
-    }
-  }
-
-  void clearDates() {
-    if (mounted) {
-      setState(() {
-        checkClose = userProvider.curUser?.checkClose ?? true;
-        startDate = null;
-        dueDate = null;
-      });
-    }
-  }
-
-  void updateDates({bool? checkClose, DateTime? newStart, DateTime? newDue}) {
-    if (mounted) {
-      setState(() {
-        checkClose = checkClose ?? this.checkClose;
-        this.checkClose = (checkClose!)
-            ? userProvider.curUser?.checkClose ?? checkClose!
-            : checkClose!;
-        startDate = newStart;
-        dueDate = newDue;
-
-        if (null != startDate &&
-            null != dueDate &&
-            startDate!.isAfter(dueDate!)) {
-          startDate = dueDate;
-        }
-      });
-    }
-  }
-
-  void clearTimes() {
-    if (mounted) {
-      setState(() {
-        checkClose = userProvider.curUser?.checkClose ?? true;
-        startTime = null;
-        dueTime = null;
-      });
-    }
-  }
-
-  void updateTimes({bool? checkClose, TimeOfDay? newStart, TimeOfDay? newDue}) {
-    if (mounted) {
-      setState(() {
-        checkClose = checkClose ?? this.checkClose;
-        this.checkClose = (checkClose!)
-            ? userProvider.curUser?.checkClose ?? checkClose!
-            : checkClose!;
-        startTime = newStart;
-        dueTime = newDue;
-      });
-    }
-  }
-
-  void clearRepeatable() {
-    if (mounted) {
-      setState(() {
-        checkClose = userProvider.curUser?.checkClose ?? true;
-        frequency = Frequency.once;
-        weekdayList.clear();
-        repeatSkip = 1;
-      });
-    }
-  }
-
-  void updateRepeatable(
-      {bool? checkClose,
-      required Frequency newFreq,
-      required Set<int> newWeekdays,
-      required int newSkip}) {
-    if (mounted) {
-      setState(() {
-        checkClose = checkClose ?? this.checkClose;
-        this.checkClose = (checkClose!)
-            ? userProvider.curUser?.checkClose ?? checkClose!
-            : checkClose!;
-        frequency = newFreq;
-        weekdayList = newWeekdays;
-        repeatSkip = newSkip;
-      });
-    }
+    _checkClose.value = false;
   }
 
   Future<void> createAndValidate() async {
-    mergeDateTimes();
     if (validateData()) {
       await handleCreate();
     }
@@ -526,7 +246,8 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
     }
     if (mounted) {
       setState(() => item.fade = Fade.fadeOut);
-      await Future.delayed(const Duration(milliseconds: Constants.fadeInTime));
+      await Future.delayed(
+          const Duration(milliseconds: Constants.animationDelay));
     }
   }
 
@@ -545,487 +266,121 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    // The query still needs to be performed to force a build.
-    MediaQuery.sizeOf(context);
+  Widget build(BuildContext context) => LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints constraints) {
+          if (constraints.maxWidth > Constants.largeScreen) {
+            return _buildDesktopDialog(
+              context: context,
+            );
+          }
+          return _buildMobileDialog(
+              context: context, smallScreen: layoutProvider.smallScreen);
+        },
+      );
 
-    bool showTimeTile = null != startDate || null != dueDate;
-    bool showRepeatTile = null != dueDate && null != startDate;
-    return (userProvider.largeScreen)
-        ? buildDesktopDialog(
-            context: context,
-            showTimeTile: showTimeTile,
-            showRepeatTile: showRepeatTile,
-          )
-        : buildMobileDialog(
-            context: context,
-            showTimeTile: showTimeTile,
-            showRepeatTile: showRepeatTile,
-            smallScreen: userProvider.smallScreen);
-  }
-
-  Dialog buildDesktopDialog({
+  Dialog _buildDesktopDialog({
     required BuildContext context,
-    bool showTimeTile = false,
-    bool showRepeatTile = false,
-  }) {
-    return Dialog(
-      insetPadding: const EdgeInsets.all(Constants.outerDialogPadding),
-      child: Padding(
-        padding: const EdgeInsets.all(Constants.padding),
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          // Title && Close Button
-          TitleBar(
-            currentContext: context,
-            title: "New Task",
-            centerWidget: (expectedDuration > 0)
-                ? TitleBar.durationCenterWidget(
-                    expectedDuration: expectedDuration,
-                    realDuration: realDuration)
-                : null,
-            checkClose: checkClose,
-            padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
-            handleClose: handleClose,
-          ),
-          const PaddedDivider(padding: Constants.halfPadding),
-          Flexible(
-            child: Material(
-              color: Colors.transparent,
-              child: Scrollbar(
-                thumbVisibility: true,
-                controller: desktopScrollController,
-                child: ListView(
-                    shrinkWrap: true,
-                    controller: desktopScrollController,
-                    physics: scrollPhysics,
-                    children: [
-                      Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Flexible(
-                              child: ListView(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: Constants.halfPadding),
-                                  shrinkWrap: true,
-                                  physics: const NeverScrollableScrollPhysics(),
-                                  children: [
-                                    Tiles.nameTile(
-                                        context: context,
-                                        leading: ListTileWidgets.checkbox(
-                                          scale: Constants.largeCheckboxScale,
-                                          completed: completed,
-                                          onChanged: completeToDo,
-                                        ),
-                                        hintText: "Task Name",
-                                        errorText: nameErrorText,
-                                        controller: nameEditingController,
-                                        outerPadding:
-                                            const EdgeInsets.symmetric(
-                                                vertical: Constants.padding),
-                                        textFieldPadding: const EdgeInsets.only(
-                                          left: Constants.padding,
-                                        ),
-                                        handleClear: clearNameField,
-                                        onEditingComplete: updateName),
-                                    Tiles.weightTile(
-                                      outerPadding: const EdgeInsets.all(
-                                          Constants.doublePadding),
-                                      batteryPadding:
-                                          const EdgeInsets.symmetric(
-                                              horizontal:
-                                                  Constants.doublePadding),
-                                      constraints: const BoxConstraints(
-                                        maxWidth: 200,
-                                      ),
-                                      weight: (taskType == TaskType.small)
-                                          ? weight.toDouble()
-                                          : sumWeight.toDouble(),
-                                      max: switch (taskType) {
-                                        TaskType.small =>
-                                          Constants.maxTaskWeight.toDouble(),
-                                        TaskType.large =>
-                                          Constants.medianWeight.toDouble(),
-                                        TaskType.huge =>
-                                          Constants.maxWeight.toDouble(),
-                                      },
-                                      slider: (taskType == TaskType.small)
-                                          ? Tiles.weightSlider(
-                                              weight: weight.toDouble(),
-                                              handleWeightChange:
-                                                  handleWeightChange,
-                                            )
-                                          : null,
-                                    ),
-
-                                    const PaddedDivider(
-                                        padding: Constants.padding),
-                                    // My Day
-                                    Tiles.myDayTile(
-                                        myDay: myDay,
-                                        canAdd:
-                                            (userProvider.myDayTotal + weight <=
-                                                (toDoProvider.user?.bandwidth ??
-                                                    Constants.maxBandwidth)),
-                                        toggleMyDay: toggleMyDay),
-
-                                    const PaddedDivider(
-                                        padding: Constants.padding),
-                                    // Priority
-                                    Tiles.priorityTile(
-                                      context: context,
-                                      priority: priority,
-                                      onSelectionChanged: changePriority,
-                                    ),
-                                    const Padding(
-                                      padding: EdgeInsets.symmetric(
-                                          vertical: Constants.padding),
-                                      child: PaddedDivider(
-                                          padding: Constants.padding),
-                                    ),
-                                    // Expected Duration / RealDuration -> Show status, on click, open a dialog.
-                                    Tiles.durationTile(
-                                      expectedDuration: expectedDuration,
-                                      context: context,
-                                      realDuration: realDuration,
-                                      handleClear: clearDuration,
-                                      handleUpdate: updateDuration,
-                                    ),
-
-                                    const PaddedDivider(
-                                        padding: Constants.padding),
-                                    // DateTime -> Show status, on click, open a dialog.
-                                    //startDate
-                                    Tiles.dateRangeTile(
-                                      context: context,
-                                      startDate: startDate,
-                                      dueDate: dueDate,
-                                      handleClear: clearDates,
-                                      handleUpdate: updateDates,
-                                    ),
-                                    // Time
-                                    if (showTimeTile) ...[
-                                      const PaddedDivider(
-                                          padding: Constants.padding),
-                                      Tiles.timeTile(
-                                        startTime: startTime,
-                                        dueTime: dueTime,
-                                        context: context,
-                                        handleClear: clearTimes,
-                                        handleUpdate: updateTimes,
-                                      ),
-                                    ],
-
-                                    // Repeatable Stuff -> Show status, on click, open a dialog.
-                                    if (showRepeatTile) ...[
-                                      const PaddedDivider(
-                                          padding: Constants.padding),
-                                      Tiles.repeatableTile(
-                                        context: context,
-                                        frequency: frequency,
-                                        weekdays: weekdayList,
-                                        repeatSkip: repeatSkip,
-                                        startDate: startDate,
-                                        handleUpdate: updateRepeatable,
-                                        handleClear: clearRepeatable,
-                                      ),
-                                    ],
-                                  ]),
-                            ),
-                            Flexible(
-                              child: ListView(
-                                  physics: const NeverScrollableScrollPhysics(),
-                                  shrinkWrap: true,
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: Constants.halfPadding),
-                                  children: [
-                                    SearchRecentsBar<Group>(
-                                      persistentEntry: widget.initialGroup,
-                                      hintText: "Search Groups",
-                                      padding: const EdgeInsets.all(
-                                          Constants.padding),
-                                      handleDataSelection: handleGroupSelection,
-                                      searchController: groupEditingController,
-                                      dispose: false,
-                                      mostRecent: groupProvider.mostRecent,
-                                      search: groupProvider.searchGroups,
-                                    ),
-
-                                    const PaddedDivider(
-                                        padding: Constants.padding),
-                                    // TaskType
-                                    const Row(children: [
-                                      Expanded(
-                                        child: AutoSizeText("Task Type",
-                                            maxLines: 1,
-                                            softWrap: true,
-                                            textAlign: TextAlign.center,
-                                            minFontSize: Constants.medium,
-                                            style: Constants.headerStyle),
-                                      )
-                                    ]),
-                                    buildTaskTypeButton(),
-                                    // Subtasks -- Factory Widget.
-                                    if (taskType != TaskType.small) ...[
-                                      const PaddedDivider(
-                                          padding: Constants.padding),
-                                      Tiles.subtasksTile(
-                                          context: context,
-                                          id: Constants.intMax,
-                                          limit: Constants.numTasks[taskType]!,
-                                          subtasksAnchorController:
-                                              subtasksAnchorController,
-                                          onAnchorOpen: onAnchorOpen,
-                                          onAnchorClose: onAnchorClose,
-                                          onRemove: (userProvider
-                                                      .curUser?.reduceMotion ??
-                                                  false)
-                                              ? null
-                                              : onRemove,
-                                          subtasks: subtasks,
-                                          subtaskCount:
-                                              toDoProvider.getSubtaskCount(
-                                                  id: Constants.intMax,
-                                                  limit: Constants
-                                                      .numTasks[taskType]!))
-                                    ],
-
-                                    const PaddedDivider(
-                                        padding: Constants.padding),
-                                    // Description
-                                    Tiles.descriptionTile(
-                                      hintText: "Notes",
-                                      minLines: Constants.desktopMinLines,
-                                      maxLines:
-                                          Constants.desktopMaxLinesBeforeScroll,
-                                      controller: descriptionEditingController,
-                                      context: context,
-                                      onEditingComplete: updateDescription,
-                                    ),
-                                  ]),
-                            )
-                          ]),
-                    ]),
-              ),
-            ),
-          ),
-
-          const PaddedDivider(padding: Constants.halfPadding),
-          Tiles.createButton(
-            outerPadding:
-                const EdgeInsets.symmetric(horizontal: Constants.padding),
-            handleCreate: createAndValidate,
-          ),
-        ]),
-      ),
-    );
-  }
-
-  Dialog buildMobileDialog(
-      {required BuildContext context,
-      bool smallScreen = false,
-      bool showTimeTile = false,
-      bool showRepeatTile = false}) {
-    return Dialog(
-      insetPadding: EdgeInsets.all((smallScreen)
-          ? Constants.mobileDialogPadding
-          : Constants.outerDialogPadding),
-      child: Padding(
-        padding: const EdgeInsets.all(Constants.padding),
-        child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
-            children: [
+  }) =>
+      Dialog(
+        insetPadding: const EdgeInsets.all(Constants.outerDialogPadding),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(
+              maxHeight: Constants.maxDesktopDialogHeight,
+              maxWidth: Constants.maxDesktopDialogWidth),
+          child: Padding(
+            padding: const EdgeInsets.all(Constants.padding),
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
               // Title && Close Button
-              TitleBar(
-                currentContext: context,
-                title: "New Task",
-                centerWidget: (expectedDuration > 0)
-                    ? TitleBar.durationCenterWidget(
-                        expectedDuration: expectedDuration,
-                        realDuration: realDuration)
-                    : null,
-                checkClose: checkClose,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: Constants.padding),
-                handleClose: handleClose,
-              ),
+              _buildTitleBar(),
               const PaddedDivider(padding: Constants.halfPadding),
               Flexible(
-                child: ListView(
-                  shrinkWrap: true,
-                  controller: mobileScrollController,
-                  physics: scrollPhysics,
-                  children: [
-                    Tiles.nameTile(
-                        context: context,
-                        leading: ListTileWidgets.checkbox(
-                          scale: Constants.largeCheckboxScale,
-                          completed: completed,
-                          onChanged: completeToDo,
-                        ),
-                        hintText: "Task Name",
-                        errorText: nameErrorText,
-                        controller: nameEditingController,
-                        outerPadding: const EdgeInsets.symmetric(
-                            vertical: Constants.padding),
-                        textFieldPadding: const EdgeInsets.only(
-                          left: Constants.padding,
-                        ),
-                        handleClear: clearNameField,
-                        onEditingComplete: updateName),
+                child: Material(
+                  color: Colors.transparent,
+                  child: Scrollbar(
+                    thumbVisibility: true,
+                    controller: desktopScrollController,
+                    child: ListView(
+                        shrinkWrap: true,
+                        controller: desktopScrollController,
+                        physics: scrollPhysics,
+                        children: [
+                          Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Flexible(
+                                  child: ListView(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: Constants.halfPadding),
+                                      shrinkWrap: true,
+                                      physics:
+                                          const NeverScrollableScrollPhysics(),
+                                      children: [
+                                        _buildNameTile(),
+                                        _buildWeightTile(),
 
-                    Tiles.weightTile(
-                      outerPadding:
-                          const EdgeInsets.all(Constants.doublePadding),
-                      batteryPadding: const EdgeInsets.symmetric(
-                          horizontal: Constants.padding),
-                      constraints: const BoxConstraints(maxWidth: 200),
-                      weight: (taskType == TaskType.small)
-                          ? weight.toDouble()
-                          : sumWeight.toDouble(),
-                      max: switch (taskType) {
-                        TaskType.small => Constants.maxTaskWeight.toDouble(),
-                        TaskType.large => Constants.medianWeight.toDouble(),
-                        TaskType.huge => Constants.maxWeight.toDouble(),
-                      },
-                      slider: (taskType == TaskType.small)
-                          ? Tiles.weightSlider(
-                              weight: weight.toDouble(),
-                              handleWeightChange: handleWeightChange,
-                            )
-                          : null,
-                    ),
-                    const PaddedDivider(padding: Constants.padding),
-                    // TaskType -- This is only one-screen.
-                    const Row(children: [
-                      Expanded(
-                        child: AutoSizeText("Task Type",
-                            maxLines: 1,
-                            softWrap: true,
-                            textAlign: TextAlign.center,
-                            minFontSize: Constants.medium,
-                            style: Constants.headerStyle),
-                      )
-                    ]),
-                    buildTaskTypeButton(),
+                                        const PaddedDivider(
+                                            padding: Constants.padding),
+                                        // My Day
+                                        _buildMyDay(),
 
-                    // Subtasks
-                    if (taskType != TaskType.small) ...[
-                      const PaddedDivider(padding: Constants.padding),
-                      Tiles.subtasksTile(
-                          context: context,
-                          subtasksAnchorController: subtasksAnchorController,
-                          onAnchorOpen: onAnchorOpen,
-                          onAnchorClose: onAnchorClose,
-                          onRemove:
-                              (userProvider.curUser?.reduceMotion ?? false)
-                                  ? null
-                                  : onRemove,
-                          limit: Constants.numTasks[taskType]!,
-                          subtasks: subtasks,
-                          subtaskCount: toDoProvider.getSubtaskCount(
-                              id: Constants.intMax,
-                              limit: Constants.numTasks[taskType]!),
-                          id: Constants.intMax),
-                    ],
+                                        const PaddedDivider(
+                                            padding: Constants.padding),
+                                        // Priority
+                                        _buildPriorityTile(),
+                                        const Padding(
+                                          padding: EdgeInsets.symmetric(
+                                              vertical: Constants.padding),
+                                          child: PaddedDivider(
+                                              padding: Constants.padding),
+                                        ),
+                                        // Expected Duration / RealDuration -> Show status, on click, open a dialog.
+                                        _buildDurationTile(),
 
-                    const PaddedDivider(padding: Constants.padding),
-                    // My Day
-                    Tiles.myDayTile(
-                        myDay: myDay,
-                        canAdd: (userProvider.myDayTotal + weight <=
-                            (toDoProvider.user?.bandwidth ??
-                                Constants.maxBandwidth)),
-                        toggleMyDay: toggleMyDay),
+                                        const PaddedDivider(
+                                            padding: Constants.padding),
+                                        // DateTime -> Show status, on click, open a dialog.
+                                        _buildDateRangeTile(),
 
-                    const PaddedDivider(padding: Constants.padding),
-                    // Priority
-                    Tiles.priorityTile(
-                      mobile: smallScreen,
-                      context: context,
-                      priority: priority,
-                      onSelectionChanged: changePriority,
-                    ),
+                                        _buildTimeTile(),
+                                        _buildRepeatableTile(),
+                                      ]),
+                                ),
+                                Flexible(
+                                  child: ListView(
+                                      physics:
+                                          const NeverScrollableScrollPhysics(),
+                                      shrinkWrap: true,
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: Constants.halfPadding),
+                                      children: [
+                                        _buildSearchBar(
+                                            padding: const EdgeInsets.all(
+                                                Constants.padding)),
 
-                    const Padding(
-                      padding:
-                          EdgeInsets.symmetric(vertical: Constants.padding),
-                      child: PaddedDivider(padding: Constants.padding),
-                    ),
+                                        const PaddedDivider(
+                                            padding: Constants.padding),
+                                        // TaskType
+                                        _buildTaskTypeButton(),
+                                        _buildSubtasksTile(),
 
-                    // Group Picker
-                    SearchRecentsBar<Group>(
-                      hintText: "Search Groups",
-                      searchController: groupEditingController,
-                      dispose: false,
-                      mostRecent: groupProvider.mostRecent,
-                      search: groupProvider.searchGroups,
-                      handleDataSelection: handleGroupSelection,
-                    ),
-
-                    const Padding(
-                      padding:
-                          EdgeInsets.symmetric(vertical: Constants.padding),
-                      child: PaddedDivider(padding: Constants.padding),
-                    ),
-
-                    // Description
-                    Tiles.descriptionTile(
-                        hintText: "Notes",
-                        controller: descriptionEditingController,
-                        isDense: true,
-                        context: context,
-                        onEditingComplete: updateDescription),
-
-                    const PaddedDivider(padding: Constants.padding),
-                    // Expected Duration / RealDuration -> Show status, on click, open a dialog.
-                    Tiles.durationTile(
-                      expectedDuration: expectedDuration,
-                      context: context,
-                      realDuration: realDuration,
-                      handleClear: clearDuration,
-                      handleUpdate: updateDuration,
-                    ),
-
-                    const PaddedDivider(padding: Constants.padding),
-                    // DateTime -> Show status, on click, open a dialog.
-                    //startDate
-                    Tiles.dateRangeTile(
-                      context: context,
-                      startDate: startDate,
-                      dueDate: dueDate,
-                      handleClear: clearDates,
-                      handleUpdate: updateDates,
-                    ),
-
-                    // Time
-                    if (showTimeTile) ...[
-                      const PaddedDivider(padding: Constants.padding),
-                      Tiles.timeTile(
-                        startTime: startTime,
-                        dueTime: dueTime,
-                        context: context,
-                        handleClear: clearTimes,
-                        handleUpdate: updateTimes,
-                      ),
-                    ],
-
-                    // Repeatable Stuff -> Show status, on click, open a dialog.
-                    if (showRepeatTile) ...[
-                      const PaddedDivider(padding: Constants.padding),
-                      Tiles.repeatableTile(
-                        context: context,
-                        frequency: frequency,
-                        weekdays: weekdayList,
-                        repeatSkip: repeatSkip,
-                        startDate: startDate,
-                        handleUpdate: updateRepeatable,
-                        handleClear: clearRepeatable,
-                      ),
-                    ],
-                  ],
+                                        const Padding(
+                                          padding: EdgeInsets.symmetric(
+                                              vertical: Constants.padding),
+                                          child: PaddedDivider(
+                                              padding: Constants.padding),
+                                        ),
+                                        // Description
+                                        _buildDescriptionTile(
+                                            minLines: Constants.desktopMinLines,
+                                            maxLines: Constants
+                                                .desktopMaxLinesBeforeScroll),
+                                      ]),
+                                )
+                              ]),
+                        ]),
+                  ),
                 ),
               ),
 
@@ -1036,46 +391,439 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                 handleCreate: createAndValidate,
               ),
             ]),
-      ),
-    );
-  }
-
-  Widget buildTaskTypeButton() {
-    return Padding(
-      padding: const EdgeInsets.all(Constants.padding),
-      child: SegmentedButton<TaskType>(
-          style: ButtonStyle(
-            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            visualDensity: VisualDensity.adaptivePlatformDensity,
-            side: MaterialStatePropertyAll<BorderSide>(BorderSide(
-              width: 2,
-              color: Theme.of(context).colorScheme.outlineVariant,
-            )),
           ),
-          segments: TaskType.values
-              .map((TaskType type) => ButtonSegment<TaskType>(
-                  value: type,
-                  label: Text(
-                    "${toBeginningOfSentenceCase(type.name)}",
-                    softWrap: false,
-                    overflow: TextOverflow.visible,
-                  )))
-              .toList(growable: false),
-          selected: <TaskType>{taskType},
-          onSelectionChanged: (Set<TaskType> newSelection) {
-            TaskType newType = newSelection.first;
-            if (taskType != newType) {
-              if (mounted) {
-                setState(() {
-                  checkClose = userProvider.curUser?.checkClose ?? true;
-                  taskType = newSelection.first;
-                  realDuration = toDoProvider.calculateRealDuration(
-                      weight: (taskType == TaskType.small) ? weight : sumWeight,
-                      duration: expectedDuration);
-                });
-              }
-            }
-          }),
-    );
-  }
+        ),
+      );
+
+  Dialog _buildMobileDialog({
+    required BuildContext context,
+    bool smallScreen = false,
+  }) =>
+      Dialog(
+        insetPadding: EdgeInsets.all((smallScreen)
+            ? Constants.mobileDialogPadding
+            : Constants.outerDialogPadding),
+        child: Padding(
+          padding: const EdgeInsets.all(Constants.padding),
+          child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Title && Close Button
+                _buildTitleBar(),
+                const PaddedDivider(padding: Constants.halfPadding),
+                Flexible(
+                  child: ListView(
+                    shrinkWrap: true,
+                    controller: mobileScrollController,
+                    physics: scrollPhysics,
+                    children: [
+                      _buildNameTile(),
+                      _buildWeightTile(),
+                      const PaddedDivider(padding: Constants.padding),
+                      // TaskType -- This is only one-screen.
+                      _buildTaskTypeButton(),
+                      _buildSubtasksTile(),
+
+                      const PaddedDivider(padding: Constants.padding),
+                      // My Day
+                      _buildMyDay(),
+                      const PaddedDivider(padding: Constants.padding),
+                      // Priority
+                      _buildPriorityTile(mobile: layoutProvider.smallScreen),
+
+                      const Padding(
+                        padding:
+                            EdgeInsets.symmetric(vertical: Constants.padding),
+                        child: PaddedDivider(padding: Constants.padding),
+                      ),
+
+                      _buildSearchBar(),
+
+                      const Padding(
+                        padding:
+                            EdgeInsets.symmetric(vertical: Constants.padding),
+                        child: PaddedDivider(padding: Constants.padding),
+                      ),
+
+                      // Description
+                      _buildDescriptionTile(mobile: smallScreen),
+
+                      const PaddedDivider(padding: Constants.padding),
+                      // Expected Duration / RealDuration -> Show status, on click, open a dialog.
+                      _buildDurationTile(),
+
+                      const PaddedDivider(padding: Constants.padding),
+                      // DateTime -> Show status, on click, open a dialog.
+                      _buildDateRangeTile(),
+
+                      _buildTimeTile(),
+                      _buildRepeatableTile(),
+                    ],
+                  ),
+                ),
+
+                const PaddedDivider(padding: Constants.halfPadding),
+                Tiles.createButton(
+                  outerPadding:
+                      const EdgeInsets.symmetric(horizontal: Constants.padding),
+                  handleCreate: createAndValidate,
+                ),
+              ]),
+        ),
+      );
+
+  Widget _buildTitleBar() => ValueListenableBuilder<bool>(
+        valueListenable: _checkClose,
+        builder: (BuildContext context, bool check, Widget? child) =>
+            Selector<ToDoViewModel, (int, int)>(
+          selector: (BuildContext context, ToDoViewModel vm) =>
+              (vm.expectedDuration, vm.realDuration),
+          builder: (BuildContext context, (int, int) value, Widget? child) {
+            return TitleBar(
+              context: context,
+              title: "New Task",
+              centerWidget: (value.$1 > 0)
+                  ? TitleBar.durationCenterWidget(
+                      expectedDuration: value.$1,
+                      realDuration: value.$2,
+                    )
+                  : null,
+              handleClose: handleClose,
+              checkClose: check,
+              padding:
+                  const EdgeInsets.symmetric(horizontal: Constants.padding),
+            );
+          },
+        ),
+      );
+
+  Widget _buildNameTile() => ValueListenableBuilder<String?>(
+      valueListenable: _nameErrorText,
+      builder: (BuildContext context, String? errorText, Widget? child) =>
+          Selector<ToDoViewModel, (String, bool)>(
+            selector: (BuildContext context, ToDoViewModel vm) =>
+                (vm.name, vm.completed),
+            builder: (BuildContext context, (String, bool) value,
+                    Widget? child) =>
+                Tiles.nameTile(
+                    context: context,
+                    leading: ListTileWidgets.checkbox(
+                      scale: Constants.largeCheckboxScale,
+                      completed: value.$2,
+                      onChanged: (bool? completed) {
+                        _checkClose.value =
+                            toDoProvider.userViewModel?.checkClose ?? true;
+                        vm.completed = completed!;
+                      },
+                    ),
+                    errorText: errorText,
+                    hintText: "Task Name",
+                    controller: nameEditingController,
+                    outerPadding:
+                        const EdgeInsets.symmetric(vertical: Constants.padding),
+                    textFieldPadding:
+                        const EdgeInsets.only(left: Constants.padding),
+                    onEditingComplete: () {
+                      _checkClose.value =
+                          toDoProvider.userViewModel?.checkClose ?? true;
+                      vm.name = nameEditingController.text;
+                    },
+                    handleClear: () {
+                      _checkClose.value =
+                          toDoProvider.userViewModel?.checkClose ?? true;
+                      nameEditingController.clear();
+                      vm.name = "";
+                    }),
+          ));
+
+  Widget _buildWeightTile() => Selector<ToDoViewModel, (TaskType, int)>(
+      selector: (BuildContext context, ToDoViewModel vm) =>
+          (vm.taskType, vm.weight),
+      builder: (BuildContext context, (TaskType, int) value, Widget? child) =>
+          Tiles.weightTile(
+            outerPadding: const EdgeInsets.all(Constants.doublePadding),
+            batteryPadding: const EdgeInsets.all(Constants.padding),
+            constraints: const BoxConstraints(
+              maxWidth: 200,
+            ),
+            weight: value.$2.toDouble(),
+            max: switch (value.$1) {
+              TaskType.small => Constants.maxTaskWeightDouble,
+              TaskType.large => Constants.medianWeight.toDouble(),
+              TaskType.huge => Constants.maxWeight.toDouble()
+            },
+            slider: (TaskType.small == value.$1)
+                ? Tiles.weightSlider(
+                    weight: value.$2.toDouble(),
+                    handleWeightChange: (double? newWeight) {
+                      if (null == newWeight) {
+                        return;
+                      }
+                      _checkClose.value =
+                          toDoProvider.userViewModel?.checkClose ?? true;
+                      vm.weight = newWeight.toInt();
+                    })
+                : null,
+          ));
+
+  Widget _buildMyDay() => Selector<ToDoViewModel, (bool, int)>(
+        selector: (BuildContext context, ToDoViewModel vm) =>
+            (vm.myDay, vm.weight),
+        builder: (BuildContext context, (bool, int) value, Widget? child) =>
+            Tiles.myDayTile(
+          myDay: value.$1,
+          canAdd: userProvider.myDayTotal + value.$2 <=
+              (toDoProvider.userViewModel?.bandwidth ?? Constants.maxBandwidth),
+          toggleMyDay: () {
+            _checkClose.value = toDoProvider.userViewModel?.checkClose ?? true;
+            vm.myDay = !vm.myDay;
+          },
+        ),
+      );
+
+  Widget _buildPriorityTile({bool mobile = false}) =>
+      Selector<ToDoViewModel, Priority>(
+        selector: (BuildContext context, ToDoViewModel vm) => vm.priority,
+        builder: (BuildContext context, Priority value, Widget? child) =>
+            Tiles.priorityTile(
+                context: context,
+                priority: value,
+                mobile: mobile,
+                onSelectionChanged: (Set<Priority> newPriority) {
+                  _checkClose.value =
+                      toDoProvider.userViewModel?.checkClose ?? true;
+                  vm.priority = newPriority.first;
+                }),
+      );
+
+  Widget _buildDurationTile() => Selector<ToDoViewModel, (int, int)>(
+        selector: (BuildContext context, ToDoViewModel vm) =>
+            (vm.expectedDuration, vm.realDuration),
+        builder: (BuildContext context, (int, int) value, Widget? child) =>
+            Tiles.durationTile(
+          context: context,
+          expectedDuration: value.$1,
+          realDuration: value.$2,
+          handleClear: vm.clearDuration,
+          handleUpdate: vm.updateDuration,
+        ),
+      );
+
+  Widget _buildDateRangeTile() =>
+      Selector<ToDoViewModel, (DateTime?, DateTime?)>(
+        selector: (BuildContext context, ToDoViewModel vm) =>
+            (vm.startDate, vm.dueDate),
+        builder: (BuildContext context, (DateTime?, DateTime?) value,
+                Widget? child) =>
+            Tiles.dateRangeTile(
+                context: context,
+                startDate: value.$1,
+                dueDate: value.$2,
+                handleClear: () {
+                  _checkClose.value =
+                      toDoProvider.userViewModel?.checkClose ?? true;
+                  vm.clearDates();
+                },
+                handleUpdate: (
+                    {bool? checkClose, DateTime? newDue, DateTime? newStart}) {
+                  checkClose = checkClose ?? _checkClose.value;
+                  _checkClose.value = (checkClose)
+                      ? toDoProvider.userViewModel?.checkClose ?? checkClose
+                      : false;
+                  vm.updateDates(newStart: newStart, newDue: newDue);
+                }),
+      );
+
+  Widget _buildTimeTile() =>
+      Selector<ToDoViewModel, (bool, TimeOfDay?, TimeOfDay?)>(
+        selector: (BuildContext context, ToDoViewModel vm) => (
+          null != vm.startDate && null != vm.dueDate,
+          vm.startTime,
+          vm.dueTime
+        ),
+        builder: (BuildContext context, (bool, TimeOfDay?, TimeOfDay?) value,
+                Widget? child) =>
+            (value.$1)
+                ? Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const PaddedDivider(padding: Constants.padding),
+                      Tiles.timeTile(
+                          context: context,
+                          startTime: value.$2,
+                          dueTime: value.$3,
+                          handleClear: () {
+                            _checkClose.value =
+                                toDoProvider.userViewModel?.checkClose ?? true;
+                            vm.clearTimes();
+                          },
+                          handleUpdate: (
+                              {bool? checkClose,
+                              TimeOfDay? newStart,
+                              TimeOfDay? newDue}) {
+                            checkClose = checkClose ?? _checkClose.value;
+                            _checkClose.value = (checkClose)
+                                ? toDoProvider.userViewModel?.checkClose ??
+                                    checkClose
+                                : false;
+                            vm.updateTimes(newStart: newStart, newDue: newDue);
+                          }),
+                    ],
+                  )
+                : const SizedBox.shrink(),
+      );
+
+  Widget _buildRepeatableTile() => Selector<ToDoViewModel, (bool, UniqueKey)>(
+        selector: (BuildContext context, ToDoViewModel vm) =>
+            (null != vm.startDate && null != vm.dueDate, vm.repeatableKey),
+        builder: (BuildContext context, (bool, UniqueKey) value,
+                Widget? child) =>
+            (value.$1)
+                ? Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const PaddedDivider(padding: Constants.padding),
+                      Tiles.repeatableTile(
+                          context: context,
+                          frequency: vm.frequency,
+                          weekdays: vm.weekdayList,
+                          repeatSkip: vm.repeatSkip,
+                          startDate: vm.startDate,
+                          handleUpdate: (
+                              {bool? checkClose,
+                              required Frequency newFreq,
+                              required int newSkip,
+                              required Set<int> newWeekdays}) {
+                            checkClose = checkClose ?? _checkClose.value;
+                            _checkClose.value = (checkClose)
+                                ? toDoProvider.userViewModel?.checkClose ??
+                                    checkClose
+                                : false;
+                            vm.updateRepeatable(
+                                newFreq: newFreq,
+                                newSkip: newSkip,
+                                newWeekdays: newWeekdays);
+                          },
+                          handleClear: () {
+                            _checkClose.value =
+                                toDoProvider.userViewModel?.checkClose ?? true;
+                            vm.clearRepeatable();
+                          }),
+                    ],
+                  )
+                : const SizedBox.shrink(),
+      );
+
+  Widget _buildTaskTypeButton() => Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Expanded(
+                child: AutoSizeText("Task Type",
+                    maxLines: 1,
+                    softWrap: true,
+                    textAlign: TextAlign.center,
+                    minFontSize: Constants.medium,
+                    style: Constants.headerStyle),
+              )
+            ],
+          ),
+          Selector<ToDoViewModel, TaskType>(
+            selector: (BuildContext context, ToDoViewModel vm) => vm.taskType,
+            builder: (BuildContext context, TaskType value, Widget? child) =>
+                SegmentedButton<TaskType>(
+                    style: ButtonStyle(
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      visualDensity: VisualDensity.adaptivePlatformDensity,
+                      side: MaterialStatePropertyAll<BorderSide>(BorderSide(
+                        width: 2,
+                        color: Theme.of(context).colorScheme.outlineVariant,
+                      )),
+                    ),
+                    segments: TaskType.values
+                        .map((TaskType type) => ButtonSegment<TaskType>(
+                            value: type,
+                            label: Text(
+                              "${toBeginningOfSentenceCase(type.name)}",
+                              softWrap: false,
+                              overflow: TextOverflow.visible,
+                            )))
+                        .toList(growable: false),
+                    selected: {value},
+                    onSelectionChanged: (Set<TaskType> newSelection) {
+                      _checkClose.value =
+                          toDoProvider.userViewModel?.checkClose ?? true;
+                      vm.taskType = newSelection.first;
+                    }),
+          )
+        ],
+      );
+
+  Widget _buildDescriptionTile({
+    int minLines = Constants.mobileMinLines,
+    int maxLines = Constants.mobileMaxLinesBeforeScroll,
+    bool mobile = false,
+  }) =>
+      Selector<ToDoViewModel, String>(
+        selector: (BuildContext context, ToDoViewModel vm) => vm.description,
+        builder: (BuildContext context, String value, Widget? child) =>
+            Tiles.descriptionTile(
+                context: context,
+                isDense: mobile,
+                hintText: "Notes",
+                minLines: minLines,
+                maxLines: maxLines,
+                controller: descriptionEditingController,
+                onEditingComplete: () {
+                  _checkClose.value =
+                      toDoProvider.userViewModel?.checkClose ?? true;
+                  vm.description = descriptionEditingController.text;
+                }),
+      );
+
+  Widget _buildSearchBar({EdgeInsetsGeometry padding = EdgeInsets.zero}) =>
+      SearchRecentsBar<Group>(
+        persistentEntry: widget.initialGroup,
+        hintText: "Search Groups",
+        padding: padding,
+        handleDataSelection: ({required int id}) async {
+          _checkClose.value = toDoProvider.userViewModel?.checkClose ?? true;
+          vm.groupID = id;
+        },
+        searchController: groupEditingController,
+        dispose: false,
+        mostRecent: groupProvider.mostRecent,
+        search: groupProvider.searchGroups,
+      );
+
+  Widget _buildSubtasksTile() => Selector<ToDoViewModel, (TaskType, UniqueKey)>(
+        selector: (BuildContext context, ToDoViewModel vm) =>
+            (vm.taskType, vm.subtaskKey),
+        builder: (BuildContext context, (TaskType, UniqueKey) value,
+                Widget? child) =>
+            (TaskType.small != value.$1)
+                ? Padding(
+                    padding:
+                        const EdgeInsets.only(top: Constants.doublePadding),
+                    child: Tiles.subtasksTile(
+                        context: context,
+                        id: vm.id,
+                        limit: Constants.numTasks[value.$1]!,
+                        subtasksAnchorController: subtasksAnchorController,
+                        onAnchorOpen: onAnchorOpen,
+                        onAnchorClose: onAnchorClose,
+                        onRemove:
+                            (toDoProvider.userViewModel?.reduceMotion ?? false)
+                                ? null
+                                : onRemove,
+                        subtasks: vm.subtasks,
+                        subtaskCount: toDoProvider.getSubtaskCount(
+                            id: vm.id, limit: Constants.numTasks[value.$1]!)),
+                  )
+                : const SizedBox.shrink(),
+      );
 }

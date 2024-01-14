@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:provider/provider.dart';
 
-import '../../providers/subtask_provider.dart';
+import '../../providers/model/subtask_provider.dart';
 import '../../util/constants.dart';
 import '../../util/exceptions.dart';
 import 'flushbars.dart';

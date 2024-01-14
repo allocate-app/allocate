@@ -4,9 +4,9 @@ import 'package:provider/provider.dart';
 
 import '../../../model/task/routine.dart';
 import '../../../model/task/subtask.dart';
-import '../../../providers/routine_provider.dart';
-import '../../../providers/subtask_provider.dart';
-import '../../../providers/user_provider.dart';
+import '../../../providers/model/routine_provider.dart';
+import '../../../providers/model/subtask_provider.dart';
+import '../../../providers/model/user_provider.dart';
 import '../../../util/constants.dart';
 import '../../../util/enums.dart';
 import '../../../util/exceptions.dart';

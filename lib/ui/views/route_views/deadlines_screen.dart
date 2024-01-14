@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../model/task/deadline.dart';
-import '../../../providers/deadline_provider.dart';
-import '../../../providers/user_provider.dart';
+import '../../../providers/model/deadline_provider.dart';
+import '../../../providers/model/user_provider.dart';
 import '../../../util/constants.dart';
 import '../../../util/enums.dart';
 import '../../widgets/listview_header.dart';

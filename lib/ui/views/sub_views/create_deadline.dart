@@ -6,9 +6,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:provider/provider.dart';
 
-import '../../../providers/deadline_provider.dart';
-import '../../../providers/event_provider.dart';
-import '../../../providers/user_provider.dart';
+import '../../../providers/application/event_provider.dart';
+import '../../../providers/model/deadline_provider.dart';
+import '../../../providers/model/user_provider.dart';
 import '../../../util/constants.dart';
 import '../../../util/enums.dart';
 import '../../../util/exceptions.dart';
@@ -399,7 +399,7 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
       insetPadding: const EdgeInsets.all(Constants.outerDialogPadding),
       child: ConstrainedBox(
         constraints:
-            const BoxConstraints(maxHeight: Constants.maxDesktopDialogSide),
+            const BoxConstraints(maxHeight: Constants.maxDesktopDialogHeight),
         child: Padding(
           padding: const EdgeInsets.all(Constants.padding),
           child: Column(
@@ -409,7 +409,7 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
               children: [
                 // Title && Close Button
                 TitleBar(
-                  currentContext: context,
+                  context: context,
                   title: "New Deadline",
                   checkClose: checkClose,
                   padding:
@@ -599,7 +599,7 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
             children: [
               // Title && Close Button
               TitleBar(
-                currentContext: context,
+                context: context,
                 title: "New Deadline",
                 checkClose: checkClose,
                 padding:

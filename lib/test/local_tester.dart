@@ -11,23 +11,32 @@ import 'package:provider/provider.dart';
 import 'package:window_manager/window_manager.dart';
 
 import '../model/task/todo.dart';
-import '../providers/app_provider.dart';
-import '../providers/deadline_provider.dart';
-import '../providers/event_provider.dart';
-import '../providers/group_provider.dart';
-import '../providers/reminder_provider.dart';
-import '../providers/routine_provider.dart';
-import '../providers/search_provider.dart';
-import '../providers/subtask_provider.dart';
-import '../providers/theme_provider.dart';
-import '../providers/todo_provider.dart';
-import '../providers/user_provider.dart';
+import '../providers/application/app_provider.dart';
+import '../providers/application/event_provider.dart';
+import '../providers/application/layout_provider.dart';
+import '../providers/application/search_provider.dart';
+import '../providers/application/theme_provider.dart';
+import '../providers/model/deadline_provider.dart';
+import '../providers/model/group_provider.dart';
+import '../providers/model/reminder_provider.dart';
+import '../providers/model/routine_provider.dart';
+import '../providers/model/subtask_provider.dart';
+import '../providers/model/todo_provider.dart';
+import '../providers/model/user_provider.dart';
+import '../providers/viewmodels/deadline_viewmodel.dart';
+import '../providers/viewmodels/group_viewmodel.dart';
+import '../providers/viewmodels/reminder_viewmodel.dart';
+import '../providers/viewmodels/routine_viewmodel.dart';
+import '../providers/viewmodels/todo_viewmodel.dart';
+import '../providers/viewmodels/user_viewmodel.dart';
 import '../services/isar_service.dart';
 import '../services/notification_service.dart';
 import '../services/supabase_service.dart';
 import '../ui/views/route_views/home_screen.dart';
+import '../ui/widgets/tiles.dart';
 import '../util/constants.dart';
 import '../util/enums.dart';
+import '../util/exceptions.dart';
 import '../util/interfaces/i_model.dart';
 
 // Async for windowmanager & desktop apps.
@@ -92,16 +101,44 @@ void main() async {
         client: FakeSupabase()),
     NotificationService.instance.init()
   ]).whenComplete(() => runApp(MultiProvider(providers: [
-        ChangeNotifierProvider<UserProvider>(create: (_) => UserProvider()),
+        // VIEWMODELS
+        ChangeNotifierProvider<ToDoViewModel>(create: (_) => ToDoViewModel()),
+        ChangeNotifierProvider<UserViewModel>(create: (_) => UserViewModel()),
+        ChangeNotifierProvider<RoutineViewModel>(
+            create: (_) => RoutineViewModel()),
+        ChangeNotifierProvider<DeadlineViewModel>(
+          create: (_) => DeadlineViewModel(),
+        ),
+        ChangeNotifierProvider<ReminderViewModel>(
+            create: (_) => ReminderViewModel()),
+        ChangeNotifierProvider<GroupViewModel>(create: (_) => GroupViewModel()),
+
+        // GLOBAL STATE
         ChangeNotifierProvider<AppProvider>(create: (_) => AppProvider()),
+        ChangeNotifierProvider<LayoutProvider>(create: (_) => LayoutProvider()),
+
+        // This is not quite right -> UserProvider needs to query the db first.
+        ChangeNotifierProxyProvider<UserViewModel, UserProvider>(
+            create: (BuildContext context) => UserProvider(
+                viewModel: Provider.of<UserViewModel>(context, listen: false)),
+            update: (BuildContext context, UserViewModel vm, UserProvider? up) {
+              up?.viewModel = vm;
+              up?.updateUser().catchError(
+                  (e) => Tiles.displayError(context: context, e: e),
+                  test: (e) =>
+                      e is FailureToUpdateException ||
+                      e is FailureToUploadException);
+              return up ?? UserProvider(viewModel: vm);
+            }),
         ChangeNotifierProxyProvider<UserProvider, ToDoProvider>(
             create: (BuildContext context) => ToDoProvider(
-                  user:
-                      Provider.of<UserProvider>(context, listen: false).curUser,
+                  userViewModel:
+                      Provider.of<UserProvider>(context, listen: false)
+                          .viewModel,
                 ),
             update: (BuildContext context, UserProvider up, ToDoProvider? tp) {
-              tp?.setUser(newUser: up.curUser);
-              return tp ?? ToDoProvider(user: up.curUser);
+              tp?.setUser(newUser: up.viewModel);
+              return tp ?? ToDoProvider(userViewModel: up.viewModel);
             }),
         ChangeNotifierProxyProvider<UserProvider, RoutineProvider>(
             create: (BuildContext context) => RoutineProvider(
@@ -241,6 +278,7 @@ class _LocalTester extends State<LocalTester> with WindowListener {
     List<ToDo> testToDos = List.generate(
         100,
         (i) => ToDo(
+              id: Constants.generateID(),
               taskType: TaskType.small,
               name: 'Test: $i',
               expectedDuration: 0,

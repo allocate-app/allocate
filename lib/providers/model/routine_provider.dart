@@ -3,18 +3,18 @@ import 'dart:developer';
 
 import 'package:flutter/foundation.dart';
 
-import "../model/task/routine.dart";
-import '../model/task/subtask.dart';
-import '../model/user/user.dart';
-import '../repositories/routine_repo.dart';
-import '../repositories/subtask_repo.dart';
-import '../util/constants.dart';
-import '../util/enums.dart';
-import "../util/exceptions.dart";
-import '../util/interfaces/repository/model/routine_repository.dart';
-import '../util/interfaces/repository/model/subtask_repository.dart';
-import '../util/numbers.dart';
-import '../util/sorting/routine_sorter.dart';
+import '../../model/task/routine.dart';
+import '../../model/task/subtask.dart';
+import '../../model/user/user.dart';
+import '../../repositories/routine_repo.dart';
+import '../../repositories/subtask_repo.dart';
+import '../../util/constants.dart';
+import '../../util/enums.dart';
+import '../../util/exceptions.dart';
+import '../../util/interfaces/repository/model/routine_repository.dart';
+import '../../util/interfaces/repository/model/subtask_repository.dart';
+import '../../util/numbers.dart';
+import '../../util/sorting/routine_sorter.dart';
 
 class RoutineProvider extends ChangeNotifier {
   bool _rebuild = true;

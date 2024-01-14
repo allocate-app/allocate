@@ -13,14 +13,15 @@ import '../../model/task/reminder.dart';
 import '../../model/task/routine.dart';
 import '../../model/task/subtask.dart';
 import '../../model/task/todo.dart';
-import '../../providers/deadline_provider.dart';
-import '../../providers/event_provider.dart';
-import '../../providers/group_provider.dart';
-import '../../providers/reminder_provider.dart';
-import '../../providers/routine_provider.dart';
-import '../../providers/subtask_provider.dart';
-import '../../providers/todo_provider.dart';
-import '../../providers/user_provider.dart';
+import '../../providers/application/event_provider.dart';
+import '../../providers/model/deadline_provider.dart';
+import '../../providers/model/group_provider.dart';
+import '../../providers/model/reminder_provider.dart';
+import '../../providers/model/routine_provider.dart';
+import '../../providers/model/subtask_provider.dart';
+import '../../providers/model/todo_provider.dart';
+import '../../providers/model/user_provider.dart';
+import '../../providers/viewmodels/todo_viewmodel.dart';
 import '../../ui/widgets/time_dialog.dart';
 import '../../util/constants.dart';
 import '../../util/enums.dart';
@@ -138,8 +139,11 @@ abstract class Tiles {
               barrierDismissible: false,
               useRootNavigator: false,
               context: context,
-              builder: (BuildContext context) =>
-                  UpdateToDoScreen(initialToDo: toDo));
+              builder: (BuildContext context) {
+                Provider.of<ToDoViewModel>(context, listen: false)
+                    .fromModel(model: toDo);
+                return const UpdateToDoScreen();
+              });
         },
         trailing: Row(mainAxisSize: MainAxisSize.min, children: [
           ListTileWidgets.toDoBatteryRow(toDo: toDo),
@@ -318,8 +322,11 @@ abstract class Tiles {
               barrierDismissible: false,
               useRootNavigator: false,
               context: context,
-              builder: (BuildContext context) =>
-                  UpdateToDoScreen(initialToDo: toDo));
+              builder: (BuildContext context) {
+                Provider.of<ToDoViewModel>(context, listen: false)
+                    .fromModel(model: toDo);
+                return const UpdateToDoScreen();
+              });
         },
         trailing: Row(mainAxisSize: MainAxisSize.min, children: [
           ListTileWidgets.toDoBatteryRow(toDo: toDo),
@@ -913,24 +920,12 @@ abstract class Tiles {
                         barrierDismissible: false,
                         useRootNavigator: false,
                         context: context,
-                        builder: (BuildContext context) => UpdateToDoScreen(
-                              initialToDo: toDo,
-                              initialGroup:
-                                  MapEntry<String, int>(group.name, group.id),
-                            )).catchError((e) {
-                      Flushbar? error;
+                        builder: (BuildContext context) {
+                          Provider.of<ToDoViewModel>(context, listen: false)
+                              .fromModel(model: toDo);
 
-                      error = Flushbars.createError(
-                        message: e.cause,
-                        context: context,
-                        dismissCallback: () => error?.dismiss(),
-                      );
-
-                      error.show(context);
-                    },
-                        test: (e) =>
-                            e is FailureToCreateException ||
-                            e is FailureToUploadException);
+                          return const UpdateToDoScreen();
+                        });
                   },
                   handleRemove: ({ToDo? toDo}) async {
                     if (null == toDo) {
@@ -979,20 +974,7 @@ abstract class Tiles {
                     builder: (BuildContext context) => CreateToDoScreen(
                           initialGroup:
                               MapEntry<String, int>(group.name, group.id),
-                        )).catchError((e) {
-                  Flushbar? error;
-
-                  error = Flushbars.createError(
-                    message: e.cause,
-                    context: context,
-                    dismissCallback: () => error?.dismiss(),
-                  );
-
-                  error.show(context);
-                },
-                    test: (e) =>
-                        e is FailureToCreateException ||
-                        e is FailureToUploadException);
+                        ));
               })
         ]);
   }
@@ -1268,7 +1250,6 @@ abstract class Tiles {
           if (subtasks.length < limit)
             SubtaskQuickEntry(
               taskID: id,
-              taskIndex: subtasks.length,
               outerPadding: const EdgeInsets.all(Constants.padding),
               innerPadding: const EdgeInsets.symmetric(
                   horizontal: Constants.doublePadding),
@@ -1651,7 +1632,7 @@ abstract class Tiles {
           {TextEditingController? controller,
           EdgeInsetsGeometry outerPadding = EdgeInsets.zero,
           String hintText = "Description",
-          int? maxLines = Constants.mobileMaxLinesBeforeScroll,
+          int maxLines = Constants.mobileMaxLinesBeforeScroll,
           int minLines = Constants.mobileMinLines,
           double? minFontSize,
           bool isDense = false,
@@ -2306,7 +2287,9 @@ abstract class Tiles {
         late Widget dialog;
         switch (event.model.modelType) {
           case ModelType.task:
-            dialog = UpdateToDoScreen(initialToDo: event.model as ToDo);
+            Provider.of<ToDoViewModel>(context, listen: false)
+                .fromModel(model: event.model as ToDo);
+            dialog = const UpdateToDoScreen();
             break;
           case ModelType.deadline:
             dialog =

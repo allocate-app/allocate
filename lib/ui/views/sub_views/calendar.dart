@@ -6,8 +6,8 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:table_calendar/table_calendar.dart';
 
-import '../../../providers/event_provider.dart';
-import '../../../providers/user_provider.dart';
+import '../../../providers/application/event_provider.dart';
+import '../../../providers/model/user_provider.dart';
 import '../../../util/constants.dart';
 import '../../widgets/listviews.dart';
 

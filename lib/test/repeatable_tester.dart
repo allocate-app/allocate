@@ -50,6 +50,7 @@ void main() async {
   // Date arithmetic.
   group("Get repeat date", () {
     ToDo toDo = ToDo(
+        id: Constants.generateID(),
         taskType: TaskType.small,
         name: 'Tester',
         expectedDuration: 0,
@@ -861,6 +862,7 @@ void main() async {
   // These are indexed 0-6 : Mon - Sun
   group("Get repeat date, custom date", () {
     ToDo toDo = ToDo(
+        id: Constants.generateID(),
         taskType: TaskType.small,
         name: 'Tester',
         expectedDuration: 0,
@@ -1935,6 +1937,7 @@ void main() async {
   group("Current Model, mutate single", () {
     // Tasks
     ToDo toDo = ToDo(
+        id: Constants.generateID(),
         taskType: TaskType.small,
         name: 'Tester',
         expectedDuration: 0,
@@ -2222,6 +2225,7 @@ void main() async {
   // Create a 5th and ensure it follows the rpt pattern.
   group("Current Model, delete single", () {
     ToDo toDo = ToDo(
+        id: Constants.generateID(),
         taskType: TaskType.small,
         name: 'Tester',
         expectedDuration: 0,
@@ -2488,6 +2492,7 @@ void main() async {
   // Ensure template matches middle, generate a new one, ensure match
   group("Current Model, mutate all", () {
     ToDo toDo = ToDo(
+        id: Constants.generateID(),
         taskType: TaskType.small,
         name: 'Tester',
         expectedDuration: 0,
@@ -2785,6 +2790,7 @@ void main() async {
   // ie. generates from the delta.
   group("Projected Model, mutate single", () {
     ToDo toDo = ToDo(
+        id: Constants.generateID(),
         taskType: TaskType.small,
         name: 'Tester',
         expectedDuration: 0,
@@ -3095,6 +3101,7 @@ void main() async {
 
   group("Projected Model, delete single", () {
     ToDo toDo = ToDo(
+        id: Constants.generateID(),
         taskType: TaskType.small,
         name: 'Tester',
         expectedDuration: 0,
@@ -3407,6 +3414,7 @@ void main() async {
   // then ensure the generated model matches the projection
   group("Projected Model, mutate all", () {
     ToDo toDo = ToDo(
+        id: Constants.generateID(),
         taskType: TaskType.small,
         name: 'Tester',
         expectedDuration: 0,
@@ -3726,6 +3734,7 @@ void main() async {
   // Ensure that trying to generate next forces null -> Freq.once
   group("Projected model, delete all", () {
     ToDo toDo = ToDo(
+        id: Constants.generateID(),
         taskType: TaskType.small,
         name: 'Tester',
         expectedDuration: 0,
@@ -4019,6 +4028,7 @@ void main() async {
   // Tests with null data pls.
   group("Invalid Repeating", () {
     ToDo toDo = ToDo(
+        id: Constants.generateID(),
         taskType: TaskType.small,
         name: 'Tester',
         expectedDuration: 0,

@@ -3,17 +3,17 @@ import 'dart:developer';
 
 import 'package:flutter/foundation.dart';
 
-import '../model/task/group.dart';
-import '../model/task/todo.dart';
-import '../model/user/user.dart';
-import '../repositories/group_repo.dart';
-import '../repositories/todo_repo.dart';
-import '../util/constants.dart';
-import '../util/enums.dart';
-import '../util/exceptions.dart';
-import '../util/interfaces/repository/model/group_repository.dart';
-import '../util/interfaces/repository/model/todo_repository.dart';
-import '../util/sorting/group_sorter.dart';
+import '../../model/task/group.dart';
+import '../../model/task/todo.dart';
+import '../../model/user/user.dart';
+import '../../repositories/group_repo.dart';
+import '../../repositories/todo_repo.dart';
+import '../../util/constants.dart';
+import '../../util/enums.dart';
+import '../../util/exceptions.dart';
+import '../../util/interfaces/repository/model/group_repository.dart';
+import '../../util/interfaces/repository/model/todo_repository.dart';
+import '../../util/sorting/group_sorter.dart';
 
 // Internal setters currently going mostly unused.
 class GroupProvider extends ChangeNotifier {

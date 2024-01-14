@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../model/task/todo.dart';
-import '../../../providers/group_provider.dart';
-import '../../../providers/todo_provider.dart';
-import '../../../providers/user_provider.dart';
+import '../../../providers/model/group_provider.dart';
+import '../../../providers/model/todo_provider.dart';
+import '../../../providers/model/user_provider.dart';
 import '../../../util/constants.dart';
 import '../../../util/enums.dart';
 import '../../widgets/listviews.dart';

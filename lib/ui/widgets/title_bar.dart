@@ -6,14 +6,14 @@ import '../../util/constants.dart';
 class TitleBar extends StatefulWidget {
   const TitleBar(
       {super.key,
-      required this.currentContext,
+      required this.context,
       this.title = "",
       this.centerWidget,
       this.checkClose = false,
       this.padding = EdgeInsets.zero,
       required this.handleClose});
 
-  final BuildContext currentContext;
+  final BuildContext context;
   final String title;
   final Widget? centerWidget;
   final bool checkClose;
@@ -158,7 +158,11 @@ class _TitleBar extends State<TitleBar> {
                             icon: const Icon(
                               Icons.edit_note_rounded,
                             ),
-                          ))
+                          )),
+                      const Padding(
+                        padding: EdgeInsets.only(bottom: Constants.padding),
+                        child: SizedBox.shrink(),
+                      ),
                     ]));
           });
     } else {

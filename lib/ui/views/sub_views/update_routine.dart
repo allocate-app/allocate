@@ -7,9 +7,9 @@ import "package:provider/provider.dart";
 
 import "../../../model/task/routine.dart";
 import "../../../model/task/subtask.dart";
-import "../../../providers/routine_provider.dart";
-import "../../../providers/subtask_provider.dart";
-import "../../../providers/user_provider.dart";
+import '../../../providers/model/routine_provider.dart';
+import '../../../providers/model/subtask_provider.dart';
+import '../../../providers/model/user_provider.dart';
 import "../../../util/constants.dart";
 import "../../../util/enums.dart";
 import "../../../util/exceptions.dart";
@@ -307,7 +307,7 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
         child: Column(mainAxisSize: MainAxisSize.min, children: [
           // Title && Close Button
           TitleBar(
-            currentContext: context,
+            context: context,
             title: "Edit Routine",
             centerWidget: (routine.expectedDuration > 0)
                 ? TitleBar.durationCenterWidget(
@@ -442,7 +442,7 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
             children: [
               // Title && Close Button
               TitleBar(
-                currentContext: context,
+                context: context,
                 title: "Edit Routine",
                 centerWidget: (routine.expectedDuration > 0)
                     ? TitleBar.durationCenterWidget(

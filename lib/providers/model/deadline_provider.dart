@@ -4,16 +4,16 @@ import 'dart:developer';
 import 'package:flutter/foundation.dart';
 import 'package:jiffy/jiffy.dart';
 
-import '../model/task/deadline.dart';
-import '../model/user/user.dart';
-import '../repositories/deadline_repo.dart';
-import '../services/notification_service.dart';
-import '../services/repeatable_service.dart';
-import '../util/constants.dart';
-import '../util/enums.dart';
-import '../util/exceptions.dart';
-import '../util/interfaces/repository/model/deadline_repository.dart';
-import '../util/sorting/deadline_sorter.dart';
+import '../../model/task/deadline.dart';
+import '../../model/user/user.dart';
+import '../../repositories/deadline_repo.dart';
+import '../../services/notification_service.dart';
+import '../../services/repeatable_service.dart';
+import '../../util/constants.dart';
+import '../../util/enums.dart';
+import '../../util/exceptions.dart';
+import '../../util/interfaces/repository/model/deadline_repository.dart';
+import '../../util/sorting/deadline_sorter.dart';
 
 class DeadlineProvider extends ChangeNotifier {
   bool _rebuild = true;

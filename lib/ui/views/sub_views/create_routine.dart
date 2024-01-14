@@ -6,9 +6,9 @@ import "package:flutter/semantics.dart";
 import "package:provider/provider.dart";
 
 import "../../../model/task/subtask.dart";
-import "../../../providers/routine_provider.dart";
-import "../../../providers/subtask_provider.dart";
-import "../../../providers/user_provider.dart";
+import '../../../providers/model/routine_provider.dart';
+import '../../../providers/model/subtask_provider.dart';
+import '../../../providers/model/user_provider.dart';
 import "../../../util/constants.dart";
 import "../../../util/enums.dart";
 import "../../../util/exceptions.dart";
@@ -304,7 +304,7 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
         child: Column(mainAxisSize: MainAxisSize.min, children: [
           // Title && Close Button
           TitleBar(
-            currentContext: context,
+            context: context,
             title: "New Routine",
             centerWidget: (expectedDuration > 0)
                 ? TitleBar.durationCenterWidget(
@@ -436,7 +436,7 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
             children: [
               // Title && Close Button
               TitleBar(
-                currentContext: context,
+                context: context,
                 title: "New Routine",
                 centerWidget: (expectedDuration > 0)
                     ? TitleBar.durationCenterWidget(

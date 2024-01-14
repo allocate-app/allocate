@@ -3,19 +3,18 @@ import 'dart:developer';
 
 import 'package:flutter/foundation.dart';
 
-import '../model/task/subtask.dart';
-import '../model/task/todo.dart';
-import '../model/user/user.dart';
-import '../repositories/subtask_repo.dart';
-import '../repositories/todo_repo.dart';
-import '../services/repeatable_service.dart';
-import '../util/constants.dart';
-import '../util/enums.dart';
-import '../util/exceptions.dart';
-import '../util/interfaces/repository/model/subtask_repository.dart';
-import '../util/interfaces/repository/model/todo_repository.dart';
-import '../util/numbers.dart';
-import '../util/sorting/todo_sorter.dart';
+import '../../model/task/subtask.dart';
+import '../../model/task/todo.dart';
+import '../../repositories/subtask_repo.dart';
+import '../../repositories/todo_repo.dart';
+import '../../services/repeatable_service.dart';
+import '../../util/constants.dart';
+import '../../util/enums.dart';
+import '../../util/exceptions.dart';
+import '../../util/interfaces/repository/model/subtask_repository.dart';
+import '../../util/interfaces/repository/model/todo_repository.dart';
+import '../../util/sorting/todo_sorter.dart';
+import '../viewmodels/user_viewmodel.dart';
 
 // TODO: IMPLEMENT PROPER GUI ERROR MSGS.
 class ToDoProvider extends ChangeNotifier {
@@ -45,30 +44,27 @@ class ToDoProvider extends ChangeNotifier {
   final SubtaskRepository _subtaskRepo;
   final RepeatableService _repeatService;
 
+  UserViewModel? userViewModel;
+
   ToDo? curToDo;
 
   List<ToDo> toDos = [];
-
   List<ToDo> secondaryToDos = [];
 
   late ToDoSorter sorter;
 
-  User? user;
-
-  final Map<int, ValueNotifier<int>> toDoSubtaskCounts = {
-    Constants.intMax: ValueNotifier<int>(0),
-  };
+  final Map<int, ValueNotifier<int>> toDoSubtaskCounts = {};
 
   // CONSTRUCTOR
   ToDoProvider({
-    this.user,
+    this.userViewModel,
     RepeatableService? repeatService,
     ToDoRepository? toDoRepository,
     SubtaskRepository? subtaskRepository,
   })  : _toDoRepo = toDoRepository ?? ToDoRepo.instance,
         _subtaskRepo = subtaskRepository ?? SubtaskRepo.instance,
         _repeatService = repeatService ?? RepeatableService.instance,
-        sorter = user?.toDoSorter ?? ToDoSorter() {
+        sorter = userViewModel?.toDoSorter ?? ToDoSorter() {
     init();
   }
 
@@ -79,9 +75,9 @@ class ToDoProvider extends ChangeNotifier {
     // repeatable subroutine
   }
 
-  void setUser({User? newUser}) {
-    user = newUser;
-    sorter = user?.toDoSorter ?? sorter;
+  void setUser({UserViewModel? newUser}) {
+    userViewModel = newUser;
+    sorter = userViewModel?.toDoSorter ?? sorter;
     notifyListeners();
   }
 
@@ -94,28 +90,11 @@ class ToDoProvider extends ChangeNotifier {
       sorter.sortMethod = method;
       sorter.descending = false;
     }
-    user?.toDoSorter = sorter;
+    userViewModel?.toDoSorter = sorter;
     notifyListeners();
   }
 
   bool get descending => sorter.descending;
-
-  int calculateRealDuration({int? weight, int? duration}) => (remap(
-              x: weight ?? 0,
-              inMin: 0,
-              inMax: Constants.medianWeight,
-              outMin: Constants.lowerBound,
-              outMax: Constants.upperBound) *
-          (duration ?? 0))
-      .toInt();
-
-  int calculateWeight({List<Subtask>? subtasks}) {
-    if (null == subtasks) {
-      return 0;
-    }
-
-    return subtasks.fold(0, (p, e) => p += (e.completed) ? 0 : e.weight);
-  }
 
   Future<int> getWeight(
           {required int taskID, int limit = Constants.maxNumTasks}) async =>
@@ -160,72 +139,13 @@ class ToDoProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> createToDo({
-    required TaskType taskType,
-    required String name,
-    int? groupID,
-    int? groupIndex,
-    String? description,
-    int? weight,
-    int? expectedDuration,
-    int? realDuration,
-    Priority? priority,
-    DateTime? startDate,
-    DateTime? dueDate,
-    bool? myDay,
-    bool? completed,
-    bool? repeatable,
-    Frequency? frequency,
-    List<bool>? repeatDays,
-    int? repeatSkip,
-    List<Subtask>? subtasks,
-  }) async {
-    weight = weight ??
-        await getWeight(
-            taskID: Constants.intMax, limit: Constants.numTasks[taskType]!);
-    expectedDuration = expectedDuration ?? (const Duration(hours: 1)).inSeconds;
-    realDuration = realDuration ??
-        calculateRealDuration(weight: weight, duration: expectedDuration);
-    subtasks =
-        subtasks ?? await _subtaskRepo.getRepoByTaskID(id: Constants.intMax);
-
-    if (null != startDate && null != dueDate && startDate.isAfter(dueDate)) {
-      dueDate = startDate.copyWith(minute: startDate.minute + 15);
-    }
-
-    curToDo = ToDo(
-        groupID: groupID,
-        groupIndex: groupIndex ?? -1,
-        taskType: taskType,
-        name: name,
-        description: description ?? "",
-        weight: weight,
-        expectedDuration: expectedDuration,
-        realDuration: realDuration,
-        priority: priority ?? Priority.low,
-        originalStart: startDate,
-        originalDue: dueDate,
-        startDate: startDate,
-        dueDate: dueDate,
-        myDay: myDay ?? false,
-        completed: completed ?? false,
-        repeatable: repeatable ?? false,
-        frequency: frequency ?? Frequency.once,
-        repeatDays: repeatDays ?? List.filled(7, false, growable: false),
-        repeatSkip: repeatSkip ?? 1,
-        subtasks: subtasks,
-        lastUpdated: DateTime.now());
-
-    curToDo!.repeatID = Constants.generateID();
-
+  Future<void> createToDo(ToDo toDo) async {
     try {
-      curToDo = await _toDoRepo.create(curToDo!);
+      curToDo = await _toDoRepo.create(toDo);
 
-      await _updateSubtasks(subtasks: subtasks, taskID: curToDo!.id);
-      toDoSubtaskCounts[Constants.intMax]!.value = 0;
-
+      // await _updateSubtasks(subtasks: curToDo!.subtasks, taskID: curToDo!.id);
       if (curToDo!.repeatable) {
-        await createTemplate(toDo: curToDo);
+        await createTemplate(toDo: curToDo!);
       }
     } on FailureToCreateException catch (e) {
       log(e.cause);

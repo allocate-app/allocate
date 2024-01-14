@@ -2,7 +2,7 @@ import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../providers/user_provider.dart';
+import '../../providers/model/user_provider.dart';
 import '../../util/constants.dart';
 
 class TimeDialog extends StatefulWidget {

@@ -9,9 +9,11 @@ import 'package:provider/provider.dart';
 
 import '../../../model/task/group.dart';
 import '../../../model/task/todo.dart';
-import '../../../providers/group_provider.dart';
-import '../../../providers/todo_provider.dart';
-import '../../../providers/user_provider.dart';
+import '../../../providers/model/group_provider.dart';
+import '../../../providers/model/todo_provider.dart';
+import '../../../providers/model/user_provider.dart';
+import '../../../providers/viewmodels/group_viewmodel.dart';
+import '../../../providers/viewmodels/todo_viewmodel.dart';
 import '../../../util/constants.dart';
 import '../../../util/enums.dart';
 import '../../../util/exceptions.dart';
@@ -51,6 +53,8 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
   late final GroupProvider groupProvider;
   late final ToDoProvider toDoProvider;
   late final UserProvider userProvider;
+  late final ToDoViewModel tVM;
+  late final GroupViewModel vm;
 
   // Scrolling
   late final ScrollController desktopScrollController;
@@ -83,7 +87,8 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
   void initializeProviders() {
     groupProvider = Provider.of<GroupProvider>(context, listen: false);
     toDoProvider = Provider.of<ToDoProvider>(context, listen: false);
-
+    vm = Provider.of<GroupViewModel>(context, listen: false);
+    tVM = Provider.of<ToDoViewModel>(context, listen: false);
     if (null != widget.initialGroup) {
       groupProvider.curGroup = widget.initialGroup;
     }
@@ -316,7 +321,7 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
       insetPadding: const EdgeInsets.all(Constants.outerDialogPadding),
       child: ConstrainedBox(
         constraints:
-            const BoxConstraints(maxHeight: Constants.maxDesktopDialogSide),
+            const BoxConstraints(maxHeight: Constants.maxDesktopDialogHeight),
         child: Padding(
           padding: const EdgeInsets.all(Constants.padding),
           child: Column(
@@ -326,7 +331,7 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
               children: [
                 // Title && Close Button
                 TitleBar(
-                  currentContext: context,
+                  context: context,
                   title: "Edit Group",
                   checkClose: checkClose,
                   padding:
@@ -436,7 +441,7 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
             children: [
               // Title && Close Button
               TitleBar(
-                currentContext: context,
+                context: context,
                 title: "Edit Group",
                 checkClose: checkClose,
                 padding:
@@ -559,27 +564,10 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
                       barrierDismissible: false,
                       useRootNavigator: false,
                       context: context,
-                      builder: (BuildContext context) => UpdateToDoScreen(
-                            initialToDo: toDo,
-                            initialGroup: MapEntry<String, int>(
-                                (group.name.isNotEmpty)
-                                    ? group.name
-                                    : "New Group",
-                                group.id),
-                          )).catchError((e) {
-                    Flushbar? error;
-
-                    error = Flushbars.createError(
-                      message: e.cause,
-                      context: context,
-                      dismissCallback: () => error?.dismiss(),
-                    );
-
-                    error.show(context);
-                  },
-                      test: (e) =>
-                          e is FailureToCreateException ||
-                          e is FailureToUploadException);
+                      builder: (BuildContext context) {
+                        tVM.fromModel(model: toDo);
+                        return const UpdateToDoScreen();
+                      });
                 },
               );
             }),

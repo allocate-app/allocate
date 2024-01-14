@@ -158,7 +158,7 @@ class SubtaskRepo implements SubtaskRepository {
           .filter()
           .toDeleteEqualTo(false)
           .sortByCustomViewIndex()
-          .thenByLastUpdatedDesc()
+          .thenByLastUpdated()
           .limit(limit)
           .count();
 
@@ -172,7 +172,7 @@ class SubtaskRepo implements SubtaskRepository {
           .toDeleteEqualTo(false)
           .completedEqualTo(false)
           .sortByCustomViewIndex()
-          .thenByLastUpdatedDesc()
+          .thenByLastUpdated()
           .limit(limit)
           .weightProperty()
           .sum();
@@ -186,7 +186,7 @@ class SubtaskRepo implements SubtaskRepository {
           .filter()
           .toDeleteEqualTo(false)
           .sortByCustomViewIndex()
-          .thenByLastUpdatedDesc()
+          .thenByLastUpdated()
           .offset(offset)
           .limit(limit)
           .findAll();

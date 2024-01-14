@@ -1,9 +1,9 @@
-import 'package:allocate/providers/user_provider.dart';
+import 'package:allocate/providers/model/user_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../model/task/reminder.dart';
-import '../../../providers/reminder_provider.dart';
+import '../../../providers/model/reminder_provider.dart';
 import '../../../util/constants.dart';
 import '../../../util/enums.dart';
 import '../../widgets/listview_header.dart';

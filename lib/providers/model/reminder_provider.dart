@@ -4,16 +4,16 @@ import 'dart:developer';
 import 'package:flutter/foundation.dart';
 import 'package:jiffy/jiffy.dart';
 
-import '../model/task/reminder.dart';
-import '../model/user/user.dart';
-import '../repositories/reminder_repo.dart';
-import '../services/notification_service.dart';
-import '../services/repeatable_service.dart';
-import '../util/constants.dart';
-import '../util/enums.dart';
-import '../util/exceptions.dart';
-import '../util/interfaces/repository/model/reminder_repository.dart';
-import '../util/sorting/reminder_sorter.dart';
+import '../../model/task/reminder.dart';
+import '../../model/user/user.dart';
+import '../../repositories/reminder_repo.dart';
+import '../../services/notification_service.dart';
+import '../../services/repeatable_service.dart';
+import '../../util/constants.dart';
+import '../../util/enums.dart';
+import '../../util/exceptions.dart';
+import '../../util/interfaces/repository/model/reminder_repository.dart';
+import '../../util/sorting/reminder_sorter.dart';
 
 class ReminderProvider extends ChangeNotifier {
   bool _rebuild = true;

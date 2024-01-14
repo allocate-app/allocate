@@ -120,28 +120,23 @@ const UserSchema = CollectionSchema(
       type: IsarType.byte,
       enumMap: _UsertoneMappingEnumValueMap,
     ),
-    r'useTransparency': PropertySchema(
-      id: 20,
-      name: r'useTransparency',
-      type: IsarType.bool,
-    ),
     r'useUltraHighContrast': PropertySchema(
-      id: 21,
+      id: 20,
       name: r'useUltraHighContrast',
       type: IsarType.bool,
     ),
     r'username': PropertySchema(
-      id: 22,
+      id: 21,
       name: r'username',
       type: IsarType.string,
     ),
     r'uuid': PropertySchema(
-      id: 23,
+      id: 22,
       name: r'uuid',
       type: IsarType.string,
     ),
     r'windowEffect': PropertySchema(
-      id: 24,
+      id: 23,
       name: r'windowEffect',
       type: IsarType.byte,
       enumMap: _UserwindowEffectEnumValueMap,
@@ -230,11 +225,10 @@ void _userSerialize(
   writer.writeLong(offsets[17], object.tertiarySeed);
   writer.writeByte(offsets[18], object.themeType.index);
   writer.writeByte(offsets[19], object.toneMapping.index);
-  writer.writeBool(offsets[20], object.useTransparency);
-  writer.writeBool(offsets[21], object.useUltraHighContrast);
-  writer.writeString(offsets[22], object.username);
-  writer.writeString(offsets[23], object.uuid);
-  writer.writeByte(offsets[24], object.windowEffect.index);
+  writer.writeBool(offsets[20], object.useUltraHighContrast);
+  writer.writeString(offsets[21], object.username);
+  writer.writeString(offsets[22], object.uuid);
+  writer.writeByte(offsets[23], object.windowEffect.index);
 }
 
 User _userDeserialize(
@@ -254,14 +248,15 @@ User _userDeserialize(
     deleteSchedule:
         _UserdeleteScheduleValueEnumMap[reader.readByteOrNull(offsets[7])] ??
             DeleteSchedule.never,
+    id: id,
     isSynced: reader.readBoolOrNull(offsets[8]) ?? false,
     lastOpened: reader.readDateTime(offsets[9]),
     lastUpdated: reader.readDateTime(offsets[10]),
     primarySeed: reader.readLong(offsets[11]),
     reduceMotion: reader.readBoolOrNull(offsets[12]) ?? false,
-    scaffoldOpacity: reader.readDoubleOrNull(offsets[13]),
+    scaffoldOpacity: reader.readDoubleOrNull(offsets[13]) ?? 100,
     secondarySeed: reader.readLongOrNull(offsets[14]),
-    sidebarOpacity: reader.readDoubleOrNull(offsets[15]),
+    sidebarOpacity: reader.readDoubleOrNull(offsets[15]) ?? 100,
     syncOnline: reader.readBoolOrNull(offsets[16]) ?? false,
     tertiarySeed: reader.readLongOrNull(offsets[17]),
     themeType: _UserthemeTypeValueEnumMap[reader.readByteOrNull(offsets[18])] ??
@@ -269,15 +264,13 @@ User _userDeserialize(
     toneMapping:
         _UsertoneMappingValueEnumMap[reader.readByteOrNull(offsets[19])] ??
             ToneMapping.system,
-    useTransparency: reader.readBoolOrNull(offsets[20]) ?? false,
-    useUltraHighContrast: reader.readBoolOrNull(offsets[21]) ?? false,
-    username: reader.readString(offsets[22]),
+    useUltraHighContrast: reader.readBoolOrNull(offsets[20]) ?? false,
+    username: reader.readString(offsets[21]),
+    uuid: reader.readStringOrNull(offsets[22]),
     windowEffect:
-        _UserwindowEffectValueEnumMap[reader.readByteOrNull(offsets[24])] ??
+        _UserwindowEffectValueEnumMap[reader.readByteOrNull(offsets[23])] ??
             Effect.disabled,
   );
-  object.id = id;
-  object.uuid = reader.readStringOrNull(offsets[23]);
   return object;
 }
 
@@ -316,11 +309,11 @@ P _userDeserializeProp<P>(
     case 12:
       return (reader.readBoolOrNull(offset) ?? false) as P;
     case 13:
-      return (reader.readDoubleOrNull(offset)) as P;
+      return (reader.readDoubleOrNull(offset) ?? 100) as P;
     case 14:
       return (reader.readLongOrNull(offset)) as P;
     case 15:
-      return (reader.readDoubleOrNull(offset)) as P;
+      return (reader.readDoubleOrNull(offset) ?? 100) as P;
     case 16:
       return (reader.readBoolOrNull(offset) ?? false) as P;
     case 17:
@@ -334,12 +327,10 @@ P _userDeserializeProp<P>(
     case 20:
       return (reader.readBoolOrNull(offset) ?? false) as P;
     case 21:
-      return (reader.readBoolOrNull(offset) ?? false) as P;
-    case 22:
       return (reader.readString(offset)) as P;
-    case 23:
+    case 22:
       return (reader.readStringOrNull(offset)) as P;
-    case 24:
+    case 23:
       return (_UserwindowEffectValueEnumMap[reader.readByteOrNull(offset)] ??
           Effect.disabled) as P;
     default:
@@ -1212,24 +1203,8 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> scaffoldOpacityIsNull() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(const FilterCondition.isNull(
-        property: r'scaffoldOpacity',
-      ));
-    });
-  }
-
-  QueryBuilder<User, User, QAfterFilterCondition> scaffoldOpacityIsNotNull() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(const FilterCondition.isNotNull(
-        property: r'scaffoldOpacity',
-      ));
-    });
-  }
-
   QueryBuilder<User, User, QAfterFilterCondition> scaffoldOpacityEqualTo(
-    double? value, {
+    double value, {
     double epsilon = Query.epsilon,
   }) {
     return QueryBuilder.apply(this, (query) {
@@ -1242,7 +1217,7 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
   }
 
   QueryBuilder<User, User, QAfterFilterCondition> scaffoldOpacityGreaterThan(
-    double? value, {
+    double value, {
     bool include = false,
     double epsilon = Query.epsilon,
   }) {
@@ -1257,7 +1232,7 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
   }
 
   QueryBuilder<User, User, QAfterFilterCondition> scaffoldOpacityLessThan(
-    double? value, {
+    double value, {
     bool include = false,
     double epsilon = Query.epsilon,
   }) {
@@ -1272,8 +1247,8 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
   }
 
   QueryBuilder<User, User, QAfterFilterCondition> scaffoldOpacityBetween(
-    double? lower,
-    double? upper, {
+    double lower,
+    double upper, {
     bool includeLower = true,
     bool includeUpper = true,
     double epsilon = Query.epsilon,
@@ -1359,24 +1334,8 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> sidebarOpacityIsNull() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(const FilterCondition.isNull(
-        property: r'sidebarOpacity',
-      ));
-    });
-  }
-
-  QueryBuilder<User, User, QAfterFilterCondition> sidebarOpacityIsNotNull() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(const FilterCondition.isNotNull(
-        property: r'sidebarOpacity',
-      ));
-    });
-  }
-
   QueryBuilder<User, User, QAfterFilterCondition> sidebarOpacityEqualTo(
-    double? value, {
+    double value, {
     double epsilon = Query.epsilon,
   }) {
     return QueryBuilder.apply(this, (query) {
@@ -1389,7 +1348,7 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
   }
 
   QueryBuilder<User, User, QAfterFilterCondition> sidebarOpacityGreaterThan(
-    double? value, {
+    double value, {
     bool include = false,
     double epsilon = Query.epsilon,
   }) {
@@ -1404,7 +1363,7 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
   }
 
   QueryBuilder<User, User, QAfterFilterCondition> sidebarOpacityLessThan(
-    double? value, {
+    double value, {
     bool include = false,
     double epsilon = Query.epsilon,
   }) {
@@ -1419,8 +1378,8 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
   }
 
   QueryBuilder<User, User, QAfterFilterCondition> sidebarOpacityBetween(
-    double? lower,
-    double? upper, {
+    double lower,
+    double upper, {
     bool includeLower = true,
     bool includeUpper = true,
     double epsilon = Query.epsilon,
@@ -1618,16 +1577,6 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
         includeLower: includeLower,
         upper: upper,
         includeUpper: includeUpper,
-      ));
-    });
-  }
-
-  QueryBuilder<User, User, QAfterFilterCondition> useTransparencyEqualTo(
-      bool value) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'useTransparency',
-        value: value,
       ));
     });
   }
@@ -2214,18 +2163,6 @@ extension UserQuerySortBy on QueryBuilder<User, User, QSortBy> {
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> sortByUseTransparency() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'useTransparency', Sort.asc);
-    });
-  }
-
-  QueryBuilder<User, User, QAfterSortBy> sortByUseTransparencyDesc() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'useTransparency', Sort.desc);
-    });
-  }
-
   QueryBuilder<User, User, QAfterSortBy> sortByUseUltraHighContrast() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'useUltraHighContrast', Sort.asc);
@@ -2528,18 +2465,6 @@ extension UserQuerySortThenBy on QueryBuilder<User, User, QSortThenBy> {
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> thenByUseTransparency() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'useTransparency', Sort.asc);
-    });
-  }
-
-  QueryBuilder<User, User, QAfterSortBy> thenByUseTransparencyDesc() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'useTransparency', Sort.desc);
-    });
-  }
-
   QueryBuilder<User, User, QAfterSortBy> thenByUseUltraHighContrast() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'useUltraHighContrast', Sort.asc);
@@ -2710,12 +2635,6 @@ extension UserQueryWhereDistinct on QueryBuilder<User, User, QDistinct> {
     });
   }
 
-  QueryBuilder<User, User, QDistinct> distinctByUseTransparency() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addDistinctBy(r'useTransparency');
-    });
-  }
-
   QueryBuilder<User, User, QDistinct> distinctByUseUltraHighContrast() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'useUltraHighContrast');
@@ -2829,7 +2748,7 @@ extension UserQueryProperty on QueryBuilder<User, User, QQueryProperty> {
     });
   }
 
-  QueryBuilder<User, double?, QQueryOperations> scaffoldOpacityProperty() {
+  QueryBuilder<User, double, QQueryOperations> scaffoldOpacityProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'scaffoldOpacity');
     });
@@ -2841,7 +2760,7 @@ extension UserQueryProperty on QueryBuilder<User, User, QQueryProperty> {
     });
   }
 
-  QueryBuilder<User, double?, QQueryOperations> sidebarOpacityProperty() {
+  QueryBuilder<User, double, QQueryOperations> sidebarOpacityProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'sidebarOpacity');
     });
@@ -2868,12 +2787,6 @@ extension UserQueryProperty on QueryBuilder<User, User, QQueryProperty> {
   QueryBuilder<User, ToneMapping, QQueryOperations> toneMappingProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'toneMapping');
-    });
-  }
-
-  QueryBuilder<User, bool, QQueryOperations> useTransparencyProperty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addPropertyName(r'useTransparency');
     });
   }
 

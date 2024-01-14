@@ -7,19 +7,20 @@ import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
-import '../model/user/user.dart';
-import '../services/authentication_service.dart';
-import '../services/user_storage_service.dart';
-import '../util/constants.dart';
-import '../util/enums.dart';
-import '../util/exceptions.dart';
-import '../util/sorting/deadline_sorter.dart';
-import '../util/sorting/group_sorter.dart';
-import '../util/sorting/reminder_sorter.dart';
-import '../util/sorting/routine_sorter.dart';
-import '../util/sorting/todo_sorter.dart';
+import '../../model/user/user.dart';
+import '../../services/authentication_service.dart';
+import '../../services/user_storage_service.dart';
+import '../../util/constants.dart';
+import '../../util/enums.dart';
+import '../../util/exceptions.dart';
+import '../../util/sorting/deadline_sorter.dart';
+import '../../util/sorting/group_sorter.dart';
+import '../../util/sorting/reminder_sorter.dart';
+import '../../util/sorting/routine_sorter.dart';
+import '../../util/sorting/todo_sorter.dart';
+import '../viewmodels/user_viewmodel.dart';
 
-// TODO: re-implement this -> Migrate params to an AppProvider.
+// TODO: re-implement this -> Migrate params to LayoutProvider.
 class UserProvider extends ChangeNotifier {
   late Timer syncTimer;
   final _userStorageService = UserStorageService();
@@ -131,10 +132,13 @@ class UserProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  UserViewModel? viewModel;
+
+  // TODO: remove curUser.
   User? curUser;
   List<User> users = [];
 
-  UserProvider() {
+  UserProvider({this.viewModel}) {
     init();
   }
 
@@ -160,9 +164,6 @@ class UserProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Right now, all that's needed is windows.
-  // io handles most other cases.
-  // Notifies.
   Future<void> _initDeviceInfo() async {
     _windowsDeviceInfo = await _deviceInfoPlugin.windowsInfo;
     win11 = (_windowsDeviceInfo.buildNumber >= 22000);
@@ -194,6 +195,7 @@ class UserProvider extends ChangeNotifier {
       RoutineSorter? routineSorter,
       ToDoSorter? toDoSorter}) async {
     curUser = User(
+        id: Constants.generateID(),
         username: userName,
         syncOnline: syncOnline,
         isSynced: isSynced ?? false,
@@ -227,7 +229,7 @@ class UserProvider extends ChangeNotifier {
 
   Future<void> updateUser() async {
     try {
-      _userStorageService.updateUser(user: curUser!);
+      // _userStorageService.updateUser(user: curUser!);
     } on FailureToUpdateException catch (e) {
       log(e.cause);
       return Future.error(e);

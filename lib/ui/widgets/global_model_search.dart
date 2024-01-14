@@ -9,11 +9,12 @@ import '../../model/task/group.dart';
 import '../../model/task/reminder.dart';
 import '../../model/task/routine.dart';
 import '../../model/task/todo.dart';
-import '../../providers/deadline_provider.dart';
-import '../../providers/group_provider.dart';
-import '../../providers/reminder_provider.dart';
-import '../../providers/routine_provider.dart';
-import '../../providers/todo_provider.dart';
+import '../../providers/model/deadline_provider.dart';
+import '../../providers/model/group_provider.dart';
+import '../../providers/model/reminder_provider.dart';
+import '../../providers/model/routine_provider.dart';
+import '../../providers/model/todo_provider.dart';
+import '../../providers/viewmodels/todo_viewmodel.dart';
 import '../../util/constants.dart';
 import '../../util/enums.dart';
 import '../../util/interfaces/i_model.dart';
@@ -87,7 +88,9 @@ class _GlobalModelSearch extends State<GlobalModelSearch> {
           if (null == toDo) {
             return;
           }
-          return await openDialog(dialog: UpdateToDoScreen(initialToDo: toDo));
+          Provider.of<ToDoViewModel>(context, listen: false)
+              .fromModel(model: toDo);
+          return await openDialog(dialog: const UpdateToDoScreen());
         });
         break;
       case ModelType.deadline:

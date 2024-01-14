@@ -660,7 +660,7 @@ class ToDoRepo implements ToDoRepository {
           .toDeleteEqualTo(false)
           .repeatableStateEqualTo(RepeatableState.normal)
           .sortByGroupIndex()
-          .thenByLastUpdatedDesc()
+          .thenByLastUpdated()
           .offset(offset)
           .limit(limit)
           .findAll();

@@ -4,9 +4,9 @@ import 'package:flex_seed_scheme/flex_seed_scheme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_acrylic/flutter_acrylic.dart';
 
-import '../model/user/user.dart';
-import '../util/constants.dart';
-import '../util/enums.dart';
+import '../../model/user/user.dart';
+import '../../util/constants.dart';
+import '../../util/enums.dart';
 
 class ThemeProvider extends ChangeNotifier {
   ThemeData? _lightTheme;
@@ -123,7 +123,6 @@ class ThemeProvider extends ChangeNotifier {
   set useTransparency(bool transparency) {
     bool changed = (transparency ^ _useTransparency);
     _useTransparency = transparency;
-    user?.useTransparency = transparency;
     if (changed) {
       notifyListeners();
     }
@@ -188,7 +187,8 @@ class ThemeProvider extends ChangeNotifier {
     _scaffoldOpacity =
         user?.scaffoldOpacity ?? Constants.defaultScaffoldOpacity;
     _sidebarOpacity = user?.sidebarOpacity ?? Constants.defaultSidebarOpacity;
-    _useTransparency = user?.useTransparency ?? false;
+    _useTransparency =
+        null != user?.windowEffect && Effect.disabled != user?.windowEffect;
 
     recentColors = List.empty(growable: true);
 
@@ -284,7 +284,7 @@ class ThemeProvider extends ChangeNotifier {
       return;
     }
 
-    useTransparency = (Effect.disabled != effect);
+    _useTransparency = (Effect.disabled != effect);
 
     if (Platform.isLinux) {
       return;

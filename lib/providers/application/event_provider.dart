@@ -4,18 +4,18 @@ import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:table_calendar/table_calendar.dart';
 
-import '../model/calendar_event.dart';
-import '../repositories/deadline_repo.dart';
-import '../repositories/reminder_repo.dart';
-import '../repositories/todo_repo.dart';
-import '../services/repeatable_service.dart';
-import '../util/constants.dart';
-import '../util/enums.dart';
-import '../util/interfaces/i_repeatable.dart';
-import '../util/interfaces/repository/model/deadline_repository.dart';
-import '../util/interfaces/repository/model/reminder_repository.dart';
-import '../util/interfaces/repository/model/todo_repository.dart';
-import 'viewmodels/user_model.dart';
+import '../../model/calendar_event.dart';
+import '../../repositories/deadline_repo.dart';
+import '../../repositories/reminder_repo.dart';
+import '../../repositories/todo_repo.dart';
+import '../../services/repeatable_service.dart';
+import '../../util/constants.dart';
+import '../../util/enums.dart';
+import '../../util/interfaces/i_repeatable.dart';
+import '../../util/interfaces/repository/model/deadline_repository.dart';
+import '../../util/interfaces/repository/model/reminder_repository.dart';
+import '../../util/interfaces/repository/model/todo_repository.dart';
+import '../viewmodels/user_viewmodel.dart';
 
 class EventProvider extends ChangeNotifier {
   bool generatingEvents = false;
@@ -35,11 +35,10 @@ class EventProvider extends ChangeNotifier {
   late DateTime _focusedDay;
   late DateTime? _selectedDay;
 
-  // TODO: implement USERMODEL, IMPLEMENT PROXYPROVIDERS
-  late UserModel? _userModel;
+  late UserViewModel? _userModel;
 
   // This will need to clear & re-init hashmaps.
-  set userModel(UserModel? newUserModel) {
+  set userModel(UserViewModel? newUserModel) {
     _userModel = newUserModel;
     _selectedEvents.value = getEventsForDay(_selectedDay);
     notifyListeners();
@@ -118,7 +117,7 @@ class EventProvider extends ChangeNotifier {
   // CONSTRUCTOR
   EventProvider(
       {DateTime? focusedDay,
-      UserModel? userModel,
+      UserViewModel? userModel,
       ToDoRepository? toDoRepository,
       DeadlineRepository? deadlineRepository,
       ReminderRepository? reminderRepository})

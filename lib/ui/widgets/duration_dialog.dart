@@ -4,7 +4,7 @@ import 'package:flutter/rendering.dart';
 import 'package:numberpicker/numberpicker.dart';
 import 'package:provider/provider.dart';
 
-import '../../providers/user_provider.dart';
+import '../../providers/model/user_provider.dart';
 import '../../util/constants.dart';
 
 class DurationDialog extends StatefulWidget {

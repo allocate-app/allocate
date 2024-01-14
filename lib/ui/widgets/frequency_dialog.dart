@@ -7,7 +7,7 @@ import 'package:intl/intl.dart';
 import 'package:numberpicker/numberpicker.dart';
 import 'package:provider/provider.dart';
 
-import '../../providers/user_provider.dart';
+import '../../providers/model/user_provider.dart';
 import '../../util/constants.dart';
 import '../../util/enums.dart';
 

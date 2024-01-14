@@ -3,8 +3,8 @@ import 'package:flutter/semantics.dart';
 import 'package:provider/provider.dart';
 
 import '../../../model/task/subtask.dart';
-import '../../../providers/subtask_provider.dart';
-import '../../../providers/user_provider.dart';
+import '../../../providers/model/subtask_provider.dart';
+import '../../../providers/model/user_provider.dart';
 import '../../../util/constants.dart';
 import '../../../util/exceptions.dart';
 import '../../widgets/listtile_widgets.dart';
@@ -90,7 +90,7 @@ class _UpdateSubtaskScreen extends State<UpdateSubtaskScreen> {
               padding: const EdgeInsets.all(Constants.padding),
               child: Column(mainAxisSize: MainAxisSize.min, children: [
                 TitleBar(
-                    currentContext: context,
+                    context: context,
                     title: "Edit Step",
                     checkClose: checkClose,
                     padding: const EdgeInsets.symmetric(

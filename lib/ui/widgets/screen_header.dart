@@ -5,13 +5,12 @@ import '../../util/constants.dart';
 
 class ScreenHeader extends StatelessWidget {
   const ScreenHeader(
-      {Key? key,
+      {super.key,
       this.leadingIcon,
       this.subtitle,
       this.trailing,
       this.header = "",
-      this.outerPadding = EdgeInsets.zero})
-      : super(key: key);
+      this.outerPadding = EdgeInsets.zero});
 
   final Widget? leadingIcon;
   final Widget? subtitle;

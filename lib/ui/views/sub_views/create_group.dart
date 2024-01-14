@@ -8,9 +8,11 @@ import 'package:flutter/semantics.dart';
 import 'package:provider/provider.dart';
 
 import '../../../model/task/todo.dart';
-import '../../../providers/group_provider.dart';
-import '../../../providers/todo_provider.dart';
-import '../../../providers/user_provider.dart';
+import '../../../providers/model/group_provider.dart';
+import '../../../providers/model/todo_provider.dart';
+import '../../../providers/model/user_provider.dart';
+import '../../../providers/viewmodels/group_viewmodel.dart';
+import '../../../providers/viewmodels/todo_viewmodel.dart';
 import '../../../util/constants.dart';
 import '../../../util/enums.dart';
 import '../../../util/exceptions.dart';
@@ -48,6 +50,8 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
   late final GroupProvider groupProvider;
   late final ToDoProvider toDoProvider;
   late final UserProvider userProvider;
+  late final GroupViewModel vm;
+  late final ToDoViewModel tVM;
 
   // Scrolling
   late final ScrollController mobileScrollController;
@@ -78,6 +82,8 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
   }
 
   void initializeProviders() {
+    vm = Provider.of<GroupViewModel>(context, listen: false);
+    tVM = Provider.of<ToDoViewModel>(context, listen: false);
     groupProvider = Provider.of<GroupProvider>(context, listen: false);
     toDoProvider = Provider.of<ToDoProvider>(context, listen: false);
     userProvider = Provider.of<UserProvider>(context, listen: false);
@@ -291,7 +297,7 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
       insetPadding: const EdgeInsets.all(Constants.outerDialogPadding),
       child: ConstrainedBox(
         constraints:
-            const BoxConstraints(maxHeight: Constants.maxDesktopDialogSide),
+            const BoxConstraints(maxHeight: Constants.maxDesktopDialogHeight),
         child: Padding(
           padding: const EdgeInsets.all(Constants.padding),
           child: Column(
@@ -301,7 +307,7 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
               children: [
                 // Title && Close Button
                 TitleBar(
-                  currentContext: context,
+                  context: context,
                   title: "New Group",
                   checkClose: checkClose,
                   padding: const EdgeInsets.symmetric(
@@ -409,7 +415,7 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
             children: [
               // Title && Close Button
               TitleBar(
-                currentContext: context,
+                context: context,
                 title: "New Group",
                 checkClose: checkClose,
                 padding:
@@ -529,25 +535,10 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
                       barrierDismissible: false,
                       useRootNavigator: false,
                       context: context,
-                      builder: (BuildContext context) => UpdateToDoScreen(
-                            initialToDo: toDo,
-                            initialGroup: MapEntry<String, int>(
-                                (name.isNotEmpty) ? name : "New Group",
-                                Constants.intMax),
-                          )).catchError((e) {
-                    Flushbar? error;
-
-                    error = Flushbars.createError(
-                      message: e.cause,
-                      context: context,
-                      dismissCallback: () => error?.dismiss(),
-                    );
-
-                    error.show(context);
-                  },
-                      test: (e) =>
-                          e is FailureToCreateException ||
-                          e is FailureToUploadException);
+                      builder: (BuildContext context) {
+                        tVM.fromModel(model: toDo);
+                        return const UpdateToDoScreen();
+                      });
                 },
               );
             }),

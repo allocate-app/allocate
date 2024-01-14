@@ -9,7 +9,6 @@ import "subtask.dart";
 
 part "todo.g.dart";
 
-// TODO: toDelete is no longer concretely local, edit model to copy fromEntity
 @Collection(inheritance: false)
 class ToDo with EquatableMixin implements Copyable<ToDo>, IRepeatable {
   @override
@@ -21,7 +20,7 @@ class ToDo with EquatableMixin implements Copyable<ToDo>, IRepeatable {
   Fade fade = Fade.none;
 
   @override
-  Id id = Constants.generateID();
+  Id id;
 
   @Index()
   int? groupID;
@@ -82,16 +81,17 @@ class ToDo with EquatableMixin implements Copyable<ToDo>, IRepeatable {
   int repeatSkip;
   @override
   @Index()
-  bool isSynced = false;
+  bool isSynced;
   @override
   @Index()
-  bool toDelete = false;
+  bool toDelete;
 
   @override
   DateTime lastUpdated;
 
   ToDo(
-      {this.groupID,
+      {required this.id,
+      this.groupID,
       this.repeatID,
       this.groupIndex = -1,
       this.customViewIndex = -1,
@@ -114,9 +114,11 @@ class ToDo with EquatableMixin implements Copyable<ToDo>, IRepeatable {
       required this.repeatDays,
       this.repeatSkip = 1,
       this.subtasks = const [],
+      this.isSynced = false,
+      this.toDelete = false,
       required this.lastUpdated});
 
-  // -> From Entitiy.
+  // -> From Entity.
   ToDo.fromEntity({required Map<String, dynamic> entity})
       : id = entity["id"] as int,
         groupID = entity["groupID"] as int,
@@ -179,8 +181,10 @@ class ToDo with EquatableMixin implements Copyable<ToDo>, IRepeatable {
         "lastUpdated": lastUpdated.toIso8601String(),
       };
 
+  // TODO: Determine whether or not to copy id.
   @override
   ToDo copy() => ToDo(
+        id: Constants.generateID(),
         groupID: groupID,
         repeatID: repeatID,
         taskType: taskType,
@@ -202,12 +206,16 @@ class ToDo with EquatableMixin implements Copyable<ToDo>, IRepeatable {
         frequency: frequency,
         repeatableState: repeatableState,
         repeatDays: List.generate(repeatDays.length, (i) => repeatDays[i]),
+        // TODO: determine whether this makes sense.
+        toDelete: false,
+        isSynced: false,
         repeatSkip: repeatSkip,
         lastUpdated: lastUpdated,
       );
 
   @override
   ToDo copyWith({
+    int? id,
     int? groupID,
     int? repeatID,
     int? groupIndex,
@@ -230,9 +238,12 @@ class ToDo with EquatableMixin implements Copyable<ToDo>, IRepeatable {
     RepeatableState? repeatableState,
     List<bool>? repeatDays,
     int? repeatSkip,
+    bool? isSynced,
+    bool? toDelete,
     DateTime? lastUpdated,
   }) =>
       ToDo(
+        id: id ?? Constants.generateID(),
         repeatID: repeatID ?? this.repeatID,
         groupID: groupID,
         groupIndex: groupIndex ?? this.groupIndex,
@@ -249,6 +260,9 @@ class ToDo with EquatableMixin implements Copyable<ToDo>, IRepeatable {
         originalStart: originalStart ?? this.originalStart,
         originalDue: originalDue ?? this.originalDue,
         myDay: myDay ?? this.myDay,
+        // TODO: figure out whether this makes sense.
+        isSynced: isSynced ?? false,
+        toDelete: toDelete ?? false,
         completed: completed ?? this.completed,
         repeatable: repeatable ?? this.repeatable,
         frequency: frequency ?? this.frequency,

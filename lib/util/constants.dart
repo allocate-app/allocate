@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
@@ -13,6 +14,7 @@ import 'view_route.dart';
 
 abstract class Constants {
   static Uuid uuid = const Uuid();
+  static Random rngesus = Random();
 
   static const String supabaseURL = String.fromEnvironment(
     "SUPABASE_URL",
@@ -251,6 +253,7 @@ abstract class Constants {
       Tween(begin: const Offset(1, 0), end: const Offset(0, 0));
 
   static const int animationDelay = 200;
+  static const int subtaskDelay = 100;
   static const int hitDelay = 150;
   static const int fadeInTime = 1000;
   static const int drawerSlideTime = 500;
@@ -366,7 +369,8 @@ abstract class Constants {
   // Tweak as necessary
   static const double maxSearchSideBeforeScroll = 300;
   static const double maxListHeightBeforeScroll = 500;
-  static const double maxDesktopDialogSide = 700;
+  static const double maxDesktopDialogHeight = 800;
+  static const double maxDesktopDialogWidth = 1.5 * maxDesktopDialogHeight;
   static const double smallLandscapeDialogHeight = 500;
   static const double smallLandscapeDialogWidth = 700;
   static const double roadmapWidth = 500;
@@ -504,4 +508,79 @@ abstract class Constants {
     -34200000: 'Pacific/Marquesas',
     -39600000: 'Pacific/Pago_Pago'
   };
+
+  static String get defaultUsername =>
+      "${adjectives[rngesus.nextInt(adjectives.length)]} ${vegetables[rngesus.nextInt(vegetables.length)]}";
+
+  // Usernames
+  static const List<String> adjectives = [
+    "Amusing",
+    "Bewildered",
+    "Burly",
+    "Boundless",
+    "Clever",
+    "Cloistered",
+    "Dreamy",
+    "Enthusiastic",
+    "Flawless",
+    "Fluffy",
+    "Habitual",
+    "Hypnotic",
+    "Logical",
+    "Loose",
+    "Luxuriant",
+    "Magical",
+    "Mellow",
+    "Mysterious",
+    "Righteous",
+    "Roomy",
+    "Salty",
+    "Selective",
+    "Spooky",
+    "Temporary",
+    "Teeny-Tiny",
+    "Offbeat",
+    "Parsimonious",
+    "Plucky",
+    "Quirky",
+    "Wistful",
+    "Whimsical",
+    "Zealous",
+    "Zesty",
+  ];
+  static const List<String> vegetables = [
+    "Artichoke",
+    "Asparagus",
+    "Aubergine",
+    "Avocado",
+    "Bean",
+    "Beet",
+    "Bok Choy",
+    "Broccoli",
+    "Cabbage",
+    "Carrot",
+    "Cauliflower",
+    "Celery",
+    "Corn",
+    "Cucumber",
+    "Garlic",
+    "Gourd",
+    "Jicama",
+    "Leek",
+    "Lettuce",
+    "Mushroom",
+    "Mustard",
+    "Onion",
+    "Parsnip",
+    "Pea",
+    "Pepper",
+    "Potato",
+    "Pumpkin",
+    "Radish",
+    "Spinach",
+    "Tomato",
+    "Turnip",
+    "Yam",
+    "Zucchini",
+  ];
 }

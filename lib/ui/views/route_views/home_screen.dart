@@ -10,14 +10,15 @@ import 'package:macos_window_utils/widgets/transparent_macos_sidebar.dart';
 import "package:provider/provider.dart";
 
 import '../../../model/task/group.dart';
-import '../../../providers/deadline_provider.dart';
-import '../../../providers/group_provider.dart';
-import '../../../providers/reminder_provider.dart';
-import '../../../providers/routine_provider.dart';
-import '../../../providers/search_provider.dart';
-import '../../../providers/theme_provider.dart';
-import '../../../providers/todo_provider.dart';
-import '../../../providers/user_provider.dart';
+import '../../../providers/application/layout_provider.dart';
+import '../../../providers/application/search_provider.dart';
+import '../../../providers/application/theme_provider.dart';
+import '../../../providers/model/deadline_provider.dart';
+import '../../../providers/model/group_provider.dart';
+import '../../../providers/model/reminder_provider.dart';
+import '../../../providers/model/routine_provider.dart';
+import '../../../providers/model/todo_provider.dart';
+import '../../../providers/model/user_provider.dart';
 import '../../../services/supabase_service.dart';
 import '../../../util/constants.dart';
 import '../../../util/enums.dart';
@@ -54,6 +55,7 @@ class _HomeScreen extends State<HomeScreen> {
   late final GroupProvider groupProvider;
   late final ThemeProvider themeProvider;
   late final SearchProvider searchProvider;
+  late final LayoutProvider layoutProvider;
 
   late final ScrollController navScrollController;
 
@@ -113,6 +115,7 @@ class _HomeScreen extends State<HomeScreen> {
     themeProvider = Provider.of<ThemeProvider>(context, listen: false);
     searchProvider = Provider.of<SearchProvider>(context, listen: false);
 
+    layoutProvider = Provider.of<LayoutProvider>(context, listen: false);
     toDoProvider.addListener(updateMyDayWeight);
     groupProvider.addListener(resetNavGroups);
   }
@@ -176,6 +179,7 @@ class _HomeScreen extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     userProvider.size = MediaQuery.sizeOf(context);
+    layoutProvider.size = MediaQuery.sizeOf(context);
     print("MQ: ${userProvider.size}");
 
     return (userProvider.largeScreen)

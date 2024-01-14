@@ -15,7 +15,7 @@ part "user.g.dart";
 @Collection(inheritance: false)
 class User with EquatableMixin implements Copyable<User> {
   // Local ID
-  Id id = Constants.generateID();
+  late Id id;
 
   // Online id
   @Index()
@@ -50,12 +50,11 @@ class User with EquatableMixin implements Copyable<User> {
   int? secondarySeed;
   int? tertiarySeed;
 
-  double? sidebarOpacity;
-  double? scaffoldOpacity;
+  double sidebarOpacity;
+  double scaffoldOpacity;
 
   bool useUltraHighContrast;
   bool reduceMotion;
-  bool useTransparency;
 
   int? curMornID;
   int? curAftID;
@@ -83,7 +82,9 @@ class User with EquatableMixin implements Copyable<User> {
   DateTime lastOpened;
 
   User(
-      {required this.username,
+      {required this.id,
+      this.uuid,
+      required this.username,
       this.checkDelete = true,
       this.checkClose = true,
       this.bandwidth = 100,
@@ -91,14 +92,13 @@ class User with EquatableMixin implements Copyable<User> {
       this.themeType = ThemeType.system,
       this.toneMapping = ToneMapping.system,
       this.windowEffect = Effect.disabled,
-      this.sidebarOpacity,
-      this.scaffoldOpacity,
+      this.sidebarOpacity = 100,
+      this.scaffoldOpacity = 100,
       required this.primarySeed,
       this.secondarySeed,
       this.tertiarySeed,
       this.useUltraHighContrast = false,
       this.reduceMotion = false,
-      this.useTransparency = false,
       this.curMornID,
       this.curAftID,
       this.curEveID,
@@ -111,12 +111,7 @@ class User with EquatableMixin implements Copyable<User> {
       this.isSynced = false,
       this.syncOnline = false,
       required this.lastOpened,
-      required this.lastUpdated}) {
-    // Constants.intMax is reserved, generate until the id is different.
-    while (Constants.intMax == id) {
-      id = Constants.generateID();
-    }
-  }
+      required this.lastUpdated});
 
   User.fromEntity({required Map<String, dynamic> entity})
       : id = entity["id"] as int,
@@ -131,14 +126,11 @@ class User with EquatableMixin implements Copyable<User> {
         curEveID = entity["curEveID"] as int?,
         themeType = ThemeType.values[entity["themeType"]],
         toneMapping = ToneMapping.values[entity["toneMapping"]],
-        windowEffect = Effect.disabled,
         primarySeed = entity["primarySeed"] as int,
         secondarySeed = entity["secondarySeed"] as int?,
         tertiarySeed = entity["tertiarySeed"] as int?,
         useUltraHighContrast = entity["useUltraHighContrast"] as bool,
         reduceMotion = entity["reduceMotion"] as bool,
-        // This is a local parameter.
-        useTransparency = false,
         groupSorter = (null != entity["groupSort"])
             ? GroupSorter(
                 descending: entity["groupDesc"],
@@ -170,7 +162,11 @@ class User with EquatableMixin implements Copyable<User> {
         syncOnline = true,
         deleteSchedule = DeleteSchedule.values[entity["deleteSchedule"]],
         lastOpened = DateTime.parse(entity["lastOpened"]),
-        lastUpdated = DateTime.parse(entity["lastUpdated"]);
+        lastUpdated = DateTime.parse(entity["lastUpdated"]),
+        // Local Parameters
+        windowEffect = Effect.disabled,
+        scaffoldOpacity = 100,
+        sidebarOpacity = 100;
 
   Map<String, dynamic> toEntity() => {
         "id": id,
@@ -205,8 +201,12 @@ class User with EquatableMixin implements Copyable<User> {
         "lastUpdated": lastUpdated.toIso8601String(),
       };
 
+  // TODO: decide whether or not to copy the id.
+  // ALSO: whether or not to uuid.
   @override
   User copy() => User(
+        id: Constants.generateID(),
+        uuid: null,
         username: username,
         bandwidth: bandwidth,
         dayCost: dayCost,
@@ -225,7 +225,6 @@ class User with EquatableMixin implements Copyable<User> {
         sidebarOpacity: sidebarOpacity,
         useUltraHighContrast: useUltraHighContrast,
         reduceMotion: reduceMotion,
-        useTransparency: useTransparency,
         groupSorter: groupSorter,
         deadlineSorter: deadlineSorter,
         reminderSorter: reminderSorter,
@@ -240,7 +239,9 @@ class User with EquatableMixin implements Copyable<User> {
 
   @override
   User copyWith(
-          {String? userName,
+          {int? id,
+          String? uuid,
+          String? userName,
           int? bandwidth,
           int? dayCost,
           bool? checkDelete,
@@ -258,7 +259,6 @@ class User with EquatableMixin implements Copyable<User> {
           double? sidebarOpacity,
           bool? useUltraHighContrast,
           bool? reduceMotion,
-          bool? useTransparency,
           ToDoSorter? toDoSorter,
           GroupSorter? groupSorter,
           DeadlineSorter? deadlineSorter,
@@ -270,6 +270,8 @@ class User with EquatableMixin implements Copyable<User> {
           DateTime? lastOpened,
           DateTime? lastUpdated}) =>
       User(
+          id: id ?? Constants.generateID(),
+          uuid: uuid,
           username: userName ?? username,
           bandwidth: bandwidth ?? this.bandwidth,
           dayCost: dayCost ?? this.dayCost,
@@ -288,7 +290,6 @@ class User with EquatableMixin implements Copyable<User> {
           sidebarOpacity: sidebarOpacity ?? this.sidebarOpacity,
           useUltraHighContrast:
               useUltraHighContrast ?? this.useUltraHighContrast,
-          useTransparency: useTransparency ?? this.useTransparency,
           reduceMotion: reduceMotion ?? this.reduceMotion,
           toDoSorter: toDoSorter ?? this.toDoSorter,
           groupSorter: groupSorter ?? this.groupSorter,

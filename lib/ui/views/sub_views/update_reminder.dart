@@ -6,9 +6,9 @@ import 'package:flutter/rendering.dart';
 import 'package:provider/provider.dart';
 
 import '../../../model/task/reminder.dart';
-import '../../../providers/event_provider.dart';
-import '../../../providers/reminder_provider.dart';
-import '../../../providers/user_provider.dart';
+import '../../../providers/application/event_provider.dart';
+import '../../../providers/model/reminder_provider.dart';
+import '../../../providers/model/user_provider.dart';
 import '../../../util/constants.dart';
 import '../../../util/enums.dart';
 import '../../../util/exceptions.dart';
@@ -358,7 +358,7 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
                   children: [
                     // Title && Close Button
                     TitleBar(
-                      currentContext: context,
+                      context: context,
                       title: "Edit Reminder",
                       checkClose: checkClose,
                       padding: const EdgeInsets.symmetric(

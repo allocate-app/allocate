@@ -1,9 +1,9 @@
 import 'package:flutter/foundation.dart';
 
-import 'viewmodels/user_model.dart';
-import '../util/enums.dart';
-import "../util/interfaces/i_model.dart";
-import '../util/strings.dart';
+import '../../util/enums.dart';
+import '../../util/interfaces/i_model.dart';
+import '../../util/strings.dart';
+import '../viewmodels/user_viewmodel.dart';
 
 class SearchProvider<T extends IModel> extends ChangeNotifier {
   bool _rebuild = true;
@@ -28,7 +28,7 @@ class SearchProvider<T extends IModel> extends ChangeNotifier {
     }
   }
 
-  late UserModel? _userModel;
+  late UserViewModel? _userModel;
   List<T> _model = [];
 
   List<T> get model => _model;
@@ -38,12 +38,12 @@ class SearchProvider<T extends IModel> extends ChangeNotifier {
     notifyListeners();
   }
 
-  set userModel(UserModel? userModel) {
+  set userModel(UserViewModel? userModel) {
     _userModel = userModel;
     notifyListeners();
   }
 
-  SearchProvider({UserModel? userModel}) : _userModel = userModel;
+  SearchProvider({UserViewModel? userModel}) : _userModel = userModel;
 
   List<IModel> batchProcess(
       {List<List<IModel>>? models, String searchString = ""}) {

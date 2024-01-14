@@ -2,11 +2,11 @@ import 'dart:developer';
 
 import 'package:flutter/foundation.dart';
 
-import '../model/task/subtask.dart';
-import '../repositories/subtask_repo.dart';
-import '../util/constants.dart';
-import '../util/exceptions.dart';
-import '../util/interfaces/repository/model/subtask_repository.dart';
+import '../../model/task/subtask.dart';
+import '../../repositories/subtask_repo.dart';
+import '../../util/constants.dart';
+import '../../util/exceptions.dart';
+import '../../util/interfaces/repository/model/subtask_repository.dart';
 
 class SubtaskProvider extends ChangeNotifier {
   bool _rebuild = true;

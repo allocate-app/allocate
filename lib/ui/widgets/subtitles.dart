@@ -5,8 +5,8 @@ import 'package:provider/provider.dart';
 
 import '../../model/task/deadline.dart';
 import '../../model/task/todo.dart';
-import '../../providers/group_provider.dart';
-import '../../providers/todo_provider.dart';
+import '../../providers/model/group_provider.dart';
+import '../../providers/model/todo_provider.dart';
 import '../../util/constants.dart';
 import '../../util/enums.dart';
 import '../../util/exceptions.dart';
