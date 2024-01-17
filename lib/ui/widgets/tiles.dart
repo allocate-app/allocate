@@ -21,6 +21,9 @@ import '../../providers/model/routine_provider.dart';
 import '../../providers/model/subtask_provider.dart';
 import '../../providers/model/todo_provider.dart';
 import '../../providers/model/user_provider.dart';
+import '../../providers/viewmodels/deadline_viewmodel.dart';
+import '../../providers/viewmodels/reminder_viewmodel.dart';
+import '../../providers/viewmodels/routine_viewmodel.dart';
 import '../../providers/viewmodels/todo_viewmodel.dart';
 import '../../ui/widgets/time_dialog.dart';
 import '../../util/constants.dart';
@@ -102,10 +105,20 @@ abstract class Tiles {
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.start,
           children: [
-            if (Frequency.once != toDo.frequency)
+            if (Frequency.once != toDo.frequency &&
+                RepeatableState.delta != toDo.repeatableState)
               const Padding(
                 padding: EdgeInsets.only(right: Constants.halfPadding),
-                child: Icon(Icons.restart_alt_rounded),
+                child: Tooltip(
+                    message: "Repeating event",
+                    child: Icon(Icons.restart_alt_rounded)),
+              ),
+            if (RepeatableState.delta == toDo.repeatableState)
+              const Padding(
+                padding: EdgeInsets.only(right: Constants.halfPadding),
+                child: Tooltip(
+                    message: "Repeating event: modified",
+                    child: Icon(Icons.change_history_rounded)),
               ),
             if (toDo.myDay)
               Padding(
@@ -387,8 +400,12 @@ abstract class Tiles {
               barrierDismissible: false,
               useRootNavigator: false,
               context: context,
-              builder: (BuildContext context) =>
-                  UpdateRoutineScreen(initialRoutine: routine));
+              builder: (BuildContext context) {
+                Provider.of<RoutineViewModel>(context, listen: false).fromModel(
+                    model: routine,
+                    times: routineProvider.getRoutineTime(routine: routine));
+                return const UpdateRoutineScreen();
+              });
         },
         trailing: Row(mainAxisSize: MainAxisSize.min, children: [
           ListTileWidgets.routineBatteryRow(routine: routine),
@@ -486,17 +503,27 @@ abstract class Tiles {
                     horizontal: Constants.halfPadding),
                 iconPadding: const EdgeInsets.all(Constants.halfPadding))
             : ListTileWidgets.deadlineIcon(
-                currentContext: context,
+                context: context,
                 outerPadding: const EdgeInsets.symmetric(
                     horizontal: Constants.halfPadding),
                 iconPadding: const EdgeInsets.all(Constants.halfPadding)),
         title: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (Frequency.once != deadline.frequency)
+            if (Frequency.once != deadline.frequency &&
+                RepeatableState.delta != deadline.repeatableState)
               const Padding(
                 padding: EdgeInsets.only(right: Constants.halfPadding),
-                child: Icon(Icons.restart_alt_rounded),
+                child: Tooltip(
+                    message: "Repeating event",
+                    child: Icon(Icons.restart_alt_rounded)),
+              ),
+            if (RepeatableState.delta == deadline.repeatableState)
+              const Padding(
+                padding: EdgeInsets.only(right: Constants.halfPadding),
+                child: Tooltip(
+                    message: "Repeating event: modified",
+                    child: Icon(Icons.change_history_rounded)),
               ),
             AutoSizeText(deadline.name,
                 overflow: TextOverflow.ellipsis,
@@ -517,8 +544,11 @@ abstract class Tiles {
               barrierDismissible: false,
               useRootNavigator: false,
               context: context,
-              builder: (BuildContext context) =>
-                  UpdateDeadlineScreen(initialDeadline: deadline));
+              builder: (BuildContext context) {
+                Provider.of<DeadlineViewModel>(context, listen: false)
+                    .fromModel(model: deadline);
+                return const UpdateDeadlineScreen();
+              });
         },
         trailing: Row(mainAxisSize: MainAxisSize.min, children: [
           Padding(
@@ -663,10 +693,20 @@ abstract class Tiles {
         title: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (Frequency.once != reminder.frequency)
+            if (Frequency.once != reminder.frequency &&
+                RepeatableState.delta != reminder.repeatableState)
               const Padding(
                 padding: EdgeInsets.only(right: Constants.halfPadding),
-                child: Icon(Icons.restart_alt_rounded),
+                child: Tooltip(
+                    message: "Repeating event",
+                    child: Icon(Icons.restart_alt_rounded)),
+              ),
+            if (RepeatableState.delta == reminder.repeatableState)
+              const Padding(
+                padding: EdgeInsets.only(right: Constants.halfPadding),
+                child: Tooltip(
+                    message: "Repeating event: modified",
+                    child: Icon(Icons.change_history_rounded)),
               ),
             AutoSizeText(reminder.name,
                 overflow: TextOverflow.ellipsis,
@@ -685,8 +725,11 @@ abstract class Tiles {
               barrierDismissible: false,
               useRootNavigator: false,
               context: context,
-              builder: (BuildContext context) =>
-                  UpdateReminderScreen(initialReminder: reminder));
+              builder: (BuildContext context) {
+                Provider.of<ReminderViewModel>(context, listen: false)
+                    .fromModel(model: reminder);
+                return const UpdateReminderScreen();
+              });
         },
         trailing: Row(mainAxisSize: MainAxisSize.min, children: [
           Padding(
@@ -1311,7 +1354,9 @@ abstract class Tiles {
                   barrierDismissible: false,
                   useRootNavigator: false,
                   builder: (BuildContext context) {
-                    return CreateRoutineScreen(times: times);
+                    Provider.of<RoutineViewModel>(context, listen: false)
+                        .initRoutineTimes = times;
+                    return const CreateRoutineScreen();
                   });
             }),
       ],
@@ -1343,8 +1388,14 @@ abstract class Tiles {
                 context: context,
                 barrierDismissible: false,
                 useRootNavigator: false,
-                builder: (BuildContext context) =>
-                    UpdateRoutineScreen(initialRoutine: routine));
+                builder: (BuildContext context) {
+                  Provider.of<RoutineViewModel>(context, listen: false)
+                      .fromModel(
+                          model: routine,
+                          times:
+                              routineProvider.getRoutineTime(routine: routine));
+                  return const UpdateRoutineScreen();
+                });
           }),
       title: routine.name,
       trailing: IconButton(
@@ -2292,12 +2343,14 @@ abstract class Tiles {
             dialog = const UpdateToDoScreen();
             break;
           case ModelType.deadline:
-            dialog =
-                UpdateDeadlineScreen(initialDeadline: event.model as Deadline);
+            Provider.of<DeadlineViewModel>(context, listen: false)
+                .fromModel(model: event.model as Deadline);
+            dialog = const UpdateDeadlineScreen();
             break;
           case ModelType.reminder:
-            dialog =
-                UpdateReminderScreen(initialReminder: event.model as Reminder);
+            Provider.of<ReminderViewModel>(context, listen: false)
+                .fromModel(model: event.model as Reminder);
+            dialog = const UpdateReminderScreen();
             break;
           default:
             return;
@@ -2314,9 +2367,16 @@ abstract class Tiles {
         model: event.model,
         smallScreen: smallScreen,
       ),
-      trailing: (Frequency.once != event.model.frequency)
-          ? const Icon(Icons.restart_alt_rounded)
-          : null,
+      trailing: (Frequency.once != event.model.frequency &&
+              RepeatableState.delta != event.model.repeatableState)
+          ? const Tooltip(
+              message: "Repeating event",
+              child: Icon(Icons.restart_alt_rounded))
+          : (RepeatableState.delta == event.model.repeatableState)
+              ? const Tooltip(
+                  message: "Repeating event: modified",
+                  child: Icon(Icons.change_history_rounded))
+              : null,
     );
   }
 

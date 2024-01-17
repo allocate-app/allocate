@@ -54,24 +54,27 @@ void main() async {
         }),
     ChangeNotifierProxyProvider<UserProvider, RoutineProvider>(
         create: (BuildContext context) => RoutineProvider(
-            user: Provider.of<UserProvider>(context, listen: false).curUser),
+            userViewModel:
+                Provider.of<UserProvider>(context, listen: false).viewModel),
         update: (BuildContext context, UserProvider up, RoutineProvider? rp) {
-          rp?.setUser(newUser: up.curUser);
-          return rp ?? RoutineProvider(user: up.curUser);
+          rp?.setUser(newUser: up.viewModel);
+          return rp ?? RoutineProvider(userViewModel: up.viewModel);
         }),
     ChangeNotifierProxyProvider<UserProvider, ReminderProvider>(
         create: (BuildContext context) => ReminderProvider(
-            user: Provider.of<UserProvider>(context, listen: false).curUser),
+            userViewModel:
+                Provider.of<UserProvider>(context, listen: false).viewModel),
         update: (BuildContext context, UserProvider up, ReminderProvider? rp) {
-          rp?.setUser(newUser: up.curUser);
-          return rp ?? ReminderProvider(user: up.curUser);
+          rp?.setUser(newUser: up.viewModel);
+          return rp ?? ReminderProvider(userViewModel: up.viewModel);
         }),
     ChangeNotifierProxyProvider<UserProvider, DeadlineProvider>(
         create: (BuildContext context) => DeadlineProvider(
-            user: Provider.of<UserProvider>(context, listen: false).curUser),
+            userViewModel:
+                Provider.of<UserProvider>(context, listen: false).viewModel),
         update: (BuildContext context, UserProvider up, DeadlineProvider? dp) {
-          dp?.setUser(newUser: up.curUser);
-          return dp ?? DeadlineProvider(user: up.curUser);
+          dp?.setUser(newUser: up.viewModel);
+          return dp ?? DeadlineProvider(userViewModel: up.viewModel);
         }),
     ChangeNotifierProxyProvider<UserProvider, GroupProvider>(
         create: (BuildContext context) => GroupProvider(

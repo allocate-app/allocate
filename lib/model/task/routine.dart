@@ -21,42 +21,43 @@ class Routine with EquatableMixin implements Copyable<Routine>, IModel {
 
   @override
   @Index()
-  Id id = Constants.generateID();
+  late Id id;
 
   @override
   @Index()
   String name;
 
-  int weight;
-
-  int expectedDuration;
-
-  int realDuration;
+  late int weight;
+  late int expectedDuration;
+  late int realDuration;
 
   @ignore
   late List<Subtask> subtasks;
 
-  int customViewIndex = -1;
+  late int customViewIndex;
 
   @override
   @Index()
-  bool isSynced = false;
+  late bool isSynced;
 
   @override
   @Index()
-  bool toDelete = false;
+  late bool toDelete;
 
   @override
   DateTime lastUpdated;
 
-  Routine({
-    required this.name,
-    this.weight = 0,
-    required this.expectedDuration,
-    required this.realDuration,
-    this.subtasks = const <Subtask>[],
-    required this.lastUpdated,
-  });
+  Routine(
+      {required this.id,
+      this.customViewIndex = -1,
+      required this.name,
+      this.weight = 0,
+      this.expectedDuration = 0,
+      this.realDuration = 0,
+      this.subtasks = const <Subtask>[],
+      required this.lastUpdated,
+      this.toDelete = false,
+      this.isSynced = false});
 
   Routine.fromEntity({required Map<String, dynamic> entity})
       : id = entity["id"] as Id,
@@ -82,6 +83,7 @@ class Routine with EquatableMixin implements Copyable<Routine>, IModel {
 
   @override
   Routine copy() => Routine(
+      id: Constants.generateID(),
       name: name,
       weight: weight,
       expectedDuration: expectedDuration,
@@ -90,13 +92,15 @@ class Routine with EquatableMixin implements Copyable<Routine>, IModel {
 
   @override
   Routine copyWith(
-          {String? name,
+          {int? id,
+          String? name,
           int? weight,
           int? expectedDuration,
           int? realDuration,
           List<Subtask>? routineTasks,
           DateTime? lastUpdated}) =>
       Routine(
+          id: id ?? Constants.generateID(),
           name: name ?? this.name,
           weight: weight ?? this.weight,
           expectedDuration: expectedDuration ?? this.expectedDuration,

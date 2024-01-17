@@ -184,6 +184,7 @@ class DeadlineRepo implements DeadlineRepository {
         .repeatIDEqualTo(deleteFrom.repeatID)
         .filter()
         .startDateGreaterThan(deleteFrom.startDate!)
+        .repeatableStateEqualTo(RepeatableState.normal)
         .idProperty()
         .findAll();
 
@@ -304,6 +305,10 @@ class DeadlineRepo implements DeadlineRepository {
           .toDeleteEqualTo(toDelete)
           .filter()
           .nameContains(searchString, caseSensitive: false)
+          .group((q) => q
+              .repeatableStateEqualTo(RepeatableState.normal)
+              .or()
+              .repeatableStateEqualTo(RepeatableState.delta))
           .limit(5)
           .findAll();
 
@@ -311,6 +316,12 @@ class DeadlineRepo implements DeadlineRepository {
   Future<List<Deadline>> mostRecent({int limit = 50}) async =>
       await _isarClient.deadlines
           .where()
+          .toDeleteEqualTo(false)
+          .filter()
+          .group((q) => q
+              .repeatableStateEqualTo(RepeatableState.normal)
+              .or()
+              .repeatableStateEqualTo(RepeatableState.delta))
           .sortByLastUpdatedDesc()
           .limit(limit)
           .findAll();
@@ -325,7 +336,10 @@ class DeadlineRepo implements DeadlineRepository {
           .where()
           .toDeleteEqualTo(false)
           .filter()
-          .repeatableStateEqualTo(RepeatableState.normal)
+          .group((q) => q
+              .repeatableStateEqualTo(RepeatableState.normal)
+              .or()
+              .repeatableStateEqualTo(RepeatableState.delta))
           .sortByCustomViewIndex()
           .thenByLastUpdatedDesc()
           .offset(offset)
@@ -344,7 +358,10 @@ class DeadlineRepo implements DeadlineRepository {
               .where()
               .toDeleteEqualTo(false)
               .filter()
-              .repeatableStateEqualTo(RepeatableState.normal)
+              .group((q) => q
+                  .repeatableStateEqualTo(RepeatableState.normal)
+                  .or()
+                  .repeatableStateEqualTo(RepeatableState.delta))
               .sortByNameDesc()
               .thenByLastUpdatedDesc()
               .offset(offset)
@@ -355,7 +372,10 @@ class DeadlineRepo implements DeadlineRepository {
               .where()
               .toDeleteEqualTo(false)
               .filter()
-              .repeatableStateEqualTo(RepeatableState.normal)
+              .group((q) => q
+                  .repeatableStateEqualTo(RepeatableState.normal)
+                  .or()
+                  .repeatableStateEqualTo(RepeatableState.delta))
               .sortByName()
               .thenByLastUpdatedDesc()
               .offset(offset)
@@ -368,7 +388,10 @@ class DeadlineRepo implements DeadlineRepository {
               .where()
               .toDeleteEqualTo(false)
               .filter()
-              .repeatableStateEqualTo(RepeatableState.normal)
+              .group((q) => q
+                  .repeatableStateEqualTo(RepeatableState.normal)
+                  .or()
+                  .repeatableStateEqualTo(RepeatableState.delta))
               .sortByPriorityDesc()
               .thenByLastUpdatedDesc()
               .offset(offset)
@@ -379,7 +402,10 @@ class DeadlineRepo implements DeadlineRepository {
               .where()
               .toDeleteEqualTo(false)
               .filter()
-              .repeatableStateEqualTo(RepeatableState.normal)
+              .group((q) => q
+                  .repeatableStateEqualTo(RepeatableState.normal)
+                  .or()
+                  .repeatableStateEqualTo(RepeatableState.delta))
               .sortByPriority()
               .thenByLastUpdatedDesc()
               .offset(offset)
@@ -392,7 +418,10 @@ class DeadlineRepo implements DeadlineRepository {
               .where()
               .toDeleteEqualTo(false)
               .filter()
-              .repeatableStateEqualTo(RepeatableState.normal)
+              .group((q) => q
+                  .repeatableStateEqualTo(RepeatableState.normal)
+                  .or()
+                  .repeatableStateEqualTo(RepeatableState.delta))
               .sortByDueDateDesc()
               .thenByLastUpdatedDesc()
               .offset(offset)
@@ -403,7 +432,10 @@ class DeadlineRepo implements DeadlineRepository {
               .where()
               .toDeleteEqualTo(false)
               .filter()
-              .repeatableStateEqualTo(RepeatableState.normal)
+              .group((q) => q
+                  .repeatableStateEqualTo(RepeatableState.normal)
+                  .or()
+                  .repeatableStateEqualTo(RepeatableState.delta))
               .sortByDueDate()
               .thenByLastUpdatedDesc()
               .offset(offset)
@@ -421,7 +453,10 @@ class DeadlineRepo implements DeadlineRepository {
           .where()
           .toDeleteEqualTo(true)
           .filter()
-          .repeatableStateEqualTo(RepeatableState.normal)
+          .group((q) => q
+              .repeatableStateEqualTo(RepeatableState.normal)
+              .or()
+              .repeatableStateEqualTo(RepeatableState.delta))
           .sortByLastUpdatedDesc()
           .offset(offset)
           .limit(limit)
@@ -434,7 +469,10 @@ class DeadlineRepo implements DeadlineRepository {
           .warnMeEqualTo(true)
           .filter()
           .toDeleteEqualTo(false)
-          .repeatableStateEqualTo(RepeatableState.normal)
+          .group((q) => q
+              .repeatableStateEqualTo(RepeatableState.normal)
+              .or()
+              .repeatableStateEqualTo(RepeatableState.delta))
           .dueDateGreaterThan(now ?? Constants.today)
           .sortByDueDate()
           .limit(limit)
@@ -527,6 +565,10 @@ class DeadlineRepo implements DeadlineRepository {
           .dueDateGreaterThan(Constants.today)
           .filter()
           .toDeleteEqualTo(false)
+          .group((q) => q
+              .repeatableStateEqualTo(RepeatableState.normal)
+              .or()
+              .repeatableStateEqualTo(RepeatableState.delta))
           .sortByDueDate()
           .thenByLastUpdatedDesc()
           .offset(offset)
@@ -540,6 +582,10 @@ class DeadlineRepo implements DeadlineRepository {
           .dueDateLessThan(Constants.today)
           .filter()
           .toDeleteEqualTo(false)
+          .group((q) => q
+              .repeatableStateEqualTo(RepeatableState.normal)
+              .or()
+              .repeatableStateEqualTo(RepeatableState.delta))
           .sortByDueDateDesc()
           .thenByLastUpdatedDesc()
           .offset(offset)

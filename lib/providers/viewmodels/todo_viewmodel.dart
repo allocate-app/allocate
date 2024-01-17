@@ -175,9 +175,11 @@ class ToDoViewModel extends ChangeNotifier
         priority: _priority,
         completed: _completed,
         startDate: mergeDateTime(date: _startDate, time: _startTime),
-        originalStart: _originalStart ?? _startDate,
+        originalStart:
+            _originalStart ?? mergeDateTime(date: _startDate, time: _startTime),
         dueDate: mergeDateTime(date: _dueDate, time: _dueTime),
-        originalDue: _originalDue ?? _dueDate,
+        originalDue:
+            _originalDue ?? mergeDateTime(date: _dueDate, time: _dueTime),
         myDay: _myDay,
         repeatable: _repeatable,
         frequency: _frequency,
@@ -190,7 +192,7 @@ class ToDoViewModel extends ChangeNotifier
         subtasks: _subtasks,
       );
 
-  // Convenience methods
+  // CONVENIENCE METHODS
   static Set<int> weekdaysToSet({required List<bool> weekdays}) {
     Set<int> weekdaySet = {};
     for (int i = 0; i < weekdays.length; i++) {
@@ -269,6 +271,10 @@ class ToDoViewModel extends ChangeNotifier
   }) {
     _startDate = newStart?.copyWith(second: 0, millisecond: 0, microsecond: 0);
     _dueDate = newDue?.copyWith(second: 0, millisecond: 0, microsecond: 0);
+    if ((null != _startDate && null != _dueDate) &&
+        _startDate!.isAfter(_dueDate!)) {
+      _dueDate = _startDate;
+    }
     notifyListeners();
   }
 

@@ -351,6 +351,8 @@ Deadline _deadlineDeserialize(
     frequency:
         _DeadlinefrequencyValueEnumMap[reader.readByteOrNull(offsets[3])] ??
             Frequency.once,
+    id: id,
+    isSynced: reader.readBoolOrNull(offsets[4]) ?? false,
     lastUpdated: reader.readDateTime(offsets[5]),
     name: reader.readString(offsets[6]),
     notificationID: reader.readLongOrNull(offsets[7]),
@@ -368,12 +370,10 @@ Deadline _deadlineDeserialize(
             reader.readByteOrNull(offsets[16])] ??
         RepeatableState.normal,
     startDate: reader.readDateTimeOrNull(offsets[17]),
+    toDelete: reader.readBoolOrNull(offsets[18]) ?? false,
     warnDate: reader.readDateTimeOrNull(offsets[19]),
     warnMe: reader.readBoolOrNull(offsets[20]) ?? false,
   );
-  object.id = id;
-  object.isSynced = reader.readBool(offsets[4]);
-  object.toDelete = reader.readBool(offsets[18]);
   return object;
 }
 
@@ -394,7 +394,7 @@ P _deadlineDeserializeProp<P>(
       return (_DeadlinefrequencyValueEnumMap[reader.readByteOrNull(offset)] ??
           Frequency.once) as P;
     case 4:
-      return (reader.readBool(offset)) as P;
+      return (reader.readBoolOrNull(offset) ?? false) as P;
     case 5:
       return (reader.readDateTime(offset)) as P;
     case 6:
@@ -425,7 +425,7 @@ P _deadlineDeserializeProp<P>(
     case 17:
       return (reader.readDateTimeOrNull(offset)) as P;
     case 18:
-      return (reader.readBool(offset)) as P;
+      return (reader.readBoolOrNull(offset) ?? false) as P;
     case 19:
       return (reader.readDateTimeOrNull(offset)) as P;
     case 20:

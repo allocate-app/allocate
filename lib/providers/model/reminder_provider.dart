@@ -5,7 +5,6 @@ import 'package:flutter/foundation.dart';
 import 'package:jiffy/jiffy.dart';
 
 import '../../model/task/reminder.dart';
-import '../../model/user/user.dart';
 import '../../repositories/reminder_repo.dart';
 import '../../services/notification_service.dart';
 import '../../services/repeatable_service.dart';
@@ -14,7 +13,9 @@ import '../../util/enums.dart';
 import '../../util/exceptions.dart';
 import '../../util/interfaces/repository/model/reminder_repository.dart';
 import '../../util/sorting/reminder_sorter.dart';
+import '../viewmodels/user_viewmodel.dart';
 
+// TODO: change schedule notification logic.
 class ReminderProvider extends ChangeNotifier {
   bool _rebuild = true;
 
@@ -50,20 +51,20 @@ class ReminderProvider extends ChangeNotifier {
 
   late ReminderSorter sorter;
 
-  User? user;
+  UserViewModel? userViewModel;
 
   // CONSTRUCTOR
   ReminderProvider(
-      {this.user,
+      {this.userViewModel,
       RepeatableService? repeatableService,
       ReminderRepository? reminderRepository})
-      : sorter = user?.reminderSorter ?? ReminderSorter(),
+      : sorter = userViewModel?.reminderSorter ?? ReminderSorter(),
         _repeatService = repeatableService ?? RepeatableService.instance,
         _reminderRepo = reminderRepository ?? ReminderRepo.instance;
 
-  void setUser({User? newUser}) {
-    user = newUser;
-    sorter = user?.reminderSorter ?? sorter;
+  void setUser({UserViewModel? newUser}) {
+    userViewModel = newUser;
+    sorter = userViewModel?.reminderSorter ?? sorter;
     notifyListeners();
   }
 
@@ -76,7 +77,7 @@ class ReminderProvider extends ChangeNotifier {
       sorter.sortMethod = method;
       sorter.descending = false;
     }
-    user?.reminderSorter = sorter;
+    userViewModel?.reminderSorter = sorter;
     notifyListeners();
   }
 
@@ -84,34 +85,9 @@ class ReminderProvider extends ChangeNotifier {
 
   List<SortMethod> get sortMethods => sorter.sortMethods;
 
-  Future<void> createReminder({
-    required String name,
-    DateTime? dueDate,
-    bool? repeatable,
-    List<bool>? repeatDays,
-    int? repeatSkip,
-    Frequency? frequency,
-  }) async {
-    if (null != dueDate) {
-      dueDate = dueDate.copyWith(second: 0, microsecond: 0, millisecond: 0);
-    }
-
-    curReminder = Reminder(
-      name: name,
-      originalDue: dueDate,
-      dueDate: dueDate,
-      repeatable: repeatable ?? false,
-      repeatDays: repeatDays ?? List.filled(7, false, growable: false),
-      repeatSkip: repeatSkip ?? 1,
-      frequency: frequency ?? Frequency.once,
-      lastUpdated: DateTime.now(),
-    );
-
-    curReminder!.notificationID = Constants.generate32ID();
-    curReminder!.repeatID = Constants.generateID();
-
+  Future<void> createReminder(Reminder reminder) async {
     try {
-      curReminder = await _reminderRepo.create(curReminder!);
+      curReminder = await _reminderRepo.create(reminder);
 
       await scheduleNotification(reminder: curReminder);
       if (curReminder!.repeatable) {
@@ -135,8 +111,11 @@ class ReminderProvider extends ChangeNotifier {
   }
 
   Future<void> updateReminderAsync({Reminder? reminder}) async {
-    reminder = reminder ?? curReminder!;
-    reminder.lastUpdated = DateTime.now();
+    reminder = reminder ?? curReminder;
+
+    if (null == reminder) {
+      throw FailureToUpdateException("Invalid model provided");
+    }
 
     try {
       curReminder = await _reminderRepo.update(curReminder!);

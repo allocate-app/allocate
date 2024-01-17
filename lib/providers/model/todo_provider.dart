@@ -143,7 +143,6 @@ class ToDoProvider extends ChangeNotifier {
     try {
       curToDo = await _toDoRepo.create(toDo);
 
-      // await _updateSubtasks(subtasks: curToDo!.subtasks, taskID: curToDo!.id);
       if (curToDo!.repeatable) {
         await createTemplate(toDo: curToDo!);
       }
@@ -160,13 +159,16 @@ class ToDoProvider extends ChangeNotifier {
   }
 
   Future<void> updateToDo({ToDo? toDo}) async {
-    await updateToDoAsync(toDo: toDo ?? curToDo!);
+    await updateToDoAsync(toDo: toDo);
     notifyListeners();
   }
 
   Future<void> updateToDoAsync({ToDo? toDo}) async {
-    toDo = toDo ?? curToDo!;
-    toDo.lastUpdated = DateTime.now();
+    toDo = toDo ?? curToDo;
+
+    if (null == toDo) {
+      throw FailureToUpdateException("Invalid model provided");
+    }
 
     try {
       curToDo = await _toDoRepo.update(toDo);

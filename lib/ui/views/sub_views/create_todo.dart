@@ -328,13 +328,13 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                                         const PaddedDivider(
                                             padding: Constants.padding),
                                         // Priority
-                                        _buildPriorityTile(),
-                                        const Padding(
-                                          padding: EdgeInsets.symmetric(
-                                              vertical: Constants.padding),
-                                          child: PaddedDivider(
-                                              padding: Constants.padding),
+                                        Padding(
+                                          padding: const EdgeInsets.only(
+                                              bottom: Constants.padding),
+                                          child: _buildPriorityTile(),
                                         ),
+                                        const PaddedDivider(
+                                            padding: Constants.padding),
                                         // Expected Duration / RealDuration -> Show status, on click, open a dialog.
                                         _buildDurationTile(),
 
@@ -430,7 +430,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                       _buildMyDay(),
                       const PaddedDivider(padding: Constants.padding),
                       // Priority
-                      _buildPriorityTile(mobile: layoutProvider.smallScreen),
+                      _buildPriorityTile(mobile: smallScreen),
 
                       const Padding(
                         padding:

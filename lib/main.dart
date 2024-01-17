@@ -33,27 +33,30 @@ void main() {
           }),
       ChangeNotifierProxyProvider<UserProvider, RoutineProvider>(
           create: (BuildContext context) => RoutineProvider(
-                user: Provider.of<UserProvider>(context, listen: false).curUser,
+                userViewModel:
+                    Provider.of<UserProvider>(context, listen: false).curUser,
               ),
           update: (BuildContext context, UserProvider up, RoutineProvider? rp) {
             rp?.setUser(newUser: up.curUser);
-            return rp ?? RoutineProvider(user: up.curUser);
+            return rp ?? RoutineProvider(userViewModel: up.curUser);
           }),
       ChangeNotifierProxyProvider<UserProvider, ReminderProvider>(
           create: (BuildContext context) => ReminderProvider(
-              user: Provider.of<UserProvider>(context, listen: false).curUser),
+              userViewModel:
+                  Provider.of<UserProvider>(context, listen: false).curUser),
           update:
               (BuildContext context, UserProvider up, ReminderProvider? rp) {
             rp?.setUser(newUser: up.curUser);
-            return rp ?? ReminderProvider(user: up.curUser);
+            return rp ?? ReminderProvider(userViewModel: up.curUser);
           }),
       ChangeNotifierProxyProvider<UserProvider, DeadlineProvider>(
           create: (BuildContext context) => DeadlineProvider(
-              user: Provider.of<UserProvider>(context, listen: false).curUser),
+              userViewModel:
+                  Provider.of<UserProvider>(context, listen: false).curUser),
           update:
               (BuildContext context, UserProvider up, DeadlineProvider? dp) {
             dp?.setUser(newUser: up.curUser);
-            return dp ?? DeadlineProvider(user: up.curUser);
+            return dp ?? DeadlineProvider(userViewModel: up.curUser);
           }),
       ChangeNotifierProxyProvider<UserProvider, GroupProvider>(
           create: (BuildContext context) => GroupProvider(

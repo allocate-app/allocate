@@ -5,7 +5,6 @@ import 'package:flutter/foundation.dart';
 import 'package:jiffy/jiffy.dart';
 
 import '../../model/task/deadline.dart';
-import '../../model/user/user.dart';
 import '../../repositories/deadline_repo.dart';
 import '../../services/notification_service.dart';
 import '../../services/repeatable_service.dart';
@@ -14,6 +13,7 @@ import '../../util/enums.dart';
 import '../../util/exceptions.dart';
 import '../../util/interfaces/repository/model/deadline_repository.dart';
 import '../../util/sorting/deadline_sorter.dart';
+import '../viewmodels/user_viewmodel.dart';
 
 class DeadlineProvider extends ChangeNotifier {
   bool _rebuild = true;
@@ -51,19 +51,19 @@ class DeadlineProvider extends ChangeNotifier {
 
   late DeadlineSorter sorter;
 
-  User? user;
+  UserViewModel? userViewModel;
 
   DeadlineProvider(
-      {this.user,
+      {this.userViewModel,
       DeadlineRepository? deadlineRepo,
       RepeatableService? repeatableService})
       : _deadlineRepo = deadlineRepo ?? DeadlineRepo.instance,
         _repeatService = repeatableService ?? RepeatableService.instance,
-        sorter = user?.deadlineSorter ?? DeadlineSorter();
+        sorter = userViewModel?.deadlineSorter ?? DeadlineSorter();
 
-  void setUser({User? newUser}) {
-    user = newUser;
-    sorter = user?.deadlineSorter ?? sorter;
+  void setUser({UserViewModel? newUser}) {
+    userViewModel = newUser;
+    sorter = userViewModel?.deadlineSorter ?? sorter;
     notifyListeners();
   }
 
@@ -76,7 +76,7 @@ class DeadlineProvider extends ChangeNotifier {
       sorter.sortMethod = method;
       sorter.descending = false;
     }
-    user?.deadlineSorter = sorter;
+    userViewModel?.deadlineSorter = sorter;
     notifyListeners();
   }
 
@@ -84,60 +84,9 @@ class DeadlineProvider extends ChangeNotifier {
 
   List<SortMethod> get sortMethods => sorter.sortMethods;
 
-  Future<void> createDeadline({
-    required String name,
-    String description = "",
-    DateTime? startDate,
-    DateTime? dueDate,
-    DateTime? warnDate,
-    bool warnMe = false,
-    Priority priority = Priority.low,
-    bool? repeatable,
-    Frequency? frequency,
-    List<bool>? repeatDays,
-    int? repeatSkip,
-  }) async {
-    if (null != startDate) {
-      startDate = startDate.copyWith(second: 0, millisecond: 0, microsecond: 0);
-    }
-    if (null != dueDate) {
-      dueDate = dueDate.copyWith(second: 0, microsecond: 0, millisecond: 0);
-    }
-    if (null != startDate && null != dueDate && startDate.isAfter(dueDate)) {
-      dueDate = startDate.copyWith(
-          day: dueDate.day + 1,
-          hour: Constants.midnight.hour,
-          minute: Constants.midnight.minute);
-    }
-
-    warnDate = warnDate?.copyWith(second: 0, millisecond: 0, microsecond: 0) ??
-        dueDate;
-
-    if (null != startDate && null != warnDate && startDate.isAfter(warnDate)) {
-      warnDate = startDate.copyWith(minute: startDate.minute + 15);
-    }
-
-    curDeadline = Deadline(
-        name: name,
-        description: description,
-        originalStart: startDate,
-        startDate: startDate,
-        dueDate: dueDate,
-        originalDue: dueDate,
-        originalWarn: warnDate,
-        warnMe: warnMe,
-        warnDate: warnDate,
-        priority: priority,
-        repeatable: repeatable ?? false,
-        frequency: frequency ?? Frequency.once,
-        repeatDays: repeatDays ?? List.filled(7, false),
-        repeatSkip: repeatSkip ?? 1,
-        lastUpdated: DateTime.now());
-
-    curDeadline!.repeatID = Constants.generateID();
-    curDeadline!.notificationID = Constants.generate32ID();
+  Future<void> createDeadline(Deadline deadline) async {
     try {
-      curDeadline = await _deadlineRepo.create(curDeadline!);
+      curDeadline = await _deadlineRepo.create(deadline);
       if (curDeadline!.repeatable) {
         await createTemplate(deadline: curDeadline!);
       }
@@ -164,14 +113,14 @@ class DeadlineProvider extends ChangeNotifier {
   }
 
   Future<void> updateDeadlineAsync({Deadline? deadline}) async {
-    deadline = deadline ?? curDeadline!;
-    deadline.lastUpdated = DateTime.now();
-    if (deadline.warnMe && null == deadline.notificationID) {
-      deadline.notificationID = Constants.generate32ID();
+    deadline = deadline ?? curDeadline;
+
+    if (null == deadline) {
+      throw FailureToUpdateException("Invalid model provided");
     }
 
     try {
-      curDeadline = await _deadlineRepo.update(curDeadline!);
+      curDeadline = await _deadlineRepo.update(deadline);
       if (curDeadline!.repeatable) {
         Deadline? template =
             await _deadlineRepo.getTemplate(repeatID: curDeadline!.repeatID!);

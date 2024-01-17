@@ -22,8 +22,8 @@ class Reminder with EquatableMixin implements Copyable<Reminder>, IRepeatable {
 
   @override
   @Index()
-  Id id = Constants.generateID();
-  int customViewIndex = -1;
+  late Id id;
+  late int customViewIndex;
   @override
   @Index()
   int? repeatID;
@@ -71,17 +71,19 @@ class Reminder with EquatableMixin implements Copyable<Reminder>, IRepeatable {
   int repeatSkip;
   @override
   @Index()
-  bool isSynced = false;
+  late bool isSynced;
   @override
   @Index()
-  bool toDelete = false;
+  late bool toDelete;
 
   @override
   DateTime lastUpdated;
 
   Reminder(
-      {this.repeatID,
+      {required this.id,
+      this.repeatID,
       this.notificationID,
+      this.customViewIndex = -1,
       required this.name,
       this.repeatable = false,
       this.repeatableState = RepeatableState.normal,
@@ -90,12 +92,16 @@ class Reminder with EquatableMixin implements Copyable<Reminder>, IRepeatable {
       required this.repeatDays,
       this.repeatSkip = 1,
       this.frequency = Frequency.once,
+      this.toDelete = false,
+      this.isSynced = false,
       required this.lastUpdated});
 
   @override
   Reminder copy() => Reminder(
+      id: Constants.generateID(),
       repeatID: repeatID,
       notificationID: notificationID,
+      customViewIndex: customViewIndex,
       name: name,
       dueDate: dueDate,
       originalDue: originalDue,
@@ -104,11 +110,12 @@ class Reminder with EquatableMixin implements Copyable<Reminder>, IRepeatable {
       repeatSkip: repeatSkip,
       frequency: frequency,
       repeatableState: repeatableState,
-      lastUpdated: lastUpdated);
+      lastUpdated: DateTime.now());
 
   @override
   Reminder copyWith(
-          {int? repeatID,
+          {int? id,
+          int? repeatID,
           int? notificationID,
           String? name,
           DateTime? dueDate,
@@ -120,6 +127,7 @@ class Reminder with EquatableMixin implements Copyable<Reminder>, IRepeatable {
           RepeatableState? repeatableState,
           DateTime? lastUpdated}) =>
       Reminder(
+          id: id ?? Constants.generateID(),
           repeatID: repeatID ?? this.repeatID,
           notificationID: notificationID ?? this.notificationID,
           name: name ?? this.name,
@@ -133,7 +141,7 @@ class Reminder with EquatableMixin implements Copyable<Reminder>, IRepeatable {
           repeatableState: repeatableState ?? this.repeatableState,
           repeatSkip: repeatSkip ?? this.repeatSkip,
           frequency: frequency ?? this.frequency,
-          lastUpdated: lastUpdated ?? this.lastUpdated);
+          lastUpdated: lastUpdated ?? DateTime.now());
 
   Reminder.fromEntity({required Map<String, dynamic> entity})
       : id = entity["id"] as Id,

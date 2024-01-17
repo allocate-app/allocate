@@ -23,7 +23,7 @@ class Deadline with EquatableMixin implements Copyable<Deadline>, IRepeatable {
 
   @override
   @Index()
-  Id id = Constants.generateID();
+  late Id id;
   @Index()
   int customViewIndex;
   @override
@@ -72,16 +72,17 @@ class Deadline with EquatableMixin implements Copyable<Deadline>, IRepeatable {
 
   @override
   @Index()
-  bool isSynced = false;
+  bool isSynced;
   @override
   @Index()
-  bool toDelete = false;
+  bool toDelete;
 
   @override
   DateTime lastUpdated;
 
   Deadline(
-      {this.repeatID,
+      {required this.id,
+      this.repeatID,
       this.notificationID,
       this.customViewIndex = -1,
       required this.name,
@@ -99,6 +100,8 @@ class Deadline with EquatableMixin implements Copyable<Deadline>, IRepeatable {
       this.frequency = Frequency.once,
       required this.repeatDays,
       this.repeatSkip = 1,
+      this.isSynced = false,
+      this.toDelete = false,
       required this.lastUpdated});
 
   Deadline.fromEntity({required Map<String, dynamic> entity})
@@ -159,6 +162,7 @@ class Deadline with EquatableMixin implements Copyable<Deadline>, IRepeatable {
 
   @override
   Deadline copy() => Deadline(
+        id: Constants.generateID(),
         notificationID: notificationID,
         repeatID: repeatID,
         customViewIndex: customViewIndex,
@@ -182,7 +186,8 @@ class Deadline with EquatableMixin implements Copyable<Deadline>, IRepeatable {
 
   @override
   Deadline copyWith(
-          {int? repeatID,
+          {int? id,
+          int? repeatID,
           int? notificationID,
           int? customViewIndex,
           String? name,
@@ -202,6 +207,7 @@ class Deadline with EquatableMixin implements Copyable<Deadline>, IRepeatable {
           int? repeatSkip,
           DateTime? lastUpdated}) =>
       Deadline(
+          id: id ?? Constants.generateID(),
           repeatID: repeatID ?? this.repeatID,
           notificationID: notificationID ?? this.notificationID,
           customViewIndex: customViewIndex ?? this.customViewIndex,

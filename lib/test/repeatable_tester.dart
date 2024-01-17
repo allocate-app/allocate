@@ -51,6 +51,7 @@ void main() async {
   group("Get repeat date", () {
     ToDo toDo = ToDo(
         id: Constants.generateID(),
+        repeatID: Constants.generateID(),
         taskType: TaskType.small,
         name: 'Tester',
         expectedDuration: 0,
@@ -863,6 +864,7 @@ void main() async {
   group("Get repeat date, custom date", () {
     ToDo toDo = ToDo(
         id: Constants.generateID(),
+        repeatID: Constants.generateID(),
         taskType: TaskType.small,
         name: 'Tester',
         expectedDuration: 0,
@@ -1938,6 +1940,7 @@ void main() async {
     // Tasks
     ToDo toDo = ToDo(
         id: Constants.generateID(),
+        repeatID: Constants.generateID(),
         taskType: TaskType.small,
         name: 'Tester',
         expectedDuration: 0,
@@ -1953,6 +1956,8 @@ void main() async {
         lastUpdated: DateTime.now());
 
     Deadline deadline = Deadline(
+        id: Constants.generateID(),
+        repeatID: Constants.generateID(),
         name: 'Tester',
         repeatable: true,
         startDate: startDate,
@@ -1965,6 +1970,8 @@ void main() async {
         lastUpdated: DateTime.now());
 
     Reminder reminder = Reminder(
+        id: Constants.generateID(),
+        repeatID: Constants.generateID(),
         name: "Tester",
         repeatDays: List.generate(7, (i) => false),
         dueDate: startDate,
@@ -2226,6 +2233,7 @@ void main() async {
   group("Current Model, delete single", () {
     ToDo toDo = ToDo(
         id: Constants.generateID(),
+        repeatID: Constants.generateID(),
         taskType: TaskType.small,
         name: 'Tester',
         expectedDuration: 0,
@@ -2241,6 +2249,8 @@ void main() async {
         lastUpdated: DateTime.now());
 
     Deadline deadline = Deadline(
+        id: Constants.generateID(),
+        repeatID: Constants.generateID(),
         name: 'Tester',
         repeatable: true,
         startDate: startDate,
@@ -2253,6 +2263,8 @@ void main() async {
         lastUpdated: DateTime.now());
 
     Reminder reminder = Reminder(
+        id: Constants.generateID(),
+        repeatID: Constants.generateID(),
         name: "Tester",
         repeatDays: List.generate(7, (i) => false),
         dueDate: startDate,
@@ -2493,6 +2505,7 @@ void main() async {
   group("Current Model, mutate all", () {
     ToDo toDo = ToDo(
         id: Constants.generateID(),
+        repeatID: Constants.generateID(),
         taskType: TaskType.small,
         name: 'Tester',
         expectedDuration: 0,
@@ -2508,6 +2521,8 @@ void main() async {
         lastUpdated: DateTime.now());
 
     Deadline deadline = Deadline(
+        id: Constants.generateID(),
+        repeatID: Constants.generateID(),
         name: 'Tester',
         repeatable: true,
         startDate: startDate,
@@ -2520,6 +2535,8 @@ void main() async {
         lastUpdated: DateTime.now());
 
     Reminder reminder = Reminder(
+        id: Constants.generateID(),
+        repeatID: Constants.generateID(),
         name: "Tester",
         repeatDays: List.generate(7, (i) => false),
         dueDate: startDate,
@@ -2791,6 +2808,7 @@ void main() async {
   group("Projected Model, mutate single", () {
     ToDo toDo = ToDo(
         id: Constants.generateID(),
+        repeatID: Constants.generateID(),
         taskType: TaskType.small,
         name: 'Tester',
         expectedDuration: 0,
@@ -2806,6 +2824,8 @@ void main() async {
         lastUpdated: DateTime.now());
 
     Deadline deadline = Deadline(
+        id: Constants.generateID(),
+        repeatID: Constants.generateID(),
         name: 'Tester',
         repeatable: true,
         startDate: startDate,
@@ -2818,6 +2838,8 @@ void main() async {
         lastUpdated: DateTime.now());
 
     Reminder reminder = Reminder(
+        id: Constants.generateID(),
+        repeatID: Constants.generateID(),
         name: "Tester",
         repeatDays: List.generate(7, (i) => false),
         dueDate: startDate,
@@ -3102,6 +3124,7 @@ void main() async {
   group("Projected Model, delete single", () {
     ToDo toDo = ToDo(
         id: Constants.generateID(),
+        repeatID: Constants.generateID(),
         taskType: TaskType.small,
         name: 'Tester',
         expectedDuration: 0,
@@ -3117,6 +3140,8 @@ void main() async {
         lastUpdated: DateTime.now());
 
     Deadline deadline = Deadline(
+        id: Constants.generateID(),
+        repeatID: Constants.generateID(),
         name: 'Tester',
         repeatable: true,
         startDate: startDate,
@@ -3129,6 +3154,8 @@ void main() async {
         lastUpdated: DateTime.now());
 
     Reminder reminder = Reminder(
+        id: Constants.generateID(),
+        repeatID: Constants.generateID(),
         name: "Tester",
         repeatDays: List.generate(7, (i) => false),
         dueDate: startDate,
@@ -3415,6 +3442,7 @@ void main() async {
   group("Projected Model, mutate all", () {
     ToDo toDo = ToDo(
         id: Constants.generateID(),
+        repeatID: Constants.generateID(),
         taskType: TaskType.small,
         name: 'Tester',
         expectedDuration: 0,
@@ -3430,6 +3458,8 @@ void main() async {
         lastUpdated: DateTime.now());
 
     Deadline deadline = Deadline(
+        id: Constants.generateID(),
+        repeatID: Constants.generateID(),
         name: 'Tester',
         repeatable: true,
         startDate: startDate,
@@ -3442,6 +3472,8 @@ void main() async {
         lastUpdated: DateTime.now());
 
     Reminder reminder = Reminder(
+        id: Constants.generateID(),
+        repeatID: Constants.generateID(),
         name: "Tester",
         repeatDays: List.generate(7, (i) => false),
         dueDate: startDate,
@@ -3735,6 +3767,7 @@ void main() async {
   group("Projected model, delete all", () {
     ToDo toDo = ToDo(
         id: Constants.generateID(),
+        repeatID: Constants.generateID(),
         taskType: TaskType.small,
         name: 'Tester',
         expectedDuration: 0,
@@ -3750,6 +3783,8 @@ void main() async {
         lastUpdated: DateTime.now());
 
     Deadline deadline = Deadline(
+        id: Constants.generateID(),
+        repeatID: Constants.generateID(),
         name: 'Tester',
         repeatable: true,
         startDate: startDate,
@@ -3762,6 +3797,8 @@ void main() async {
         lastUpdated: DateTime.now());
 
     Reminder reminder = Reminder(
+        id: Constants.generateID(),
+        repeatID: Constants.generateID(),
         name: "Tester",
         repeatDays: List.generate(7, (i) => false),
         dueDate: startDate,
@@ -4029,6 +4066,7 @@ void main() async {
   group("Invalid Repeating", () {
     ToDo toDo = ToDo(
         id: Constants.generateID(),
+        repeatID: Constants.generateID(),
         taskType: TaskType.small,
         name: 'Tester',
         expectedDuration: 0,
@@ -4044,6 +4082,8 @@ void main() async {
         lastUpdated: DateTime.now());
 
     Deadline deadline = Deadline(
+        id: Constants.generateID(),
+        repeatID: Constants.generateID(),
         name: 'Tester',
         repeatable: true,
         startDate: startDate,
@@ -4056,6 +4096,8 @@ void main() async {
         lastUpdated: DateTime.now());
 
     Reminder reminder = Reminder(
+        id: Constants.generateID(),
+        repeatID: Constants.generateID(),
         name: "Tester",
         repeatDays: List.generate(7, (i) => false),
         dueDate: startDate,

@@ -5,7 +5,6 @@ import 'package:flutter/foundation.dart';
 
 import '../../model/task/routine.dart';
 import '../../model/task/subtask.dart';
-import '../../model/user/user.dart';
 import '../../repositories/routine_repo.dart';
 import '../../repositories/subtask_repo.dart';
 import '../../util/constants.dart';
@@ -15,6 +14,7 @@ import '../../util/interfaces/repository/model/routine_repository.dart';
 import '../../util/interfaces/repository/model/subtask_repository.dart';
 import '../../util/numbers.dart';
 import '../../util/sorting/routine_sorter.dart';
+import '../viewmodels/user_viewmodel.dart';
 
 class RoutineProvider extends ChangeNotifier {
   bool _rebuild = true;
@@ -42,7 +42,7 @@ class RoutineProvider extends ChangeNotifier {
   late final RoutineRepository _routineRepo;
   late final SubtaskRepository _subtaskRepo;
 
-  User? user;
+  UserViewModel? userViewModel;
   Routine? curRoutine;
 
   Routine? _curMorning;
@@ -54,16 +54,14 @@ class RoutineProvider extends ChangeNotifier {
   int? _aftID;
   int? _eveID;
 
-  final Map<int, ValueNotifier<int>> routineSubtaskCounts = {
-    Constants.intMax: ValueNotifier<int>(0),
-  };
+  final Map<int, ValueNotifier<int>> routineSubtaskCounts = {};
 
   // CONSTRUCTOR
   RoutineProvider({
-    this.user,
+    this.userViewModel,
     RoutineRepository? routineRepository,
     SubtaskRepository? subtaskRepository,
-  })  : sorter = user?.routineSorter ?? RoutineSorter(),
+  })  : sorter = userViewModel?.routineSorter ?? RoutineSorter(),
         _routineRepo = routineRepository ?? RoutineRepo.instance,
         _subtaskRepo = subtaskRepository ?? SubtaskRepo.instance {
     init();
@@ -81,21 +79,21 @@ class RoutineProvider extends ChangeNotifier {
 
   set curMorning(Routine? newRoutine) {
     _curMorning = newRoutine;
-    user?.curMornID = newRoutine?.id;
+    userViewModel?.curMornID = newRoutine?.id;
     // For testing
     _morningID = newRoutine?.id;
   }
 
   set curAfternoon(Routine? newRoutine) {
     _curAfternoon = newRoutine;
-    user?.curAftID = newRoutine?.id;
+    userViewModel?.curAftID = newRoutine?.id;
     // For testing
     _aftID = newRoutine?.id;
   }
 
   set curEvening(Routine? newRoutine) {
     _curEvening = newRoutine;
-    user?.curEveID = newRoutine?.id;
+    userViewModel?.curEveID = newRoutine?.id;
     // For testing
     _eveID = newRoutine?.id;
   }
@@ -146,9 +144,9 @@ class RoutineProvider extends ChangeNotifier {
 
   late RoutineSorter sorter;
 
-  void setUser({User? newUser}) {
-    user = newUser;
-    sorter = user?.routineSorter ?? sorter;
+  void setUser({UserViewModel? newUser}) {
+    userViewModel = newUser;
+    sorter = userViewModel?.routineSorter ?? sorter;
     notifyListeners();
   }
 
@@ -167,16 +165,16 @@ class RoutineProvider extends ChangeNotifier {
   }
 
   Future<void> setDailyRoutines() async {
-    curMorning = (null != user?.curMornID!)
-        ? await _routineRepo.getByID(id: user!.curMornID!)
+    _curMorning = (null != userViewModel?.curMornID)
+        ? await _routineRepo.getByID(id: userViewModel!.curMornID!)
         : null;
 
-    curAfternoon = (null != user?.curAftID!)
-        ? await _routineRepo.getByID(id: user!.curAftID!)
+    _curAfternoon = (null != userViewModel?.curAftID)
+        ? await _routineRepo.getByID(id: userViewModel!.curAftID!)
         : null;
 
-    curEvening = (null != user?.curAftID!)
-        ? await _routineRepo.getByID(id: user!.curAftID!)
+    _curEvening = (null != userViewModel?.curAftID)
+        ? await _routineRepo.getByID(id: userViewModel!.curAftID!)
         : null;
     notifyListeners();
   }
@@ -190,7 +188,7 @@ class RoutineProvider extends ChangeNotifier {
       sorter.sortMethod = method;
       sorter.descending = false;
     }
-    user?.routineSorter = sorter;
+    userViewModel?.routineSorter = sorter;
     notifyListeners();
   }
 
@@ -234,33 +232,9 @@ class RoutineProvider extends ChangeNotifier {
   }
 
   // Refactor this please - RoutineModel.
-  Future<void> createRoutine({
-    required String name,
-    int? expectedDuration,
-    int? realDuration,
-    int? weight,
-    int? times,
-    List<Subtask>? subtasks,
-  }) async {
-    times = times ?? 0;
-    subtasks =
-        subtasks ?? await _subtaskRepo.getRepoByTaskID(id: Constants.intMax);
-    weight = weight ?? await getWeight(taskID: Constants.intMax);
-    expectedDuration = expectedDuration ?? (const Duration(hours: 1)).inSeconds;
-    realDuration = realDuration ??
-        calculateRealDuration(weight: weight, duration: expectedDuration);
-
-    curRoutine = Routine(
-        name: name,
-        weight: weight,
-        expectedDuration: expectedDuration,
-        realDuration: realDuration,
-        subtasks: subtasks,
-        lastUpdated: DateTime.now());
-
+  Future<void> createRoutine(Routine routine, int times) async {
     try {
-      curRoutine = await _routineRepo.create(curRoutine!);
-      await _updateSubtasks(subtasks: subtasks, taskID: curRoutine!.id);
+      curRoutine = await _routineRepo.create(routine);
     } on FailureToCreateException catch (e) {
       log(e.cause);
       return Future.error(e);
@@ -270,13 +244,11 @@ class RoutineProvider extends ChangeNotifier {
       return updateRoutine();
     }
 
-    routineSubtaskCounts[Constants.intMax]!.value = 0;
     setDailyRoutine(timeOfDay: times, routine: curRoutine);
     notifyListeners();
   }
 
   Future<void> updateRoutine({Routine? routine, int? times}) async {
-    routine = routine ?? curRoutine;
     await updateRoutineAsync(routine: routine);
     if (null != times) {
       unsetDailyRoutine(id: routine!.id);
@@ -286,8 +258,11 @@ class RoutineProvider extends ChangeNotifier {
   }
 
   Future<void> updateRoutineAsync({Routine? routine}) async {
-    routine = routine ?? curRoutine!;
-    routine.lastUpdated = DateTime.now();
+    routine = routine ?? curRoutine;
+
+    if (null == routine) {
+      throw FailureToUpdateException("Invalid model provided");
+    }
 
     try {
       curRoutine = await _routineRepo.update(routine);

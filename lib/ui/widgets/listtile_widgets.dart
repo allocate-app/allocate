@@ -41,7 +41,7 @@ abstract class ListTileWidgets {
             outerPadding: outerPadding,
             icon: const Icon(Icons.task_rounded)),
         ModelType.deadline => deadlineIcon(
-            currentContext: currentContext,
+            context: currentContext,
             iconPadding: iconPadding,
             outerPadding: outerPadding),
         ModelType.reminder => reminderIcon(
@@ -54,12 +54,12 @@ abstract class ListTileWidgets {
   // This has no functionality at the moment. If a feature is added,
   // this will become a button.
   static Widget deadlineIcon({
-    required BuildContext currentContext,
+    required BuildContext context,
     EdgeInsetsGeometry iconPadding = EdgeInsets.zero,
     EdgeInsetsGeometry outerPadding = EdgeInsets.zero,
   }) =>
       outlinedIcon(
-          currentContext: currentContext,
+          currentContext: context,
           iconPadding: iconPadding,
           outerPadding: outerPadding,
           icon: const Icon(Icons.announcement_rounded));

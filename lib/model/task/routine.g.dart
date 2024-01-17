@@ -145,16 +145,16 @@ Routine _routineDeserialize(
   Map<Type, List<int>> allOffsets,
 ) {
   final object = Routine(
-    expectedDuration: reader.readLong(offsets[1]),
+    customViewIndex: reader.readLongOrNull(offsets[0]) ?? -1,
+    expectedDuration: reader.readLongOrNull(offsets[1]) ?? 0,
+    id: id,
+    isSynced: reader.readBoolOrNull(offsets[2]) ?? false,
     lastUpdated: reader.readDateTime(offsets[3]),
     name: reader.readString(offsets[4]),
-    realDuration: reader.readLong(offsets[5]),
+    realDuration: reader.readLongOrNull(offsets[5]) ?? 0,
+    toDelete: reader.readBoolOrNull(offsets[6]) ?? false,
     weight: reader.readLongOrNull(offsets[7]) ?? 0,
   );
-  object.customViewIndex = reader.readLong(offsets[0]);
-  object.id = id;
-  object.isSynced = reader.readBool(offsets[2]);
-  object.toDelete = reader.readBool(offsets[6]);
   return object;
 }
 
@@ -166,19 +166,19 @@ P _routineDeserializeProp<P>(
 ) {
   switch (propertyId) {
     case 0:
-      return (reader.readLong(offset)) as P;
+      return (reader.readLongOrNull(offset) ?? -1) as P;
     case 1:
-      return (reader.readLong(offset)) as P;
+      return (reader.readLongOrNull(offset) ?? 0) as P;
     case 2:
-      return (reader.readBool(offset)) as P;
+      return (reader.readBoolOrNull(offset) ?? false) as P;
     case 3:
       return (reader.readDateTime(offset)) as P;
     case 4:
       return (reader.readString(offset)) as P;
     case 5:
-      return (reader.readLong(offset)) as P;
+      return (reader.readLongOrNull(offset) ?? 0) as P;
     case 6:
-      return (reader.readBool(offset)) as P;
+      return (reader.readBoolOrNull(offset) ?? false) as P;
     case 7:
       return (reader.readLongOrNull(offset) ?? 0) as P;
     default:

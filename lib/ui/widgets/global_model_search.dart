@@ -14,6 +14,9 @@ import '../../providers/model/group_provider.dart';
 import '../../providers/model/reminder_provider.dart';
 import '../../providers/model/routine_provider.dart';
 import '../../providers/model/todo_provider.dart';
+import '../../providers/viewmodels/deadline_viewmodel.dart';
+import '../../providers/viewmodels/reminder_viewmodel.dart';
+import '../../providers/viewmodels/routine_viewmodel.dart';
 import '../../providers/viewmodels/todo_viewmodel.dart';
 import '../../util/constants.dart';
 import '../../util/enums.dart';
@@ -100,8 +103,9 @@ class _GlobalModelSearch extends State<GlobalModelSearch> {
           if (null == deadline) {
             return;
           }
-          return await openDialog(
-              dialog: UpdateDeadlineScreen(initialDeadline: deadline));
+          Provider.of<DeadlineViewModel>(context, listen: false)
+              .fromModel(model: deadline);
+          return await openDialog(dialog: const UpdateDeadlineScreen());
         });
         break;
       case ModelType.reminder:
@@ -111,8 +115,9 @@ class _GlobalModelSearch extends State<GlobalModelSearch> {
           if (null == reminder) {
             return;
           }
-          return await openDialog(
-              dialog: UpdateReminderScreen(initialReminder: reminder));
+          Provider.of<ReminderViewModel>(context, listen: false)
+              .fromModel(model: reminder);
+          return await openDialog(dialog: const UpdateReminderScreen());
         });
         break;
       case ModelType.routine:
@@ -122,8 +127,10 @@ class _GlobalModelSearch extends State<GlobalModelSearch> {
           if (null == routine) {
             return;
           }
-          return await openDialog(
-              dialog: UpdateRoutineScreen(initialRoutine: routine));
+          Provider.of<RoutineViewModel>(context, listen: false).fromModel(
+              model: routine,
+              times: routineProvider.getRoutineTime(routine: routine));
+          return await openDialog(dialog: const UpdateRoutineScreen());
         });
         break;
       case ModelType.group:

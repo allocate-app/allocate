@@ -1,40 +1,37 @@
 import "dart:io";
 
-import "package:another_flushbar/flushbar.dart";
+import "package:allocate/providers/application/layout_provider.dart";
 import "package:flutter/material.dart";
 import "package:flutter/semantics.dart";
 import "package:provider/provider.dart";
 
-import "../../../model/task/routine.dart";
 import "../../../model/task/subtask.dart";
 import '../../../providers/model/routine_provider.dart';
 import '../../../providers/model/subtask_provider.dart';
-import '../../../providers/model/user_provider.dart';
+import "../../../providers/viewmodels/routine_viewmodel.dart";
 import "../../../util/constants.dart";
 import "../../../util/enums.dart";
 import "../../../util/exceptions.dart";
-import "../../widgets/flushbars.dart";
 import "../../widgets/listtile_widgets.dart";
 import "../../widgets/padded_divider.dart";
 import "../../widgets/tiles.dart";
 import "../../widgets/title_bar.dart";
 
 class UpdateRoutineScreen extends StatefulWidget {
-  final Routine? initialRoutine;
-
-  const UpdateRoutineScreen({super.key, this.initialRoutine});
+  const UpdateRoutineScreen({super.key});
 
   @override
   State<UpdateRoutineScreen> createState() => _UpdateRoutineScreen();
 }
 
 class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
-  late bool checkClose;
-  late bool expanded;
+  late ValueNotifier<bool> _checkClose;
+  late ValueNotifier<String?> _nameErrorText;
 
+  late final RoutineViewModel vm;
   late final RoutineProvider routineProvider;
   late final SubtaskProvider subtaskProvider;
-  late final UserProvider userProvider;
+  late final LayoutProvider layoutProvider;
 
   // Scrolling
   late final ScrollController mobileScrollController;
@@ -45,33 +42,29 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
   late final MenuController subtasksAnchorController;
 
   late final TextEditingController nameEditingController;
-  String? nameErrorText;
-
-  // RoutineTasks
-  late final List<Subtask> cacheRoutineTasks;
-  late int shownTasks;
-
-  // Convenience method to avoid typing
-  Routine get routine => routineProvider.curRoutine!;
-
-  // For setting routine TOD for main screen
-  int? times;
 
   @override
   void initState() {
     super.initState();
     initializeProviders();
-
     initializeParameters();
-
     initializeControllers();
     resetSubtasks();
   }
 
+  void initializeProviders() {
+    routineProvider = Provider.of<RoutineProvider>(context, listen: false);
+
+    vm = Provider.of<RoutineViewModel>(context, listen: false);
+
+    subtaskProvider = Provider.of<SubtaskProvider>(context, listen: false);
+
+    subtaskProvider.addListener(resetSubtasks);
+  }
+
   void initializeParameters() {
-    checkClose = false;
-    expanded = true;
-    times = routineProvider.getRoutineTime(routine: routine);
+    _checkClose = ValueNotifier(false);
+    _nameErrorText = ValueNotifier(null);
   }
 
   void initializeControllers() {
@@ -81,34 +74,15 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
         ? const BouncingScrollPhysics()
         : const ClampingScrollPhysics();
     scrollPhysics = AlwaysScrollableScrollPhysics(parent: parentPhysics);
-    nameEditingController = TextEditingController(text: routine.name);
-    nameEditingController.addListener(() {
-      if (null != nameErrorText && mounted) {
-        setState(() {
-          nameErrorText = null;
-        });
-      }
-      checkClose = userProvider.curUser?.checkClose ?? true;
-      String newText = nameEditingController.text;
-      SemanticsService.announce(newText, Directionality.of(context));
-    });
+    nameEditingController = TextEditingController(text: vm.name);
+    nameEditingController.addListener(watchName);
 
     subtasksAnchorController = MenuController();
   }
 
-  void initializeProviders() {
-    routineProvider = Provider.of<RoutineProvider>(context, listen: false);
-    if (null != widget.initialRoutine) {
-      routineProvider.curRoutine = widget.initialRoutine;
-    }
-    subtaskProvider = Provider.of<SubtaskProvider>(context, listen: false);
-
-    subtaskProvider.addListener(resetSubtasks);
-    userProvider = Provider.of<UserProvider>(context, listen: false);
-  }
-
   @override
   void dispose() {
+    nameEditingController.removeListener(watchName);
     nameEditingController.dispose();
     mobileScrollController.dispose();
     desktopScrollController.dispose();
@@ -116,24 +90,30 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
     super.dispose();
   }
 
+  void watchName() {
+    _checkClose.value = routineProvider.userViewModel?.checkClose ?? true;
+    String newText = nameEditingController.text;
+    SemanticsService.announce(newText, Directionality.of(context));
+    vm.name = newText;
+    if (null != _nameErrorText.value) {
+      _nameErrorText.value = null;
+    }
+  }
+
   Future<void> resetSubtasks() async {
     List<Subtask> newSubtasks = await routineProvider.getSubtasks(
-      id: routine.id,
-    );
+        id: vm.id, limit: Constants.maxNumTasks);
 
-    if (!(userProvider.curUser?.reduceMotion ?? false)) {
+    if (!(routineProvider.userViewModel?.reduceMotion ?? false)) {
       onFetch(items: newSubtasks);
     }
 
-    routine.subtasks = newSubtasks;
-    routineProvider.setSubtaskCount(
-        id: routine.id, count: routine.subtasks.length);
-    routine.weight = await routineProvider.getWeight(taskID: routine.id);
-    routine.realDuration = routineProvider.calculateRealDuration(
-        weight: routine.weight, duration: routine.expectedDuration);
-    if (mounted) {
-      setState(() {});
-    }
+    vm.subtasks = newSubtasks;
+    routineProvider.setSubtaskCount(id: vm.id, count: vm.subtasks.length);
+    vm.weight = await routineProvider.getWeight(
+        taskID: vm.id, limit: Constants.maxNumTasks);
+
+    subtaskProvider.rebuild = false;
   }
 
   bool validateData() {
@@ -141,8 +121,12 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
 
     if (nameEditingController.text.isEmpty) {
       valid = false;
-      if (mounted) {
-        setState(() => nameErrorText = "Enter Routine Name");
+      _nameErrorText.value = "Enter Task Name";
+      if (desktopScrollController.hasClients) {
+        desktopScrollController.jumpTo(0);
+      }
+      if (mobileScrollController.hasClients) {
+        mobileScrollController.jumpTo(0);
       }
     }
 
@@ -150,83 +134,24 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
   }
 
   Future<void> handleUpdate() async {
-    // in case the usr doesn't submit to the textfields
-    routine.name = nameEditingController.text;
-
-    await routineProvider.updateRoutine(times: times).whenComplete(() {
+    await routineProvider
+        .updateRoutine(routine: vm.toModel(), times: vm.routineTimes)
+        .whenComplete(() {
+      vm.clear();
       Navigator.pop(context);
-    }).catchError((e) {
-      Flushbar? error;
-
-      error = Flushbars.createError(
-        message: e.cause,
-        context: context,
-        dismissCallback: () => error?.dismiss(),
-      );
-
-      error.show(context);
-    },
-        test: (e) =>
-            e is FailureToCreateException || e is FailureToUploadException);
+    }).catchError((e) => Tiles.displayError(context: context, e: e),
+            test: (e) =>
+                e is FailureToCreateException || e is FailureToUploadException);
   }
 
   void handleClose({required bool willDiscard}) {
     if (willDiscard) {
       routineProvider.rebuild = true;
-      return Navigator.pop(context);
+      vm.clear();
+      Navigator.pop(context);
     }
 
-    if (mounted) {
-      setState(() => checkClose = false);
-    }
-  }
-
-  void clearNameField() {
-    if (mounted) {
-      setState(() {
-        checkClose = userProvider.curUser?.checkClose ?? true;
-        nameEditingController.clear();
-        routine.name = "";
-      });
-    }
-  }
-
-  void updateName() {
-    if (mounted) {
-      setState(() {
-        routine.name = nameEditingController.text;
-      });
-    }
-  }
-
-  void changeRoutineTime({required int newRoutineTimes}) {
-    if (mounted) {
-      setState(() {
-        checkClose = userProvider.curUser?.checkClose ?? true;
-        times = newRoutineTimes;
-      });
-    }
-  }
-
-  void updateDuration(int? value) {
-    if (mounted) {
-      setState(() {
-        checkClose = userProvider.curUser?.checkClose ?? true;
-        routine.expectedDuration = value ?? routine.expectedDuration;
-        routine.realDuration = routineProvider.calculateRealDuration(
-            weight: routine.weight, duration: routine.expectedDuration);
-      });
-    }
-  }
-
-  void clearDuration() {
-    if (mounted) {
-      setState(() {
-        checkClose = userProvider.curUser?.checkClose ?? true;
-        routine.expectedDuration = 0;
-        routine.realDuration = 0;
-      });
-    }
+    _checkClose.value = false;
   }
 
   Future<void> updateAndValidate() async {
@@ -237,18 +162,10 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
 
   Future<void> handleDelete() async {
     return await routineProvider.deleteRoutine().whenComplete(() {
+      vm.clear();
       Navigator.pop(context);
-    }).catchError((e) {
-      Flushbar? error;
-
-      error = Flushbars.createError(
-        message: e.cause,
-        context: context,
-        dismissCallback: () => error?.dismiss(),
-      );
-
-      error.show(context);
-    }, test: (e) => e is FailureToDeleteException);
+    }).catchError((e) => Tiles.displayError(context: context, e: e),
+        test: (e) => e is FailureToDeleteException);
   }
 
   void onFetch({List<Subtask>? items}) {
@@ -285,150 +202,95 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    MediaQuery.sizeOf(context);
-    return (userProvider.largeScreen)
-        ? buildDesktopDialog(
-            context: context,
-            smallScreen: userProvider.smallScreen,
-            hugeScreen: userProvider.hugeScreen)
-        : buildMobileDialog(
-            context: context, smallScreen: userProvider.smallScreen);
-  }
+  Widget build(BuildContext context) => LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints constraints) {
+          if (constraints.maxWidth > Constants.largeScreen) {
+            return _buildDesktopDialog(
+              context: context,
+            );
+          }
+          return _buildMobileDialog(
+              context: context, smallScreen: layoutProvider.smallScreen);
+        },
+      );
 
-  Dialog buildDesktopDialog(
-      {required BuildContext context,
-      bool smallScreen = false,
-      bool hugeScreen = false}) {
+  Dialog _buildDesktopDialog({
+    required BuildContext context,
+  }) {
     return Dialog(
       insetPadding: const EdgeInsets.all(Constants.outerDialogPadding),
-      child: Padding(
-        padding: const EdgeInsets.all(Constants.padding),
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          // Title && Close Button
-          TitleBar(
-            context: context,
-            title: "Edit Routine",
-            centerWidget: (routine.expectedDuration > 0)
-                ? TitleBar.durationCenterWidget(
-                    expectedDuration: routine.expectedDuration,
-                    realDuration: routine.realDuration)
-                : null,
-            checkClose: checkClose,
-            padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
-            handleClose: handleClose,
-          ),
-
-          const PaddedDivider(padding: Constants.halfPadding),
-          Flexible(
-            child: Material(
-              color: Colors.transparent,
-              child: Scrollbar(
-                thumbVisibility: true,
-                controller: desktopScrollController,
-                child: ListView(
-                  shrinkWrap: true,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(
+            maxHeight: Constants.maxDesktopDialogHeight,
+            maxWidth: Constants.maxDesktopDialogWidth),
+        child: Padding(
+          padding: const EdgeInsets.all(Constants.padding),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            // Title && Close Button
+            _buildTitleBar(),
+            const PaddedDivider(padding: Constants.halfPadding),
+            Flexible(
+              child: Material(
+                color: Colors.transparent,
+                child: Scrollbar(
+                  thumbVisibility: true,
                   controller: desktopScrollController,
-                  physics: scrollPhysics,
-                  children: [
-                    Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Flexible(
-                              child: ListView(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: Constants.halfPadding),
-                                  shrinkWrap: true,
-                                  physics: const NeverScrollableScrollPhysics(),
-                                  children: [
-                                // Title
+                  child: ListView(
+                      shrinkWrap: true,
+                      controller: desktopScrollController,
+                      physics: scrollPhysics,
+                      children: [
+                        Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Flexible(
+                                  child: ListView(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: Constants.halfPadding),
+                                      shrinkWrap: true,
+                                      children: [
+                                    // Title
 
-                                Tiles.nameTile(
-                                    context: context,
-                                    leading: ListTileWidgets.routineIcon(
-                                      currentContext: context,
-                                      scale: Constants.largeCheckboxMinScale,
-                                      times: times ?? 0,
-                                      handleRoutineTimeChange:
-                                          changeRoutineTime,
-                                    ),
-                                    hintText: "Routine Name",
-                                    errorText: nameErrorText,
-                                    controller: nameEditingController,
-                                    outerPadding: const EdgeInsets.symmetric(
-                                        vertical: Constants.padding),
-                                    textFieldPadding: const EdgeInsets.only(
-                                      left: Constants.padding,
-                                    ),
-                                    handleClear: clearNameField,
-                                    onEditingComplete: updateName),
-                                Tiles.weightTile(
-                                  outerPadding: const EdgeInsets.all(
-                                      Constants.doublePadding),
-                                  batteryPadding: const EdgeInsets.symmetric(
-                                      horizontal: Constants.padding),
-                                  constraints:
-                                      const BoxConstraints(maxWidth: 200),
-                                  weight: routine.weight.toDouble(),
-                                  max: Constants.maxWeight.toDouble(),
-                                ),
-                                const PaddedDivider(padding: Constants.padding),
-                                Tiles.durationTile(
-                                  expectedDuration: routine.expectedDuration,
-                                  context: context,
-                                  realDuration: routine.realDuration,
-                                  handleClear: clearDuration,
-                                  handleUpdate: updateDuration,
-                                ),
-                              ])),
-                          Flexible(
-                              child: ListView(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: Constants.halfPadding),
-                                  physics: const NeverScrollableScrollPhysics(),
-                                  shrinkWrap: true,
-                                  children: [
-                                Tiles.subtasksTile(
-                                  context: context,
-                                  id: routine.id,
-                                  subtasksAnchorController:
-                                      subtasksAnchorController,
-                                  onAnchorOpen: onAnchorOpen,
-                                  onAnchorClose: onAnchorClose,
-                                  onRemove:
-                                      (userProvider.curUser?.reduceMotion ??
-                                              false)
-                                          ? null
-                                          : onRemove,
-                                  subtasks: routine.subtasks,
-                                  subtaskCount: routineProvider.getSubtaskCount(
-                                      id: routine.id),
-                                )
-                              ]))
-                        ]),
-                  ],
+                                    _buildNameTile(),
+                                    _buildWeightTile(),
+                                    const PaddedDivider(
+                                        padding: Constants.padding),
+                                    _buildDurationTile(),
+                                  ])),
+                              Flexible(
+                                  child: ListView(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: Constants.halfPadding),
+                                      physics:
+                                          const NeverScrollableScrollPhysics(),
+                                      shrinkWrap: true,
+                                      children: [
+                                    _buildSubtasksTile(),
+                                  ]))
+                            ]),
+                      ]),
                 ),
               ),
             ),
-          ),
 
-          const PaddedDivider(padding: Constants.halfPadding),
-          Tiles.updateAndDeleteButtons(
-            handleDelete: handleDelete,
-            updateButtonPadding:
-                const EdgeInsets.symmetric(horizontal: Constants.padding),
-            deleteButtonPadding:
-                const EdgeInsets.symmetric(horizontal: Constants.padding),
-            handleUpdate: updateAndValidate,
-          ),
-        ]),
+            const PaddedDivider(padding: Constants.halfPadding),
+            Tiles.updateAndDeleteButtons(
+              handleDelete: handleDelete,
+              updateButtonPadding:
+                  const EdgeInsets.symmetric(horizontal: Constants.padding),
+              deleteButtonPadding:
+                  const EdgeInsets.symmetric(horizontal: Constants.padding),
+              handleUpdate: updateAndValidate,
+            ),
+          ]),
+        ),
       ),
     );
   }
 
-  Dialog buildMobileDialog(
+  Dialog _buildMobileDialog(
       {required BuildContext context, bool smallScreen = false}) {
     return Dialog(
       insetPadding: EdgeInsets.all((smallScreen)
@@ -441,19 +303,7 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               // Title && Close Button
-              TitleBar(
-                context: context,
-                title: "Edit Routine",
-                centerWidget: (routine.expectedDuration > 0)
-                    ? TitleBar.durationCenterWidget(
-                        expectedDuration: routine.expectedDuration,
-                        realDuration: routine.realDuration)
-                    : null,
-                checkClose: checkClose,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: Constants.padding),
-                handleClose: handleClose,
-              ),
+              _buildTitleBar(),
               const PaddedDivider(padding: Constants.halfPadding),
               Flexible(
                 child: ListView(
@@ -461,54 +311,14 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
                   controller: mobileScrollController,
                   physics: scrollPhysics,
                   children: [
-                    Tiles.nameTile(
-                        context: context,
-                        leading: ListTileWidgets.routineIcon(
-                          currentContext: context,
-                          scale: Constants.largeCheckboxMinScale,
-                          times: times ?? 0,
-                          handleRoutineTimeChange: changeRoutineTime,
-                        ),
-                        hintText: "Routine Name",
-                        errorText: nameErrorText,
-                        controller: nameEditingController,
-                        outerPadding: const EdgeInsets.symmetric(
-                            vertical: Constants.padding),
-                        textFieldPadding: const EdgeInsets.only(
-                          left: Constants.padding,
-                        ),
-                        handleClear: clearNameField,
-                        onEditingComplete: updateName),
-                    Tiles.weightTile(
-                      outerPadding:
-                          const EdgeInsets.all(Constants.doublePadding),
-                      batteryPadding: const EdgeInsets.symmetric(
-                          horizontal: Constants.padding),
-                      constraints: const BoxConstraints(maxWidth: 200),
-                      weight: routine.weight.toDouble(),
-                      max: Constants.maxWeight.toDouble(),
-                    ),
+                    _buildNameTile(),
+                    _buildWeightTile(),
                     const PaddedDivider(padding: Constants.padding),
                     // Expected Duration / RealDuration -> Show status, on click, open a dialog.
-                    Tiles.durationTile(
-                      expectedDuration: routine.expectedDuration,
-                      context: context,
-                      realDuration: routine.realDuration,
-                      handleClear: clearDuration,
-                      handleUpdate: updateDuration,
-                    ),
-
+                    _buildDurationTile(),
                     const PaddedDivider(padding: Constants.padding),
 
-                    Tiles.subtasksTile(
-                        context: context,
-                        id: routine.id,
-                        subtasksAnchorController: subtasksAnchorController,
-                        onAnchorOpen: onAnchorOpen,
-                        onAnchorClose: onAnchorClose,
-                        subtasks: routine.subtasks,
-                        subtaskCount:
-                            routineProvider.getSubtaskCount(id: routine.id)),
+                    _buildSubtasksTile()
                   ],
                 ),
               ),
@@ -526,4 +336,110 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
       ),
     );
   }
+
+  Widget _buildTitleBar() => ValueListenableBuilder<bool>(
+        valueListenable: _checkClose,
+        builder: (BuildContext context, bool check, Widget? child) =>
+            Selector<RoutineViewModel, (int, int)>(
+          selector: (BuildContext context, RoutineViewModel vm) =>
+              (vm.expectedDuration, vm.realDuration),
+          builder: (BuildContext context, (int, int) value, Widget? child) {
+            return TitleBar(
+              context: context,
+              title: "Edit Routine",
+              centerWidget: (value.$1 > 0)
+                  ? TitleBar.durationCenterWidget(
+                      expectedDuration: value.$1,
+                      realDuration: value.$2,
+                    )
+                  : null,
+              handleClose: handleClose,
+              checkClose: check,
+              padding:
+                  const EdgeInsets.symmetric(horizontal: Constants.padding),
+            );
+          },
+        ),
+      );
+
+  Widget _buildNameTile() => ValueListenableBuilder<String?>(
+      valueListenable: _nameErrorText,
+      builder: (BuildContext context, String? errorText, Widget? child) =>
+          Selector<RoutineViewModel, (String, int)>(
+            selector: (BuildContext context, RoutineViewModel vm) =>
+                (vm.name, vm.routineTimes),
+            builder: (BuildContext context, (String, int) value,
+                    Widget? child) =>
+                Tiles.nameTile(
+                    context: context,
+                    leading: ListTileWidgets.routineIcon(
+                      currentContext: context,
+                      scale: Constants.largeCheckboxMinScale,
+                      times: value.$2,
+                      handleRoutineTimeChange: (
+                          {required int newRoutineTimes}) {
+                        vm.routineTimes = newRoutineTimes;
+                      },
+                    ),
+                    errorText: errorText,
+                    hintText: "Routine Name",
+                    controller: nameEditingController,
+                    outerPadding:
+                        const EdgeInsets.symmetric(vertical: Constants.padding),
+                    textFieldPadding:
+                        const EdgeInsets.only(left: Constants.padding),
+                    onEditingComplete: () {
+                      _checkClose.value =
+                          routineProvider.userViewModel?.checkClose ?? true;
+                      vm.name = nameEditingController.text;
+                    },
+                    handleClear: () {
+                      _checkClose.value =
+                          routineProvider.userViewModel?.checkClose ?? true;
+                      nameEditingController.clear();
+                      vm.name = "";
+                    }),
+          ));
+
+  Widget _buildWeightTile() => Selector<RoutineViewModel, int>(
+      selector: (BuildContext context, RoutineViewModel vm) => vm.weight,
+      builder: (BuildContext context, int value, Widget? child) =>
+          Tiles.weightTile(
+            outerPadding: const EdgeInsets.all(Constants.doublePadding),
+            batteryPadding: const EdgeInsets.all(Constants.padding),
+            constraints: const BoxConstraints(
+              maxWidth: 200,
+            ),
+            weight: value.toDouble(),
+            max: Constants.maxWeight.toDouble(),
+          ));
+
+  Widget _buildDurationTile() => Selector<RoutineViewModel, (int, int)>(
+        selector: (BuildContext context, RoutineViewModel vm) =>
+            (vm.expectedDuration, vm.realDuration),
+        builder: (BuildContext context, (int, int) value, Widget? child) =>
+            Tiles.durationTile(
+          context: context,
+          expectedDuration: value.$1,
+          realDuration: value.$2,
+          handleClear: vm.clearDuration,
+          handleUpdate: vm.updateDuration,
+        ),
+      );
+
+  Widget _buildSubtasksTile() => Selector<RoutineViewModel, UniqueKey>(
+      selector: (BuildContext context, RoutineViewModel vm) => vm.subtaskKey,
+      builder: (BuildContext context, UniqueKey value, Widget? child) =>
+          // TODO: Check and see if padding needed.
+          Tiles.subtasksTile(
+              context: context,
+              id: vm.id,
+              subtasksAnchorController: subtasksAnchorController,
+              onAnchorOpen: onAnchorOpen,
+              onAnchorClose: onAnchorClose,
+              onRemove: (routineProvider.userViewModel?.reduceMotion ?? false)
+                  ? null
+                  : onRemove,
+              subtasks: vm.subtasks,
+              subtaskCount: routineProvider.getSubtaskCount(id: vm.id)));
 }

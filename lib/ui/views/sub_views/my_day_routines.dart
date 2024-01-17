@@ -88,7 +88,7 @@ class _MyDayRoutines extends State<MyDayRoutines> {
     List<Subtask> newSubtasks =
         await routineProvider.getSubtasks(id: routine.id);
 
-    if (!(routineProvider.user?.reduceMotion ?? false)) {
+    if (!(routineProvider.userViewModel?.reduceMotion ?? false)) {
       onFetch(items: newSubtasks);
     }
 
@@ -154,7 +154,7 @@ class _MyDayRoutines extends State<MyDayRoutines> {
                   return Tiles.filledRoutineTile(
                       context: context,
                       onSubtaskRemove:
-                          (routineProvider.user?.reduceMotion ?? false)
+                          (routineProvider.userViewModel?.reduceMotion ?? false)
                               ? null
                               : onRemove,
                       routine: value.curMorning!,
@@ -170,7 +170,7 @@ class _MyDayRoutines extends State<MyDayRoutines> {
                   return Tiles.filledRoutineTile(
                       context: context,
                       onSubtaskRemove:
-                          (routineProvider.user?.reduceMotion ?? false)
+                          (routineProvider.userViewModel?.reduceMotion ?? false)
                               ? null
                               : onRemove,
                       routine: value.curAfternoon!,
@@ -186,7 +186,7 @@ class _MyDayRoutines extends State<MyDayRoutines> {
                   return Tiles.filledRoutineTile(
                       context: context,
                       onSubtaskRemove:
-                          (routineProvider.user?.reduceMotion ?? false)
+                          (routineProvider.userViewModel?.reduceMotion ?? false)
                               ? null
                               : onRemove,
                       routine: value.curEvening!,

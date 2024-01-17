@@ -299,6 +299,10 @@ class ReminderRepo implements ReminderRepository {
           .where()
           .toDeleteEqualTo(toDelete)
           .filter()
+          .group((q) => q
+              .repeatableStateEqualTo(RepeatableState.normal)
+              .or()
+              .repeatableStateEqualTo(RepeatableState.delta))
           .nameContains(searchString, caseSensitive: false)
           .limit(5)
           .findAll();
@@ -307,6 +311,12 @@ class ReminderRepo implements ReminderRepository {
   Future<List<Reminder>> mostRecent({int limit = 50}) async =>
       await _isarClient.reminders
           .where()
+          .toDeleteEqualTo(false)
+          .filter()
+          .group((q) => q
+              .repeatableStateEqualTo(RepeatableState.normal)
+              .or()
+              .repeatableStateEqualTo(RepeatableState.delta))
           .sortByLastUpdatedDesc()
           .limit(limit)
           .findAll();
@@ -321,7 +331,10 @@ class ReminderRepo implements ReminderRepository {
           .where()
           .toDeleteEqualTo(false)
           .filter()
-          .repeatableStateEqualTo(RepeatableState.normal)
+          .group((q) => q
+              .repeatableStateEqualTo(RepeatableState.normal)
+              .or()
+              .repeatableStateEqualTo(RepeatableState.delta))
           .sortByCustomViewIndex()
           .thenByLastUpdatedDesc()
           .offset(offset)
@@ -340,7 +353,10 @@ class ReminderRepo implements ReminderRepository {
               .where()
               .toDeleteEqualTo(false)
               .filter()
-              .repeatableStateEqualTo(RepeatableState.normal)
+              .group((q) => q
+                  .repeatableStateEqualTo(RepeatableState.normal)
+                  .or()
+                  .repeatableStateEqualTo(RepeatableState.delta))
               .sortByNameDesc()
               .thenByLastUpdatedDesc()
               .offset(offset)
@@ -351,7 +367,10 @@ class ReminderRepo implements ReminderRepository {
               .where()
               .toDeleteEqualTo(false)
               .filter()
-              .repeatableStateEqualTo(RepeatableState.normal)
+              .group((q) => q
+                  .repeatableStateEqualTo(RepeatableState.normal)
+                  .or()
+                  .repeatableStateEqualTo(RepeatableState.delta))
               .sortByNameDesc()
               .thenByLastUpdatedDesc()
               .offset(offset)
@@ -364,7 +383,10 @@ class ReminderRepo implements ReminderRepository {
               .where()
               .toDeleteEqualTo(false)
               .filter()
-              .repeatableStateEqualTo(RepeatableState.normal)
+              .group((q) => q
+                  .repeatableStateEqualTo(RepeatableState.normal)
+                  .or()
+                  .repeatableStateEqualTo(RepeatableState.delta))
               .sortByDueDateDesc()
               .thenByLastUpdatedDesc()
               .offset(offset)
@@ -375,7 +397,10 @@ class ReminderRepo implements ReminderRepository {
               .where()
               .toDeleteEqualTo(false)
               .filter()
-              .repeatableStateEqualTo(RepeatableState.normal)
+              .group((q) => q
+                  .repeatableStateEqualTo(RepeatableState.normal)
+                  .or()
+                  .repeatableStateEqualTo(RepeatableState.delta))
               .sortByDueDate()
               .thenByLastUpdatedDesc()
               .offset(offset)
@@ -393,7 +418,10 @@ class ReminderRepo implements ReminderRepository {
           .where()
           .toDeleteEqualTo(true)
           .filter()
-          .repeatableStateEqualTo(RepeatableState.normal)
+          .group((q) => q
+              .repeatableStateEqualTo(RepeatableState.normal)
+              .or()
+              .repeatableStateEqualTo(RepeatableState.delta))
           .sortByLastUpdatedDesc()
           .offset(offset)
           .limit(limit)
@@ -406,7 +434,10 @@ class ReminderRepo implements ReminderRepository {
           .dueDateGreaterThan(now ?? Constants.today)
           .filter()
           .toDeleteEqualTo(false)
-          .repeatableStateEqualTo(RepeatableState.normal)
+          .group((q) => q
+              .repeatableStateEqualTo(RepeatableState.normal)
+              .or()
+              .repeatableStateEqualTo(RepeatableState.delta))
           .sortByDueDate()
           .limit(limit)
           .findAll();
@@ -454,6 +485,7 @@ class ReminderRepo implements ReminderRepository {
           .repeatIDEqualTo(repeatID)
           .originalDueGreaterThan(now ?? Constants.today)
           .findAll();
+
   @override
   Future<Reminder?> getTemplate({required int repeatID}) async =>
       await _isarClient.reminders
@@ -498,7 +530,10 @@ class ReminderRepo implements ReminderRepository {
           .dueDateGreaterThan(Constants.today)
           .filter()
           .toDeleteEqualTo(false)
-          .repeatableStateEqualTo(RepeatableState.normal)
+          .group((q) => q
+              .repeatableStateEqualTo(RepeatableState.normal)
+              .or()
+              .repeatableStateEqualTo(RepeatableState.delta))
           .sortByDueDate()
           .thenByLastUpdatedDesc()
           .offset(offset)
@@ -512,7 +547,10 @@ class ReminderRepo implements ReminderRepository {
           .dueDateLessThan(Constants.today)
           .filter()
           .toDeleteEqualTo(false)
-          .repeatableStateEqualTo(RepeatableState.normal)
+          .group((q) => q
+              .repeatableStateEqualTo(RepeatableState.normal)
+              .or()
+              .repeatableStateEqualTo(RepeatableState.delta))
           .sortByDueDateDesc()
           .thenByLastUpdatedDesc()
           .offset(offset)

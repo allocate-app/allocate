@@ -28,7 +28,9 @@ import "../../widgets/tiles.dart";
 import "../../widgets/title_bar.dart";
 
 class UpdateToDoScreen extends StatefulWidget {
-  const UpdateToDoScreen({super.key});
+  final MapEntry<String, int>? initialGroup;
+
+  const UpdateToDoScreen({super.key, this.initialGroup});
 
   @override
   State<UpdateToDoScreen> createState() => _UpdateToDoScreen();
@@ -90,19 +92,12 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
     eventProvider = Provider.of<EventProvider>(context, listen: false);
     layoutProvider = Provider.of<LayoutProvider>(context, listen: false);
 
-    // if (null != widget.initialToDo) {
-    //   toDoProvider.curToDo = widget.initialToDo;
-    // }
-
     subtaskProvider.addListener(resetSubtasks);
   }
 
   void initializeParameters() {
     _checkClose = ValueNotifier(false);
     _nameErrorText = ValueNotifier(null);
-
-    // Get rid of this
-    checkClose = false;
 
     _checkRepeating = false;
     _prev = vm.toModel();
@@ -130,7 +125,12 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
 
   // TODO: refactor once proper error msging implemented in providers.
   void initGroupName() {
-    // Migrate to tiles.displayError
+    if (null != widget.initialGroup) {
+      groupEditingController.value =
+          groupEditingController.value.copyWith(text: widget.initialGroup!.key);
+      return;
+    }
+
     groupProvider
         .getGroupByID(id: vm.groupID)
         .then((group) => setState(() => groupEditingController.value =
@@ -463,13 +463,13 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                                           const PaddedDivider(
                                               padding: Constants.padding),
                                           // Priority
-                                          _buildPriorityTile(),
-                                          const Padding(
-                                            padding: EdgeInsets.symmetric(
-                                                vertical: Constants.padding),
-                                            child: PaddedDivider(
-                                                padding: Constants.padding),
+                                          Padding(
+                                            padding: const EdgeInsets.only(
+                                                bottom: Constants.padding),
+                                            child: _buildPriorityTile(),
                                           ),
+                                          const PaddedDivider(
+                                              padding: Constants.padding),
                                           // Expected Duration / RealDuration -> Show status, on click, open a dialog.
                                           _buildDurationTile(),
 
@@ -563,7 +563,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                       _buildMyDay(),
                       const PaddedDivider(padding: Constants.padding),
                       // Priority
-                      _buildPriorityTile(mobile: layoutProvider.smallScreen),
+                      _buildPriorityTile(mobile: smallScreen),
 
                       const Padding(
                         padding:
@@ -822,8 +822,12 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
       );
 
   Widget _buildRepeatableTile() => Selector<ToDoViewModel, (bool, UniqueKey)>(
-        selector: (BuildContext context, ToDoViewModel vm) =>
-            (null != vm.startDate && null != vm.dueDate, vm.repeatableKey),
+        selector: (BuildContext context, ToDoViewModel vm) => (
+          null != vm.startDate &&
+              null != vm.dueDate &&
+              RepeatableState.delta != vm.repeatableState,
+          vm.repeatableKey
+        ),
         builder: (BuildContext context, (bool, UniqueKey) value,
                 Widget? child) =>
             (value.$1)
@@ -945,6 +949,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
           _checkClose.value = toDoProvider.userViewModel?.checkClose ?? true;
           vm.groupID = id;
         },
+        persistentEntry: widget.initialGroup,
         searchController: groupEditingController,
         dispose: false,
         mostRecent: groupProvider.mostRecent,

@@ -268,10 +268,13 @@ Reminder _reminderDeserialize(
   Map<Type, List<int>> allOffsets,
 ) {
   final object = Reminder(
+    customViewIndex: reader.readLongOrNull(offsets[0]) ?? -1,
     dueDate: reader.readDateTimeOrNull(offsets[1]),
     frequency:
         _ReminderfrequencyValueEnumMap[reader.readByteOrNull(offsets[2])] ??
             Frequency.once,
+    id: id,
+    isSynced: reader.readBoolOrNull(offsets[3]) ?? false,
     lastUpdated: reader.readDateTime(offsets[4]),
     name: reader.readString(offsets[5]),
     notificationID: reader.readLongOrNull(offsets[6]),
@@ -283,12 +286,9 @@ Reminder _reminderDeserialize(
     repeatableState: _ReminderrepeatableStateValueEnumMap[
             reader.readByteOrNull(offsets[13])] ??
         RepeatableState.normal,
+    toDelete: reader.readBoolOrNull(offsets[14]) ?? false,
   );
-  object.customViewIndex = reader.readLong(offsets[0]);
-  object.id = id;
-  object.isSynced = reader.readBool(offsets[3]);
   object.originalStart = reader.readDateTimeOrNull(offsets[8]);
-  object.toDelete = reader.readBool(offsets[14]);
   return object;
 }
 
@@ -300,14 +300,14 @@ P _reminderDeserializeProp<P>(
 ) {
   switch (propertyId) {
     case 0:
-      return (reader.readLong(offset)) as P;
+      return (reader.readLongOrNull(offset) ?? -1) as P;
     case 1:
       return (reader.readDateTimeOrNull(offset)) as P;
     case 2:
       return (_ReminderfrequencyValueEnumMap[reader.readByteOrNull(offset)] ??
           Frequency.once) as P;
     case 3:
-      return (reader.readBool(offset)) as P;
+      return (reader.readBoolOrNull(offset) ?? false) as P;
     case 4:
       return (reader.readDateTime(offset)) as P;
     case 5:
@@ -331,7 +331,7 @@ P _reminderDeserializeProp<P>(
               reader.readByteOrNull(offset)] ??
           RepeatableState.normal) as P;
     case 14:
-      return (reader.readBool(offset)) as P;
+      return (reader.readBoolOrNull(offset) ?? false) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
   }

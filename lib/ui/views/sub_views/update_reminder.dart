@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math';
 
 import 'package:another_flushbar/flushbar.dart';
 import 'package:flutter/material.dart';
@@ -7,8 +8,9 @@ import 'package:provider/provider.dart';
 
 import '../../../model/task/reminder.dart';
 import '../../../providers/application/event_provider.dart';
+import '../../../providers/application/layout_provider.dart';
 import '../../../providers/model/reminder_provider.dart';
-import '../../../providers/model/user_provider.dart';
+import '../../../providers/viewmodels/reminder_viewmodel.dart';
 import '../../../util/constants.dart';
 import '../../../util/enums.dart';
 import '../../../util/exceptions.dart';
@@ -20,29 +22,25 @@ import '../../widgets/tiles.dart';
 import '../../widgets/title_bar.dart';
 
 class UpdateReminderScreen extends StatefulWidget {
-  const UpdateReminderScreen({super.key, this.initialReminder});
-
-  final Reminder? initialReminder;
+  const UpdateReminderScreen({super.key});
 
   @override
   State<UpdateReminderScreen> createState() => _UpdateReminderScreen();
 }
 
 class _UpdateReminderScreen extends State<UpdateReminderScreen> {
-  late bool checkClose;
+  late ValueNotifier<bool> _checkClose;
+  late ValueNotifier<String?> _nameErrorText;
   late bool _checkRepeating;
-  late bool showTime;
 
   late final ReminderProvider reminderProvider;
-  late final UserProvider userProvider;
+  late final ReminderViewModel vm;
   late final EventProvider eventProvider;
-  late final Reminder prevReminder;
+  late final LayoutProvider layoutProvider;
+  late final Reminder _prev;
 
   // Name
   late final TextEditingController nameEditingController;
-  String? nameErrorText;
-
-  Reminder get reminder => reminderProvider.curReminder!;
 
   // Scrolling
   late final ScrollController mainScrollController;
@@ -58,18 +56,16 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
 
   void initializeProviders() {
     reminderProvider = Provider.of<ReminderProvider>(context, listen: false);
-    if (null != widget.initialReminder) {
-      reminderProvider.curReminder = widget.initialReminder;
-    }
-    userProvider = Provider.of<UserProvider>(context, listen: false);
+    vm = Provider.of<ReminderViewModel>(context, listen: false);
     eventProvider = Provider.of<EventProvider>(context, listen: false);
+    layoutProvider = Provider.of<LayoutProvider>(context, listen: false);
   }
 
   void initializeParameters() {
-    checkClose = false;
+    _prev = vm.toModel();
     _checkRepeating = false;
-    showTime = null != reminder.dueDate;
-    prevReminder = reminder.copy();
+    _checkClose = ValueNotifier(false);
+    _nameErrorText = ValueNotifier(null);
   }
 
   void initializeControllers() {
@@ -78,37 +74,42 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
         ? const BouncingScrollPhysics()
         : const ClampingScrollPhysics();
     scrollPhysics = AlwaysScrollableScrollPhysics(parent: parentPhysics);
-    nameEditingController = TextEditingController(text: reminder.name);
-    nameEditingController.addListener(() {
-      _checkRepeating = true;
-      String newText = nameEditingController.text;
-      SemanticsService.announce(newText, Directionality.of(context));
-      reminder.name = newText;
-      if (null != nameErrorText && mounted) {
-        setState(() {
-          nameErrorText = null;
-        });
-      }
-    });
+
+    nameEditingController = TextEditingController(text: vm.name);
+    nameEditingController.addListener(watchName);
   }
 
   @override
   void dispose() {
+    nameEditingController.removeListener(watchName);
     mainScrollController.dispose();
     nameEditingController.dispose();
     super.dispose();
   }
 
+  void watchName() {
+    _checkClose.value = reminderProvider.userViewModel?.checkClose ?? true;
+    _checkRepeating = true;
+    String newText = nameEditingController.text;
+    SemanticsService.announce(newText, Directionality.of(context));
+    vm.name = newText;
+    if (null != _nameErrorText.value) {
+      _nameErrorText.value = null;
+    }
+  }
+
   bool validateData() {
     bool valid = true;
+
     if (nameEditingController.text.isEmpty) {
       valid = false;
-      if (mounted) {
-        setState(() => nameErrorText = "Enter Reminder Name");
+      _nameErrorText.value = "Enter Task Name";
+      if (mainScrollController.hasClients) {
+        mainScrollController.jumpTo(0);
       }
     }
 
-    if (Constants.nullDate == reminder.dueDate) {
+    if (null == vm.mergeDateTime(date: vm.dueDate, time: vm.dueTime)) {
       valid = false;
 
       Flushbar? error;
@@ -122,17 +123,29 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
       error.show(context);
     }
 
-    reminder.repeatable = (Frequency.once != reminder.frequency &&
-        (prevReminder.repeatable ||
-            !(reminder.dueDate?.isBefore(Constants.today) ?? false)));
+    // if (null == vm.dueDate) {
+    //   vm.frequency = Frequency.once;
+    // }
+
+    if (vm.frequency == Frequency.custom) {
+      if (vm.weekdayList.isEmpty) {
+        vm.weekdayList.add(
+            min(((vm.dueDate?.weekday ?? Constants.today.weekday) - 1), 0));
+      }
+    }
+
+    vm.repeatable = (Frequency.once != vm.frequency &&
+        (_prev.repeatable ||
+            !(vm.dueDate?.isBefore(Constants.today) ?? false)));
 
     return valid;
   }
 
   Future<void> handleUpdate() async {
-    if (prevReminder.frequency != Frequency.once &&
+    Reminder newReminder = vm.toModel();
+    if (_prev.frequency != Frequency.once &&
         _checkRepeating &&
-        RepeatableState.delta != prevReminder.repeatableState) {
+        RepeatableState.delta != _prev.repeatableState) {
       bool? updateSingle = await showModalBottomSheet<bool?>(
           showDragHandle: true,
           context: context,
@@ -146,8 +159,8 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
 
       await reminderProvider
           .handleRepeating(
-              reminder: prevReminder,
-              delta: reminder,
+              reminder: _prev,
+              delta: newReminder,
               single: updateSingle,
               delete: false)
           .catchError((e) => Tiles.displayError(context: context, e: e),
@@ -159,24 +172,30 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
 
       return await eventProvider
           .updateEventModel(
-              oldModel: prevReminder, newModel: reminder, notify: true)
-          .whenComplete(() => Navigator.pop(context));
+              oldModel: _prev, newModel: newReminder, notify: true)
+          .whenComplete(() {
+        vm.clear();
+        Navigator.pop(context);
+      });
     }
 
-    await reminderProvider.updateReminder().catchError(
+    await reminderProvider.updateReminder(reminder: newReminder).catchError(
         (e) => Tiles.displayError(context: context, e: e),
         test: (e) =>
             e is FailureToCreateException || e is FailureToUploadException);
 
     return await eventProvider
-        .updateEventModel(
-            oldModel: prevReminder, newModel: reminder, notify: true)
-        .whenComplete(() => Navigator.pop(context));
+        .updateEventModel(oldModel: _prev, newModel: newReminder, notify: true)
+        .whenComplete(() {
+      vm.clear();
+      Navigator.pop(context);
+    });
   }
 
   Future<void> handleDelete() async {
-    if (prevReminder.frequency != Frequency.once &&
-        RepeatableState.delta != prevReminder.repeatableState) {
+    Reminder newReminder = vm.toModel();
+    if (_prev.frequency != Frequency.once &&
+        RepeatableState.delta != _prev.repeatableState) {
       bool? deleteSingle = await showModalBottomSheet<bool?>(
           showDragHandle: true,
           context: context,
@@ -191,8 +210,8 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
       }
       await reminderProvider
           .handleRepeating(
-              reminder: prevReminder,
-              delta: reminder,
+              reminder: _prev,
+              delta: newReminder,
               single: deleteSingle,
               delete: true)
           .catchError((e) => Tiles.displayError(context: context, e: e),
@@ -202,11 +221,14 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
                   e is InvalidRepeatingException ||
                   e is FailureToDeleteException);
 
-      reminder.toDelete = true;
+      newReminder.toDelete = true;
       return await eventProvider
           .updateEventModel(
-              oldModel: prevReminder, newModel: reminder, notify: true)
-          .whenComplete(() => Navigator.pop(context));
+              oldModel: _prev, newModel: newReminder, notify: true)
+          .whenComplete(() {
+        vm.clear();
+        Navigator.pop(context);
+      });
     }
 
     await reminderProvider.deleteReminder().catchError(
@@ -214,122 +236,27 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
         test: (e) =>
             e is FailureToCreateException || e is FailureToUploadException);
 
-    reminder.toDelete = true;
+    newReminder.toDelete = true;
     return await eventProvider
         .updateEventModel(
-          oldModel: prevReminder,
-          newModel: reminder,
-          notify: true,
-        )
-        .whenComplete(() => Navigator.pop(context));
+      oldModel: _prev,
+      newModel: newReminder,
+      notify: true,
+    )
+        .whenComplete(() {
+      vm.clear();
+      Navigator.pop(context);
+    });
   }
 
   void handleClose({required bool willDiscard}) {
     if (willDiscard) {
       reminderProvider.rebuild = true;
+      vm.clear();
       return Navigator.pop(context);
     }
 
-    if (mounted) {
-      setState(() => checkClose = false);
-    }
-  }
-
-  void clearNameField() {
-    if (mounted) {
-      setState(() {
-        checkClose = userProvider.curUser?.checkClose ?? true;
-        _checkRepeating = true;
-        nameEditingController.clear();
-        reminder.name = "";
-      });
-    }
-  }
-
-  void updateName() {
-    if (mounted) {
-      setState(() {
-        checkClose = userProvider.curUser?.checkClose ?? true;
-        _checkRepeating = true;
-        reminder.name = nameEditingController.text;
-      });
-    }
-  }
-
-  void clearDue() {
-    if (mounted) {
-      setState(() {
-        checkClose = userProvider.curUser?.checkClose ?? true;
-        _checkRepeating = true;
-        reminder.dueDate = null;
-        showTime = false;
-      });
-    }
-  }
-
-  void updateDue({bool? checkClose, DateTime? newDate, TimeOfDay? newTime}) {
-    if (mounted) {
-      setState(() {
-        checkClose = checkClose ?? this.checkClose;
-        _checkRepeating = true;
-        this.checkClose = (checkClose!)
-            ? userProvider.curUser?.checkClose ?? checkClose!
-            : checkClose!;
-        reminder.dueDate =
-            newDate?.copyWith(hour: newTime?.hour, minute: newTime?.minute);
-        showTime = null != newTime;
-      });
-    }
-  }
-
-  void clearRepeatable() {
-    if (mounted) {
-      setState(() {
-        checkClose = userProvider.curUser?.checkClose ?? true;
-        _checkRepeating = true;
-        reminder.frequency = Frequency.once;
-        reminder.repeatDays.fillRange(0, reminder.repeatDays.length, false);
-        reminder.repeatSkip = 1;
-      });
-    }
-  }
-
-  // TODO: fix - how to know if something is repeatable again..
-  void updateRepeatable(
-      {bool? checkClose,
-      required Frequency newFreq,
-      required Set<int> newWeekdays,
-      required int newSkip}) {
-    if (mounted) {
-      setState(() {
-        _checkRepeating = true;
-        checkClose = checkClose ?? this.checkClose;
-        this.checkClose = (checkClose!)
-            ? userProvider.curUser?.checkClose ?? checkClose!
-            : checkClose!;
-        reminder.frequency = newFreq;
-        reminder.repeatSkip = newSkip;
-
-        if (newWeekdays.isEmpty) {
-          newWeekdays
-              .add((reminder.dueDate?.weekday ?? DateTime.now().weekday) - 1);
-        }
-
-        for (int i = 0; i < reminder.repeatDays.length; i++) {
-          reminder.repeatDays[i] = newWeekdays.contains(i);
-        }
-      });
-    }
-  }
-
-  Set<int> get weekdayList {
-    Set<int> weekdays = {};
-    for (int i = 0; i < reminder.repeatDays.length; i++) {
-      if (reminder.repeatDays[i]) {
-        weekdays.add(i);
-      }
-    }
-    return weekdays;
+    _checkClose.value = false;
   }
 
   Future<void> updateAndValidate() async {
@@ -340,103 +267,181 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
 
   @override
   Widget build(BuildContext context) {
-    MediaQuery.sizeOf(context);
-    return Dialog(
-        insetPadding: EdgeInsets.all((userProvider.smallScreen)
-            ? Constants.mobileDialogPadding
-            : Constants.outerDialogPadding),
-        child: ConstrainedBox(
-            constraints: const BoxConstraints(
-                maxHeight: Constants.smallLandscapeDialogHeight,
-                maxWidth: Constants.smallLandscapeDialogWidth),
-            child: Padding(
-              padding: const EdgeInsets.all(Constants.padding),
-              child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // Title && Close Button
-                    TitleBar(
-                      context: context,
-                      title: "Edit Reminder",
-                      checkClose: checkClose,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: Constants.padding),
-                      handleClose: handleClose,
-                    ),
+    return LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints constraints) {
+      return Dialog(
+          insetPadding: EdgeInsets.all((layoutProvider.smallScreen)
+              ? Constants.mobileDialogPadding
+              : Constants.outerDialogPadding),
+          child: ConstrainedBox(
+              constraints: const BoxConstraints(
+                  maxHeight: Constants.smallLandscapeDialogHeight,
+                  maxWidth: Constants.smallLandscapeDialogWidth),
+              child: Padding(
+                padding: const EdgeInsets.all(Constants.padding),
+                child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Title && Close Button
+                      _buildTitleBar(),
 
-                    const PaddedDivider(padding: Constants.halfPadding),
-                    Flexible(
-                        child: Scrollbar(
-                            thumbVisibility: true,
-                            controller: mainScrollController,
-                            child: ListView(
-                                shrinkWrap: true,
-                                controller: mainScrollController,
-                                physics: scrollPhysics,
-                                children: [
-                                  Tiles.nameTile(
-                                      leading: ListTileWidgets.reminderIcon(
-                                        currentContext: context,
-                                        iconPadding: const EdgeInsets.all(
-                                            Constants.padding),
-                                      ),
-                                      context: context,
-                                      hintText: "Reminder Name",
-                                      errorText: nameErrorText,
-                                      controller: nameEditingController,
-                                      outerPadding: const EdgeInsets.symmetric(
-                                          vertical: Constants.padding),
-                                      textFieldPadding: const EdgeInsets.only(
-                                        left: Constants.padding,
-                                      ),
-                                      handleClear: clearNameField,
-                                      onEditingComplete: updateName),
-                                  const PaddedDivider(
-                                      padding: Constants.halfPadding),
-                                  Tiles.singleDateTimeTile(
-                                    leading: const Icon(Icons.today_outlined),
-                                    context: context,
-                                    date: reminder.dueDate,
-                                    time: (null != reminder.dueDate && showTime)
-                                        ? TimeOfDay.fromDateTime(
-                                            reminder.dueDate!)
-                                        : null,
-                                    useAlertIcon: false,
-                                    showDate: true,
-                                    unsetDateText: "Due Date",
-                                    unsetTimeText: "Due Time",
-                                    dialogHeader: "Select Due Date",
-                                    handleClear: clearDue,
-                                    handleUpdate: updateDue,
-                                  ),
+                      const PaddedDivider(padding: Constants.halfPadding),
+                      Flexible(
+                          child: Scrollbar(
+                              thumbVisibility: true,
+                              controller: mainScrollController,
+                              child: ListView(
+                                  shrinkWrap: true,
+                                  controller: mainScrollController,
+                                  physics: scrollPhysics,
+                                  children: [
+                                    _buildNameTile(),
 
-                                  // Repeatable Stuff -> Show status, on click, open a dialog.
-                                  if (null != reminder.dueDate) ...[
                                     const PaddedDivider(
-                                        padding: Constants.padding),
-                                    Tiles.repeatableTile(
-                                      context: context,
-                                      frequency: reminder.frequency,
-                                      weekdays: weekdayList,
-                                      repeatSkip: reminder.repeatSkip,
-                                      startDate: reminder.dueDate,
-                                      handleUpdate: updateRepeatable,
-                                      handleClear: clearRepeatable,
-                                    ),
-                                  ],
-                                ]))),
-                    const PaddedDivider(padding: Constants.halfPadding),
-                    Tiles.updateAndDeleteButtons(
-                      handleDelete: handleDelete,
-                      handleUpdate: updateAndValidate,
-                      updateButtonPadding: const EdgeInsets.symmetric(
-                          horizontal: Constants.padding),
-                      deleteButtonPadding: const EdgeInsets.symmetric(
-                          horizontal: Constants.padding),
-                    ),
-                  ]),
-            )));
+                                        padding: Constants.halfPadding),
+
+                                    _buildDueDateTile(),
+
+                                    // Repeatable Stuff -> Show status, on click, open a dialog.
+                                    _buildRepeatableTile(),
+                                  ]))),
+                      const PaddedDivider(padding: Constants.halfPadding),
+                      Tiles.updateAndDeleteButtons(
+                        handleDelete: handleDelete,
+                        handleUpdate: updateAndValidate,
+                        updateButtonPadding: const EdgeInsets.symmetric(
+                            horizontal: Constants.padding),
+                        deleteButtonPadding: const EdgeInsets.symmetric(
+                            horizontal: Constants.padding),
+                      ),
+                    ]),
+              )));
+    });
   }
+
+  Widget _buildTitleBar() => ValueListenableBuilder<bool>(
+        valueListenable: _checkClose,
+        builder: (BuildContext context, bool check, Widget? child) => TitleBar(
+          context: context,
+          title: "Edit Reminder",
+          handleClose: handleClose,
+          checkClose: check,
+          padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
+        ),
+      );
+
+  Widget _buildNameTile() => ValueListenableBuilder<String?>(
+      valueListenable: _nameErrorText,
+      builder: (BuildContext context, String? errorText, Widget? child) =>
+          Selector<ReminderViewModel, String>(
+            selector: (BuildContext context, ReminderViewModel vm) => vm.name,
+            builder: (BuildContext context, String value, Widget? child) =>
+                Tiles.nameTile(
+                    context: context,
+                    leading: ListTileWidgets.reminderIcon(
+                      currentContext: context,
+                      iconPadding: const EdgeInsets.all(Constants.padding),
+                    ),
+                    errorText: errorText,
+                    hintText: "Reminder Name",
+                    controller: nameEditingController,
+                    outerPadding:
+                        const EdgeInsets.symmetric(vertical: Constants.padding),
+                    textFieldPadding:
+                        const EdgeInsets.only(left: Constants.padding),
+                    onEditingComplete: () {
+                      _checkRepeating = true;
+                      _checkClose.value =
+                          reminderProvider.userViewModel?.checkClose ?? true;
+                      vm.name = nameEditingController.text;
+                    },
+                    handleClear: () {
+                      _checkRepeating = true;
+                      _checkClose.value =
+                          reminderProvider.userViewModel?.checkClose ?? true;
+                      nameEditingController.clear();
+                      vm.name = "";
+                    }),
+          ));
+
+  Widget _buildDueDateTile() =>
+      Selector<ReminderViewModel, (DateTime?, TimeOfDay?)>(
+        selector: (BuildContext context, ReminderViewModel vm) =>
+            (vm.dueDate, vm.dueTime),
+        builder: (BuildContext context, (DateTime?, TimeOfDay?) value,
+                Widget? child) =>
+            Tiles.singleDateTimeTile(
+                context: context,
+                date: value.$1,
+                time: value.$2,
+                useAlertIcon: false,
+                showDate: true,
+                unsetDateText: "Due Date",
+                unsetTimeText: "Due time",
+                dialogHeader: "Select Due Date",
+                handleClear: () {
+                  _checkRepeating = true;
+                  _checkClose.value =
+                      reminderProvider.userViewModel?.checkClose ?? true;
+                  vm.clearDateTime();
+                },
+                handleUpdate: (
+                    {bool? checkClose, DateTime? newDate, TimeOfDay? newTime}) {
+                  checkClose = checkClose ?? _checkClose.value;
+                  _checkClose.value = (checkClose)
+                      ? reminderProvider.userViewModel?.checkClose ?? checkClose
+                      : false;
+
+                  vm.updateDateTime(newDate: newDate, newTime: newTime);
+                }),
+      );
+
+  Widget _buildRepeatableTile() =>
+      Selector<ReminderViewModel, (bool, UniqueKey)>(
+        selector: (BuildContext context, ReminderViewModel vm) => (
+          null != vm.dueDate && RepeatableState.delta != vm.repeatableState,
+          vm.repeatableKey
+        ),
+        builder: (BuildContext context, (bool, UniqueKey) value,
+                Widget? child) =>
+            (value.$1)
+                ? Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const PaddedDivider(padding: Constants.padding),
+                      Tiles.repeatableTile(
+                          context: context,
+                          frequency: vm.frequency,
+                          weekdays: vm.weekdayList,
+                          repeatSkip: vm.repeatSkip,
+                          startDate: vm.dueDate,
+                          handleUpdate: (
+                              {bool? checkClose,
+                              required Frequency newFreq,
+                              required int newSkip,
+                              required Set<int> newWeekdays}) {
+                            checkClose = checkClose ?? _checkClose.value;
+                            _checkRepeating = true;
+                            _checkClose.value = (checkClose)
+                                ? reminderProvider.userViewModel?.checkClose ??
+                                    checkClose
+                                : false;
+                            vm.updateRepeatable(
+                                newFreq: newFreq,
+                                newSkip: newSkip,
+                                newWeekdays: newWeekdays);
+                          },
+                          handleClear: () {
+                            _checkRepeating = true;
+                            _checkClose.value =
+                                reminderProvider.userViewModel?.checkClose ??
+                                    true;
+                            vm.clearRepeatable();
+                          }),
+                    ],
+                  )
+                : const SizedBox.shrink(),
+      );
 }
