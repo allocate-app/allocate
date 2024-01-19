@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:provider/provider.dart';
 
-import '../../../model/task/subtask.dart';
+import '../../../providers/application/layout_provider.dart';
 import '../../../providers/model/subtask_provider.dart';
-import '../../../providers/model/user_provider.dart';
+import '../../../providers/viewmodels/subtask_viewmodel.dart';
 import '../../../util/constants.dart';
 import '../../../util/exceptions.dart';
 import '../../widgets/listtile_widgets.dart';
@@ -13,62 +13,55 @@ import '../../widgets/tiles.dart';
 import '../../widgets/title_bar.dart';
 
 class UpdateSubtaskScreen extends StatefulWidget {
-  const UpdateSubtaskScreen({super.key, this.initialSubtask});
-
-  final Subtask? initialSubtask;
+  const UpdateSubtaskScreen({super.key});
 
   @override
   State<UpdateSubtaskScreen> createState() => _UpdateSubtaskScreen();
 }
 
 class _UpdateSubtaskScreen extends State<UpdateSubtaskScreen> {
-  late bool checkClose;
+  late ValueNotifier<bool> _checkClose;
+  late ValueNotifier<String?> _nameErrorText;
   late final SubtaskProvider subtaskProvider;
-  late final UserProvider userProvider;
-
+  late final SubtaskViewModel vm;
+  late final LayoutProvider layoutProvider;
   late final TextEditingController nameEditingController;
-
-  String? nameErrorText;
-
-  Subtask get subtask => subtaskProvider.curSubtask!;
 
   @override
   void initState() {
     subtaskProvider = Provider.of<SubtaskProvider>(context, listen: false);
-    if (null != widget.initialSubtask) {
-      subtaskProvider.curSubtask = widget.initialSubtask;
-    }
 
-    userProvider = Provider.of<UserProvider>(context, listen: false);
+    vm = Provider.of<SubtaskViewModel>(context, listen: false);
 
-    nameEditingController = TextEditingController(text: subtask.name);
-    nameEditingController.addListener(() {
-      checkClose = userProvider.curUser?.checkClose ?? true;
-      String newText = nameEditingController.text;
-      SemanticsService.announce(newText, Directionality.of(context));
-      subtask.name = newText;
-      if (null != nameErrorText && mounted) {
-        setState(() {
-          nameErrorText = null;
-        });
-      }
-    });
-    checkClose = false;
+    layoutProvider = Provider.of<LayoutProvider>(context, listen: false);
+
+    nameEditingController = TextEditingController(text: vm.name);
+    nameEditingController.addListener(watchName);
+    _checkClose = ValueNotifier(false);
     super.initState();
   }
 
   @override
   void dispose() {
+    nameEditingController.removeListener(watchName);
     nameEditingController.dispose();
 
     super.dispose();
   }
 
+  void watchName() {
+    _checkClose.value = subtaskProvider.userViewModel?.checkClose ?? true;
+    String newText = nameEditingController.text;
+    SemanticsService.announce(newText, Directionality.of(context));
+    vm.name = newText;
+    if (null != _nameErrorText.value) {
+      _nameErrorText.value = null;
+    }
+  }
+
   bool validateData() {
     if (nameEditingController.text.isEmpty) {
-      if (mounted) {
-        nameErrorText = "Enter Task Name";
-      }
+      _nameErrorText.value = "Enter Step Name";
       return false;
     }
     return true;
@@ -76,124 +69,231 @@ class _UpdateSubtaskScreen extends State<UpdateSubtaskScreen> {
 
   @override
   Widget build(context) {
-    MediaQuery.sizeOf(context);
+    return LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints constraints) => Dialog(
+            insetPadding: (layoutProvider.smallScreen)
+                ? const EdgeInsets.all(Constants.mobileDialogPadding)
+                : const EdgeInsets.all(Constants.outerDialogPadding),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(
+                  maxHeight: Constants.smallLandscapeDialogHeight,
+                  maxWidth: Constants.smallLandscapeDialogWidth),
+              child: Padding(
+                  padding: const EdgeInsets.all(Constants.padding),
+                  child: Column(mainAxisSize: MainAxisSize.min, children: [
+                    _buildTitleBar(),
+                    const PaddedDivider(padding: Constants.halfPadding),
+                    // Tiles.nameTile(
+                    //     context: context,
+                    //     leading: ListTileWidgets.checkbox(
+                    //       scale: Constants.largeCheckboxScale,
+                    //       completed: subtask.completed,
+                    //       onChanged: (value) {
+                    //         if (mounted) {
+                    //           setState(() {
+                    //             checkClose =
+                    //                 userProvider.curUser?.checkClose ?? true;
+                    //             subtask.completed = value!;
+                    //           });
+                    //         }
+                    //       },
+                    //     ),
+                    //     hintText: "Step Name",
+                    //     errorText: nameErrorText,
+                    //     controller: nameEditingController,
+                    //     outerPadding: const EdgeInsets.all(Constants.padding),
+                    //     textFieldPadding:
+                    //         const EdgeInsets.only(left: Constants.halfPadding),
+                    //     handleClear: () {
+                    //       if (mounted) {
+                    //         setState(() {
+                    //           checkClose = userProvider.curUser?.checkClose ?? true;
+                    //           nameEditingController.clear();
+                    //           subtask.name = "";
+                    //         });
+                    //       }
+                    //     },
+                    //     onEditingComplete: () {
+                    //       if (mounted) {
+                    //         setState(() {
+                    //           checkClose = userProvider.curUser?.checkClose ?? true;
+                    //           subtask.name = nameEditingController.text;
+                    //         });
+                    //       }
+                    //     }),
+                    _buildNameTile(),
 
-    return Dialog(
-        insetPadding: (userProvider.smallScreen)
-            ? const EdgeInsets.all(Constants.mobileDialogPadding)
-            : const EdgeInsets.all(Constants.outerDialogPadding),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(
-              maxHeight: Constants.smallLandscapeDialogHeight,
-              maxWidth: Constants.smallLandscapeDialogWidth),
-          child: Padding(
-              padding: const EdgeInsets.all(Constants.padding),
-              child: Column(mainAxisSize: MainAxisSize.min, children: [
-                TitleBar(
-                    context: context,
-                    title: "Edit Step",
-                    checkClose: checkClose,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: Constants.padding),
-                    handleClose: ({required bool willDiscard}) async {
-                      if (willDiscard) {
-                        subtaskProvider.rebuild = true;
-                        return Navigator.pop(context);
-                      }
-                      if (mounted) {
-                        setState(() => checkClose = false);
-                      }
-                    }),
-                const PaddedDivider(padding: Constants.halfPadding),
+                    // Tiles.weightTile(
+                    //   outerPadding: const EdgeInsets.all(Constants.doublePadding),
+                    //   batteryPadding:
+                    //       const EdgeInsets.symmetric(horizontal: Constants.padding),
+                    //   constraints: const BoxConstraints(maxWidth: 200),
+                    //   weight: subtask.weight.toDouble(),
+                    //   max: Constants.maxTaskWeight.toDouble(),
+                    //   slider: Tiles.weightSlider(
+                    //       weight: subtask.weight.toDouble(),
+                    //       handleWeightChange: (value) {
+                    //         if (null == value) {
+                    //           return;
+                    //         }
+                    //         if (mounted) {
+                    //           setState(() {
+                    //             checkClose =
+                    //                 userProvider.curUser?.checkClose ?? true;
+                    //             subtask.weight = value.toInt();
+                    //           });
+                    //         }
+                    //       }),
+                    // ),
+                    _buildWeightTile(),
+                    const PaddedDivider(padding: Constants.halfPadding),
+                    Tiles.updateAndDeleteButtons(
+                        updateButtonPadding: const EdgeInsets.symmetric(
+                            horizontal: Constants.padding),
+                        deleteButtonPadding: const EdgeInsets.symmetric(
+                            horizontal: Constants.padding),
+                        handleDelete: () async {
+                          await subtaskProvider
+                              .deleteSubtask(subtask: vm.toModel())
+                              .whenComplete(() {
+                            vm.clear();
+                            Navigator.pop(context);
+                          }).catchError(
+                                  (e) => Tiles.displayError(
+                                      context: context, e: e),
+                                  test: (e) => e is FailureToDeleteException);
+                        },
+                        handleUpdate: () async {
+                          if (validateData()) {
+                            await subtaskProvider
+                                .updateSubtask(subtask: vm.toModel())
+                                .whenComplete(() {
+                              vm.clear();
+                              Navigator.pop(context);
+                            }).catchError((e) =>
+                                    Tiles.displayError(context: context, e: e));
+                          }
+                        }),
+                  ])),
+            )));
+  }
+
+  Widget _buildTitleBar() => ValueListenableBuilder<bool>(
+        valueListenable: _checkClose,
+        builder: (BuildContext context, bool check, Widget? child) => TitleBar(
+          context: context,
+          title: "Edit Task",
+          handleClose: ({required bool willDiscard}) async {
+            if (willDiscard) {
+              subtaskProvider.rebuild = true;
+              vm.clear();
+              return Navigator.pop(context);
+            }
+            _checkClose.value = false;
+          },
+          checkClose: check,
+          padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
+        ),
+      );
+
+// Tiles.nameTile(
+//     context: context,
+//     leading: ListTileWidgets.checkbox(
+//       scale: Constants.largeCheckboxScale,
+//       completed: subtask.completed,
+//       onChanged: (value) {
+//         if (mounted) {
+//           setState(() {
+//             checkClose =
+//                 userProvider.curUser?.checkClose ?? true;
+//             subtask.completed = value!;
+//           });
+//         }
+//       },
+//     ),
+
+  Widget _buildNameTile() => ValueListenableBuilder<String?>(
+      valueListenable: _nameErrorText,
+      builder: (BuildContext context, String? errorText, Widget? child) =>
+          Selector<SubtaskViewModel, (String, bool)>(
+            selector: (BuildContext context, SubtaskViewModel vm) =>
+                (vm.name, vm.completed),
+            builder: (BuildContext context, (String, bool) value,
+                    Widget? child) =>
                 Tiles.nameTile(
                     context: context,
                     leading: ListTileWidgets.checkbox(
                       scale: Constants.largeCheckboxScale,
-                      completed: subtask.completed,
-                      onChanged: (value) {
-                        if (mounted) {
-                          setState(() {
-                            checkClose =
-                                userProvider.curUser?.checkClose ?? true;
-                            subtask.completed = value!;
-                          });
-                        }
+                      completed: value.$2,
+                      onChanged: (bool? completed) {
+                        _checkClose.value =
+                            subtaskProvider.userViewModel?.checkClose ?? true;
+                        vm.completed = completed!;
                       },
                     ),
+                    errorText: errorText,
                     hintText: "Step Name",
-                    errorText: nameErrorText,
                     controller: nameEditingController,
-                    outerPadding: const EdgeInsets.all(Constants.padding),
+                    outerPadding:
+                        const EdgeInsets.symmetric(vertical: Constants.padding),
                     textFieldPadding:
-                        const EdgeInsets.only(left: Constants.halfPadding),
-                    handleClear: () {
-                      if (mounted) {
-                        setState(() {
-                          checkClose = userProvider.curUser?.checkClose ?? true;
-                          nameEditingController.clear();
-                          subtask.name = "";
-                        });
-                      }
-                    },
+                        const EdgeInsets.only(left: Constants.padding),
                     onEditingComplete: () {
-                      if (mounted) {
-                        setState(() {
-                          checkClose = userProvider.curUser?.checkClose ?? true;
-                          subtask.name = nameEditingController.text;
-                        });
-                      }
-                    }),
-                Tiles.weightTile(
-                  outerPadding: const EdgeInsets.all(Constants.doublePadding),
-                  batteryPadding:
-                      const EdgeInsets.symmetric(horizontal: Constants.padding),
-                  constraints: const BoxConstraints(maxWidth: 200),
-                  weight: subtask.weight.toDouble(),
-                  max: Constants.maxTaskWeight.toDouble(),
-                  slider: Tiles.weightSlider(
-                      weight: subtask.weight.toDouble(),
-                      handleWeightChange: (value) {
-                        if (null == value) {
-                          return;
-                        }
-                        if (mounted) {
-                          setState(() {
-                            checkClose =
-                                userProvider.curUser?.checkClose ?? true;
-                            subtask.weight = value.toInt();
-                          });
-                        }
-                      }),
-                ),
-                const PaddedDivider(padding: Constants.halfPadding),
-                Tiles.updateAndDeleteButtons(
-                    updateButtonPadding: const EdgeInsets.symmetric(
-                        horizontal: Constants.padding),
-                    deleteButtonPadding: const EdgeInsets.symmetric(
-                        horizontal: Constants.padding),
-                    handleDelete: () async {
-                      await subtaskProvider
-                          .deleteSubtask(subtask: subtask)
-                          .whenComplete(() {
-                        Navigator.pop(context);
-                      }).catchError(
-                              (e) => Tiles.displayError(context: context, e: e),
-                              test: (e) => e is FailureToDeleteException);
+                      _checkClose.value =
+                          subtaskProvider.userViewModel?.checkClose ?? true;
+                      vm.name = nameEditingController.text;
                     },
-                    handleUpdate: () async {
-                      if (validateData()) {
-                        // in case the usr doesn't submit to the textfields
-                        subtask.name = nameEditingController.text;
-
-                        await subtaskProvider
-                            .updateSubtask(subtask: subtask)
-                            .whenComplete(() {
-                          Navigator.pop(context);
-                        }).catchError((e) =>
-                                Tiles.displayError(context: context, e: e));
-                      }
+                    handleClear: () {
+                      _checkClose.value =
+                          subtaskProvider.userViewModel?.checkClose ?? true;
+                      nameEditingController.clear();
+                      vm.name = "";
                     }),
-              ])),
-        ));
-  }
+          ));
+
+// Tiles.weightTile(
+//   outerPadding: const EdgeInsets.all(Constants.doublePadding),
+//   batteryPadding:
+//       const EdgeInsets.symmetric(horizontal: Constants.padding),
+//   constraints: const BoxConstraints(maxWidth: 200),
+//   weight: subtask.weight.toDouble(),
+//   max: Constants.maxTaskWeight.toDouble(),
+//   slider: Tiles.weightSlider(
+//       weight: subtask.weight.toDouble(),
+//       handleWeightChange: (value) {
+//         if (null == value) {
+//           return;
+//         }
+//         if (mounted) {
+//           setState(() {
+//             checkClose =
+//                 userProvider.curUser?.checkClose ?? true;
+//             subtask.weight = value.toInt();
+//           });
+//         }
+//       }),
+// ),
+
+  Widget _buildWeightTile() => Selector<SubtaskViewModel, int>(
+      selector: (BuildContext context, SubtaskViewModel vm) => vm.weight,
+      builder: (BuildContext context, int value, Widget? child) =>
+          Tiles.weightTile(
+            outerPadding: const EdgeInsets.all(Constants.doublePadding),
+            batteryPadding: const EdgeInsets.all(Constants.padding),
+            constraints: const BoxConstraints(
+              maxWidth: 200,
+            ),
+            weight: value.toDouble(),
+            max: Constants.maxTaskWeightDouble,
+            slider: Tiles.weightSlider(
+                weight: value.toDouble(),
+                handleWeightChange: (double? newWeight) {
+                  if (null == newWeight) {
+                    return;
+                  }
+                  _checkClose.value =
+                      subtaskProvider.userViewModel?.checkClose ?? true;
+                  vm.weight = newWeight.toInt();
+                }),
+          ));
 }

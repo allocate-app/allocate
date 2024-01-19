@@ -1,8 +1,8 @@
-import 'package:allocate/providers/model/user_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../model/task/reminder.dart';
+import '../../../providers/application/layout_provider.dart';
 import '../../../providers/model/reminder_provider.dart';
 import '../../../util/constants.dart';
 import '../../../util/enums.dart';
@@ -21,7 +21,7 @@ class RemindersListScreen extends StatefulWidget {
 
 class _RemindersListScreen extends State<RemindersListScreen> {
   late final ReminderProvider reminderProvider;
-  late final UserProvider userProvider;
+  late final LayoutProvider layoutProvider;
 
   @override
   void initState() {
@@ -31,7 +31,7 @@ class _RemindersListScreen extends State<RemindersListScreen> {
 
   void initializeProviders() {
     reminderProvider = Provider.of<ReminderProvider>(context, listen: false);
-    userProvider = Provider.of<UserProvider>(context, listen: false);
+    layoutProvider = Provider.of<LayoutProvider>(context, listen: false);
   }
 
   @override
@@ -40,6 +40,20 @@ class _RemindersListScreen extends State<RemindersListScreen> {
   }
 
   void onFetch({List<Reminder>? items}) {
+    if (null == items) {
+      return;
+    }
+
+    Set<Reminder> itemSet = reminderProvider.reminders.toSet();
+
+    for (Reminder reminder in items) {
+      if (!itemSet.contains(reminder)) {
+        reminder.fade = Fade.fadeIn;
+      }
+    }
+  }
+
+  void onAppend({List<Reminder>? items}) {
     if (null == items) {
       return;
     }
@@ -59,89 +73,101 @@ class _RemindersListScreen extends State<RemindersListScreen> {
 
     if (mounted) {
       setState(() => item.fade = Fade.fadeOut);
-      await Future.delayed(const Duration(milliseconds: Constants.fadeOutTime));
+      await Future.delayed(Duration(
+          milliseconds: (reminderProvider.userViewModel?.reduceMotion ?? false)
+              ? 0
+              : Constants.fadeOutTime));
     }
   }
 
   @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(Constants.padding),
-      child: Column(mainAxisSize: MainAxisSize.min, children: [
-        ListViewHeader<Reminder>(
-            outerPadding: const EdgeInsets.all(Constants.padding),
-            header: "Reminders",
-            leadingIcon: const Icon(Icons.push_pin_outlined),
-            sorter: reminderProvider.sorter,
-            onChanged: ({SortMethod? sortMethod}) {
-              if (null == sortMethod) {
-                return;
-              }
-              if (mounted) {
-                setState(() {
-                  reminderProvider.sortMethod = sortMethod;
-                });
-              }
-            }),
-        Tiles.createNew(
-          outerPadding:
-              const EdgeInsets.symmetric(vertical: Constants.halfPadding),
-          context: context,
-          onTap: () async => await showDialog(
-            barrierDismissible: false,
-            context: context,
-            builder: (BuildContext context) => const CreateReminderScreen(),
-          ),
-        ),
-        Flexible(
-          child: PaginatingListview<Reminder>(
-              items: reminderProvider.reminders,
-              query: reminderProvider.getRemindersBy,
-              offset: (reminderProvider.rebuild)
-                  ? 0
-                  : reminderProvider.reminders.length,
-              limit: Constants.minLimitPerQuery,
-              rebuildNotifiers: [reminderProvider],
-              rebuildCallback: ({required List<Reminder> items}) {
-                reminderProvider.reminders = items;
-                reminderProvider.rebuild = false;
-              },
-              onFetch: (userProvider.curUser?.reduceMotion ?? false)
-                  ? null
-                  : onFetch,
-              onRemove: (userProvider.curUser?.reduceMotion ?? false)
-                  ? null
-                  : onRemove,
-              getAnimationKey: () => ValueKey(
-                  reminderProvider.sorter.sortMethod.index *
-                          (reminderProvider.sorter.descending ? -1 : 1) +
-                      (reminderProvider.reminders.isEmpty ? 0 : 1)),
-              listviewBuilder: ({
-                Key? key,
-                required BuildContext context,
-                required List<Reminder> items,
-                Future<void> Function({Reminder? item})? onRemove,
-              }) {
-                if (reminderProvider.sortMethod == SortMethod.none) {
-                  return ListViews.reorderableReminders(
-                    key: key,
-                    context: context,
-                    reminders: items,
-                    checkDelete: userProvider.curUser?.checkDelete ?? true,
-                    smallScreen: userProvider.smallScreen,
-                    onRemove: onRemove,
-                  );
-                }
-                return ListViews.immutableReminders(
-                  key: key,
-                  reminders: items,
-                  checkDelete: userProvider.curUser?.checkDelete ?? true,
-                  smallScreen: userProvider.smallScreen,
-                  onRemove: onRemove,
-                );
-              }),
-        ),
-      ]),
-    );
-  }
+  Widget build(BuildContext context) => LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) => Padding(
+            padding: const EdgeInsets.all(Constants.padding),
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              ListViewHeader<Reminder>(
+                  outerPadding: const EdgeInsets.all(Constants.padding),
+                  header: "Reminders",
+                  leadingIcon: const Icon(Icons.push_pin_outlined),
+                  sorter: reminderProvider.sorter,
+                  onChanged: ({SortMethod? sortMethod}) {
+                    if (null == sortMethod) {
+                      return;
+                    }
+                    if (mounted) {
+                      setState(() {
+                        reminderProvider.sortMethod = sortMethod;
+                      });
+                    }
+                  }),
+              Tiles.createNew(
+                outerPadding:
+                    const EdgeInsets.symmetric(vertical: Constants.halfPadding),
+                context: context,
+                onTap: () async => await showDialog(
+                  barrierDismissible: false,
+                  context: context,
+                  builder: (BuildContext context) =>
+                      const CreateReminderScreen(),
+                ),
+              ),
+              Flexible(
+                child: PaginatingListview<Reminder>(
+                    items: reminderProvider.reminders,
+                    query: reminderProvider.getRemindersBy,
+                    offset: (reminderProvider.rebuild)
+                        ? 0
+                        : reminderProvider.reminders.length,
+                    limit: Constants.minLimitPerQuery,
+                    rebuildNotifiers: [reminderProvider],
+                    rebuildCallback: ({required List<Reminder> items}) {
+                      reminderProvider.reminders = items;
+                      reminderProvider.rebuild = false;
+                    },
+                    onFetch:
+                        (reminderProvider.userViewModel?.reduceMotion ?? false)
+                            ? null
+                            : onFetch,
+                    onRemove:
+                        (reminderProvider.userViewModel?.reduceMotion ?? false)
+                            ? null
+                            : onRemove,
+                    onAppend:
+                        (reminderProvider.userViewModel?.reduceMotion ?? false)
+                            ? null
+                            : onAppend,
+                    getAnimationKey: () => ValueKey(
+                        reminderProvider.sorter.sortMethod.index *
+                                (reminderProvider.sorter.descending ? -1 : 1) +
+                            (reminderProvider.reminders.isEmpty ? 0 : 1)),
+                    listviewBuilder: ({
+                      Key? key,
+                      required BuildContext context,
+                      required List<Reminder> items,
+                      Future<void> Function({Reminder? item})? onRemove,
+                    }) {
+                      if (reminderProvider.sortMethod == SortMethod.none) {
+                        return ListViews.reorderableReminders(
+                          key: key,
+                          context: context,
+                          reminders: items,
+                          checkDelete:
+                              reminderProvider.userViewModel?.checkDelete ??
+                                  true,
+                          smallScreen: layoutProvider.smallScreen,
+                          onRemove: onRemove,
+                        );
+                      }
+                      return ListViews.immutableReminders(
+                        key: key,
+                        reminders: items,
+                        checkDelete:
+                            reminderProvider.userViewModel?.checkDelete ?? true,
+                        smallScreen: layoutProvider.smallScreen,
+                        onRemove: onRemove,
+                      );
+                    }),
+              ),
+            ]),
+          ));
 }

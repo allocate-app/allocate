@@ -14,7 +14,7 @@ class Subtask
     implements Copyable<Subtask>, Comparable<Subtask>, IModel {
   @override
   @Index()
-  Id id = Constants.generateID();
+  late Id id;
 
   @override
   @ignore
@@ -35,20 +35,23 @@ class Subtask
   int customViewIndex;
   @override
   @Index()
-  bool isSynced = false;
+  late bool isSynced = false;
   @override
   @Index()
-  bool toDelete = false;
+  late bool toDelete = false;
 
   @override
   DateTime lastUpdated;
 
   Subtask(
-      {this.name = "",
+      {required this.id,
+      this.name = "",
       this.customViewIndex = -1,
       this.weight = 0,
       this.completed = false,
       this.taskID,
+      this.isSynced = false,
+      this.toDelete = false,
       required this.lastUpdated});
 
   Subtask.fromEntity({required Map<String, dynamic> entity})
@@ -78,28 +81,37 @@ class Subtask
 
   @override
   Subtask copy() => Subtask(
+        id: Constants.generateID(),
         name: name,
         taskID: taskID,
         weight: weight,
         completed: completed,
         customViewIndex: customViewIndex,
         lastUpdated: lastUpdated,
+        isSynced: isSynced,
+        toDelete: toDelete,
       );
 
   @override
   Subtask copyWith(
-          {String? name,
+          {int? id,
+          String? name,
           int? weight,
           int? taskID,
           bool? completed,
           int? customViewIndex,
+          bool? isSynced,
+          bool? toDelete,
           DateTime? lastUpdated}) =>
       Subtask(
+          id: id ?? Constants.generateID(),
           name: name ?? this.name,
           weight: weight ?? this.weight,
           taskID: taskID ?? this.taskID,
           completed: completed ?? this.completed,
           customViewIndex: customViewIndex ?? this.customViewIndex,
+          isSynced: isSynced ?? this.isSynced,
+          toDelete: toDelete ?? this.toDelete,
           lastUpdated: lastUpdated ?? this.lastUpdated);
 
   @ignore

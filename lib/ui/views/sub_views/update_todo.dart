@@ -42,8 +42,6 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
 
   late bool _checkRepeating;
 
-  late bool checkClose;
-
   late final UserProvider userProvider;
   late final ToDoProvider toDoProvider;
   late final ToDoViewModel vm;
@@ -349,10 +347,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
       vm.clear();
       Navigator.pop(context);
     }
-
-    if (mounted) {
-      setState(() => checkClose = false);
-    }
+    _checkClose.value = false;
   }
 
   Future<void> updateAndValidate() async {
@@ -381,7 +376,10 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
     }
     if (mounted) {
       setState(() => item.fade = Fade.fadeOut);
-      await Future.delayed(const Duration(milliseconds: Constants.fadeInTime));
+      await Future.delayed(Duration(
+          milliseconds: (toDoProvider.userViewModel?.reduceMotion ?? false)
+              ? 0
+              : Constants.fadeOutTime));
     }
   }
 

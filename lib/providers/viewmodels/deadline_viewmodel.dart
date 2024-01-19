@@ -247,6 +247,7 @@ class DeadlineViewModel extends ChangeNotifier
     _warnDate = newDate?.copyWith(second: 0, millisecond: 0, microsecond: 0);
     _warnTime = newTime;
     _warnMe = (null != _warnDate);
+    notifyListeners();
   }
 
   // GETSET

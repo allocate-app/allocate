@@ -121,7 +121,7 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
 
     if (nameEditingController.text.isEmpty) {
       valid = false;
-      _nameErrorText.value = "Enter Task Name";
+      _nameErrorText.value = "Enter Routine Name";
       if (desktopScrollController.hasClients) {
         desktopScrollController.jumpTo(0);
       }
@@ -183,7 +183,10 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
     }
     if (mounted) {
       setState(() => item.fade = Fade.fadeOut);
-      await Future.delayed(const Duration(milliseconds: Constants.fadeInTime));
+      await Future.delayed(Duration(
+          milliseconds: (routineProvider.userViewModel?.reduceMotion ?? false)
+              ? 0
+              : Constants.fadeOutTime));
     }
   }
 

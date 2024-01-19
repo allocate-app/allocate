@@ -15,7 +15,7 @@ import '../../util/interfaces/i_repeatable.dart';
 abstract class Subtitles {
   static Widget toDoSubtitle(
           {required BuildContext context,
-          int? id,
+          int? groupID,
           required void Function() onError,
           DateTime? dueDate,
           bool smallScreen = false,
@@ -25,9 +25,9 @@ abstract class Subtitles {
           runSpacing: (smallScreen) ? Constants.halfPadding : Constants.padding,
           children: [
             // Group Name
-            if (null != id)
+            if (null != groupID)
               groupNameIcon(
-                id: id,
+                id: groupID,
                 context: context,
                 onError: onError,
               ),
@@ -42,7 +42,7 @@ abstract class Subtitles {
                 AutoSizeText(
                   Jiffy.parseFromDateTime(dueDate)
                       .toLocal()
-                      .format(pattern: "MMM d y"),
+                      .format(pattern: (smallScreen) ? "MMM d yy" : "MMMM d y"),
                   softWrap: false,
                   overflow: TextOverflow.visible,
                   maxLines: 2,
@@ -52,21 +52,21 @@ abstract class Subtitles {
               ]),
 
             // Priority Icon.
-            if (!smallScreen || null == id)
-              switch (priority) {
-                Priority.low => const Tooltip(
-                    message: "Low",
-                    child: Icon(Icons.low_priority_rounded,
-                        size: Constants.smIconSize)),
-                Priority.medium => const Tooltip(
-                    message: "Medium",
-                    child: Icon(Icons.outlined_flag_rounded,
-                        size: Constants.smIconSize)),
-                Priority.high => const Tooltip(
-                    message: "High",
-                    child: Icon(Icons.priority_high_rounded,
-                        size: Constants.smIconSize)),
-              },
+            // if (!smallScreen || null == groupID)
+            switch (priority) {
+              Priority.low => const Tooltip(
+                  message: "Low",
+                  child: Icon(Icons.low_priority_rounded,
+                      size: Constants.smIconSize)),
+              Priority.medium => const Tooltip(
+                  message: "Medium",
+                  child: Icon(Icons.outlined_flag_rounded,
+                      size: Constants.smIconSize)),
+              Priority.high => const Tooltip(
+                  message: "High",
+                  child: Icon(Icons.priority_high_rounded,
+                      size: Constants.smIconSize)),
+            },
           ]);
 
   static Widget deadlineSubtitle(
@@ -89,7 +89,7 @@ abstract class Subtitles {
                 AutoSizeText(
                   Jiffy.parseFromDateTime(dueDate)
                       .toLocal()
-                      .format(pattern: "MMM d y"),
+                      .format(pattern: (smallScreen) ? "MMM d yy" : "MMMM d y"),
                   softWrap: false,
                   overflow: TextOverflow.visible,
                   maxLines: 2,
@@ -105,7 +105,7 @@ abstract class Subtitles {
                 AutoSizeText(
                   Jiffy.parseFromDateTime(warnDate)
                       .toLocal()
-                      .format(pattern: "MMM d y"),
+                      .format(pattern: (smallScreen) ? "MMM d yy" : "MMMM d y"),
                   softWrap: false,
                   overflow: TextOverflow.visible,
                   maxLines: 2,
@@ -114,21 +114,20 @@ abstract class Subtitles {
                 )
               ]),
             // Priority Icon.
-            if (!smallScreen || null == warnDate)
-              switch (priority) {
-                Priority.low => const Tooltip(
-                    message: "Low",
-                    child: Icon(Icons.low_priority_rounded,
-                        size: Constants.smIconSize)),
-                Priority.medium => const Tooltip(
-                    message: "Medium",
-                    child: Icon(Icons.outlined_flag_rounded,
-                        size: Constants.smIconSize)),
-                Priority.high => const Tooltip(
-                    message: "High",
-                    child: Icon(Icons.priority_high_rounded,
-                        size: Constants.smIconSize)),
-              },
+            switch (priority) {
+              Priority.low => const Tooltip(
+                  message: "Low",
+                  child: Icon(Icons.low_priority_rounded,
+                      size: Constants.smIconSize)),
+              Priority.medium => const Tooltip(
+                  message: "Medium",
+                  child: Icon(Icons.outlined_flag_rounded,
+                      size: Constants.smIconSize)),
+              Priority.high => const Tooltip(
+                  message: "High",
+                  child: Icon(Icons.priority_high_rounded,
+                      size: Constants.smIconSize)),
+            },
           ]);
 
   static Widget reminderSubtitle({
@@ -150,7 +149,7 @@ abstract class Subtitles {
                 AutoSizeText(
                   Jiffy.parseFromDateTime(dueDate)
                       .toLocal()
-                      .format(pattern: "MMM d"),
+                      .format(pattern: (smallScreen) ? "MMM d yy" : "MMMM d y"),
                   softWrap: false,
                   overflow: TextOverflow.visible,
                   maxLines: 2,
@@ -295,7 +294,7 @@ abstract class Subtitles {
       case ModelType.task:
         return toDoSubtitle(
             context: context,
-            id: (model as ToDo).groupID,
+            groupID: (model as ToDo).groupID,
             dueDate: model.dueDate,
             priority: model.priority,
             smallScreen: smallScreen,

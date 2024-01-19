@@ -12,12 +12,13 @@ import "../../../model/task/group.dart";
 import "../../../model/task/reminder.dart";
 import "../../../model/task/routine.dart";
 import "../../../model/task/todo.dart";
-import '../../../providers/model/deadline_provider.dart';
 import '../../../providers/application/event_provider.dart';
+import "../../../providers/application/layout_provider.dart";
+import '../../../providers/application/search_provider.dart';
+import '../../../providers/model/deadline_provider.dart';
 import '../../../providers/model/group_provider.dart';
 import '../../../providers/model/reminder_provider.dart';
 import '../../../providers/model/routine_provider.dart';
-import '../../../providers/application/search_provider.dart';
 import '../../../providers/model/subtask_provider.dart';
 import '../../../providers/model/todo_provider.dart';
 import '../../../providers/model/user_provider.dart';
@@ -45,9 +46,9 @@ class _TrashScreen extends State<TrashScreen> {
   late final DeadlineProvider deadlineProvider;
   late final RoutineProvider routineProvider;
   late final GroupProvider groupProvider;
-  late final UserProvider userProvider;
   late final SubtaskProvider subtaskProvider;
   late final EventProvider eventProvider;
+  late final LayoutProvider layoutProvider;
 
   late final ScrollController mainScrollController;
   late final ScrollPhysics scrollPhysics;
@@ -77,10 +78,10 @@ class _TrashScreen extends State<TrashScreen> {
     reminderProvider = Provider.of<ReminderProvider>(context, listen: false);
     groupProvider = Provider.of<GroupProvider>(context, listen: false);
     subtaskProvider = Provider.of<SubtaskProvider>(context, listen: false);
-    userProvider = Provider.of<UserProvider>(context, listen: false);
 
     searchProvider = Provider.of<SearchProvider>(context, listen: false);
     eventProvider = Provider.of<EventProvider>(context, listen: false);
+    layoutProvider = Provider.of<LayoutProvider>(context, listen: false);
   }
 
   void initializeControllers() {
@@ -151,31 +152,34 @@ class _TrashScreen extends State<TrashScreen> {
 
   // Refactor delete dialog.
   Future<void> handleRemove({required IModel model}) async {
-    if (userProvider.curUser?.checkDelete ?? true) {
+    if (toDoProvider.userViewModel?.checkDelete ?? true) {
       List<bool>? results = await showDialog(
           useRootNavigator: false,
           context: context,
           builder: (BuildContext context) {
             return CheckDeleteDialog(
               type: toBeginningOfSentenceCase(model.modelType.name)!,
-              dontAsk: !(userProvider.curUser?.checkDelete ?? true),
+              dontAsk: !(toDoProvider.userViewModel?.checkDelete ?? true),
             );
           });
 
       if (null == results) {
         // Need to repaint bc of fade animation
         if (mounted) {
-          setState(() {});
+          setState(() {
+            model.fade = Fade.fadeIn;
+          });
         }
         return;
       }
 
       bool delete = results[0];
-      userProvider.curUser?.checkDelete = results[1];
+      toDoProvider.userViewModel?.checkDelete = results[1];
       if (!delete) {
-        // Need to repaint bc of fade animation
         if (mounted) {
-          setState(() {});
+          setState(() {
+            model.fade = Fade.fadeIn;
+          });
         }
         return;
       }
@@ -238,7 +242,20 @@ class _TrashScreen extends State<TrashScreen> {
         test: (e) => e is FailureToDeleteException);
   }
 
-  void onFetch({List<IModel>? items}) {
+  // This needs to take a set.
+  void onFetch({List<IModel>? items, Set<IModel>? itemSet}) {
+    if (null == items || null == itemSet) {
+      return;
+    }
+
+    for (IModel item in items) {
+      if (!itemSet.contains(item)) {
+        item.fade = Fade.fadeIn;
+      }
+    }
+  }
+
+  void onAppend({List<IModel>? items}) {
     if (null == items) {
       return;
     }
@@ -255,393 +272,447 @@ class _TrashScreen extends State<TrashScreen> {
     if (mounted) {
       setState(() => item.fade = Fade.fadeOut);
       await Future.delayed(Duration(
-          milliseconds: (userProvider.curUser?.reduceMotion ?? false)
+          milliseconds: (toDoProvider.userViewModel?.reduceMotion ?? false)
               ? 0
               : Constants.fadeOutTime));
     }
   }
 
   @override
-  Widget build(BuildContext context) {
-    MediaQuery.sizeOf(context);
-    return Padding(
-      padding: const EdgeInsets.all(Constants.padding),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          ScreenHeader(
-            outerPadding: const EdgeInsets.all(Constants.padding),
-            leadingIcon: const Icon(Icons.delete_sweep_rounded),
-            header: "Trash",
-            trailing: FilledButton.icon(
-              icon: const Icon(Icons.delete_forever_rounded),
-              label: const Text(
-                "Empty Trash",
-                overflow: TextOverflow.ellipsis,
+  Widget build(BuildContext context) => LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints constraints) => Padding(
+          padding: const EdgeInsets.all(Constants.padding),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ScreenHeader(
+                outerPadding: const EdgeInsets.all(Constants.padding),
+                leadingIcon: const Icon(Icons.delete_sweep_rounded),
+                header: "Trash",
+                trailing: FilledButton.icon(
+                  icon: const Icon(Icons.delete_forever_rounded),
+                  label: const Text(
+                    "Empty Trash",
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  onPressed: emptyTrash,
+                ),
               ),
-              onPressed: emptyTrash,
-            ),
-          ),
-          Padding(
-            padding:
-                const EdgeInsets.symmetric(vertical: Constants.doublePadding),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Flexible(
-                  child: Consumer<SearchProvider>(
-                    builder: (BuildContext context,
-                        SearchProvider<IModel> value, Widget? child) {
-                      return AutoSizeTextField(
-                        maxLines: 1,
-                        minFontSize: Constants.huge,
-                        controller: _searchController,
-                        decoration: InputDecoration(
-                          prefixIcon: const Padding(
-                            padding: EdgeInsets.all(Constants.doublePadding),
-                            child: Icon(Icons.search_rounded),
-                          ),
-                          suffixIcon: (searchProvider.searchString.isNotEmpty)
-                              ? IconButton(
-                                  icon: const Icon(Icons.close_rounded),
-                                  onPressed: () {
-                                    searchProvider.rebuild = true;
-                                    _searchController.clear();
-                                  })
-                              : null,
-                          hintText: "Search Deleted",
-                          contentPadding:
-                              const EdgeInsets.all(Constants.doublePadding),
-                          enabledBorder: OutlineInputBorder(
-                              borderRadius: const BorderRadius.all(
-                                  Radius.circular(Constants.semiCircular)),
-                              borderSide: BorderSide(
-                                width: 2,
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .outlineVariant,
-                                strokeAlign: BorderSide.strokeAlignOutside,
-                              )),
-                          border: const OutlineInputBorder(
-                              borderRadius: BorderRadius.all(
-                                  Radius.circular(Constants.semiCircular)),
-                              borderSide: BorderSide(
-                                strokeAlign: BorderSide.strokeAlignOutside,
-                              )),
-                        ),
-                      );
-                    },
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                    vertical: Constants.doublePadding),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Flexible(
+                      child: Consumer<SearchProvider>(
+                        builder: (BuildContext context,
+                            SearchProvider<IModel> value, Widget? child) {
+                          return AutoSizeTextField(
+                            maxLines: 1,
+                            minFontSize: Constants.huge,
+                            controller: _searchController,
+                            decoration: InputDecoration(
+                              prefixIcon: const Padding(
+                                padding:
+                                    EdgeInsets.all(Constants.doublePadding),
+                                child: Icon(Icons.search_rounded),
+                              ),
+                              suffixIcon:
+                                  (searchProvider.searchString.isNotEmpty)
+                                      ? IconButton(
+                                          icon: const Icon(Icons.close_rounded),
+                                          onPressed: () {
+                                            searchProvider.rebuild = true;
+                                            _searchController.clear();
+                                          })
+                                      : null,
+                              hintText: "Search Deleted",
+                              contentPadding:
+                                  const EdgeInsets.all(Constants.doublePadding),
+                              enabledBorder: OutlineInputBorder(
+                                  borderRadius: const BorderRadius.all(
+                                      Radius.circular(Constants.semiCircular)),
+                                  borderSide: BorderSide(
+                                    width: 2,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .outlineVariant,
+                                    strokeAlign: BorderSide.strokeAlignOutside,
+                                  )),
+                              border: const OutlineInputBorder(
+                                  borderRadius: BorderRadius.all(
+                                      Radius.circular(Constants.semiCircular)),
+                                  borderSide: BorderSide(
+                                    strokeAlign: BorderSide.strokeAlignOutside,
+                                  )),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Flexible(
+                child: Scrollbar(
+                  thumbVisibility: true,
+                  controller: mainScrollController,
+                  child: ListView(
+                    shrinkWrap: true,
+                    controller: mainScrollController,
+                    physics: scrollPhysics,
+                    children: [
+                      Consumer<SearchProvider>(
+                        builder: (BuildContext context,
+                            SearchProvider<IModel> value, Widget? child) {
+                          return AnimatedCrossFade(
+                            crossFadeState:
+                                (searchProvider.searchString.isNotEmpty)
+                                    ? CrossFadeState.showFirst
+                                    : CrossFadeState.showSecond,
+                            duration: const Duration(
+                                milliseconds: Constants.animationDelay),
+                            firstChild: ListViews.trashList(
+                              models: value.model,
+                              showCategory: true,
+                              smallScreen: layoutProvider.smallScreen,
+                              onRemove: onRemove,
+                            ),
+                            secondChild: ListView(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              padding: EdgeInsets.zero,
+                              children: [
+                                // TODOS
+                                ExpandedListTile(
+                                  outerPadding: const EdgeInsets.only(
+                                      bottom: Constants.padding),
+                                  leading: const Icon(
+                                    Icons.task_rounded,
+                                  ),
+                                  title: const AutoSizeText(
+                                    "Tasks",
+                                    maxLines: 1,
+                                    overflow: TextOverflow.visible,
+                                    softWrap: false,
+                                    minFontSize: Constants.large,
+                                  ),
+                                  children: [
+                                    PaginatingListview<IModel>(
+                                      indicatorDisplacement: 0,
+                                      query: toDoProvider.getDeleted,
+                                      rebuildNotifiers: [
+                                        toDoProvider,
+                                      ],
+                                      rebuildCallback: (
+                                          {required List<IModel> items}) {
+                                        toDoProvider.toDos = items.cast();
+                                        toDoProvider.rebuild = false;
+                                      },
+                                      items: toDoProvider.toDos,
+                                      offset: (toDoProvider.rebuild)
+                                          ? 0
+                                          : toDoProvider.toDos.length,
+                                      onRemove: (toDoProvider.userViewModel
+                                                  ?.reduceMotion ??
+                                              false)
+                                          ? null
+                                          : onRemove,
+                                      onFetch: (toDoProvider.userViewModel
+                                                  ?.reduceMotion ??
+                                              false)
+                                          ? null
+                                          : ({List<IModel>? items}) => onFetch(
+                                              items: items,
+                                              itemSet:
+                                                  toDoProvider.toDos.toSet()),
+                                      onAppend: (toDoProvider.userViewModel
+                                                  ?.reduceMotion ??
+                                              false)
+                                          ? null
+                                          : onAppend,
+                                      listviewBuilder: ({
+                                        Key? key,
+                                        required BuildContext context,
+                                        required List<IModel> items,
+                                        Future<void> Function({IModel? item})?
+                                            onRemove,
+                                      }) =>
+                                          ListViews.trashList(
+                                        models: items,
+                                        restoreModel: handleRecover,
+                                        deleteModel: handleRemove,
+                                        onRemove: onRemove,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                // DEADLINES
+                                ExpandedListTile(
+                                  outerPadding: const EdgeInsets.only(
+                                      bottom: Constants.padding),
+                                  leading: const Icon(
+                                    Icons.announcement_rounded,
+                                  ),
+                                  title: const AutoSizeText(
+                                    "Deadlines",
+                                    maxLines: 1,
+                                    overflow: TextOverflow.visible,
+                                    softWrap: false,
+                                    minFontSize: Constants.large,
+                                  ),
+                                  children: [
+                                    PaginatingListview<IModel>(
+                                      indicatorDisplacement: 0,
+                                      query: deadlineProvider.getDeleted,
+                                      rebuildNotifiers: [
+                                        deadlineProvider,
+                                      ],
+                                      rebuildCallback: (
+                                          {required List<IModel> items}) {
+                                        deadlineProvider.deadlines =
+                                            items.cast();
+                                        deadlineProvider.rebuild = false;
+                                      },
+                                      items: deadlineProvider.deadlines,
+                                      offset: (deadlineProvider.rebuild)
+                                          ? 0
+                                          : deadlineProvider.deadlines.length,
+                                      onRemove: (deadlineProvider.userViewModel
+                                                  ?.reduceMotion ??
+                                              false)
+                                          ? null
+                                          : onRemove,
+                                      onFetch: (deadlineProvider.userViewModel
+                                                  ?.reduceMotion ??
+                                              false)
+                                          ? null
+                                          : ({List<IModel>? items}) => onFetch(
+                                              items: items,
+                                              itemSet: deadlineProvider
+                                                  .deadlines
+                                                  .toSet()),
+                                      onAppend: (deadlineProvider.userViewModel
+                                                  ?.reduceMotion ??
+                                              false)
+                                          ? null
+                                          : onAppend,
+                                      listviewBuilder: ({
+                                        Key? key,
+                                        required BuildContext context,
+                                        required List<IModel> items,
+                                        Future<void> Function({IModel? item})?
+                                            onRemove,
+                                      }) =>
+                                          ListViews.trashList(
+                                        models: items,
+                                        restoreModel: handleRecover,
+                                        deleteModel: handleRemove,
+                                        onRemove: onRemove,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                // REMINDERS
+                                ExpandedListTile(
+                                  outerPadding: const EdgeInsets.only(
+                                      bottom: Constants.padding),
+                                  leading: const Icon(
+                                    Icons.push_pin_rounded,
+                                  ),
+                                  title: const AutoSizeText(
+                                    "Reminders",
+                                    maxLines: 1,
+                                    overflow: TextOverflow.visible,
+                                    softWrap: false,
+                                    minFontSize: Constants.large,
+                                  ),
+                                  children: [
+                                    PaginatingListview<IModel>(
+                                      indicatorDisplacement: 0,
+                                      query: reminderProvider.getDeleted,
+                                      rebuildNotifiers: [
+                                        reminderProvider,
+                                      ],
+                                      rebuildCallback: (
+                                          {required List<IModel> items}) {
+                                        reminderProvider.reminders =
+                                            items.cast();
+                                        reminderProvider.rebuild = false;
+                                      },
+                                      items: reminderProvider.reminders,
+                                      offset: (reminderProvider.rebuild)
+                                          ? 0
+                                          : reminderProvider.reminders.length,
+                                      onRemove: (reminderProvider.userViewModel
+                                                  ?.reduceMotion ??
+                                              false)
+                                          ? null
+                                          : onRemove,
+                                      onFetch: (reminderProvider.userViewModel
+                                                  ?.reduceMotion ??
+                                              false)
+                                          ? null
+                                          : ({List<IModel>? items}) => onFetch(
+                                              items: items,
+                                              itemSet: reminderProvider
+                                                  .reminders
+                                                  .toSet()),
+                                      onAppend: (reminderProvider.userViewModel
+                                                  ?.reduceMotion ??
+                                              false)
+                                          ? null
+                                          : onAppend,
+                                      listviewBuilder: ({
+                                        Key? key,
+                                        required BuildContext context,
+                                        required List<IModel> items,
+                                        Future<void> Function({IModel? item})?
+                                            onRemove,
+                                      }) =>
+                                          ListViews.trashList(
+                                        models: items,
+                                        restoreModel: handleRecover,
+                                        deleteModel: handleRemove,
+                                        onRemove: onRemove,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                // ROUTINES
+                                ExpandedListTile(
+                                  outerPadding: const EdgeInsets.only(
+                                      bottom: Constants.padding),
+                                  leading: const Icon(Icons.repeat_rounded),
+                                  title: const AutoSizeText(
+                                    "Routines",
+                                    maxLines: 1,
+                                    overflow: TextOverflow.visible,
+                                    softWrap: false,
+                                    minFontSize: Constants.large,
+                                  ),
+                                  children: [
+                                    PaginatingListview<IModel>(
+                                      indicatorDisplacement: 0,
+                                      query: routineProvider.getDeleted,
+                                      rebuildNotifiers: [
+                                        routineProvider,
+                                      ],
+                                      rebuildCallback: (
+                                          {required List<IModel> items}) {
+                                        routineProvider.routines = items.cast();
+                                        routineProvider.rebuild = false;
+                                      },
+                                      items: routineProvider.routines,
+                                      offset: (routineProvider.rebuild)
+                                          ? 0
+                                          : routineProvider.routines.length,
+                                      onRemove: (routineProvider.userViewModel
+                                                  ?.reduceMotion ??
+                                              false)
+                                          ? null
+                                          : onRemove,
+                                      onFetch: (routineProvider.userViewModel
+                                                  ?.reduceMotion ??
+                                              false)
+                                          ? null
+                                          : ({List<IModel>? items}) => onFetch(
+                                              items: items,
+                                              itemSet: routineProvider.routines
+                                                  .toSet()),
+                                      onAppend: (routineProvider.userViewModel
+                                                  ?.reduceMotion ??
+                                              false)
+                                          ? null
+                                          : onAppend,
+                                      listviewBuilder: ({
+                                        Key? key,
+                                        required BuildContext context,
+                                        required List<IModel> items,
+                                        Future<void> Function({IModel? item})?
+                                            onRemove,
+                                      }) =>
+                                          ListViews.trashList(
+                                        models: items,
+                                        restoreModel: handleRecover,
+                                        deleteModel: handleRemove,
+                                        onRemove: onRemove,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                // GROUPS
+                                ExpandedListTile(
+                                  leading: const Icon(Icons.table_view_rounded),
+                                  title: const AutoSizeText(
+                                    "Groups",
+                                    maxLines: 1,
+                                    overflow: TextOverflow.visible,
+                                    softWrap: false,
+                                    minFontSize: Constants.large,
+                                  ),
+                                  children: [
+                                    PaginatingListview<IModel>(
+                                      indicatorDisplacement: 0,
+                                      query: groupProvider.getDeleted,
+                                      rebuildNotifiers: [
+                                        groupProvider,
+                                      ],
+                                      rebuildCallback: (
+                                          {required List<IModel> items}) {
+                                        groupProvider.groups = items.cast();
+                                        groupProvider.rebuild = false;
+                                      },
+                                      items: groupProvider.groups,
+                                      offset: (groupProvider.rebuild)
+                                          ? 0
+                                          : groupProvider.groups.length,
+                                      onRemove: (groupProvider.userViewModel
+                                                  ?.reduceMotion ??
+                                              false)
+                                          ? null
+                                          : onRemove,
+                                      onFetch: (groupProvider.userViewModel
+                                                  ?.reduceMotion ??
+                                              false)
+                                          ? null
+                                          : ({List<IModel>? items}) => onFetch(
+                                              items: items,
+                                              itemSet:
+                                                  groupProvider.groups.toSet()),
+                                      onAppend: (groupProvider.userViewModel
+                                                  ?.reduceMotion ??
+                                              false)
+                                          ? null
+                                          : onAppend,
+                                      listviewBuilder: ({
+                                        Key? key,
+                                        required BuildContext context,
+                                        required List<IModel> items,
+                                        Future<void> Function({IModel? item})?
+                                            onRemove,
+                                      }) =>
+                                          ListViews.trashList(
+                                        models: items,
+                                        restoreModel: handleRecover,
+                                        deleteModel: handleRemove,
+                                        onRemove: onRemove,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                    ],
                   ),
                 ),
-              ],
-            ),
-          ),
-          Flexible(
-            child: Scrollbar(
-              thumbVisibility: true,
-              controller: mainScrollController,
-              child: ListView(
-                shrinkWrap: true,
-                controller: mainScrollController,
-                physics: scrollPhysics,
-                children: [
-                  Consumer<SearchProvider>(
-                    builder: (BuildContext context,
-                        SearchProvider<IModel> value, Widget? child) {
-                      return AnimatedCrossFade(
-                        crossFadeState: (searchProvider.searchString.isNotEmpty)
-                            ? CrossFadeState.showFirst
-                            : CrossFadeState.showSecond,
-                        duration: const Duration(
-                            milliseconds: Constants.animationDelay),
-                        firstChild: ListViews.trashList(
-                          models: value.model,
-                          showCategory: true,
-                          smallScreen: userProvider.smallScreen,
-                          onRemove: onRemove,
-                        ),
-                        secondChild: ListView(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          padding: EdgeInsets.zero,
-                          children: [
-                            // TODOS
-                            ExpandedListTile(
-                              leading: const Icon(
-                                Icons.task_rounded,
-                              ),
-                              title: const AutoSizeText(
-                                "Tasks",
-                                maxLines: 1,
-                                overflow: TextOverflow.visible,
-                                softWrap: false,
-                                minFontSize: Constants.large,
-                              ),
-                              children: [
-                                PaginatingListview<IModel>(
-                                  indicatorDisplacement: 0,
-                                  query: toDoProvider.getDeleted,
-                                  rebuildNotifiers: [
-                                    toDoProvider,
-                                  ],
-                                  rebuildCallback: (
-                                      {required List<IModel> items}) {
-                                    toDoProvider.toDos = items.cast();
-                                    toDoProvider.rebuild = false;
-                                  },
-                                  items: toDoProvider.toDos,
-                                  offset: (toDoProvider.rebuild)
-                                      ? 0
-                                      : toDoProvider.toDos.length,
-                                  onRemove:
-                                      (userProvider.curUser?.reduceMotion ??
-                                              false)
-                                          ? null
-                                          : onRemove,
-                                  onFetch:
-                                      (userProvider.curUser?.reduceMotion ??
-                                              false)
-                                          ? null
-                                          : onFetch,
-                                  listviewBuilder: ({
-                                    Key? key,
-                                    required BuildContext context,
-                                    required List<IModel> items,
-                                    Future<void> Function({IModel? item})?
-                                        onRemove,
-                                  }) =>
-                                      ListViews.trashList(
-                                    models: items,
-                                    restoreModel: handleRecover,
-                                    deleteModel: handleRemove,
-                                    onRemove: onRemove,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            // DEADLINES
-                            ExpandedListTile(
-                              leading: const Icon(
-                                Icons.announcement_rounded,
-                              ),
-                              title: const AutoSizeText(
-                                "Deadlines",
-                                maxLines: 1,
-                                overflow: TextOverflow.visible,
-                                softWrap: false,
-                                minFontSize: Constants.large,
-                              ),
-                              children: [
-                                PaginatingListview<IModel>(
-                                  indicatorDisplacement: 0,
-                                  query: deadlineProvider.getDeleted,
-                                  rebuildNotifiers: [
-                                    deadlineProvider,
-                                  ],
-                                  rebuildCallback: (
-                                      {required List<IModel> items}) {
-                                    deadlineProvider.deadlines = items.cast();
-                                    deadlineProvider.rebuild = false;
-                                  },
-                                  items: deadlineProvider.deadlines,
-                                  offset: (deadlineProvider.rebuild)
-                                      ? 0
-                                      : deadlineProvider.deadlines.length,
-                                  onRemove:
-                                      (userProvider.curUser?.reduceMotion ??
-                                              false)
-                                          ? null
-                                          : onRemove,
-                                  onFetch:
-                                      (userProvider.curUser?.reduceMotion ??
-                                              false)
-                                          ? null
-                                          : onFetch,
-                                  listviewBuilder: ({
-                                    Key? key,
-                                    required BuildContext context,
-                                    required List<IModel> items,
-                                    Future<void> Function({IModel? item})?
-                                        onRemove,
-                                  }) =>
-                                      ListViews.trashList(
-                                    models: items,
-                                    restoreModel: handleRecover,
-                                    deleteModel: handleRemove,
-                                    onRemove: onRemove,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            // REMINDERS
-                            ExpandedListTile(
-                              leading: const Icon(
-                                Icons.push_pin_rounded,
-                              ),
-                              title: const AutoSizeText(
-                                "Reminders",
-                                maxLines: 1,
-                                overflow: TextOverflow.visible,
-                                softWrap: false,
-                                minFontSize: Constants.large,
-                              ),
-                              children: [
-                                PaginatingListview<IModel>(
-                                  indicatorDisplacement: 0,
-                                  query: reminderProvider.getDeleted,
-                                  rebuildNotifiers: [
-                                    reminderProvider,
-                                  ],
-                                  rebuildCallback: (
-                                      {required List<IModel> items}) {
-                                    reminderProvider.reminders = items.cast();
-                                    reminderProvider.rebuild = false;
-                                  },
-                                  items: reminderProvider.reminders,
-                                  offset: (reminderProvider.rebuild)
-                                      ? 0
-                                      : reminderProvider.reminders.length,
-                                  onRemove:
-                                      (userProvider.curUser?.reduceMotion ??
-                                              false)
-                                          ? null
-                                          : onRemove,
-                                  onFetch:
-                                      (userProvider.curUser?.reduceMotion ??
-                                              false)
-                                          ? null
-                                          : onFetch,
-                                  listviewBuilder: ({
-                                    Key? key,
-                                    required BuildContext context,
-                                    required List<IModel> items,
-                                    Future<void> Function({IModel? item})?
-                                        onRemove,
-                                  }) =>
-                                      ListViews.trashList(
-                                    models: items,
-                                    restoreModel: handleRecover,
-                                    deleteModel: handleRemove,
-                                    onRemove: onRemove,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            // ROUTINES
-                            ExpandedListTile(
-                              leading: const Icon(Icons.repeat_rounded),
-                              title: const AutoSizeText(
-                                "Routines",
-                                maxLines: 1,
-                                overflow: TextOverflow.visible,
-                                softWrap: false,
-                                minFontSize: Constants.large,
-                              ),
-                              children: [
-                                PaginatingListview<IModel>(
-                                  indicatorDisplacement: 0,
-                                  query: routineProvider.getDeleted,
-                                  rebuildNotifiers: [
-                                    routineProvider,
-                                  ],
-                                  rebuildCallback: (
-                                      {required List<IModel> items}) {
-                                    routineProvider.routines = items.cast();
-                                    routineProvider.rebuild = false;
-                                  },
-                                  items: routineProvider.routines,
-                                  offset: (routineProvider.rebuild)
-                                      ? 0
-                                      : routineProvider.routines.length,
-                                  onRemove:
-                                      (userProvider.curUser?.reduceMotion ??
-                                              false)
-                                          ? null
-                                          : onRemove,
-                                  onFetch:
-                                      (userProvider.curUser?.reduceMotion ??
-                                              false)
-                                          ? null
-                                          : onFetch,
-                                  listviewBuilder: ({
-                                    Key? key,
-                                    required BuildContext context,
-                                    required List<IModel> items,
-                                    Future<void> Function({IModel? item})?
-                                        onRemove,
-                                  }) =>
-                                      ListViews.trashList(
-                                    models: items,
-                                    restoreModel: handleRecover,
-                                    deleteModel: handleRemove,
-                                    onRemove: onRemove,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            // GROUPS
-                            ExpandedListTile(
-                              leading: const Icon(Icons.table_view_rounded),
-                              title: const AutoSizeText(
-                                "Groups",
-                                maxLines: 1,
-                                overflow: TextOverflow.visible,
-                                softWrap: false,
-                                minFontSize: Constants.large,
-                              ),
-                              children: [
-                                PaginatingListview<IModel>(
-                                  indicatorDisplacement: 0,
-                                  query: groupProvider.getDeleted,
-                                  rebuildNotifiers: [
-                                    groupProvider,
-                                  ],
-                                  rebuildCallback: (
-                                      {required List<IModel> items}) {
-                                    groupProvider.groups = items.cast();
-                                    groupProvider.rebuild = false;
-                                  },
-                                  items: groupProvider.groups,
-                                  offset: (groupProvider.rebuild)
-                                      ? 0
-                                      : groupProvider.groups.length,
-                                  onRemove:
-                                      (userProvider.curUser?.reduceMotion ??
-                                              false)
-                                          ? null
-                                          : onRemove,
-                                  onFetch:
-                                      (userProvider.curUser?.reduceMotion ??
-                                              false)
-                                          ? null
-                                          : onFetch,
-                                  listviewBuilder: ({
-                                    Key? key,
-                                    required BuildContext context,
-                                    required List<IModel> items,
-                                    Future<void> Function({IModel? item})?
-                                        onRemove,
-                                  }) =>
-                                      ListViews.trashList(
-                                    models: items,
-                                    restoreModel: handleRecover,
-                                    deleteModel: handleRemove,
-                                    onRemove: onRemove,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-                ],
               ),
-            ),
+            ],
           ),
-        ],
-      ),
-    );
-  }
+        ),
+      );
 }

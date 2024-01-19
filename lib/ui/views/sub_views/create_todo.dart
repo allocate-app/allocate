@@ -246,8 +246,10 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
     }
     if (mounted) {
       setState(() => item.fade = Fade.fadeOut);
-      await Future.delayed(
-          const Duration(milliseconds: Constants.animationDelay));
+      await Future.delayed(Duration(
+          milliseconds: (toDoProvider.userViewModel?.reduceMotion ?? false)
+              ? 0
+              : Constants.fadeOutTime));
     }
   }
 

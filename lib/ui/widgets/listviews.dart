@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:allocate/providers/model/reminder_provider.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -18,6 +20,7 @@ import '../../util/constants.dart';
 import '../../util/enums.dart';
 import '../../util/interfaces/i_model.dart';
 import 'custom_drag_start.dart';
+import 'custom_reorderable_separated.dart';
 import 'tiles.dart';
 
 abstract class ListViews {
@@ -31,7 +34,9 @@ abstract class ListViews {
             final ColorScheme colorScheme = Theme.of(context).colorScheme;
             final Color draggableColor = colorScheme.primaryContainer;
             final Color shadowColor = colorScheme.shadow;
+            final animValue = Curves.easeInOut.transform(animation.value);
             return Material(
+              elevation: lerpDouble(0, 10, animValue)!,
               borderRadius: const BorderRadius.all(
                   Radius.circular(Constants.semiCircular)),
               color: draggableColor,
@@ -469,17 +474,24 @@ abstract class ListViews {
             );
           });
 
+  // NOTE: This is using a custom reorderable listview
+  // to allow padding between items.
+  // The index correction happens within the widget,
+  // This has been accounted for in GroupProvider.
   static Widget reorderableGroups({
     Key? key,
     required BuildContext context,
     required List<Group> groups,
     bool checkDelete = false,
+    Widget? divider,
+    EdgeInsetsGeometry separatorPadding =
+        const EdgeInsets.symmetric(vertical: Constants.padding),
     ScrollPhysics physics = const NeverScrollableScrollPhysics(),
     Future<void> Function({Group? item})? onRemove,
     void Function({List<ToDo>? items})? onToDoFetch,
     Future<void> Function({ToDo? item})? onToDoRemove,
   }) =>
-      ReorderableListView.builder(
+      CustomReorderableListView.separated(
           key: key,
           proxyDecorator: proxyDecorator,
           buildDefaultDragHandles: false,
@@ -507,49 +519,65 @@ abstract class ListViews {
                 onToDoRemove: onToDoRemove,
               ),
             );
+
+            // BECAUSE OF SEPARATORS, THIS NEEDS TO HAVE A DOUBLED INDEX
             if (groups.length > 1) {
               return CustomDragStartListener(
                 delay: Constants.dragDelayTime,
                 key: ValueKey(groups[index].id),
-                index: index,
+                index: index * 2,
                 child: child,
               );
             }
             return child;
-          });
+          },
+          separatorBuilder: (BuildContext context, int index) =>
+              divider ??
+              Padding(
+                  key: ValueKey("separatorKey: $index"),
+                  padding: separatorPadding,
+                  child: const SizedBox.shrink()));
 
+  // TODO: migrate to listview.separarted.
   static Widget immutableGroups({
     Key? key,
     required List<Group> groups,
     bool checkDelete = false,
+    Widget? divider,
+    EdgeInsetsGeometry separatorPadding =
+        const EdgeInsets.symmetric(vertical: Constants.padding),
     ScrollPhysics physics = const NeverScrollableScrollPhysics(),
     Future<void> Function({Group? item})? onRemove,
     void Function({List<ToDo>? items})? onToDoFetch,
     Future<void> Function({ToDo? item})? onToDoRemove,
   }) =>
-      ListView.builder(
-          key: key,
-          shrinkWrap: true,
-          physics: physics,
-          itemCount: groups.length,
-          itemBuilder: (BuildContext context, int index) {
-            return fade(
-              key: ValueKey(groups[index].id),
-              onEnd: () {
-                groups[index].fade = Fade.none;
-              },
-              fade: groups[index].fade,
-              child: Tiles.groupListTile(
-                context: context,
-                index: index,
-                group: groups[index],
-                checkDelete: checkDelete,
-                onRemove: onRemove,
-                onToDoFetch: onToDoFetch,
-                onToDoRemove: onToDoRemove,
-              ),
-            );
-          });
+      ListView.separated(
+        key: key,
+        shrinkWrap: true,
+        physics: physics,
+        itemCount: groups.length,
+        itemBuilder: (BuildContext context, int index) {
+          return fade(
+            key: ValueKey(groups[index].id),
+            onEnd: () {
+              groups[index].fade = Fade.none;
+            },
+            fade: groups[index].fade,
+            child: Tiles.groupListTile(
+              context: context,
+              index: index,
+              group: groups[index],
+              checkDelete: checkDelete,
+              onRemove: onRemove,
+              onToDoFetch: onToDoFetch,
+              onToDoRemove: onToDoRemove,
+            ),
+          );
+        },
+        separatorBuilder: (BuildContext context, int index) =>
+            divider ??
+            Padding(padding: separatorPadding, child: const SizedBox.shrink()),
+      );
 
   static Widget reorderableGroupToDos({
     Key? key,

@@ -27,6 +27,7 @@ import '../providers/viewmodels/deadline_viewmodel.dart';
 import '../providers/viewmodels/group_viewmodel.dart';
 import '../providers/viewmodels/reminder_viewmodel.dart';
 import '../providers/viewmodels/routine_viewmodel.dart';
+import '../providers/viewmodels/subtask_viewmodel.dart';
 import '../providers/viewmodels/todo_viewmodel.dart';
 import '../providers/viewmodels/user_viewmodel.dart';
 import '../services/isar_service.dart';
@@ -113,11 +114,14 @@ void main() async {
             create: (_) => ReminderViewModel()),
         ChangeNotifierProvider<GroupViewModel>(create: (_) => GroupViewModel()),
 
+        ChangeNotifierProvider<SubtaskViewModel>(
+            create: (_) => SubtaskViewModel()),
+
         // GLOBAL STATE
         ChangeNotifierProvider<AppProvider>(create: (_) => AppProvider()),
         ChangeNotifierProvider<LayoutProvider>(create: (_) => LayoutProvider()),
 
-        // This is not quite right -> UserProvider needs to query the db first.
+        // TODO: This is not quite right -> UserProvider needs to query the db first.
         ChangeNotifierProxyProvider<UserViewModel, UserProvider>(
             create: (BuildContext context) => UserProvider(
                 viewModel: Provider.of<UserViewModel>(context, listen: false)),
@@ -154,9 +158,15 @@ void main() async {
                     userViewModel: up.viewModel,
                   );
             }),
-        ChangeNotifierProvider<SubtaskProvider>(
-          create: (BuildContext context) => SubtaskProvider(),
-        ),
+        ChangeNotifierProxyProvider<UserProvider, SubtaskProvider>(
+            create: (BuildContext context) => SubtaskProvider(
+                userViewModel: Provider.of<UserProvider>(context, listen: false)
+                    .viewModel),
+            update:
+                (BuildContext context, UserProvider up, SubtaskProvider? sp) {
+              sp?.setUser(newUser: up.viewModel);
+              return sp ?? SubtaskProvider(userViewModel: up.viewModel);
+            }),
         ChangeNotifierProxyProvider<UserProvider, ReminderProvider>(
             create: (BuildContext context) => ReminderProvider(
                   userViewModel:
@@ -179,19 +189,19 @@ void main() async {
             }),
         ChangeNotifierProxyProvider<UserProvider, GroupProvider>(
             create: (BuildContext context) => GroupProvider(
-                user:
-                    Provider.of<UserProvider>(context, listen: false).curUser),
+                userViewModel: Provider.of<UserProvider>(context, listen: false)
+                    .viewModel),
             update: (BuildContext context, UserProvider up, GroupProvider? gp) {
-              gp?.setUser(newUser: up.curUser);
-              return gp ?? GroupProvider(user: up.curUser);
+              gp?.setUser(newUser: up.viewModel);
+              return gp ?? GroupProvider(userViewModel: up.viewModel);
             }),
         ChangeNotifierProxyProvider<UserProvider, ThemeProvider>(
             create: (BuildContext context) => ThemeProvider(
-                user:
-                    Provider.of<UserProvider>(context, listen: false).curUser),
+                userViewModel: Provider.of<UserProvider>(context, listen: false)
+                    .viewModel),
             update: (BuildContext context, UserProvider up, ThemeProvider? tp) {
-              tp?.setUser(newUser: up.curUser);
-              return tp ?? ThemeProvider(user: up.curUser);
+              tp?.setUser(newUser: up.viewModel);
+              return tp ?? ThemeProvider(userViewModel: up.viewModel);
             }),
         ChangeNotifierProxyProvider<UserProvider, SearchProvider>(
             create: (BuildContext context) => SearchProvider<IModel>(

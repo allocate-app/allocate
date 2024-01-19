@@ -7,6 +7,7 @@ import '../../repositories/subtask_repo.dart';
 import '../../util/constants.dart';
 import '../../util/exceptions.dart';
 import '../../util/interfaces/repository/model/subtask_repository.dart';
+import '../viewmodels/user_viewmodel.dart';
 
 class SubtaskProvider extends ChangeNotifier {
   bool _rebuild = true;
@@ -26,34 +27,22 @@ class SubtaskProvider extends ChangeNotifier {
 
   late final SubtaskRepository _subtaskRepo;
 
-  // Not sure if I need a ptr, or a usr pref yet.
+  late UserViewModel? userViewModel;
   Subtask? curSubtask;
   List<Subtask> subtasks = [];
 
   // CONSTRUCTOR
-  SubtaskProvider({SubtaskRepository? subtaskRepository})
+  SubtaskProvider({SubtaskRepository? subtaskRepository, this.userViewModel})
       : _subtaskRepo = subtaskRepository ?? SubtaskRepo.instance;
 
-  Future<void> createSubtask(
-      {String? name,
-      int? weight,
-      bool? completed,
-      int? taskID,
-      int? index}) async {
-    name = name ?? "";
-    weight = weight ?? 0;
-    completed = completed ?? false;
-    curSubtask = Subtask(
-        name: name,
-        weight: weight,
-        completed: completed,
-        taskID: taskID,
-        lastUpdated: DateTime.now());
-    if (null != index) {
-      curSubtask?.customViewIndex = index;
-    }
+  void setUser({UserViewModel? newUser}) {
+    userViewModel = newUser;
+    notifyListeners();
+  }
+
+  Future<void> createSubtask(Subtask subtask) async {
     try {
-      curSubtask = await _subtaskRepo.create(curSubtask!);
+      curSubtask = await _subtaskRepo.create(subtask);
     } on FailureToUploadException catch (e) {
       log(e.cause);
       return Future.error(e);

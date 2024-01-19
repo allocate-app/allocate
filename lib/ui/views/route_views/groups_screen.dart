@@ -14,6 +14,7 @@ import '../../widgets/paginating_listview.dart';
 import '../../widgets/tiles.dart';
 import '../sub_views/create_group.dart';
 
+// TODO: factor out userProvider.
 class GroupsListScreen extends StatefulWidget {
   const GroupsListScreen({super.key});
 
@@ -60,7 +61,10 @@ class _GroupsListScreen extends State<GroupsListScreen> {
 
     if (mounted) {
       setState(() => item.fade = Fade.fadeOut);
-      await Future.delayed(const Duration(milliseconds: Constants.fadeOutTime));
+      await Future.delayed(Duration(
+          milliseconds: (groupProvider.userViewModel?.reduceMotion ?? false)
+              ? 0
+              : Constants.fadeOutTime));
     }
   }
 
@@ -69,6 +73,18 @@ class _GroupsListScreen extends State<GroupsListScreen> {
       return;
     }
 
+    Set<IModel> currentGroups = groupProvider.groups.toSet();
+    for (IModel item in items) {
+      if (!currentGroups.contains(item)) {
+        item.fade = Fade.fadeIn;
+      }
+    }
+  }
+
+  void onAppend({List<IModel>? items}) {
+    if (null == items || items.isEmpty) {
+      return;
+    }
     for (IModel item in items) {
       item.fade = Fade.fadeIn;
     }
@@ -126,6 +142,9 @@ class _GroupsListScreen extends State<GroupsListScreen> {
               onRemove: (userProvider.curUser?.reduceMotion ?? false)
                   ? null
                   : onRemove,
+              onAppend: (userProvider.curUser?.reduceMotion ?? false)
+                  ? null
+                  : onAppend,
               getAnimationKey: () => ValueKey(
                   groupProvider.sorter.sortMethod.index *
                           (groupProvider.sorter.descending ? -1 : 1) +

@@ -42,10 +42,10 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreen();
 }
 
-// TODO: clean up setState
+// TODO: clean up setState -> listen to layoutProvider.
 // TODO: read UserModel.reduceMotion and set tween duration.
 class _HomeScreen extends State<HomeScreen> {
-  late int selectedPageIndex;
+  // late int _selectedPageIndex;
 
   late final ToDoProvider toDoProvider;
   late final RoutineProvider routineProvider;
@@ -129,7 +129,8 @@ class _HomeScreen extends State<HomeScreen> {
   }
 
   void initializeParams() {
-    selectedPageIndex = widget.index ?? 0;
+    // _selectedPageIndex = widget.index ?? 0;
+    layoutProvider.initPageIndex = widget.index ?? 0;
     _navDrawerWidth = Constants.navigationDrawerMaxWidth;
     _opened = userProvider.drawerOpened;
     _dragging = false;
@@ -182,7 +183,7 @@ class _HomeScreen extends State<HomeScreen> {
     layoutProvider.size = MediaQuery.sizeOf(context);
     print("MQ: ${userProvider.size}");
 
-    return (userProvider.largeScreen)
+    return (layoutProvider.largeScreen)
         ? buildDesktop(context: context)
         : buildMobile(context: context);
   }
@@ -292,15 +293,21 @@ class _HomeScreen extends State<HomeScreen> {
       ),
 
       Expanded(
-        child: Consumer<ThemeProvider>(
-          builder: (BuildContext context, ThemeProvider value, Widget? child) {
-            return Scaffold(
-                backgroundColor: Theme.of(context)
-                    .scaffoldBackgroundColor
-                    .withOpacity(value.scaffoldOpacity),
-                appBar: buildAppBar(mobile: false),
-                body: SafeArea(
-                    child: Constants.viewRoutes[selectedPageIndex].view));
+        child: Selector<ThemeProvider, double>(
+          selector: (BuildContext context, ThemeProvider tp) =>
+              tp.scaffoldOpacity,
+          builder: (BuildContext context, double opacity, Widget? child) {
+            return Selector<LayoutProvider, int>(
+                selector: (BuildContext context, LayoutProvider lp) =>
+                    lp.selectedPageIndex,
+                builder: (BuildContext context, int index, Widget? child) {
+                  return Scaffold(
+                      backgroundColor: Theme.of(context)
+                          .scaffoldBackgroundColor
+                          .withOpacity(opacity),
+                      appBar: buildAppBar(mobile: false),
+                      body: SafeArea(child: Constants.viewRoutes[index].view));
+                });
           },
         ),
       )
@@ -308,18 +315,35 @@ class _HomeScreen extends State<HomeScreen> {
   }
 
   Widget buildMobile({required BuildContext context}) {
-    return Consumer<ThemeProvider>(
-      builder: (BuildContext context, ThemeProvider value, Widget? child) {
-        return Scaffold(
-            backgroundColor: Theme.of(context)
-                .scaffoldBackgroundColor
-                .withOpacity(value.scaffoldOpacity),
-            appBar: buildAppBar(mobile: true),
-            drawer: buildNavigationDrawer(context: context, largeScreen: false),
-            body:
-                SafeArea(child: Constants.viewRoutes[selectedPageIndex].view));
+    return Selector<ThemeProvider, double>(
+      selector: (BuildContext context, ThemeProvider tp) => tp.scaffoldOpacity,
+      builder: (BuildContext context, double opacity, Widget? child) {
+        return Selector<LayoutProvider, int>(
+            selector: (BuildContext context, LayoutProvider lp) =>
+                lp.selectedPageIndex,
+            builder: (BuildContext context, int index, Widget? child) {
+              return Scaffold(
+                  backgroundColor: Theme.of(context)
+                      .scaffoldBackgroundColor
+                      .withOpacity(opacity),
+                  appBar: buildAppBar(mobile: true),
+                  body: SafeArea(child: Constants.viewRoutes[index].view));
+            });
       },
     );
+    // return Consumer<ThemeProvider>(
+    //   builder: (BuildContext context, ThemeProvider value, Widget? child) {
+    //     return Scaffold(
+    //         backgroundColor: Theme.of(context)
+    //             .scaffoldBackgroundColor
+    //             .withOpacity(value.scaffoldOpacity),
+    //         appBar: buildAppBar(mobile: true),
+    //         drawer: buildNavigationDrawer(context: context, largeScreen: false),
+    //         body: SafeArea(
+    //             child: Constants
+    //                 .viewRoutes[layoutProvider.selectedPageIndex].view));
+    //   },
+    // );
   }
 
   AppBar buildAppBar({bool mobile = false}) {
@@ -404,9 +428,7 @@ class _HomeScreen extends State<HomeScreen> {
                 .withOpacity(themeProvider.sidebarOpacity)
             : null,
         onDestinationSelected: (index) {
-          setState(() {
-            selectedPageIndex = index;
-          });
+          layoutProvider.selectedPageIndex = index;
 
           if (!largeScreen) {
             Navigator.pop(context);
@@ -414,7 +436,7 @@ class _HomeScreen extends State<HomeScreen> {
 
           resetProviders();
         },
-        selectedIndex: selectedPageIndex,
+        selectedIndex: layoutProvider.selectedPageIndex,
         children: [
           // User name bar
           // Possible stretch Goal: add user images?
@@ -445,7 +467,7 @@ class _HomeScreen extends State<HomeScreen> {
                 setState(() {
                   resetProviders();
                   // TODO: come up with a clever way to avoid looping.
-                  selectedPageIndex =
+                  layoutProvider.selectedPageIndex =
                       Constants.viewRoutes.indexOf(Constants.settingsScreen);
                 });
                 if (!largeScreen) {
@@ -529,7 +551,8 @@ class _HomeScreen extends State<HomeScreen> {
                     ),
                     onTap: () {
                       groupProvider.softRebuild = true;
-                      selectedPageIndex = Constants.viewRoutes.length - 1;
+                      layoutProvider.selectedPageIndex =
+                          Constants.viewRoutes.length - 1;
                       if (mounted) {
                         setState(() {});
                       }

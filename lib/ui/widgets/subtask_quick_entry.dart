@@ -6,6 +6,7 @@ import 'package:flutter/semantics.dart';
 import 'package:provider/provider.dart';
 
 import '../../providers/model/subtask_provider.dart';
+import '../../providers/viewmodels/subtask_viewmodel.dart';
 import '../../util/constants.dart';
 import '../../util/exceptions.dart';
 import 'flushbars.dart';
@@ -40,37 +41,37 @@ class SubtaskQuickEntry extends StatefulWidget {
 }
 
 class _SubtaskQuickEntry extends State<SubtaskQuickEntry> {
-  late String name;
-  late double weight;
   late TextEditingController nameEditingController;
   late MenuController menuController;
 
   late final SubtaskProvider subtaskProvider;
+  late final SubtaskViewModel vm;
 
   @override
   void initState() {
     super.initState();
-    name = "";
-    weight = widget.weight;
+    vm = Provider.of<SubtaskViewModel>(context, listen: false);
+    vm.weight = widget.weight.toInt();
+    vm.taskID = widget.taskID;
+    vm.customViewIndex = widget.taskIndex ?? vm.customViewIndex;
     subtaskProvider = Provider.of<SubtaskProvider>(context, listen: false);
     nameEditingController = TextEditingController();
-    nameEditingController.addListener(() {
-      if ((nameEditingController.text.isEmpty ^ name.isEmpty) && mounted) {
-        setState(() {});
-      }
-
-      String newText = nameEditingController.text;
-      SemanticsService.announce(newText, Directionality.of(context));
-      name = newText;
-    });
+    nameEditingController.addListener(watchName);
 
     menuController = widget.menuController ?? MenuController();
   }
 
   @override
   void dispose() {
+    nameEditingController.removeListener(watchName);
     nameEditingController.dispose();
     super.dispose();
+  }
+
+  void watchName() {
+    String newText = nameEditingController.text;
+    SemanticsService.announce(newText, Directionality.of(context));
+    vm.name = newText;
   }
 
   @override
@@ -81,86 +82,79 @@ class _SubtaskQuickEntry extends State<SubtaskQuickEntry> {
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Expanded(
-              child: AutoSizeTextField(
-                  controller: nameEditingController,
-                  minFontSize: Constants.large,
-                  decoration: InputDecoration(
-                      contentPadding: widget.innerPadding,
-                      hintText: widget.hintText,
-                      enabledBorder: OutlineInputBorder(
-                          borderRadius: const BorderRadius.all(
-                              Radius.circular(Constants.semiCircular)),
-                          borderSide: BorderSide(
-                            width: 2,
-                            color: Theme.of(context).colorScheme.outlineVariant,
-                            strokeAlign: BorderSide.strokeAlignOutside,
+            Selector<SubtaskViewModel, String>(
+              selector: (BuildContext context, SubtaskViewModel vm) => vm.name,
+              builder: (BuildContext context, String value, Widget? child) {
+                return Expanded(
+                  child: AutoSizeTextField(
+                      controller: nameEditingController,
+                      minFontSize: Constants.large,
+                      decoration: InputDecoration(
+                          contentPadding: widget.innerPadding,
+                          hintText: widget.hintText,
+                          enabledBorder: OutlineInputBorder(
+                              borderRadius: const BorderRadius.all(
+                                  Radius.circular(Constants.semiCircular)),
+                              borderSide: BorderSide(
+                                width: 2,
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .outlineVariant,
+                                strokeAlign: BorderSide.strokeAlignOutside,
+                              )),
+                          border: const OutlineInputBorder(
+                            borderRadius: BorderRadius.all(
+                                Radius.circular(Constants.semiCircular)),
+                            borderSide: BorderSide(
+                              strokeAlign: BorderSide.strokeAlignOutside,
+                            ),
                           )),
-                      border: const OutlineInputBorder(
-                        borderRadius: BorderRadius.all(
-                            Radius.circular(Constants.semiCircular)),
-                        borderSide: BorderSide(
-                          strokeAlign: BorderSide.strokeAlignOutside,
-                        ),
-                      )),
-                  onEditingComplete: () {
-                    name = nameEditingController.text;
-                    if (mounted) {
-                      setState(() {});
-                    }
-                  }),
+                      onEditingComplete: () {
+                        vm.name = nameEditingController.text;
+                      }),
+                );
+              },
             ),
-            Tiles.weightAnchor(
-                controller: menuController,
-                weight: weight,
-                onOpen: widget.onOpen,
-                onClose: widget.onClose,
-                onChangeEnd: (value) {
-                  menuController.close();
-                },
-                handleWeightChange: (value) {
-                  if (null == value) {
-                    return;
-                  }
-                  if (mounted) {
-                    setState(() => weight = value);
-                  }
+            Selector<SubtaskViewModel, int>(
+                selector: (BuildContext context, SubtaskViewModel vm) =>
+                    vm.weight,
+                builder: (BuildContext context, int value, Widget? child) {
+                  return Tiles.weightAnchor(
+                      controller: menuController,
+                      weight: vm.weight.toDouble(),
+                      onOpen: widget.onOpen,
+                      onClose: widget.onClose,
+                      onChangeEnd: (value) {
+                        menuController.close();
+                      },
+                      handleWeightChange: (value) {
+                        if (null == value) {
+                          return;
+                        }
+                        vm.weight = value.toInt();
+                      });
                 }),
-            IconButton.filled(
-                icon: const Icon(Icons.add_rounded),
-                onPressed: (name.isNotEmpty)
-                    ? () async {
-                        // in case the usr doesn't submit to the textfields
-                        name = nameEditingController.text;
-
-                        await subtaskProvider
-                            .createSubtask(
-                                name: name,
-                                weight: weight.toInt(),
-                                taskID: widget.taskID,
-                                index: widget.taskIndex)
-                            .whenComplete(() {
-                          if (mounted) {
-                            setState(() {
-                              name = "";
-                              weight = 0;
-                              nameEditingController.value =
-                                  nameEditingController.value
-                                      .copyWith(text: name);
-                            });
-                          }
-                        }).catchError((e) {
-                          Flushbar? error;
-                          error = Flushbars.createError(
-                              message: e.cause,
-                              context: context,
-                              dismissCallback: () => error?.dismiss());
-                        },
-                                test: (e) =>
-                                    e is FailureToCreateException ||
-                                    e is FailureToUploadException);
-                      }
-                    : null),
+            Selector<SubtaskViewModel, String>(
+                selector: (BuildContext context, SubtaskViewModel vm) =>
+                    vm.name,
+                builder: (BuildContext context, String value, Widget? child) {
+                  return IconButton.filled(
+                      icon: const Icon(Icons.add_rounded),
+                      onPressed: (vm.name.isNotEmpty)
+                          ? () async {
+                              await subtaskProvider
+                                  .createSubtask(vm.toModel())
+                                  .whenComplete(() {
+                                vm.clear();
+                              }).catchError(
+                                      (e) => Tiles.displayError(
+                                          context: context, e: e),
+                                      test: (e) =>
+                                          e is FailureToCreateException ||
+                                          e is FailureToUploadException);
+                            }
+                          : null);
+                }),
           ]),
     );
   }

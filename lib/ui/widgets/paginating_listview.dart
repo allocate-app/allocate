@@ -22,6 +22,7 @@ class PaginatingListview<T extends IModel> extends StatefulWidget {
       this.indicatorDisplacement = 40.0,
       this.scrollController,
       this.onFetch,
+      this.onAppend,
       this.onRemove,
       this.getAnimationKey,
       this.rebuildNotifiers,
@@ -47,6 +48,7 @@ class PaginatingListview<T extends IModel> extends StatefulWidget {
   final ValueKey<int> Function()? getAnimationKey;
 
   final void Function({List<T>? items})? onFetch;
+  final void Function({List<T>? items})? onAppend;
   final Future<void> Function({T? item})? onRemove;
 
   final bool pullToRefresh;

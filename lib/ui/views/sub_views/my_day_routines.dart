@@ -1,4 +1,3 @@
-import 'package:another_flushbar/flushbar.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -6,13 +5,12 @@ import '../../../model/task/routine.dart';
 import '../../../model/task/subtask.dart';
 import '../../../providers/model/routine_provider.dart';
 import '../../../providers/model/subtask_provider.dart';
-import '../../../providers/model/user_provider.dart';
 import '../../../util/constants.dart';
 import '../../../util/enums.dart';
 import '../../../util/exceptions.dart';
-import '../../widgets/flushbars.dart';
 import '../../widgets/tiles.dart';
 
+// MIGRATE TO SELECTORS -> WATCH EACH ROUTINE
 class MyDayRoutines extends StatefulWidget {
   const MyDayRoutines({super.key});
 
@@ -22,7 +20,6 @@ class MyDayRoutines extends StatefulWidget {
 
 class _MyDayRoutines extends State<MyDayRoutines> {
   late RoutineProvider routineProvider;
-  late UserProvider userProvider;
   late SubtaskProvider subtaskProvider;
 
   late ScrollController mainScrollController;
@@ -37,7 +34,6 @@ class _MyDayRoutines extends State<MyDayRoutines> {
   }
 
   void initializeProviders() {
-    userProvider = Provider.of<UserProvider>(context, listen: false);
     routineProvider = Provider.of<RoutineProvider>(context, listen: false);
     subtaskProvider = Provider.of<SubtaskProvider>(context, listen: false);
     routineProvider.addListener(resetRoutines);
@@ -89,7 +85,7 @@ class _MyDayRoutines extends State<MyDayRoutines> {
         await routineProvider.getSubtasks(id: routine.id);
 
     if (!(routineProvider.userViewModel?.reduceMotion ?? false)) {
-      onFetch(items: newSubtasks);
+      onFetch(items: newSubtasks, itemSet: routine.subtasks.toSet());
     }
 
     routine.subtasks = newSubtasks;
@@ -100,25 +96,19 @@ class _MyDayRoutines extends State<MyDayRoutines> {
     routine.realDuration = routineProvider.calculateRealDuration(
         weight: routine.weight, duration: routine.expectedDuration);
     return await routineProvider.updateRoutine(routine: routine).catchError(
-        (e) {
-      Flushbar? error;
-      error = Flushbars.createError(
-        context: context,
-        message: e.cause,
-        dismissCallback: () => error?.dismiss(),
-      );
-      error.show(context);
-    },
+        (e) => Tiles.displayError(context: context, e: e),
         test: (e) =>
             e is FailureToUpdateException || e is FailureToUploadException);
   }
 
-  void onFetch({List<Subtask>? items}) {
-    if (null == items) {
+  void onFetch({List<Subtask>? items, Set<Subtask>? itemSet}) {
+    if (null == items || null == itemSet) {
       return;
     }
     for (Subtask subtask in items) {
-      subtask.fade = Fade.fadeIn;
+      if (!itemSet.contains(subtask)) {
+        subtask.fade = Fade.fadeIn;
+      }
     }
   }
 
@@ -129,10 +119,14 @@ class _MyDayRoutines extends State<MyDayRoutines> {
 
     if (mounted) {
       setState(() => item.fade = Fade.fadeOut);
-      await Future.delayed(const Duration(milliseconds: Constants.fadeOutTime));
+      await Future.delayed(Duration(
+          milliseconds: (routineProvider.userViewModel?.reduceMotion ?? false)
+              ? 0
+              : Constants.fadeOutTime));
     }
   }
 
+  // These don't need to be consumed.
   @override
   Widget build(BuildContext context) {
     return Column(mainAxisSize: MainAxisSize.min, children: [
@@ -147,53 +141,44 @@ class _MyDayRoutines extends State<MyDayRoutines> {
           physics: scrollPhysics,
           shrinkWrap: true,
           children: [
-            Consumer<RoutineProvider>(
-              builder:
-                  (BuildContext context, RoutineProvider value, Widget? child) {
-                if (null != value.curMorning) {
-                  return Tiles.filledRoutineTile(
+            Padding(
+              padding: const EdgeInsets.only(bottom: Constants.padding),
+              child: (null != routineProvider.curMorning)
+                  ? Tiles.filledRoutineTile(
                       context: context,
                       onSubtaskRemove:
                           (routineProvider.userViewModel?.reduceMotion ?? false)
                               ? null
                               : onRemove,
-                      routine: value.curMorning!,
-                      times: 1);
-                }
-                return Tiles.emptyRoutineTile(context: context, times: 1);
-              },
+                      routine: routineProvider.curMorning!,
+                      times: 1)
+                  : Tiles.emptyRoutineTile(context: context, times: 1),
             ),
-            Consumer<RoutineProvider>(
-              builder:
-                  (BuildContext context, RoutineProvider value, Widget? child) {
-                if (null != value.curAfternoon) {
-                  return Tiles.filledRoutineTile(
+            Padding(
+              padding: const EdgeInsets.only(bottom: Constants.padding),
+              child: (null != routineProvider.curAfternoon)
+                  ? Tiles.filledRoutineTile(
                       context: context,
                       onSubtaskRemove:
                           (routineProvider.userViewModel?.reduceMotion ?? false)
                               ? null
                               : onRemove,
-                      routine: value.curAfternoon!,
-                      times: 2);
-                }
-                return Tiles.emptyRoutineTile(context: context, times: 2);
-              },
+                      routine: routineProvider.curAfternoon!,
+                      times: 2)
+                  : Tiles.emptyRoutineTile(context: context, times: 2),
             ),
-            Consumer<RoutineProvider>(
-              builder:
-                  (BuildContext context, RoutineProvider value, Widget? child) {
-                if (null != value.curEvening) {
-                  return Tiles.filledRoutineTile(
+            Padding(
+              padding: const EdgeInsets.only(bottom: Constants.padding),
+              child: (null != routineProvider.curEvening)
+                  ? Tiles.filledRoutineTile(
                       context: context,
                       onSubtaskRemove:
                           (routineProvider.userViewModel?.reduceMotion ?? false)
                               ? null
                               : onRemove,
-                      routine: value.curEvening!,
-                      times: 4);
-                }
-                return Tiles.emptyRoutineTile(context: context, times: 4);
-              },
+                      routine: routineProvider.curEvening!,
+                      times: 4)
+                  : Tiles.emptyRoutineTile(context: context, times: 4),
             ),
           ]),
     );

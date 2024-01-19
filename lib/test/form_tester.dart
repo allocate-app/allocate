@@ -78,10 +78,11 @@ void main() async {
         }),
     ChangeNotifierProxyProvider<UserProvider, GroupProvider>(
         create: (BuildContext context) => GroupProvider(
-            user: Provider.of<UserProvider>(context, listen: false).curUser),
+            userViewModel:
+                Provider.of<UserProvider>(context, listen: false).viewModel),
         update: (BuildContext context, UserProvider up, GroupProvider? gp) {
-          gp?.setUser(newUser: up.curUser);
-          return gp ?? GroupProvider(user: up.curUser);
+          gp?.setUser(newUser: up.viewModel);
+          return gp ?? GroupProvider(userViewModel: up.viewModel);
         })
   ], child: UITester()));
 }

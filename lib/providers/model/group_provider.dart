@@ -5,7 +5,6 @@ import 'package:flutter/foundation.dart';
 
 import '../../model/task/group.dart';
 import '../../model/task/todo.dart';
-import '../../model/user/user.dart';
 import '../../repositories/group_repo.dart';
 import '../../repositories/todo_repo.dart';
 import '../../util/constants.dart';
@@ -14,6 +13,7 @@ import '../../util/exceptions.dart';
 import '../../util/interfaces/repository/model/group_repository.dart';
 import '../../util/interfaces/repository/model/todo_repository.dart';
 import '../../util/sorting/group_sorter.dart';
+import '../viewmodels/user_viewmodel.dart';
 
 // Internal setters currently going mostly unused.
 class GroupProvider extends ChangeNotifier {
@@ -47,29 +47,25 @@ class GroupProvider extends ChangeNotifier {
   List<Group> groups = [];
   List<Group> secondaryGroups = [];
 
-  final Map<int, String> groupNames = {
-    Constants.intMax: "New Group",
-  };
-  final Map<int, ValueNotifier<int>> groupToDoCounts = {
-    Constants.intMax: ValueNotifier<int>(0),
-  };
+  final Map<int, String> groupNames = {};
+  final Map<int, ValueNotifier<int>> groupToDoCounts = {};
 
   late GroupSorter sorter;
 
-  User? user;
+  UserViewModel? userViewModel;
 
   // CONSTRUTOR
   GroupProvider({
-    this.user,
+    this.userViewModel,
     GroupRepository? groupRepository,
     ToDoRepository? toDoRepository,
-  })  : sorter = user?.groupSorter ?? GroupSorter(),
+  })  : sorter = userViewModel?.groupSorter ?? GroupSorter(),
         _groupRepo = groupRepository ?? GroupRepo.instance,
         _toDoRepo = toDoRepository ?? ToDoRepo.instance;
 
   void startTimer() {
     syncTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
-      if (user?.syncOnline ?? false) {
+      if (userViewModel?.syncOnline ?? false) {
         // _syncRepo();
       } else {
         // _groupService.clearDeletesLocalRepo();
@@ -77,9 +73,9 @@ class GroupProvider extends ChangeNotifier {
     });
   }
 
-  void setUser({User? newUser}) {
-    user = newUser;
-    sorter = user?.groupSorter ?? sorter;
+  void setUser({UserViewModel? newUser}) {
+    userViewModel = newUser;
+    sorter = userViewModel?.groupSorter ?? sorter;
     notifyListeners();
   }
 
@@ -92,7 +88,7 @@ class GroupProvider extends ChangeNotifier {
       sorter.sortMethod = method;
       sorter.descending = false;
     }
-    user?.groupSorter = sorter;
+    userViewModel?.groupSorter = sorter;
     notifyListeners();
   }
 
@@ -147,17 +143,10 @@ class GroupProvider extends ChangeNotifier {
   //   notifyListeners();
   // }
 
-  Future<void> createGroup(
-      {required String name, String? description, List<ToDo>? toDos}) async {
+  Future<void> createGroup(Group group) async {
     // The likelihood of adding more than 50 tasks at creation is incredibly slim.
-    toDos =
-        toDos ?? await _toDoRepo.getRepoByGroupID(groupID: Constants.intMax);
-    curGroup = Group(
-        name: name,
-        description: description ?? "",
-        lastUpdated: DateTime.now());
     try {
-      curGroup = await _groupRepo.create(curGroup!);
+      curGroup = await _groupRepo.create(group);
     } on FailureToCreateException catch (e) {
       log(e.cause);
       return Future.error(e);
@@ -167,9 +156,7 @@ class GroupProvider extends ChangeNotifier {
       return await updateGroup();
     }
 
-    await _updateToDos(toDos: toDos, groupID: curGroup!.id);
     groupNames[curGroup!.id] = curGroup!.name;
-    setToDoCount(id: Constants.intMax, count: 0);
 
     notifyListeners();
   }
@@ -180,8 +167,11 @@ class GroupProvider extends ChangeNotifier {
   }
 
   Future<void> updateGroupAsync({Group? group}) async {
-    group = group ?? curGroup!;
-    group.lastUpdated = DateTime.now();
+    group = group ?? curGroup;
+
+    if (null == group) {
+      throw FailureToUpdateException("Invalid model provided");
+    }
     try {
       curGroup = await _groupRepo.update(group);
     } on FailureToUploadException catch (e) {
@@ -290,9 +280,11 @@ class GroupProvider extends ChangeNotifier {
       required int oldIndex,
       required int newIndex}) async {
     groups = groups ?? this.groups;
-    if (oldIndex < newIndex) {
-      newIndex--;
-    }
+    // NOTE: Index correction is in the custom separated
+    // reorderable listview.
+    // if (oldIndex < newIndex) {
+    //   newIndex--;
+    // }
     Group group = groups.removeAt(oldIndex);
     groups.insert(newIndex, group);
     for (int i = 0; i < groups.length; i++) {

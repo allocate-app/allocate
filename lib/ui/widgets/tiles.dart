@@ -1,3 +1,4 @@
+import 'package:allocate/providers/viewmodels/group_viewmodel.dart';
 import 'package:another_flushbar/flushbar.dart';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:auto_size_text_field/auto_size_text_field.dart';
@@ -24,6 +25,7 @@ import '../../providers/model/user_provider.dart';
 import '../../providers/viewmodels/deadline_viewmodel.dart';
 import '../../providers/viewmodels/reminder_viewmodel.dart';
 import '../../providers/viewmodels/routine_viewmodel.dart';
+import '../../providers/viewmodels/subtask_viewmodel.dart';
 import '../../providers/viewmodels/todo_viewmodel.dart';
 import '../../ui/widgets/time_dialog.dart';
 import '../../util/constants.dart';
@@ -140,7 +142,7 @@ abstract class Tiles {
         subtitle: Subtitles.toDoSubtitle(
             smallScreen: smallScreen,
             context: context,
-            id: toDo.groupID,
+            groupID: toDo.groupID,
             dueDate: toDo.dueDate,
             priority: toDo.priority,
             onError: () async {
@@ -323,7 +325,7 @@ abstract class Tiles {
         subtitle: Subtitles.toDoSubtitle(
             smallScreen: smallScreen,
             context: context,
-            id: toDo.groupID,
+            groupID: toDo.groupID,
             dueDate: toDo.dueDate,
             priority: toDo.priority,
             onError: () async {
@@ -857,6 +859,7 @@ abstract class Tiles {
     UserProvider userProvider =
         Provider.of<UserProvider>(context, listen: false);
 
+    // TODO: possibly make expand conditional.
     return ExpandedListTile(
         key: ValueKey(group.id),
         initiallyExpanded: true,
@@ -866,8 +869,10 @@ abstract class Tiles {
               useRootNavigator: false,
               context: context,
               builder: (BuildContext context) {
-                return UpdateGroupScreen(initialGroup: group);
-              }).whenComplete(() {});
+                Provider.of<GroupViewModel>(context, listen: false)
+                    .fromModel(model: group);
+                return const UpdateGroupScreen();
+              });
         }),
         trailing: Row(mainAxisSize: MainAxisSize.min, children: [
           Padding(
@@ -1079,8 +1084,10 @@ abstract class Tiles {
             barrierDismissible: false,
             useRootNavigator: false,
             context: context,
-            builder: (BuildContext context) =>
-                UpdateGroupScreen(initialGroup: group));
+            builder: (BuildContext context) {
+              Provider.of<GroupViewModel>(context, listen: false);
+              return const UpdateGroupScreen();
+            });
       },
       trailing: Subtitles.groupSubtitle(
           toDoCount: groupProvider.getToDoCount(id: group.id)!),
@@ -1241,17 +1248,22 @@ abstract class Tiles {
               subtasks: subtasks,
               itemCount: subtasks.length,
               onTap: ({Subtask? subtask}) async {
+                if (null == subtask) {
+                  return;
+                }
                 await showDialog(
-                    barrierDismissible: true,
-                    useRootNavigator: false,
-                    context: context,
-                    builder: (BuildContext context) => UpdateSubtaskScreen(
-                          initialSubtask: subtask,
-                        )).catchError(
-                    (e) => displayError(context: context, e: e),
-                    test: (e) =>
-                        e is FailureToUpdateException ||
-                        e is FailureToUploadException);
+                        barrierDismissible: true,
+                        useRootNavigator: false,
+                        context: context,
+                        builder: (BuildContext context) {
+                          Provider.of<SubtaskViewModel>(context, listen: false)
+                              .fromModel(model: subtask);
+                          return const UpdateSubtaskScreen();
+                        })
+                    .catchError((e) => displayError(context: context, e: e),
+                        test: (e) =>
+                            e is FailureToUpdateException ||
+                            e is FailureToUploadException);
               },
               onChanged: ({bool? value, Subtask? subtask}) async {
                 if (null == subtask) {
@@ -1398,23 +1410,38 @@ abstract class Tiles {
                 });
           }),
       title: routine.name,
-      trailing: IconButton(
-        icon: const Icon(Icons.remove_circle_outline_rounded),
-        onPressed: () {
-          switch (times) {
-            case 1:
-              routineProvider.curMorning = null;
-              break;
-            case 2:
-              routineProvider.curAfternoon = null;
-              break;
-            case 4:
-              routineProvider.curEvening = null;
-              break;
-            default:
-              break;
-          }
-        },
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton(
+              icon: const Icon(Icons.refresh_rounded),
+              tooltip: "Reset routine",
+              onPressed: () async => await routineProvider
+                  .resetRoutineSubtasks(routine: routine)
+                  .catchError((e) => displayError(context: context, e: e),
+                      test: (e) =>
+                          e is FailureToUpdateException ||
+                          e is FailureToUploadException)),
+          IconButton(
+            tooltip: "Remove routine",
+            icon: const Icon(Icons.remove_circle_outline_rounded),
+            onPressed: () {
+              switch (times) {
+                case 1:
+                  routineProvider.curMorning = null;
+                  break;
+                case 2:
+                  routineProvider.curAfternoon = null;
+                  break;
+                case 4:
+                  routineProvider.curEvening = null;
+                  break;
+                default:
+                  break;
+              }
+            },
+          ),
+        ],
       ),
     );
   }
@@ -1453,7 +1480,7 @@ abstract class Tiles {
             minFontSize: Constants.large),
         subtitle: switch (model.modelType) {
           ModelType.task => Subtitles.toDoSubtitle(
-              id: (model as ToDo).groupID,
+              groupID: (model as ToDo).groupID,
               dueDate: model.dueDate,
               smallScreen: smallScreen,
               context: context,

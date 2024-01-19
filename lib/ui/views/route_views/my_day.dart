@@ -4,8 +4,8 @@ import 'package:jiffy/jiffy.dart';
 import 'package:provider/provider.dart';
 
 import '../../../model/task/todo.dart';
+import '../../../providers/application/layout_provider.dart';
 import '../../../providers/model/todo_provider.dart';
-import '../../../providers/model/user_provider.dart';
 import '../../../util/constants.dart';
 import '../../../util/enums.dart';
 import '../../widgets/listview_header.dart';
@@ -18,8 +18,7 @@ class MyDayScreen extends StatefulWidget {
 }
 
 class _MyDayScreen extends State<MyDayScreen> {
-  late final UserProvider userProvider;
-
+  late final LayoutProvider layoutProvider;
   late final ToDoProvider toDoProvider;
 
   @override
@@ -29,8 +28,8 @@ class _MyDayScreen extends State<MyDayScreen> {
   }
 
   void initializeProviders() {
-    userProvider = Provider.of<UserProvider>(context, listen: false);
     toDoProvider = Provider.of<ToDoProvider>(context, listen: false);
+    layoutProvider = Provider.of<LayoutProvider>(context, listen: false);
   }
 
   @override
@@ -40,18 +39,19 @@ class _MyDayScreen extends State<MyDayScreen> {
 
   @override
   Widget build(BuildContext context) {
-    MediaQuery.sizeOf(context);
-    return Consumer<UserProvider>(
-      builder: (BuildContext context, UserProvider value, Widget? child) {
-        return (value.wideView)
-            ? buildHuge(context: context)
-            : Padding(
-                padding: const EdgeInsets.all(Constants.padding),
-                child: buildRegular(
-                    context: context,
-                    buildCalendar: true,
-                    smallScreen: userProvider.smallScreen),
-              );
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        // Constraints are calculated in layoutProvider.
+        if (layoutProvider.wideView) {
+          return buildHuge(context: context);
+        }
+        return Padding(
+          padding: const EdgeInsets.all(Constants.padding),
+          child: buildRegular(
+              context: context,
+              buildCalendar: true,
+              smallScreen: layoutProvider.smallScreen),
+        );
       },
     );
   }
@@ -78,7 +78,7 @@ class _MyDayScreen extends State<MyDayScreen> {
                   overflow: TextOverflow.visible,
                   minFontSize: Constants.large),
               minFontSize: Constants.large),
-          showSorter: (userProvider.myDayIndex == 0),
+          showSorter: (layoutProvider.myDayIndex == 0),
           header: "My Day",
           onChanged: ({SortMethod? sortMethod}) {
             if (null == sortMethod) {
@@ -91,9 +91,8 @@ class _MyDayScreen extends State<MyDayScreen> {
             }
           }),
       Expanded(
-        // TODO: consider moving to tiles class.
         child: DefaultTabController(
-            initialIndex: userProvider.myDayIndex,
+            initialIndex: layoutProvider.myDayIndex,
             length: (buildCalendar) ? 3 : 2,
             child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -112,7 +111,7 @@ class _MyDayScreen extends State<MyDayScreen> {
                       ),
                       child: TabBar(
                         onTap: (int newIndex) {
-                          userProvider.myDayIndex = newIndex;
+                          layoutProvider.myDayIndex = newIndex;
                         },
                         indicatorSize: TabBarIndicatorSize.tab,
                         indicator: BoxDecoration(
@@ -143,6 +142,7 @@ class _MyDayScreen extends State<MyDayScreen> {
     ]);
   }
 
+  // TODO: make vertical divider slideable.
   Widget buildHuge({required BuildContext context}) {
     return Padding(
         padding: const EdgeInsets.all(Constants.doublePadding),

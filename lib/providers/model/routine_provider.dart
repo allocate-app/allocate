@@ -64,7 +64,7 @@ class RoutineProvider extends ChangeNotifier {
   })  : sorter = userViewModel?.routineSorter ?? RoutineSorter(),
         _routineRepo = routineRepository ?? RoutineRepo.instance,
         _subtaskRepo = subtaskRepository ?? SubtaskRepo.instance {
-    init();
+    init().whenComplete(notifyListeners);
   }
 
   Future<void> init() async {
@@ -135,10 +135,23 @@ class RoutineProvider extends ChangeNotifier {
     }
   }
 
-  int get routineWeight =>
-      (curMorning?.weight ?? 0) +
-      (curAfternoon?.weight ?? 0) +
-      (curEvening?.weight ?? 0);
+  // This is due to shared references.
+  int get routineWeight {
+    int totalWeight = 0;
+    if (null != curMorning) {
+      totalWeight += curMorning!.weight;
+    }
+    if (null != curAfternoon && curMorning != curAfternoon) {
+      totalWeight += curAfternoon!.weight;
+    }
+    if (null != curEvening &&
+        curMorning != curEvening &&
+        curAfternoon != curEvening) {
+      totalWeight += curEvening!.weight;
+    }
+
+    return totalWeight;
+  }
 
   List<Routine> routines = [];
 
@@ -408,7 +421,9 @@ class RoutineProvider extends ChangeNotifier {
     if (null == routine) {
       return;
     }
-    List<Subtask> subtasks = await _subtaskRepo.getRepoByTaskID(id: routine.id);
+    List<Subtask> subtasks = (routine.subtasks.isNotEmpty)
+        ? routine.subtasks
+        : await _subtaskRepo.getRepoByTaskID(id: routine.id);
     for (Subtask subtask in subtasks) {
       subtask.completed = false;
     }

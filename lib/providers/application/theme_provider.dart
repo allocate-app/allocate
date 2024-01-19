@@ -4,9 +4,9 @@ import 'package:flex_seed_scheme/flex_seed_scheme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_acrylic/flutter_acrylic.dart';
 
-import '../../model/user/user.dart';
 import '../../util/constants.dart';
 import '../../util/enums.dart';
+import '../viewmodels/user_viewmodel.dart';
 
 class ThemeProvider extends ChangeNotifier {
   ThemeData? _lightTheme;
@@ -34,7 +34,7 @@ class ThemeProvider extends ChangeNotifier {
   // Make private as necessary.
   late List<Color> recentColors;
 
-  User? user;
+  UserViewModel? userViewModel;
 
   ThemeData? get lightTheme => _lightTheme;
 
@@ -48,7 +48,7 @@ class ThemeProvider extends ChangeNotifier {
 
   set primarySeed(Color newColor) {
     _primarySeed = newColor;
-    user?.primarySeed = newColor.value;
+    userViewModel?.primarySeed = newColor.value;
     generateThemes();
     notifyListeners();
   }
@@ -58,7 +58,7 @@ class ThemeProvider extends ChangeNotifier {
   //Notifies.
   set secondarySeed(Color? newColor) {
     _secondarySeed = newColor;
-    user?.secondarySeed = newColor?.value;
+    userViewModel?.secondarySeed = newColor?.value;
     generateThemes();
     notifyListeners();
   }
@@ -68,7 +68,7 @@ class ThemeProvider extends ChangeNotifier {
   //Notifies.
   set tertiarySeed(Color? newColor) {
     _tertiarySeed = newColor;
-    user?.tertiarySeed = newColor?.value;
+    userViewModel?.tertiarySeed = newColor?.value;
     generateThemes();
     notifyListeners();
   }
@@ -78,7 +78,7 @@ class ThemeProvider extends ChangeNotifier {
   //Notifies.
   set themeType(ThemeType newThemeType) {
     _themeType = newThemeType;
-    user?.themeType = newThemeType;
+    userViewModel?.themeType = newThemeType;
     notifyListeners();
   }
 
@@ -86,7 +86,7 @@ class ThemeProvider extends ChangeNotifier {
 
   set toneMapping(ToneMapping newToneMapping) {
     _toneMapping = newToneMapping;
-    user?.toneMapping = newToneMapping;
+    userViewModel?.toneMapping = newToneMapping;
     _setToneMapping(tone: _toneMapping);
     generateThemes();
     notifyListeners();
@@ -96,7 +96,7 @@ class ThemeProvider extends ChangeNotifier {
 
   set windowEffect(Effect newEffect) {
     _windowEffect = newEffect;
-    user?.windowEffect = newEffect;
+    userViewModel?.windowEffect = newEffect;
     _setWindowEffect(effect: _windowEffect);
     notifyListeners();
   }
@@ -105,7 +105,7 @@ class ThemeProvider extends ChangeNotifier {
 
   set useUltraHighContrast(bool hiContrast) {
     _useUltraHighContrast = hiContrast;
-    user?.useUltraHighContrast = hiContrast;
+    userViewModel?.useUltraHighContrast = hiContrast;
     generateThemes();
     notifyListeners();
   }
@@ -114,7 +114,7 @@ class ThemeProvider extends ChangeNotifier {
 
   set reduceMotion(bool reduceMotion) {
     _reduceMotion = reduceMotion;
-    user?.reduceMotion = reduceMotion;
+    userViewModel?.reduceMotion = reduceMotion;
     notifyListeners();
   }
 
@@ -132,7 +132,7 @@ class ThemeProvider extends ChangeNotifier {
 
   // Because these are continuous & modified by slider, updating the user in a separate setter
   set scaffoldOpacitySavePref(double newOpacity) {
-    user?.scaffoldOpacity = newOpacity;
+    userViewModel?.scaffoldOpacity = newOpacity;
     scaffoldOpacity = newOpacity;
     notifyListeners();
   }
@@ -145,7 +145,7 @@ class ThemeProvider extends ChangeNotifier {
   double get sidebarOpacity => (_useTransparency) ? _sidebarOpacity : 1.0;
 
   set sidebarOpacitySavePref(double newOpacity) {
-    user?.sidebarOpacity = newOpacity;
+    userViewModel?.sidebarOpacity = newOpacity;
     sidebarOpacity = newOpacity;
     notifyListeners();
   }
@@ -160,12 +160,12 @@ class ThemeProvider extends ChangeNotifier {
           ? 1
           : 0;
 
-  void setUser({User? newUser}) {
-    user = newUser;
+  void setUser({UserViewModel? newUser}) {
+    userViewModel = newUser;
     notifyListeners();
   }
 
-  ThemeProvider({this.user}) {
+  ThemeProvider({this.userViewModel}) {
     init();
   }
 
@@ -173,22 +173,25 @@ class ThemeProvider extends ChangeNotifier {
   void init() {
     // Get colors
     _primarySeed =
-        Color(user?.primarySeed ?? Constants.defaultPrimaryColorSeed);
-    _secondarySeed =
-        (null != user?.secondarySeed) ? Color(user!.secondarySeed!) : null;
-    _tertiarySeed =
-        (null != user?.tertiarySeed) ? Color(user!.tertiarySeed!) : null;
+        Color(userViewModel?.primarySeed ?? Constants.defaultPrimaryColorSeed);
+    _secondarySeed = (null != userViewModel?.secondarySeed)
+        ? Color(userViewModel!.secondarySeed!)
+        : null;
+    _tertiarySeed = (null != userViewModel?.tertiarySeed)
+        ? Color(userViewModel!.tertiarySeed!)
+        : null;
 
-    _themeType = user?.themeType ?? ThemeType.system;
-    _toneMapping = user?.toneMapping ?? ToneMapping.system;
-    _windowEffect = user?.windowEffect ?? Effect.disabled;
-    _useUltraHighContrast = user?.useUltraHighContrast ?? false;
-    _reduceMotion = user?.reduceMotion ?? false;
+    _themeType = userViewModel?.themeType ?? ThemeType.system;
+    _toneMapping = userViewModel?.toneMapping ?? ToneMapping.system;
+    _windowEffect = userViewModel?.windowEffect ?? Effect.disabled;
+    _useUltraHighContrast = userViewModel?.useUltraHighContrast ?? false;
+    _reduceMotion = userViewModel?.reduceMotion ?? false;
     _scaffoldOpacity =
-        user?.scaffoldOpacity ?? Constants.defaultScaffoldOpacity;
-    _sidebarOpacity = user?.sidebarOpacity ?? Constants.defaultSidebarOpacity;
-    _useTransparency =
-        null != user?.windowEffect && Effect.disabled != user?.windowEffect;
+        userViewModel?.scaffoldOpacity ?? Constants.defaultScaffoldOpacity;
+    _sidebarOpacity =
+        userViewModel?.sidebarOpacity ?? Constants.defaultSidebarOpacity;
+    _useTransparency = null != userViewModel?.windowEffect &&
+        Effect.disabled != userViewModel?.windowEffect;
 
     recentColors = List.empty(growable: true);
 
@@ -230,7 +233,7 @@ class ThemeProvider extends ChangeNotifier {
           primaryKey: _primarySeed,
           secondaryKey: _secondarySeed,
           tertiaryKey: _tertiarySeed,
-          tones: (user?.useUltraHighContrast ?? false)
+          tones: (userViewModel?.useUltraHighContrast ?? false)
               ? FlexTones.ultraContrast(Brightness.dark)
               : FlexTones.highContrast(Brightness.dark)),
       useMaterial3: true,
@@ -242,7 +245,7 @@ class ThemeProvider extends ChangeNotifier {
           primaryKey: _primarySeed,
           secondaryKey: _secondarySeed,
           tertiaryKey: _tertiarySeed,
-          tones: (user?.useUltraHighContrast ?? false)
+          tones: (userViewModel?.useUltraHighContrast ?? false)
               ? FlexTones.ultraContrast(Brightness.light)
               : FlexTones.highContrast(Brightness.light)),
       useMaterial3: true,

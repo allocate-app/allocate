@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../model/task/routine.dart';
+import '../../../providers/application/layout_provider.dart';
 import '../../../providers/model/routine_provider.dart';
-import '../../../providers/model/user_provider.dart';
 import '../../../util/constants.dart';
 import '../../../util/enums.dart';
 import '../../widgets/listview_header.dart';
@@ -21,7 +21,7 @@ class RoutinesListScreen extends StatefulWidget {
 
 class _RoutinesListScreen extends State<RoutinesListScreen> {
   late final RoutineProvider routineProvider;
-  late final UserProvider userProvider;
+  late final LayoutProvider layoutProvider;
 
   @override
   void initState() {
@@ -31,8 +31,7 @@ class _RoutinesListScreen extends State<RoutinesListScreen> {
 
   void initializeProviders() {
     routineProvider = Provider.of<RoutineProvider>(context, listen: false);
-
-    userProvider = Provider.of<UserProvider>(context, listen: false);
+    layoutProvider = Provider.of<LayoutProvider>(context, listen: false);
   }
 
   @override
@@ -41,6 +40,19 @@ class _RoutinesListScreen extends State<RoutinesListScreen> {
   }
 
   void onFetch({List<Routine>? items}) {
+    if (null == items) {
+      return;
+    }
+
+    Set<Routine> itemSet = routineProvider.routines.toSet();
+    for (Routine routine in items) {
+      if (!itemSet.contains(routine)) {
+        routine.fade = Fade.fadeIn;
+      }
+    }
+  }
+
+  void onAppend({List<Routine>? items}) {
     if (null == items) {
       return;
     }
@@ -60,87 +72,98 @@ class _RoutinesListScreen extends State<RoutinesListScreen> {
 
     if (mounted) {
       setState(() => item.fade = Fade.fadeOut);
-      await Future.delayed(const Duration(milliseconds: Constants.fadeOutTime));
+      await Future.delayed(Duration(
+          milliseconds: (routineProvider.userViewModel?.reduceMotion ?? false)
+              ? 0
+              : Constants.fadeOutTime));
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(Constants.padding),
-      child: Column(mainAxisSize: MainAxisSize.min, children: [
-        ListViewHeader<Routine>(
-            outerPadding: const EdgeInsets.all(Constants.padding),
-            header: "Routines",
-            sorter: routineProvider.sorter,
-            leadingIcon: const Icon(Icons.repeat_rounded),
-            onChanged: ({SortMethod? sortMethod}) {
-              if (null == sortMethod) {
-                return;
-              }
-              if (mounted) {
-                setState(() {
-                  routineProvider.sortMethod = sortMethod;
-                });
-              }
-            }),
-        Tiles.createNew(
-          outerPadding:
-              const EdgeInsets.symmetric(vertical: Constants.halfPadding),
-          context: context,
-          onTap: () async => await showDialog(
-            barrierDismissible: false,
+    return LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints constraints) {
+      return Padding(
+        padding: const EdgeInsets.all(Constants.padding),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          ListViewHeader<Routine>(
+              outerPadding: const EdgeInsets.all(Constants.padding),
+              header: "Routines",
+              sorter: routineProvider.sorter,
+              leadingIcon: const Icon(Icons.repeat_rounded),
+              onChanged: ({SortMethod? sortMethod}) {
+                if (null == sortMethod) {
+                  return;
+                }
+                if (mounted) {
+                  setState(() {
+                    routineProvider.sortMethod = sortMethod;
+                  });
+                }
+              }),
+          Tiles.createNew(
+            outerPadding:
+                const EdgeInsets.symmetric(vertical: Constants.halfPadding),
             context: context,
-            builder: (BuildContext context) => const CreateRoutineScreen(),
+            onTap: () async => await showDialog(
+              barrierDismissible: false,
+              context: context,
+              builder: (BuildContext context) => const CreateRoutineScreen(),
+            ),
           ),
-        ),
-        Flexible(
-          child: PaginatingListview<Routine>(
-              items: routineProvider.routines,
-              query: routineProvider.getRoutinesBy,
-              offset: (routineProvider.rebuild)
-                  ? 0
-                  : routineProvider.routines.length,
-              limit: Constants.minLimitPerQuery,
-              rebuildNotifiers: [routineProvider],
-              rebuildCallback: ({required List<Routine> items}) {
-                routineProvider.routines = items;
-                routineProvider.rebuild = false;
-              },
-              getAnimationKey: () => ValueKey(
-                  routineProvider.sorter.sortMethod.index *
-                          (routineProvider.sorter.descending ? -1 : 1) +
-                      (routineProvider.routines.isEmpty ? 0 : 1)),
-              onFetch: (userProvider.curUser?.reduceMotion ?? false)
-                  ? null
-                  : onFetch,
-              onRemove: (userProvider.curUser?.reduceMotion ?? false)
-                  ? null
-                  : onRemove,
-              listviewBuilder: ({
-                Key? key,
-                required BuildContext context,
-                required List<Routine> items,
-                Future<void> Function({Routine? item})? onRemove,
-              }) {
-                if (routineProvider.sortMethod == SortMethod.none) {
-                  return ListViews.reorderableRoutines(
+          Flexible(
+            child: PaginatingListview<Routine>(
+                items: routineProvider.routines,
+                query: routineProvider.getRoutinesBy,
+                offset: (routineProvider.rebuild)
+                    ? 0
+                    : routineProvider.routines.length,
+                limit: Constants.minLimitPerQuery,
+                rebuildNotifiers: [routineProvider],
+                rebuildCallback: ({required List<Routine> items}) {
+                  routineProvider.routines = items;
+                  routineProvider.rebuild = false;
+                },
+                getAnimationKey: () => ValueKey(
+                    routineProvider.sorter.sortMethod.index *
+                            (routineProvider.sorter.descending ? -1 : 1) +
+                        (routineProvider.routines.isEmpty ? 0 : 1)),
+                onFetch: (routineProvider.userViewModel?.reduceMotion ?? false)
+                    ? null
+                    : onFetch,
+                onRemove: (routineProvider.userViewModel?.reduceMotion ?? false)
+                    ? null
+                    : onRemove,
+                onAppend: (routineProvider.userViewModel?.reduceMotion ?? false)
+                    ? null
+                    : onAppend,
+                listviewBuilder: ({
+                  Key? key,
+                  required BuildContext context,
+                  required List<Routine> items,
+                  Future<void> Function({Routine? item})? onRemove,
+                }) {
+                  if (routineProvider.sortMethod == SortMethod.none) {
+                    return ListViews.reorderableRoutines(
+                      key: key,
+                      context: context,
+                      routines: items,
+                      checkDelete:
+                          routineProvider.userViewModel?.checkDelete ?? true,
+                      onRemove: onRemove,
+                    );
+                  }
+                  return ListViews.immutableRoutines(
                     key: key,
-                    context: context,
                     routines: items,
-                    checkDelete: userProvider.curUser?.checkDelete ?? true,
+                    checkDelete:
+                        routineProvider.userViewModel?.checkDelete ?? true,
                     onRemove: onRemove,
                   );
-                }
-                return ListViews.immutableRoutines(
-                  key: key,
-                  routines: items,
-                  checkDelete: userProvider.curUser?.checkDelete ?? true,
-                  onRemove: onRemove,
-                );
-              }),
-        ),
-      ]),
-    );
+                }),
+          ),
+        ]),
+      );
+    });
   }
 }

@@ -160,14 +160,14 @@ Group _groupDeserialize(
   Map<Type, List<int>> allOffsets,
 ) {
   final object = Group(
+    customViewIndex: reader.readLongOrNull(offsets[0]) ?? -1,
     description: reader.readStringOrNull(offsets[1]) ?? "",
+    id: id,
+    isSynced: reader.readBoolOrNull(offsets[2]) ?? false,
     lastUpdated: reader.readDateTime(offsets[3]),
     name: reader.readString(offsets[4]),
+    toDelete: reader.readBoolOrNull(offsets[5]) ?? false,
   );
-  object.customViewIndex = reader.readLong(offsets[0]);
-  object.id = id;
-  object.isSynced = reader.readBool(offsets[2]);
-  object.toDelete = reader.readBool(offsets[5]);
   return object;
 }
 
@@ -179,17 +179,17 @@ P _groupDeserializeProp<P>(
 ) {
   switch (propertyId) {
     case 0:
-      return (reader.readLong(offset)) as P;
+      return (reader.readLongOrNull(offset) ?? -1) as P;
     case 1:
       return (reader.readStringOrNull(offset) ?? "") as P;
     case 2:
-      return (reader.readBool(offset)) as P;
+      return (reader.readBoolOrNull(offset) ?? false) as P;
     case 3:
       return (reader.readDateTime(offset)) as P;
     case 4:
       return (reader.readString(offset)) as P;
     case 5:
-      return (reader.readBool(offset)) as P;
+      return (reader.readBoolOrNull(offset) ?? false) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
   }

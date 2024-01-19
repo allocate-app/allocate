@@ -52,6 +52,10 @@ class LayoutProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  set initPageIndex(int newIndex) {
+    _selectedPageIndex = newIndex;
+  }
+
   Size get size => _size;
 
   set size(Size newSize) {

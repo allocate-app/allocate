@@ -60,10 +60,11 @@ void main() {
           }),
       ChangeNotifierProxyProvider<UserProvider, GroupProvider>(
           create: (BuildContext context) => GroupProvider(
-              user: Provider.of<UserProvider>(context, listen: false).curUser),
+              userViewModel:
+                  Provider.of<UserProvider>(context, listen: false).curUser),
           update: (BuildContext context, UserProvider up, GroupProvider? gp) {
             gp?.setUser(newUser: up.curUser);
-            return gp ?? GroupProvider(user: up.curUser);
+            return gp ?? GroupProvider(userViewModel: up.curUser);
           })
     ], child: const MyApp()),
   );

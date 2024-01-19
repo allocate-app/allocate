@@ -1,5 +1,4 @@
 import 'package:equatable/equatable.dart';
-import 'package:flutter/foundation.dart';
 import 'package:isar/isar.dart';
 
 import '../../util/constants.dart';
@@ -22,45 +21,50 @@ class Group with EquatableMixin implements Copyable<Group>, IModel {
 
   @override
   @Index()
-  Id id = Constants.generateID();
+  late Id id;
 
   @Index()
-  int customViewIndex = -1;
+  late int customViewIndex;
   @override
   @Index()
   String name;
   String description;
   @override
   @Index()
-  bool isSynced = false;
+  bool isSynced;
   @override
   @Index()
-  bool toDelete = false;
+  bool toDelete;
   @override
   @Index()
   DateTime lastUpdated;
 
   @ignore
-  List<ToDo> toDos = [];
-
-  @ignore
-  late ValueNotifier<int> toDoCount = ValueNotifier<int>(toDos.length);
+  late List<ToDo> toDos;
 
   Group({
+    required this.id,
+    this.customViewIndex = -1,
     required this.name,
     this.description = "",
+    this.isSynced = false,
+    this.toDelete = false,
     required this.lastUpdated,
+    this.toDos = const [],
   });
 
   Group.fromEntity({required Map<String, dynamic> entity})
       : id = entity["id"] as Id,
+        customViewIndex = entity["customViewIndex"] as int,
         name = entity["name"] as String,
         description = entity["description"] as String,
         toDelete = entity["toDelete"] as bool,
+        isSynced = true,
         lastUpdated = DateTime.parse(entity["lastUpdated"]);
 
   Map<String, dynamic> toEntity() => {
         "id": id,
+        "customViewIndex": customViewIndex,
         "name": name,
         "description": description,
         "toDelete": toDelete,
@@ -69,20 +73,35 @@ class Group with EquatableMixin implements Copyable<Group>, IModel {
 
   @override
   Group copy() => Group(
-        name: name,
-        description: description,
-        lastUpdated: lastUpdated,
-      );
+      id: Constants.generateID(),
+      customViewIndex: customViewIndex,
+      name: name,
+      description: description,
+      isSynced: isSynced,
+      toDelete: toDelete,
+      lastUpdated: lastUpdated,
+      toDos: List.generate(toDos.length, (i) => toDos[i]));
 
   @override
-  Group copyWith({
-    String? name,
-    String? description,
-    DateTime? lastUpdated,
-  }) =>
+  Group copyWith(
+          {int? id,
+          int? customViewIndex,
+          String? name,
+          String? description,
+          bool? isSynced,
+          bool? toDelete,
+          DateTime? lastUpdated,
+          List<ToDo>? toDos}) =>
       Group(
+        id: id ?? Constants.generateID(),
+        customViewIndex: customViewIndex ?? this.customViewIndex,
         name: name ?? this.name,
         description: description ?? this.description,
+        isSynced: isSynced ?? this.isSynced,
+        toDelete: toDelete ?? this.toDelete,
+        toDos: (null != toDos)
+            ? toDos
+            : List.generate(this.toDos.length, (i) => this.toDos[i]),
         lastUpdated: lastUpdated ?? this.lastUpdated,
       );
 

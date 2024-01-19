@@ -15,6 +15,7 @@ import '../../providers/model/reminder_provider.dart';
 import '../../providers/model/routine_provider.dart';
 import '../../providers/model/todo_provider.dart';
 import '../../providers/viewmodels/deadline_viewmodel.dart';
+import '../../providers/viewmodels/group_viewmodel.dart';
 import '../../providers/viewmodels/reminder_viewmodel.dart';
 import '../../providers/viewmodels/routine_viewmodel.dart';
 import '../../providers/viewmodels/todo_viewmodel.dart';
@@ -140,8 +141,12 @@ class _GlobalModelSearch extends State<GlobalModelSearch> {
           if (null == group) {
             return;
           }
-          return await openDialog(
-              dialog: UpdateGroupScreen(initialGroup: group));
+
+          Provider.of<GroupViewModel>(context, listen: false).fromModel(
+            model: group,
+          );
+
+          return await openDialog(dialog: const UpdateGroupScreen());
         });
         break;
       default:

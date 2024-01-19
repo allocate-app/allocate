@@ -7,11 +7,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:provider/provider.dart';
 
-import '../../../model/task/group.dart';
 import '../../../model/task/todo.dart';
+import '../../../providers/application/layout_provider.dart';
 import '../../../providers/model/group_provider.dart';
 import '../../../providers/model/todo_provider.dart';
-import '../../../providers/model/user_provider.dart';
 import '../../../providers/viewmodels/group_viewmodel.dart';
 import '../../../providers/viewmodels/todo_viewmodel.dart';
 import '../../../util/constants.dart';
@@ -30,31 +29,22 @@ import '../../widgets/title_bar.dart';
 import '../sub_views.dart';
 
 class UpdateGroupScreen extends StatefulWidget {
-  final Group? initialGroup;
-
-  const UpdateGroupScreen({super.key, this.initialGroup});
+  const UpdateGroupScreen({super.key});
 
   @override
   State<UpdateGroupScreen> createState() => _UpdateGroupScreen();
 }
 
 class _UpdateGroupScreen extends State<UpdateGroupScreen> {
-  late bool checkClose;
-  late bool expanded;
-  late bool allData;
-
-  late bool loading;
-  late int offset;
-
-  // Limit >= Constants.minLimitPerQuery
-  late int limit;
+  late ValueNotifier<bool> _checkClose;
+  late ValueNotifier<String?> _nameErrorText;
 
   // Providers
-  late final GroupProvider groupProvider;
-  late final ToDoProvider toDoProvider;
-  late final UserProvider userProvider;
-  late final ToDoViewModel tVM;
   late final GroupViewModel vm;
+  late final GroupProvider groupProvider;
+  late final ToDoViewModel tVM;
+  late final ToDoProvider toDoProvider;
+  late final LayoutProvider layoutProvider;
 
   // Scrolling
   late final ScrollController desktopScrollController;
@@ -66,13 +56,9 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
 
   // Name
   late final TextEditingController nameEditingController;
-  String? nameErrorText;
 
   // Description
   late final TextEditingController descriptionEditingController;
-
-  Group get group => groupProvider.curGroup!;
-  late Group prevGroup;
 
   @override
   void initState() {
@@ -80,66 +66,66 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
     initializeProviders();
     initializeParameters();
     initializeControllers();
-    prevGroup = group.copy();
-    prevGroup.id = group.id;
   }
 
   void initializeProviders() {
-    groupProvider = Provider.of<GroupProvider>(context, listen: false);
-    toDoProvider = Provider.of<ToDoProvider>(context, listen: false);
     vm = Provider.of<GroupViewModel>(context, listen: false);
     tVM = Provider.of<ToDoViewModel>(context, listen: false);
-    if (null != widget.initialGroup) {
-      groupProvider.curGroup = widget.initialGroup;
-    }
-
-    userProvider = Provider.of<UserProvider>(context, listen: false);
+    groupProvider = Provider.of<GroupProvider>(context, listen: false);
+    toDoProvider = Provider.of<ToDoProvider>(context, listen: false);
+    layoutProvider = Provider.of<LayoutProvider>(context, listen: false);
   }
 
   void initializeParameters() {
-    loading = true;
-    allData = false;
-    checkClose = false;
-    expanded = true;
-    offset = (toDoProvider.rebuild) ? 0 : toDoProvider.toDos.length;
-    limit = Constants.minLimitPerQuery;
+    _checkClose = ValueNotifier(false);
+    _nameErrorText = ValueNotifier(null);
   }
 
   void initializeControllers() {
-    mobileScrollController = ScrollController();
     desktopScrollController = ScrollController();
+    mobileScrollController = ScrollController();
 
     ScrollPhysics parentPhysics = (Platform.isIOS || Platform.isMacOS)
         ? const BouncingScrollPhysics()
         : const ClampingScrollPhysics();
     scrollPhysics = AlwaysScrollableScrollPhysics(parent: parentPhysics);
-    nameEditingController = TextEditingController(text: group.name);
-    nameEditingController.addListener(() {
-      if (null != nameErrorText && mounted) {
-        setState(() {
-          nameErrorText = null;
-        });
-      }
-      SemanticsService.announce(
-          nameEditingController.text, Directionality.of(context));
-    });
-    descriptionEditingController =
-        TextEditingController(text: group.description);
-    descriptionEditingController.addListener(() {
-      String newText = descriptionEditingController.text;
-      SemanticsService.announce(newText, Directionality.of(context));
-    });
+
+    nameEditingController = TextEditingController(text: vm.name);
+    nameEditingController.addListener(watchName);
+
+    descriptionEditingController = TextEditingController();
+    descriptionEditingController.addListener(watchDescription);
+
     toDoSearchController = SearchController();
   }
 
   @override
   void dispose() {
+    nameEditingController.removeListener(watchName);
     nameEditingController.dispose();
+    descriptionEditingController.removeListener(watchDescription);
     descriptionEditingController.dispose();
-    desktopScrollController.dispose();
     mobileScrollController.dispose();
+    desktopScrollController.dispose();
     toDoSearchController.dispose();
     super.dispose();
+  }
+
+  void watchName() {
+    _checkClose.value = groupProvider.userViewModel?.checkClose ?? true;
+    String newText = nameEditingController.text;
+    SemanticsService.announce(newText, Directionality.of(context));
+    vm.name = newText;
+    if (null != _nameErrorText.value) {
+      _nameErrorText.value = null;
+    }
+  }
+
+  void watchDescription() {
+    _checkClose.value = groupProvider.userViewModel?.checkClose ?? true;
+    String newText = descriptionEditingController.text;
+    SemanticsService.announce(newText, Directionality.of(context));
+    vm.description = newText;
   }
 
   bool validateData() {
@@ -147,41 +133,45 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
 
     if (nameEditingController.text.isEmpty) {
       valid = false;
-      if (mounted) {
-        setState(() => nameErrorText = "Enter Group Name");
+      _nameErrorText.value = "Enter Group Name";
+      if (desktopScrollController.hasClients) {
+        desktopScrollController.jumpTo(0);
+      }
+      if (mobileScrollController.hasClients) {
+        mobileScrollController.jumpTo(0);
       }
     }
 
     return valid;
   }
 
-  void clearNameField() {
-    if (mounted) {
-      setState(() {
-        checkClose = (groupProvider.user?.checkClose ?? true);
-        nameEditingController.clear();
-        group.name = "";
-      });
-    }
-  }
-
-  void updateName() {
-    if (mounted) {
-      setState(() {
-        checkClose = (groupProvider.user?.checkClose ?? true);
-        group.name = nameEditingController.text;
-      });
-    }
-  }
-
-  void updateDescription() {
-    if (mounted) {
-      setState(() {
-        checkClose = (groupProvider.user?.checkClose ?? true);
-        group.description = descriptionEditingController.text;
-      });
-    }
-  }
+  // void clearNameField() {
+  //   if (mounted) {
+  //     setState(() {
+  //       checkClose = (groupProvider.userViewModel?.checkClose ?? true);
+  //       nameEditingController.clear();
+  //       group.name = "";
+  //     });
+  //   }
+  // }
+  //
+  // void updateName() {
+  //   if (mounted) {
+  //     setState(() {
+  //       checkClose = (groupProvider.userViewModel?.checkClose ?? true);
+  //       group.name = nameEditingController.text;
+  //     });
+  //   }
+  // }
+  //
+  // void updateDescription() {
+  //   if (mounted) {
+  //     setState(() {
+  //       checkClose = (groupProvider.userViewModel?.checkClose ?? true);
+  //       group.description = descriptionEditingController.text;
+  //     });
+  //   }
+  // }
 
   Future<void> handleSelection({required int id}) async {
     ToDo? toDo = await toDoProvider.getToDoByID(id: id).catchError((_) {
@@ -200,49 +190,47 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
     if (null == toDo) {
       return;
     }
-    if (group.id == toDo.groupID) {
+    if (vm.id == toDo.groupID) {
       return;
     }
 
-    toDo.groupID = group.id;
-    toDo.groupIndex = group.toDos.length;
+    toDo.groupID = vm.id;
+    toDo.groupIndex = vm.toDos.length;
     await toDoProvider.updateToDo(toDo: toDo);
   }
 
   void handleClose({required bool willDiscard}) {
     if (willDiscard) {
+      vm.clear();
       groupProvider.rebuild = true;
       return Navigator.pop(context);
     }
-
-    if (mounted) {
-      setState(() => checkClose = false);
-    }
+    _checkClose.value = false;
   }
 
-  Future<void> createToDo() async {
-    checkClose = (groupProvider.user?.checkClose ?? true);
-    await showDialog(
-        barrierDismissible: false,
-        useRootNavigator: false,
-        context: context,
-        builder: (BuildContext context) => CreateToDoScreen(
-              initialGroup: MapEntry<String, int>(
-                  (group.name.isNotEmpty) ? group.name : "New Group", group.id),
-            )).catchError((e) {
-      Flushbar? error;
-
-      error = Flushbars.createError(
-        message: e.cause,
-        context: context,
-        dismissCallback: () => error?.dismiss(),
-      );
-
-      error.show(context);
-    },
-        test: (e) =>
-            e is FailureToCreateException || e is FailureToUploadException);
-  }
+  // Future<void> createToDo() async {
+  //   checkClose = (groupProvider.userViewModel?.checkClose ?? true);
+  //   await showDialog(
+  //       barrierDismissible: false,
+  //       useRootNavigator: false,
+  //       context: context,
+  //       builder: (BuildContext context) => CreateToDoScreen(
+  //             initialGroup: MapEntry<String, int>(
+  //                 (group.name.isNotEmpty) ? group.name : "New Group", group.id),
+  //           )).catchError((e) {
+  //     Flushbar? error;
+  //
+  //     error = Flushbars.createError(
+  //       message: e.cause,
+  //       context: context,
+  //       dismissCallback: () => error?.dismiss(),
+  //     );
+  //
+  //     error.show(context);
+  //   },
+  //       test: (e) =>
+  //           e is FailureToCreateException || e is FailureToUploadException);
+  // }
 
   Future<void> updateAndValidate() async {
     if (validateData()) {
@@ -251,39 +239,20 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
   }
 
   Future<void> handleUpdate() async {
-    // in case the usr doesn't submit to the textfields
-    group.name = nameEditingController.text;
-    group.description = descriptionEditingController.text;
-
-    await groupProvider.updateGroup().whenComplete(() {
+    await groupProvider.updateGroup(group: vm.toModel()).whenComplete(() {
+      vm.clear();
       Navigator.pop(context);
-    }).catchError((e) {
-      Flushbar? error;
-
-      error = Flushbars.createError(
-        message: e.cause,
-        context: context,
-        dismissCallback: () => error?.dismiss(),
-      );
-    },
+    }).catchError((e) => Tiles.displayError(context: context, e: e),
         test: (e) =>
             e is FailureToCreateException || e is FailureToUpdateException);
   }
 
   Future<void> handleDelete() async {
     await groupProvider.deleteGroup().whenComplete(() {
+      vm.clear();
       Navigator.pop(context);
-    }).catchError((e) {
-      Flushbar? error;
-
-      error = Flushbars.createError(
-        message: e.cause,
-        context: context,
-        dismissCallback: () => error?.dismiss(),
-      );
-
-      error.show(context);
-    }, test: (e) => e is FailureToDeleteException);
+    }).catchError((e) => Tiles.displayError(context: context, e: e),
+        test: (e) => e is FailureToDeleteException);
   }
 
   void onFetch({List<ToDo>? items}) {
@@ -301,27 +270,33 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
     }
     if (mounted) {
       setState(() => item.fade = Fade.fadeOut);
-      await Future.delayed(const Duration(milliseconds: Constants.fadeInTime));
+      await Future.delayed(Duration(
+          milliseconds: (groupProvider.userViewModel?.reduceMotion ?? false)
+              ? 0
+              : Constants.fadeOutTime));
     }
   }
 
   @override
-  Widget build(BuildContext context) {
-    MediaQuery.sizeOf(context);
-    return (userProvider.largeScreen)
-        ? buildDesktopDialog(
-            context: context, smallScreen: userProvider.smallScreen)
-        : buildMobileDialog(
-            context: context, smallScreen: userProvider.smallScreen);
-  }
+  Widget build(BuildContext context) => LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints constraints) {
+          if (constraints.maxWidth > Constants.largeScreen) {
+            return _buildDesktopDialog(
+              context: context,
+            );
+          }
+          return _buildMobileDialog(
+              context: context, smallScreen: layoutProvider.smallScreen);
+        },
+      );
 
-  Dialog buildDesktopDialog(
-      {required BuildContext context, bool smallScreen = false}) {
+  Dialog _buildDesktopDialog({required BuildContext context}) {
     return Dialog(
       insetPadding: const EdgeInsets.all(Constants.outerDialogPadding),
       child: ConstrainedBox(
-        constraints:
-            const BoxConstraints(maxHeight: Constants.maxDesktopDialogHeight),
+        constraints: const BoxConstraints(
+            maxHeight: Constants.maxDesktopDialogHeight,
+            maxWidth: Constants.maxDesktopDialogWidth),
         child: Padding(
           padding: const EdgeInsets.all(Constants.padding),
           child: Column(
@@ -330,14 +305,8 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 // Title && Close Button
-                TitleBar(
-                  context: context,
-                  title: "Edit Group",
-                  checkClose: checkClose,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: Constants.padding),
-                  handleClose: handleClose,
-                ),
+                _buildTitleBar(),
+
                 const PaddedDivider(padding: Constants.halfPadding),
                 Flexible(
                   child: Material(
@@ -347,8 +316,8 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
                       controller: desktopScrollController,
                       child: ListView(
                         shrinkWrap: true,
-                        controller: desktopScrollController,
                         physics: scrollPhysics,
+                        controller: desktopScrollController,
                         children: [
                           Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -364,45 +333,53 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
                                         physics:
                                             const NeverScrollableScrollPhysics(),
                                         children: [
-                                      // Title
-                                      Tiles.nameTile(
-                                          context: context,
-                                          leading: ListTileWidgets.groupIcon(
-                                            currentContext: context,
-                                            iconPadding: const EdgeInsets.all(
-                                                Constants.padding),
-                                          ),
-                                          hintText: "Group Name",
-                                          errorText: nameErrorText,
-                                          controller: nameEditingController,
-                                          outerPadding:
-                                              const EdgeInsets.symmetric(
-                                                  vertical: Constants.padding),
-                                          textFieldPadding:
-                                              const EdgeInsets.only(
-                                            left: Constants.padding,
-                                          ),
-                                          handleClear: clearNameField,
-                                          onEditingComplete: updateName),
-                                      buildToDosTile(),
+                                      // Name
+
+                                      _buildNameTile(),
+
+                                      // Tiles.nameTile(
+                                      //   context: context,
+                                      //   leading: ListTileWidgets.groupIcon(
+                                      //     currentContext: context,
+                                      //     iconPadding: const EdgeInsets.all(
+                                      //         Constants.padding),
+                                      //   ),
+                                      //   hintText: "Group Name",
+                                      //   errorText: nameErrorText,
+                                      //   controller: nameEditingController,
+                                      //   outerPadding:
+                                      //       const EdgeInsets.symmetric(
+                                      //           vertical: Constants.padding),
+                                      //   textFieldPadding: const EdgeInsets.only(
+                                      //     left: Constants.padding,
+                                      //   ),
+                                      //   handleClear: clearNameField,
+                                      //   onEditingComplete: updateName,
+                                      // ),
+
+                                      _buildToDosTile(),
                                     ])),
                                 Flexible(
                                   child: ListView(
+                                      physics:
+                                          const NeverScrollableScrollPhysics(),
                                       shrinkWrap: true,
                                       padding: const EdgeInsets.symmetric(
                                           horizontal: Constants.padding),
-                                      physics:
-                                          const NeverScrollableScrollPhysics(),
                                       children: [
-                                        Tiles.descriptionTile(
-                                          minLines: Constants.desktopMinLines,
-                                          maxLines: Constants
-                                              .desktopMaxLinesBeforeScroll,
-                                          controller:
-                                              descriptionEditingController,
-                                          context: context,
-                                          onEditingComplete: updateDescription,
-                                        ),
+                                        _buildDescriptionTile(
+                                            minLines: Constants.desktopMinLines,
+                                            maxLines: Constants
+                                                .desktopMaxLinesBeforeScroll)
+                                        // Tiles.descriptionTile(
+                                        //   minLines: Constants.desktopMinLines,
+                                        //   maxLines: Constants
+                                        //       .desktopMaxLinesBeforeScroll,
+                                        //   controller:
+                                        //       descriptionEditingController,
+                                        //   context: context,
+                                        //   onEditingComplete: updateDescription,
+                                        // ),
                                       ]),
                                 )
                               ]),
@@ -415,7 +392,7 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
                 const PaddedDivider(padding: Constants.halfPadding),
                 Tiles.updateAndDeleteButtons(
                   handleDelete: handleDelete,
-                  handleUpdate: handleUpdate,
+                  handleUpdate: updateAndValidate,
                   updateButtonPadding:
                       const EdgeInsets.symmetric(horizontal: Constants.padding),
                   deleteButtonPadding:
@@ -427,7 +404,7 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
     );
   }
 
-  Dialog buildMobileDialog(
+  Dialog _buildMobileDialog(
       {required BuildContext context, required bool smallScreen}) {
     return Dialog(
       insetPadding: EdgeInsets.all((smallScreen)
@@ -440,14 +417,17 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               // Title && Close Button
-              TitleBar(
-                context: context,
-                title: "Edit Group",
-                checkClose: checkClose,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: Constants.padding),
-                handleClose: handleClose,
-              ),
+              // TitleBar(
+              //   context: context,
+              //   title: "New Group",
+              //   checkClose: checkClose,
+              //   padding:
+              //       const EdgeInsets.symmetric(horizontal: Constants.padding),
+              //   handleClose: handleClose,
+              // ),
+
+              _buildTitleBar(),
+
               const PaddedDivider(padding: Constants.halfPadding),
               Flexible(
                 child: ListView(
@@ -455,37 +435,46 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
                     controller: mobileScrollController,
                     physics: scrollPhysics,
                     children: [
-                      Tiles.nameTile(
-                          context: context,
-                          leading: ListTileWidgets.groupIcon(
-                            currentContext: context,
-                            iconPadding:
-                                const EdgeInsets.all(Constants.padding),
-                          ),
-                          hintText: "Group Name",
-                          errorText: nameErrorText,
-                          controller: nameEditingController,
-                          outerPadding: const EdgeInsets.symmetric(
-                              vertical: Constants.padding),
-                          textFieldPadding: const EdgeInsets.only(
-                            left: Constants.padding,
-                          ),
-                          handleClear: clearNameField,
-                          onEditingComplete: updateName),
-                      buildToDosTile(),
+                      _buildNameTile(),
+
+                      // Tiles.nameTile(
+                      //     context: context,
+                      //     leading: ListTileWidgets.groupIcon(
+                      //         currentContext: context,
+                      //         iconPadding:
+                      //             const EdgeInsets.all(Constants.padding),
+                      //         outerPadding: const EdgeInsets.symmetric(
+                      //           horizontal: Constants.halfPadding,
+                      //         )),
+                      //     hintText: "Group Name",
+                      //     errorText: nameErrorText,
+                      //     controller: nameEditingController,
+                      //     outerPadding: const EdgeInsets.symmetric(
+                      //         vertical: Constants.padding),
+                      //     textFieldPadding: const EdgeInsets.only(
+                      //       left: Constants.padding,
+                      //     ),
+                      //     handleClear: clearNameField,
+                      //     onEditingComplete: updateName),
+
+                      _buildToDosTile(),
+
                       const PaddedDivider(padding: Constants.padding),
-                      Tiles.descriptionTile(
-                        controller: descriptionEditingController,
-                        context: context,
-                        onEditingComplete: updateDescription,
-                      ),
+
+                      // Tiles.descriptionTile(
+                      //   controller: descriptionEditingController,
+                      //   onEditingComplete: updateDescription,
+                      //   context: context,
+                      // ),
+
+                      _buildDescriptionTile(mobile: smallScreen),
                     ]),
               ),
 
               const PaddedDivider(padding: Constants.halfPadding),
               Tiles.updateAndDeleteButtons(
                 handleDelete: handleDelete,
-                handleUpdate: handleUpdate,
+                handleUpdate: updateAndValidate,
                 updateButtonPadding:
                     const EdgeInsets.symmetric(horizontal: Constants.padding),
                 deleteButtonPadding:
@@ -497,36 +486,38 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
   }
 
   // This could be factored into the tiles class.
-  Widget buildToDosTile(
+  Widget _buildToDosTile(
       {ScrollPhysics physics = const NeverScrollableScrollPhysics()}) {
     return ExpandedListTile(
-      initiallyExpanded: expanded,
+      initiallyExpanded: true,
       title: const AutoSizeText("Tasks",
           maxLines: 1,
           overflow: TextOverflow.visible,
           softWrap: false,
           minFontSize: Constants.large),
       subtitle: Subtitles.groupSubtitle(
-          toDoCount: groupProvider.getToDoCount(id: group.id)!),
+          toDoCount: groupProvider.getToDoCount(id: vm.id)!),
       children: [
         PaginatingListview<ToDo>(
-            items: group.toDos,
+            items: vm.toDos,
             query: (
                     {int limit = Constants.minLimitPerQuery,
                     int offset = 0}) async =>
                 await groupProvider.getToDosByGroupID(
-                    id: group.id, limit: limit, offset: offset),
-            offset: group.toDos.length,
+                    id: vm.id, limit: limit, offset: offset),
+            offset: vm.toDos.length,
             indicatorDisplacement: 0.0,
-            onFetch:
-                (groupProvider.user?.reduceMotion ?? false) ? null : onFetch,
-            onRemove:
-                (groupProvider.user?.reduceMotion ?? false) ? null : onRemove,
             rebuildNotifiers: [toDoProvider],
             rebuildCallback: ({required List<ToDo> items}) {
-              group.toDos = items;
-              groupProvider.setToDoCount(id: group.id, count: items.length);
+              vm.toDos = items;
+              groupProvider.setToDoCount(id: vm.id);
             },
+            onFetch: (groupProvider.userViewModel?.reduceMotion ?? false)
+                ? null
+                : onFetch,
+            onRemove: (groupProvider.userViewModel?.reduceMotion ?? false)
+                ? null
+                : onRemove,
             listviewBuilder: (
                 {Key? key,
                 required BuildContext context,
@@ -548,12 +539,11 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
                   if (null == toDo) {
                     return;
                   }
+                  toDo.groupIndex = -1;
+                  toDo.groupID = null;
                   if (null != onRemove) {
                     onRemove(item: toDo);
                   }
-                  toDo.groupIndex = -1;
-                  toDo.groupID = null;
-
                   await toDoProvider.updateToDo(toDo: toDo);
                 },
                 onTap: ({ToDo? toDo}) async {
@@ -565,6 +555,8 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
                       useRootNavigator: false,
                       context: context,
                       builder: (BuildContext context) {
+                        // Provider.of<ToDoViewModel>(context, listen: false)
+                        //     .fromModel(model: toDo);
                         tVM.fromModel(model: toDo);
                         return const UpdateToDoScreen();
                       });
@@ -590,19 +582,9 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
               context: context,
               builder: (BuildContext context) => CreateToDoScreen(
                     initialGroup: MapEntry<String, int>(
-                        (group.name.isNotEmpty) ? group.name : "New Group",
-                        group.id),
-                  )).catchError((e) {
-            Flushbar? error;
-
-            error = Flushbars.createError(
-              message: e.cause,
-              context: context,
-              dismissCallback: () => error?.dismiss(),
-            );
-
-            error.show(context);
-          },
+                        (vm.name.isNotEmpty) ? vm.name : "New Group", vm.id),
+                  )).catchError(
+              (e) => Tiles.displayError(context: context, e: e),
               test: (e) =>
                   e is FailureToCreateException ||
                   e is FailureToUploadException),
@@ -610,4 +592,69 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
       ],
     );
   }
+
+  Widget _buildTitleBar() => ValueListenableBuilder<bool>(
+        valueListenable: _checkClose,
+        builder: (BuildContext context, bool check, Widget? child) => TitleBar(
+          context: context,
+          title: "Edit Group",
+          handleClose: handleClose,
+          checkClose: check,
+          padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
+        ),
+      );
+
+  Widget _buildNameTile() => ValueListenableBuilder<String?>(
+      valueListenable: _nameErrorText,
+      builder: (BuildContext context, String? errorText, Widget? child) =>
+          Selector<GroupViewModel, String>(
+            selector: (BuildContext context, GroupViewModel vm) => vm.name,
+            builder: (BuildContext context, String value, Widget? child) =>
+                Tiles.nameTile(
+                    context: context,
+                    leading: ListTileWidgets.groupIcon(
+                      currentContext: context,
+                      iconPadding: const EdgeInsets.all(Constants.padding),
+                    ),
+                    errorText: errorText,
+                    hintText: "Group Name",
+                    controller: nameEditingController,
+                    outerPadding:
+                        const EdgeInsets.symmetric(vertical: Constants.padding),
+                    textFieldPadding:
+                        const EdgeInsets.only(left: Constants.padding),
+                    onEditingComplete: () {
+                      _checkClose.value =
+                          groupProvider.userViewModel?.checkClose ?? true;
+                      vm.name = nameEditingController.text;
+                    },
+                    handleClear: () {
+                      _checkClose.value =
+                          groupProvider.userViewModel?.checkClose ?? true;
+                      nameEditingController.clear();
+                      vm.name = "";
+                    }),
+          ));
+
+  Widget _buildDescriptionTile({
+    int minLines = Constants.mobileMinLines,
+    int maxLines = Constants.mobileMaxLinesBeforeScroll,
+    bool mobile = false,
+  }) =>
+      Selector<GroupViewModel, String>(
+        selector: (BuildContext context, GroupViewModel vm) => vm.description,
+        builder: (BuildContext context, String value, Widget? child) =>
+            Tiles.descriptionTile(
+                context: context,
+                isDense: mobile,
+                hintText: "Notes",
+                minLines: minLines,
+                maxLines: maxLines,
+                controller: descriptionEditingController,
+                onEditingComplete: () {
+                  _checkClose.value =
+                      groupProvider.userViewModel?.checkClose ?? true;
+                  vm.description = descriptionEditingController.text;
+                }),
+      );
 }

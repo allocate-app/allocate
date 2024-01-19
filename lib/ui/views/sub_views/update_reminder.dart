@@ -103,7 +103,7 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
 
     if (nameEditingController.text.isEmpty) {
       valid = false;
-      _nameErrorText.value = "Enter Task Name";
+      _nameErrorText.value = "Enter Reminder Name";
       if (mainScrollController.hasClients) {
         mainScrollController.jumpTo(0);
       }

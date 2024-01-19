@@ -313,7 +313,7 @@ class UserViewModel extends ChangeNotifier
 
   int? get tertiarySeed => _tertiarySeed;
 
-  set teriarySeed(int? tertiarySeed) {
+  set tertiarySeed(int? tertiarySeed) {
     _tertiarySeed = tertiarySeed;
     notifyListeners();
   }

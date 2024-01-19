@@ -16,6 +16,7 @@ class Paginator<T extends IModel> extends ChangeNotifier {
   late bool loading;
   late Future<List<T>> Function({int limit, int offset})? query;
   late void Function({List<T>? items})? onFetch;
+  late void Function({List<T>? items})? onAppend;
 
   // This is for listening to global stage changes.
   // ie. A change to a provider class.
@@ -31,6 +32,7 @@ class Paginator<T extends IModel> extends ChangeNotifier {
     this.loading = false,
     this.query,
     this.onFetch,
+    this.onAppend,
     this.resetNotifiers,
     // this.appendNotifier
   }) {
@@ -79,8 +81,8 @@ class Paginator<T extends IModel> extends ChangeNotifier {
     }
 
     List<T> newItems = await fetchData();
-    if (null != onFetch) {
-      onFetch!(items: newItems);
+    if (null != onAppend) {
+      onAppend!(items: newItems);
     }
     offset += newItems.length;
     items?.addAll(newItems);

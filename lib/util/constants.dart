@@ -255,12 +255,12 @@ abstract class Constants {
   static const int animationDelay = 200;
   static const int subtaskDelay = 100;
   static const int hitDelay = 150;
-  static const int fadeInTime = 1000;
+  static const int fadeInTime = 800;
   static const int drawerSlideTime = 500;
   static const int slideInTime = 300;
   static const int footerTime = 600;
   static const int footerDelay = 100;
-  static const int fadeOutTime = 250;
+  static const int fadeOutTime = 125;
 
   // Pagination:
   static const int minLimitPerQuery = 50;

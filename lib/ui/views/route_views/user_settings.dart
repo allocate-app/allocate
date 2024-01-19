@@ -95,7 +95,7 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
     _sidebarController.close();
   }
 
-  // TODO: refactor consumer to use AppProvider once written
+  // TODO: layoutProvider.
   // TODO: refactor to also consume UserModel/UserProvider, and themeProvider.
   @override
   Widget build(BuildContext context) {
