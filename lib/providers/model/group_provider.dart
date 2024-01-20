@@ -45,6 +45,9 @@ class GroupProvider extends ChangeNotifier {
   Group? curGroup;
 
   List<Group> groups = [];
+
+  // For nav bar groups
+  late ValueNotifier<int> navKey;
   List<Group> secondaryGroups = [];
 
   final Map<int, String> groupNames = {};
@@ -54,14 +57,15 @@ class GroupProvider extends ChangeNotifier {
 
   UserViewModel? userViewModel;
 
-  // CONSTRUTOR
+  // CONSTRUCTOR
   GroupProvider({
     this.userViewModel,
     GroupRepository? groupRepository,
     ToDoRepository? toDoRepository,
   })  : sorter = userViewModel?.groupSorter ?? GroupSorter(),
         _groupRepo = groupRepository ?? GroupRepo.instance,
-        _toDoRepo = toDoRepository ?? ToDoRepo.instance;
+        _toDoRepo = toDoRepository ?? ToDoRepo.instance,
+        navKey = ValueNotifier<int>(0);
 
   void startTimer() {
     syncTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
@@ -144,7 +148,6 @@ class GroupProvider extends ChangeNotifier {
   // }
 
   Future<void> createGroup(Group group) async {
-    // The likelihood of adding more than 50 tasks at creation is incredibly slim.
     try {
       curGroup = await _groupRepo.create(group);
     } on FailureToCreateException catch (e) {
@@ -152,8 +155,8 @@ class GroupProvider extends ChangeNotifier {
       return Future.error(e);
     } on FailureToUploadException catch (e) {
       log(e.cause);
-      curGroup!.isSynced = false;
-      return await updateGroup();
+      group.isSynced = false;
+      return await updateGroup(group: group);
     }
 
     groupNames[curGroup!.id] = curGroup!.name;

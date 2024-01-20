@@ -13,6 +13,7 @@ class ExpandedListTile extends StatefulWidget {
       this.subtitle,
       this.leading,
       this.border,
+      this.controller,
       this.trailing});
 
   final EdgeInsetsGeometry outerPadding;
@@ -23,6 +24,7 @@ class ExpandedListTile extends StatefulWidget {
   final Widget? leading;
   final Widget? trailing;
   final BorderSide? border;
+  final ExpansionTileController? controller;
   final void Function({bool expanded})? onExpansionChanged;
 
   @override
@@ -56,6 +58,7 @@ class _ExpandedListTile extends State<ExpandedListTile> {
             borderRadius: const BorderRadius.all(
                 Radius.circular(Constants.semiCircular))),
         child: ExpansionTile(
+          controller: widget.controller,
           initiallyExpanded: expanded,
           maintainState: true,
           leading: widget.leading,

@@ -67,6 +67,7 @@ class _ToDosListScreen extends State<ToDosListScreen> {
       return;
     }
 
+    // Uh, DUH, this will be null if reduce motion.
     if (mounted) {
       setState(() => item.fade = Fade.fadeOut);
       await Future.delayed(Duration(
@@ -78,6 +79,7 @@ class _ToDosListScreen extends State<ToDosListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    print("vm: ${toDoProvider.userViewModel?.reduceMotion}");
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
         return Padding(
@@ -120,8 +122,10 @@ class _ToDosListScreen extends State<ToDosListScreen> {
                     toDoProvider.toDos = items;
                     toDoProvider.rebuild = false;
                   },
-                  getAnimationKey: () => ValueKey(
-                      toDoProvider.sorter.sortMethod.index *
+                  getAnimationKey: (toDoProvider.userViewModel?.reduceMotion ??
+                          false)
+                      ? null
+                      : () => ValueKey(toDoProvider.sorter.sortMethod.index *
                               (toDoProvider.sorter.descending ? -1 : 1) +
                           (toDoProvider.toDos.isEmpty ? 0 : 1)),
                   onFetch: (toDoProvider.userViewModel?.reduceMotion ?? false)

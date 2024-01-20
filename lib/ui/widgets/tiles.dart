@@ -1649,6 +1649,7 @@ abstract class Tiles {
           Expanded(
             child: Slider(
               value: weight,
+              min: 0.0,
               max: max,
               label:
                   "${weight.toInt()} ${(weight > (Constants.maxTaskWeight / 2).floor()) ? Constants.lowBattery : Constants.fullBattery}",

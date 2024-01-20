@@ -3,9 +3,13 @@ import 'package:flex_color_picker/flex_color_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:intl/intl.dart';
+import 'package:isar/isar.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
-import '../../model/user/user.dart';
+import '../../providers/model/user_provider.dart';
+import '../../providers/viewmodels/user_viewmodel.dart';
+import '../../services/isar_service.dart';
+import '../../services/supabase_service.dart';
 import '../../util/constants.dart';
 import 'battery_meter.dart';
 import 'color_picker_dialog.dart';
@@ -184,7 +188,9 @@ abstract class SettingsScreenWidgets {
 
   // TODO: this will need to change to UserModel.
   static Widget userQuickInfo(
-          {User? user, EdgeInsetsGeometry outerPadding = EdgeInsets.zero}) =>
+          {required UserProvider userProvider,
+          required UserViewModel viewModel,
+          EdgeInsetsGeometry outerPadding = EdgeInsets.zero}) =>
       Padding(
         padding: outerPadding,
         child: Card(
@@ -196,6 +202,7 @@ abstract class SettingsScreenWidgets {
             borderRadius:
                 const BorderRadius.all(Radius.circular(Constants.circular)),
             onTap: () {
+              // TODO: finish user editing dialog.
               // THIS SHOULD OPEN UP A DIALOG TO CHANGE USERNAME + email.
               print("Pressed tile");
             },
@@ -206,6 +213,7 @@ abstract class SettingsScreenWidgets {
                   borderRadius: const BorderRadius.all(
                       Radius.circular(Constants.circular)),
                   onTap: () {
+                    // TODO: finish USER SWITCHER
                     // THIS SHOULD SWITCH USER
                     print("Pressed icon");
                   },
@@ -231,17 +239,23 @@ abstract class SettingsScreenWidgets {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         AutoSizeText(
-                          // TODO: implement a hashing algorithm for the online UUID.
-                          // and concatenate.
-                          "${user?.username ?? ""}#1234",
+                          // This tag doesn't serve any purpose.
+                          // "${viewModel.username} #${(null != viewModel.uuid) ? Constants.generateTag(viewModel.uuid!).toString().padLeft(Constants.tagDigits, "0") : Constants.generateTag(Constants.generateUuid()).toString().padLeft(Constants.tagDigits, "0")}",
+                          viewModel.username,
                           style: Constants.xtraLargeBodyText,
                           overflow: TextOverflow.visible,
                           softWrap: false,
                           maxLines: 1,
-                          minFontSize: Constants.large,
+                          minFontSize: Constants.huge,
                         ),
-                        const AutoSizeText(
-                          "TODO: LOGIN EMAIL",
+                        AutoSizeText(
+                          (null != viewModel.email)
+                              ? "Email ${viewModel.email}"
+                              : "Offline Only",
+                          overflow: TextOverflow.visible,
+                          softWrap: false,
+                          maxLines: 1,
+                          minFontSize: Constants.large,
                         ),
                       ],
                     ),
@@ -305,30 +319,30 @@ abstract class SettingsScreenWidgets {
 
   /// RADIOBUTTON - Enum.
   static Widget radioTile<T extends Enum>(
-          {required T member,
-          String? name,
-          required T groupValue,
-          void Function(T?)? onChanged}) =>
-      Padding(
-        padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
-        child: ListTile(
-          shape: const RoundedRectangleBorder(
-              borderRadius:
-                  BorderRadius.all(Radius.circular(Constants.circular))),
-          leading: Radio<T>(
-              value: member, groupValue: groupValue, onChanged: onChanged),
-          onTap: (null != onChanged) ? () => onChanged(member) : null,
-          title: AutoSizeText(
-            name ??
-                toBeginningOfSentenceCase(member.name.replaceAll("_", " "))!,
-            softWrap: false,
-            maxLines: 1,
-            overflow: TextOverflow.visible,
-            minFontSize: Constants.large,
-            style: Constants.largeBodyText,
-          ),
+      {required T member,
+      String? name,
+      required T groupValue,
+      void Function(T?)? onChanged}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
+      child: ListTile(
+        shape: const RoundedRectangleBorder(
+            borderRadius:
+                BorderRadius.all(Radius.circular(Constants.circular))),
+        leading: Radio<T>(
+            value: member, groupValue: groupValue, onChanged: onChanged),
+        onTap: (null != onChanged) ? () => onChanged(member) : null,
+        title: AutoSizeText(
+          name ?? toBeginningOfSentenceCase(member.name.replaceAll("_", " "))!,
+          softWrap: false,
+          maxLines: 1,
+          overflow: TextOverflow.visible,
+          minFontSize: Constants.large,
+          style: Constants.largeBodyText,
         ),
-      );
+      ),
+    );
+  }
 
   static Widget radioDropDown<T extends Enum>({
     required T groupMember,
@@ -338,10 +352,13 @@ abstract class SettingsScreenWidgets {
     Widget? leading,
     bool initiallyExpanded = false,
     String Function(T member)? getName,
+    ExpansionTileController? controller,
     void Function({bool expanded})? onExpansionChanged,
     void Function(T? newSelection)? onChanged,
   }) =>
       ExpandedListTile(
+        controller: controller,
+        border: BorderSide.none,
         leading: leading,
         title: AutoSizeText(
           title ?? toBeginningOfSentenceCase(T.runtimeType.toString())!,
@@ -521,6 +538,218 @@ abstract class SettingsScreenWidgets {
                       styleSheetTheme: MarkdownStyleSheetBaseTheme.material,
                       shrinkWrap: true,
                     )),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  static Widget debugInfoDialog({required UserViewModel viewModel}) {
+    bool connected =
+        null != SupabaseService.instance.supabaseClient.auth.currentSession;
+
+    Isar isar = IsarService.instance.isarClient;
+    int dbBytes = isar.getSizeSync();
+    // db size in MB.
+    int dbSize = dbBytes ~/ (1000 * 1000);
+    // db size in MiB.
+    int dbMiB = dbBytes ~/ (1024 * 1024);
+    int storageLocal = dbMiB * 100 ~/ 2048;
+    int storageOnline = dbSize * 100 ~/ 50;
+
+    return Dialog(
+      insetPadding: const EdgeInsets.all(Constants.mobileDialogPadding),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(
+            maxWidth: Constants.smallLandscapeDialogHeight),
+        child: Padding(
+          padding: const EdgeInsets.all(Constants.doublePadding),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const AutoSizeText(
+                "Debug Info:",
+                style: Constants.largeHeaderStyle,
+                minFontSize: Constants.huge,
+                maxLines: 1,
+                softWrap: false,
+                overflow: TextOverflow.visible,
+              ),
+              Padding(
+                padding:
+                    const EdgeInsets.symmetric(vertical: Constants.padding),
+                child: Stack(
+                  children: [
+                    const Align(
+                      alignment: Alignment.centerLeft,
+                      child: AutoSizeText(
+                        "Local User ID:",
+                        minFontSize: Constants.large,
+                        maxLines: 1,
+                        softWrap: false,
+                        overflow: TextOverflow.visible,
+                      ),
+                    ),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: AutoSizeText(
+                        "${viewModel.id}",
+                        minFontSize: Constants.large,
+                        maxLines: 1,
+                        softWrap: false,
+                        overflow: TextOverflow.visible,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Stack(
+                children: [
+                  const Align(
+                    alignment: Alignment.centerLeft,
+                    child: AutoSizeText(
+                      "Online Sync Enabled:",
+                      minFontSize: Constants.large,
+                      maxLines: 1,
+                      softWrap: false,
+                      overflow: TextOverflow.visible,
+                    ),
+                  ),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: AutoSizeText(
+                      "${viewModel.syncOnline}",
+                      minFontSize: Constants.large,
+                      maxLines: 1,
+                      softWrap: false,
+                      overflow: TextOverflow.visible,
+                    ),
+                  ),
+                ],
+              ),
+              Stack(
+                children: [
+                  const Align(
+                    alignment: Alignment.centerLeft,
+                    child: AutoSizeText(
+                      "Online User ID:",
+                      minFontSize: Constants.large,
+                      maxLines: 1,
+                      softWrap: false,
+                      overflow: TextOverflow.visible,
+                    ),
+                  ),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: AutoSizeText(
+                      viewModel.uuid ?? "N/A",
+                      minFontSize: Constants.large,
+                      maxLines: 1,
+                      softWrap: false,
+                      overflow: TextOverflow.visible,
+                    ),
+                  ),
+                ],
+              ),
+              Stack(
+                children: [
+                  const Align(
+                    alignment: Alignment.centerLeft,
+                    child: AutoSizeText(
+                      "Connection Status:",
+                      minFontSize: Constants.large,
+                      maxLines: 1,
+                      softWrap: false,
+                      overflow: TextOverflow.visible,
+                    ),
+                  ),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: AutoSizeText(
+                      connected ? "Online" : "Offline",
+                      minFontSize: Constants.large,
+                      maxLines: 1,
+                      softWrap: false,
+                      overflow: TextOverflow.visible,
+                    ),
+                  ),
+                ],
+              ),
+              Stack(
+                children: [
+                  const Align(
+                    alignment: Alignment.centerLeft,
+                    child: AutoSizeText(
+                      "Local Storage:",
+                      minFontSize: Constants.large,
+                      maxLines: 1,
+                      softWrap: false,
+                      overflow: TextOverflow.visible,
+                    ),
+                  ),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: AutoSizeText(
+                      "$dbSize MB",
+                      minFontSize: Constants.large,
+                      maxLines: 1,
+                      softWrap: false,
+                      overflow: TextOverflow.visible,
+                    ),
+                  ),
+                ],
+              ),
+              Stack(
+                children: [
+                  const Align(
+                    alignment: Alignment.centerLeft,
+                    child: AutoSizeText(
+                      "Local Space Remaining:",
+                      minFontSize: Constants.large,
+                      maxLines: 1,
+                      softWrap: false,
+                      overflow: TextOverflow.visible,
+                    ),
+                  ),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: AutoSizeText(
+                      "${100 - storageLocal}%",
+                      minFontSize: Constants.large,
+                      maxLines: 1,
+                      softWrap: false,
+                      overflow: TextOverflow.visible,
+                    ),
+                  ),
+                ],
+              ),
+              Stack(
+                children: [
+                  const Align(
+                    alignment: Alignment.centerLeft,
+                    child: AutoSizeText(
+                      "Online Space Remaining:",
+                      minFontSize: Constants.large,
+                      maxLines: 1,
+                      softWrap: false,
+                      overflow: TextOverflow.visible,
+                    ),
+                  ),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: AutoSizeText(
+                      "${100 - storageOnline}%",
+                      minFontSize: Constants.large,
+                      maxLines: 1,
+                      softWrap: false,
+                      overflow: TextOverflow.visible,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),

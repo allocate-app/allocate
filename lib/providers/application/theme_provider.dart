@@ -79,6 +79,7 @@ class ThemeProvider extends ChangeNotifier {
   set themeType(ThemeType newThemeType) {
     _themeType = newThemeType;
     userViewModel?.themeType = newThemeType;
+    generateThemes();
     notifyListeners();
   }
 
@@ -209,12 +210,15 @@ class ThemeProvider extends ChangeNotifier {
   }
 
   void generateThemes() {
+    bool monochromatic = ToneMapping.monochromatic == _toneMapping;
+    Color? secondary = (!monochromatic) ? _secondarySeed : _primarySeed;
+    Color? tertiary = (!monochromatic) ? _tertiarySeed : _primarySeed;
     _lightTheme = ThemeData(
       colorScheme: SeedColorScheme.fromSeeds(
           brightness: Brightness.light,
           primaryKey: _primarySeed,
-          secondaryKey: _secondarySeed,
-          tertiaryKey: _tertiarySeed,
+          secondaryKey: secondary,
+          tertiaryKey: tertiary,
           tones: _flexTone(Brightness.light)),
       useMaterial3: true,
     );
@@ -222,8 +226,8 @@ class ThemeProvider extends ChangeNotifier {
       colorScheme: SeedColorScheme.fromSeeds(
           brightness: Brightness.dark,
           primaryKey: _primarySeed,
-          secondaryKey: _secondarySeed,
-          tertiaryKey: _tertiarySeed,
+          secondaryKey: secondary,
+          tertiaryKey: tertiary,
           tones: _flexTone(Brightness.dark)),
       useMaterial3: true,
     );
@@ -231,8 +235,8 @@ class ThemeProvider extends ChangeNotifier {
       colorScheme: SeedColorScheme.fromSeeds(
           brightness: Brightness.dark,
           primaryKey: _primarySeed,
-          secondaryKey: _secondarySeed,
-          tertiaryKey: _tertiarySeed,
+          secondaryKey: secondary,
+          tertiaryKey: tertiary,
           tones: (userViewModel?.useUltraHighContrast ?? false)
               ? FlexTones.ultraContrast(Brightness.dark)
               : FlexTones.highContrast(Brightness.dark)),
@@ -243,8 +247,8 @@ class ThemeProvider extends ChangeNotifier {
       colorScheme: SeedColorScheme.fromSeeds(
           brightness: Brightness.light,
           primaryKey: _primarySeed,
-          secondaryKey: _secondarySeed,
-          tertiaryKey: _tertiarySeed,
+          secondaryKey: secondary,
+          tertiaryKey: tertiary,
           tones: (userViewModel?.useUltraHighContrast ?? false)
               ? FlexTones.ultraContrast(Brightness.light)
               : FlexTones.highContrast(Brightness.light)),
@@ -262,7 +266,8 @@ class ThemeProvider extends ChangeNotifier {
       ToneMapping.vivid => FlexTones.vivid,
       ToneMapping.jolly => FlexTones.jolly,
       ToneMapping.candy => FlexTones.candyPop,
-      ToneMapping.monochromatic => FlexTones.oneHue,
+      // OneHue has some contrast issues,
+      ToneMapping.monochromatic => FlexTones.material,
       ToneMapping.high_contrast => FlexTones.highContrast,
       ToneMapping.ultra_high_contrast => FlexTones.ultraContrast,
     };

@@ -22,6 +22,7 @@ class UserViewModel extends ChangeNotifier
   late bool _syncOnline;
   late bool _isSynced;
   late String _username;
+  late String? _email;
   late int _bandwidth;
   late int _dayCost;
   late DateTime _lastOpened;
@@ -64,6 +65,7 @@ class UserViewModel extends ChangeNotifier
         _syncOnline = false,
         _isSynced = false,
         _username = Constants.defaultUsername,
+        _email = null,
         _bandwidth = Constants.maxBandwidth ~/ 2,
         _dayCost = 0,
         _lastOpened = DateTime.now(),
@@ -96,6 +98,7 @@ class UserViewModel extends ChangeNotifier
     _syncOnline = model.syncOnline;
     _isSynced = model.isSynced;
     _username = model.username;
+    _email = model.email;
     _bandwidth = model.bandwidth;
     _dayCost = model.dayCost;
     _lastOpened = model.lastOpened;
@@ -134,6 +137,7 @@ class UserViewModel extends ChangeNotifier
     _syncOnline = false;
     _isSynced = false;
     _username = Constants.defaultUsername;
+    _email = null;
     _bandwidth = Constants.maxBandwidth ~/ 2;
     _dayCost = 0;
     _lastOpened = DateTime.now();
@@ -168,6 +172,7 @@ class UserViewModel extends ChangeNotifier
         syncOnline: _syncOnline,
         isSynced: _isSynced,
         username: _username,
+        email: _email,
         bandwidth: _bandwidth,
         dayCost: _dayCost,
         lastOpened: _lastOpened,
@@ -229,6 +234,13 @@ class UserViewModel extends ChangeNotifier
 
   set userName(String userName) {
     _username = userName;
+    notifyListeners();
+  }
+
+  String? get email => _email;
+
+  set email(String? email) {
+    _email = email;
     notifyListeners();
   }
 

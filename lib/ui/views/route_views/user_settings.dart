@@ -7,8 +7,10 @@ import "package:flutter/material.dart";
 import "package:intl/intl.dart";
 import "package:provider/provider.dart";
 
+import "../../../providers/application/layout_provider.dart";
 import '../../../providers/application/theme_provider.dart';
 import '../../../providers/model/user_provider.dart';
+import "../../../providers/viewmodels/user_viewmodel.dart";
 import "../../../util/constants.dart";
 import "../../../util/enums.dart";
 import "../../../util/numbers.dart";
@@ -25,40 +27,28 @@ class UserSettingsScreen extends StatefulWidget {
 class _UserSettingsScreen extends State<UserSettingsScreen> {
   // For testing
   late bool _mockOnline;
-  late bool _checkClose;
-  late bool _checkDelete;
-  late DeleteSchedule _deleteSchedule;
 
   late final UserProvider userProvider;
+  late final UserViewModel vm;
   late final ThemeProvider themeProvider;
+  late final LayoutProvider layoutProvider;
 
   late final ScrollController mobileScrollController;
   late final ScrollController desktopScrollController;
   late final ScrollPhysics scrollPhysics;
 
-  late double _testWeight;
-
-  late bool _toneMappingOpened;
-  late bool _windowEffectOpened;
-  late bool _deleteScheduleOpened;
-
   late MenuController _scaffoldController;
   late MenuController _sidebarController;
 
+  // Factor out into functions.
   @override
   void initState() {
     userProvider = Provider.of<UserProvider>(context, listen: false);
+    vm = Provider.of<UserViewModel>(context, listen: false);
     themeProvider = Provider.of<ThemeProvider>(context, listen: false);
-    _testWeight = userProvider.curUser?.bandwidth.toDouble() ??
-        Constants.maxBandwidthDouble;
+    layoutProvider = Provider.of<LayoutProvider>(context, listen: false);
 
     _mockOnline = true;
-    _toneMappingOpened = false;
-    _windowEffectOpened = false;
-    _deleteScheduleOpened = false;
-    _checkClose = true;
-    _checkDelete = true;
-    _deleteSchedule = DeleteSchedule.never;
 
     _scaffoldController = MenuController();
     _sidebarController = MenuController();
@@ -77,33 +67,16 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
     super.dispose();
   }
 
-  // TODO: REMOVE THIS ONCE USER FINISHED.
-  void handleWeightChange(double? value) {
-    if (null == value) {
-      return;
-    }
-    if (mounted) {
-      setState(() {
-        userProvider.curUser?.bandwidth = value.toInt();
-        _testWeight = value;
-      });
-    }
-  }
-
   void anchorWatchScroll() {
     _scaffoldController.close();
     _sidebarController.close();
   }
 
-  // TODO: layoutProvider.
-  // TODO: refactor to also consume UserModel/UserProvider, and themeProvider.
   @override
   Widget build(BuildContext context) {
-    MediaQuery.sizeOf(context);
-
-    return Consumer<UserProvider>(
-        builder: (BuildContext context, UserProvider value, Widget? child) {
-      return (userProvider.wideView)
+    return LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints constraints) {
+      return (layoutProvider.wideView)
           ? buildWide(context: context)
           : buildRegular(context: context);
     });
@@ -117,33 +90,7 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           // Header.
-          // TODO: CONSUME USERMODEL once USERMODEL
-          ScreenHeader(
-            outerPadding: const EdgeInsets.all(Constants.padding),
-            leadingIcon: const Icon(Icons.settings_rounded),
-            header: "Settings",
-            trailing: (userProvider.curUser?.syncOnline ?? _mockOnline)
-                ? FilledButton(
-                    onPressed: () {
-                      if (mounted && kDebugMode) {
-                        setState(() {
-                          _mockOnline = !_mockOnline;
-                        });
-                      }
-                    },
-                    child: const AutoSizeText("Sign in"),
-                  )
-                : FilledButton(
-                    onPressed: () {
-                      if (mounted && kDebugMode) {
-                        setState(() {
-                          _mockOnline = !_mockOnline;
-                        });
-                      }
-                    },
-                    child: const AutoSizeText("Sign up"),
-                  ),
-          ),
+          _buildHeader(),
           Flexible(
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -160,21 +107,21 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
                             top: Constants.quadPadding +
                                 Constants.doublePadding +
                                 Constants.padding),
-                        child: buildEnergyTile(),
+                        child: _buildEnergyTile(),
                       ),
                       Padding(
                         padding: const EdgeInsets.only(
                           top: Constants.quadPadding,
                           bottom: Constants.doublePadding,
                         ),
-                        child: buildQuickInfo(),
+                        child: _buildQuickInfo(),
                       ),
                       const Padding(
                         padding: EdgeInsets.all(Constants.halfPadding - 1),
                         child: SizedBox.shrink(),
                       ),
-                      buildSignOut(),
-                      buildDeleteAccount(),
+                      _buildSignOut(),
+                      _buildDeleteAccount(),
                     ],
                   ),
                 ),
@@ -190,11 +137,11 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
                       physics: scrollPhysics,
                       shrinkWrap: true,
                       children: [
-                        buildAccountSection(),
-                        buildGeneralSection(),
-                        buildAccessibilitySection(),
-                        buildThemeSection(),
-                        buildAboutSection(),
+                        _buildAccountSection(),
+                        _buildGeneralSection(),
+                        _buildAccessibilitySection(),
+                        _buildThemeSection(),
+                        _buildAboutSection(),
                         const Padding(
                           padding: EdgeInsets.all(Constants.padding),
                           child: SizedBox.shrink(),
@@ -218,33 +165,7 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             // Header.
-            // TODO: CONSUME USERMODEL once USERMODEL
-            ScreenHeader(
-              outerPadding: const EdgeInsets.all(Constants.padding),
-              leadingIcon: const Icon(Icons.settings_rounded),
-              header: "Settings",
-              trailing: (userProvider.curUser?.syncOnline ?? _mockOnline)
-                  ? FilledButton(
-                      onPressed: () {
-                        if (mounted && kDebugMode) {
-                          setState(() {
-                            _mockOnline = !_mockOnline;
-                          });
-                        }
-                      },
-                      child: const AutoSizeText("Sign in"),
-                    )
-                  : FilledButton(
-                      onPressed: () {
-                        if (mounted && kDebugMode) {
-                          setState(() {
-                            _mockOnline = !_mockOnline;
-                          });
-                        }
-                      },
-                      child: const AutoSizeText("Sign up"),
-                    ),
-            ),
+            _buildHeader(),
             Flexible(
               child: Scrollbar(
                 controller: mobileScrollController,
@@ -256,23 +177,23 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
                   physics: scrollPhysics,
                   controller: mobileScrollController,
                   children: [
-                    buildEnergyTile(),
-                    buildQuickInfo(),
+                    _buildEnergyTile(),
+                    _buildQuickInfo(),
                     // ACCOUNT SETTNIGS
-                    buildAccountSection(),
+                    _buildAccountSection(),
                     // GENERAL SETTINGS
-                    buildGeneralSection(),
+                    _buildGeneralSection(),
                     // ACCESSIBILITY
-                    buildAccessibilitySection(),
+                    _buildAccessibilitySection(),
                     // THEME
-                    buildThemeSection(),
+                    _buildThemeSection(),
                     // ABOUT
-                    buildAboutSection(),
+                    _buildAboutSection(),
                     // SIGN OUT
-                    buildSignOut(),
+                    _buildSignOut(),
 
                     // DELETE ACCOUNT
-                    buildDeleteAccount(),
+                    _buildDeleteAccount(),
                     const Padding(
                       padding: EdgeInsets.all(Constants.padding),
                       child: SizedBox.shrink(),
@@ -285,338 +206,414 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
         ));
   }
 
-  // TODO: finish User switcher
-  Widget buildQuickInfo() {
+  // TODO: finish User switcher ->
+  Widget _buildQuickInfo() {
     return Consumer<UserProvider>(
       builder: (BuildContext context, UserProvider value, Widget? child) {
-        return SettingsScreenWidgets.userQuickInfo(
-            outerPadding: const EdgeInsets.only(bottom: Constants.halfPadding),
-            user: userProvider.curUser);
+        return Selector<UserViewModel, (String, String?, String?)>(
+            selector: (BuildContext context, UserViewModel vm) =>
+                (vm.username, vm.email, vm.uuid),
+            builder: (BuildContext context,
+                (String, String?, String?) watchInfo, Widget? child) {
+              return SettingsScreenWidgets.userQuickInfo(
+                userProvider: value,
+                viewModel: vm,
+                outerPadding:
+                    const EdgeInsets.only(bottom: Constants.halfPadding),
+              );
+            });
       },
     );
   }
 
-  // TODO: CONSUME USERMODEL once USERMODEL
-  Widget buildEnergyTile({double maxScale = 1.5}) {
-    return SettingsScreenWidgets.energyTile(
-      weight: userProvider.curUser?.bandwidth.toDouble() ?? _testWeight,
-      batteryScale: remap(
-              x: userProvider.width
-                  .clamp(Constants.smallScreen, Constants.largeScreen),
-              inMin: Constants.smallScreen,
-              inMax: Constants.largeScreen,
-              outMin: 1,
-              outMax: maxScale)
-          .toDouble(),
-      handleWeightChange: handleWeightChange,
-    );
+  Widget _buildEnergyTile({double maxScale = 1.5}) {
+    return Selector<UserViewModel, int>(
+        selector: (BuildContext context, UserViewModel vm) => vm.bandwidth,
+        builder: (BuildContext context, int value, Widget? child) =>
+            SettingsScreenWidgets.energyTile(
+              weight: value.toDouble(),
+              batteryScale: remap(
+                      x: layoutProvider.width
+                          .clamp(Constants.smallScreen, Constants.largeScreen),
+                      inMin: Constants.smallScreen,
+                      inMax: Constants.largeScreen,
+                      outMin: 1,
+                      outMax: maxScale)
+                  .toDouble(),
+              handleWeightChange: (newWeight) {
+                if (null == newWeight) {
+                  return;
+                }
+                vm.bandwidth = newWeight.toInt();
+              },
+            ));
   }
 
-  // TODO: CONSUME USERMODEL once USERMODEL
-  Widget buildAccountSection() {
-    return SettingsScreenWidgets.settingsSection(
-      context: context,
-      title: "Account",
-      entries: [
-        (userProvider.curUser?.syncOnline ?? _mockOnline)
-            ? SettingsScreenWidgets.tapTile(
-                leading: const Icon(Icons.sync_rounded),
-                title: "Sync now",
-                onTap: () async {
-                  //
-                  print("Sync now");
-                })
-            : SettingsScreenWidgets.tapTile(
-                leading: const Icon(Icons.cloud_sync_rounded),
-                title: "Cloud backup",
-                onTap: () {
-                  print("Sign up");
-                }),
-        if (userProvider.curUser?.syncOnline ?? _mockOnline)
-          SettingsScreenWidgets.tapTile(
-            leading: const Icon(Icons.email_rounded),
-            title: "Change email",
-            onTap: () {
-              print("Edit Email");
-            },
-          ),
-        if (userProvider.curUser?.syncOnline ?? _mockOnline)
-          SettingsScreenWidgets.tapTile(
-              leading: const Icon(Icons.lock_reset_rounded),
-              title: "Reset password",
-              onTap: () {
-                print("Edit Password");
-              }),
-        SettingsScreenWidgets.tapTile(
-            leading: const Icon(Icons.account_circle_rounded),
-            title: "Add new account",
-            onTap: () {
-              print("New Account");
-            }),
-      ],
-    );
+  Widget _buildAccountSection() {
+    return Selector2<UserViewModel, UserProvider, (bool, int)>(
+        selector: (BuildContext context, UserViewModel vm, UserProvider up) =>
+            (vm.syncOnline, up.userCount),
+        builder: (BuildContext context, (bool, int) value, Widget? child) =>
+            SettingsScreenWidgets.settingsSection(
+              context: context,
+              title: "Account",
+              entries: [
+                (value.$1 || (kDebugMode && _mockOnline))
+                    ? SettingsScreenWidgets.tapTile(
+                        leading: const Icon(Icons.sync_rounded),
+                        title: "Sync now",
+                        onTap: () async {
+                          //
+                          print("Sync now");
+                        })
+                    : SettingsScreenWidgets.tapTile(
+                        leading: const Icon(Icons.cloud_sync_rounded),
+                        title: "Cloud backup",
+                        onTap: () {
+                          print("Sign up");
+                        }),
+                if (value.$1 || (kDebugMode && _mockOnline))
+                  SettingsScreenWidgets.tapTile(
+                    leading: const Icon(Icons.email_rounded),
+                    title: "Change email",
+                    onTap: () {
+                      print("Edit Email");
+                    },
+                  ),
+                if (value.$1 || (kDebugMode && _mockOnline))
+                  SettingsScreenWidgets.tapTile(
+                      leading: const Icon(Icons.lock_reset_rounded),
+                      title: "Reset password",
+                      onTap: () {
+                        print("Edit Password");
+                      }),
+                if (value.$2 < Constants.maxUserCount)
+                  SettingsScreenWidgets.tapTile(
+                      leading: const Icon(Icons.account_circle_rounded),
+                      title: "Add new account",
+                      onTap: () {
+                        print("New Account");
+                      })
+              ],
+            ));
   }
 
-  // TODO: CONSUME USERMODEL once USERMODEL
-  Widget buildGeneralSection() {
+  Widget _buildGeneralSection() {
     return SettingsScreenWidgets.settingsSection(
       context: context,
       title: "General",
       entries: [
         //  Check close.
-        SettingsScreenWidgets.toggleTile(
-            leading: const Icon(Icons.close_rounded),
-            value: userProvider.curUser?.checkClose ?? _checkClose,
-            title: "Ask before closing",
-            onChanged: (bool value) {
-              userProvider.curUser?.checkClose = value;
-              if (mounted) {
-                setState(() {
-                  _checkClose = value;
+        Selector<UserViewModel, bool>(
+          selector: (BuildContext context, UserViewModel vm) => vm.checkClose,
+          builder: (BuildContext context, bool value, Widget? child) {
+            return SettingsScreenWidgets.toggleTile(
+                leading: const Icon(Icons.close_rounded),
+                value: value,
+                title: "Ask before closing",
+                onChanged: (bool value) {
+                  vm.checkClose = value;
                 });
-              }
-            }),
+          },
+        ),
 
-        SettingsScreenWidgets.toggleTile(
-            leading: const Icon(Icons.delete_outline_rounded),
-            title: "Ask before deleting",
-            value: userProvider.curUser?.checkDelete ?? _checkDelete,
-            onChanged: (bool value) {
-              userProvider.curUser?.checkDelete = value;
-              if (mounted) {
-                setState(() {
-                  _checkDelete = value;
+        Selector<UserViewModel, bool>(
+          selector: (BuildContext context, UserViewModel vm) => vm.checkDelete,
+          builder: (BuildContext context, bool value, Widget? child) {
+            return SettingsScreenWidgets.toggleTile(
+                leading: const Icon(Icons.delete_outline_rounded),
+                title: "Ask before deleting",
+                value: value,
+                onChanged: (bool value) {
+                  vm.checkDelete = value;
+                  // if (mounted && kDebugMode) {
+                  //   setState(() {
+                  //     _checkDelete = value;
+                  //   });
+                  // }
                 });
-              }
-            }),
-        SettingsScreenWidgets.radioDropDown(
-            groupMember:
-                userProvider.curUser?.deleteSchedule ?? _deleteSchedule,
-            values: DeleteSchedule.values,
-            title: "Keep deleted items:",
-            getName: Constants.deleteScheduleType,
-            initiallyExpanded: _deleteScheduleOpened,
-            onExpansionChanged: ({bool expanded = false}) {
-              if (mounted) {
-                _deleteScheduleOpened = expanded;
-              }
-            },
-            onChanged: (DeleteSchedule? newSchedule) {
-              if (null == newSchedule) {
-                return;
-              }
-              userProvider.curUser?.deleteSchedule = newSchedule;
-              if (mounted) {
-                setState(() {
-                  _deleteSchedule = newSchedule;
-                });
-              }
-            }),
+          },
+        ),
+
+        Selector<UserViewModel, DeleteSchedule>(
+          selector: (BuildContext context, UserViewModel vm) =>
+              vm.deleteSchedule,
+          builder:
+              (BuildContext context, DeleteSchedule value, Widget? child) =>
+                  SettingsScreenWidgets.radioDropDown(
+                      initiallyExpanded: false,
+                      groupMember: value,
+                      values: DeleteSchedule.values,
+                      title: "Keep deleted items:",
+                      getName: Constants.deleteScheduleType,
+                      onChanged: (DeleteSchedule? newSchedule) {
+                        if (null == newSchedule) {
+                          return;
+                        }
+                        vm.deleteSchedule = newSchedule;
+                      }),
+        ),
       ],
     );
   }
 
-  Widget buildAccessibilitySection() {
-    return Consumer<ThemeProvider>(
-      builder: (BuildContext context, ThemeProvider value, Widget? child) {
-        return SettingsScreenWidgets.settingsSection(
-          context: context,
-          title: "Accessibility",
-          entries: [
-            // Reduce motion.
-            SettingsScreenWidgets.toggleTile(
-                leading: const Icon(Icons.slow_motion_video_rounded),
-                title: "Reduce motion",
-                value: value.reduceMotion,
-                onChanged: (bool reduceMotion) {
-                  value.reduceMotion = reduceMotion;
-                }),
-            // Use Ultra high Contrast.
-            SettingsScreenWidgets.toggleTile(
-                leading: const Icon(Icons.contrast_rounded),
-                title: "Ultra contrast",
-                value: value.useUltraHighContrast,
-                onChanged: (bool useHi) {
-                  value.useUltraHighContrast = useHi;
-                }),
-          ],
-        );
-      },
+  Widget _buildAccessibilitySection() {
+    return SettingsScreenWidgets.settingsSection(
+      context: context,
+      title: "Accessibility",
+      entries: [
+        // Reduce motion.
+        Selector<ThemeProvider, bool>(
+          selector: (BuildContext context, ThemeProvider tp) => tp.reduceMotion,
+          builder: (BuildContext context, bool value, Widget? child) =>
+              SettingsScreenWidgets.toggleTile(
+                  leading: const Icon(Icons.slow_motion_video_rounded),
+                  title: "Reduce motion",
+                  value: value,
+                  onChanged: (bool reduceMotion) {
+                    themeProvider.reduceMotion = reduceMotion;
+                  }),
+        ),
+        // Use Ultra high Contrast.
+        Selector<ThemeProvider, bool>(
+          selector: (BuildContext context, ThemeProvider tp) =>
+              tp.useUltraHighContrast,
+          builder: (BuildContext context, bool value, Widget? child) =>
+              SettingsScreenWidgets.toggleTile(
+                  leading: const Icon(Icons.contrast_rounded),
+                  title: "Ultra contrast",
+                  value: value,
+                  onChanged: (bool useHi) {
+                    themeProvider.useUltraHighContrast = useHi;
+                  }),
+        ),
+      ],
     );
   }
 
-  Widget buildThemeSection() {
-    return Consumer<ThemeProvider>(
-        builder: (BuildContext context, ThemeProvider value, Widget? child) {
-      return SettingsScreenWidgets.settingsSection(
-          context: context,
-          title: "Theme",
-          entries: [
-            // ThemeType
+  Widget _buildThemeSection() {
+    return SettingsScreenWidgets
+        .settingsSection(context: context, title: "Theme", entries: [
+      // ThemeType
+      Selector<ThemeProvider, ThemeType>(
+        selector: (BuildContext context, ThemeProvider tp) => tp.themeType,
+        builder: (BuildContext context, ThemeType value, Widget? child) =>
             DefaultTabController(
-              initialIndex: value.themeType.index,
-              length: ThemeType.values.length,
-              child: Padding(
-                padding: const EdgeInsets.only(bottom: Constants.padding),
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
+          initialIndex: value.index,
+          length: ThemeType.values.length,
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: Constants.padding),
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                borderRadius: const BorderRadius.all(
+                    Radius.circular(Constants.roundedCorners)),
+                color: Theme.of(context).colorScheme.onSecondary,
+              ),
+              child: TabBar(
+                onTap: (newIndex) {
+                  themeProvider.themeType = ThemeType.values[newIndex];
+                },
+                indicatorSize: TabBarIndicatorSize.tab,
+                indicator: BoxDecoration(
+                    color: Theme.of(context).colorScheme.primaryContainer,
                     borderRadius: const BorderRadius.all(
-                        Radius.circular(Constants.roundedCorners)),
-                    color: Theme.of(context).colorScheme.onSecondary,
-                  ),
-                  child: TabBar(
-                    onTap: (newIndex) {
-                      value.themeType = ThemeType.values[newIndex];
-                    },
-                    indicatorSize: TabBarIndicatorSize.tab,
-                    indicator: BoxDecoration(
-                        color: Theme.of(context).colorScheme.primaryContainer,
-                        borderRadius: const BorderRadius.all(
-                            Radius.circular(Constants.roundedCorners))),
-                    splashBorderRadius: const BorderRadius.all(
-                        Radius.circular(Constants.roundedCorners)),
-                    dividerColor: Colors.transparent,
-                    tabs: ThemeType.values
-                        .map((ThemeType type) => Tab(
-                              text: toBeginningOfSentenceCase(type.name),
-                            ))
-                        .toList(),
-                  ),
-                ),
+                        Radius.circular(Constants.roundedCorners))),
+                splashBorderRadius: const BorderRadius.all(
+                    Radius.circular(Constants.roundedCorners)),
+                dividerColor: Colors.transparent,
+                tabs: ThemeType.values
+                    .map((ThemeType type) => Tab(
+                          text: toBeginningOfSentenceCase(type.name),
+                        ))
+                    .toList(),
               ),
             ),
+          ),
+        ),
+      ),
 
-            // Color seeds.
+      // Color seeds.
+      Selector<ThemeProvider, Color>(
+        selector: (BuildContext context, ThemeProvider tp) => tp.primarySeed,
+        builder: (BuildContext context, Color value, Widget? child) =>
             SettingsScreenWidgets.colorSeedTile(
                 context: context,
-                recentColors: value.recentColors,
-                color: value.primarySeed,
+                recentColors: themeProvider.recentColors,
+                color: value,
                 onColorChanged: (Color newColor) {
-                  value.primarySeed = newColor;
+                  themeProvider.primarySeed = newColor;
                 },
                 colorType: "Primary color",
                 icon: const Icon(Icons.eject_rounded),
-                showTrailing: Constants.defaultPrimaryColorSeed !=
-                    value.primarySeed.value,
+                showTrailing: Constants.defaultPrimaryColorSeed != value,
                 restoreDefault: () {
                   Tooltip.dismissAllToolTips();
-                  value.primarySeed =
+                  themeProvider.primarySeed =
                       const Color(Constants.defaultPrimaryColorSeed);
                 }),
+      ),
+      Selector<ThemeProvider, Color?>(
+        selector: (BuildContext context, ThemeProvider tp) => tp.secondarySeed,
+        builder: (BuildContext context, Color? value, Widget? child) =>
             SettingsScreenWidgets.colorSeedTile(
                 context: context,
-                recentColors: value.recentColors,
+                recentColors: themeProvider.recentColors,
                 onColorChanged: (Color newColor) {
-                  value.secondarySeed = newColor;
+                  themeProvider.secondarySeed = newColor;
                 },
-                color: value.secondarySeed,
+                color: value,
                 colorType: "Secondary color",
-                showTrailing: null != value.secondarySeed,
+                showTrailing: null != value,
                 restoreDefault: () {
                   Tooltip.dismissAllToolTips();
-                  value.secondarySeed = null;
+                  themeProvider.secondarySeed = null;
                 }),
+      ),
+      Selector<ThemeProvider, Color?>(
+        selector: (BuildContext context, ThemeProvider tp) => tp.tertiarySeed,
+        builder: (BuildContext context, Color? value, Widget? child) =>
             SettingsScreenWidgets.colorSeedTile(
                 context: context,
-                recentColors: value.recentColors,
+                recentColors: themeProvider.recentColors,
                 onColorChanged: (Color newColor) {
-                  value.tertiarySeed = newColor;
+                  themeProvider.tertiarySeed = newColor;
                 },
-                color: value.tertiarySeed,
+                color: value,
                 colorType: "Tertiary color",
-                showTrailing: null != value.tertiarySeed,
+                showTrailing: null != value,
                 restoreDefault: () {
                   Tooltip.dismissAllToolTips();
-                  value.tertiarySeed = null;
+                  themeProvider.tertiarySeed = null;
                 }),
+      ),
 
-            // Tonemapping radiobutton
+      // Tonemapping radiobutton
+      Selector<ThemeProvider, ToneMapping>(
+        selector: (BuildContext context, ThemeProvider tp) => tp.toneMapping,
+        builder: (BuildContext context, ToneMapping value, Widget? child) =>
             SettingsScreenWidgets.radioDropDown(
+                initiallyExpanded: false,
                 leading: const Icon(Icons.colorize_rounded),
                 title: "Tonemapping",
-                groupMember: value.toneMapping,
+                groupMember: value,
                 values: ToneMapping.values,
-                initiallyExpanded: _toneMappingOpened,
-                onExpansionChanged: ({bool expanded = false}) {
-                  if (mounted) {
-                    _toneMappingOpened = expanded;
-                  }
-                },
                 onChanged: (ToneMapping? newMap) {
                   if (null == newMap) {
                     return;
                   }
-                  value.toneMapping = newMap;
-                  if (mounted) {
-                    setState(() {
-                      _toneMappingOpened = false;
-                    });
-                  }
+                  themeProvider.toneMapping = newMap;
                 }),
+      ),
 
-            // Window effects
-            if (!userProvider.isMobile) ...[
+      // Window effects
+      if (!layoutProvider.isMobile) ...[
+        Selector<ThemeProvider, Effect>(
+          selector: (BuildContext context, ThemeProvider tp) => tp.windowEffect,
+          builder: (BuildContext context, Effect value, Widget? child) =>
               SettingsScreenWidgets.radioDropDown(
-                initiallyExpanded: _windowEffectOpened,
-                leading: const Icon(Icons.color_lens_outlined),
-                title: "Window effect",
-                children: getAvailableWindowEffects(),
-                groupMember: value.windowEffect,
-                values: Effect.values,
-              ),
-              // Transparency - use the dropdown slider.
-              SettingsScreenWidgets.sliderTile(
-                title: "Sidebar opacity",
-                leading: const Icon(Icons.gradient_rounded),
-                label: "${(100 * value.sidebarOpacity).toInt()}",
-                onOpen: () {
-                  mobileScrollController.addListener(anchorWatchScroll);
-                },
-                onClose: () {
-                  mobileScrollController.removeListener(anchorWatchScroll);
-                },
-                onChanged: (value.useTransparency)
-                    ? (double newOpacity) {
-                        value.sidebarOpacity = newOpacity;
-                      }
-                    : null,
-                onChangeEnd: (double newOpacity) {
-                  value.sidebarOpacitySavePref = newOpacity;
-                  _sidebarController.close();
-                },
-                value: value.sidebarOpacity,
-                controller: _sidebarController,
-              ),
+            initiallyExpanded: false,
+            leading: const Icon(Icons.color_lens_outlined),
+            title: "Window effect",
+            children: getAvailableWindowEffects(),
+            groupMember: value,
+            values: Effect.values,
+          ),
+        ),
+        // Transparency - use the dropdown slider.
+        Selector<ThemeProvider, (double, bool)>(
+          selector: (BuildContext context, ThemeProvider tp) =>
+              (tp.sidebarOpacity, tp.useTransparency),
+          builder:
+              (BuildContext context, (double, bool) value, Widget? child) =>
+                  SettingsScreenWidgets.sliderTile(
+            title: "Sidebar opacity",
+            leading: const Icon(Icons.gradient_rounded),
+            label: "${(100 * value.$1).toInt()}",
+            onOpen: () {
+              mobileScrollController.addListener(anchorWatchScroll);
+            },
+            onClose: () {
+              mobileScrollController.removeListener(anchorWatchScroll);
+            },
+            onChanged: (value.$2)
+                ? (double newOpacity) {
+                    themeProvider.sidebarOpacity = newOpacity;
+                  }
+                : null,
+            onChangeEnd: (double newOpacity) {
+              themeProvider.sidebarOpacitySavePref = newOpacity;
+              _sidebarController.close();
+            },
+            value: value.$1,
+            controller: _sidebarController,
+          ),
+        ),
 
-              SettingsScreenWidgets.sliderTile(
-                title: "Window opacity",
-                leading: const Icon(Icons.gradient_rounded),
-                label: "${(100 * value.scaffoldOpacity).toInt()}",
-                onOpen: () {
-                  mobileScrollController.addListener(anchorWatchScroll);
-                },
-                onClose: () {
-                  mobileScrollController.removeListener(anchorWatchScroll);
-                },
-                onChanged: (value.useTransparency)
-                    ? (double newOpacity) {
-                        value.scaffoldOpacity = newOpacity;
-                      }
-                    : null,
-                onChangeEnd: (double newOpacity) {
-                  value.scaffoldOpacitySavePref = newOpacity;
-                  _scaffoldController.close();
-                },
-                value: value.scaffoldOpacity,
-                controller: _scaffoldController,
-              ),
-            ],
-          ]);
-    });
+        Selector<ThemeProvider, (double, bool)>(
+          selector: (BuildContext context, ThemeProvider tp) =>
+              (tp.scaffoldOpacity, tp.useTransparency),
+          builder:
+              (BuildContext context, (double, bool) value, Widget? child) =>
+                  SettingsScreenWidgets.sliderTile(
+            title: "Window opacity",
+            leading: const Icon(Icons.gradient_rounded),
+            label: "${(100 * value.$1).toInt()}",
+            onOpen: () {
+              mobileScrollController.addListener(anchorWatchScroll);
+            },
+            onClose: () {
+              mobileScrollController.removeListener(anchorWatchScroll);
+            },
+            onChanged: (value.$2)
+                ? (double newOpacity) {
+                    themeProvider.scaffoldOpacity = newOpacity;
+                  }
+                : null,
+            onChangeEnd: (double newOpacity) {
+              themeProvider.scaffoldOpacitySavePref = newOpacity;
+              _scaffoldController.close();
+            },
+            value: value.$1,
+            controller: _scaffoldController,
+          ),
+        ),
+      ],
+    ]);
   }
 
-  // TODO: refactor to AppProvider once AppProvider
-  Widget buildAboutSection() {
+  Widget _buildHeader() => Selector<UserViewModel, bool>(
+        selector: (BuildContext context, UserViewModel vm) => vm.syncOnline,
+        builder: (BuildContext context, bool value, Widget? child) =>
+            ScreenHeader(
+          outerPadding: const EdgeInsets.all(Constants.padding),
+          leadingIcon: const Icon(Icons.settings_rounded),
+          header: "Settings",
+          // TODO: sign in widgets.
+          trailing: (value || (kDebugMode && _mockOnline))
+              ? FilledButton(
+                  onPressed: () {
+                    if (mounted && kDebugMode) {
+                      setState(() {
+                        _mockOnline = !_mockOnline;
+                      });
+                    }
+                  },
+                  child: const AutoSizeText("Sign in"),
+                )
+              : FilledButton(
+                  onPressed: () {
+                    if (mounted && kDebugMode) {
+                      setState(() {
+                        _mockOnline = !_mockOnline;
+                      });
+                    }
+                  },
+                  child: const AutoSizeText("Sign up"),
+                ),
+        ),
+      );
+
+  Widget _buildAboutSection() {
     return SettingsScreenWidgets.settingsSection(
         context: context,
         title: "About",
@@ -631,8 +628,21 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
                     useRootNavigator: false,
                     builder: (BuildContext context) {
                       return SettingsScreenWidgets.aboutDialog(
-                        packageInfo: userProvider.packageInfo,
+                        packageInfo: layoutProvider.packageInfo,
                       );
+                    });
+              }),
+
+          SettingsScreenWidgets.tapTile(
+              leading: const Icon(Icons.medical_information_rounded),
+              title: "Debug Information",
+              onTap: () async {
+                await showDialog(
+                    context: context,
+                    useRootNavigator: false,
+                    builder: (BuildContext context) {
+                      return SettingsScreenWidgets.debugInfoDialog(
+                          viewModel: vm);
                     });
               }),
           SettingsScreenWidgets.tapTile(
@@ -650,7 +660,8 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
         ]);
   }
 
-  Widget buildSignOut() {
+  // This should probably select vm.
+  Widget _buildSignOut() {
     return SettingsScreenWidgets.settingsSection(
       context: context,
       title: "",
@@ -667,7 +678,8 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
     );
   }
 
-  buildDeleteAccount() {
+  // This should probably select userProvider.
+  _buildDeleteAccount() {
     return SettingsScreenWidgets.settingsSection(
       context: context,
       title: "",
@@ -705,7 +717,7 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
   List<Widget> getAvailableWindowEffects() {
     List<Widget> validEffects = List.empty(growable: true);
 
-    bool filterWindows = (Platform.isWindows && !userProvider.win11);
+    bool filterWindows = (Platform.isWindows && !layoutProvider.win11);
     for (Effect effect in Effect.values) {
       switch (effect) {
         case Effect.mica:
@@ -740,13 +752,7 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
               if (null == newEffect) {
                 return;
               }
-
               themeProvider.windowEffect = newEffect;
-              if (mounted) {
-                setState(() {
-                  _windowEffectOpened = false;
-                });
-              }
             }),
       );
     }

@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math';
 import 'dart:ui';
 
 import 'package:device_info_plus/device_info_plus.dart';
@@ -10,6 +11,7 @@ import '../../util/constants.dart';
 class LayoutProvider extends ChangeNotifier {
   int _myDayIndex = 0;
   int _selectedPageIndex = 0;
+  int navGroupsLength = 0;
 
   Size _size = const Size(0, 0);
 
@@ -25,6 +27,11 @@ class LayoutProvider extends ChangeNotifier {
 
   bool _drawerOpened = true;
   double _navDrawerWidth = Constants.navigationDrawerMaxWidth;
+  bool _dragging = false;
+
+  bool _footerTween = false;
+
+  bool _navGroupsExpanded = false;
 
   PackageInfo _packageInfo = PackageInfo(
     appName: "",
@@ -72,6 +79,13 @@ class LayoutProvider extends ChangeNotifier {
 
   double get width => size.width;
 
+  bool get dragging => _dragging;
+
+  set dragging(bool drag) {
+    _dragging = drag;
+    notifyListeners();
+  }
+
   bool get drawerOpened => _drawerOpened;
 
   set drawerOpened(bool opened) {
@@ -85,16 +99,7 @@ class LayoutProvider extends ChangeNotifier {
   double get navDrawerWidth => _navDrawerWidth;
 
   set navDrawerWidth(double navDrawerWidth) {
-    bool breakpoint =
-        ((_navDrawerWidth < Constants.navigationDrawerMinThreshold) ^
-            (navDrawerWidth < Constants.navigationDrawerMinThreshold));
-
     _navDrawerWidth = navDrawerWidth;
-
-    // If there is no breakpoint passed, no need to force a rebuild.
-    if (!breakpoint) {
-      return;
-    }
 
     if (_myDayIndex == Constants.tabs.length - 1 && wideView) {
       _myDayIndex = 0;
@@ -102,6 +107,43 @@ class LayoutProvider extends ChangeNotifier {
 
     notifyListeners();
   }
+
+  bool get navGroupsExpanded => _navGroupsExpanded;
+
+  set navGroupsExpanded(bool expanded) {
+    bool notify = expanded ^ _navGroupsExpanded;
+    _navGroupsExpanded = expanded;
+    if (notify) {
+      notifyListeners();
+    }
+  }
+
+  bool get footerTween => _footerTween;
+
+  set footerTween(bool tween) {
+    bool notify = tween ^ _footerTween;
+    _footerTween = tween;
+    if (notify) {
+      notifyListeners();
+    }
+  }
+
+  // This is a hacky, hacky way of creating a footer.
+  // ie. number of tiles + user tile + room for 1 extra tile *
+  // approx tile height in lp.
+
+  double get tileSpace =>
+      (Constants.viewRoutes.length + 2) * Constants.navDestinationHeight +
+      2.5 * Constants.doublePadding;
+
+  double get tileSpaceOpened =>
+      (Constants.viewRoutes.length + 4 + navGroupsLength) *
+          Constants.navDestinationHeight +
+      3 * Constants.padding;
+
+  double get footerOffset => max(size.height - tileSpace, 0);
+
+  double get footerOffsetOpened => max(size.height - tileSpaceOpened, 0);
 
   bool get smallScreen => _smallScreen;
 

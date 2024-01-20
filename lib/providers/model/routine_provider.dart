@@ -244,7 +244,6 @@ class RoutineProvider extends ChangeNotifier {
     }
   }
 
-  // Refactor this please - RoutineModel.
   Future<void> createRoutine(Routine routine, int times) async {
     try {
       curRoutine = await _routineRepo.create(routine);
@@ -253,8 +252,8 @@ class RoutineProvider extends ChangeNotifier {
       return Future.error(e);
     } on FailureToUploadException catch (e) {
       log(e.cause);
-      curRoutine!.isSynced = false;
-      return updateRoutine();
+      routine.isSynced = false;
+      return updateRoutine(routine: routine, times: times);
     }
 
     setDailyRoutine(timeOfDay: times, routine: curRoutine);

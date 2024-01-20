@@ -101,8 +101,8 @@ class DeadlineProvider extends ChangeNotifier {
       return Future.error(e);
     } on FailureToUploadException catch (e) {
       log(e.cause);
-      curDeadline!.isSynced = false;
-      return await updateDeadline();
+      deadline.isSynced = false;
+      return await updateDeadline(deadline: deadline);
     }
     notifyListeners();
   }

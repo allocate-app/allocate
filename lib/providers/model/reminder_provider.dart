@@ -99,8 +99,8 @@ class ReminderProvider extends ChangeNotifier {
       return Future.error(e);
     } on FailureToUploadException catch (e) {
       log(e.cause);
-      curReminder!.isSynced = false;
-      return await updateReminder();
+      reminder.isSynced = false;
+      return await updateReminder(reminder: reminder);
     }
     notifyListeners();
   }

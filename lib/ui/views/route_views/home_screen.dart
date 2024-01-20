@@ -1,15 +1,15 @@
 import 'dart:io';
-import 'dart:math';
 import 'dart:ui';
 
 import "package:auto_route/auto_route.dart";
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/foundation.dart';
 import "package:flutter/material.dart";
-import 'package:macos_window_utils/widgets/transparent_macos_sidebar.dart';
+import 'package:flutter_acrylic/widgets/transparent_macos_sidebar.dart';
 import "package:provider/provider.dart";
 
 import '../../../model/task/group.dart';
+import '../../../providers/application/app_provider.dart';
 import '../../../providers/application/layout_provider.dart';
 import '../../../providers/application/search_provider.dart';
 import '../../../providers/application/theme_provider.dart';
@@ -19,6 +19,7 @@ import '../../../providers/model/reminder_provider.dart';
 import '../../../providers/model/routine_provider.dart';
 import '../../../providers/model/todo_provider.dart';
 import '../../../providers/model/user_provider.dart';
+import '../../../providers/viewmodels/user_viewmodel.dart';
 import '../../../services/supabase_service.dart';
 import '../../../util/constants.dart';
 import '../../../util/enums.dart';
@@ -42,11 +43,8 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreen();
 }
 
-// TODO: clean up setState -> listen to layoutProvider.
 // TODO: read UserModel.reduceMotion and set tween duration.
 class _HomeScreen extends State<HomeScreen> {
-  // late int _selectedPageIndex;
-
   late final ToDoProvider toDoProvider;
   late final RoutineProvider routineProvider;
   late final ReminderProvider reminderProvider;
@@ -56,37 +54,11 @@ class _HomeScreen extends State<HomeScreen> {
   late final ThemeProvider themeProvider;
   late final SearchProvider searchProvider;
   late final LayoutProvider layoutProvider;
+  late final AppProvider appProvider;
 
   late final ScrollController navScrollController;
 
   late final ScrollPhysics scrollPhysics;
-
-  // NavigationDrawer stuff
-  late bool _opened;
-  late bool _navDrawerExpanded;
-  late bool _footerTween;
-  late double _navDrawerWidth;
-  late bool _dragging;
-
-  // This is a hacky, hacky way of creating a footer.
-  // ie. number of tiles + user tile + room for 1 extra tile *
-  // approx tile height in lp.
-  double get footerOffset => max(userProvider.size.height - tileSpace, 0);
-
-  double get footerOffsetOpened =>
-      max(userProvider.size.height - tileSpaceOpened, 0);
-
-  double get tileSpace =>
-      (Constants.viewRoutes.length + 2) * Constants.navDestinationHeight +
-      2.5 * Constants.doublePadding;
-
-  double get tileSpaceOpened =>
-      (Constants.viewRoutes.length +
-              2 +
-              groupProvider.secondaryGroups.length +
-              2) *
-          Constants.navDestinationHeight +
-      3 * Constants.padding;
 
   // I haven't fully thought this through yet. => Also, should probably just BE a double
   // + userProvider.curUser?.dayCost;
@@ -106,6 +78,7 @@ class _HomeScreen extends State<HomeScreen> {
   }
 
   void initializeProviders() {
+    appProvider = Provider.of<AppProvider>(context, listen: false);
     toDoProvider = Provider.of<ToDoProvider>(context, listen: false);
     routineProvider = Provider.of<RoutineProvider>(context, listen: false);
     reminderProvider = Provider.of<ReminderProvider>(context, listen: false);
@@ -116,6 +89,7 @@ class _HomeScreen extends State<HomeScreen> {
     searchProvider = Provider.of<SearchProvider>(context, listen: false);
 
     layoutProvider = Provider.of<LayoutProvider>(context, listen: false);
+    appProvider.addListener(dayReset);
     toDoProvider.addListener(updateMyDayWeight);
     groupProvider.addListener(resetNavGroups);
   }
@@ -130,12 +104,11 @@ class _HomeScreen extends State<HomeScreen> {
 
   void initializeParams() {
     // _selectedPageIndex = widget.index ?? 0;
-    layoutProvider.initPageIndex = widget.index ?? 0;
-    _navDrawerWidth = Constants.navigationDrawerMaxWidth;
-    _opened = userProvider.drawerOpened;
-    _dragging = false;
-    _navDrawerExpanded = false;
-    _footerTween = false;
+    if (null != widget.index &&
+        widget.index != layoutProvider.selectedPageIndex) {
+      layoutProvider.initPageIndex = widget.index!;
+    }
+    // should just use layoutProvider for drawerOpened.
   }
 
   void initializeControllers() {
@@ -149,17 +122,42 @@ class _HomeScreen extends State<HomeScreen> {
   }
 
   Future<void> resetNavGroups() async {
-    groupProvider.secondaryGroups = await groupProvider.mostRecent();
+    List<Group> newGroups = await groupProvider.mostRecent();
 
-    if (!(userProvider.curUser?.reduceMotion ?? false)) {
-      for (Group group in groupProvider.secondaryGroups) {
-        group.fade = Fade.fadeIn;
+    // This needs a set & comparison.
+    if (!(userProvider.viewModel?.reduceMotion ?? false)) {
+      Set<Group> itemSet = groupProvider.secondaryGroups.toSet();
+      for (Group group in newGroups) {
+        if (!itemSet.contains(group)) {
+          group.fade = Fade.fadeIn;
+        }
       }
     }
 
-    if (mounted) {
-      setState(() {});
+    groupProvider.secondaryGroups = newGroups;
+    // for offset width on nav drawer expansion.
+    layoutProvider.navGroupsLength = groupProvider.secondaryGroups.length;
+
+    if (groupProvider.secondaryGroups.isEmpty) {
+      return;
     }
+
+    int newKey = groupProvider.secondaryGroups[0].id;
+    if (newKey != groupProvider.navKey.value) {
+      groupProvider.navKey.value = newKey;
+    }
+  }
+
+  // TODO: Day reset -> delete sweep, reset myDay, etc.
+  Future<void> dayReset() async {
+    // userProvider.dayReset();
+    // toDoProvider.dayReset();
+    // routineProvider.dayReset();
+    // deadlineProvider.dayReset();
+    // reminderProvider.dayReset();
+    // groupProvider.dayReset();
+    // // Subtaskprovider might need to be added
+    // subtaskProvider.dayReset();
   }
 
   @override
@@ -179,81 +177,82 @@ class _HomeScreen extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    userProvider.size = MediaQuery.sizeOf(context);
     layoutProvider.size = MediaQuery.sizeOf(context);
-    print("MQ: ${userProvider.size}");
-
-    return (layoutProvider.largeScreen)
-        ? buildDesktop(context: context)
-        : buildMobile(context: context);
+    print("MQ: ${layoutProvider.size}");
+    // Possiby migrate to Selector.
+    return Consumer<LayoutProvider>(
+        builder: (BuildContext context, LayoutProvider value, Widget? child) {
+      return (value.largeScreen)
+          ? _buildDesktop(context: context)
+          : _buildMobile(context: context);
+    });
   }
 
-  Widget buildDesktop({required BuildContext context}) {
+  // TODO: refactor this to use selectors once state variables in LayoutProvider
+  Widget _buildDesktop({required BuildContext context}) {
     return Row(children: [
       // This is a workaround for a standard navigation drawer
       // until m3 spec is fully implemented in flutter.
       TweenAnimationBuilder<double>(
           duration: Duration(
-              milliseconds: (_dragging) ? 0 : Constants.drawerSlideTime),
+              milliseconds:
+                  (layoutProvider.dragging) ? 0 : Constants.drawerSlideTime),
           curve: Curves.easeOutQuint,
           tween: Tween<double>(
-            begin: _opened ? _navDrawerWidth : 0.0,
-            end: _opened ? _navDrawerWidth : 0.0,
+            begin: layoutProvider.drawerOpened
+                ? layoutProvider.navDrawerWidth
+                : 0.0,
+            end: layoutProvider.drawerOpened
+                ? layoutProvider.navDrawerWidth
+                : 0.0,
           ),
           builder: (BuildContext context, double value, Widget? child) {
+            //TransparentMacOSSidebar
             return TransparentMacOSSidebar(
-                child: Container(
-              width: value,
-              clipBehavior: Clip.hardEdge,
-              decoration: const BoxDecoration(),
-              child: OverflowBox(
-                minWidth: Constants.navigationDrawerMaxWidth,
-                maxWidth: Constants.navigationDrawerMaxWidth,
-                child: Consumer<ThemeProvider>(builder:
-                    (BuildContext context, ThemeProvider value, Widget? child) {
-                  return DesktopDrawerWrapper(
-                    elevation: value.sidebarElevation,
-                    drawer: buildNavigationDrawer(
-                        context: context, largeScreen: true),
-                  );
-                }),
+              child: Container(
+                width: value,
+                clipBehavior: Clip.hardEdge,
+                decoration: const BoxDecoration(),
+                child: OverflowBox(
+                  minWidth: Constants.navigationDrawerMaxWidth,
+                  maxWidth: Constants.navigationDrawerMaxWidth,
+                  child: Consumer<ThemeProvider>(builder: (BuildContext context,
+                      ThemeProvider value, Widget? child) {
+                    return DesktopDrawerWrapper(
+                      elevation: value.sidebarElevation,
+                      drawer: buildNavigationDrawer(
+                          context: context, largeScreen: true),
+                    );
+                  }),
+                ),
               ),
-            ));
+            );
           }),
       GestureDetector(
         behavior: HitTestBehavior.translucent,
         supportedDevices: PointerDeviceKind.values.toSet(),
         onHorizontalDragEnd: (DragEndDetails details) {
-          _dragging = false;
-          if ((0 - _navDrawerWidth).abs() <= precisionErrorTolerance) {
-            _opened = false;
-            userProvider.drawerOpened = _opened;
-            // _navDrawerWidth = Constants.navigationDrawerMaxWidth;
-            userProvider.navDrawerWidth = _navDrawerWidth;
-            if (mounted) {
-              setState(() {});
-            }
+          layoutProvider.dragging = false;
+          if ((0 - layoutProvider.navDrawerWidth).abs() <=
+              precisionErrorTolerance) {
+            layoutProvider.drawerOpened = false;
           }
         },
         onHorizontalDragUpdate: (DragUpdateDetails details) {
-          if (!_opened) {
-            _opened = !_opened;
-            userProvider.drawerOpened = _opened;
+          if (!layoutProvider.drawerOpened) {
+            layoutProvider.drawerOpened = !layoutProvider.drawerOpened;
           }
-          _dragging = true;
-          _navDrawerWidth = (_navDrawerWidth + details.delta.dx)
-              .clamp(0, Constants.navigationDrawerMaxWidth);
-          userProvider.navDrawerWidth = _navDrawerWidth;
-          if (mounted) {
-            setState(() {});
-          }
+          layoutProvider.dragging = true;
+          layoutProvider.navDrawerWidth =
+              (layoutProvider.navDrawerWidth + details.delta.dx)
+                  .clamp(0, Constants.navigationDrawerMaxWidth);
         },
         child: TweenAnimationBuilder<double>(
             duration: const Duration(milliseconds: Constants.drawerSlideTime),
             curve: Curves.easeInQuint,
             tween: Tween<double>(
-              begin: _opened ? 1 : 0.0,
-              end: _opened ? 1 : 0.0,
+              begin: layoutProvider.drawerOpened ? 1 : 0.0,
+              end: layoutProvider.drawerOpened ? 1 : 0.0,
             ),
             builder: (BuildContext context, double value, Widget? child) {
               return Material(
@@ -264,18 +263,14 @@ class _HomeScreen extends State<HomeScreen> {
                     mouseCursor: SystemMouseCursors.resizeLeftRight,
                     onHover: (value) {},
                     onTapUp: (TapUpDetails details) {
-                      if (!_opened) {
-                        _navDrawerWidth = Constants.navigationDrawerMaxWidth;
-                        userProvider.navDrawerWidth = _navDrawerWidth;
+                      if (!layoutProvider.drawerOpened) {
+                        layoutProvider.navDrawerWidth =
+                            Constants.navigationDrawerMaxWidth;
                       } else {
-                        _navDrawerWidth = 0;
-                        userProvider.navDrawerWidth = _navDrawerWidth;
+                        layoutProvider.navDrawerWidth = 0;
                       }
-                      _opened = !_opened;
-                      userProvider.drawerOpened = _opened;
-                      if (mounted) {
-                        setState(() {});
-                      }
+                      layoutProvider.drawerOpened =
+                          !layoutProvider.drawerOpened;
                     },
                     child: VerticalDivider(
                       width: lerpDouble(Constants.verticalDividerThickness * 3,
@@ -293,57 +288,28 @@ class _HomeScreen extends State<HomeScreen> {
       ),
 
       Expanded(
-        child: Selector<ThemeProvider, double>(
-          selector: (BuildContext context, ThemeProvider tp) =>
-              tp.scaffoldOpacity,
-          builder: (BuildContext context, double opacity, Widget? child) {
-            return Selector<LayoutProvider, int>(
-                selector: (BuildContext context, LayoutProvider lp) =>
-                    lp.selectedPageIndex,
-                builder: (BuildContext context, int index, Widget? child) {
-                  return Scaffold(
-                      backgroundColor: Theme.of(context)
-                          .scaffoldBackgroundColor
-                          .withOpacity(opacity),
-                      appBar: buildAppBar(mobile: false),
-                      body: SafeArea(child: Constants.viewRoutes[index].view));
-                });
-          },
-        ),
+        child: Scaffold(
+            backgroundColor: Theme.of(context)
+                .scaffoldBackgroundColor
+                .withOpacity(themeProvider.scaffoldOpacity),
+            appBar: buildAppBar(mobile: false),
+            body: SafeArea(
+                child: Constants
+                    .viewRoutes[layoutProvider.selectedPageIndex].view)),
       )
     ]);
   }
 
-  Widget buildMobile({required BuildContext context}) {
-    return Selector<ThemeProvider, double>(
-      selector: (BuildContext context, ThemeProvider tp) => tp.scaffoldOpacity,
-      builder: (BuildContext context, double opacity, Widget? child) {
-        return Selector<LayoutProvider, int>(
-            selector: (BuildContext context, LayoutProvider lp) =>
-                lp.selectedPageIndex,
-            builder: (BuildContext context, int index, Widget? child) {
-              return Scaffold(
-                  backgroundColor: Theme.of(context)
-                      .scaffoldBackgroundColor
-                      .withOpacity(opacity),
-                  appBar: buildAppBar(mobile: true),
-                  body: SafeArea(child: Constants.viewRoutes[index].view));
-            });
-      },
-    );
-    // return Consumer<ThemeProvider>(
-    //   builder: (BuildContext context, ThemeProvider value, Widget? child) {
-    //     return Scaffold(
-    //         backgroundColor: Theme.of(context)
-    //             .scaffoldBackgroundColor
-    //             .withOpacity(value.scaffoldOpacity),
-    //         appBar: buildAppBar(mobile: true),
-    //         drawer: buildNavigationDrawer(context: context, largeScreen: false),
-    //         body: SafeArea(
-    //             child: Constants
-    //                 .viewRoutes[layoutProvider.selectedPageIndex].view));
-    //   },
-    // );
+  Widget _buildMobile({required BuildContext context}) {
+    return Scaffold(
+        backgroundColor: Theme.of(context)
+            .scaffoldBackgroundColor
+            .withOpacity(themeProvider.scaffoldOpacity),
+        appBar: buildAppBar(mobile: true),
+        drawer: buildNavigationDrawer(context: context, largeScreen: false),
+        body: SafeArea(
+            child:
+                Constants.viewRoutes[layoutProvider.selectedPageIndex].view));
   }
 
   AppBar buildAppBar({bool mobile = false}) {
@@ -365,13 +331,21 @@ class _HomeScreen extends State<HomeScreen> {
           ),
           Tooltip(
             message: "Remaining energy for tasks",
-            child: BatteryMeter(
-                showDifference: true,
-                scale: .65,
-                weight: myDayTotal.toDouble(),
-                max: userProvider.curUser?.bandwidth.toDouble() ??
-                    Constants.maxBandwidthDouble,
-                constraints: const BoxConstraints(maxWidth: 120)),
+            // This should select for UserViewModel & userProvider
+            // TODO: refactor. ValueListenable -> selector.
+            child: Selector2<UserProvider, UserViewModel, (int, int)>(
+              selector:
+                  (BuildContext context, UserProvider up, UserViewModel vm) =>
+                      (up.myDayTotal, vm.bandwidth),
+              builder:
+                  (BuildContext context, (int, int) value, Widget? child) =>
+                      BatteryMeter(
+                          showDifference: true,
+                          scale: .65,
+                          weight: myDayTotal.toDouble(),
+                          max: value.$2.toDouble(),
+                          constraints: const BoxConstraints(maxWidth: 120)),
+            ),
           ),
         ],
       ),
@@ -391,30 +365,20 @@ class _HomeScreen extends State<HomeScreen> {
       });
     }
 
-    if (_opened) {
+    // These should select from LayoutProvider
+    if (layoutProvider.drawerOpened) {
       return IconButton(
           icon: const Icon(Icons.arrow_back_rounded),
           onPressed: () {
-            _opened = false;
-            userProvider.drawerOpened = _opened;
-            _navDrawerWidth = 1.0;
-            userProvider.navDrawerWidth = _navDrawerWidth;
-            if (mounted) {
-              setState(() {});
-            }
+            layoutProvider.drawerOpened = false;
+            layoutProvider.navDrawerWidth = 1.0;
           });
     }
     return IconButton(
         icon: const Icon(Icons.menu_rounded),
         onPressed: () {
-          if (mounted) {
-            setState(() {
-              _opened = true;
-              userProvider.drawerOpened = _opened;
-              _navDrawerWidth = Constants.navigationDrawerMaxWidth;
-              userProvider.navDrawerWidth = _navDrawerWidth;
-            });
-          }
+          layoutProvider.drawerOpened = true;
+          layoutProvider.navDrawerWidth = Constants.navigationDrawerMaxWidth;
         });
   }
 
@@ -438,8 +402,6 @@ class _HomeScreen extends State<HomeScreen> {
         },
         selectedIndex: layoutProvider.selectedPageIndex,
         children: [
-          // User name bar
-          // Possible stretch Goal: add user images?
           Padding(
             padding: const EdgeInsets.only(
               top: Constants.doublePadding,
@@ -452,11 +414,21 @@ class _HomeScreen extends State<HomeScreen> {
                   borderRadius:
                       BorderRadius.all(Radius.circular(Constants.circular))),
               leading: CircleAvatar(
-                  radius: Constants.circleAvatarRadius,
-                  child: Text(
-                      "${userProvider.curUser?.username[0].toUpperCase()}")),
-              // Possible TODO: Refactor this to take a first/last name?
-              title: Text("${userProvider.curUser?.username}"),
+                radius: Constants.circleAvatarRadius,
+                child: Selector<UserViewModel, String>(
+                    selector: (BuildContext context, UserViewModel vm) =>
+                        vm.username,
+                    builder:
+                        (BuildContext context, String value, Widget? child) =>
+                            Text(value[0].toUpperCase())),
+              ),
+
+              title: Selector<UserViewModel, String>(
+                  selector: (BuildContext context, UserViewModel vm) =>
+                      vm.username,
+                  builder:
+                      (BuildContext context, String value, Widget? child) =>
+                          Text(value)),
               // Possible TODO: Refactor this to use an enum.
               subtitle: (null !=
                       SupabaseService
@@ -464,12 +436,10 @@ class _HomeScreen extends State<HomeScreen> {
                   ? const Text("Online")
                   : const Text("Offline"),
               onTap: () {
-                setState(() {
-                  resetProviders();
-                  // TODO: come up with a clever way to avoid looping.
-                  layoutProvider.selectedPageIndex =
-                      Constants.viewRoutes.indexOf(Constants.settingsScreen);
-                });
+                resetProviders();
+                // TODO: come up with a clever way to avoid looping.
+                layoutProvider.selectedPageIndex =
+                    Constants.viewRoutes.indexOf(Constants.settingsScreen);
                 if (!largeScreen) {
                   Navigator.pop(context);
                 }
@@ -523,14 +493,12 @@ class _HomeScreen extends State<HomeScreen> {
               ),
               border: BorderSide.none,
               leading: const Icon(Icons.table_view_rounded),
-              initiallyExpanded: _navDrawerExpanded,
+              initiallyExpanded: layoutProvider.navGroupsExpanded,
               onExpansionChanged: ({bool expanded = false}) {
                 Future.delayed(
                     const Duration(milliseconds: Constants.footerDelay), () {
-                  if (mounted) {
-                    setState(() => _navDrawerExpanded = expanded);
-                    _footerTween = true;
-                  }
+                  layoutProvider.navGroupsExpanded = expanded;
+                  layoutProvider.footerTween = true;
                 });
               },
               children: [
@@ -553,9 +521,6 @@ class _HomeScreen extends State<HomeScreen> {
                       groupProvider.softRebuild = true;
                       layoutProvider.selectedPageIndex =
                           Constants.viewRoutes.length - 1;
-                      if (mounted) {
-                        setState(() {});
-                      }
                       if (!largeScreen) {
                         Navigator.pop(context);
                       }
@@ -570,25 +535,32 @@ class _HomeScreen extends State<HomeScreen> {
                           builder: (BuildContext context) =>
                               const CreateGroupScreen());
                     }),
-                ListViews.navDrawerGroups(
-                  groups: groupProvider.secondaryGroups,
+
+                ValueListenableBuilder(
+                  valueListenable: groupProvider.navKey,
+                  builder: (BuildContext context, int value, Widget? child) =>
+                      ListViews.navDrawerGroups(
+                    groups: groupProvider.secondaryGroups,
+                  ),
                 ),
+
                 // refactor listview
               ]),
           const PaddedDivider(padding: Constants.doublePadding),
-          (_footerTween)
+          (layoutProvider.footerTween)
               ? TweenAnimationBuilder<double>(
                   duration: const Duration(milliseconds: Constants.footerTime),
                   curve: Curves.fastOutSlowIn,
                   onEnd: () {
-                    if (mounted) {
-                      setState(() => _footerTween = false);
-                    }
+                    layoutProvider.footerTween = false;
                   },
                   tween: Tween<double>(
-                    begin:
-                        _navDrawerExpanded ? footerOffset : footerOffsetOpened,
-                    end: _navDrawerExpanded ? footerOffsetOpened : footerOffset,
+                    begin: layoutProvider.navGroupsExpanded
+                        ? layoutProvider.footerOffset
+                        : layoutProvider.footerOffsetOpened,
+                    end: layoutProvider.navGroupsExpanded
+                        ? layoutProvider.footerOffsetOpened
+                        : layoutProvider.footerOffset,
                   ),
                   builder: (BuildContext context, double value, Widget? child) {
                     return Padding(
@@ -598,9 +570,9 @@ class _HomeScreen extends State<HomeScreen> {
                   })
               : Padding(
                   padding: EdgeInsets.only(
-                      bottom: (_navDrawerExpanded)
-                          ? footerOffsetOpened
-                          : footerOffset),
+                      bottom: (layoutProvider.navGroupsExpanded)
+                          ? layoutProvider.footerOffsetOpened
+                          : layoutProvider.footerOffset),
                   child: const SizedBox.shrink()),
           Constants.settingsScreen.destination,
           Constants.trashScreen.destination,

@@ -31,6 +31,8 @@ class User with EquatableMixin implements Copyable<User> {
   @Index()
   String username;
 
+  String? email;
+
   // Emotional bandwidth
   int bandwidth;
 
@@ -85,6 +87,7 @@ class User with EquatableMixin implements Copyable<User> {
       {required this.id,
       this.uuid,
       required this.username,
+      this.email,
       this.checkDelete = true,
       this.checkClose = true,
       this.bandwidth = 100,

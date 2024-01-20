@@ -31,6 +31,9 @@ class _BatteryMeter extends State<BatteryMeter> {
   @override
   Widget build(context) {
     double offset = widget.weight / widget.max;
+    if (offset.isNaN || offset.isInfinite) {
+      offset = 0;
+    }
     return ConstrainedBox(
       constraints: widget.constraints,
       child: Transform.scale(

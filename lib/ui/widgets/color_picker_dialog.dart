@@ -46,6 +46,9 @@ class _ColorPickerDialog extends State<ColorPickerDialog> {
     super.dispose();
   }
 
+  // NOTE: TONAL ENABLE + WHEEL IS BUGGED.
+  // TONAL ENABLE SEEMS BUGGED IN GENERAL
+  // FIX IS COMING TODAY
   @override
   Widget build(context) => LayoutBuilder(
         builder: (BuildContext context, BoxConstraints constraints) => Dialog(

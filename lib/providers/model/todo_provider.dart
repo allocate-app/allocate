@@ -76,6 +76,7 @@ class ToDoProvider extends ChangeNotifier {
   }
 
   void setUser({UserViewModel? newUser}) {
+    print("updating");
     userViewModel = newUser;
     sorter = userViewModel?.toDoSorter ?? sorter;
     notifyListeners();
@@ -151,8 +152,8 @@ class ToDoProvider extends ChangeNotifier {
       return Future.error(e);
     } on FailureToUploadException catch (e) {
       log(e.cause);
-      curToDo!.isSynced = false;
-      return await updateToDo();
+      toDo.isSynced = false;
+      return await updateToDo(toDo: toDo);
     }
 
     notifyListeners();

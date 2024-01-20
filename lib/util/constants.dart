@@ -54,6 +54,15 @@ abstract class Constants {
 
   static int generate32ID() => fast32Hash(uuid.v4());
 
+  static int generateTag(String uuid) =>
+      fastHash(uuid) % (pow(10, tagDigits).toInt());
+
+  static String generateUuid() => uuid.v4();
+
+  static const int tagDigits = 4;
+
+  static int maxUserCount = 5;
+
   // Task weight/duration params
   static const int lowerBound = 1;
 
