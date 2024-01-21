@@ -73,10 +73,7 @@ class _RemindersListScreen extends State<RemindersListScreen> {
 
     if (mounted) {
       setState(() => item.fade = Fade.fadeOut);
-      await Future.delayed(Duration(
-          milliseconds: (reminderProvider.userViewModel?.reduceMotion ?? false)
-              ? 0
-              : Constants.fadeOutTime));
+      await Future.delayed(const Duration(milliseconds: Constants.fadeOutTime));
     }
   }
 
@@ -136,10 +133,15 @@ class _RemindersListScreen extends State<RemindersListScreen> {
                         (reminderProvider.userViewModel?.reduceMotion ?? false)
                             ? null
                             : onAppend,
-                    getAnimationKey: () => ValueKey(
-                        reminderProvider.sorter.sortMethod.index *
-                                (reminderProvider.sorter.descending ? -1 : 1) +
-                            (reminderProvider.reminders.isEmpty ? 0 : 1)),
+                    getAnimationKey:
+                        (reminderProvider.userViewModel?.reduceMotion ?? false)
+                            ? null
+                            : () => ValueKey(reminderProvider
+                                        .sorter.sortMethod.index *
+                                    (reminderProvider.sorter.descending
+                                        ? -1
+                                        : 1) +
+                                (reminderProvider.reminders.isEmpty ? 0 : 1)),
                     listviewBuilder: ({
                       Key? key,
                       required BuildContext context,

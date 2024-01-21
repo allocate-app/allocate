@@ -119,10 +119,7 @@ class _MyDayRoutines extends State<MyDayRoutines> {
 
     if (mounted) {
       setState(() => item.fade = Fade.fadeOut);
-      await Future.delayed(Duration(
-          milliseconds: (routineProvider.userViewModel?.reduceMotion ?? false)
-              ? 0
-              : Constants.fadeOutTime));
+      await Future.delayed(const Duration(milliseconds: Constants.fadeOutTime));
     }
   }
 

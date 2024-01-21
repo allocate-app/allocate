@@ -72,10 +72,7 @@ class _RoutinesListScreen extends State<RoutinesListScreen> {
 
     if (mounted) {
       setState(() => item.fade = Fade.fadeOut);
-      await Future.delayed(Duration(
-          milliseconds: (routineProvider.userViewModel?.reduceMotion ?? false)
-              ? 0
-              : Constants.fadeOutTime));
+      await Future.delayed(const Duration(milliseconds: Constants.fadeOutTime));
     }
   }
 
@@ -124,8 +121,10 @@ class _RoutinesListScreen extends State<RoutinesListScreen> {
                   routineProvider.routines = items;
                   routineProvider.rebuild = false;
                 },
-                getAnimationKey: () => ValueKey(
-                    routineProvider.sorter.sortMethod.index *
+                getAnimationKey: (routineProvider.userViewModel?.reduceMotion ??
+                        false)
+                    ? null
+                    : () => ValueKey(routineProvider.sorter.sortMethod.index *
                             (routineProvider.sorter.descending ? -1 : 1) +
                         (routineProvider.routines.isEmpty ? 0 : 1)),
                 onFetch: (routineProvider.userViewModel?.reduceMotion ?? false)

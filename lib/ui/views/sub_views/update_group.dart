@@ -145,34 +145,6 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
     return valid;
   }
 
-  // void clearNameField() {
-  //   if (mounted) {
-  //     setState(() {
-  //       checkClose = (groupProvider.userViewModel?.checkClose ?? true);
-  //       nameEditingController.clear();
-  //       group.name = "";
-  //     });
-  //   }
-  // }
-  //
-  // void updateName() {
-  //   if (mounted) {
-  //     setState(() {
-  //       checkClose = (groupProvider.userViewModel?.checkClose ?? true);
-  //       group.name = nameEditingController.text;
-  //     });
-  //   }
-  // }
-  //
-  // void updateDescription() {
-  //   if (mounted) {
-  //     setState(() {
-  //       checkClose = (groupProvider.userViewModel?.checkClose ?? true);
-  //       group.description = descriptionEditingController.text;
-  //     });
-  //   }
-  // }
-
   Future<void> handleSelection({required int id}) async {
     ToDo? toDo = await toDoProvider.getToDoByID(id: id).catchError((_) {
       Flushbar? error;
@@ -208,30 +180,6 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
     _checkClose.value = false;
   }
 
-  // Future<void> createToDo() async {
-  //   checkClose = (groupProvider.userViewModel?.checkClose ?? true);
-  //   await showDialog(
-  //       barrierDismissible: false,
-  //       useRootNavigator: false,
-  //       context: context,
-  //       builder: (BuildContext context) => CreateToDoScreen(
-  //             initialGroup: MapEntry<String, int>(
-  //                 (group.name.isNotEmpty) ? group.name : "New Group", group.id),
-  //           )).catchError((e) {
-  //     Flushbar? error;
-  //
-  //     error = Flushbars.createError(
-  //       message: e.cause,
-  //       context: context,
-  //       dismissCallback: () => error?.dismiss(),
-  //     );
-  //
-  //     error.show(context);
-  //   },
-  //       test: (e) =>
-  //           e is FailureToCreateException || e is FailureToUploadException);
-  // }
-
   Future<void> updateAndValidate() async {
     if (validateData()) {
       await handleUpdate();
@@ -259,8 +207,13 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
     if (null == items) {
       return;
     }
+
+    Set<ToDo> itemSet = vm.toDos.toSet();
+
     for (ToDo toDo in items) {
-      toDo.fade = Fade.fadeIn;
+      if (!itemSet.contains(toDo)) {
+        toDo.fade = Fade.fadeIn;
+      }
     }
   }
 
@@ -268,12 +221,10 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
     if (null == item) {
       return;
     }
+
     if (mounted) {
       setState(() => item.fade = Fade.fadeOut);
-      await Future.delayed(Duration(
-          milliseconds: (groupProvider.userViewModel?.reduceMotion ?? false)
-              ? 0
-              : Constants.fadeOutTime));
+      await Future.delayed(const Duration(milliseconds: Constants.fadeOutTime));
     }
   }
 
@@ -337,26 +288,6 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
 
                                       _buildNameTile(),
 
-                                      // Tiles.nameTile(
-                                      //   context: context,
-                                      //   leading: ListTileWidgets.groupIcon(
-                                      //     currentContext: context,
-                                      //     iconPadding: const EdgeInsets.all(
-                                      //         Constants.padding),
-                                      //   ),
-                                      //   hintText: "Group Name",
-                                      //   errorText: nameErrorText,
-                                      //   controller: nameEditingController,
-                                      //   outerPadding:
-                                      //       const EdgeInsets.symmetric(
-                                      //           vertical: Constants.padding),
-                                      //   textFieldPadding: const EdgeInsets.only(
-                                      //     left: Constants.padding,
-                                      //   ),
-                                      //   handleClear: clearNameField,
-                                      //   onEditingComplete: updateName,
-                                      // ),
-
                                       _buildToDosTile(),
                                     ])),
                                 Flexible(
@@ -371,15 +302,6 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
                                             minLines: Constants.desktopMinLines,
                                             maxLines: Constants
                                                 .desktopMaxLinesBeforeScroll)
-                                        // Tiles.descriptionTile(
-                                        //   minLines: Constants.desktopMinLines,
-                                        //   maxLines: Constants
-                                        //       .desktopMaxLinesBeforeScroll,
-                                        //   controller:
-                                        //       descriptionEditingController,
-                                        //   context: context,
-                                        //   onEditingComplete: updateDescription,
-                                        // ),
                                       ]),
                                 )
                               ]),
@@ -416,18 +338,7 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Title && Close Button
-              // TitleBar(
-              //   context: context,
-              //   title: "New Group",
-              //   checkClose: checkClose,
-              //   padding:
-              //       const EdgeInsets.symmetric(horizontal: Constants.padding),
-              //   handleClose: handleClose,
-              // ),
-
               _buildTitleBar(),
-
               const PaddedDivider(padding: Constants.halfPadding),
               Flexible(
                 child: ListView(
@@ -436,41 +347,11 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
                     physics: scrollPhysics,
                     children: [
                       _buildNameTile(),
-
-                      // Tiles.nameTile(
-                      //     context: context,
-                      //     leading: ListTileWidgets.groupIcon(
-                      //         currentContext: context,
-                      //         iconPadding:
-                      //             const EdgeInsets.all(Constants.padding),
-                      //         outerPadding: const EdgeInsets.symmetric(
-                      //           horizontal: Constants.halfPadding,
-                      //         )),
-                      //     hintText: "Group Name",
-                      //     errorText: nameErrorText,
-                      //     controller: nameEditingController,
-                      //     outerPadding: const EdgeInsets.symmetric(
-                      //         vertical: Constants.padding),
-                      //     textFieldPadding: const EdgeInsets.only(
-                      //       left: Constants.padding,
-                      //     ),
-                      //     handleClear: clearNameField,
-                      //     onEditingComplete: updateName),
-
                       _buildToDosTile(),
-
                       const PaddedDivider(padding: Constants.padding),
-
-                      // Tiles.descriptionTile(
-                      //   controller: descriptionEditingController,
-                      //   onEditingComplete: updateDescription,
-                      //   context: context,
-                      // ),
-
                       _buildDescriptionTile(mobile: smallScreen),
                     ]),
               ),
-
               const PaddedDivider(padding: Constants.halfPadding),
               Tiles.updateAndDeleteButtons(
                 handleDelete: handleDelete,
@@ -555,8 +436,6 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
                       useRootNavigator: false,
                       context: context,
                       builder: (BuildContext context) {
-                        // Provider.of<ToDoViewModel>(context, listen: false)
-                        //     .fromModel(model: toDo);
                         tVM.fromModel(model: toDo);
                         return const UpdateToDoScreen();
                       });

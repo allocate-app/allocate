@@ -61,21 +61,17 @@ class _GroupsListScreen extends State<GroupsListScreen> {
 
     if (mounted) {
       setState(() => item.fade = Fade.fadeOut);
-      await Future.delayed(Duration(
-          milliseconds: (groupProvider.userViewModel?.reduceMotion ?? false)
-              ? 0
-              : Constants.fadeOutTime));
+      await Future.delayed(const Duration(milliseconds: Constants.fadeOutTime));
     }
   }
 
-  void onFetch({List<IModel>? items}) {
-    if (null == items || items.isEmpty) {
+  void onFetch({List<IModel>? items, Set<IModel>? itemSet}) {
+    if (null == items || items.isEmpty || null == itemSet) {
       return;
     }
 
-    Set<IModel> currentGroups = groupProvider.groups.toSet();
     for (IModel item in items) {
-      if (!currentGroups.contains(item)) {
+      if (!itemSet.contains(item)) {
         item.fade = Fade.fadeIn;
       }
     }
@@ -136,13 +132,14 @@ class _GroupsListScreen extends State<GroupsListScreen> {
                 groupProvider.groups = items;
                 groupProvider.rebuild = false;
               },
-              onFetch: (userProvider.curUser?.reduceMotion ?? false)
+              onFetch: (groupProvider.userViewModel?.reduceMotion ?? false)
                   ? null
-                  : onFetch,
-              onRemove: (userProvider.curUser?.reduceMotion ?? false)
+                  : ({List<Group>? items}) => onFetch(
+                      items: items, itemSet: groupProvider.groups.toSet()),
+              onRemove: (groupProvider.userViewModel?.reduceMotion ?? false)
                   ? null
                   : onRemove,
-              onAppend: (userProvider.curUser?.reduceMotion ?? false)
+              onAppend: (groupProvider.userViewModel?.reduceMotion ?? false)
                   ? null
                   : onAppend,
               getAnimationKey: () => ValueKey(
@@ -159,19 +156,33 @@ class _GroupsListScreen extends State<GroupsListScreen> {
                     key: key,
                     context: context,
                     groups: items,
-                    checkDelete: userProvider.curUser?.checkDelete ?? true,
+                    checkDelete:
+                        groupProvider.userViewModel?.checkDelete ?? true,
                     onRemove: onRemove,
-                    onToDoFetch: onFetch,
-                    onToDoRemove: this.onRemove,
+                    onToDoFetch:
+                        (groupProvider.userViewModel?.reduceMotion ?? false)
+                            ? null
+                            : onFetch,
+                    onToDoRemove:
+                        (groupProvider.userViewModel?.reduceMotion ?? false)
+                            ? null
+                            : this.onRemove,
                   );
                 }
                 return ListViews.immutableGroups(
                     key: key,
                     groups: items,
-                    checkDelete: userProvider.curUser?.checkDelete ?? true,
+                    checkDelete:
+                        groupProvider.userViewModel?.checkDelete ?? true,
                     onRemove: onRemove,
-                    onToDoFetch: onFetch,
-                    onToDoRemove: this.onRemove);
+                    onToDoFetch:
+                        (groupProvider.userViewModel?.reduceMotion ?? false)
+                            ? null
+                            : onFetch,
+                    onToDoRemove:
+                        (groupProvider.userViewModel?.reduceMotion ?? false)
+                            ? null
+                            : this.onRemove);
               }),
         ),
       ]),

@@ -64,10 +64,7 @@ class _DeadlinesListScreen extends State<DeadlinesListScreen> {
 
     if (mounted) {
       setState(() => item.fade = Fade.fadeOut);
-      await Future.delayed(Duration(
-          milliseconds: (deadlineProvider.userViewModel?.reduceMotion ?? false)
-              ? 0
-              : Constants.fadeOutTime));
+      await Future.delayed(const Duration(milliseconds: Constants.fadeOutTime));
     }
   }
 
@@ -121,10 +118,15 @@ class _DeadlinesListScreen extends State<DeadlinesListScreen> {
                       : deadlineProvider.deadlines.length,
                   limit: Constants.minLimitPerQuery,
                   rebuildNotifiers: [deadlineProvider],
-                  getAnimationKey: () => ValueKey(
-                      deadlineProvider.sorter.sortMethod.index *
-                              (deadlineProvider.sorter.descending ? -1 : 1) +
-                          (deadlineProvider.deadlines.isEmpty ? 0 : 1)),
+                  getAnimationKey:
+                      (deadlineProvider.userViewModel?.reduceMotion ?? false)
+                          ? null
+                          : () => ValueKey(
+                              deadlineProvider.sorter.sortMethod.index *
+                                      (deadlineProvider.sorter.descending
+                                          ? -1
+                                          : 1) +
+                                  (deadlineProvider.deadlines.isEmpty ? 0 : 1)),
                   rebuildCallback: ({required List<Deadline> items}) {
                     deadlineProvider.deadlines = items;
                     deadlineProvider.rebuild = false;

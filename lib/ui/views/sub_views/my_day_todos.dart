@@ -41,10 +41,11 @@ class _MyDayToDos extends State<MyDayToDos> {
   }
 
   void onFetch({List<ToDo>? items}) {
-    Set<ToDo> itemSet = toDoProvider.toDos.toSet();
     if (null == items) {
       return;
     }
+    Set<ToDo> itemSet = toDoProvider.toDos.toSet();
+
     for (ToDo toDo in items) {
       if (!itemSet.contains(toDo)) {
         toDo.fade = Fade.fadeIn;
@@ -72,10 +73,7 @@ class _MyDayToDos extends State<MyDayToDos> {
 
     if (mounted) {
       setState(() => item.fade = Fade.fadeOut);
-      await Future.delayed(Duration(
-          milliseconds: (toDoProvider.userViewModel?.reduceMotion ?? false)
-              ? 0
-              : Constants.fadeOutTime));
+      await Future.delayed(const Duration(milliseconds: Constants.fadeOutTime));
     }
   }
 
@@ -93,8 +91,10 @@ class _MyDayToDos extends State<MyDayToDos> {
                   offset:
                       (toDoProvider.rebuild) ? 0 : toDoProvider.toDos.length,
                   limit: Constants.minLimitPerQuery,
-                  getAnimationKey: () => ValueKey(
-                      toDoProvider.sorter.sortMethod.index *
+                  getAnimationKey: (toDoProvider.userViewModel?.reduceMotion ??
+                          false)
+                      ? null
+                      : () => ValueKey(toDoProvider.sorter.sortMethod.index *
                               (toDoProvider.sorter.descending ? -1 : 1) +
                           (toDoProvider.toDos.isEmpty ? 0 : 1)),
                   rebuildNotifiers: [toDoProvider, groupProvider],

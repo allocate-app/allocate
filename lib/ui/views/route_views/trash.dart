@@ -271,10 +271,7 @@ class _TrashScreen extends State<TrashScreen> {
 
     if (mounted) {
       setState(() => item.fade = Fade.fadeOut);
-      await Future.delayed(Duration(
-          milliseconds: (toDoProvider.userViewModel?.reduceMotion ?? false)
-              ? 0
-              : Constants.fadeOutTime));
+      await Future.delayed(const Duration(milliseconds: Constants.fadeOutTime));
     }
   }
 
@@ -377,7 +374,11 @@ class _TrashScreen extends State<TrashScreen> {
                               models: value.model,
                               showCategory: true,
                               smallScreen: layoutProvider.smallScreen,
-                              onRemove: onRemove,
+                              onRemove:
+                                  (toDoProvider.userViewModel?.reduceMotion ??
+                                          false)
+                                      ? null
+                                      : onRemove,
                             ),
                             secondChild: ListView(
                               shrinkWrap: true,

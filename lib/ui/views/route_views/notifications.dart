@@ -89,10 +89,8 @@ class _NotificationsScreen extends State<NotificationsScreen> {
 
     if (mounted) {
       setState(() => item.fade = Fade.fadeOut);
-      await Future.delayed(Duration(
-          milliseconds: (toDoProvider.userViewModel?.reduceMotion ?? false)
-              ? 0
-              : Constants.fadeOutTime));
+      await Future.delayed(
+          const Duration(milliseconds: Constants.fadeOutTime));
     }
   }
 

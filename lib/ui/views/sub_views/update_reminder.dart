@@ -123,10 +123,6 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
       error.show(context);
     }
 
-    // if (null == vm.dueDate) {
-    //   vm.frequency = Frequency.once;
-    // }
-
     if (vm.frequency == Frequency.custom) {
       if (vm.weekdayList.isEmpty) {
         vm.weekdayList.add(
@@ -182,7 +178,9 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
     await reminderProvider.updateReminder(reminder: newReminder).catchError(
         (e) => Tiles.displayError(context: context, e: e),
         test: (e) =>
-            e is FailureToCreateException || e is FailureToUploadException);
+            e is FailureToCreateException ||
+            e is FailureToUploadException ||
+            e is FailureToScheduleException);
 
     return await eventProvider
         .updateEventModel(oldModel: _prev, newModel: newReminder, notify: true)

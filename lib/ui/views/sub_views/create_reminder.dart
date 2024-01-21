@@ -115,10 +115,6 @@ class _CreateReminderScreen extends State<CreateReminderScreen> {
       error.show(context);
     }
 
-    // if (null == vm.dueDate) {
-    //   vm.frequency = Frequency.once;
-    // }
-
     if (vm.frequency == Frequency.custom) {
       if (vm.weekdayList.isEmpty) {
         vm.weekdayList.add(
@@ -137,7 +133,9 @@ class _CreateReminderScreen extends State<CreateReminderScreen> {
         )
         .catchError((e) => Tiles.displayError(context: context, e: e),
             test: (e) =>
-                e is FailureToCreateException || e is FailureToUploadException);
+                e is FailureToCreateException ||
+                e is FailureToUploadException ||
+                e is FailureToScheduleException);
 
     await eventProvider
         .insertEventModel(model: reminderProvider.curReminder!, notify: true)
@@ -162,7 +160,6 @@ class _CreateReminderScreen extends State<CreateReminderScreen> {
     }
   }
 
-  // Check that this works -> might need to force a breakpoint..
   @override
   Widget build(BuildContext context) => LayoutBuilder(
         builder: (BuildContext context, BoxConstraints constraints) {

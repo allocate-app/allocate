@@ -6,12 +6,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_acrylic/flutter_acrylic.dart';
 import 'package:isar/isar.dart';
-// import 'package:macos_window_utils/macos_window_utils.dart';
 import 'package:provider/provider.dart';
 import 'package:window_manager/window_manager.dart';
 
 import '../model/task/todo.dart';
-import '../providers/application/app_provider.dart';
+import '../providers/application/daily_reset_provider.dart';
 import '../providers/application/event_provider.dart';
 import '../providers/application/layout_provider.dart';
 import '../providers/application/search_provider.dart';
@@ -118,7 +117,8 @@ void main() async {
             create: (_) => SubtaskViewModel()),
 
         // GLOBAL STATE
-        ChangeNotifierProvider<AppProvider>(create: (_) => AppProvider()),
+        ChangeNotifierProvider<DailyResetProvider>(
+            create: (_) => DailyResetProvider()),
         ChangeNotifierProvider<LayoutProvider>(create: (_) => LayoutProvider()),
 
         // TODO: This is not quite right -> UserProvider needs to query the db first.

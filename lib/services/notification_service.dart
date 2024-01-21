@@ -10,13 +10,15 @@ import 'package:windows_notification/notification_message.dart';
 import 'package:windows_notification/windows_notification.dart';
 
 import '../util/constants.dart';
+import '../util/exceptions.dart';
 
 // Limitations: Linux build cannot currently handle notification clicks.
 // Plugin may eventually use the new desktop standard. In the meantime looking into dbus.
 
-// Future TODO: refactor this into an interface and use DI to handle platform specific code.
 class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
+
+  late bool canSchedule = true;
 
   // Linux/Windows only.
   late final Map<int, TimeScheduler> desktopLocalNotifications = {};
@@ -68,34 +70,38 @@ class NotificationService {
       LinuxInitializationSettings(defaultActionName: "Open notification");
 
   Future<void> init() async {
-    // Timezones
-    tz.initializeTimeZones();
-    final String timeZoneName =
-        Constants.timezoneNames[DateTime.now().timeZoneOffset.inMilliseconds];
-    tz.setLocalLocation(tz.getLocation(timeZoneName));
+    try {
+      // Timezones
+      tz.initializeTimeZones();
+      final String timeZoneName =
+          Constants.timezoneNames[DateTime.now().timeZoneOffset.inMilliseconds];
+      tz.setLocalLocation(tz.getLocation(timeZoneName));
 
-    if (Platform.isWindows) {
-      return await initWindows();
+      if (Platform.isWindows) {
+        return await initWindows();
+      }
+
+      flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+      await flutterLocalNotificationsPlugin
+          .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>()
+          ?.requestNotificationsPermission();
+
+      // LocalNotifierSettings
+      const initSettings = InitializationSettings(
+          android: initializationSettingsAndroid,
+          iOS: initializationSettingsDarwin,
+          macOS: initializationSettingsDarwin,
+          linux: initializationSettingsLinux);
+
+      // Include routing for when this is initialized.
+      await flutterLocalNotificationsPlugin.initialize(initSettings,
+          onDidReceiveNotificationResponse: onDidReceiveNotificationResponse);
+
+      return await handleAppLaunch();
+    } on tz.TimeZoneInitException catch (e) {
+      canSchedule = false;
     }
-
-    flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
-    await flutterLocalNotificationsPlugin
-        .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>()
-        ?.requestNotificationsPermission();
-
-    // LocalNotifierSettings
-    const initSettings = InitializationSettings(
-        android: initializationSettingsAndroid,
-        iOS: initializationSettingsDarwin,
-        macOS: initializationSettingsDarwin,
-        linux: initializationSettingsLinux);
-
-    // Include routing for when this is initialized.
-    await flutterLocalNotificationsPlugin.initialize(initSettings,
-        onDidReceiveNotificationResponse: onDidReceiveNotificationResponse);
-
-    return await handleAppLaunch();
   }
 
   Future<void> initWindows() async {
@@ -121,13 +127,16 @@ class NotificationService {
     });
   }
 
-  // NOTE: id should be the object's hashcode. Payload is TYPE\n notificationID.
   Future<void> scheduleNotification({
     required int id,
     required DateTime warnDate,
     required String message,
     required String payload,
   }) async {
+    if (!canSchedule) {
+      throw FailureToScheduleException(
+          "Unable to establish Timezone for Scheduling");
+    }
     final scheduleDate = tz.TZDateTime.from(warnDate, tz.local);
 
     if (Platform.isIOS || Platform.isAndroid || Platform.isMacOS) {
@@ -239,6 +248,7 @@ class NotificationService {
     await flutterLocalNotificationsPlugin.cancelAll();
   }
 
+  // TODO: refactor this to just route to the notifications scrn.
   @pragma('vm: entry-point')
   Future<void> onDidReceiveNotificationResponse(
       NotificationResponse? notificationResponse) async {

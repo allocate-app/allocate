@@ -21,7 +21,6 @@ import '../../providers/model/reminder_provider.dart';
 import '../../providers/model/routine_provider.dart';
 import '../../providers/model/subtask_provider.dart';
 import '../../providers/model/todo_provider.dart';
-import '../../providers/model/user_provider.dart';
 import '../../providers/viewmodels/deadline_viewmodel.dart';
 import '../../providers/viewmodels/reminder_viewmodel.dart';
 import '../../providers/viewmodels/routine_viewmodel.dart';
@@ -69,7 +68,6 @@ abstract class Tiles {
       Future<void> Function({ToDo? item})? onRemove,
       bool showHandle = false,
       bool checkDelete = false}) {
-    UserProvider userProvider = Provider.of(context, listen: false);
     ToDoProvider toDoProvider = Provider.of(context, listen: false);
     // This is not an ideal solution, but it is to maintain a proper count
     // of linked ToDos.
@@ -198,7 +196,7 @@ abstract class Tiles {
                     if (null == results) {
                       return;
                     }
-                    userProvider.curUser?.checkDelete = results[1];
+                    toDoProvider.userViewModel?.checkDelete = results[1];
                     if (!results[0]) {
                       return;
                     }
@@ -373,8 +371,6 @@ abstract class Tiles {
       bool checkDelete = false}) {
     RoutineProvider routineProvider =
         Provider.of<RoutineProvider>(context, listen: false);
-    UserProvider userProvider =
-        Provider.of<UserProvider>(context, listen: false);
     return ListTile(
         contentPadding: const EdgeInsets.only(right: Constants.padding),
         key: ValueKey(routine.id),
@@ -446,7 +442,7 @@ abstract class Tiles {
                     if (null == results) {
                       return;
                     }
-                    userProvider.curUser?.checkDelete = results[1];
+                    routineProvider.userViewModel?.checkDelete = results[1];
                     if (!results[0]) {
                       return;
                     }
@@ -488,7 +484,6 @@ abstract class Tiles {
   }) {
     DeadlineProvider deadlineProvider =
         Provider.of<DeadlineProvider>(context, listen: false);
-    UserProvider userProvider = Provider.of(context, listen: false);
     EventProvider eventProvider = Provider.of(context, listen: false);
     return ListTile(
         contentPadding:
@@ -588,7 +583,7 @@ abstract class Tiles {
                     if (null == results) {
                       return;
                     }
-                    userProvider.curUser?.checkDelete = results[1];
+                    deadlineProvider.userViewModel?.checkDelete = results[1];
                     if (!results[0]) {
                       return;
                     }
@@ -672,7 +667,6 @@ abstract class Tiles {
       Future<void> Function({Reminder item})? onRemove}) {
     ReminderProvider reminderProvider =
         Provider.of<ReminderProvider>(context, listen: false);
-    UserProvider userProvider = Provider.of(context, listen: false);
     EventProvider eventProvider = Provider.of(context, listen: false);
     return ListTile(
         contentPadding:
@@ -769,7 +763,7 @@ abstract class Tiles {
                     if (null == results) {
                       return;
                     }
-                    userProvider.curUser?.checkDelete = results[1];
+                    reminderProvider.userViewModel?.checkDelete = results[1];
                     if (!results[0]) {
                       return;
                     }
@@ -856,8 +850,6 @@ abstract class Tiles {
         Provider.of<GroupProvider>(context, listen: false);
     ToDoProvider toDoProvider =
         Provider.of<ToDoProvider>(context, listen: false);
-    UserProvider userProvider =
-        Provider.of<UserProvider>(context, listen: false);
 
     // TODO: possibly make expand conditional.
     return ExpandedListTile(
@@ -898,7 +890,7 @@ abstract class Tiles {
                     if (null == results) {
                       return;
                     }
-                    userProvider.curUser?.checkDelete = results[1];
+                    groupProvider.userViewModel?.checkDelete = results[1];
                     if (!results[0]) {
                       return;
                     }

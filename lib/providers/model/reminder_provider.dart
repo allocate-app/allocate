@@ -321,12 +321,17 @@ class ReminderProvider extends ChangeNotifier {
         .toLocal()
         .format(pattern: "MMM d, hh:mm a")
         .toString();
-    await _notificationService.scheduleNotification(
-        id: reminder.notificationID!,
-        warnDate: reminder.dueDate!,
-        message:
-            "${reminder.name} is due on: $newDue\n It's okay to ask for more time.",
-        payload: "REMINDER\n${reminder.id}");
+    try {
+      await _notificationService.scheduleNotification(
+          id: reminder.notificationID!,
+          warnDate: reminder.dueDate!,
+          message:
+              "${reminder.name} is due on: $newDue\n It's okay to ask for more time.",
+          payload: "REMINDER\n${reminder.id}");
+    } on FailureToScheduleException catch (e, stacktrace) {
+      log("${e.cause} \n $stacktrace");
+      return Future.error(e);
+    }
   }
 
   Future<void> cancelNotification({Reminder? reminder}) async {

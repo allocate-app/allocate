@@ -1,22 +1,24 @@
 import 'package:flutter/foundation.dart';
 import 'package:schedulers/schedulers.dart';
-import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 
 import '../../util/constants.dart';
 
-class AppProvider extends ChangeNotifier {
+class DailyResetProvider extends ChangeNotifier {
   TimeScheduler resetScheduler;
 
-  AppProvider() : resetScheduler = TimeScheduler() {
+  DailyResetProvider() : resetScheduler = TimeScheduler() {
     init();
   }
 
   void init() {
-    tz.initializeTimeZones();
-    final String timeZoneName =
-        Constants.timezoneNames[DateTime.now().timeZoneOffset.inMilliseconds];
-    tz.setLocalLocation(tz.getLocation(timeZoneName));
+    // This is already initialized in the notification service.
+
+    // tz.initializeTimeZones();
+    // final String timeZoneName =
+    //     Constants.timezoneNames[DateTime.now().timeZoneOffset.inMilliseconds];
+    // tz.setLocalLocation(tz.getLocation(timeZoneName));
+
     initTimeScheduler();
   }
 

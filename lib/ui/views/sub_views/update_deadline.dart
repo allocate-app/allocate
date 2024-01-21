@@ -209,7 +209,9 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
     await deadlineProvider.updateDeadline(deadline: newDeadline).catchError(
         (e) => Tiles.displayError(context: context, e: e),
         test: (e) =>
-            e is FailureToUpdateException || e is FailureToUploadException);
+            e is FailureToUpdateException ||
+            e is FailureToUploadException ||
+            e is FailureToScheduleException);
 
     return await eventProvider
         .updateEventModel(

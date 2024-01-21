@@ -196,32 +196,6 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
     _checkClose.value = false;
   }
 
-  // void clearNameField() {
-  //   setState(() {
-  //     checkClose = (groupProvider.userViewModel?.checkClose ?? true);
-  //     nameEditingController.clear();
-  //     name = "";
-  //   });
-  // }
-  //
-  // void updateName() {
-  //   if (mounted) {
-  //     setState(() {
-  //       checkClose = (groupProvider.userViewModel?.checkClose ?? true);
-  //       name = nameEditingController.text;
-  //     });
-  //   }
-  // }
-  //
-  // void updateDescription() {
-  //   if (mounted) {
-  //     setState(() {
-  //       checkClose = (groupProvider.userViewModel?.checkClose ?? true);
-  //       description = descriptionEditingController.text;
-  //     });
-  //   }
-  // }
-
   Future<void> createAndValidate() async {
     if (validateData()) {
       await handleCreate();
@@ -232,8 +206,12 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
     if (null == items) {
       return;
     }
+    Set<ToDo> itemSet = vm.toDos.toSet();
+
     for (ToDo toDo in items) {
-      toDo.fade = Fade.fadeIn;
+      if (!itemSet.contains(toDo)) {
+        toDo.fade = Fade.fadeIn;
+      }
     }
   }
 
@@ -243,10 +221,7 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
     }
     if (mounted) {
       setState(() => item.fade = Fade.fadeOut);
-      await Future.delayed(Duration(
-          milliseconds: (groupProvider.userViewModel?.reduceMotion ?? false)
-              ? 0
-              : Constants.fadeOutTime));
+      await Future.delayed(const Duration(milliseconds: Constants.fadeOutTime));
     }
   }
 
@@ -310,26 +285,6 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
 
                                       _buildNameTile(),
 
-                                      // Tiles.nameTile(
-                                      //   context: context,
-                                      //   leading: ListTileWidgets.groupIcon(
-                                      //     currentContext: context,
-                                      //     iconPadding: const EdgeInsets.all(
-                                      //         Constants.padding),
-                                      //   ),
-                                      //   hintText: "Group Name",
-                                      //   errorText: nameErrorText,
-                                      //   controller: nameEditingController,
-                                      //   outerPadding:
-                                      //       const EdgeInsets.symmetric(
-                                      //           vertical: Constants.padding),
-                                      //   textFieldPadding: const EdgeInsets.only(
-                                      //     left: Constants.padding,
-                                      //   ),
-                                      //   handleClear: clearNameField,
-                                      //   onEditingComplete: updateName,
-                                      // ),
-
                                       _buildToDosTile(),
                                     ])),
                                 Flexible(
@@ -344,15 +299,6 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
                                             minLines: Constants.desktopMinLines,
                                             maxLines: Constants
                                                 .desktopMaxLinesBeforeScroll)
-                                        // Tiles.descriptionTile(
-                                        //   minLines: Constants.desktopMinLines,
-                                        //   maxLines: Constants
-                                        //       .desktopMaxLinesBeforeScroll,
-                                        //   controller:
-                                        //       descriptionEditingController,
-                                        //   context: context,
-                                        //   onEditingComplete: updateDescription,
-                                        // ),
                                       ]),
                                 )
                               ]),
@@ -387,14 +333,6 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               // Title && Close Button
-              // TitleBar(
-              //   context: context,
-              //   title: "New Group",
-              //   checkClose: checkClose,
-              //   padding:
-              //       const EdgeInsets.symmetric(horizontal: Constants.padding),
-              //   handleClose: handleClose,
-              // ),
 
               _buildTitleBar(),
 
@@ -406,37 +344,8 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
                     physics: scrollPhysics,
                     children: [
                       _buildNameTile(),
-
-                      // Tiles.nameTile(
-                      //     context: context,
-                      //     leading: ListTileWidgets.groupIcon(
-                      //         currentContext: context,
-                      //         iconPadding:
-                      //             const EdgeInsets.all(Constants.padding),
-                      //         outerPadding: const EdgeInsets.symmetric(
-                      //           horizontal: Constants.halfPadding,
-                      //         )),
-                      //     hintText: "Group Name",
-                      //     errorText: nameErrorText,
-                      //     controller: nameEditingController,
-                      //     outerPadding: const EdgeInsets.symmetric(
-                      //         vertical: Constants.padding),
-                      //     textFieldPadding: const EdgeInsets.only(
-                      //       left: Constants.padding,
-                      //     ),
-                      //     handleClear: clearNameField,
-                      //     onEditingComplete: updateName),
-
                       _buildToDosTile(),
-
                       const PaddedDivider(padding: Constants.padding),
-
-                      // Tiles.descriptionTile(
-                      //   controller: descriptionEditingController,
-                      //   onEditingComplete: updateDescription,
-                      //   context: context,
-                      // ),
-
                       _buildDescriptionTile(mobile: smallScreen),
                     ]),
               ),
@@ -521,8 +430,6 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
                       useRootNavigator: false,
                       context: context,
                       builder: (BuildContext context) {
-                        // Provider.of<ToDoViewModel>(context, listen: false)
-                        //     .fromModel(model: toDo);
                         tVM.fromModel(model: toDo);
                         return const UpdateToDoScreen();
                       });

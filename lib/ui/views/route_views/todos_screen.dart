@@ -67,19 +67,14 @@ class _ToDosListScreen extends State<ToDosListScreen> {
       return;
     }
 
-    // Uh, DUH, this will be null if reduce motion.
     if (mounted) {
       setState(() => item.fade = Fade.fadeOut);
-      await Future.delayed(Duration(
-          milliseconds: (toDoProvider.userViewModel?.reduceMotion ?? false)
-              ? 0
-              : Constants.fadeOutTime));
+      await Future.delayed(const Duration(milliseconds: Constants.fadeOutTime));
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    print("vm: ${toDoProvider.userViewModel?.reduceMotion}");
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
         return Padding(

@@ -83,68 +83,7 @@ class _UpdateSubtaskScreen extends State<UpdateSubtaskScreen> {
                   child: Column(mainAxisSize: MainAxisSize.min, children: [
                     _buildTitleBar(),
                     const PaddedDivider(padding: Constants.halfPadding),
-                    // Tiles.nameTile(
-                    //     context: context,
-                    //     leading: ListTileWidgets.checkbox(
-                    //       scale: Constants.largeCheckboxScale,
-                    //       completed: subtask.completed,
-                    //       onChanged: (value) {
-                    //         if (mounted) {
-                    //           setState(() {
-                    //             checkClose =
-                    //                 userProvider.curUser?.checkClose ?? true;
-                    //             subtask.completed = value!;
-                    //           });
-                    //         }
-                    //       },
-                    //     ),
-                    //     hintText: "Step Name",
-                    //     errorText: nameErrorText,
-                    //     controller: nameEditingController,
-                    //     outerPadding: const EdgeInsets.all(Constants.padding),
-                    //     textFieldPadding:
-                    //         const EdgeInsets.only(left: Constants.halfPadding),
-                    //     handleClear: () {
-                    //       if (mounted) {
-                    //         setState(() {
-                    //           checkClose = userProvider.curUser?.checkClose ?? true;
-                    //           nameEditingController.clear();
-                    //           subtask.name = "";
-                    //         });
-                    //       }
-                    //     },
-                    //     onEditingComplete: () {
-                    //       if (mounted) {
-                    //         setState(() {
-                    //           checkClose = userProvider.curUser?.checkClose ?? true;
-                    //           subtask.name = nameEditingController.text;
-                    //         });
-                    //       }
-                    //     }),
                     _buildNameTile(),
-
-                    // Tiles.weightTile(
-                    //   outerPadding: const EdgeInsets.all(Constants.doublePadding),
-                    //   batteryPadding:
-                    //       const EdgeInsets.symmetric(horizontal: Constants.padding),
-                    //   constraints: const BoxConstraints(maxWidth: 200),
-                    //   weight: subtask.weight.toDouble(),
-                    //   max: Constants.maxTaskWeight.toDouble(),
-                    //   slider: Tiles.weightSlider(
-                    //       weight: subtask.weight.toDouble(),
-                    //       handleWeightChange: (value) {
-                    //         if (null == value) {
-                    //           return;
-                    //         }
-                    //         if (mounted) {
-                    //           setState(() {
-                    //             checkClose =
-                    //                 userProvider.curUser?.checkClose ?? true;
-                    //             subtask.weight = value.toInt();
-                    //           });
-                    //         }
-                    //       }),
-                    // ),
                     _buildWeightTile(),
                     const PaddedDivider(padding: Constants.halfPadding),
                     Tiles.updateAndDeleteButtons(
@@ -196,22 +135,6 @@ class _UpdateSubtaskScreen extends State<UpdateSubtaskScreen> {
         ),
       );
 
-// Tiles.nameTile(
-//     context: context,
-//     leading: ListTileWidgets.checkbox(
-//       scale: Constants.largeCheckboxScale,
-//       completed: subtask.completed,
-//       onChanged: (value) {
-//         if (mounted) {
-//           setState(() {
-//             checkClose =
-//                 userProvider.curUser?.checkClose ?? true;
-//             subtask.completed = value!;
-//           });
-//         }
-//       },
-//     ),
-
   Widget _buildNameTile() => ValueListenableBuilder<String?>(
       valueListenable: _nameErrorText,
       builder: (BuildContext context, String? errorText, Widget? child) =>
@@ -250,29 +173,6 @@ class _UpdateSubtaskScreen extends State<UpdateSubtaskScreen> {
                       vm.name = "";
                     }),
           ));
-
-// Tiles.weightTile(
-//   outerPadding: const EdgeInsets.all(Constants.doublePadding),
-//   batteryPadding:
-//       const EdgeInsets.symmetric(horizontal: Constants.padding),
-//   constraints: const BoxConstraints(maxWidth: 200),
-//   weight: subtask.weight.toDouble(),
-//   max: Constants.maxTaskWeight.toDouble(),
-//   slider: Tiles.weightSlider(
-//       weight: subtask.weight.toDouble(),
-//       handleWeightChange: (value) {
-//         if (null == value) {
-//           return;
-//         }
-//         if (mounted) {
-//           setState(() {
-//             checkClose =
-//                 userProvider.curUser?.checkClose ?? true;
-//             subtask.weight = value.toInt();
-//           });
-//         }
-//       }),
-// ),
 
   Widget _buildWeightTile() => Selector<SubtaskViewModel, int>(
       selector: (BuildContext context, SubtaskViewModel vm) => vm.weight,

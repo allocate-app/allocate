@@ -43,6 +43,13 @@ class InvalidRepeatingException implements Exception {
   toString() => cause;
 }
 
+class FailureToScheduleException implements Exception {
+  String cause;
+  FailureToScheduleException(this.cause);
+  @override
+  toString() => cause;
+}
+
 class GroupNotFoundException implements Exception {
   String cause;
 

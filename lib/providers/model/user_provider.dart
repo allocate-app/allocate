@@ -39,7 +39,7 @@ class UserProvider extends ChangeNotifier {
   UserViewModel? viewModel;
 
   // TODO: remove curUser?.
-  User? curUser;
+  // User? curUser;
   List<User> users = [];
 
   UserProvider({this.viewModel}) {

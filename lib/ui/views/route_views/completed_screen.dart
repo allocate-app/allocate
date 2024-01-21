@@ -41,10 +41,11 @@ class _CompletedListScreen extends State<CompletedListScreen> {
   }
 
   void onFetch({List<ToDo>? items}) {
-    Set<ToDo> itemSet = toDoProvider.toDos.toSet();
     if (null == items) {
       return;
     }
+
+    Set<ToDo> itemSet = toDoProvider.toDos.toSet();
     for (ToDo toDo in items) {
       if (!itemSet.contains(toDo)) {
         toDo.fade = Fade.fadeIn;
@@ -72,10 +73,7 @@ class _CompletedListScreen extends State<CompletedListScreen> {
 
     if (mounted) {
       setState(() => item.fade = Fade.fadeOut);
-      await Future.delayed(Duration(
-          milliseconds: (toDoProvider.userViewModel?.reduceMotion ?? false)
-              ? 0
-              : Constants.fadeOutTime));
+      await Future.delayed(const Duration(milliseconds: Constants.fadeOutTime));
     }
   }
 
@@ -123,8 +121,10 @@ class _CompletedListScreen extends State<CompletedListScreen> {
                   onAppend: (toDoProvider.userViewModel?.reduceMotion ?? false)
                       ? null
                       : onAppend,
-                  getAnimationKey: () => ValueKey(
-                      toDoProvider.sorter.sortMethod.index *
+                  getAnimationKey: (toDoProvider.userViewModel?.reduceMotion ??
+                          false)
+                      ? null
+                      : () => ValueKey(toDoProvider.sorter.sortMethod.index *
                               (toDoProvider.sorter.descending ? -1 : 1) +
                           (toDoProvider.toDos.isEmpty ? 0 : 1)),
                   listviewBuilder: (

@@ -327,12 +327,17 @@ class DeadlineProvider extends ChangeNotifier {
         .toLocal()
         .format(pattern: "MMM d, hh:mm a")
         .toString();
-    await _notificationService.scheduleNotification(
-        id: deadline.notificationID!,
-        warnDate: deadline.warnDate!,
-        message:
-            "${deadline.name} is due on: $newDue\n It's okay to ask for more time.",
-        payload: "DEADLINE\n${deadline.id}");
+    try {
+      await _notificationService.scheduleNotification(
+          id: deadline.notificationID!,
+          warnDate: deadline.warnDate!,
+          message:
+              "${deadline.name} is due on: $newDue\n It's okay to ask for more time.",
+          payload: "DEADLINE\n${deadline.id}");
+    } on FailureToScheduleException catch (e, stacktrace) {
+      log("${e.cause}\n $stacktrace");
+      return Future.error(e);
+    }
   }
 
   Future<void> cancelNotification({Deadline? deadline}) async {

@@ -158,7 +158,9 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
     await deadlineProvider.createDeadline(vm.toModel()).catchError(
         (e) => Tiles.displayError(context: context, e: e),
         test: (e) =>
-            e is FailureToCreateException || e is FailureToUploadException);
+            e is FailureToCreateException ||
+            e is FailureToUploadException ||
+            e is FailureToScheduleException);
 
     await eventProvider
         .insertEventModel(model: deadlineProvider.curDeadline!, notify: true)

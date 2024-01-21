@@ -9,7 +9,7 @@ import 'package:flutter_acrylic/widgets/transparent_macos_sidebar.dart';
 import "package:provider/provider.dart";
 
 import '../../../model/task/group.dart';
-import '../../../providers/application/app_provider.dart';
+import '../../../providers/application/daily_reset_provider.dart';
 import '../../../providers/application/layout_provider.dart';
 import '../../../providers/application/search_provider.dart';
 import '../../../providers/application/theme_provider.dart';
@@ -54,7 +54,7 @@ class _HomeScreen extends State<HomeScreen> {
   late final ThemeProvider themeProvider;
   late final SearchProvider searchProvider;
   late final LayoutProvider layoutProvider;
-  late final AppProvider appProvider;
+  late final DailyResetProvider appProvider;
 
   late final ScrollController navScrollController;
 
@@ -65,7 +65,7 @@ class _HomeScreen extends State<HomeScreen> {
   int get myDayTotal =>
       userProvider.myDayTotal +
       routineProvider.routineWeight +
-      (userProvider.curUser?.dayCost ?? 0);
+      (userProvider.viewModel?.dayCost ?? 0);
 
   @override
   void initState() {
@@ -78,7 +78,7 @@ class _HomeScreen extends State<HomeScreen> {
   }
 
   void initializeProviders() {
-    appProvider = Provider.of<AppProvider>(context, listen: false);
+    appProvider = Provider.of<DailyResetProvider>(context, listen: false);
     toDoProvider = Provider.of<ToDoProvider>(context, listen: false);
     routineProvider = Provider.of<RoutineProvider>(context, listen: false);
     reminderProvider = Provider.of<ReminderProvider>(context, listen: false);

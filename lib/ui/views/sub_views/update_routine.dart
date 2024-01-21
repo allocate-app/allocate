@@ -172,8 +172,12 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
     if (null == items) {
       return;
     }
+    Set<Subtask> itemSet = vm.subtasks.toSet();
+
     for (Subtask subtask in items) {
-      subtask.fade = Fade.fadeIn;
+      if (!itemSet.contains(subtask)) {
+        subtask.fade = Fade.fadeIn;
+      }
     }
   }
 
@@ -183,10 +187,7 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
     }
     if (mounted) {
       setState(() => item.fade = Fade.fadeOut);
-      await Future.delayed(Duration(
-          milliseconds: (routineProvider.userViewModel?.reduceMotion ?? false)
-              ? 0
-              : Constants.fadeOutTime));
+      await Future.delayed(const Duration(milliseconds: Constants.fadeOutTime));
     }
   }
 
@@ -433,7 +434,6 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
   Widget _buildSubtasksTile() => Selector<RoutineViewModel, UniqueKey>(
       selector: (BuildContext context, RoutineViewModel vm) => vm.subtaskKey,
       builder: (BuildContext context, UniqueKey value, Widget? child) =>
-          // TODO: Check and see if padding needed.
           Tiles.subtasksTile(
               context: context,
               id: vm.id,
