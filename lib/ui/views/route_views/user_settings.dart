@@ -1,7 +1,6 @@
 import "dart:io";
 
 import "package:allocate/ui/widgets/check_delete_dialog.dart";
-import "package:auto_size_text/auto_size_text.dart";
 import "package:flutter/foundation.dart";
 import "package:flutter/material.dart";
 import "package:intl/intl.dart";
@@ -9,6 +8,12 @@ import "package:provider/provider.dart";
 
 import "../../../providers/application/layout_provider.dart";
 import '../../../providers/application/theme_provider.dart';
+import "../../../providers/model/deadline_provider.dart";
+import "../../../providers/model/group_provider.dart";
+import "../../../providers/model/reminder_provider.dart";
+import "../../../providers/model/routine_provider.dart";
+import "../../../providers/model/subtask_provider.dart";
+import "../../../providers/model/todo_provider.dart";
 import '../../../providers/model/user_provider.dart';
 import "../../../providers/viewmodels/user_viewmodel.dart";
 import "../../../util/constants.dart";
@@ -16,6 +21,7 @@ import "../../../util/enums.dart";
 import "../../../util/numbers.dart";
 import "../../widgets/screen_header.dart";
 import "../../widgets/settings_screen_widgets.dart";
+import "loading_screen.dart";
 
 class UserSettingsScreen extends StatefulWidget {
   const UserSettingsScreen({super.key});
@@ -30,11 +36,19 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
 
   late final UserProvider userProvider;
   late final UserViewModel vm;
+  late final ToDoProvider toDoProvider;
+  late final RoutineProvider routineProvider;
+  late final ReminderProvider reminderProvider;
+  late final DeadlineProvider deadlineProvider;
+  late final GroupProvider groupProvider;
+  late final SubtaskProvider subtaskProvider;
+
   late final ThemeProvider themeProvider;
   late final LayoutProvider layoutProvider;
 
   late final ScrollController mobileScrollController;
   late final ScrollController desktopScrollController;
+  late final ScrollController desktopSideController;
   late final ScrollPhysics scrollPhysics;
 
   late MenuController _scaffoldController;
@@ -48,6 +62,13 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
     themeProvider = Provider.of<ThemeProvider>(context, listen: false);
     layoutProvider = Provider.of<LayoutProvider>(context, listen: false);
 
+    toDoProvider = Provider.of<ToDoProvider>(context, listen: false);
+    routineProvider = Provider.of<RoutineProvider>(context, listen: false);
+    reminderProvider = Provider.of<ReminderProvider>(context, listen: false);
+    deadlineProvider = Provider.of<DeadlineProvider>(context, listen: false);
+    groupProvider = Provider.of<GroupProvider>(context, listen: false);
+    subtaskProvider = Provider.of<SubtaskProvider>(context, listen: false);
+
     _mockOnline = true;
 
     _scaffoldController = MenuController();
@@ -55,6 +76,7 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
 
     mobileScrollController = ScrollController();
     desktopScrollController = ScrollController();
+    desktopSideController = ScrollController();
     ScrollPhysics scrollBehaviour = (Platform.isMacOS || Platform.isIOS)
         ? const BouncingScrollPhysics()
         : const ClampingScrollPhysics();
@@ -89,8 +111,6 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
         mainAxisSize: MainAxisSize.min,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Header.
-          _buildHeader(),
           Flexible(
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -98,30 +118,44 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Flexible(
-                  child: ListView(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Padding(
-                        padding: const EdgeInsets.only(
-                            top: Constants.quadPadding +
-                                Constants.doublePadding +
-                                Constants.padding),
-                        child: _buildEnergyTile(),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.only(
-                          top: Constants.quadPadding,
-                          bottom: Constants.doublePadding,
+                      // Header.
+                      _buildHeader(),
+                      Flexible(
+                        child: Scrollbar(
+                          controller: desktopSideController,
+                          child: ListView(
+                            shrinkWrap: true,
+                            physics: scrollPhysics,
+                            controller: desktopSideController,
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.only(
+                                    top: Constants.quadPadding +
+                                        Constants.doublePadding +
+                                        Constants.padding),
+                                child: _buildEnergyTile(),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.only(
+                                  top: Constants.quadPadding,
+                                  bottom: Constants.doublePadding,
+                                ),
+                                child: _buildQuickInfo(),
+                              ),
+                              const Padding(
+                                padding:
+                                    EdgeInsets.all(Constants.halfPadding - 1),
+                                child: SizedBox.shrink(),
+                              ),
+                              _buildSignInOut(),
+                              _buildDeleteAccount(),
+                            ],
+                          ),
                         ),
-                        child: _buildQuickInfo(),
                       ),
-                      const Padding(
-                        padding: EdgeInsets.all(Constants.halfPadding - 1),
-                        child: SizedBox.shrink(),
-                      ),
-                      _buildSignOut(),
-                      _buildDeleteAccount(),
                     ],
                   ),
                 ),
@@ -190,7 +224,7 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
                     // ABOUT
                     _buildAboutSection(),
                     // SIGN OUT
-                    _buildSignOut(),
+                    _buildSignInOut(),
 
                     // DELETE ACCOUNT
                     _buildDeleteAccount(),
@@ -206,24 +240,38 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
         ));
   }
 
-  // TODO: finish User switcher ->
   Widget _buildQuickInfo() {
-    return Consumer<UserProvider>(
-      builder: (BuildContext context, UserProvider value, Widget? child) {
-        return Selector<UserViewModel, (String, String?, String?)>(
-            selector: (BuildContext context, UserViewModel vm) =>
-                (vm.username, vm.email, vm.uuid),
-            builder: (BuildContext context,
-                (String, String?, String?) watchInfo, Widget? child) {
-              return SettingsScreenWidgets.userQuickInfo(
-                userProvider: value,
-                viewModel: vm,
-                outerPadding:
-                    const EdgeInsets.only(bottom: Constants.halfPadding),
-              );
-            });
-      },
-    );
+    // TODO: implement a user switcher.
+    // return Consumer<UserProvider>(
+    //   builder: (BuildContext context, UserProvider value, Widget? child) {
+    //     return Selector<UserViewModel, (String, String?, String?)>(
+    //         selector: (BuildContext context, UserViewModel vm) =>
+    //             (vm.username, vm.email, vm.uuid),
+    //         builder: (BuildContext context,
+    //             (String, String?, String?) watchInfo, Widget? child) {
+    //           return SettingsScreenWidgets.userQuickInfo(
+    //             context: context,
+    //             // userProvider: value,
+    //             viewModel: vm,
+    //             outerPadding:
+    //                 const EdgeInsets.only(bottom: Constants.halfPadding),
+    //           );
+    //         });
+    //   },
+    // );
+
+    return Selector<UserViewModel, (String, String?, String?)>(
+        selector: (BuildContext context, UserViewModel vm) =>
+            (vm.username, vm.email, vm.uuid),
+        builder: (BuildContext context, (String, String?, String?) watchInfo,
+            Widget? child) {
+          return SettingsScreenWidgets.userQuickInfo(
+            context: context,
+            // userProvider: value,
+            viewModel: vm,
+            outerPadding: const EdgeInsets.only(bottom: Constants.halfPadding),
+          );
+        });
   }
 
   Widget _buildEnergyTile({double maxScale = 1.5}) {
@@ -268,8 +316,13 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
                         })
                     : SettingsScreenWidgets.tapTile(
                         leading: const Icon(Icons.cloud_sync_rounded),
-                        title: "Cloud backup",
+                        title: "Sign up for cloud backup",
                         onTap: () {
+                          if (kDebugMode) {
+                            setState(() {
+                              _mockOnline = true;
+                            });
+                          }
                           print("Sign up");
                         }),
                 if (value.$1 || (kDebugMode && _mockOnline))
@@ -287,6 +340,8 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
                       onTap: () {
                         print("Edit Password");
                       }),
+
+                // This should also only appear with online connection.
                 if (value.$2 < Constants.maxUserCount)
                   SettingsScreenWidgets.tapTile(
                       leading: const Icon(Icons.account_circle_rounded),
@@ -326,11 +381,6 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
                 value: value,
                 onChanged: (bool value) {
                   vm.checkDelete = value;
-                  // if (mounted && kDebugMode) {
-                  //   setState(() {
-                  //     _checkDelete = value;
-                  //   });
-                  // }
                 });
           },
         ),
@@ -530,9 +580,11 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
             leading: const Icon(Icons.gradient_rounded),
             label: "${(100 * value.$1).toInt()}",
             onOpen: () {
+              desktopScrollController.addListener(anchorWatchScroll);
               mobileScrollController.addListener(anchorWatchScroll);
             },
             onClose: () {
+              desktopScrollController.removeListener(anchorWatchScroll);
               mobileScrollController.removeListener(anchorWatchScroll);
             },
             onChanged: (value.$2)
@@ -559,9 +611,11 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
             leading: const Icon(Icons.gradient_rounded),
             label: "${(100 * value.$1).toInt()}",
             onOpen: () {
+              desktopScrollController.addListener(anchorWatchScroll);
               mobileScrollController.addListener(anchorWatchScroll);
             },
             onClose: () {
+              desktopScrollController.removeListener(anchorWatchScroll);
               mobileScrollController.removeListener(anchorWatchScroll);
             },
             onChanged: (value.$2)
@@ -584,32 +638,10 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
   Widget _buildHeader() => Selector<UserViewModel, bool>(
         selector: (BuildContext context, UserViewModel vm) => vm.syncOnline,
         builder: (BuildContext context, bool value, Widget? child) =>
-            ScreenHeader(
-          outerPadding: const EdgeInsets.all(Constants.padding),
-          leadingIcon: const Icon(Icons.settings_rounded),
+            const ScreenHeader(
+          outerPadding: EdgeInsets.all(Constants.padding),
+          leadingIcon: Icon(Icons.settings_rounded),
           header: "Settings",
-          // TODO: sign in widgets.
-          trailing: (value || (kDebugMode && _mockOnline))
-              ? FilledButton(
-                  onPressed: () {
-                    if (mounted && kDebugMode) {
-                      setState(() {
-                        _mockOnline = !_mockOnline;
-                      });
-                    }
-                  },
-                  child: const AutoSizeText("Sign in"),
-                )
-              : FilledButton(
-                  onPressed: () {
-                    if (mounted && kDebugMode) {
-                      setState(() {
-                        _mockOnline = !_mockOnline;
-                      });
-                    }
-                  },
-                  child: const AutoSizeText("Sign up"),
-                ),
         ),
       );
 
@@ -660,22 +692,43 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
         ]);
   }
 
-  // This should probably select vm.
-  Widget _buildSignOut() {
-    return SettingsScreenWidgets.settingsSection(
-      context: context,
-      title: "",
-      entries: [
-        SettingsScreenWidgets.tapTile(
-            leading: Icon(Icons.highlight_off_rounded,
-                color: Theme.of(context).colorScheme.tertiary),
-            title: "Sign out",
-            onTap: () async {
-              print("Sign out");
-              // Sign out of supabase, then push to account switcher.
-            }),
-      ],
-    );
+  Widget _buildSignInOut() {
+    return ValueListenableBuilder(
+        valueListenable: userProvider.isConnected,
+        builder: (BuildContext context, bool value, Widget? child) {
+          if ((value || (kDebugMode && _mockOnline))) {
+            return SettingsScreenWidgets.settingsSection(
+              context: context,
+              title: "",
+              entries: [
+                SettingsScreenWidgets.tapTile(
+                    leading: Icon(Icons.highlight_off_rounded,
+                        color: Theme.of(context).colorScheme.tertiary),
+                    title: "Sign out",
+                    onTap: () async {
+                      if (kDebugMode) {
+                        setState(() {
+                          _mockOnline = false;
+                        });
+                      }
+                      print("Sign out");
+                      // Sign out of supabase, then push to account switcher.
+                    }),
+              ],
+            );
+          }
+          // TODO: finish sign in dialog an hook up tile
+          if (vm.syncOnline) {
+            return SettingsScreenWidgets.tapTile(
+                leading: const Icon(Icons.login_rounded),
+                title: "Sign in",
+                onTap: () async {
+                  print("Sign in");
+                });
+          }
+
+          return const SizedBox.shrink();
+        });
   }
 
   // This should probably select userProvider.
@@ -704,9 +757,31 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
                 }
                 bool delete = deleteInfo[0];
                 if (delete) {
-                  print("Deleted Acount");
-                  //await userProvider.deleteUser();
-                  // Push to Login screen/user switcher.
+                  // PUSH LOADING SCREEN TO CONTEXT.
+                  // NUKE THE DB.
+                  // RESTORE TO HOME SCRN w/default settings.
+                  Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (BuildContext context) =>
+                            const LoadingScreen(),
+                      ));
+                  await Future.wait(
+                    [
+                      toDoProvider.clearDatabase(),
+                      routineProvider.clearDatabase(),
+                      reminderProvider.clearDatabase(),
+                      deadlineProvider.clearDatabase(),
+                      groupProvider.clearDatabase(),
+                      subtaskProvider.clearDatabase(),
+
+                      // This should notify -> resetting userVM, resets everything.
+                      userProvider.deleteUser(),
+                    ],
+                  ).whenComplete(() {
+                    layoutProvider.selectedPageIndex = 0;
+                    Navigator.pop(context);
+                  });
                 }
               });
             }),
@@ -717,7 +792,7 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
   List<Widget> getAvailableWindowEffects() {
     List<Widget> validEffects = List.empty(growable: true);
 
-    bool filterWindows = (Platform.isWindows && !layoutProvider.win11);
+    bool filterWindows = (Platform.isWindows && !themeProvider.win11);
     for (Effect effect in Effect.values) {
       switch (effect) {
         case Effect.mica:

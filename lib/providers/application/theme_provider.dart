@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flex_seed_scheme/flex_seed_scheme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_acrylic/flutter_acrylic.dart';
@@ -30,6 +31,12 @@ class ThemeProvider extends ChangeNotifier {
   late double _scaffoldOpacity;
   late double _sidebarOpacity;
   late bool _useTransparency;
+
+  // This is for allowing mica
+  bool _win11 = false;
+
+  final DeviceInfoPlugin _deviceInfoPlugin = DeviceInfoPlugin();
+  late WindowsDeviceInfo _windowsDeviceInfo;
 
   // Make private as necessary.
   late List<Color> recentColors;
@@ -161,8 +168,11 @@ class ThemeProvider extends ChangeNotifier {
           ? 1
           : 0;
 
+  bool get win11 => _win11;
+
   void setUser({UserViewModel? newUser}) {
     userViewModel = newUser;
+    init();
     notifyListeners();
   }
 
@@ -171,7 +181,7 @@ class ThemeProvider extends ChangeNotifier {
   }
 
   // Generate according to user params.
-  void init() {
+  Future<void> init() async {
     // Get colors
     _primarySeed =
         Color(userViewModel?.primarySeed ?? Constants.defaultPrimaryColorSeed);
@@ -184,7 +194,8 @@ class ThemeProvider extends ChangeNotifier {
 
     _themeType = userViewModel?.themeType ?? ThemeType.system;
     _toneMapping = userViewModel?.toneMapping ?? ToneMapping.system;
-    _windowEffect = userViewModel?.windowEffect ?? Effect.disabled;
+    _windowEffect =
+        userViewModel?.windowEffect ?? Constants.defaultWindowEffect;
     _useUltraHighContrast = userViewModel?.useUltraHighContrast ?? false;
     _reduceMotion = userViewModel?.reduceMotion ?? false;
     _scaffoldOpacity =
@@ -195,6 +206,11 @@ class ThemeProvider extends ChangeNotifier {
         Effect.disabled != userViewModel?.windowEffect;
 
     recentColors = List.empty(growable: true);
+
+    if (Platform.isWindows) {
+      _windowsDeviceInfo = await _deviceInfoPlugin.windowsInfo;
+      _win11 = (_windowsDeviceInfo.buildNumber >= 22000);
+    }
 
     // Get tonemapping.
     _setToneMapping(tone: _toneMapping);
@@ -323,4 +339,19 @@ class ThemeProvider extends ChangeNotifier {
       );
     }
   }
+
+// uservm needs to access this in its default constructor.
+// Effect get defaultWindowEffect {
+//   if (Platform.isIOS || Platform.isAndroid) {
+//     return Effect.disabled;
+//   }
+//   if (Platform.isWindows) {
+//     if (_win11) {
+//       return Effect.acrylic;
+//     }
+//     return Effect.aero;
+//   }
+//
+//   return Effect.transparent;
+// }
 }

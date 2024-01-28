@@ -1,29 +1,36 @@
 import 'dart:async';
 import 'dart:developer';
 
+import 'package:allocate/providers/application/daily_reset_provider.dart';
 import 'package:flutter/foundation.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../../model/user/user.dart';
+import '../../model/user/allocate_user.dart';
 import '../../services/authentication_service.dart';
+import '../../services/supabase_service.dart';
 import '../../services/user_storage_service.dart';
 import '../../util/constants.dart';
-import '../../util/enums.dart';
 import '../../util/exceptions.dart';
-import '../../util/sorting/deadline_sorter.dart';
-import '../../util/sorting/group_sorter.dart';
-import '../../util/sorting/reminder_sorter.dart';
-import '../../util/sorting/routine_sorter.dart';
-import '../../util/sorting/todo_sorter.dart';
+import '../../util/interfaces/authenticator.dart';
 import '../viewmodels/user_viewmodel.dart';
 
-// TODO: re-implement this -> Migrate params to LayoutProvider.
 class UserProvider extends ChangeNotifier {
-  final _userStorageService = UserStorageService();
-  final _authenticationService = AuthenticationService();
+  // This has no DI at the moment -> At some point I should probably write
+  // an interface and refactor DI.
+  final UserStorageService _userStorageService = UserStorageService.instance;
+  late final Authenticator _authenticationService;
 
-  // TODO: either valueNotifier or move to vm.
-  int myDayTotal = 0;
+  // This may not be needed.
+  late ValueNotifier<bool> isConnected;
 
+  late StreamSubscription<AuthState> _connectionSubscription;
+
+  late ValueNotifier<int> myDayTotal;
+
+  bool shouldUpdate = false;
+  bool updating = false;
+
+  // FUTURE TODO: multiple user switching.
   int _userCount = 1;
 
   int get userCount => _userCount;
@@ -38,159 +45,154 @@ class UserProvider extends ChangeNotifier {
 
   UserViewModel? viewModel;
 
-  // TODO: remove curUser?.
-  // User? curUser;
-  List<User> users = [];
+  late Timer updateTimer;
 
-  UserProvider({this.viewModel}) {
-    init().whenComplete(() {
-      notifyListeners();
+  // FUTURE TODO: user switching with secure-storage.
+  // TODO: call init on splash screen to handle multiple-users in db.
+  UserProvider({this.viewModel, Authenticator? auth})
+      : isConnected = ValueNotifier<bool>(false),
+        myDayTotal = ValueNotifier<int>(0),
+        _authenticationService = auth ?? AuthenticationService.instance {
+    init().whenComplete(notifyListeners);
+  }
+
+  Future<void> init() async {
+    initSubscription();
+    await setUser();
+    if ((viewModel?.lastOpened.day ?? Constants.today.day - Constants.today.day)
+            .abs() >
+        0) {
+      DailyResetProvider.instance.dailyReset();
+    }
+
+    updateTimer = Timer.periodic(Constants.userUpdateTime, requestUpdate);
+  }
+
+  void initSubscription() {
+    if (SupabaseService.instance.debug) {
+      return;
+    }
+    _connectionSubscription =
+        SupabaseService.instance.authSubscription.listen((AuthState data) {
+      // final AuthChangeEvent event = data.event;
+      bool connection = SupabaseService.instance.isConnected;
+      if (connection ^ isConnected.value) {
+        isConnected.value = connection;
+      }
     });
   }
 
-  // Init.
-  // Get user, (last updated)
-  // Swap user, *maybe store JWT?* see if possible
-  // Sign in -> should query supabase.
-  // Sign out.
-  // Update user.
-  // None of this sync nonsense.
-
-  Future<void> init() async {
-    await getUser();
-  }
-
-  // TODO: fix this. Can likely just be update.
-  Future<void> createUser(
-      {required String userName,
-      bool syncOnline = false,
-      bool? isSynced,
-      int? bandwidth,
-      ThemeType? theme,
-      int? curMornID,
-      int? curAftID,
-      int? curEveID,
-      GroupSorter? groupSorter,
-      DeadlineSorter? deadlineSorter,
-      ReminderSorter? reminderSorter,
-      RoutineSorter? routineSorter,
-      ToDoSorter? toDoSorter}) async {
-    curUser = User(
-        id: Constants.generateID(),
-        username: userName,
-        syncOnline: syncOnline,
-        isSynced: isSynced ?? false,
-        themeType: theme ?? ThemeType.dark,
-        curMornID: curMornID,
-        curAftID: curAftID,
-        curEveID: curEveID,
-        groupSorter: groupSorter ?? GroupSorter(),
-        deadlineSorter: deadlineSorter ?? DeadlineSorter(),
-        reminderSorter: reminderSorter ?? ReminderSorter(),
-        routineSorter: routineSorter ?? RoutineSorter(),
-        toDoSorter: toDoSorter ?? ToDoSorter(),
-        lastOpened: DateTime.now(),
-        lastUpdated: DateTime.now(),
-        primarySeed: Constants.defaultPrimaryColorSeed);
-    // This WILL require a "check close" parameter.
-    // TODO: implement checkClose preference.
-    // If this needs to scale, migrate data to a userprefs table and relate by uid.
-
-    try {
-      _userStorageService.createUser(user: curUser!);
-    } on FailureToCreateException catch (e) {
-      log(e.cause);
-      return Future.error(e);
-    } on FailureToUploadException catch (e) {
-      log(e.cause);
-      return Future.error(e);
+  void requestUpdate(Timer timer) {
+    if (!shouldUpdate || updating || null == viewModel) {
+      return;
     }
-    notifyListeners();
+    updateUser();
   }
 
   Future<void> updateUser() async {
+    updating = true;
     try {
-      // _userStorageService.updateUser(user: curUser!);
-    } on FailureToUpdateException catch (e) {
-      log(e.cause);
+      await _userStorageService.updateUser(user: viewModel!.toModel());
+    } on FailureToUpdateException catch (e, stacktrace) {
+      log(e.cause, stackTrace: stacktrace);
+      shouldUpdate = true;
       return Future.error(e);
-    } on FailureToUploadException catch (e) {
-      log(e.cause);
+    } on FailureToUploadException catch (e, stacktrace) {
+      log(e.cause, stackTrace: stacktrace);
+      shouldUpdate = true;
       return Future.error(e);
     }
-    // notifyListeners();
+    shouldUpdate = false;
+    updating = false;
   }
 
   Future<void> signUp({required String email, required String password}) async {
     try {
-      _authenticationService.signUpEmailPassword(
+      // This also throws UserExistsException -> catch accordingly
+      viewModel?.uuid = await _authenticationService.signUpEmailPassword(
           email: email, password: password);
 
-      //Not sure.
+      viewModel?.syncOnline = true;
     } on SignUpFailedException catch (e) {
-      log(e.cause);
-      return Future.error(e);
-
-      // Uh, some sort of UI thing.
-    } on UserExistsException catch (e) {
       log(e.cause);
       return Future.error(e);
     }
   }
 
-  // TODO: refactor this entire implementation.
   Future<void> signIn({required String email, required String password}) async {
     try {
-      _authenticationService.signInEmailPassword(
+      await _authenticationService.signUpEmailPassword(
           email: email, password: password);
-
-      // For switching users.
-      // -- Needs rewriting.
-      _userStorageService.fetchUser();
-
-      User? newUser = await _userStorageService.getUser();
-      curUser = newUser ?? curUser;
-      curUser!.syncOnline = true;
-    } on LoginFailedException catch (e) {
-      log(e.cause);
-      return Future.error(e);
-
-      // uh, some sort of UI thing? -> warning popup.
-    } on UserSyncException catch (e) {
-      // I do not know how to handle this yet - Possibly an edge function in supabase.
-      log(e.cause);
-      return Future.error(e);
-    } on UserException catch (e) {
-      log(e.cause);
-      // If, for some reason, there are two users in the db,
-      // opting to keep the current user to serialize and deleting the others.
-      // This should have happened during the online fetch.
-      _userStorageService.clearUser();
-      return Future.error(e);
+    } on LoginFailedException catch (e, stacktrace) {
+      log(e.cause, stackTrace: stacktrace);
     }
-    updateUser();
+    viewModel?.isSynced = SupabaseService.instance.isConnected;
+  }
+
+  Future<void> updateEmail({required String newEmail}) async {
+    try {
+      viewModel?.email =
+          await _authenticationService.updateEmail(newEmail: newEmail);
+    } on FailureToUpdateException catch (e, stacktrace) {
+      log(e.cause, stackTrace: stacktrace);
+      return Future.error(e, stacktrace);
+    }
+  }
+
+  Future<void> updatePassword({required String newPassword}) async {
+    try {
+      await _authenticationService.updatePassword(newPassword: newPassword);
+    } on FailureToUpdateException catch (e, stacktrace) {
+      log(e.cause, stackTrace: stacktrace);
+      return Future.error(e, stacktrace);
+    }
+  }
+
+  // On sign-up.
+  Future<void> resendConfirmation({required String email}) async {
+    await _authenticationService.resendConfirmation(email: email);
+  }
+
+  Future<void> resendEmailChange({required String newEmail}) async {
+    await _authenticationService.resendEmailChange(newEmail: newEmail);
   }
 
   Future<void> signOut() async {
     await _authenticationService.signOut();
-    curUser!.syncOnline = false;
-    updateUser();
   }
 
-  Future<void> syncUser() async {
+  // Get the user, initialize the viewmodel.
+  Future<void> setUser() async {
     try {
-      await _userStorageService.syncUser(user: curUser!);
-    } on FailureToUploadException catch (e) {
-      log(e.cause);
-      return Future.error(e);
-    } on UserSyncException catch (e) {
-      log(e.cause);
-      return Future.error(e);
+      AllocateUser? user = await _userStorageService.getUser();
+      if (null != user) {
+        viewModel?.fromModel(model: user);
+      }
+      // This has a reference to the list of multiple users.
+      // TODO: Handle in the gui -> SplashScrn.
+    } on MultipleUsersException catch (e, stacktrace) {
+      log(e.cause, stackTrace: stacktrace);
+      return Future.error(e, stacktrace);
     }
+    notifyListeners();
   }
 
-  Future<void> getUser() async {
-    curUser = await _userStorageService.getUser();
+  Future<void> deleteUser() async {
+    AllocateUser? user = viewModel?.toModel();
+    if (null != user) {
+      try {
+        await _userStorageService.deleteUser(user: user);
+      } on FailureToDeleteException catch (e, stacktrace) {
+        log(e.cause, stackTrace: stacktrace);
+      }
+    }
+
+    await signOut();
+    viewModel?.clear();
     notifyListeners();
+  }
+
+  Future<void> dayReset() async {
+    await _userStorageService.deleteSweep();
   }
 }

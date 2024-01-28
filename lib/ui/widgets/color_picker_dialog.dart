@@ -141,16 +141,12 @@ class _ColorPickerDialog extends State<ColorPickerDialog> {
                                         Theme.of(context).primaryColor,
                                     enableTonalPalette: true,
                                     tonalColorSameSize: true,
-                                    tonalSubheading: const Tooltip(
-                                      message:
-                                          "Deselect tone to update picker type.",
-                                      child: Text(
-                                        "Tonal palette",
-                                        style: Constants.largeBodyText,
-                                        maxLines: 1,
-                                        softWrap: true,
-                                        overflow: TextOverflow.visible,
-                                      ),
+                                    tonalSubheading: const Text(
+                                      "Tonal palette",
+                                      style: Constants.largeBodyText,
+                                      maxLines: 1,
+                                      softWrap: true,
+                                      overflow: TextOverflow.visible,
                                     ),
                                     enableShadesSelection: true,
                                     heading: const Text(

@@ -60,7 +60,9 @@ class ReminderProvider extends ChangeNotifier {
       ReminderRepository? reminderRepository})
       : sorter = userViewModel?.reminderSorter ?? ReminderSorter(),
         _repeatService = repeatableService ?? RepeatableService.instance,
-        _reminderRepo = reminderRepository ?? ReminderRepo.instance;
+        _reminderRepo = reminderRepository ?? ReminderRepo.instance {
+    _reminderRepo.addListener(notifyListeners);
+  }
 
   void setUser({UserViewModel? newUser}) {
     userViewModel = newUser;
@@ -93,12 +95,12 @@ class ReminderProvider extends ChangeNotifier {
       if (curReminder!.repeatable) {
         await createTemplate(reminder: curReminder);
       }
-    } on FailureToCreateException catch (e) {
-      log(e.cause);
+    } on FailureToCreateException catch (e, stacktrace) {
+      log(e.cause, stackTrace: stacktrace);
       await cancelNotification();
-      return Future.error(e);
-    } on FailureToUploadException catch (e) {
-      log(e.cause);
+      return Future.error(e, stacktrace);
+    } on FailureToUploadException catch (e, stacktrace) {
+      log(e.cause, stackTrace: stacktrace);
       reminder.isSynced = false;
       return await updateReminder(reminder: reminder);
     }
@@ -131,13 +133,13 @@ class ReminderProvider extends ChangeNotifier {
       if (validateDueDate(dueDate: curReminder!.dueDate)) {
         await scheduleNotification(reminder: curReminder);
       }
-    } on FailureToUploadException catch (e) {
-      log(e.cause);
-      return Future.error(e);
-    } on FailureToUpdateException catch (e) {
-      log(e.cause);
+    } on FailureToUploadException catch (e, stacktrace) {
+      log(e.cause, stackTrace: stacktrace);
+      return Future.error(e, stacktrace);
+    } on FailureToUpdateException catch (e, stacktrace) {
+      log(e.cause, stackTrace: stacktrace);
       await cancelNotification();
-      return Future.error(e);
+      return Future.error(e, stacktrace);
     }
   }
 
@@ -146,9 +148,9 @@ class ReminderProvider extends ChangeNotifier {
     await cancelNotification(reminder: reminder);
     try {
       await _reminderRepo.delete(reminder);
-    } on FailureToDeleteException catch (e) {
-      log(e.cause);
-      return Future.error(e);
+    } on FailureToDeleteException catch (e, stacktrace) {
+      log(e.cause, stackTrace: stacktrace);
+      return Future.error(e, stacktrace);
     }
     notifyListeners();
   }
@@ -159,9 +161,9 @@ class ReminderProvider extends ChangeNotifier {
     }
     try {
       await _reminderRepo.remove(reminder);
-    } on FailureToDeleteException catch (e) {
-      log(e.cause);
-      return Future.error(e);
+    } on FailureToDeleteException catch (e, stacktrace) {
+      log(e.cause, stackTrace: stacktrace);
+      return Future.error(e, stacktrace);
     }
 
     notifyListeners();
@@ -178,12 +180,12 @@ class ReminderProvider extends ChangeNotifier {
     reminder.repeatID = Constants.generateID();
     try {
       curReminder = await _reminderRepo.update(reminder);
-    } on FailureToUploadException catch (e) {
-      log(e.cause);
-      return Future.error(e);
-    } on FailureToUpdateException catch (e) {
-      log(e.cause);
-      return Future.error(e);
+    } on FailureToUploadException catch (e, stacktrace) {
+      log(e.cause, stackTrace: stacktrace);
+      return Future.error(e, stacktrace);
+    } on FailureToUpdateException catch (e, stacktrace) {
+      log(e.cause, stackTrace: stacktrace);
+      return Future.error(e, stacktrace);
     }
     notifyListeners();
   }
@@ -192,11 +194,32 @@ class ReminderProvider extends ChangeNotifier {
     try {
       List<int> ids = await _reminderRepo.emptyTrash();
       await _notificationService.cancelMultiple(ids: ids);
-    } on FailureToDeleteException catch (e) {
-      log(e.cause);
-      return Future.error(e);
+    } on FailureToDeleteException catch (e, stacktrace) {
+      log(e.cause, stackTrace: stacktrace);
+      return Future.error(e, stacktrace);
     }
     notifyListeners();
+  }
+
+  Future<void> dayReset() async {
+    DateTime? upTo = userViewModel?.deleteDate;
+    if (null != upTo) {
+      try {
+        await _reminderRepo.deleteSweep(upTo: upTo);
+      } on FailureToDeleteException catch (e, stacktrace) {
+        log(e.cause, stackTrace: stacktrace);
+        return Future.error(e, stacktrace);
+      }
+    }
+  }
+
+  Future<void> clearDatabase() async {
+    curReminder = null;
+    reminders = [];
+    secondaryReminders = [];
+    _rebuild = true;
+    await _reminderRepo.clearDB();
+    await _notificationService.cancelAllNotifications();
   }
 
   Future<List<Reminder>> reorderReminders(
@@ -216,24 +239,24 @@ class ReminderProvider extends ChangeNotifier {
     try {
       await _reminderRepo.updateBatch(reminders);
       return reminders;
-    } on FailureToUpdateException catch (e) {
-      log(e.cause);
-      return Future.error(e);
-    } on FailureToUploadException catch (e) {
-      log(e.cause);
-      return Future.error(e);
+    } on FailureToUpdateException catch (e, stacktrace) {
+      log(e.cause, stackTrace: stacktrace);
+      return Future.error(e, stacktrace);
+    } on FailureToUploadException catch (e, stacktrace) {
+      log(e.cause, stackTrace: stacktrace);
+      return Future.error(e, stacktrace);
     }
   }
 
   Future<void> nextRepeat({Reminder? reminder}) async {
     try {
       await _repeatService.nextRepeat(model: reminder ?? curReminder!);
-    } on FailureToUpdateException catch (e) {
-      log(e.cause);
-      return Future.error(e);
-    } on FailureToUploadException catch (e) {
-      log(e.cause);
-      return Future.error(e);
+    } on FailureToUpdateException catch (e, stacktrace) {
+      log(e.cause, stackTrace: stacktrace);
+      return Future.error(e, stacktrace);
+    } on FailureToUploadException catch (e, stacktrace) {
+      log(e.cause, stackTrace: stacktrace);
+      return Future.error(e, stacktrace);
     }
   }
 
@@ -245,9 +268,9 @@ class ReminderProvider extends ChangeNotifier {
     try {
       await _repeatService.handleRepeating(
           oldModel: reminder, newModel: delta, single: single, delete: delete);
-    } on InvalidRepeatingException catch (e) {
-      log(e.cause);
-      return Future.error(e);
+    } on InvalidRepeatingException catch (e, stacktrace) {
+      log(e.cause, stackTrace: stacktrace);
+      return Future.error(e, stacktrace);
     }
     notifyListeners();
   }
@@ -265,12 +288,12 @@ class ReminderProvider extends ChangeNotifier {
     try {
       return await _repeatService.deleteFutures(
           model: reminder ?? curReminder!);
-    } on FailureToUpdateException catch (e) {
-      log(e.cause);
-      return Future.error(e);
-    } on FailureToUploadException catch (e) {
-      log(e.cause);
-      return Future.error(e);
+    } on FailureToUpdateException catch (e, stacktrace) {
+      log(e.cause, stackTrace: stacktrace);
+      return Future.error(e, stacktrace);
+    } on FailureToUploadException catch (e, stacktrace) {
+      log(e.cause, stackTrace: stacktrace);
+      return Future.error(e, stacktrace);
     }
   }
 
@@ -329,8 +352,8 @@ class ReminderProvider extends ChangeNotifier {
               "${reminder.name} is due on: $newDue\n It's okay to ask for more time.",
           payload: "REMINDER\n${reminder.id}");
     } on FailureToScheduleException catch (e, stacktrace) {
-      log("${e.cause} \n $stacktrace");
-      return Future.error(e);
+      log(e.cause, stackTrace: stacktrace);
+      return Future.error(e, stacktrace);
     }
   }
 

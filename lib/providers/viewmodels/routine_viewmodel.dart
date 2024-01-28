@@ -102,11 +102,12 @@ class RoutineViewModel extends ChangeNotifier
     _realDuration = (remap(
                 x: _weight,
                 inMin: 0,
-                inMax: Constants.medianWeight,
+                inMax: Constants.maxWeight,
                 outMin: Constants.lowerBound,
                 outMax: Constants.upperBound) *
             _expectedDuration)
         .toInt();
+    return;
   }
 
   // GETSET

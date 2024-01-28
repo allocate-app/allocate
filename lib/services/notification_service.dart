@@ -4,11 +4,11 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import "package:flutter_local_notifications/flutter_local_notifications.dart";
 import 'package:schedulers/schedulers.dart';
-import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 import 'package:windows_notification/notification_message.dart';
 import 'package:windows_notification/windows_notification.dart';
 
+import '../providers/application/daily_reset_provider.dart';
 import '../util/constants.dart';
 import '../util/exceptions.dart';
 
@@ -69,39 +69,36 @@ class NotificationService {
   static const LinuxInitializationSettings initializationSettingsLinux =
       LinuxInitializationSettings(defaultActionName: "Open notification");
 
+  // Timezone is already initialized in the reset scheduler.
   Future<void> init() async {
-    try {
-      // Timezones
-      tz.initializeTimeZones();
-      final String timeZoneName =
-          Constants.timezoneNames[DateTime.now().timeZoneOffset.inMilliseconds];
-      tz.setLocalLocation(tz.getLocation(timeZoneName));
+    canSchedule = DailyResetProvider.instance.timezoneInitialized;
 
-      if (Platform.isWindows) {
-        return await initWindows();
-      }
-
-      flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
-      await flutterLocalNotificationsPlugin
-          .resolvePlatformSpecificImplementation<
-              AndroidFlutterLocalNotificationsPlugin>()
-          ?.requestNotificationsPermission();
-
-      // LocalNotifierSettings
-      const initSettings = InitializationSettings(
-          android: initializationSettingsAndroid,
-          iOS: initializationSettingsDarwin,
-          macOS: initializationSettingsDarwin,
-          linux: initializationSettingsLinux);
-
-      // Include routing for when this is initialized.
-      await flutterLocalNotificationsPlugin.initialize(initSettings,
-          onDidReceiveNotificationResponse: onDidReceiveNotificationResponse);
-
-      return await handleAppLaunch();
-    } on tz.TimeZoneInitException catch (e) {
-      canSchedule = false;
+    if (!canSchedule) {
+      return;
     }
+
+    if (Platform.isWindows) {
+      return await initWindows();
+    }
+
+    flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+    await flutterLocalNotificationsPlugin
+        .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>()
+        ?.requestNotificationsPermission();
+
+    // LocalNotifierSettings
+    const initSettings = InitializationSettings(
+        android: initializationSettingsAndroid,
+        iOS: initializationSettingsDarwin,
+        macOS: initializationSettingsDarwin,
+        linux: initializationSettingsLinux);
+
+    // Include routing for when this is initialized.
+    await flutterLocalNotificationsPlugin.initialize(initSettings,
+        onDidReceiveNotificationResponse: onDidReceiveNotificationResponse);
+
+    return await handleAppLaunch();
   }
 
   Future<void> initWindows() async {

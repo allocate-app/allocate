@@ -1,6 +1,5 @@
 import "dart:io";
 
-import "package:allocate/providers/viewmodels/routine_viewmodel.dart";
 import "package:flutter/material.dart";
 import "package:flutter/semantics.dart";
 import "package:provider/provider.dart";
@@ -9,6 +8,7 @@ import "../../../model/task/subtask.dart";
 import "../../../providers/application/layout_provider.dart";
 import '../../../providers/model/routine_provider.dart';
 import '../../../providers/model/subtask_provider.dart';
+import "../../../providers/viewmodels/routine_viewmodel.dart";
 import "../../../util/constants.dart";
 import "../../../util/enums.dart";
 import "../../../util/exceptions.dart";
@@ -425,7 +425,6 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
   Widget _buildSubtasksTile() => Selector<RoutineViewModel, UniqueKey>(
       selector: (BuildContext context, RoutineViewModel vm) => vm.subtaskKey,
       builder: (BuildContext context, UniqueKey value, Widget? child) =>
-          // TODO: Check and see if padding needed.
           Tiles.subtasksTile(
               context: context,
               id: vm.id,

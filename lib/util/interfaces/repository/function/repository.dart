@@ -10,7 +10,7 @@ abstract interface class Repository<T extends IModel> {
 
   Future<void> delete(T t);
 
-  Future<void> deleteSweep();
+  Future<void> deleteSweep({DateTime? upTo});
 
   // This is for permanent deletion
   Future<void> remove(T t);
@@ -18,9 +18,12 @@ abstract interface class Repository<T extends IModel> {
   // This is also for permanent deletion
   Future<List<int>> emptyTrash();
 
+  // This is to wipe the db.
+  Future<void> clearDB();
+
   Future<void> syncRepo();
 
-  Future<void> fetchRepo();
+  Future<List<T>> fetchRepo({int limit = 1000, int offset = 0});
 
   Future<List<T>> getRepoList({int limit = 50, int offset = 0});
 

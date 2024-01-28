@@ -33,10 +33,8 @@ import '../services/isar_service.dart';
 import '../services/notification_service.dart';
 import '../services/supabase_service.dart';
 import '../ui/views/route_views/home_screen.dart';
-import '../ui/widgets/tiles.dart';
 import '../util/constants.dart';
 import '../util/enums.dart';
-import '../util/exceptions.dart';
 import '../util/interfaces/i_model.dart';
 
 // Async for windowmanager & desktop apps.
@@ -93,13 +91,16 @@ void main() async {
     });
   }
 
+  // GLOBAL APP SCHEDULER
+  DailyResetProvider.instance.init();
+
   await Future.wait([
     IsarService.instance.init(debug: true),
     SupabaseService.instance.init(
         supabaseUrl: Constants.supabaseURL,
         anonKey: Constants.supabaseAnnonKey,
         client: FakeSupabase()),
-    NotificationService.instance.init()
+    NotificationService.instance.init(),
   ]).whenComplete(() => runApp(MultiProvider(providers: [
         // VIEWMODELS
         ChangeNotifierProvider<ToDoViewModel>(create: (_) => ToDoViewModel()),
@@ -116,23 +117,16 @@ void main() async {
         ChangeNotifierProvider<SubtaskViewModel>(
             create: (_) => SubtaskViewModel()),
 
-        // GLOBAL STATE
-        ChangeNotifierProvider<DailyResetProvider>(
-            create: (_) => DailyResetProvider()),
+        // GLOBAL LAYOUT STATE
         ChangeNotifierProvider<LayoutProvider>(create: (_) => LayoutProvider()),
 
-        // TODO: This is not quite right -> UserProvider needs to query the db first.
         ChangeNotifierProxyProvider<UserViewModel, UserProvider>(
             create: (BuildContext context) => UserProvider(
                 viewModel: Provider.of<UserViewModel>(context, listen: false)),
             update: (BuildContext context, UserViewModel vm, UserProvider? up) {
-              up?.viewModel = vm;
-              up?.updateUser().catchError(
-                  (e) => Tiles.displayError(context: context, e: e),
-                  test: (e) =>
-                      e is FailureToUpdateException ||
-                      e is FailureToUploadException);
-              return up ?? UserProvider(viewModel: vm);
+              up = up ?? UserProvider(viewModel: vm);
+              up.shouldUpdate = true;
+              return up;
             }),
         ChangeNotifierProxyProvider<UserProvider, ToDoProvider>(
             create: (BuildContext context) => ToDoProvider(

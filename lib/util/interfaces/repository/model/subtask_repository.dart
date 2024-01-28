@@ -1,8 +1,11 @@
+import 'package:flutter/foundation.dart';
+
 import '../../../../model/task/subtask.dart';
 import '../../../constants.dart';
 import '../function/repository.dart';
 
-abstract interface class SubtaskRepository implements Repository<Subtask> {
+abstract interface class SubtaskRepository extends ChangeNotifier
+    implements Repository<Subtask> {
   Future<List<Subtask>> getRepoByTaskID(
       {required int id, int limit = Constants.maxNumTasks, int offset = 0});
 

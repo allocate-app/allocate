@@ -1,7 +1,9 @@
+import 'package:flutter/foundation.dart';
 import 'package:isar/isar.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../model/task/group.dart';
+import '../model/task/todo.dart';
 import '../services/isar_service.dart';
 import '../services/supabase_service.dart';
 import '../util/constants.dart';
@@ -10,18 +12,25 @@ import '../util/exceptions.dart';
 import '../util/interfaces/repository/model/group_repository.dart';
 import '../util/interfaces/sortable.dart';
 
-class GroupRepo implements GroupRepository {
+class GroupRepo extends ChangeNotifier implements GroupRepository {
   static final GroupRepo _instance = GroupRepo._internal();
 
   static GroupRepo get instance => _instance;
 
   final SupabaseClient _supabaseClient =
       SupabaseService.instance.supabaseClient;
+  late final RealtimeChannel _groupStream;
+
   final Isar _isarClient = IsarService.instance.isarClient;
+
+  bool get isConnected => SupabaseService.instance.isConnected;
+
+  int _groupCount = 0;
+  bool _subscribed = false;
 
   @override
   Future<Group> create(Group group) async {
-    group.isSynced = (null != _supabaseClient.auth.currentSession);
+    group.isSynced = isConnected;
     late int? id;
 
     await _isarClient.writeTxn(() async {
@@ -35,7 +44,7 @@ class GroupRepo implements GroupRepository {
           "Isar Open: ${_isarClient.isOpen}");
     }
 
-    if (null != _supabaseClient.auth.currentSession) {
+    if (isConnected) {
       Map<String, dynamic> groupEntity = group.toEntity();
       final List<Map<String, dynamic>> response =
           await _supabaseClient.from("groups").insert(groupEntity).select("id");
@@ -49,7 +58,7 @@ class GroupRepo implements GroupRepository {
 
   @override
   Future<Group> update(Group group) async {
-    group.isSynced = (null != _supabaseClient.auth.currentSession);
+    group.isSynced = isConnected;
 
     late int? id;
     await _isarClient.writeTxn(() async {
@@ -57,13 +66,13 @@ class GroupRepo implements GroupRepository {
     });
 
     if (null == id) {
-      throw FailureToUpdateException("Failed to update deadline locally\n"
+      throw FailureToUpdateException("Failed to update group locally\n"
           "Group: ${group.toString()}\n"
           "Time: ${DateTime.now()}\n"
           "Isar Open: ${_isarClient.isOpen}");
     }
 
-    if (null != _supabaseClient.auth.currentSession) {
+    if (isConnected) {
       Map<String, dynamic> groupEntity = group.toEntity();
       final List<Map<String, dynamic>> response =
           await _supabaseClient.from("groups").update(groupEntity).select("id");
@@ -71,10 +80,11 @@ class GroupRepo implements GroupRepository {
       id = response.last["id"];
 
       if (null == id) {
-        throw FailureToUploadException("Failed to sync deadline on update\n"
+        throw FailureToUploadException("Failed to sync group on update\n"
             "Group: ${group.toString()}\n"
             "Time: ${DateTime.now()}\n\n"
-            "Supabase Open: ${null != _supabaseClient.auth.currentSession}");
+            "Supabase Open: $isConnected"
+            "Session expired: ${_supabaseClient.auth.currentSession?.isExpired}");
       }
     }
     return group;
@@ -87,7 +97,7 @@ class GroupRepo implements GroupRepository {
     await _isarClient.writeTxn(() async {
       ids = List<int?>.empty(growable: true);
       for (Group group in groups) {
-        group.isSynced = (null != _supabaseClient.auth.currentSession);
+        group.isSynced = isConnected;
         id = await _isarClient.groups.put(group);
         ids.add(id);
       }
@@ -99,7 +109,7 @@ class GroupRepo implements GroupRepository {
           "Isar Open: ${_isarClient.isOpen}");
     }
 
-    if (null != _supabaseClient.auth.currentSession) {
+    if (isConnected) {
       ids.clear();
       List<Map<String, dynamic>> groupEntities =
           groups.map((group) => group.toEntity()).toList();
@@ -115,7 +125,8 @@ class GroupRepo implements GroupRepository {
         throw FailureToUploadException("Failed to sync groups on update\n"
             "Groups: ${groups.toString()}\n"
             "Time: ${DateTime.now()}\n\n"
-            "Supabase Open: ${null != _supabaseClient.auth.currentSession}");
+            "Supabase Open: $isConnected"
+            "Session expired: ${_supabaseClient.auth.currentSession?.isExpired}");
       }
     }
   }
@@ -129,14 +140,15 @@ class GroupRepo implements GroupRepository {
   @override
   Future<void> remove(Group group) async {
     // Delete online
-    if (null != _supabaseClient.auth.currentSession) {
+    if (isConnected) {
       try {
         await _supabaseClient.from("groups").delete().eq("id", group.id);
       } catch (error) {
         throw FailureToDeleteException("Failed to delete Group online\n"
             "Group: ${group.toString()}\n"
             "Time: ${DateTime.now()}\n"
-            "Supabase Open: ${null != _supabaseClient.auth.currentSession}");
+            "Supabase Open: $isConnected"
+            "Session expired: ${_supabaseClient.auth.currentSession?.isExpired}");
       }
     }
     // Delete local
@@ -147,13 +159,14 @@ class GroupRepo implements GroupRepository {
 
   @override
   Future<List<int>> emptyTrash() async {
-    if (null != _supabaseClient.auth.currentSession) {
+    if (isConnected) {
       try {
         await _supabaseClient.from("groups").delete().eq("toDelete", true);
       } catch (error) {
         throw FailureToDeleteException("Failed to empty trash online\n"
             "Time: ${DateTime.now()}\n"
-            "Supabase Open: ${null != _supabaseClient.auth.currentSession}");
+            "Supabase Open: $isConnected"
+            "Session expired: ${_supabaseClient.auth.currentSession?.isExpired}");
       }
     }
     late List<int> deleteIDs;
@@ -169,84 +182,154 @@ class GroupRepo implements GroupRepository {
   }
 
   @override
-  Future<void> deleteSweep() async {
-    List<int> toDeletes = await getDeleteIDs();
+  Future<void> clearDB() async {
+    if (isConnected) {
+      // not sure whether or not to catch errors.
+      await _supabaseClient.from("groups").delete().neq("customViewIndex", -2);
+    }
+
     await _isarClient.writeTxn(() async {
-      await _isarClient.groups.deleteAll(toDeletes);
+      await _isarClient.groups.clear();
     });
   }
+
+  @override
+  Future<void> deleteSweep({DateTime? upTo}) async {
+    List<int> toDeletes = await getDeleteIDs(deleteLimit: upTo);
+    // For local update
+    List<ToDo> toDos = List.empty(growable: true);
+    // For online update
+    List<Map<String, dynamic>> entities = List.empty(growable: true);
+    for (int id in toDeletes) {
+      List<ToDo> groupToDos =
+          await _isarClient.toDos.where().groupIDEqualTo(id).findAll();
+      for (ToDo toDo in groupToDos) {
+        toDo.groupID = null;
+        toDo.groupIndex = -1;
+        toDos.add(toDo);
+        entities.add(toDo.toEntity());
+      }
+    }
+
+    if (isConnected) {
+      try {
+        await _supabaseClient.from("groups").delete().inFilter("id", toDeletes);
+        await _supabaseClient.from("toDos").upsert(entities);
+      } catch (error) {
+        throw FailureToDeleteException("Failed to delete groups online \n"
+            "Time: ${DateTime.now()}\n"
+            "Supabase Open: $isConnected"
+            "Session expired: ${_supabaseClient.auth.currentSession?.isExpired}");
+      }
+    }
+    await _isarClient.writeTxn(() async {
+      await _isarClient.groups.deleteAll(toDeletes);
+      for (ToDo toDo in toDos) {
+        await _isarClient.toDos.put(toDo);
+      }
+    });
+  }
+
+  Future<int> getOnlineCount() async =>
+      _supabaseClient.from("groups").count(CountOption.exact);
 
   @override
   Future<void> syncRepo() async {
-    if (null == _supabaseClient.auth.currentSession) {
-      return fetchRepo();
+    if (!isConnected) {
+      return;
     }
-    // Get the non-deleted stuff from Isar
-    List<int> toDeletes = await getDeleteIDs();
-    if (toDeletes.isNotEmpty) {
-      try {
-        await _supabaseClient.from("groups").delete().inFilter("id", toDeletes);
-      } catch (error) {
-        // I'm also unsure about this Exception.
-        throw FailureToDeleteException("Failed to delete groups on sync\n"
-            "Group: ${toDeletes.toString()}\n"
-            "Time: ${DateTime.now()}\n\n"
-            "Supabase Open: ${null != _supabaseClient.auth.currentSession}");
+
+    // Get the set of unsynced data.
+    Set<Group> unsynced = await getUnsynced().then((_) => _.toSet());
+
+    // Get the online count.
+    _groupCount = await getOnlineCount();
+
+    // Fetch new data -> by fetchRepo();
+    List<Group> onlineGroups = await fetchRepo();
+
+    List<Group> toInsert = List.empty(growable: true);
+    for (Group group in onlineGroups) {
+      Group? otherGroup = unsynced.lookup(group);
+      // Prioritize by last updated -> unsynced data will overwrite new data.
+      if (null != otherGroup &&
+          group.lastUpdated.isAfter(otherGroup.lastUpdated)) {
+        unsynced.remove(otherGroup);
       }
+      toInsert.add(group);
     }
 
-    // Get the non-uploaded stuff from Isar.
-    List<Group> unsyncedGroups = await getUnsynced();
+    // Put all new data in the db.
+    await _isarClient.writeTxn(() async {
+      await _isarClient.groups.putAll(toInsert);
+    });
 
-    if (unsyncedGroups.isNotEmpty) {
-      List<Map<String, dynamic>> syncEntities = unsyncedGroups.map((group) {
-        group.isSynced = true;
-        return group.toEntity();
-      }).toList();
+    // Update the unsynced data.
+    await updateBatch(unsynced.toList());
 
-      final List<Map<String, dynamic>> responses = await _supabaseClient
-          .from("groups")
-          .upsert(syncEntities)
-          .select("id");
+    if (onlineGroups.length < _groupCount) {
+      // Give the db a moment to refresh.
+      await Future.delayed(const Duration(seconds: 1));
+      insertRemaining(totalFetched: onlineGroups.length).whenComplete(() {
+        notifyListeners();
+      });
+    }
 
-      List<int?> ids =
-          responses.map((response) => response["id"] as int?).toList();
+    notifyListeners();
+  }
 
-      if (ids.any((id) => null == id)) {
-        throw FailureToUploadException("Failed to sync groups\n"
-            "Groups: ${unsyncedGroups.toString()}\n"
-            "Time: ${DateTime.now()}\n\n"
-            "Supabase Open: ${null != _supabaseClient.auth.currentSession}");
+  Future<void> insertRemaining({required int totalFetched}) async {
+    List<Group> toInsert = List.empty(growable: true);
+    while (totalFetched < _groupCount) {
+      List<Group>? newGroups = await fetchRepo(offset: totalFetched);
+
+      // If there is no data or connection is lost, break.
+      if (newGroups.isEmpty) {
+        break;
       }
+      toInsert.addAll(newGroups);
+      totalFetched += newGroups.length;
     }
-    // Fetch from supabase.
-    fetchRepo();
+
+    await _isarClient.writeTxn(() async {
+      await _isarClient.groups.putAll(toInsert);
+    });
   }
 
   @override
-  Future<void> fetchRepo() async {
-    late List<Map<String, dynamic>> groupEntities;
+  Future<List<Group>> fetchRepo({int limit = 1000, int offset = 0}) async {
+    List<Group> data = List.empty(growable: true);
+    if (!isConnected) {
+      return data;
+    }
+    List<Map<String, dynamic>> groupEntities = await _supabaseClient
+        .from("groups")
+        .select()
+        .order("lastUpdated", ascending: false)
+        .range(offset, offset + limit);
 
-    await Future.delayed(const Duration(seconds: 1)).then((value) async {
-      if (null == _supabaseClient.auth.currentSession) {
-        return;
-      }
-      groupEntities = await _supabaseClient.from("groups").select();
+    for (Map<String, dynamic> entity in groupEntities) {
+      data.add(Group.fromEntity(entity: entity));
+    }
+    return data;
+  }
 
-      if (groupEntities.isEmpty) {
-        return;
-      }
-
-      List<Group> groups = groupEntities
-          .map((group) => Group.fromEntity(entity: group))
-          .toList();
-      await _isarClient.writeTxn(() async {
-        await _isarClient.groups.clear();
-        for (Group group in groups) {
-          _isarClient.groups.put(group);
-        }
-      });
+  Future<void> handleUpsert(PostgresChangePayload payload) async {
+    Group group = Group.fromEntity(entity: payload.newRecord);
+    await _isarClient.writeTxn(() async {
+      await _isarClient.groups.put(group);
     });
+
+    _groupCount = await getOnlineCount();
+  }
+
+  Future<void> handleDelete(PostgresChangePayload payload) async {
+    int deleteID = payload.oldRecord["id"] as int;
+    await _isarClient.writeTxn(() async {
+      await _isarClient.groups.delete(deleteID);
+    });
+
+    _groupCount = await getOnlineCount();
   }
 
   @override
@@ -344,5 +427,81 @@ class GroupRepo implements GroupRepository {
   Future<List<Group>> getUnsynced() async =>
       await _isarClient.groups.filter().isSyncedEqualTo(false).findAll();
 
-  GroupRepo._internal();
+  GroupRepo._internal() {
+    // I haven't faked the connection channels -> doesn't make sense to.
+    if (SupabaseService.instance.debug) {
+      return;
+    }
+    // Initialize table stream -> only listen on signIn.
+    _groupStream = _supabaseClient
+        .channel("public:groups")
+        .onPostgresChanges(
+            event: PostgresChangeEvent.insert,
+            schema: "public",
+            table: "groups",
+            callback: handleUpsert)
+        .onPostgresChanges(
+            schema: "public",
+            table: "groups",
+            event: PostgresChangeEvent.update,
+            callback: handleUpsert)
+        .onPostgresChanges(
+            schema: "public",
+            table: "groups",
+            event: PostgresChangeEvent.delete,
+            callback: handleDelete);
+
+    // Listen to auth changes.
+    SupabaseService.instance.authSubscription.listen((AuthState data) async {
+      final AuthChangeEvent event = data.event;
+      switch (event) {
+        case AuthChangeEvent.signedIn:
+          await syncRepo();
+          // OPEN TABLE STREAM -> insert new data.
+          if (!_subscribed) {
+            _groupStream.subscribe();
+            _subscribed = true;
+          }
+          break;
+        case AuthChangeEvent.tokenRefreshed:
+          if (!_subscribed) {
+            await syncRepo();
+            _groupStream.subscribe();
+            _subscribed = true;
+          }
+          break;
+        case AuthChangeEvent.signedOut:
+          // CLOSE TABLE STREAM.
+          await _groupStream.unsubscribe();
+          _subscribed = false;
+          break;
+        default:
+          break;
+      }
+      // if (event == AuthChangeEvent.signedIn) {
+      //   await syncRepo();
+      //   // OPEN TABLE STREAM -> insert new data.
+      //   if (!_subscribed) {
+      //     _groupStream.subscribe();
+      //     _subscribed = true;
+      //   }
+      //   return;
+      // }
+      // if (event == AuthChangeEvent.tokenRefreshed) {
+      //   // If not listening to the stream, there hasn't been an update.
+      //   // Sync accordingly.
+      //   if (!_subscribed) {
+      //     await syncRepo();
+      //     _groupStream.subscribe();
+      //     _subscribed = true;
+      //   }
+      //   return;
+      // }
+      // if (event == AuthChangeEvent.signedOut) {
+      //   // CLOSE TABLE STREAM.
+      //   await _groupStream.unsubscribe();
+      //   _subscribed = false;
+      // }
+    });
+  }
 }

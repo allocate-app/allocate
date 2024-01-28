@@ -252,7 +252,7 @@ class ToDoViewModel extends ChangeNotifier
     _realDuration = (remap(
                 x: w,
                 inMin: 0,
-                inMax: Constants.medianWeight,
+                inMax: Constants.maxWeight,
                 outMin: Constants.lowerBound,
                 outMax: Constants.upperBound) *
             _expectedDuration)

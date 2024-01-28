@@ -577,7 +577,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
         builder: (BuildContext context, (bool, int) value, Widget? child) =>
             Tiles.myDayTile(
           myDay: value.$1,
-          canAdd: userProvider.myDayTotal + value.$2 <=
+          canAdd: userProvider.myDayTotal.value + value.$2 <=
               (toDoProvider.userViewModel?.bandwidth ?? Constants.maxBandwidth),
           toggleMyDay: () {
             _checkClose.value = toDoProvider.userViewModel?.checkClose ?? true;

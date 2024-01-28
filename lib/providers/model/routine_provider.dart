@@ -64,6 +64,7 @@ class RoutineProvider extends ChangeNotifier {
   })  : sorter = userViewModel?.routineSorter ?? RoutineSorter(),
         _routineRepo = routineRepository ?? RoutineRepo.instance,
         _subtaskRepo = subtaskRepository ?? SubtaskRepo.instance {
+    _routineRepo.addListener(notifyListeners);
     init().whenComplete(notifyListeners);
   }
 
@@ -212,7 +213,7 @@ class RoutineProvider extends ChangeNotifier {
   int calculateRealDuration({int? weight, int? duration}) => (remap(
               x: weight ?? 0,
               inMin: 0,
-              inMax: Constants.medianWeight,
+              inMax: Constants.maxWeight,
               outMin: Constants.lowerBound,
               outMax: Constants.upperBound) *
           (duration ?? 0))
@@ -247,11 +248,11 @@ class RoutineProvider extends ChangeNotifier {
   Future<void> createRoutine(Routine routine, int times) async {
     try {
       curRoutine = await _routineRepo.create(routine);
-    } on FailureToCreateException catch (e) {
-      log(e.cause);
-      return Future.error(e);
-    } on FailureToUploadException catch (e) {
-      log(e.cause);
+    } on FailureToCreateException catch (e, stacktrace) {
+      log(e.cause, stackTrace: stacktrace);
+      return Future.error(e, stacktrace);
+    } on FailureToUploadException catch (e, stacktrace) {
+      log(e.cause, stackTrace: stacktrace);
       routine.isSynced = false;
       return updateRoutine(routine: routine, times: times);
     }
@@ -278,12 +279,12 @@ class RoutineProvider extends ChangeNotifier {
 
     try {
       curRoutine = await _routineRepo.update(routine);
-    } on FailureToUploadException catch (e) {
-      log(e.cause);
-      return Future.error(e);
-    } on FailureToUpdateException catch (e) {
-      log(e.cause);
-      return Future.error(e);
+    } on FailureToUploadException catch (e, stacktrace) {
+      log(e.cause, stackTrace: stacktrace);
+      return Future.error(e, stacktrace);
+    } on FailureToUpdateException catch (e, stacktrace) {
+      log(e.cause, stackTrace: stacktrace);
+      return Future.error(e, stacktrace);
     }
   }
 
@@ -294,12 +295,12 @@ class RoutineProvider extends ChangeNotifier {
     }
     try {
       await _routineRepo.updateBatch(routines);
-    } on FailureToUploadException catch (e) {
-      log(e.cause);
-      return Future.error(e);
-    } on FailureToUpdateException catch (e) {
-      log(e.cause);
-      return Future.error(e);
+    } on FailureToUploadException catch (e, stacktrace) {
+      log(e.cause, stackTrace: stacktrace);
+      return Future.error(e, stacktrace);
+    } on FailureToUpdateException catch (e, stacktrace) {
+      log(e.cause, stackTrace: stacktrace);
+      return Future.error(e, stacktrace);
     }
     notifyListeners();
   }
@@ -320,12 +321,12 @@ class RoutineProvider extends ChangeNotifier {
     }
     try {
       await _subtaskRepo.updateBatch(subtasks);
-    } on FailureToUploadException catch (e) {
-      log(e.cause);
-      return Future.error(e);
-    } on FailureToUpdateException catch (e) {
-      log(e.cause);
-      return Future.error(e);
+    } on FailureToUploadException catch (e, stacktrace) {
+      log(e.cause, stackTrace: stacktrace);
+      return Future.error(e, stacktrace);
+    } on FailureToUpdateException catch (e, stacktrace) {
+      log(e.cause, stackTrace: stacktrace);
+      return Future.error(e, stacktrace);
     }
   }
 
@@ -335,9 +336,9 @@ class RoutineProvider extends ChangeNotifier {
     }
     try {
       await _routineRepo.delete(routine);
-    } on FailureToDeleteException catch (e) {
-      log(e.cause);
-      return Future.error(e);
+    } on FailureToDeleteException catch (e, stacktrace) {
+      log(e.cause, stackTrace: stacktrace);
+      return Future.error(e, stacktrace);
     }
     notifyListeners();
   }
@@ -348,9 +349,9 @@ class RoutineProvider extends ChangeNotifier {
     }
     try {
       await _routineRepo.remove(routine);
-    } on FailureToDeleteException catch (e) {
-      log(e.cause);
-      return Future.error(e);
+    } on FailureToDeleteException catch (e, stacktrace) {
+      log(e.cause, stackTrace: stacktrace);
+      return Future.error(e, stacktrace);
     }
 
     notifyListeners();
@@ -363,12 +364,12 @@ class RoutineProvider extends ChangeNotifier {
     routine.toDelete = false;
     try {
       curRoutine = await _routineRepo.update(routine);
-    } on FailureToUploadException catch (e) {
-      log(e.cause);
-      return Future.error(e);
-    } on FailureToUpdateException catch (e) {
-      log(e.cause);
-      return Future.error(e);
+    } on FailureToUploadException catch (e, stacktrace) {
+      log(e.cause, stackTrace: stacktrace);
+      return Future.error(e, stacktrace);
+    } on FailureToUpdateException catch (e, stacktrace) {
+      log(e.cause, stackTrace: stacktrace);
+      return Future.error(e, stacktrace);
     }
     notifyListeners();
   }
@@ -384,11 +385,35 @@ class RoutineProvider extends ChangeNotifier {
         await _subtaskRepo.updateBatch(subtasks);
         routineSubtaskCounts.remove(id);
       }
-    } on FailureToDeleteException catch (e) {
-      log(e.cause);
-      return Future.error(e);
+    } on FailureToDeleteException catch (e, stacktrace) {
+      log(e.cause, stackTrace: stacktrace);
+      return Future.error(e, stacktrace);
     }
     notifyListeners();
+  }
+
+  Future<void> dayReset() async {
+    DateTime? upTo = userViewModel?.deleteDate;
+    if (null != upTo) {
+      try {
+        await _routineRepo.deleteSweep(upTo: upTo);
+      } on FailureToDeleteException catch (e, stacktrace) {
+        log(e.cause, stackTrace: stacktrace);
+        return Future.error(e, stacktrace);
+      }
+    }
+    await resetDailyRoutines();
+  }
+
+  Future<void> clearDatabase() async {
+    curRoutine = null;
+    routines = [];
+    _rebuild = true;
+    routineSubtaskCounts.clear();
+    _curMorning = null;
+    _curAfternoon = null;
+    _curEvening = null;
+    await _routineRepo.clearDB();
   }
 
   Future<List<Routine>> reorderRoutines(
@@ -407,12 +432,12 @@ class RoutineProvider extends ChangeNotifier {
     try {
       await _routineRepo.updateBatch(routines);
       return routines;
-    } on FailureToUpdateException catch (e) {
-      log(e.cause);
-      return Future.error(e);
-    } on FailureToUploadException catch (e) {
-      log(e.cause);
-      return Future.error(e);
+    } on FailureToUpdateException catch (e, stacktrace) {
+      log(e.cause, stackTrace: stacktrace);
+      return Future.error(e, stacktrace);
+    } on FailureToUploadException catch (e, stacktrace) {
+      log(e.cause, stackTrace: stacktrace);
+      return Future.error(e, stacktrace);
     }
   }
 
@@ -428,12 +453,12 @@ class RoutineProvider extends ChangeNotifier {
     }
     try {
       await _subtaskRepo.updateBatch(subtasks);
-    } on FailureToUpdateException catch (e) {
-      log(e.cause);
-      return Future.error(e);
-    } on FailureToUploadException catch (e) {
-      log(e.cause);
-      return Future.error(e);
+    } on FailureToUpdateException catch (e, stacktrace) {
+      log(e.cause, stackTrace: stacktrace);
+      return Future.error(e, stacktrace);
+    } on FailureToUploadException catch (e, stacktrace) {
+      log(e.cause, stackTrace: stacktrace);
+      return Future.error(e, stacktrace);
     }
   }
 
@@ -442,10 +467,12 @@ class RoutineProvider extends ChangeNotifier {
     if (null != curMorning) {
       resetRoutineSubtasks(routine: curMorning);
     }
-    if (null != curAfternoon) {
+    if (null != curAfternoon && curMorning != curAfternoon) {
       resetRoutineSubtasks(routine: curAfternoon);
     }
-    if (null != curEvening) {
+    if (null != curEvening &&
+        curMorning != curEvening &&
+        curAfternoon != curEvening) {
       resetRoutineSubtasks(routine: curEvening);
     }
     notifyListeners();

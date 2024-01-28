@@ -5,7 +5,6 @@ import '../model/task/reminder.dart';
 import '../model/task/todo.dart';
 import '../repositories/deadline_repo.dart';
 import '../repositories/reminder_repo.dart';
-import '../repositories/subtask_repo.dart';
 import '../repositories/todo_repo.dart';
 import '../util/constants.dart';
 import '../util/enums.dart';
@@ -13,7 +12,6 @@ import '../util/exceptions.dart';
 import '../util/interfaces/i_repeatable.dart';
 import '../util/interfaces/repository/model/deadline_repository.dart';
 import '../util/interfaces/repository/model/reminder_repository.dart';
-import '../util/interfaces/repository/model/subtask_repository.dart';
 import '../util/interfaces/repository/model/todo_repository.dart';
 
 class RepeatableService {
@@ -22,7 +20,6 @@ class RepeatableService {
   static RepeatableService get instance => _instance;
 
   final ToDoRepository _toDoRepository = ToDoRepo.instance;
-  final SubtaskRepository _subtaskRepository = SubtaskRepo.instance;
   final DeadlineRepository _deadlineRepository = DeadlineRepo.instance;
   final ReminderRepository _reminderRepository = ReminderRepo.instance;
 
@@ -146,7 +143,7 @@ class RepeatableService {
 
     // if deleting all, delete the template and delete all models from today onward.
     if (delete) {
-      await deleteTemplateAndFutures(model: model);
+      return await deleteTemplateAndFutures(model: model);
     }
 
     // if updating all, update the template

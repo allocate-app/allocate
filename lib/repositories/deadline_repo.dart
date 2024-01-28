@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:isar/isar.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -11,7 +12,7 @@ import '../util/interfaces/i_repeatable.dart';
 import '../util/interfaces/repository/model/deadline_repository.dart';
 import '../util/interfaces/sortable.dart';
 
-class DeadlineRepo implements DeadlineRepository {
+class DeadlineRepo extends ChangeNotifier implements DeadlineRepository {
   static final DeadlineRepo _instance = DeadlineRepo._internal();
 
   static DeadlineRepo get instance => _instance;
@@ -19,11 +20,18 @@ class DeadlineRepo implements DeadlineRepository {
   //DB Clients.
   final SupabaseClient _supabaseClient =
       SupabaseService.instance.supabaseClient;
+  late final RealtimeChannel _deadlineStream;
+
   final Isar _isarClient = IsarService.instance.isarClient;
+
+  bool get isConnected => SupabaseService.instance.isConnected;
+
+  int _deadlineCount = 0;
+  bool _subscribed = false;
 
   @override
   Future<Deadline> create(Deadline deadline) async {
-    deadline.isSynced = (null != _supabaseClient.auth.currentSession);
+    deadline.isSynced = isConnected;
     late int? id;
 
     await _isarClient.writeTxn(() async {
@@ -37,7 +45,7 @@ class DeadlineRepo implements DeadlineRepository {
           "Isar Open: ${_isarClient.isOpen}");
     }
 
-    if (null != _supabaseClient.auth.currentSession) {
+    if (isConnected) {
       Map<String, dynamic> deadlineEntity = deadline.toEntity();
       final List<Map<String, dynamic>> response = await _supabaseClient
           .from("deadlines")
@@ -48,7 +56,8 @@ class DeadlineRepo implements DeadlineRepository {
         throw FailureToUploadException("Failed to sync deadline on create\n"
             "Deadline: ${deadline.toString()}\n"
             "Time: ${DateTime.now()}\n\n"
-            "Supabase Open: ${null != _supabaseClient.auth.currentSession}");
+            "Supabase Open: $isConnected"
+            "Session expired: ${_supabaseClient.auth.currentSession?.isExpired}");
       }
     }
     return deadline;
@@ -56,7 +65,7 @@ class DeadlineRepo implements DeadlineRepository {
 
   @override
   Future<Deadline> update(Deadline deadline) async {
-    deadline.isSynced = (null != _supabaseClient.auth.currentSession);
+    deadline.isSynced = isConnected;
 
     late int? id;
     await _isarClient.writeTxn(() async {
@@ -70,7 +79,7 @@ class DeadlineRepo implements DeadlineRepository {
           "Isar Open: ${_isarClient.isOpen}");
     }
 
-    if (null != _supabaseClient.auth.currentSession) {
+    if (isConnected) {
       Map<String, dynamic> deadlineEntity = deadline.toEntity();
       final List<Map<String, dynamic>> response = await _supabaseClient
           .from("deadlines")
@@ -83,7 +92,8 @@ class DeadlineRepo implements DeadlineRepository {
         throw FailureToUploadException("Failed to sync deadline on update\n"
             "Deadline: ${deadline.toString()}\n"
             "Time: ${DateTime.now()}\n\n"
-            "Supabase Open: ${null != _supabaseClient.auth.currentSession}");
+            "Supabase Open: $isConnected"
+            "Session expired: ${_supabaseClient.auth.currentSession?.isExpired}");
       }
     }
     return deadline;
@@ -96,7 +106,7 @@ class DeadlineRepo implements DeadlineRepository {
     await _isarClient.writeTxn(() async {
       ids = List<int?>.empty(growable: true);
       for (Deadline deadline in deadlines) {
-        deadline.isSynced = (null != _supabaseClient.auth.currentSession);
+        deadline.isSynced = isConnected;
         id = await _isarClient.deadlines.put(deadline);
         ids.add(id);
       }
@@ -108,7 +118,7 @@ class DeadlineRepo implements DeadlineRepository {
           "Isar Open: ${_isarClient.isOpen}");
     }
 
-    if (null != _supabaseClient.auth.currentSession) {
+    if (isConnected) {
       ids.clear();
       List<Map<String, dynamic>> deadlineEntities =
           deadlines.map((deadline) => deadline.toEntity()).toList();
@@ -124,7 +134,8 @@ class DeadlineRepo implements DeadlineRepository {
         throw FailureToUploadException("Failed to sync deadlines on update\n"
             "Deadline: ${deadlines.toString()}\n"
             "Time: ${DateTime.now()}\n\n"
-            "Supabase Open: ${null != _supabaseClient.auth.currentSession}");
+            "Supabase Open: $isConnected"
+            "Session expired: ${_supabaseClient.auth.currentSession?.isExpired}");
       }
     }
   }
@@ -138,14 +149,15 @@ class DeadlineRepo implements DeadlineRepository {
   @override
   Future<void> remove(Deadline deadline) async {
     // Delete online
-    if (null != _supabaseClient.auth.currentSession) {
+    if (isConnected) {
       try {
         await _supabaseClient.from("deadlines").delete().eq("id", deadline.id);
       } catch (error) {
         throw FailureToDeleteException("Failed to delete Deadline online\n"
             "Deadline: ${deadline.toString()}\n"
             "Time: ${DateTime.now()}\n"
-            "Supabase Open: ${null != _supabaseClient.auth.currentSession}");
+            "Supabase Open: $isConnected"
+            "Session expired: ${_supabaseClient.auth.currentSession?.isExpired}");
       }
     }
     // Delete local
@@ -156,13 +168,14 @@ class DeadlineRepo implements DeadlineRepository {
 
   @override
   Future<List<int>> emptyTrash() async {
-    if (null != _supabaseClient.auth.currentSession) {
+    if (isConnected) {
       try {
         await _supabaseClient.from("deadlines").delete().eq("toDelete", true);
       } catch (error) {
         throw FailureToDeleteException("Failed to empty trash online\n"
             "Time: ${DateTime.now()}\n"
-            "Supabase Open: ${null != _supabaseClient.auth.currentSession}");
+            "Supabase Open: $isConnected"
+            "Session expired: ${_supabaseClient.auth.currentSession?.isExpired}");
       }
     }
     late List<int> deleteIDs;
@@ -178,6 +191,21 @@ class DeadlineRepo implements DeadlineRepository {
   }
 
   @override
+  Future<void> clearDB() async {
+    if (isConnected) {
+      // not sure whether or not to catch errors.
+      await _supabaseClient
+          .from("deadlines")
+          .delete()
+          .neq("customViewIndex", -2);
+    }
+
+    await _isarClient.writeTxn(() async {
+      await _isarClient.deadlines.clear();
+    });
+  }
+
+  @override
   Future<List<int>> deleteFutures({required IRepeatable deleteFrom}) async {
     List<int> toDelete = await _isarClient.deadlines
         .where()
@@ -189,7 +217,7 @@ class DeadlineRepo implements DeadlineRepository {
         .findAll();
 
     // Online
-    if (null != _supabaseClient.auth.currentSession) {
+    if (isConnected) {
       try {
         await _supabaseClient
             .from("deadlines")
@@ -200,7 +228,8 @@ class DeadlineRepo implements DeadlineRepository {
             "Failed to delete future events online \n"
             "Deadline: ${deleteFrom.toString()}\n"
             "Time: ${DateTime.now()}\n"
-            "Supabase Open: ${null != _supabaseClient.auth.currentSession}");
+            "Supabase Open: $isConnected"
+            "Session expired: ${_supabaseClient.auth.currentSession?.isExpired}");
       }
     }
 
@@ -213,87 +242,127 @@ class DeadlineRepo implements DeadlineRepository {
   }
 
   @override
-  Future<void> deleteSweep() async {
-    List<int> toDeletes = await getDeleteIDs();
-    await _isarClient.writeTxn(() async {
-      await _isarClient.deadlines.deleteAll(toDeletes);
-    });
-  }
+  Future<void> deleteSweep({DateTime? upTo}) async {
+    List<int> toDeletes = await getDeleteIDs(deleteLimit: upTo);
 
-  @override
-  Future<void> syncRepo() async {
-    if (null == _supabaseClient.auth.currentSession) {
-      return fetchRepo();
-    }
-
-    List<int> toDeletes = await getDeleteIDs();
-    if (toDeletes.isNotEmpty) {
+    if (isConnected) {
       try {
         await _supabaseClient
             .from("deadlines")
             .delete()
             .inFilter("id", toDeletes);
       } catch (error) {
-        // I'm also unsure about this Exception.
-        throw FailureToDeleteException("Failed to delete deadlines\n"
-            "ids: ${toDeletes.toString()}\n"
-            "Time: ${DateTime.now()}\n\n"
-            "Supabase Open: ${null != _supabaseClient.auth.currentSession}");
+        throw FailureToDeleteException("Failed to delete deadlines online \n"
+            "Time: ${DateTime.now()}\n"
+            "Supabase Open: $isConnected"
+            "Session expired: ${_supabaseClient.auth.currentSession?.isExpired}");
       }
     }
+    await _isarClient.writeTxn(() async {
+      await _isarClient.deadlines.deleteAll(toDeletes);
+    });
+  }
 
-    // Get the non-uploaded stuff from Isar.
-    List<Deadline> unsyncedDeadlines = await getUnsynced();
+  Future<int> getOnlineCount() async =>
+      _supabaseClient.from("deadlines").count(CountOption.exact);
 
-    if (unsyncedDeadlines.isNotEmpty) {
-      List<Map<String, dynamic>> syncEntities =
-          unsyncedDeadlines.map((deadline) {
-        deadline.isSynced = true;
-        return deadline.toEntity();
-      }).toList();
-
-      final List<Map<String, dynamic>> responses = await _supabaseClient
-          .from("deadlines")
-          .upsert(syncEntities)
-          .select("id");
-
-      List<int?> ids =
-          responses.map((response) => response["id"] as int?).toList();
-
-      if (ids.any((id) => null == id)) {
-        throw FailureToUploadException("Failed to Sync deadlines\n"
-            "deadlines: ${unsyncedDeadlines.toString()}\n"
-            "Time: ${DateTime.now()}\n\n"
-            "Supabase Open: ${null != _supabaseClient.auth.currentSession}");
-      }
+  @override
+  Future<void> syncRepo() async {
+    if (!isConnected) {
+      return;
     }
-    fetchRepo();
+
+    // Get the set of unsynced data.
+    Set<Deadline> unsynced = await getUnsynced().then((_) => _.toSet());
+
+    // Get the online count.
+    _deadlineCount = await getOnlineCount();
+
+    // Fetch new data -> by fetchRepo();
+    List<Deadline> onlineDeadlines = await fetchRepo();
+
+    List<Deadline> toInsert = List.empty(growable: true);
+    for (Deadline deadline in onlineDeadlines) {
+      Deadline? otherDeadline = unsynced.lookup(deadline);
+      // Prioritize by last updated -> unsynced data will overwrite new data.
+      if (null != otherDeadline &&
+          deadline.lastUpdated.isAfter(otherDeadline.lastUpdated)) {
+        unsynced.remove(otherDeadline);
+      }
+      toInsert.add(deadline);
+    }
+
+    // Put all new data in the db.
+    await _isarClient.writeTxn(() async {
+      await _isarClient.deadlines.putAll(toInsert);
+    });
+
+    // Update the unsynced data.
+    await updateBatch(unsynced.toList());
+
+    if (onlineDeadlines.length < _deadlineCount) {
+      // Give the db a moment to refresh.
+      await Future.delayed(const Duration(seconds: 1));
+      insertRemaining(totalFetched: onlineDeadlines.length).whenComplete(() {
+        notifyListeners();
+      });
+    }
+
+    notifyListeners();
+  }
+
+  Future<void> insertRemaining({required int totalFetched}) async {
+    List<Deadline> toInsert = List.empty(growable: true);
+    while (totalFetched < _deadlineCount) {
+      List<Deadline>? newDeadlines = await fetchRepo(offset: totalFetched);
+
+      // If there is no data or connection is lost, break.
+      if (newDeadlines.isEmpty) {
+        break;
+      }
+      toInsert.addAll(newDeadlines);
+      totalFetched += newDeadlines.length;
+    }
+
+    await _isarClient.writeTxn(() async {
+      await _isarClient.deadlines.putAll(toInsert);
+    });
   }
 
   @override
-  Future<void> fetchRepo() async {
-    late List<Map<String, dynamic>> deadlineEntities;
+  Future<List<Deadline>> fetchRepo({int limit = 1000, int offset = 0}) async {
+    List<Deadline> data = List.empty(growable: true);
+    if (!isConnected) {
+      return data;
+    }
+    List<Map<String, dynamic>> deadlineEntities = await _supabaseClient
+        .from("deadlines")
+        .select()
+        .order("lastUpdated", ascending: false)
+        .range(offset, offset + limit);
 
-    await Future.delayed(const Duration(seconds: 1)).then((value) async {
-      if (null == _supabaseClient.auth.currentSession) {
-        return;
-      }
-      deadlineEntities = await _supabaseClient.from("deadlines").select();
+    for (Map<String, dynamic> entity in deadlineEntities) {
+      data.add(Deadline.fromEntity(entity: entity));
+    }
+    return data;
+  }
 
-      if (deadlineEntities.isEmpty) {
-        return;
-      }
-
-      List<Deadline> deadlines = deadlineEntities
-          .map((deadline) => Deadline.fromEntity(entity: deadline))
-          .toList();
-      await _isarClient.writeTxn(() async {
-        await _isarClient.deadlines.clear();
-        for (Deadline deadline in deadlines) {
-          await _isarClient.deadlines.put(deadline);
-        }
-      });
+  Future<void> handleUpsert(PostgresChangePayload payload) async {
+    Deadline deadline = Deadline.fromEntity(entity: payload.newRecord);
+    await _isarClient.writeTxn(() async {
+      await _isarClient.deadlines.put(deadline);
     });
+
+    _deadlineCount = await getOnlineCount();
+  }
+
+  Future<void> handleDelete(PostgresChangePayload payload) async {
+    int deleteID = payload.oldRecord["id"] as int;
+    await _isarClient.writeTxn(() async {
+      await _isarClient.deadlines.delete(deleteID);
+    });
+
+    _deadlineCount = await getOnlineCount();
   }
 
   // Search + Most Recent
@@ -579,8 +648,9 @@ class DeadlineRepo implements DeadlineRepository {
   Future<List<Deadline>> getOverdues({int limit = 50, int offset = 0}) async =>
       _isarClient.deadlines
           .where()
-          .dueDateLessThan(Constants.today)
+          .dueDateIsNotNull()
           .filter()
+          .dueDateLessThan(Constants.today)
           .toDeleteEqualTo(false)
           .group((q) => q
               .repeatableStateEqualTo(RepeatableState.normal)
@@ -592,5 +662,81 @@ class DeadlineRepo implements DeadlineRepository {
           .limit(limit)
           .findAll();
 
-  DeadlineRepo._internal();
+  DeadlineRepo._internal() {
+    // I haven't faked the connection channels -> doesn't make sense to.
+    if (SupabaseService.instance.debug) {
+      return;
+    }
+    // Initialize table stream -> only listen on signIn.
+    _deadlineStream = _supabaseClient
+        .channel("public:deadlines")
+        .onPostgresChanges(
+            event: PostgresChangeEvent.insert,
+            schema: "public",
+            table: "deadlines",
+            callback: handleUpsert)
+        .onPostgresChanges(
+            schema: "public",
+            table: "deadlines",
+            event: PostgresChangeEvent.update,
+            callback: handleUpsert)
+        .onPostgresChanges(
+            schema: "public",
+            table: "deadlines",
+            event: PostgresChangeEvent.delete,
+            callback: handleDelete);
+
+    // Listen to auth changes.
+    SupabaseService.instance.authSubscription.listen((AuthState data) async {
+      final AuthChangeEvent event = data.event;
+      switch (event) {
+        case AuthChangeEvent.signedIn:
+          await syncRepo();
+          // OPEN TABLE STREAM -> insert new data.
+          if (!_subscribed) {
+            _deadlineStream.subscribe();
+            _subscribed = true;
+          }
+          break;
+        case AuthChangeEvent.tokenRefreshed:
+          if (!_subscribed) {
+            await syncRepo();
+            _deadlineStream.subscribe();
+            _subscribed = true;
+          }
+          break;
+        case AuthChangeEvent.signedOut:
+          // CLOSE TABLE STREAM.
+          await _deadlineStream.unsubscribe();
+          _subscribed = false;
+          break;
+        default:
+          break;
+      }
+      // if (event == AuthChangeEvent.signedIn) {
+      //   await syncRepo();
+      //   // OPEN TABLE STREAM -> insert new data.
+      //   if (!_subscribed) {
+      //     _deadlineStream.subscribe();
+      //     _subscribed = true;
+      //   }
+      //   return;
+      // }
+      // if (event == AuthChangeEvent.tokenRefreshed) {
+      //   // If not listening to the stream, there hasn't been an update.
+      //   // Sync accordingly.
+      //   if (!_subscribed) {
+      //     await syncRepo();
+      //     _deadlineStream.subscribe();
+      //     _subscribed = true;
+      //   }
+      //   return;
+      // }
+      // if (event == AuthChangeEvent.signedOut) {
+      //   // CLOSE TABLE STREAM.
+      //   await _deadlineStream.unsubscribe();
+      //   _subscribed = false;
+      // }
+    });
+  }
 }

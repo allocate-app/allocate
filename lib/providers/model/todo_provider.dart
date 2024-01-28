@@ -55,6 +55,8 @@ class ToDoProvider extends ChangeNotifier {
 
   final Map<int, ValueNotifier<int>> toDoSubtaskCounts = {};
 
+  int myDayWeight = 0;
+
   // CONSTRUCTOR
   ToDoProvider({
     this.userViewModel,
@@ -65,18 +67,16 @@ class ToDoProvider extends ChangeNotifier {
         _subtaskRepo = subtaskRepository ?? SubtaskRepo.instance,
         _repeatService = repeatService ?? RepeatableService.instance,
         sorter = userViewModel?.toDoSorter ?? ToDoSorter() {
-    init();
+    // This bubbles up state.
+    _toDoRepo.addListener(notifyListeners);
+    init().whenComplete(notifyListeners);
   }
 
   Future<void> init() async {
-    // startTimer();
-
-    // TODO: fill the hashmap with repeating events.
-    // repeatable subroutine
+    myDayWeight = await getMyDayWeight();
   }
 
   void setUser({UserViewModel? newUser}) {
-    print("updating");
     userViewModel = newUser;
     sorter = userViewModel?.toDoSorter ?? sorter;
     notifyListeners();
@@ -130,12 +130,12 @@ class ToDoProvider extends ChangeNotifier {
   Future<void> _syncRepo() async {
     try {
       await _toDoRepo.syncRepo();
-    } on FailureToDeleteException catch (e) {
-      log(e.cause);
-      return Future.error(e);
-    } on FailureToUploadException catch (e) {
-      log(e.cause);
-      return Future.error(e);
+    } on FailureToDeleteException catch (e, stacktrace) {
+      log(e.cause, stackTrace: stacktrace);
+      return Future.error(e, stacktrace);
+    } on FailureToUploadException catch (e, stacktrace) {
+      log(e.cause, stackTrace: stacktrace);
+      return Future.error(e, stacktrace);
     }
     notifyListeners();
   }
@@ -147,11 +147,15 @@ class ToDoProvider extends ChangeNotifier {
       if (curToDo!.repeatable) {
         await createTemplate(toDo: curToDo!);
       }
-    } on FailureToCreateException catch (e) {
-      log(e.cause);
-      return Future.error(e);
-    } on FailureToUploadException catch (e) {
-      log(e.cause);
+
+      if (curToDo!.myDay) {
+        myDayWeight = await getMyDayWeight();
+      }
+    } on FailureToCreateException catch (e, stacktrace) {
+      log(e.cause, stackTrace: stacktrace);
+      return Future.error(e, stacktrace);
+    } on FailureToUploadException catch (e, stacktrace) {
+      log(e.cause, stackTrace: stacktrace);
       toDo.isSynced = false;
       return await updateToDo(toDo: toDo);
     }
@@ -183,12 +187,13 @@ class ToDoProvider extends ChangeNotifier {
           await createTemplate(toDo: curToDo!);
         }
       }
-    } on FailureToUploadException catch (e) {
-      log(e.cause);
-      return Future.error(e);
-    } on FailureToUpdateException catch (e) {
-      log(e.cause);
-      return Future.error(e);
+      myDayWeight = await getMyDayWeight();
+    } on FailureToUploadException catch (e, stacktrace) {
+      log(e.cause, stackTrace: stacktrace);
+      return Future.error(e, stacktrace);
+    } on FailureToUpdateException catch (e, stacktrace) {
+      log(e.cause, stackTrace: stacktrace);
+      return Future.error(e, stacktrace);
     }
   }
 
@@ -207,12 +212,12 @@ class ToDoProvider extends ChangeNotifier {
     }
     try {
       await _subtaskRepo.updateBatch(subtasks);
-    } on FailureToUploadException catch (e) {
-      log(e.cause);
-      return Future.error(e);
-    } on FailureToUpdateException catch (e) {
-      log(e.cause);
-      return Future.error(e);
+    } on FailureToUploadException catch (e, stacktrace) {
+      log(e.cause, stackTrace: stacktrace);
+      return Future.error(e, stacktrace);
+    } on FailureToUpdateException catch (e, stacktrace) {
+      log(e.cause, stackTrace: stacktrace);
+      return Future.error(e, stacktrace);
     }
   }
 
@@ -223,12 +228,12 @@ class ToDoProvider extends ChangeNotifier {
     }
     try {
       await _toDoRepo.updateBatch(toDos);
-    } on FailureToUploadException catch (e) {
-      log(e.cause);
-      return Future.error(e);
-    } on FailureToUpdateException catch (e) {
-      log(e.cause);
-      return Future.error(e);
+    } on FailureToUploadException catch (e, stacktrace) {
+      log(e.cause, stackTrace: stacktrace);
+      return Future.error(e, stacktrace);
+    } on FailureToUpdateException catch (e, stacktrace) {
+      log(e.cause, stackTrace: stacktrace);
+      return Future.error(e, stacktrace);
     }
     notifyListeners();
   }
@@ -239,9 +244,9 @@ class ToDoProvider extends ChangeNotifier {
     }
     try {
       await _toDoRepo.delete(toDo);
-    } on FailureToDeleteException catch (e) {
-      log(e.cause);
-      return Future.error(e);
+    } on FailureToDeleteException catch (e, stacktrace) {
+      log(e.cause, stackTrace: stacktrace);
+      return Future.error(e, stacktrace);
     }
 
     notifyListeners();
@@ -253,9 +258,9 @@ class ToDoProvider extends ChangeNotifier {
     }
     try {
       await _toDoRepo.remove(toDo);
-    } on FailureToDeleteException catch (e) {
-      log(e.cause);
-      return Future.error(e);
+    } on FailureToDeleteException catch (e, stacktrace) {
+      log(e.cause, stackTrace: stacktrace);
+      return Future.error(e, stacktrace);
     }
 
     notifyListeners();
@@ -271,12 +276,12 @@ class ToDoProvider extends ChangeNotifier {
     toDo.repeatID = Constants.generateID();
     try {
       curToDo = await _toDoRepo.update(toDo);
-    } on FailureToUploadException catch (e) {
-      log(e.cause);
-      return Future.error(e);
-    } on FailureToUpdateException catch (e) {
-      log(e.cause);
-      return Future.error(e);
+    } on FailureToUploadException catch (e, stacktrace) {
+      log(e.cause, stackTrace: stacktrace);
+      return Future.error(e, stacktrace);
+    } on FailureToUpdateException catch (e, stacktrace) {
+      log(e.cause, stackTrace: stacktrace);
+      return Future.error(e, stacktrace);
     }
     notifyListeners();
   }
@@ -292,11 +297,49 @@ class ToDoProvider extends ChangeNotifier {
         await _subtaskRepo.updateBatch(subtasks);
         toDoSubtaskCounts.remove(id);
       }
-    } on FailureToDeleteException catch (e) {
-      log(e.cause);
-      return Future.error(e);
+    } on FailureToDeleteException catch (e, stacktrace) {
+      log(e.cause, stackTrace: stacktrace);
+      return Future.error(e, stacktrace);
     }
     notifyListeners();
+  }
+
+  Future<void> clearDatabase() async {
+    curToDo = null;
+    toDos = [];
+    secondaryToDos = [];
+    _rebuild = true;
+    toDoSubtaskCounts.clear();
+    await _toDoRepo.clearDB();
+  }
+
+  Future<void> dayReset() async {
+    try {
+      DateTime? upTo = userViewModel?.deleteDate;
+      if (null != upTo) {
+        await _toDoRepo.deleteSweep(upTo: upTo);
+      }
+      await resetMyDay();
+    } on FailureToDeleteException catch (e, stacktrace) {
+      log(e.cause, stackTrace: stacktrace);
+      return Future.error(e, stacktrace);
+    } on FailureToUpdateException catch (e, stacktrace) {
+      log(e.cause, stackTrace: stacktrace);
+      return Future.error(e, stacktrace);
+    }
+  }
+
+  // This is a concession of Isar3 -> no way to update fields.
+  Future<void> resetMyDay() async {
+    List<ToDo> previousMyDay = await _toDoRepo.getMyDay(sorter: sorter);
+
+    for (ToDo toDo in toDos) {
+      if (toDo.completed) {
+        toDo.myDay = false;
+      }
+    }
+    await _toDoRepo.updateBatch(previousMyDay);
+    myDayWeight = await _toDoRepo.getMyDayWeight();
   }
 
   Future<List<ToDo>> reorderToDos(
@@ -313,24 +356,24 @@ class ToDoProvider extends ChangeNotifier {
     try {
       await _toDoRepo.updateBatch(toDos);
       return toDos;
-    } on FailureToUpdateException catch (e) {
-      log(e.cause);
-      return Future.error(e);
-    } on FailureToUploadException catch (e) {
-      log(e.cause);
-      return Future.error(e);
+    } on FailureToUpdateException catch (e, stacktrace) {
+      log(e.cause, stackTrace: stacktrace);
+      return Future.error(e, stacktrace);
+    } on FailureToUploadException catch (e, stacktrace) {
+      log(e.cause, stackTrace: stacktrace);
+      return Future.error(e, stacktrace);
     }
   }
 
   Future<void> nextRepeat({ToDo? toDo}) async {
     try {
       return await _repeatService.nextRepeat(model: toDo ?? curToDo);
-    } on FailureToUpdateException catch (e) {
-      log(e.cause);
-      return Future.error(e);
-    } on FailureToUploadException catch (e) {
-      log(e.cause);
-      return Future.error(e);
+    } on FailureToUpdateException catch (e, stacktrace) {
+      log(e.cause, stackTrace: stacktrace);
+      return Future.error(e, stacktrace);
+    } on FailureToUploadException catch (e, stacktrace) {
+      log(e.cause, stackTrace: stacktrace);
+      return Future.error(e, stacktrace);
     }
   }
 
@@ -342,9 +385,9 @@ class ToDoProvider extends ChangeNotifier {
     try {
       await _repeatService.handleRepeating(
           oldModel: toDo, newModel: delta, single: single, delete: delete);
-    } on InvalidRepeatingException catch (e) {
-      log(e.cause);
-      return Future.error(e);
+    } on InvalidRepeatingException catch (e, stacktrace) {
+      log(e.cause, stackTrace: stacktrace);
+      return Future.error(e, stacktrace);
     }
     notifyListeners();
   }
@@ -363,12 +406,12 @@ class ToDoProvider extends ChangeNotifier {
   Future<List<int>> deleteFutures({ToDo? toDo}) async {
     try {
       return await _repeatService.deleteFutures(model: toDo ?? curToDo!);
-    } on FailureToUpdateException catch (e) {
-      log(e.cause);
-      return Future.error(e);
-    } on FailureToUploadException catch (e) {
-      log(e.cause);
-      return Future.error(e);
+    } on FailureToUpdateException catch (e, stacktrace) {
+      log(e.cause, stackTrace: stacktrace);
+      return Future.error(e, stacktrace);
+    } on FailureToUploadException catch (e, stacktrace) {
+      log(e.cause, stackTrace: stacktrace);
+      return Future.error(e, stacktrace);
     }
   }
 

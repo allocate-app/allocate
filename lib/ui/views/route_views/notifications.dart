@@ -11,7 +11,6 @@ import '../../../providers/application/layout_provider.dart';
 import '../../../providers/model/deadline_provider.dart';
 import '../../../providers/model/reminder_provider.dart';
 import '../../../providers/model/todo_provider.dart';
-import '../../../providers/model/user_provider.dart';
 import '../../../util/constants.dart';
 import '../../../util/enums.dart';
 import '../../../util/interfaces/i_model.dart';

@@ -3,7 +3,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 
-import '../../model/user/user.dart';
+import '../../model/user/allocate_user.dart';
 import '../../util/constants.dart';
 import '../../util/enums.dart';
 import '../../util/interfaces/view_model.dart';
@@ -15,7 +15,7 @@ import '../../util/sorting/todo_sorter.dart';
 
 class UserViewModel extends ChangeNotifier
     with EquatableMixin
-    implements ViewModel<User> {
+    implements ViewModel<AllocateUser> {
   // INFO
   late int _id;
   late String? _uuid;
@@ -24,7 +24,6 @@ class UserViewModel extends ChangeNotifier
   late String _username;
   late String? _email;
   late int _bandwidth;
-  late int _dayCost;
   late DateTime _lastOpened;
 
   // ROUTINES
@@ -67,24 +66,23 @@ class UserViewModel extends ChangeNotifier
         _username = Constants.defaultUsername,
         _email = null,
         _bandwidth = Constants.maxBandwidth ~/ 2,
-        _dayCost = 0,
         _lastOpened = DateTime.now(),
         _curMornID = null,
         _curAftID = null,
         _curEveID = null,
         _themeType = ThemeType.system,
         _toneMapping = ToneMapping.system,
-        _windowEffect = Effect.disabled,
+        _windowEffect = Constants.defaultWindowEffect,
         _primarySeed = Constants.defaultPrimaryColorSeed,
         _secondarySeed = null,
         _tertiarySeed = null,
-        _sidebarOpacity = 1,
-        _scaffoldOpacity = 1,
+        _sidebarOpacity = Constants.defaultSidebarOpacity,
+        _scaffoldOpacity = Constants.defaultScaffoldOpacity,
         _checkClose = true,
         _checkDelete = true,
         _useUltraHighContrast = false,
         _reduceMotion = false,
-        _deleteSchedule = DeleteSchedule.never,
+        _deleteSchedule = DeleteSchedule.thirtyDays,
         _toDoSorter = ToDoSorter(),
         _routineSorter = RoutineSorter(),
         _reminderSorter = ReminderSorter(),
@@ -92,7 +90,7 @@ class UserViewModel extends ChangeNotifier
         _groupSorter = GroupSorter();
 
   @override
-  void fromModel({required User model}) {
+  void fromModel({required AllocateUser model}) {
     _id = model.id;
     _uuid = model.uuid;
     _syncOnline = model.syncOnline;
@@ -100,7 +98,6 @@ class UserViewModel extends ChangeNotifier
     _username = model.username;
     _email = model.email;
     _bandwidth = model.bandwidth;
-    _dayCost = model.dayCost;
     _lastOpened = model.lastOpened;
 
     _curMornID = model.curMornID;
@@ -139,24 +136,23 @@ class UserViewModel extends ChangeNotifier
     _username = Constants.defaultUsername;
     _email = null;
     _bandwidth = Constants.maxBandwidth ~/ 2;
-    _dayCost = 0;
     _lastOpened = DateTime.now();
     _curMornID = null;
     _curAftID = null;
     _curEveID = null;
     _themeType = ThemeType.system;
     _toneMapping = ToneMapping.system;
-    _windowEffect = Effect.disabled;
+    _windowEffect = Constants.defaultWindowEffect;
     _primarySeed = Constants.defaultPrimaryColorSeed;
     _secondarySeed = null;
     _tertiarySeed = null;
-    _sidebarOpacity = 1;
-    _scaffoldOpacity = 1;
+    _sidebarOpacity = Constants.defaultSidebarOpacity;
+    _scaffoldOpacity = Constants.defaultScaffoldOpacity;
     _checkClose = true;
     _checkDelete = true;
     _useUltraHighContrast = false;
     _reduceMotion = false;
-    _deleteSchedule = DeleteSchedule.never;
+    _deleteSchedule = DeleteSchedule.thirtyDays;
     _toDoSorter = ToDoSorter();
     _routineSorter = RoutineSorter();
     _reminderSorter = ReminderSorter();
@@ -166,7 +162,7 @@ class UserViewModel extends ChangeNotifier
   }
 
   @override
-  User toModel() => User(
+  AllocateUser toModel() => AllocateUser(
         id: _id,
         uuid: _uuid,
         syncOnline: _syncOnline,
@@ -174,7 +170,6 @@ class UserViewModel extends ChangeNotifier
         username: _username,
         email: _email,
         bandwidth: _bandwidth,
-        dayCost: _dayCost,
         lastOpened: _lastOpened,
         lastUpdated: DateTime.now(),
         curMornID: _curMornID,
@@ -232,8 +227,8 @@ class UserViewModel extends ChangeNotifier
 
   String get username => _username;
 
-  set userName(String userName) {
-    _username = userName;
+  set username(String username) {
+    _username = username;
     notifyListeners();
   }
 
@@ -248,13 +243,6 @@ class UserViewModel extends ChangeNotifier
 
   set bandwidth(int bandwidth) {
     _bandwidth = bandwidth;
-    notifyListeners();
-  }
-
-  int get dayCost => _dayCost;
-
-  set dayCost(int dayCost) {
-    _dayCost = dayCost;
     notifyListeners();
   }
 
@@ -378,6 +366,18 @@ class UserViewModel extends ChangeNotifier
   set deleteSchedule(DeleteSchedule deleteSchedule) {
     _deleteSchedule = deleteSchedule;
     notifyListeners();
+  }
+
+  DateTime? get deleteDate {
+    return switch (_deleteSchedule) {
+      DeleteSchedule.fifteenDays =>
+        Constants.today.copyWith(day: Constants.today.day - 15),
+      DeleteSchedule.thirtyDays =>
+        Constants.today.copyWith(day: Constants.today.day - 30),
+      DeleteSchedule.oneYear =>
+        Constants.today.copyWith(day: Constants.today.year - 1),
+      _ => null,
+    };
   }
 
   // SORTING PREFERENCES

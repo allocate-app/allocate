@@ -38,6 +38,7 @@ class _UpdateSubtaskScreen extends State<UpdateSubtaskScreen> {
     nameEditingController = TextEditingController(text: vm.name);
     nameEditingController.addListener(watchName);
     _checkClose = ValueNotifier(false);
+    _nameErrorText = ValueNotifier(null);
     super.initState();
   }
 
@@ -186,6 +187,8 @@ class _UpdateSubtaskScreen extends State<UpdateSubtaskScreen> {
             weight: value.toDouble(),
             max: Constants.maxTaskWeightDouble,
             slider: Tiles.weightSlider(
+                max: Constants.maxSubtaskWeightDouble,
+                divisions: Constants.maxSubtaskWeight,
                 weight: value.toDouble(),
                 handleWeightChange: (double? newWeight) {
                   if (null == newWeight) {

@@ -21,7 +21,6 @@ import '../../../providers/model/reminder_provider.dart';
 import '../../../providers/model/routine_provider.dart';
 import '../../../providers/model/subtask_provider.dart';
 import '../../../providers/model/todo_provider.dart';
-import '../../../providers/model/user_provider.dart';
 import "../../../util/constants.dart";
 import "../../../util/enums.dart";
 import "../../../util/exceptions.dart";

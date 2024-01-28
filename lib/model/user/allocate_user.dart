@@ -10,11 +10,12 @@ import '../../util/sorting/reminder_sorter.dart';
 import '../../util/sorting/routine_sorter.dart';
 import '../../util/sorting/todo_sorter.dart';
 
-part "user.g.dart";
+part "allocate_user.g.dart";
 
 @Collection(inheritance: false)
-class User with EquatableMixin implements Copyable<User> {
+class AllocateUser with EquatableMixin implements Copyable<AllocateUser> {
   // Local ID
+  @Index()
   late Id id;
 
   // Online id
@@ -35,8 +36,6 @@ class User with EquatableMixin implements Copyable<User> {
 
   // Emotional bandwidth
   int bandwidth;
-
-  int dayCost;
 
   // User Theme type.
   @Enumerated(EnumType.ordinal)
@@ -83,7 +82,10 @@ class User with EquatableMixin implements Copyable<User> {
   // Last login.
   DateTime lastOpened;
 
-  User(
+  @Index()
+  bool toDelete;
+
+  AllocateUser(
       {required this.id,
       this.uuid,
       required this.username,
@@ -91,7 +93,6 @@ class User with EquatableMixin implements Copyable<User> {
       this.checkDelete = true,
       this.checkClose = true,
       this.bandwidth = 100,
-      this.dayCost = 0,
       this.themeType = ThemeType.system,
       this.toneMapping = ToneMapping.system,
       this.windowEffect = Effect.disabled,
@@ -113,15 +114,15 @@ class User with EquatableMixin implements Copyable<User> {
       this.deleteSchedule = DeleteSchedule.never,
       this.isSynced = false,
       this.syncOnline = false,
+      this.toDelete = false,
       required this.lastOpened,
       required this.lastUpdated});
 
-  User.fromEntity({required Map<String, dynamic> entity})
+  AllocateUser.fromEntity({required Map<String, dynamic> entity})
       : id = entity["id"] as int,
         uuid = entity["uuid"] as String,
-        username = entity["userName"] as String,
+        username = entity["username"] as String,
         bandwidth = entity["bandwidth"] as int,
-        dayCost = entity["dayCost"] as int,
         checkDelete = entity["checkDelete"],
         checkClose = entity["checkClose"],
         curMornID = entity["curMornID"] as int?,
@@ -169,13 +170,18 @@ class User with EquatableMixin implements Copyable<User> {
         // Local Parameters
         windowEffect = Effect.disabled,
         scaffoldOpacity = 100,
-        sidebarOpacity = 100;
+        sidebarOpacity = 100,
+        toDelete = false;
 
+  // TODO: supabase - link user table by user.auth.uuid + email.
   Map<String, dynamic> toEntity() => {
         "id": id,
-        "userName": username,
+        // TODO: remove this -> should already be in table.
+        "uuid": uuid,
+        // TODO: remove this -> should already be in table.
+        "email": email,
+        "username": username,
         "bandwidth": bandwidth,
-        "dayCost": dayCost,
         "checkDelete": checkDelete,
         "checkClose": checkClose,
         "curMornID": curMornID,
@@ -207,12 +213,11 @@ class User with EquatableMixin implements Copyable<User> {
   // TODO: decide whether or not to copy the id.
   // ALSO: whether or not to uuid.
   @override
-  User copy() => User(
+  AllocateUser copy() => AllocateUser(
         id: Constants.generateID(),
         uuid: null,
         username: username,
         bandwidth: bandwidth,
-        dayCost: dayCost,
         checkDelete: checkDelete,
         checkClose: checkClose,
         curMornID: curMornID,
@@ -238,15 +243,15 @@ class User with EquatableMixin implements Copyable<User> {
         syncOnline: syncOnline,
         lastOpened: lastOpened,
         lastUpdated: lastUpdated,
+        toDelete: toDelete,
       );
 
   @override
-  User copyWith(
+  AllocateUser copyWith(
           {int? id,
           String? uuid,
-          String? userName,
+          String? username,
           int? bandwidth,
-          int? dayCost,
           bool? checkDelete,
           bool? checkClose,
           int? curMornID,
@@ -271,13 +276,13 @@ class User with EquatableMixin implements Copyable<User> {
           bool? isSynced,
           DeleteSchedule? deleteSchedule,
           DateTime? lastOpened,
-          DateTime? lastUpdated}) =>
-      User(
+          DateTime? lastUpdated,
+          bool? toDelete}) =>
+      AllocateUser(
           id: id ?? Constants.generateID(),
           uuid: uuid,
-          username: userName ?? username,
+          username: username ?? this.username,
           bandwidth: bandwidth ?? this.bandwidth,
-          dayCost: dayCost ?? this.dayCost,
           checkDelete: checkDelete ?? this.checkDelete,
           checkClose: checkClose ?? this.checkClose,
           curMornID: curMornID ?? this.curMornID,
@@ -303,7 +308,8 @@ class User with EquatableMixin implements Copyable<User> {
           isSynced: isSynced ?? this.isSynced,
           deleteSchedule: deleteSchedule ?? this.deleteSchedule,
           lastOpened: lastOpened ?? this.lastOpened,
-          lastUpdated: lastUpdated ?? this.lastUpdated);
+          lastUpdated: lastUpdated ?? this.lastUpdated,
+          toDelete: toDelete ?? this.toDelete);
 
   @ignore
   @override
@@ -311,7 +317,7 @@ class User with EquatableMixin implements Copyable<User> {
 
   @override
   toString() =>
-      "id: $id, uuid: $uuid, userName: $username, syncOnline: $syncOnline, bandwidth: $bandwidth, "
+      "id: $id, uuid: $uuid, username: $username, syncOnline: $syncOnline, bandwidth: $bandwidth, "
       "curTheme: ${themeType.name}, curMornID: $curMornID, curAftID: $curAftID, curEveID: $curEveID,"
       "groupSorter: $groupSorter, deadlineSorter: $deadlineSorter,"
       "reminderSorter: $reminderSorter, routineSorter: $routineSorter, "

@@ -3,15 +3,19 @@ import 'dart:core';
 abstract interface class Authenticator {
   Future<void> signInEmailPassword(
       {required String email, required String password});
-  Future<void> signUpEmailPassword(
+
+  Future<String?> signUpEmailPassword(
       {required String email, required String password});
 
-  // These require configuration - Consider adding later.
-  // Also: No Linux-Supabase redirect yet. Add later.
-  // Future<void> signInSMSOTP(String phone);
-  // Future<void> verifyOTP(String token, String phone);
-  // Future<void> signInWithApple();
-  //Future<void> signInOAuth();
-
   Future<void> signOut();
+
+  Future<String?> updateEmail({required String newEmail});
+
+  Future<void> updatePassword({required String newPassword});
+
+  Future<void> resendConfirmation({required String email});
+
+  Future<void> resendEmailChange({required String newEmail});
+
+  Future<void> passwordRecovery({required String email});
 }

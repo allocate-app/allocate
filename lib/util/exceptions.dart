@@ -1,3 +1,5 @@
+import '../model/user/allocate_user.dart';
+
 class FailureToCreateException implements Exception {
   String cause;
 
@@ -45,7 +47,9 @@ class InvalidRepeatingException implements Exception {
 
 class FailureToScheduleException implements Exception {
   String cause;
+
   FailureToScheduleException(this.cause);
+
   @override
   toString() => cause;
 }
@@ -91,6 +95,23 @@ class UserExistsException implements Exception {
 
   UserExistsException(this.cause);
 
+  @override
+  toString() => cause;
+}
+
+class MultipleUsersException implements Exception {
+  String cause;
+  List<AllocateUser>? users;
+
+  MultipleUsersException(this.cause, {this.users});
+
+  @override
+  toString() => cause;
+}
+
+class UserMissingException implements Exception {
+  String cause;
+  UserMissingException(this.cause);
   @override
   toString() => cause;
 }

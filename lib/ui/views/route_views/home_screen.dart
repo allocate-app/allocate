@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:ui';
 
+import 'package:allocate/util/exceptions.dart';
 import "package:auto_route/auto_route.dart";
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/foundation.dart';
@@ -17,9 +18,11 @@ import '../../../providers/model/deadline_provider.dart';
 import '../../../providers/model/group_provider.dart';
 import '../../../providers/model/reminder_provider.dart';
 import '../../../providers/model/routine_provider.dart';
+import '../../../providers/model/subtask_provider.dart';
 import '../../../providers/model/todo_provider.dart';
 import '../../../providers/model/user_provider.dart';
 import '../../../providers/viewmodels/user_viewmodel.dart';
+import '../../../services/repeatable_service.dart';
 import '../../../services/supabase_service.dart';
 import '../../../util/constants.dart';
 import '../../../util/enums.dart';
@@ -43,29 +46,22 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreen();
 }
 
-// TODO: read UserModel.reduceMotion and set tween duration.
 class _HomeScreen extends State<HomeScreen> {
+  final DailyResetProvider dailyResetProvider = DailyResetProvider.instance;
   late final ToDoProvider toDoProvider;
   late final RoutineProvider routineProvider;
   late final ReminderProvider reminderProvider;
   late final DeadlineProvider deadlineProvider;
+  late final SubtaskProvider subtaskProvider;
   late final UserProvider userProvider;
   late final GroupProvider groupProvider;
   late final ThemeProvider themeProvider;
   late final SearchProvider searchProvider;
   late final LayoutProvider layoutProvider;
-  late final DailyResetProvider appProvider;
 
   late final ScrollController navScrollController;
 
   late final ScrollPhysics scrollPhysics;
-
-  // I haven't fully thought this through yet. => Also, should probably just BE a double
-  // + userProvider.curUser?.dayCost;
-  int get myDayTotal =>
-      userProvider.myDayTotal +
-      routineProvider.routineWeight +
-      (userProvider.viewModel?.dayCost ?? 0);
 
   @override
   void initState() {
@@ -73,24 +69,26 @@ class _HomeScreen extends State<HomeScreen> {
     initializeProviders();
     initializeParams();
     initializeControllers();
-    updateMyDayWeight();
+    updateMyDay();
     resetNavGroups();
   }
 
   void initializeProviders() {
-    appProvider = Provider.of<DailyResetProvider>(context, listen: false);
     toDoProvider = Provider.of<ToDoProvider>(context, listen: false);
     routineProvider = Provider.of<RoutineProvider>(context, listen: false);
     reminderProvider = Provider.of<ReminderProvider>(context, listen: false);
     deadlineProvider = Provider.of<DeadlineProvider>(context, listen: false);
+    subtaskProvider = Provider.of<SubtaskProvider>(context, listen: false);
     userProvider = Provider.of<UserProvider>(context, listen: false);
     groupProvider = Provider.of<GroupProvider>(context, listen: false);
     themeProvider = Provider.of<ThemeProvider>(context, listen: false);
     searchProvider = Provider.of<SearchProvider>(context, listen: false);
 
     layoutProvider = Provider.of<LayoutProvider>(context, listen: false);
-    appProvider.addListener(dayReset);
-    toDoProvider.addListener(updateMyDayWeight);
+
+    toDoProvider.addListener(updateMyDay);
+    routineProvider.addListener(updateMyDay);
+    dailyResetProvider.addListener(dayReset);
     groupProvider.addListener(resetNavGroups);
   }
 
@@ -103,12 +101,10 @@ class _HomeScreen extends State<HomeScreen> {
   }
 
   void initializeParams() {
-    // _selectedPageIndex = widget.index ?? 0;
     if (null != widget.index &&
         widget.index != layoutProvider.selectedPageIndex) {
       layoutProvider.initPageIndex = widget.index!;
     }
-    // should just use layoutProvider for drawerOpened.
   }
 
   void initializeControllers() {
@@ -119,6 +115,16 @@ class _HomeScreen extends State<HomeScreen> {
         : const ClampingScrollPhysics();
 
     scrollPhysics = AlwaysScrollableScrollPhysics(parent: parentPhysics);
+  }
+
+  void updateMyDay() {
+    int newMyDayTotal =
+        toDoProvider.myDayWeight + routineProvider.routineWeight;
+
+    // This is to avoid rebuilds.
+    if (newMyDayTotal != userProvider.myDayTotal.value) {
+      userProvider.myDayTotal.value = newMyDayTotal;
+    }
   }
 
   Future<void> resetNavGroups() async {
@@ -148,38 +154,35 @@ class _HomeScreen extends State<HomeScreen> {
     }
   }
 
-  // TODO: Day reset -> delete sweep, reset myDay, etc.
   Future<void> dayReset() async {
-    // userProvider.dayReset();
-    // toDoProvider.dayReset();
-    // routineProvider.dayReset();
-    // deadlineProvider.dayReset();
-    // reminderProvider.dayReset();
-    // groupProvider.dayReset();
-    // // Subtaskprovider might need to be added
-    // subtaskProvider.dayReset();
+    Future.wait([
+      RepeatableService.instance.generateNextRepeats(),
+      userProvider.dayReset(),
+      toDoProvider.dayReset(),
+      routineProvider.dayReset(),
+      deadlineProvider.dayReset(),
+      reminderProvider.dayReset(),
+      groupProvider.dayReset(),
+      subtaskProvider.dayReset(),
+    ]).catchError((e) => Tiles.displayError(context: context, e: e),
+        test: (e) =>
+            e is FailureToUpdateException || e is FailureToDeleteException);
   }
 
   @override
   void dispose() {
-    navScrollController.dispose();
-    toDoProvider.removeListener(updateMyDayWeight);
+    toDoProvider.removeListener(updateMyDay);
+    routineProvider.removeListener(updateMyDay);
+    dailyResetProvider.removeListener(dayReset);
     groupProvider.removeListener(resetNavGroups);
+    navScrollController.dispose();
     super.dispose();
-  }
-
-  Future<void> updateMyDayWeight() async {
-    userProvider.myDayTotal = await toDoProvider.getMyDayWeight();
-    if (mounted) {
-      setState(() {});
-    }
   }
 
   @override
   Widget build(BuildContext context) {
     layoutProvider.size = MediaQuery.sizeOf(context);
     print("MQ: ${layoutProvider.size}");
-    // Possiby migrate to Selector.
     return Consumer<LayoutProvider>(
         builder: (BuildContext context, LayoutProvider value, Widget? child) {
       return (value.largeScreen)
@@ -188,7 +191,6 @@ class _HomeScreen extends State<HomeScreen> {
     });
   }
 
-  // TODO: refactor this to use selectors once state variables in LayoutProvider
   Widget _buildDesktop({required BuildContext context}) {
     return Row(children: [
       // This is a workaround for a standard navigation drawer
@@ -322,7 +324,7 @@ class _HomeScreen extends State<HomeScreen> {
         mainAxisSize: MainAxisSize.min,
         children: [
           const AutoSizeText(
-            "Allocate:",
+            "Allocate",
             style: Constants.largeHeaderStyle,
             minFontSize: Constants.huge,
             maxLines: 1,
@@ -333,18 +335,22 @@ class _HomeScreen extends State<HomeScreen> {
             message: "Remaining energy for tasks",
             // This should select for UserViewModel & userProvider
             // TODO: refactor. ValueListenable -> selector.
-            child: Selector2<UserProvider, UserViewModel, (int, int)>(
-              selector:
-                  (BuildContext context, UserProvider up, UserViewModel vm) =>
-                      (up.myDayTotal, vm.bandwidth),
-              builder:
-                  (BuildContext context, (int, int) value, Widget? child) =>
-                      BatteryMeter(
-                          showDifference: true,
-                          scale: .65,
-                          weight: myDayTotal.toDouble(),
-                          max: value.$2.toDouble(),
-                          constraints: const BoxConstraints(maxWidth: 120)),
+            child: ValueListenableBuilder<int>(
+              valueListenable: userProvider.myDayTotal,
+              builder: (BuildContext context, int myDay, Widget? child) {
+                return Selector<UserViewModel, int>(
+                  selector: (BuildContext context, UserViewModel vm) =>
+                      vm.bandwidth,
+                  builder:
+                      (BuildContext context, int bandwidth, Widget? child) =>
+                          BatteryMeter(
+                              showDifference: true,
+                              scale: .65,
+                              weight: myDay.toDouble(),
+                              max: bandwidth.toDouble(),
+                              constraints: const BoxConstraints(maxWidth: 120)),
+                );
+              },
             ),
           ),
         ],

@@ -19,6 +19,8 @@ enum Effect {
   sidebar,
 }
 
+enum UserStatus { normal, missing, multiple }
+
 enum ThemeType { system, light, dark }
 
 enum RepeatableState { normal, projected, template, delta }
@@ -36,7 +38,7 @@ enum ToneMapping {
 
 enum DeleteSchedule {
   never,
-  day,
-  month,
-  year,
+  fifteenDays,
+  thirtyDays,
+  oneYear,
 }

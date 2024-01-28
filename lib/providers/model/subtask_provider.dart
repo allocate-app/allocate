@@ -33,7 +33,9 @@ class SubtaskProvider extends ChangeNotifier {
 
   // CONSTRUCTOR
   SubtaskProvider({SubtaskRepository? subtaskRepository, this.userViewModel})
-      : _subtaskRepo = subtaskRepository ?? SubtaskRepo.instance;
+      : _subtaskRepo = subtaskRepository ?? SubtaskRepo.instance {
+    _subtaskRepo.addListener(notifyListeners);
+  }
 
   void setUser({UserViewModel? newUser}) {
     userViewModel = newUser;
@@ -43,12 +45,12 @@ class SubtaskProvider extends ChangeNotifier {
   Future<void> createSubtask(Subtask subtask) async {
     try {
       curSubtask = await _subtaskRepo.create(subtask);
-    } on FailureToUploadException catch (e) {
-      log(e.cause);
-      return Future.error(e);
-    } on FailureToUpdateException catch (e) {
-      log(e.cause);
-      return Future.error(e);
+    } on FailureToUploadException catch (e, stacktrace) {
+      log(e.cause, stackTrace: stacktrace);
+      return Future.error(e, stacktrace);
+    } on FailureToUpdateException catch (e, stacktrace) {
+      log(e.cause, stackTrace: stacktrace);
+      return Future.error(e, stacktrace);
     }
     notifyListeners();
   }
@@ -58,12 +60,12 @@ class SubtaskProvider extends ChangeNotifier {
     subtask.lastUpdated = DateTime.now();
     try {
       curSubtask = await _subtaskRepo.update(subtask);
-    } on FailureToUploadException catch (e) {
-      log(e.cause);
-      return Future.error(e);
-    } on FailureToUpdateException catch (e) {
-      log(e.cause);
-      return Future.error(e);
+    } on FailureToUploadException catch (e, stacktrace) {
+      log(e.cause, stackTrace: stacktrace);
+      return Future.error(e, stacktrace);
+    } on FailureToUpdateException catch (e, stacktrace) {
+      log(e.cause, stackTrace: stacktrace);
+      return Future.error(e, stacktrace);
     }
     notifyListeners();
   }
@@ -75,12 +77,12 @@ class SubtaskProvider extends ChangeNotifier {
     }
     try {
       await _subtaskRepo.updateBatch(subtasks);
-    } on FailureToUploadException catch (e) {
-      log(e.cause);
-      return Future.error(e);
-    } on FailureToUpdateException catch (e) {
-      log(e.cause);
-      return Future.error(e);
+    } on FailureToUploadException catch (e, stacktrace) {
+      log(e.cause, stackTrace: stacktrace);
+      return Future.error(e, stacktrace);
+    } on FailureToUpdateException catch (e, stacktrace) {
+      log(e.cause, stackTrace: stacktrace);
+      return Future.error(e, stacktrace);
     }
     notifyListeners();
   }
@@ -88,9 +90,9 @@ class SubtaskProvider extends ChangeNotifier {
   Future<void> deleteSubtask({required Subtask subtask}) async {
     try {
       await _subtaskRepo.delete(subtask);
-    } on FailureToDeleteException catch (e) {
-      log(e.cause);
-      return Future.error(e);
+    } on FailureToDeleteException catch (e, stacktrace) {
+      log(e.cause, stackTrace: stacktrace);
+      return Future.error(e, stacktrace);
     }
     notifyListeners();
   }
@@ -99,11 +101,27 @@ class SubtaskProvider extends ChangeNotifier {
   Future<void> emptyTrash() async {
     try {
       await _subtaskRepo.emptyTrash();
-    } on FailureToDeleteException catch (e) {
-      log(e.cause);
-      return Future.error(e);
+    } on FailureToDeleteException catch (e, stacktrace) {
+      log(e.cause, stackTrace: stacktrace);
+      return Future.error(e, stacktrace);
     }
     notifyListeners();
+  }
+
+  Future<void> dayReset() async {
+    try {
+      await _subtaskRepo.deleteSweep();
+    } on FailureToDeleteException catch (e, stacktrace) {
+      log(e.cause, stackTrace: stacktrace);
+      return Future.error(e, stacktrace);
+    }
+  }
+
+  Future<void> clearDatabase() async {
+    curSubtask = null;
+    subtasks = [];
+    _rebuild = false;
+    await _subtaskRepo.clearDB();
   }
 
   Future<List<Subtask>> reorderSubtasks(
@@ -122,12 +140,12 @@ class SubtaskProvider extends ChangeNotifier {
     try {
       await _subtaskRepo.updateBatch(subtasks);
       return subtasks;
-    } on FailureToUpdateException catch (e) {
-      log(e.cause);
-      return Future.error(e);
-    } on FailureToUploadException catch (e) {
-      log(e.cause);
-      return Future.error(e);
+    } on FailureToUpdateException catch (e, stacktrace) {
+      log(e.cause, stackTrace: stacktrace);
+      return Future.error(e, stacktrace);
+    } on FailureToUploadException catch (e, stacktrace) {
+      log(e.cause, stackTrace: stacktrace);
+      return Future.error(e, stacktrace);
     }
   }
 

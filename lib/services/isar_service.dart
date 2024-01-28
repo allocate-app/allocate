@@ -10,13 +10,12 @@ import "../model/task/reminder.dart";
 import "../model/task/routine.dart";
 import "../model/task/subtask.dart";
 import "../model/task/todo.dart";
-import "../model/user/user.dart";
+import "../model/user/allocate_user.dart";
 
 /// Singleton helper class for interfacing with Isar.
 /// Needs the schema to be generated.
 
 class IsarService {
-  // Future TODO -> Refactor to DI.
   static final IsarService _instance = IsarService._internal();
 
   static IsarService get instance => _instance;
@@ -40,7 +39,7 @@ class IsarService {
       ReminderSchema,
       GroupSchema,
       SubtaskSchema,
-      UserSchema,
+      AllocateUserSchema,
       DeadlineSchema
     ], directory: dbStorageDir.path);
   }

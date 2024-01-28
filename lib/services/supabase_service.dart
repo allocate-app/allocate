@@ -1,3 +1,5 @@
+import "dart:async";
+
 import "package:mocktail/mocktail.dart";
 import "package:supabase_flutter/supabase_flutter.dart";
 
@@ -8,19 +10,45 @@ class SupabaseService {
   static SupabaseService get instance => _instance;
 
   late SupabaseClient _supabaseClient;
+  late Stream<AuthState> _authSubscription;
 
   SupabaseClient get supabaseClient => _supabaseClient;
+
+  Stream<AuthState> get authSubscription => _authSubscription;
+
+  // late final StreamSubscription<AuthState> authSubscription;
+
+  bool get isConnected =>
+      null != _supabaseClient.auth.currentSession &&
+      !_supabaseClient.auth.currentSession!.isExpired;
+
+  bool _debug = false;
+  bool get debug => _debug;
 
   Future<void> init(
       {required String supabaseUrl,
       required String anonKey,
       SupabaseClient? client}) async {
     if (null != client) {
+      _debug = true;
       _supabaseClient = client;
       return;
     }
-    await Supabase.initialize(url: supabaseUrl, anonKey: anonKey);
+    await Supabase.initialize(
+        url: supabaseUrl,
+        anonKey: anonKey,
+        storageOptions: const StorageClientOptions(
+          retryAttempts: 10,
+        ));
     _supabaseClient = Supabase.instance.client;
+
+    // Initialize stream.
+    _authSubscription = _supabaseClient.auth.onAuthStateChange;
+
+    // Supabase refreshes automatically while the app is open.
+    // if (_supabaseClient.auth.currentSession?.isExpired ?? false) {
+    //   await _supabaseClient.auth.refreshSession();
+    // }
   }
 
   SupabaseService._internal();

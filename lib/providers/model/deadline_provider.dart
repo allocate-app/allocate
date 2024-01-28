@@ -37,8 +37,6 @@ class DeadlineProvider extends ChangeNotifier {
     }
   }
 
-  late Timer syncTimer;
-
   final DeadlineRepository _deadlineRepo;
   final RepeatableService _repeatService;
 
@@ -59,7 +57,9 @@ class DeadlineProvider extends ChangeNotifier {
       RepeatableService? repeatableService})
       : _deadlineRepo = deadlineRepo ?? DeadlineRepo.instance,
         _repeatService = repeatableService ?? RepeatableService.instance,
-        sorter = userViewModel?.deadlineSorter ?? DeadlineSorter();
+        sorter = userViewModel?.deadlineSorter ?? DeadlineSorter() {
+    _deadlineRepo.addListener(notifyListeners);
+  }
 
   void setUser({UserViewModel? newUser}) {
     userViewModel = newUser;
@@ -202,6 +202,28 @@ class DeadlineProvider extends ChangeNotifier {
       return Future.error(e);
     }
     notifyListeners();
+  }
+
+  Future<void> dayReset() async {
+    // TODO: schedule notifications.
+    DateTime? upTo = userViewModel?.deleteDate;
+    if (null != upTo) {
+      try {
+        await _deadlineRepo.deleteSweep(upTo: upTo);
+      } on FailureToDeleteException catch (e, stacktrace) {
+        log(e.cause, stackTrace: stacktrace);
+        return Future.error(e, stacktrace);
+      }
+    }
+  }
+
+  Future<void> clearDatabase() async {
+    curDeadline = null;
+    deadlines = [];
+    secondaryDeadlines = [];
+    _rebuild = true;
+    await _deadlineRepo.clearDB();
+    await _notificationService.cancelAllNotifications();
   }
 
   Future<List<Deadline>> reorderDeadlines(

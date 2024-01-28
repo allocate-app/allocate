@@ -1,5 +1,4 @@
 import 'package:allocate/ui/widgets/tiles.dart';
-import 'package:another_flushbar/flushbar.dart';
 import 'package:auto_size_text_field/auto_size_text_field.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
@@ -9,7 +8,6 @@ import '../../providers/model/subtask_provider.dart';
 import '../../providers/viewmodels/subtask_viewmodel.dart';
 import '../../util/constants.dart';
 import '../../util/exceptions.dart';
-import 'flushbars.dart';
 
 class SubtaskQuickEntry extends StatefulWidget {
   const SubtaskQuickEntry({
@@ -51,9 +49,10 @@ class _SubtaskQuickEntry extends State<SubtaskQuickEntry> {
   void initState() {
     super.initState();
     vm = Provider.of<SubtaskViewModel>(context, listen: false);
-    vm.weight = widget.weight.toInt();
-    vm.taskID = widget.taskID;
-    vm.customViewIndex = widget.taskIndex ?? vm.customViewIndex;
+    resetVM();
+    // vm.weight = widget.weight.toInt();
+    // vm.taskID = widget.taskID;
+    // vm.customViewIndex = widget.taskIndex ?? vm.customViewIndex;
     subtaskProvider = Provider.of<SubtaskProvider>(context, listen: false);
     nameEditingController = TextEditingController();
     nameEditingController.addListener(watchName);
@@ -72,6 +71,13 @@ class _SubtaskQuickEntry extends State<SubtaskQuickEntry> {
     String newText = nameEditingController.text;
     SemanticsService.announce(newText, Directionality.of(context));
     vm.name = newText;
+  }
+
+  void resetVM() {
+    vm.initWith(
+        weight: widget.weight.toInt(),
+        taskID: widget.taskID,
+        customViewIndex: widget.taskIndex);
   }
 
   @override
@@ -122,6 +128,8 @@ class _SubtaskQuickEntry extends State<SubtaskQuickEntry> {
                   return Tiles.weightAnchor(
                       controller: menuController,
                       weight: vm.weight.toDouble(),
+                      max: Constants.maxSubtaskWeightDouble,
+                      divisions: Constants.maxSubtaskWeight,
                       onOpen: widget.onOpen,
                       onClose: widget.onClose,
                       onChangeEnd: (value) {
@@ -145,7 +153,8 @@ class _SubtaskQuickEntry extends State<SubtaskQuickEntry> {
                               await subtaskProvider
                                   .createSubtask(vm.toModel())
                                   .whenComplete(() {
-                                vm.clear();
+                                resetVM();
+                                nameEditingController.clear();
                               }).catchError(
                                       (e) => Tiles.displayError(
                                           context: context, e: e),

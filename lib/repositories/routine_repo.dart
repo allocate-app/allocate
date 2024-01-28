@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:allocate/model/task/subtask.dart';
+import 'package:flutter/foundation.dart';
 import 'package:isar/isar.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -12,7 +14,7 @@ import '../util/exceptions.dart';
 import '../util/interfaces/repository/model/routine_repository.dart';
 import '../util/interfaces/sortable.dart';
 
-class RoutineRepo implements RoutineRepository {
+class RoutineRepo extends ChangeNotifier implements RoutineRepository {
   static final RoutineRepo _instance = RoutineRepo._internal();
 
   static RoutineRepo get instance => _instance;
@@ -20,11 +22,18 @@ class RoutineRepo implements RoutineRepository {
   // DB Clients.
   final SupabaseClient _supabaseClient =
       SupabaseService.instance.supabaseClient;
+  late final RealtimeChannel _routineStream;
+
   final Isar _isarClient = IsarService.instance.isarClient;
+
+  bool get isConnected => SupabaseService.instance.isConnected;
+
+  int _routineCount = 0;
+  bool _subscribed = false;
 
   @override
   Future<Routine> create(Routine routine) async {
-    routine.isSynced = (null != _supabaseClient.auth.currentSession);
+    routine.isSynced = isConnected;
 
     late int? id;
     await _isarClient.writeTxn(() async {
@@ -39,7 +48,7 @@ class RoutineRepo implements RoutineRepository {
           "Isar Open: ${_isarClient.isOpen}");
     }
 
-    if (null != _supabaseClient.auth.currentSession) {
+    if (isConnected) {
       Map<String, dynamic> routineEntity = routine.toEntity();
       final List<Map<String, dynamic>> response = await _supabaseClient
           .from("routines")
@@ -52,7 +61,8 @@ class RoutineRepo implements RoutineRepository {
         throw FailureToUploadException("Failed to sync routine on create\n"
             "Routine: ${routine.toString()}\n"
             "Time: ${DateTime.now()}\n\n"
-            "Supabase Open: ${null != _supabaseClient.auth.currentSession}");
+            "Supabase Open: $isConnected"
+            "Session expired: ${_supabaseClient.auth.currentSession?.isExpired}");
       }
     }
     return routine;
@@ -60,7 +70,7 @@ class RoutineRepo implements RoutineRepository {
 
   @override
   Future<Routine> update(Routine routine) async {
-    routine.isSynced = (null != _supabaseClient.auth.currentSession);
+    routine.isSynced = isConnected;
 
     // This is just for error checking.
     late int? id;
@@ -75,7 +85,7 @@ class RoutineRepo implements RoutineRepository {
           "Isar Open: ${_isarClient.isOpen}");
     }
 
-    if (null != _supabaseClient.auth.currentSession) {
+    if (isConnected) {
       Map<String, dynamic> routineEntity = routine.toEntity();
       final List<Map<String, dynamic>> response = await _supabaseClient
           .from("routines")
@@ -87,7 +97,8 @@ class RoutineRepo implements RoutineRepository {
         throw FailureToUploadException("Failed to sync routine on update\n"
             "Routine: ${routine.toString()}\n"
             "Time: ${DateTime.now()}\n\n"
-            "Supabase Open: ${null != _supabaseClient.auth.currentSession}");
+            "Supabase Open: $isConnected"
+            "Session expired: ${_supabaseClient.auth.currentSession?.isExpired}");
       }
     }
     return routine;
@@ -105,7 +116,7 @@ class RoutineRepo implements RoutineRepository {
     await _isarClient.writeTxn(() async {
       ids = List<int?>.empty(growable: true);
       for (Routine routine in routines) {
-        routine.isSynced = (null != _supabaseClient.auth.currentSession);
+        routine.isSynced = isConnected;
         id = await _isarClient.routines.put(routine);
         ids.add(id);
       }
@@ -117,7 +128,7 @@ class RoutineRepo implements RoutineRepository {
           "Isar Open: ${_isarClient.isOpen}");
     }
 
-    if (null != _supabaseClient.auth.currentSession) {
+    if (isConnected) {
       ids.clear();
       List<Map<String, dynamic>> routineEntities =
           routines.map((routine) => routine.toEntity()).toList();
@@ -132,7 +143,8 @@ class RoutineRepo implements RoutineRepository {
         throw FailureToUploadException("Failed to sync routines on update\n"
             "Routines: ${routines.toString()}\n"
             "Time: ${DateTime.now()}\n\n"
-            "Supabase Open: ${null != _supabaseClient.auth.currentSession}");
+            "Supabase Open: $isConnected"
+            "Session expired: ${_supabaseClient.auth.currentSession?.isExpired}");
       }
     }
   }
@@ -146,14 +158,15 @@ class RoutineRepo implements RoutineRepository {
   @override
   Future<void> remove(Routine routine) async {
     // Delete online
-    if (null != _supabaseClient.auth.currentSession) {
+    if (isConnected) {
       try {
         await _supabaseClient.from("routines").delete().eq("id", routine.id);
       } catch (error) {
         throw FailureToDeleteException("Failed to delete Routine online\n"
             "Routine: ${routine.toString()}\n"
             "Time: ${DateTime.now()}\n"
-            "Supabase Open: ${null != _supabaseClient.auth.currentSession}");
+            "Supabase Open: $isConnected"
+            "Session expired: ${_supabaseClient.auth.currentSession?.isExpired}");
       }
     }
     // Delete local
@@ -164,13 +177,14 @@ class RoutineRepo implements RoutineRepository {
 
   @override
   Future<List<int>> emptyTrash() async {
-    if (null != _supabaseClient.auth.currentSession) {
+    if (isConnected) {
       try {
         await _supabaseClient.from("routines").delete().eq("toDelete", true);
       } catch (error) {
         throw FailureToDeleteException("Failed to empty trash online\n"
             "Time: ${DateTime.now()}\n"
-            "Supabase Open: ${null != _supabaseClient.auth.currentSession}");
+            "Supabase Open: $isConnected"
+            "Session expired: ${_supabaseClient.auth.currentSession?.isExpired}");
       }
     }
     late List<int> deleteIDs;
@@ -186,88 +200,159 @@ class RoutineRepo implements RoutineRepository {
   }
 
   @override
-  Future<void> deleteSweep() async {
-    List<int> toDeletes = await getDeleteIDs();
+  Future<void> clearDB() async {
+    if (isConnected) {
+      // not sure whether or not to catch errors.
+      await _supabaseClient
+          .from("routines")
+          .delete()
+          .neq("customViewIndex", -2);
+    }
+
     await _isarClient.writeTxn(() async {
-      await _isarClient.routines.deleteAll(toDeletes);
+      await _isarClient.routines.clear();
     });
   }
 
+  // To avoid unnecessary id list passing -> just deleting subtasks here.
+
   @override
-  Future<void> syncRepo() async {
-    if (null == _supabaseClient.auth.currentSession) {
-      return fetchRepo();
+  Future<void> deleteSweep({DateTime? upTo}) async {
+    List<int> toDeletes = await getDeleteIDs(deleteLimit: upTo);
+    List<int> subtaskIDs = List.empty(growable: true);
+    for (int id in toDeletes) {
+      subtaskIDs.addAll(await _isarClient.subtasks
+          .where()
+          .taskIDEqualTo(id)
+          .idProperty()
+          .findAll());
     }
 
-    List<int> toDeletes = await getDeleteIDs();
-    if (toDeletes.isNotEmpty) {
+    if (isConnected) {
       try {
         await _supabaseClient
             .from("routines")
             .delete()
             .inFilter("id", toDeletes);
+        await _supabaseClient
+            .from("subtasks")
+            .delete()
+            .inFilter("id", subtaskIDs);
       } catch (error) {
-        throw FailureToDeleteException("Failed to delete routines on sync\n"
-            "ids: ${toDeletes.toString()}\n"
-            "Time: ${DateTime.now()}\n\n"
-            "Supabase Open: ${null != _supabaseClient.auth.currentSession}");
+        throw FailureToDeleteException("Failed to delete routines online \n"
+            "Time: ${DateTime.now()}\n"
+            "Supabase Open: $isConnected"
+            "Session expired: ${_supabaseClient.auth.currentSession?.isExpired}");
       }
     }
-
-    // Get the non-uploaded stuff from Isar.
-    List<Routine> unsyncedRoutines = await getUnsynced();
-
-    if (unsyncedRoutines.isNotEmpty) {
-      List<Map<String, dynamic>> syncEntities = unsyncedRoutines.map((routine) {
-        routine.isSynced = true;
-        return routine.toEntity();
-      }).toList();
-
-      final List<Map<String, dynamic>> responses = await _supabaseClient
-          .from("routines")
-          .upsert(syncEntities)
-          .select("id");
-
-      List<int?> ids =
-          responses.map((response) => response["id"] as int?).toList();
-
-      if (ids.any((id) => null == id)) {
-        throw FailureToUploadException("Failed to sync routines\n"
-            "Routines: ${unsyncedRoutines.toString()}\n"
-            "Time: ${DateTime.now()}\n\n"
-            "Supabase Open: ${null != _supabaseClient.auth.currentSession}");
-      }
-    }
-    fetchRepo();
-  }
-
-  @override
-  Future<void> fetchRepo() async {
-    late List<Map<String, dynamic>> routineEntities;
-
-    await Future.delayed(const Duration(seconds: 1)).then((value) async {
-      if (null == _supabaseClient.auth.currentSession) {
-        return;
-      }
-      routineEntities = await _supabaseClient.from("routines").select();
-
-      if (routineEntities.isEmpty) {
-        return;
-      }
-
-      List<Routine> routines = routineEntities
-          .map((routine) => Routine.fromEntity(entity: routine))
-          .toList();
-      await _isarClient.writeTxn(() async {
-        await _isarClient.routines.clear();
-        for (Routine routine in routines) {
-          await _isarClient.routines.put(routine);
-        }
-      });
+    await _isarClient.writeTxn(() async {
+      await _isarClient.routines.deleteAll(toDeletes);
+      await _isarClient.subtasks.deleteAll(subtaskIDs);
     });
   }
 
-  // TODO: possibly factor the magic number out.
+  Future<int> getOnlineCount() async =>
+      _supabaseClient.from("routines").count(CountOption.exact);
+
+  @override
+  Future<void> syncRepo() async {
+    if (!isConnected) {
+      return;
+    }
+
+    // Get the set of unsynced data.
+    Set<Routine> unsynced = await getUnsynced().then((_) => _.toSet());
+
+    // Get the online count.
+    _routineCount = await getOnlineCount();
+
+    // Fetch new data -> by fetchRepo();
+    List<Routine> onlineRoutines = await fetchRepo();
+
+    List<Routine> toInsert = List.empty(growable: true);
+    for (Routine routine in onlineRoutines) {
+      Routine? otherRoutine = unsynced.lookup(routine);
+      // Prioritize by last updated -> unsynced data will overwrite new data.
+      if (null != otherRoutine &&
+          routine.lastUpdated.isAfter(otherRoutine.lastUpdated)) {
+        unsynced.remove(otherRoutine);
+      }
+      toInsert.add(routine);
+    }
+
+    // Put all new data in the db.
+    await _isarClient.writeTxn(() async {
+      await _isarClient.routines.putAll(toInsert);
+    });
+
+    // Update the unsynced data.
+    await updateBatch(unsynced.toList());
+
+    if (onlineRoutines.length < _routineCount) {
+      // Give the db a moment to refresh.
+      await Future.delayed(const Duration(seconds: 1));
+      insertRemaining(totalFetched: onlineRoutines.length).whenComplete(() {
+        notifyListeners();
+      });
+    }
+
+    notifyListeners();
+  }
+
+  Future<void> insertRemaining({required int totalFetched}) async {
+    List<Routine> toInsert = List.empty(growable: true);
+    while (totalFetched < _routineCount) {
+      List<Routine>? newRoutines = await fetchRepo(offset: totalFetched);
+
+      // If there is no data or connection is lost, break.
+      if (newRoutines.isEmpty) {
+        break;
+      }
+      toInsert.addAll(newRoutines);
+      totalFetched += newRoutines.length;
+    }
+
+    await _isarClient.writeTxn(() async {
+      await _isarClient.routines.putAll(toInsert);
+    });
+  }
+
+  @override
+  Future<List<Routine>> fetchRepo({int limit = 1000, int offset = 0}) async {
+    List<Routine> data = List.empty(growable: true);
+    if (!isConnected) {
+      return data;
+    }
+    List<Map<String, dynamic>> routineEntities = await _supabaseClient
+        .from("routines")
+        .select()
+        .order("lastUpdated", ascending: false)
+        .range(offset, offset + limit);
+
+    for (Map<String, dynamic> entity in routineEntities) {
+      data.add(Routine.fromEntity(entity: entity));
+    }
+    return data;
+  }
+
+  Future<void> handleUpsert(PostgresChangePayload payload) async {
+    Routine routine = Routine.fromEntity(entity: payload.newRecord);
+    await _isarClient.writeTxn(() async {
+      await _isarClient.routines.put(routine);
+    });
+
+    _routineCount = await getOnlineCount();
+  }
+
+  Future<void> handleDelete(PostgresChangePayload payload) async {
+    int deleteID = payload.oldRecord["id"] as int;
+    await _isarClient.writeTxn(() async {
+      await _isarClient.routines.delete(deleteID);
+    });
+
+    _routineCount = await getOnlineCount();
+  }
+
   @override
   Future<List<Routine>> search(
           {required String searchString, bool toDelete = false}) async =>
@@ -381,7 +466,6 @@ class RoutineRepo implements RoutineRepository {
           .limit(limit)
           .findAll();
 
-  // TODO: Migrate to other repositories
   Future<List<int>> getDeleteIDs({DateTime? deleteLimit}) async {
     deleteLimit = deleteLimit ?? Constants.today;
     return await _isarClient.routines
@@ -396,5 +480,83 @@ class RoutineRepo implements RoutineRepository {
   Future<List<Routine>> getUnsynced() async =>
       await _isarClient.routines.where().isSyncedEqualTo(false).findAll();
 
-  RoutineRepo._internal();
+  RoutineRepo._internal() {
+    // I haven't faked the connection channels -> doesn't make sense to.
+    if (SupabaseService.instance.debug) {
+      return;
+    }
+    // Initialize table stream -> only listen on signIn.
+    _routineStream = _supabaseClient
+        .channel("public:routines")
+        .onPostgresChanges(
+            event: PostgresChangeEvent.insert,
+            schema: "public",
+            table: "routines",
+            callback: handleUpsert)
+        .onPostgresChanges(
+            schema: "public",
+            table: "routines",
+            event: PostgresChangeEvent.update,
+            callback: handleUpsert)
+        .onPostgresChanges(
+            schema: "public",
+            table: "routines",
+            event: PostgresChangeEvent.delete,
+            callback: handleDelete);
+
+    // Listen to auth changes.
+    SupabaseService.instance.authSubscription.listen((AuthState data) async {
+      final AuthChangeEvent event = data.event;
+      switch (event) {
+        case AuthChangeEvent.signedIn:
+          await syncRepo();
+          // OPEN TABLE STREAM -> insert new data.
+          if (!_subscribed) {
+            _routineStream.subscribe();
+            _subscribed = true;
+          }
+          break;
+        case AuthChangeEvent.tokenRefreshed:
+          // If not listening to the stream, there hasn't been an update.
+          // Sync accordingly.
+          if (!_subscribed) {
+            await syncRepo();
+            _routineStream.subscribe();
+            _subscribed = true;
+          }
+          break;
+        case AuthChangeEvent.signedOut:
+          // CLOSE TABLE STREAM.
+          await _routineStream.unsubscribe();
+          _subscribed = false;
+          break;
+        default:
+          break;
+      }
+      // if (event == AuthChangeEvent.signedIn) {
+      //   await syncRepo();
+      //   // OPEN TABLE STREAM -> insert new data.
+      //   if (!_subscribed) {
+      //     _routineStream.subscribe();
+      //     _subscribed = true;
+      //   }
+      //   return;
+      // }
+      // if (event == AuthChangeEvent.tokenRefreshed) {
+      //   // If not listening to the stream, there hasn't been an update.
+      //   // Sync accordingly.
+      //   if (!_subscribed) {
+      //     await syncRepo();
+      //     _routineStream.subscribe();
+      //     _subscribed = true;
+      //   }
+      //   return;
+      // }
+      // if (event == AuthChangeEvent.signedOut) {
+      //   // CLOSE TABLE STREAM.
+      //   await _routineStream.unsubscribe();
+      //   _subscribed = false;
+      // }
+    });
+  }
 }

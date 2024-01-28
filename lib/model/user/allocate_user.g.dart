@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'user.dart';
+part of 'allocate_user.dart';
 
 // **************************************************************************
 // IsarCollectionGenerator
@@ -9,13 +9,13 @@ part of 'user.dart';
 // coverage:ignore-file
 // ignore_for_file: duplicate_ignore, non_constant_identifier_names, constant_identifier_names, invalid_use_of_protected_member, unnecessary_cast, prefer_const_constructors, lines_longer_than_80_chars, require_trailing_commas, inference_failure_on_function_invocation, unnecessary_parenthesis, unnecessary_raw_strings, unnecessary_null_checks, join_return_with_assignment, prefer_final_locals, avoid_js_rounded_ints, avoid_positional_boolean_parameters, always_specify_types
 
-extension GetUserCollection on Isar {
-  IsarCollection<User> get users => this.collection();
+extension GetAllocateUserCollection on Isar {
+  IsarCollection<AllocateUser> get allocateUsers => this.collection();
 }
 
-const UserSchema = CollectionSchema(
-  name: r'User',
-  id: -7838171048429979076,
+const AllocateUserSchema = CollectionSchema(
+  name: r'AllocateUser',
+  id: -2756271931436751004,
   properties: {
     r'bandwidth': PropertySchema(
       id: 0,
@@ -47,16 +47,16 @@ const UserSchema = CollectionSchema(
       name: r'curMornID',
       type: IsarType.long,
     ),
-    r'dayCost': PropertySchema(
-      id: 6,
-      name: r'dayCost',
-      type: IsarType.long,
-    ),
     r'deleteSchedule': PropertySchema(
-      id: 7,
+      id: 6,
       name: r'deleteSchedule',
       type: IsarType.byte,
-      enumMap: _UserdeleteScheduleEnumValueMap,
+      enumMap: _AllocateUserdeleteScheduleEnumValueMap,
+    ),
+    r'email': PropertySchema(
+      id: 7,
+      name: r'email',
+      type: IsarType.string,
     ),
     r'isSynced': PropertySchema(
       id: 8,
@@ -112,40 +112,45 @@ const UserSchema = CollectionSchema(
       id: 18,
       name: r'themeType',
       type: IsarType.byte,
-      enumMap: _UserthemeTypeEnumValueMap,
+      enumMap: _AllocateUserthemeTypeEnumValueMap,
+    ),
+    r'toDelete': PropertySchema(
+      id: 19,
+      name: r'toDelete',
+      type: IsarType.bool,
     ),
     r'toneMapping': PropertySchema(
-      id: 19,
+      id: 20,
       name: r'toneMapping',
       type: IsarType.byte,
-      enumMap: _UsertoneMappingEnumValueMap,
+      enumMap: _AllocateUsertoneMappingEnumValueMap,
     ),
     r'useUltraHighContrast': PropertySchema(
-      id: 20,
+      id: 21,
       name: r'useUltraHighContrast',
       type: IsarType.bool,
     ),
     r'username': PropertySchema(
-      id: 21,
+      id: 22,
       name: r'username',
       type: IsarType.string,
     ),
     r'uuid': PropertySchema(
-      id: 22,
+      id: 23,
       name: r'uuid',
       type: IsarType.string,
     ),
     r'windowEffect': PropertySchema(
-      id: 23,
+      id: 24,
       name: r'windowEffect',
       type: IsarType.byte,
-      enumMap: _UserwindowEffectEnumValueMap,
+      enumMap: _AllocateUserwindowEffectEnumValueMap,
     )
   },
-  estimateSize: _userEstimateSize,
-  serialize: _userSerialize,
-  deserialize: _userDeserialize,
-  deserializeProp: _userDeserializeProp,
+  estimateSize: _allocateUserEstimateSize,
+  serialize: _allocateUserSerialize,
+  deserialize: _allocateUserDeserialize,
+  deserializeProp: _allocateUserDeserializeProp,
   idName: r'id',
   indexes: {
     r'uuid': IndexSchema(
@@ -173,22 +178,41 @@ const UserSchema = CollectionSchema(
           caseSensitive: true,
         )
       ],
+    ),
+    r'toDelete': IndexSchema(
+      id: -1258472419680751990,
+      name: r'toDelete',
+      unique: false,
+      replace: false,
+      properties: [
+        IndexPropertySchema(
+          name: r'toDelete',
+          type: IndexType.value,
+          caseSensitive: false,
+        )
+      ],
     )
   },
   links: {},
   embeddedSchemas: {},
-  getId: _userGetId,
-  getLinks: _userGetLinks,
-  attach: _userAttach,
+  getId: _allocateUserGetId,
+  getLinks: _allocateUserGetLinks,
+  attach: _allocateUserAttach,
   version: '3.1.0+1',
 );
 
-int _userEstimateSize(
-  User object,
+int _allocateUserEstimateSize(
+  AllocateUser object,
   List<int> offsets,
   Map<Type, List<int>> allOffsets,
 ) {
   var bytesCount = offsets.last;
+  {
+    final value = object.email;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
   bytesCount += 3 + object.username.length * 3;
   {
     final value = object.uuid;
@@ -199,8 +223,8 @@ int _userEstimateSize(
   return bytesCount;
 }
 
-void _userSerialize(
-  User object,
+void _allocateUserSerialize(
+  AllocateUser object,
   IsarWriter writer,
   List<int> offsets,
   Map<Type, List<int>> allOffsets,
@@ -211,8 +235,8 @@ void _userSerialize(
   writer.writeLong(offsets[3], object.curAftID);
   writer.writeLong(offsets[4], object.curEveID);
   writer.writeLong(offsets[5], object.curMornID);
-  writer.writeLong(offsets[6], object.dayCost);
-  writer.writeByte(offsets[7], object.deleteSchedule.index);
+  writer.writeByte(offsets[6], object.deleteSchedule.index);
+  writer.writeString(offsets[7], object.email);
   writer.writeBool(offsets[8], object.isSynced);
   writer.writeDateTime(offsets[9], object.lastOpened);
   writer.writeDateTime(offsets[10], object.lastUpdated);
@@ -224,30 +248,31 @@ void _userSerialize(
   writer.writeBool(offsets[16], object.syncOnline);
   writer.writeLong(offsets[17], object.tertiarySeed);
   writer.writeByte(offsets[18], object.themeType.index);
-  writer.writeByte(offsets[19], object.toneMapping.index);
-  writer.writeBool(offsets[20], object.useUltraHighContrast);
-  writer.writeString(offsets[21], object.username);
-  writer.writeString(offsets[22], object.uuid);
-  writer.writeByte(offsets[23], object.windowEffect.index);
+  writer.writeBool(offsets[19], object.toDelete);
+  writer.writeByte(offsets[20], object.toneMapping.index);
+  writer.writeBool(offsets[21], object.useUltraHighContrast);
+  writer.writeString(offsets[22], object.username);
+  writer.writeString(offsets[23], object.uuid);
+  writer.writeByte(offsets[24], object.windowEffect.index);
 }
 
-User _userDeserialize(
+AllocateUser _allocateUserDeserialize(
   Id id,
   IsarReader reader,
   List<int> offsets,
   Map<Type, List<int>> allOffsets,
 ) {
-  final object = User(
+  final object = AllocateUser(
     bandwidth: reader.readLongOrNull(offsets[0]) ?? 100,
     checkClose: reader.readBoolOrNull(offsets[1]) ?? true,
     checkDelete: reader.readBoolOrNull(offsets[2]) ?? true,
     curAftID: reader.readLongOrNull(offsets[3]),
     curEveID: reader.readLongOrNull(offsets[4]),
     curMornID: reader.readLongOrNull(offsets[5]),
-    dayCost: reader.readLongOrNull(offsets[6]) ?? 0,
-    deleteSchedule:
-        _UserdeleteScheduleValueEnumMap[reader.readByteOrNull(offsets[7])] ??
-            DeleteSchedule.never,
+    deleteSchedule: _AllocateUserdeleteScheduleValueEnumMap[
+            reader.readByteOrNull(offsets[6])] ??
+        DeleteSchedule.never,
+    email: reader.readStringOrNull(offsets[7]),
     id: id,
     isSynced: reader.readBoolOrNull(offsets[8]) ?? false,
     lastOpened: reader.readDateTime(offsets[9]),
@@ -259,22 +284,24 @@ User _userDeserialize(
     sidebarOpacity: reader.readDoubleOrNull(offsets[15]) ?? 100,
     syncOnline: reader.readBoolOrNull(offsets[16]) ?? false,
     tertiarySeed: reader.readLongOrNull(offsets[17]),
-    themeType: _UserthemeTypeValueEnumMap[reader.readByteOrNull(offsets[18])] ??
+    themeType: _AllocateUserthemeTypeValueEnumMap[
+            reader.readByteOrNull(offsets[18])] ??
         ThemeType.system,
-    toneMapping:
-        _UsertoneMappingValueEnumMap[reader.readByteOrNull(offsets[19])] ??
-            ToneMapping.system,
-    useUltraHighContrast: reader.readBoolOrNull(offsets[20]) ?? false,
-    username: reader.readString(offsets[21]),
-    uuid: reader.readStringOrNull(offsets[22]),
-    windowEffect:
-        _UserwindowEffectValueEnumMap[reader.readByteOrNull(offsets[23])] ??
-            Effect.disabled,
+    toDelete: reader.readBoolOrNull(offsets[19]) ?? false,
+    toneMapping: _AllocateUsertoneMappingValueEnumMap[
+            reader.readByteOrNull(offsets[20])] ??
+        ToneMapping.system,
+    useUltraHighContrast: reader.readBoolOrNull(offsets[21]) ?? false,
+    username: reader.readString(offsets[22]),
+    uuid: reader.readStringOrNull(offsets[23]),
+    windowEffect: _AllocateUserwindowEffectValueEnumMap[
+            reader.readByteOrNull(offsets[24])] ??
+        Effect.disabled,
   );
   return object;
 }
 
-P _userDeserializeProp<P>(
+P _allocateUserDeserializeProp<P>(
   IsarReader reader,
   int propertyId,
   int offset,
@@ -294,10 +321,11 @@ P _userDeserializeProp<P>(
     case 5:
       return (reader.readLongOrNull(offset)) as P;
     case 6:
-      return (reader.readLongOrNull(offset) ?? 0) as P;
-    case 7:
-      return (_UserdeleteScheduleValueEnumMap[reader.readByteOrNull(offset)] ??
+      return (_AllocateUserdeleteScheduleValueEnumMap[
+              reader.readByteOrNull(offset)] ??
           DeleteSchedule.never) as P;
+    case 7:
+      return (reader.readStringOrNull(offset)) as P;
     case 8:
       return (reader.readBoolOrNull(offset) ?? false) as P;
     case 9:
@@ -319,48 +347,53 @@ P _userDeserializeProp<P>(
     case 17:
       return (reader.readLongOrNull(offset)) as P;
     case 18:
-      return (_UserthemeTypeValueEnumMap[reader.readByteOrNull(offset)] ??
+      return (_AllocateUserthemeTypeValueEnumMap[
+              reader.readByteOrNull(offset)] ??
           ThemeType.system) as P;
     case 19:
-      return (_UsertoneMappingValueEnumMap[reader.readByteOrNull(offset)] ??
-          ToneMapping.system) as P;
-    case 20:
       return (reader.readBoolOrNull(offset) ?? false) as P;
+    case 20:
+      return (_AllocateUsertoneMappingValueEnumMap[
+              reader.readByteOrNull(offset)] ??
+          ToneMapping.system) as P;
     case 21:
-      return (reader.readString(offset)) as P;
+      return (reader.readBoolOrNull(offset) ?? false) as P;
     case 22:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 23:
-      return (_UserwindowEffectValueEnumMap[reader.readByteOrNull(offset)] ??
+      return (reader.readStringOrNull(offset)) as P;
+    case 24:
+      return (_AllocateUserwindowEffectValueEnumMap[
+              reader.readByteOrNull(offset)] ??
           Effect.disabled) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
   }
 }
 
-const _UserdeleteScheduleEnumValueMap = {
+const _AllocateUserdeleteScheduleEnumValueMap = {
   'never': 0,
-  'day': 1,
-  'month': 2,
-  'year': 3,
+  'fifteenDays': 1,
+  'thirtyDays': 2,
+  'oneYear': 3,
 };
-const _UserdeleteScheduleValueEnumMap = {
+const _AllocateUserdeleteScheduleValueEnumMap = {
   0: DeleteSchedule.never,
-  1: DeleteSchedule.day,
-  2: DeleteSchedule.month,
-  3: DeleteSchedule.year,
+  1: DeleteSchedule.fifteenDays,
+  2: DeleteSchedule.thirtyDays,
+  3: DeleteSchedule.oneYear,
 };
-const _UserthemeTypeEnumValueMap = {
+const _AllocateUserthemeTypeEnumValueMap = {
   'system': 0,
   'light': 1,
   'dark': 2,
 };
-const _UserthemeTypeValueEnumMap = {
+const _AllocateUserthemeTypeValueEnumMap = {
   0: ThemeType.system,
   1: ThemeType.light,
   2: ThemeType.dark,
 };
-const _UsertoneMappingEnumValueMap = {
+const _AllocateUsertoneMappingEnumValueMap = {
   'system': 0,
   'soft': 1,
   'vivid': 2,
@@ -370,7 +403,7 @@ const _UsertoneMappingEnumValueMap = {
   'high_contrast': 6,
   'ultra_high_contrast': 7,
 };
-const _UsertoneMappingValueEnumMap = {
+const _AllocateUsertoneMappingValueEnumMap = {
   0: ToneMapping.system,
   1: ToneMapping.soft,
   2: ToneMapping.vivid,
@@ -380,7 +413,7 @@ const _UsertoneMappingValueEnumMap = {
   6: ToneMapping.high_contrast,
   7: ToneMapping.ultra_high_contrast,
 };
-const _UserwindowEffectEnumValueMap = {
+const _AllocateUserwindowEffectEnumValueMap = {
   'disabled': 0,
   'transparent': 1,
   'aero': 2,
@@ -388,7 +421,7 @@ const _UserwindowEffectEnumValueMap = {
   'mica': 4,
   'sidebar': 5,
 };
-const _UserwindowEffectValueEnumMap = {
+const _AllocateUserwindowEffectValueEnumMap = {
   0: Effect.disabled,
   1: Effect.transparent,
   2: Effect.aero,
@@ -397,28 +430,39 @@ const _UserwindowEffectValueEnumMap = {
   5: Effect.sidebar,
 };
 
-Id _userGetId(User object) {
+Id _allocateUserGetId(AllocateUser object) {
   return object.id;
 }
 
-List<IsarLinkBase<dynamic>> _userGetLinks(User object) {
+List<IsarLinkBase<dynamic>> _allocateUserGetLinks(AllocateUser object) {
   return [];
 }
 
-void _userAttach(IsarCollection<dynamic> col, Id id, User object) {
+void _allocateUserAttach(
+    IsarCollection<dynamic> col, Id id, AllocateUser object) {
   object.id = id;
 }
 
-extension UserQueryWhereSort on QueryBuilder<User, User, QWhere> {
-  QueryBuilder<User, User, QAfterWhere> anyId() {
+extension AllocateUserQueryWhereSort
+    on QueryBuilder<AllocateUser, AllocateUser, QWhere> {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterWhere> anyId() {
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(const IdWhereClause.any());
     });
   }
+
+  QueryBuilder<AllocateUser, AllocateUser, QAfterWhere> anyToDelete() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(
+        const IndexWhereClause.any(indexName: r'toDelete'),
+      );
+    });
+  }
 }
 
-extension UserQueryWhere on QueryBuilder<User, User, QWhereClause> {
-  QueryBuilder<User, User, QAfterWhereClause> idEqualTo(Id id) {
+extension AllocateUserQueryWhere
+    on QueryBuilder<AllocateUser, AllocateUser, QWhereClause> {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterWhereClause> idEqualTo(Id id) {
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(IdWhereClause.between(
         lower: id,
@@ -427,7 +471,8 @@ extension UserQueryWhere on QueryBuilder<User, User, QWhereClause> {
     });
   }
 
-  QueryBuilder<User, User, QAfterWhereClause> idNotEqualTo(Id id) {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterWhereClause> idNotEqualTo(
+      Id id) {
     return QueryBuilder.apply(this, (query) {
       if (query.whereSort == Sort.asc) {
         return query
@@ -449,7 +494,8 @@ extension UserQueryWhere on QueryBuilder<User, User, QWhereClause> {
     });
   }
 
-  QueryBuilder<User, User, QAfterWhereClause> idGreaterThan(Id id,
+  QueryBuilder<AllocateUser, AllocateUser, QAfterWhereClause> idGreaterThan(
+      Id id,
       {bool include = false}) {
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(
@@ -458,7 +504,7 @@ extension UserQueryWhere on QueryBuilder<User, User, QWhereClause> {
     });
   }
 
-  QueryBuilder<User, User, QAfterWhereClause> idLessThan(Id id,
+  QueryBuilder<AllocateUser, AllocateUser, QAfterWhereClause> idLessThan(Id id,
       {bool include = false}) {
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(
@@ -467,7 +513,7 @@ extension UserQueryWhere on QueryBuilder<User, User, QWhereClause> {
     });
   }
 
-  QueryBuilder<User, User, QAfterWhereClause> idBetween(
+  QueryBuilder<AllocateUser, AllocateUser, QAfterWhereClause> idBetween(
     Id lowerId,
     Id upperId, {
     bool includeLower = true,
@@ -483,7 +529,7 @@ extension UserQueryWhere on QueryBuilder<User, User, QWhereClause> {
     });
   }
 
-  QueryBuilder<User, User, QAfterWhereClause> uuidIsNull() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterWhereClause> uuidIsNull() {
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(IndexWhereClause.equalTo(
         indexName: r'uuid',
@@ -492,7 +538,7 @@ extension UserQueryWhere on QueryBuilder<User, User, QWhereClause> {
     });
   }
 
-  QueryBuilder<User, User, QAfterWhereClause> uuidIsNotNull() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterWhereClause> uuidIsNotNull() {
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(IndexWhereClause.between(
         indexName: r'uuid',
@@ -503,7 +549,8 @@ extension UserQueryWhere on QueryBuilder<User, User, QWhereClause> {
     });
   }
 
-  QueryBuilder<User, User, QAfterWhereClause> uuidEqualTo(String? uuid) {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterWhereClause> uuidEqualTo(
+      String? uuid) {
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(IndexWhereClause.equalTo(
         indexName: r'uuid',
@@ -512,7 +559,8 @@ extension UserQueryWhere on QueryBuilder<User, User, QWhereClause> {
     });
   }
 
-  QueryBuilder<User, User, QAfterWhereClause> uuidNotEqualTo(String? uuid) {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterWhereClause> uuidNotEqualTo(
+      String? uuid) {
     return QueryBuilder.apply(this, (query) {
       if (query.whereSort == Sort.asc) {
         return query
@@ -546,7 +594,8 @@ extension UserQueryWhere on QueryBuilder<User, User, QWhereClause> {
     });
   }
 
-  QueryBuilder<User, User, QAfterWhereClause> usernameEqualTo(String username) {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterWhereClause> usernameEqualTo(
+      String username) {
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(IndexWhereClause.equalTo(
         indexName: r'username',
@@ -555,8 +604,8 @@ extension UserQueryWhere on QueryBuilder<User, User, QWhereClause> {
     });
   }
 
-  QueryBuilder<User, User, QAfterWhereClause> usernameNotEqualTo(
-      String username) {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterWhereClause>
+      usernameNotEqualTo(String username) {
     return QueryBuilder.apply(this, (query) {
       if (query.whereSort == Sort.asc) {
         return query
@@ -589,10 +638,57 @@ extension UserQueryWhere on QueryBuilder<User, User, QWhereClause> {
       }
     });
   }
+
+  QueryBuilder<AllocateUser, AllocateUser, QAfterWhereClause> toDeleteEqualTo(
+      bool toDelete) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'toDelete',
+        value: [toDelete],
+      ));
+    });
+  }
+
+  QueryBuilder<AllocateUser, AllocateUser, QAfterWhereClause>
+      toDeleteNotEqualTo(bool toDelete) {
+    return QueryBuilder.apply(this, (query) {
+      if (query.whereSort == Sort.asc) {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'toDelete',
+              lower: [],
+              upper: [toDelete],
+              includeUpper: false,
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'toDelete',
+              lower: [toDelete],
+              includeLower: false,
+              upper: [],
+            ));
+      } else {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'toDelete',
+              lower: [toDelete],
+              includeLower: false,
+              upper: [],
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'toDelete',
+              lower: [],
+              upper: [toDelete],
+              includeUpper: false,
+            ));
+      }
+    });
+  }
 }
 
-extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
-  QueryBuilder<User, User, QAfterFilterCondition> bandwidthEqualTo(int value) {
+extension AllocateUserQueryFilter
+    on QueryBuilder<AllocateUser, AllocateUser, QFilterCondition> {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      bandwidthEqualTo(int value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
         property: r'bandwidth',
@@ -601,7 +697,8 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> bandwidthGreaterThan(
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      bandwidthGreaterThan(
     int value, {
     bool include = false,
   }) {
@@ -614,7 +711,8 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> bandwidthLessThan(
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      bandwidthLessThan(
     int value, {
     bool include = false,
   }) {
@@ -627,7 +725,8 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> bandwidthBetween(
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      bandwidthBetween(
     int lower,
     int upper, {
     bool includeLower = true,
@@ -644,8 +743,8 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> checkCloseEqualTo(
-      bool value) {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      checkCloseEqualTo(bool value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
         property: r'checkClose',
@@ -654,8 +753,8 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> checkDeleteEqualTo(
-      bool value) {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      checkDeleteEqualTo(bool value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
         property: r'checkDelete',
@@ -664,7 +763,8 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> curAftIDIsNull() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      curAftIDIsNull() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(const FilterCondition.isNull(
         property: r'curAftID',
@@ -672,7 +772,8 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> curAftIDIsNotNull() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      curAftIDIsNotNull() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(const FilterCondition.isNotNull(
         property: r'curAftID',
@@ -680,7 +781,8 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> curAftIDEqualTo(int? value) {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      curAftIDEqualTo(int? value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
         property: r'curAftID',
@@ -689,7 +791,8 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> curAftIDGreaterThan(
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      curAftIDGreaterThan(
     int? value, {
     bool include = false,
   }) {
@@ -702,7 +805,8 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> curAftIDLessThan(
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      curAftIDLessThan(
     int? value, {
     bool include = false,
   }) {
@@ -715,7 +819,8 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> curAftIDBetween(
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      curAftIDBetween(
     int? lower,
     int? upper, {
     bool includeLower = true,
@@ -732,7 +837,8 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> curEveIDIsNull() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      curEveIDIsNull() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(const FilterCondition.isNull(
         property: r'curEveID',
@@ -740,7 +846,8 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> curEveIDIsNotNull() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      curEveIDIsNotNull() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(const FilterCondition.isNotNull(
         property: r'curEveID',
@@ -748,7 +855,8 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> curEveIDEqualTo(int? value) {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      curEveIDEqualTo(int? value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
         property: r'curEveID',
@@ -757,7 +865,8 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> curEveIDGreaterThan(
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      curEveIDGreaterThan(
     int? value, {
     bool include = false,
   }) {
@@ -770,7 +879,8 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> curEveIDLessThan(
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      curEveIDLessThan(
     int? value, {
     bool include = false,
   }) {
@@ -783,7 +893,8 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> curEveIDBetween(
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      curEveIDBetween(
     int? lower,
     int? upper, {
     bool includeLower = true,
@@ -800,7 +911,8 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> curMornIDIsNull() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      curMornIDIsNull() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(const FilterCondition.isNull(
         property: r'curMornID',
@@ -808,7 +920,8 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> curMornIDIsNotNull() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      curMornIDIsNotNull() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(const FilterCondition.isNotNull(
         property: r'curMornID',
@@ -816,7 +929,8 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> curMornIDEqualTo(int? value) {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      curMornIDEqualTo(int? value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
         property: r'curMornID',
@@ -825,7 +939,8 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> curMornIDGreaterThan(
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      curMornIDGreaterThan(
     int? value, {
     bool include = false,
   }) {
@@ -838,7 +953,8 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> curMornIDLessThan(
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      curMornIDLessThan(
     int? value, {
     bool include = false,
   }) {
@@ -851,7 +967,8 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> curMornIDBetween(
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      curMornIDBetween(
     int? lower,
     int? upper, {
     bool includeLower = true,
@@ -868,60 +985,8 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> dayCostEqualTo(int value) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'dayCost',
-        value: value,
-      ));
-    });
-  }
-
-  QueryBuilder<User, User, QAfterFilterCondition> dayCostGreaterThan(
-    int value, {
-    bool include = false,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        include: include,
-        property: r'dayCost',
-        value: value,
-      ));
-    });
-  }
-
-  QueryBuilder<User, User, QAfterFilterCondition> dayCostLessThan(
-    int value, {
-    bool include = false,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.lessThan(
-        include: include,
-        property: r'dayCost',
-        value: value,
-      ));
-    });
-  }
-
-  QueryBuilder<User, User, QAfterFilterCondition> dayCostBetween(
-    int lower,
-    int upper, {
-    bool includeLower = true,
-    bool includeUpper = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.between(
-        property: r'dayCost',
-        lower: lower,
-        includeLower: includeLower,
-        upper: upper,
-        includeUpper: includeUpper,
-      ));
-    });
-  }
-
-  QueryBuilder<User, User, QAfterFilterCondition> deleteScheduleEqualTo(
-      DeleteSchedule value) {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      deleteScheduleEqualTo(DeleteSchedule value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
         property: r'deleteSchedule',
@@ -930,7 +995,8 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> deleteScheduleGreaterThan(
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      deleteScheduleGreaterThan(
     DeleteSchedule value, {
     bool include = false,
   }) {
@@ -943,7 +1009,8 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> deleteScheduleLessThan(
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      deleteScheduleLessThan(
     DeleteSchedule value, {
     bool include = false,
   }) {
@@ -956,7 +1023,8 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> deleteScheduleBetween(
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      deleteScheduleBetween(
     DeleteSchedule lower,
     DeleteSchedule upper, {
     bool includeLower = true,
@@ -973,7 +1041,160 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> idEqualTo(Id value) {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      emailIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'email',
+      ));
+    });
+  }
+
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      emailIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'email',
+      ));
+    });
+  }
+
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition> emailEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'email',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      emailGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'email',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition> emailLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'email',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition> emailBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'email',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      emailStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'email',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition> emailEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'email',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition> emailContains(
+      String value,
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'email',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition> emailMatches(
+      String pattern,
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'email',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      emailIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'email',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      emailIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'email',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition> idEqualTo(
+      Id value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
         property: r'id',
@@ -982,7 +1203,7 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> idGreaterThan(
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition> idGreaterThan(
     Id value, {
     bool include = false,
   }) {
@@ -995,7 +1216,7 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> idLessThan(
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition> idLessThan(
     Id value, {
     bool include = false,
   }) {
@@ -1008,7 +1229,7 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> idBetween(
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition> idBetween(
     Id lower,
     Id upper, {
     bool includeLower = true,
@@ -1025,7 +1246,8 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> isSyncedEqualTo(bool value) {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      isSyncedEqualTo(bool value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
         property: r'isSynced',
@@ -1034,8 +1256,8 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> lastOpenedEqualTo(
-      DateTime value) {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      lastOpenedEqualTo(DateTime value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
         property: r'lastOpened',
@@ -1044,7 +1266,8 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> lastOpenedGreaterThan(
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      lastOpenedGreaterThan(
     DateTime value, {
     bool include = false,
   }) {
@@ -1057,7 +1280,8 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> lastOpenedLessThan(
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      lastOpenedLessThan(
     DateTime value, {
     bool include = false,
   }) {
@@ -1070,7 +1294,8 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> lastOpenedBetween(
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      lastOpenedBetween(
     DateTime lower,
     DateTime upper, {
     bool includeLower = true,
@@ -1087,8 +1312,8 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> lastUpdatedEqualTo(
-      DateTime value) {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      lastUpdatedEqualTo(DateTime value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
         property: r'lastUpdated',
@@ -1097,7 +1322,8 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> lastUpdatedGreaterThan(
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      lastUpdatedGreaterThan(
     DateTime value, {
     bool include = false,
   }) {
@@ -1110,7 +1336,8 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> lastUpdatedLessThan(
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      lastUpdatedLessThan(
     DateTime value, {
     bool include = false,
   }) {
@@ -1123,7 +1350,8 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> lastUpdatedBetween(
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      lastUpdatedBetween(
     DateTime lower,
     DateTime upper, {
     bool includeLower = true,
@@ -1140,8 +1368,8 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> primarySeedEqualTo(
-      int value) {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      primarySeedEqualTo(int value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
         property: r'primarySeed',
@@ -1150,7 +1378,8 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> primarySeedGreaterThan(
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      primarySeedGreaterThan(
     int value, {
     bool include = false,
   }) {
@@ -1163,7 +1392,8 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> primarySeedLessThan(
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      primarySeedLessThan(
     int value, {
     bool include = false,
   }) {
@@ -1176,7 +1406,8 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> primarySeedBetween(
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      primarySeedBetween(
     int lower,
     int upper, {
     bool includeLower = true,
@@ -1193,8 +1424,8 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> reduceMotionEqualTo(
-      bool value) {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      reduceMotionEqualTo(bool value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
         property: r'reduceMotion',
@@ -1203,7 +1434,8 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> scaffoldOpacityEqualTo(
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      scaffoldOpacityEqualTo(
     double value, {
     double epsilon = Query.epsilon,
   }) {
@@ -1216,7 +1448,8 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> scaffoldOpacityGreaterThan(
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      scaffoldOpacityGreaterThan(
     double value, {
     bool include = false,
     double epsilon = Query.epsilon,
@@ -1231,7 +1464,8 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> scaffoldOpacityLessThan(
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      scaffoldOpacityLessThan(
     double value, {
     bool include = false,
     double epsilon = Query.epsilon,
@@ -1246,7 +1480,8 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> scaffoldOpacityBetween(
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      scaffoldOpacityBetween(
     double lower,
     double upper, {
     bool includeLower = true,
@@ -1265,7 +1500,8 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> secondarySeedIsNull() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      secondarySeedIsNull() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(const FilterCondition.isNull(
         property: r'secondarySeed',
@@ -1273,7 +1509,8 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> secondarySeedIsNotNull() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      secondarySeedIsNotNull() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(const FilterCondition.isNotNull(
         property: r'secondarySeed',
@@ -1281,8 +1518,8 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> secondarySeedEqualTo(
-      int? value) {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      secondarySeedEqualTo(int? value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
         property: r'secondarySeed',
@@ -1291,7 +1528,8 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> secondarySeedGreaterThan(
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      secondarySeedGreaterThan(
     int? value, {
     bool include = false,
   }) {
@@ -1304,7 +1542,8 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> secondarySeedLessThan(
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      secondarySeedLessThan(
     int? value, {
     bool include = false,
   }) {
@@ -1317,7 +1556,8 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> secondarySeedBetween(
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      secondarySeedBetween(
     int? lower,
     int? upper, {
     bool includeLower = true,
@@ -1334,7 +1574,8 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> sidebarOpacityEqualTo(
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      sidebarOpacityEqualTo(
     double value, {
     double epsilon = Query.epsilon,
   }) {
@@ -1347,7 +1588,8 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> sidebarOpacityGreaterThan(
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      sidebarOpacityGreaterThan(
     double value, {
     bool include = false,
     double epsilon = Query.epsilon,
@@ -1362,7 +1604,8 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> sidebarOpacityLessThan(
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      sidebarOpacityLessThan(
     double value, {
     bool include = false,
     double epsilon = Query.epsilon,
@@ -1377,7 +1620,8 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> sidebarOpacityBetween(
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      sidebarOpacityBetween(
     double lower,
     double upper, {
     bool includeLower = true,
@@ -1396,8 +1640,8 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> syncOnlineEqualTo(
-      bool value) {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      syncOnlineEqualTo(bool value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
         property: r'syncOnline',
@@ -1406,7 +1650,8 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> tertiarySeedIsNull() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      tertiarySeedIsNull() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(const FilterCondition.isNull(
         property: r'tertiarySeed',
@@ -1414,7 +1659,8 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> tertiarySeedIsNotNull() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      tertiarySeedIsNotNull() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(const FilterCondition.isNotNull(
         property: r'tertiarySeed',
@@ -1422,8 +1668,8 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> tertiarySeedEqualTo(
-      int? value) {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      tertiarySeedEqualTo(int? value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
         property: r'tertiarySeed',
@@ -1432,7 +1678,8 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> tertiarySeedGreaterThan(
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      tertiarySeedGreaterThan(
     int? value, {
     bool include = false,
   }) {
@@ -1445,7 +1692,8 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> tertiarySeedLessThan(
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      tertiarySeedLessThan(
     int? value, {
     bool include = false,
   }) {
@@ -1458,7 +1706,8 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> tertiarySeedBetween(
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      tertiarySeedBetween(
     int? lower,
     int? upper, {
     bool includeLower = true,
@@ -1475,8 +1724,8 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> themeTypeEqualTo(
-      ThemeType value) {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      themeTypeEqualTo(ThemeType value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
         property: r'themeType',
@@ -1485,7 +1734,8 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> themeTypeGreaterThan(
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      themeTypeGreaterThan(
     ThemeType value, {
     bool include = false,
   }) {
@@ -1498,7 +1748,8 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> themeTypeLessThan(
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      themeTypeLessThan(
     ThemeType value, {
     bool include = false,
   }) {
@@ -1511,7 +1762,8 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> themeTypeBetween(
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      themeTypeBetween(
     ThemeType lower,
     ThemeType upper, {
     bool includeLower = true,
@@ -1528,8 +1780,18 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> toneMappingEqualTo(
-      ToneMapping value) {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      toDeleteEqualTo(bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'toDelete',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      toneMappingEqualTo(ToneMapping value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
         property: r'toneMapping',
@@ -1538,7 +1800,8 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> toneMappingGreaterThan(
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      toneMappingGreaterThan(
     ToneMapping value, {
     bool include = false,
   }) {
@@ -1551,7 +1814,8 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> toneMappingLessThan(
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      toneMappingLessThan(
     ToneMapping value, {
     bool include = false,
   }) {
@@ -1564,7 +1828,8 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> toneMappingBetween(
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      toneMappingBetween(
     ToneMapping lower,
     ToneMapping upper, {
     bool includeLower = true,
@@ -1581,8 +1846,8 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> useUltraHighContrastEqualTo(
-      bool value) {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      useUltraHighContrastEqualTo(bool value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
         property: r'useUltraHighContrast',
@@ -1591,7 +1856,8 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> usernameEqualTo(
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      usernameEqualTo(
     String value, {
     bool caseSensitive = true,
   }) {
@@ -1604,7 +1870,8 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> usernameGreaterThan(
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      usernameGreaterThan(
     String value, {
     bool include = false,
     bool caseSensitive = true,
@@ -1619,7 +1886,8 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> usernameLessThan(
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      usernameLessThan(
     String value, {
     bool include = false,
     bool caseSensitive = true,
@@ -1634,7 +1902,8 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> usernameBetween(
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      usernameBetween(
     String lower,
     String upper, {
     bool includeLower = true,
@@ -1653,7 +1922,8 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> usernameStartsWith(
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      usernameStartsWith(
     String value, {
     bool caseSensitive = true,
   }) {
@@ -1666,7 +1936,8 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> usernameEndsWith(
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      usernameEndsWith(
     String value, {
     bool caseSensitive = true,
   }) {
@@ -1679,8 +1950,8 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> usernameContains(String value,
-      {bool caseSensitive = true}) {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      usernameContains(String value, {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.contains(
         property: r'username',
@@ -1690,9 +1961,8 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> usernameMatches(
-      String pattern,
-      {bool caseSensitive = true}) {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      usernameMatches(String pattern, {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.matches(
         property: r'username',
@@ -1702,7 +1972,8 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> usernameIsEmpty() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      usernameIsEmpty() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
         property: r'username',
@@ -1711,7 +1982,8 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> usernameIsNotEmpty() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      usernameIsNotEmpty() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.greaterThan(
         property: r'username',
@@ -1720,7 +1992,7 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> uuidIsNull() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition> uuidIsNull() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(const FilterCondition.isNull(
         property: r'uuid',
@@ -1728,7 +2000,8 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> uuidIsNotNull() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      uuidIsNotNull() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(const FilterCondition.isNotNull(
         property: r'uuid',
@@ -1736,7 +2009,7 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> uuidEqualTo(
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition> uuidEqualTo(
     String? value, {
     bool caseSensitive = true,
   }) {
@@ -1749,7 +2022,8 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> uuidGreaterThan(
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      uuidGreaterThan(
     String? value, {
     bool include = false,
     bool caseSensitive = true,
@@ -1764,7 +2038,7 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> uuidLessThan(
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition> uuidLessThan(
     String? value, {
     bool include = false,
     bool caseSensitive = true,
@@ -1779,7 +2053,7 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> uuidBetween(
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition> uuidBetween(
     String? lower,
     String? upper, {
     bool includeLower = true,
@@ -1798,7 +2072,8 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> uuidStartsWith(
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      uuidStartsWith(
     String value, {
     bool caseSensitive = true,
   }) {
@@ -1811,7 +2086,7 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> uuidEndsWith(
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition> uuidEndsWith(
     String value, {
     bool caseSensitive = true,
   }) {
@@ -1824,7 +2099,8 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> uuidContains(String value,
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition> uuidContains(
+      String value,
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.contains(
@@ -1835,7 +2111,8 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> uuidMatches(String pattern,
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition> uuidMatches(
+      String pattern,
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.matches(
@@ -1846,7 +2123,8 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> uuidIsEmpty() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      uuidIsEmpty() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
         property: r'uuid',
@@ -1855,7 +2133,8 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> uuidIsNotEmpty() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      uuidIsNotEmpty() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.greaterThan(
         property: r'uuid',
@@ -1864,8 +2143,8 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> windowEffectEqualTo(
-      Effect value) {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      windowEffectEqualTo(Effect value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
         property: r'windowEffect',
@@ -1874,7 +2153,8 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> windowEffectGreaterThan(
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      windowEffectGreaterThan(
     Effect value, {
     bool include = false,
   }) {
@@ -1887,7 +2167,8 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> windowEffectLessThan(
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      windowEffectLessThan(
     Effect value, {
     bool include = false,
   }) {
@@ -1900,7 +2181,8 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
     });
   }
 
-  QueryBuilder<User, User, QAfterFilterCondition> windowEffectBetween(
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      windowEffectBetween(
     Effect lower,
     Effect upper, {
     bool includeLower = true,
@@ -1918,897 +2200,987 @@ extension UserQueryFilter on QueryBuilder<User, User, QFilterCondition> {
   }
 }
 
-extension UserQueryObject on QueryBuilder<User, User, QFilterCondition> {}
+extension AllocateUserQueryObject
+    on QueryBuilder<AllocateUser, AllocateUser, QFilterCondition> {}
 
-extension UserQueryLinks on QueryBuilder<User, User, QFilterCondition> {}
+extension AllocateUserQueryLinks
+    on QueryBuilder<AllocateUser, AllocateUser, QFilterCondition> {}
 
-extension UserQuerySortBy on QueryBuilder<User, User, QSortBy> {
-  QueryBuilder<User, User, QAfterSortBy> sortByBandwidth() {
+extension AllocateUserQuerySortBy
+    on QueryBuilder<AllocateUser, AllocateUser, QSortBy> {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterSortBy> sortByBandwidth() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'bandwidth', Sort.asc);
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> sortByBandwidthDesc() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterSortBy> sortByBandwidthDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'bandwidth', Sort.desc);
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> sortByCheckClose() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterSortBy> sortByCheckClose() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'checkClose', Sort.asc);
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> sortByCheckCloseDesc() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterSortBy>
+      sortByCheckCloseDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'checkClose', Sort.desc);
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> sortByCheckDelete() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterSortBy> sortByCheckDelete() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'checkDelete', Sort.asc);
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> sortByCheckDeleteDesc() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterSortBy>
+      sortByCheckDeleteDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'checkDelete', Sort.desc);
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> sortByCurAftID() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterSortBy> sortByCurAftID() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'curAftID', Sort.asc);
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> sortByCurAftIDDesc() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterSortBy> sortByCurAftIDDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'curAftID', Sort.desc);
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> sortByCurEveID() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterSortBy> sortByCurEveID() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'curEveID', Sort.asc);
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> sortByCurEveIDDesc() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterSortBy> sortByCurEveIDDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'curEveID', Sort.desc);
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> sortByCurMornID() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterSortBy> sortByCurMornID() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'curMornID', Sort.asc);
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> sortByCurMornIDDesc() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterSortBy> sortByCurMornIDDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'curMornID', Sort.desc);
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> sortByDayCost() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'dayCost', Sort.asc);
-    });
-  }
-
-  QueryBuilder<User, User, QAfterSortBy> sortByDayCostDesc() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'dayCost', Sort.desc);
-    });
-  }
-
-  QueryBuilder<User, User, QAfterSortBy> sortByDeleteSchedule() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterSortBy>
+      sortByDeleteSchedule() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'deleteSchedule', Sort.asc);
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> sortByDeleteScheduleDesc() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterSortBy>
+      sortByDeleteScheduleDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'deleteSchedule', Sort.desc);
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> sortByIsSynced() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterSortBy> sortByEmail() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'email', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AllocateUser, AllocateUser, QAfterSortBy> sortByEmailDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'email', Sort.desc);
+    });
+  }
+
+  QueryBuilder<AllocateUser, AllocateUser, QAfterSortBy> sortByIsSynced() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isSynced', Sort.asc);
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> sortByIsSyncedDesc() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterSortBy> sortByIsSyncedDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isSynced', Sort.desc);
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> sortByLastOpened() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterSortBy> sortByLastOpened() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'lastOpened', Sort.asc);
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> sortByLastOpenedDesc() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterSortBy>
+      sortByLastOpenedDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'lastOpened', Sort.desc);
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> sortByLastUpdated() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterSortBy> sortByLastUpdated() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'lastUpdated', Sort.asc);
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> sortByLastUpdatedDesc() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterSortBy>
+      sortByLastUpdatedDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'lastUpdated', Sort.desc);
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> sortByPrimarySeed() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterSortBy> sortByPrimarySeed() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'primarySeed', Sort.asc);
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> sortByPrimarySeedDesc() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterSortBy>
+      sortByPrimarySeedDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'primarySeed', Sort.desc);
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> sortByReduceMotion() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterSortBy> sortByReduceMotion() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'reduceMotion', Sort.asc);
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> sortByReduceMotionDesc() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterSortBy>
+      sortByReduceMotionDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'reduceMotion', Sort.desc);
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> sortByScaffoldOpacity() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterSortBy>
+      sortByScaffoldOpacity() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'scaffoldOpacity', Sort.asc);
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> sortByScaffoldOpacityDesc() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterSortBy>
+      sortByScaffoldOpacityDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'scaffoldOpacity', Sort.desc);
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> sortBySecondarySeed() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterSortBy> sortBySecondarySeed() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'secondarySeed', Sort.asc);
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> sortBySecondarySeedDesc() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterSortBy>
+      sortBySecondarySeedDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'secondarySeed', Sort.desc);
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> sortBySidebarOpacity() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterSortBy>
+      sortBySidebarOpacity() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'sidebarOpacity', Sort.asc);
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> sortBySidebarOpacityDesc() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterSortBy>
+      sortBySidebarOpacityDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'sidebarOpacity', Sort.desc);
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> sortBySyncOnline() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterSortBy> sortBySyncOnline() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'syncOnline', Sort.asc);
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> sortBySyncOnlineDesc() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterSortBy>
+      sortBySyncOnlineDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'syncOnline', Sort.desc);
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> sortByTertiarySeed() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterSortBy> sortByTertiarySeed() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'tertiarySeed', Sort.asc);
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> sortByTertiarySeedDesc() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterSortBy>
+      sortByTertiarySeedDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'tertiarySeed', Sort.desc);
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> sortByThemeType() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterSortBy> sortByThemeType() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'themeType', Sort.asc);
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> sortByThemeTypeDesc() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterSortBy> sortByThemeTypeDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'themeType', Sort.desc);
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> sortByToneMapping() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterSortBy> sortByToDelete() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'toDelete', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AllocateUser, AllocateUser, QAfterSortBy> sortByToDeleteDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'toDelete', Sort.desc);
+    });
+  }
+
+  QueryBuilder<AllocateUser, AllocateUser, QAfterSortBy> sortByToneMapping() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'toneMapping', Sort.asc);
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> sortByToneMappingDesc() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterSortBy>
+      sortByToneMappingDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'toneMapping', Sort.desc);
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> sortByUseUltraHighContrast() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterSortBy>
+      sortByUseUltraHighContrast() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'useUltraHighContrast', Sort.asc);
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> sortByUseUltraHighContrastDesc() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterSortBy>
+      sortByUseUltraHighContrastDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'useUltraHighContrast', Sort.desc);
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> sortByUsername() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterSortBy> sortByUsername() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'username', Sort.asc);
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> sortByUsernameDesc() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterSortBy> sortByUsernameDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'username', Sort.desc);
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> sortByUuid() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterSortBy> sortByUuid() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'uuid', Sort.asc);
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> sortByUuidDesc() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterSortBy> sortByUuidDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'uuid', Sort.desc);
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> sortByWindowEffect() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterSortBy> sortByWindowEffect() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'windowEffect', Sort.asc);
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> sortByWindowEffectDesc() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterSortBy>
+      sortByWindowEffectDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'windowEffect', Sort.desc);
     });
   }
 }
 
-extension UserQuerySortThenBy on QueryBuilder<User, User, QSortThenBy> {
-  QueryBuilder<User, User, QAfterSortBy> thenByBandwidth() {
+extension AllocateUserQuerySortThenBy
+    on QueryBuilder<AllocateUser, AllocateUser, QSortThenBy> {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterSortBy> thenByBandwidth() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'bandwidth', Sort.asc);
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> thenByBandwidthDesc() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterSortBy> thenByBandwidthDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'bandwidth', Sort.desc);
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> thenByCheckClose() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterSortBy> thenByCheckClose() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'checkClose', Sort.asc);
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> thenByCheckCloseDesc() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterSortBy>
+      thenByCheckCloseDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'checkClose', Sort.desc);
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> thenByCheckDelete() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterSortBy> thenByCheckDelete() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'checkDelete', Sort.asc);
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> thenByCheckDeleteDesc() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterSortBy>
+      thenByCheckDeleteDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'checkDelete', Sort.desc);
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> thenByCurAftID() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterSortBy> thenByCurAftID() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'curAftID', Sort.asc);
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> thenByCurAftIDDesc() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterSortBy> thenByCurAftIDDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'curAftID', Sort.desc);
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> thenByCurEveID() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterSortBy> thenByCurEveID() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'curEveID', Sort.asc);
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> thenByCurEveIDDesc() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterSortBy> thenByCurEveIDDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'curEveID', Sort.desc);
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> thenByCurMornID() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterSortBy> thenByCurMornID() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'curMornID', Sort.asc);
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> thenByCurMornIDDesc() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterSortBy> thenByCurMornIDDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'curMornID', Sort.desc);
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> thenByDayCost() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'dayCost', Sort.asc);
-    });
-  }
-
-  QueryBuilder<User, User, QAfterSortBy> thenByDayCostDesc() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'dayCost', Sort.desc);
-    });
-  }
-
-  QueryBuilder<User, User, QAfterSortBy> thenByDeleteSchedule() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterSortBy>
+      thenByDeleteSchedule() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'deleteSchedule', Sort.asc);
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> thenByDeleteScheduleDesc() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterSortBy>
+      thenByDeleteScheduleDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'deleteSchedule', Sort.desc);
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> thenById() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterSortBy> thenByEmail() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'email', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AllocateUser, AllocateUser, QAfterSortBy> thenByEmailDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'email', Sort.desc);
+    });
+  }
+
+  QueryBuilder<AllocateUser, AllocateUser, QAfterSortBy> thenById() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'id', Sort.asc);
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> thenByIdDesc() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterSortBy> thenByIdDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'id', Sort.desc);
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> thenByIsSynced() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterSortBy> thenByIsSynced() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isSynced', Sort.asc);
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> thenByIsSyncedDesc() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterSortBy> thenByIsSyncedDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isSynced', Sort.desc);
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> thenByLastOpened() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterSortBy> thenByLastOpened() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'lastOpened', Sort.asc);
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> thenByLastOpenedDesc() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterSortBy>
+      thenByLastOpenedDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'lastOpened', Sort.desc);
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> thenByLastUpdated() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterSortBy> thenByLastUpdated() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'lastUpdated', Sort.asc);
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> thenByLastUpdatedDesc() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterSortBy>
+      thenByLastUpdatedDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'lastUpdated', Sort.desc);
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> thenByPrimarySeed() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterSortBy> thenByPrimarySeed() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'primarySeed', Sort.asc);
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> thenByPrimarySeedDesc() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterSortBy>
+      thenByPrimarySeedDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'primarySeed', Sort.desc);
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> thenByReduceMotion() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterSortBy> thenByReduceMotion() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'reduceMotion', Sort.asc);
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> thenByReduceMotionDesc() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterSortBy>
+      thenByReduceMotionDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'reduceMotion', Sort.desc);
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> thenByScaffoldOpacity() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterSortBy>
+      thenByScaffoldOpacity() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'scaffoldOpacity', Sort.asc);
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> thenByScaffoldOpacityDesc() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterSortBy>
+      thenByScaffoldOpacityDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'scaffoldOpacity', Sort.desc);
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> thenBySecondarySeed() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterSortBy> thenBySecondarySeed() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'secondarySeed', Sort.asc);
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> thenBySecondarySeedDesc() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterSortBy>
+      thenBySecondarySeedDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'secondarySeed', Sort.desc);
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> thenBySidebarOpacity() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterSortBy>
+      thenBySidebarOpacity() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'sidebarOpacity', Sort.asc);
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> thenBySidebarOpacityDesc() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterSortBy>
+      thenBySidebarOpacityDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'sidebarOpacity', Sort.desc);
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> thenBySyncOnline() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterSortBy> thenBySyncOnline() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'syncOnline', Sort.asc);
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> thenBySyncOnlineDesc() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterSortBy>
+      thenBySyncOnlineDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'syncOnline', Sort.desc);
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> thenByTertiarySeed() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterSortBy> thenByTertiarySeed() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'tertiarySeed', Sort.asc);
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> thenByTertiarySeedDesc() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterSortBy>
+      thenByTertiarySeedDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'tertiarySeed', Sort.desc);
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> thenByThemeType() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterSortBy> thenByThemeType() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'themeType', Sort.asc);
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> thenByThemeTypeDesc() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterSortBy> thenByThemeTypeDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'themeType', Sort.desc);
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> thenByToneMapping() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterSortBy> thenByToDelete() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'toDelete', Sort.asc);
+    });
+  }
+
+  QueryBuilder<AllocateUser, AllocateUser, QAfterSortBy> thenByToDeleteDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'toDelete', Sort.desc);
+    });
+  }
+
+  QueryBuilder<AllocateUser, AllocateUser, QAfterSortBy> thenByToneMapping() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'toneMapping', Sort.asc);
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> thenByToneMappingDesc() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterSortBy>
+      thenByToneMappingDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'toneMapping', Sort.desc);
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> thenByUseUltraHighContrast() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterSortBy>
+      thenByUseUltraHighContrast() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'useUltraHighContrast', Sort.asc);
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> thenByUseUltraHighContrastDesc() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterSortBy>
+      thenByUseUltraHighContrastDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'useUltraHighContrast', Sort.desc);
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> thenByUsername() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterSortBy> thenByUsername() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'username', Sort.asc);
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> thenByUsernameDesc() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterSortBy> thenByUsernameDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'username', Sort.desc);
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> thenByUuid() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterSortBy> thenByUuid() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'uuid', Sort.asc);
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> thenByUuidDesc() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterSortBy> thenByUuidDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'uuid', Sort.desc);
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> thenByWindowEffect() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterSortBy> thenByWindowEffect() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'windowEffect', Sort.asc);
     });
   }
 
-  QueryBuilder<User, User, QAfterSortBy> thenByWindowEffectDesc() {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterSortBy>
+      thenByWindowEffectDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'windowEffect', Sort.desc);
     });
   }
 }
 
-extension UserQueryWhereDistinct on QueryBuilder<User, User, QDistinct> {
-  QueryBuilder<User, User, QDistinct> distinctByBandwidth() {
+extension AllocateUserQueryWhereDistinct
+    on QueryBuilder<AllocateUser, AllocateUser, QDistinct> {
+  QueryBuilder<AllocateUser, AllocateUser, QDistinct> distinctByBandwidth() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'bandwidth');
     });
   }
 
-  QueryBuilder<User, User, QDistinct> distinctByCheckClose() {
+  QueryBuilder<AllocateUser, AllocateUser, QDistinct> distinctByCheckClose() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'checkClose');
     });
   }
 
-  QueryBuilder<User, User, QDistinct> distinctByCheckDelete() {
+  QueryBuilder<AllocateUser, AllocateUser, QDistinct> distinctByCheckDelete() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'checkDelete');
     });
   }
 
-  QueryBuilder<User, User, QDistinct> distinctByCurAftID() {
+  QueryBuilder<AllocateUser, AllocateUser, QDistinct> distinctByCurAftID() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'curAftID');
     });
   }
 
-  QueryBuilder<User, User, QDistinct> distinctByCurEveID() {
+  QueryBuilder<AllocateUser, AllocateUser, QDistinct> distinctByCurEveID() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'curEveID');
     });
   }
 
-  QueryBuilder<User, User, QDistinct> distinctByCurMornID() {
+  QueryBuilder<AllocateUser, AllocateUser, QDistinct> distinctByCurMornID() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'curMornID');
     });
   }
 
-  QueryBuilder<User, User, QDistinct> distinctByDayCost() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addDistinctBy(r'dayCost');
-    });
-  }
-
-  QueryBuilder<User, User, QDistinct> distinctByDeleteSchedule() {
+  QueryBuilder<AllocateUser, AllocateUser, QDistinct>
+      distinctByDeleteSchedule() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'deleteSchedule');
     });
   }
 
-  QueryBuilder<User, User, QDistinct> distinctByIsSynced() {
+  QueryBuilder<AllocateUser, AllocateUser, QDistinct> distinctByEmail(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'email', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<AllocateUser, AllocateUser, QDistinct> distinctByIsSynced() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'isSynced');
     });
   }
 
-  QueryBuilder<User, User, QDistinct> distinctByLastOpened() {
+  QueryBuilder<AllocateUser, AllocateUser, QDistinct> distinctByLastOpened() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'lastOpened');
     });
   }
 
-  QueryBuilder<User, User, QDistinct> distinctByLastUpdated() {
+  QueryBuilder<AllocateUser, AllocateUser, QDistinct> distinctByLastUpdated() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'lastUpdated');
     });
   }
 
-  QueryBuilder<User, User, QDistinct> distinctByPrimarySeed() {
+  QueryBuilder<AllocateUser, AllocateUser, QDistinct> distinctByPrimarySeed() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'primarySeed');
     });
   }
 
-  QueryBuilder<User, User, QDistinct> distinctByReduceMotion() {
+  QueryBuilder<AllocateUser, AllocateUser, QDistinct> distinctByReduceMotion() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'reduceMotion');
     });
   }
 
-  QueryBuilder<User, User, QDistinct> distinctByScaffoldOpacity() {
+  QueryBuilder<AllocateUser, AllocateUser, QDistinct>
+      distinctByScaffoldOpacity() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'scaffoldOpacity');
     });
   }
 
-  QueryBuilder<User, User, QDistinct> distinctBySecondarySeed() {
+  QueryBuilder<AllocateUser, AllocateUser, QDistinct>
+      distinctBySecondarySeed() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'secondarySeed');
     });
   }
 
-  QueryBuilder<User, User, QDistinct> distinctBySidebarOpacity() {
+  QueryBuilder<AllocateUser, AllocateUser, QDistinct>
+      distinctBySidebarOpacity() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'sidebarOpacity');
     });
   }
 
-  QueryBuilder<User, User, QDistinct> distinctBySyncOnline() {
+  QueryBuilder<AllocateUser, AllocateUser, QDistinct> distinctBySyncOnline() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'syncOnline');
     });
   }
 
-  QueryBuilder<User, User, QDistinct> distinctByTertiarySeed() {
+  QueryBuilder<AllocateUser, AllocateUser, QDistinct> distinctByTertiarySeed() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'tertiarySeed');
     });
   }
 
-  QueryBuilder<User, User, QDistinct> distinctByThemeType() {
+  QueryBuilder<AllocateUser, AllocateUser, QDistinct> distinctByThemeType() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'themeType');
     });
   }
 
-  QueryBuilder<User, User, QDistinct> distinctByToneMapping() {
+  QueryBuilder<AllocateUser, AllocateUser, QDistinct> distinctByToDelete() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'toDelete');
+    });
+  }
+
+  QueryBuilder<AllocateUser, AllocateUser, QDistinct> distinctByToneMapping() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'toneMapping');
     });
   }
 
-  QueryBuilder<User, User, QDistinct> distinctByUseUltraHighContrast() {
+  QueryBuilder<AllocateUser, AllocateUser, QDistinct>
+      distinctByUseUltraHighContrast() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'useUltraHighContrast');
     });
   }
 
-  QueryBuilder<User, User, QDistinct> distinctByUsername(
+  QueryBuilder<AllocateUser, AllocateUser, QDistinct> distinctByUsername(
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'username', caseSensitive: caseSensitive);
     });
   }
 
-  QueryBuilder<User, User, QDistinct> distinctByUuid(
+  QueryBuilder<AllocateUser, AllocateUser, QDistinct> distinctByUuid(
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'uuid', caseSensitive: caseSensitive);
     });
   }
 
-  QueryBuilder<User, User, QDistinct> distinctByWindowEffect() {
+  QueryBuilder<AllocateUser, AllocateUser, QDistinct> distinctByWindowEffect() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'windowEffect');
     });
   }
 }
 
-extension UserQueryProperty on QueryBuilder<User, User, QQueryProperty> {
-  QueryBuilder<User, int, QQueryOperations> idProperty() {
+extension AllocateUserQueryProperty
+    on QueryBuilder<AllocateUser, AllocateUser, QQueryProperty> {
+  QueryBuilder<AllocateUser, int, QQueryOperations> idProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'id');
     });
   }
 
-  QueryBuilder<User, int, QQueryOperations> bandwidthProperty() {
+  QueryBuilder<AllocateUser, int, QQueryOperations> bandwidthProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'bandwidth');
     });
   }
 
-  QueryBuilder<User, bool, QQueryOperations> checkCloseProperty() {
+  QueryBuilder<AllocateUser, bool, QQueryOperations> checkCloseProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'checkClose');
     });
   }
 
-  QueryBuilder<User, bool, QQueryOperations> checkDeleteProperty() {
+  QueryBuilder<AllocateUser, bool, QQueryOperations> checkDeleteProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'checkDelete');
     });
   }
 
-  QueryBuilder<User, int?, QQueryOperations> curAftIDProperty() {
+  QueryBuilder<AllocateUser, int?, QQueryOperations> curAftIDProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'curAftID');
     });
   }
 
-  QueryBuilder<User, int?, QQueryOperations> curEveIDProperty() {
+  QueryBuilder<AllocateUser, int?, QQueryOperations> curEveIDProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'curEveID');
     });
   }
 
-  QueryBuilder<User, int?, QQueryOperations> curMornIDProperty() {
+  QueryBuilder<AllocateUser, int?, QQueryOperations> curMornIDProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'curMornID');
     });
   }
 
-  QueryBuilder<User, int, QQueryOperations> dayCostProperty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addPropertyName(r'dayCost');
-    });
-  }
-
-  QueryBuilder<User, DeleteSchedule, QQueryOperations>
+  QueryBuilder<AllocateUser, DeleteSchedule, QQueryOperations>
       deleteScheduleProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'deleteSchedule');
     });
   }
 
-  QueryBuilder<User, bool, QQueryOperations> isSyncedProperty() {
+  QueryBuilder<AllocateUser, String?, QQueryOperations> emailProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'email');
+    });
+  }
+
+  QueryBuilder<AllocateUser, bool, QQueryOperations> isSyncedProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'isSynced');
     });
   }
 
-  QueryBuilder<User, DateTime, QQueryOperations> lastOpenedProperty() {
+  QueryBuilder<AllocateUser, DateTime, QQueryOperations> lastOpenedProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'lastOpened');
     });
   }
 
-  QueryBuilder<User, DateTime, QQueryOperations> lastUpdatedProperty() {
+  QueryBuilder<AllocateUser, DateTime, QQueryOperations> lastUpdatedProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'lastUpdated');
     });
   }
 
-  QueryBuilder<User, int, QQueryOperations> primarySeedProperty() {
+  QueryBuilder<AllocateUser, int, QQueryOperations> primarySeedProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'primarySeed');
     });
   }
 
-  QueryBuilder<User, bool, QQueryOperations> reduceMotionProperty() {
+  QueryBuilder<AllocateUser, bool, QQueryOperations> reduceMotionProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'reduceMotion');
     });
   }
 
-  QueryBuilder<User, double, QQueryOperations> scaffoldOpacityProperty() {
+  QueryBuilder<AllocateUser, double, QQueryOperations>
+      scaffoldOpacityProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'scaffoldOpacity');
     });
   }
 
-  QueryBuilder<User, int?, QQueryOperations> secondarySeedProperty() {
+  QueryBuilder<AllocateUser, int?, QQueryOperations> secondarySeedProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'secondarySeed');
     });
   }
 
-  QueryBuilder<User, double, QQueryOperations> sidebarOpacityProperty() {
+  QueryBuilder<AllocateUser, double, QQueryOperations>
+      sidebarOpacityProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'sidebarOpacity');
     });
   }
 
-  QueryBuilder<User, bool, QQueryOperations> syncOnlineProperty() {
+  QueryBuilder<AllocateUser, bool, QQueryOperations> syncOnlineProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'syncOnline');
     });
   }
 
-  QueryBuilder<User, int?, QQueryOperations> tertiarySeedProperty() {
+  QueryBuilder<AllocateUser, int?, QQueryOperations> tertiarySeedProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'tertiarySeed');
     });
   }
 
-  QueryBuilder<User, ThemeType, QQueryOperations> themeTypeProperty() {
+  QueryBuilder<AllocateUser, ThemeType, QQueryOperations> themeTypeProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'themeType');
     });
   }
 
-  QueryBuilder<User, ToneMapping, QQueryOperations> toneMappingProperty() {
+  QueryBuilder<AllocateUser, bool, QQueryOperations> toDeleteProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'toDelete');
+    });
+  }
+
+  QueryBuilder<AllocateUser, ToneMapping, QQueryOperations>
+      toneMappingProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'toneMapping');
     });
   }
 
-  QueryBuilder<User, bool, QQueryOperations> useUltraHighContrastProperty() {
+  QueryBuilder<AllocateUser, bool, QQueryOperations>
+      useUltraHighContrastProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'useUltraHighContrast');
     });
   }
 
-  QueryBuilder<User, String, QQueryOperations> usernameProperty() {
+  QueryBuilder<AllocateUser, String, QQueryOperations> usernameProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'username');
     });
   }
 
-  QueryBuilder<User, String?, QQueryOperations> uuidProperty() {
+  QueryBuilder<AllocateUser, String?, QQueryOperations> uuidProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'uuid');
     });
   }
 
-  QueryBuilder<User, Effect, QQueryOperations> windowEffectProperty() {
+  QueryBuilder<AllocateUser, Effect, QQueryOperations> windowEffectProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'windowEffect');
     });

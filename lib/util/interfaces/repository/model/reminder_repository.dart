@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 import '../../../../model/task/reminder.dart';
 import '../function/date_range.dart';
 import '../function/local_notifications.dart';
@@ -7,7 +9,7 @@ import '../function/repository.dart';
 import '../function/search.dart';
 import '../function/upcoming.dart';
 
-abstract class ReminderRepository
+abstract class ReminderRepository extends ChangeNotifier
     implements
         Repository<Reminder>,
         Overdue<Reminder>,

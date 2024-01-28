@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:isar/isar.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -10,17 +11,25 @@ import '../util/exceptions.dart';
 import '../util/interfaces/repository/model/reminder_repository.dart';
 import '../util/interfaces/sortable.dart';
 
-class ReminderRepo implements ReminderRepository {
+class ReminderRepo extends ChangeNotifier implements ReminderRepository {
   static final ReminderRepo _instance = ReminderRepo._internal();
 
   static ReminderRepo get instance => _instance;
   final SupabaseClient _supabaseClient =
       SupabaseService.instance.supabaseClient;
+
+  late final RealtimeChannel _reminderStream;
+
   final Isar _isarClient = IsarService.instance.isarClient;
+
+  bool get isConnected => SupabaseService.instance.isConnected;
+
+  int _reminderCount = 0;
+  bool _subscribed = false;
 
   @override
   Future<Reminder> create(Reminder reminder) async {
-    reminder.isSynced = (null != _supabaseClient.auth.currentSession);
+    reminder.isSynced = isConnected;
     late int? id;
 
     await _isarClient.writeTxn(() async {
@@ -33,7 +42,7 @@ class ReminderRepo implements ReminderRepository {
           "Isar Open: ${_isarClient.isOpen}");
     }
 
-    if (null != _supabaseClient.auth.currentSession) {
+    if (isConnected) {
       Map<String, dynamic> reminderEntity = reminder.toEntity();
       final List<Map<String, dynamic>> response = await _supabaseClient
           .from("reminders")
@@ -44,7 +53,8 @@ class ReminderRepo implements ReminderRepository {
         throw FailureToUploadException("Failed to sync reminder on create\n"
             "Reminder: ${reminder.toString()}\n"
             "Time: ${DateTime.now()}\n\n"
-            "Supabase Open: ${null != _supabaseClient.auth.currentSession}");
+            "Supabase Open: $isConnected"
+            "Session expired: ${_supabaseClient.auth.currentSession?.isExpired}");
       }
     }
     return reminder;
@@ -52,7 +62,7 @@ class ReminderRepo implements ReminderRepository {
 
   @override
   Future<Reminder> update(Reminder reminder) async {
-    reminder.isSynced = (null != _supabaseClient.auth.currentSession);
+    reminder.isSynced = isConnected;
 
     late int? id;
     await _isarClient.writeTxn(() async {
@@ -66,7 +76,7 @@ class ReminderRepo implements ReminderRepository {
           "Isar Open: ${_isarClient.isOpen}");
     }
 
-    if (null != _supabaseClient.auth.currentSession) {
+    if (isConnected) {
       Map<String, dynamic> reminderEntity = reminder.toEntity();
       final List<Map<String, dynamic>> response = await _supabaseClient
           .from("reminders")
@@ -79,7 +89,8 @@ class ReminderRepo implements ReminderRepository {
         throw FailureToUploadException("Failed to sync reminder on update\n"
             "Reminder: ${reminder.toString()}\n"
             "Time: ${DateTime.now()}\n\n"
-            "Supabase Open: ${null != _supabaseClient.auth.currentSession}");
+            "Supabase Open: $isConnected"
+            "Session expired: ${_supabaseClient.auth.currentSession?.isExpired}");
       }
     }
     return reminder;
@@ -92,7 +103,7 @@ class ReminderRepo implements ReminderRepository {
     await _isarClient.writeTxn(() async {
       ids = List<int?>.empty(growable: true);
       for (Reminder reminder in reminders) {
-        reminder.isSynced = (null != _supabaseClient.auth.currentSession);
+        reminder.isSynced = isConnected;
         id = await _isarClient.reminders.put(reminder);
         ids.add(id);
       }
@@ -104,7 +115,7 @@ class ReminderRepo implements ReminderRepository {
           "Isar Open: ${_isarClient.isOpen}");
     }
 
-    if (null != _supabaseClient.auth.currentSession) {
+    if (isConnected) {
       ids.clear();
       List<Map<String, dynamic>> reminderEntities =
           reminders.map((reminder) => reminder.toEntity()).toList();
@@ -119,7 +130,8 @@ class ReminderRepo implements ReminderRepository {
         throw FailureToUploadException("Failed to sync reminders on update \n"
             "Reminder: ${reminders.toString()}\n"
             "Time: ${DateTime.now()}\n"
-            "Supabase Open: ${null != _supabaseClient.auth.currentSession}");
+            "Supabase Open: $isConnected"
+            "Session expired: ${_supabaseClient.auth.currentSession?.isExpired}");
       }
     }
   }
@@ -133,14 +145,15 @@ class ReminderRepo implements ReminderRepository {
   @override
   Future<void> remove(Reminder reminder) async {
     // Delete online
-    if (null != _supabaseClient.auth.currentSession) {
+    if (isConnected) {
       try {
         await _supabaseClient.from("reminders").delete().eq("id", reminder.id);
       } catch (error) {
         throw FailureToDeleteException("Failed to delete Reminder online\n"
             "Reminder: ${reminder.toString()}\n"
             "Time: ${DateTime.now()}\n"
-            "Supabase Open: ${null != _supabaseClient.auth.currentSession}");
+            "Supabase Open: $isConnected"
+            "Session expired: ${_supabaseClient.auth.currentSession?.isExpired}");
       }
     }
     // Delete local
@@ -151,13 +164,14 @@ class ReminderRepo implements ReminderRepository {
 
   @override
   Future<List<int>> emptyTrash() async {
-    if (null != _supabaseClient.auth.currentSession) {
+    if (isConnected) {
       try {
         await _supabaseClient.from("reminders").delete().eq("toDelete", true);
       } catch (error) {
         throw FailureToDeleteException("Failed to empty trash online\n"
             "Time: ${DateTime.now()}\n"
-            "Supabase Open: ${null != _supabaseClient.auth.currentSession}");
+            "Supabase Open: $isConnected"
+            "Session expired: ${_supabaseClient.auth.currentSession?.isExpired}");
       }
     }
     late List<int> deleteIDs;
@@ -173,6 +187,21 @@ class ReminderRepo implements ReminderRepository {
   }
 
   @override
+  Future<void> clearDB() async {
+    if (isConnected) {
+      // not sure whether or not to catch errors.
+      await _supabaseClient
+          .from("reminders")
+          .delete()
+          .neq("customViewIndex", -2);
+    }
+
+    await _isarClient.writeTxn(() async {
+      await _isarClient.reminders.clear();
+    });
+  }
+
+  @override
   Future<List<int>> deleteFutures({required Reminder deleteFrom}) async {
     List<int> toDelete = await _isarClient.reminders
         .where()
@@ -183,7 +212,7 @@ class ReminderRepo implements ReminderRepository {
         .findAll();
 
     // Online
-    if (null != _supabaseClient.auth.currentSession) {
+    if (isConnected) {
       try {
         await _supabaseClient
             .from("reminders")
@@ -194,7 +223,8 @@ class ReminderRepo implements ReminderRepository {
             "Failed to delete future events online \n"
             "Reminder: ${deleteFrom.toString()}\n"
             "Time: ${DateTime.now()}\n"
-            "Supabase Open: ${null != _supabaseClient.auth.currentSession}");
+            "Supabase Open: $isConnected"
+            "Session expired: ${_supabaseClient.auth.currentSession?.isExpired}");
       }
     }
 
@@ -207,89 +237,127 @@ class ReminderRepo implements ReminderRepository {
   }
 
   @override
-  Future<void> deleteSweep() async {
-    List<int> toDeletes = await getDeleteIDs();
-    await _isarClient.writeTxn(() async {
-      await _isarClient.reminders.deleteAll(toDeletes);
-    });
-  }
+  Future<void> deleteSweep({DateTime? upTo}) async {
+    List<int> toDeletes = await getDeleteIDs(deleteLimit: upTo);
 
-  @override
-  Future<void> syncRepo() async {
-    if (null == _supabaseClient.auth.currentSession) {
-      return fetchRepo();
-    }
-
-    List<int> toDeletes = await getDeleteIDs();
-    if (toDeletes.isNotEmpty) {
+    if (isConnected) {
       try {
         await _supabaseClient
             .from("reminders")
             .delete()
             .inFilter("id", toDeletes);
       } catch (error) {
-        // I'm also unsure about this Exception.
-        throw FailureToDeleteException("Failed to delete reminders on sync\n"
-            "ids: ${toDeletes.toString()}\n"
-            "Time: ${DateTime.now()}\n\n"
-            "Supabase Open: ${null != _supabaseClient.auth.currentSession}");
+        throw FailureToDeleteException("Failed to delete reminders online \n"
+            "Time: ${DateTime.now()}\n"
+            "Supabase Open: $isConnected"
+            "Session expired: ${_supabaseClient.auth.currentSession?.isExpired}");
       }
     }
+    await _isarClient.writeTxn(() async {
+      await _isarClient.reminders.deleteAll(toDeletes);
+    });
+  }
 
-    // Get the non-uploaded stuff from Isar.
-    List<Reminder> unsyncedReminders = await getUnsynced();
+  Future<int> getOnlineCount() async =>
+      _supabaseClient.from("reminders").count(CountOption.exact);
 
-    if (unsyncedReminders.isNotEmpty) {
-      List<Map<String, dynamic>> syncEntities =
-          unsyncedReminders.map((reminder) {
-        reminder.isSynced = true;
-        return reminder.toEntity();
-      }).toList();
-
-      final List<Map<String, dynamic>> responses = await _supabaseClient
-          .from("reminders")
-          .upsert(syncEntities)
-          .select("id");
-
-      List<int?> ids =
-          responses.map((response) => response["id"] as int?).toList();
-
-      if (ids.any((id) => null == id)) {
-        throw FailureToUploadException("Failed to sync reminders\n"
-            "Reminders: ${unsyncedReminders.toString()}\n"
-            "Time: ${DateTime.now()}\n\n"
-            "Supabase Open: ${null != _supabaseClient.auth.currentSession}");
-      }
+  @override
+  Future<void> syncRepo() async {
+    if (!isConnected) {
+      return;
     }
 
-    // Fetch from supabase.
-    fetchRepo();
+    // Get the set of unsynced data.
+    Set<Reminder> unsynced = await getUnsynced().then((_) => _.toSet());
+
+    // Get the online count.
+    _reminderCount = await getOnlineCount();
+
+    // Fetch new data -> by fetchRepo();
+    List<Reminder> onlineReminders = await fetchRepo();
+
+    List<Reminder> toInsert = List.empty(growable: true);
+    for (Reminder reminder in onlineReminders) {
+      Reminder? otherReminder = unsynced.lookup(reminder);
+      // Prioritize by last updated -> unsynced data will overwrite new data.
+      if (null != otherReminder &&
+          reminder.lastUpdated.isAfter(otherReminder.lastUpdated)) {
+        unsynced.remove(otherReminder);
+      }
+      toInsert.add(reminder);
+    }
+
+    // Put all new data in the db.
+    await _isarClient.writeTxn(() async {
+      await _isarClient.reminders.putAll(toInsert);
+    });
+
+    // Update the unsynced data.
+    await updateBatch(unsynced.toList());
+
+    if (onlineReminders.length < _reminderCount) {
+      // Give the db a moment to refresh.
+      await Future.delayed(const Duration(seconds: 1));
+      insertRemaining(totalFetched: onlineReminders.length).whenComplete(() {
+        notifyListeners();
+      });
+    }
+
+    notifyListeners();
+  }
+
+  Future<void> insertRemaining({required int totalFetched}) async {
+    List<Reminder> toInsert = List.empty(growable: true);
+    while (totalFetched < _reminderCount) {
+      List<Reminder>? newReminders = await fetchRepo(offset: totalFetched);
+
+      // If there is no data or connection is lost, break.
+      if (newReminders.isEmpty) {
+        break;
+      }
+      toInsert.addAll(newReminders);
+      totalFetched += newReminders.length;
+    }
+
+    await _isarClient.writeTxn(() async {
+      await _isarClient.reminders.putAll(toInsert);
+    });
   }
 
   @override
-  Future<void> fetchRepo() async {
-    late List<Map<String, dynamic>> reminderEntities;
+  Future<List<Reminder>> fetchRepo({int limit = 1000, int offset = 0}) async {
+    List<Reminder> data = List.empty(growable: true);
+    if (!isConnected) {
+      return data;
+    }
+    List<Map<String, dynamic>> reminderEntities = await _supabaseClient
+        .from("reminders")
+        .select()
+        .order("lastUpdated", ascending: false)
+        .range(offset, offset + limit);
 
-    await Future.delayed(const Duration(seconds: 1)).then((value) async {
-      if (null == _supabaseClient.auth.currentSession) {
-        return;
-      }
-      reminderEntities = await _supabaseClient.from("reminders").select();
+    for (Map<String, dynamic> entity in reminderEntities) {
+      data.add(Reminder.fromEntity(entity: entity));
+    }
+    return data;
+  }
 
-      if (reminderEntities.isEmpty) {
-        return;
-      }
-
-      List<Reminder> reminders = reminderEntities
-          .map((reminder) => Reminder.fromEntity(entity: reminder))
-          .toList();
-      await _isarClient.writeTxn(() async {
-        await _isarClient.reminders.clear();
-        for (Reminder reminder in reminders) {
-          _isarClient.reminders.put(reminder);
-        }
-      });
+  Future<void> handleUpsert(PostgresChangePayload payload) async {
+    Reminder reminder = Reminder.fromEntity(entity: payload.newRecord);
+    await _isarClient.writeTxn(() async {
+      await _isarClient.reminders.put(reminder);
     });
+
+    _reminderCount = await getOnlineCount();
+  }
+
+  Future<void> handleDelete(PostgresChangePayload payload) async {
+    int deleteID = payload.oldRecord["id"] as int;
+    await _isarClient.writeTxn(() async {
+      await _isarClient.reminders.delete(deleteID);
+    });
+
+    _reminderCount = await getOnlineCount();
   }
 
   @override
@@ -557,5 +625,81 @@ class ReminderRepo implements ReminderRepository {
           .limit(limit)
           .findAll();
 
-  ReminderRepo._internal();
+  ReminderRepo._internal() {
+    // I haven't faked the connection channels -> doesn't make sense to.
+    if (SupabaseService.instance.debug) {
+      return;
+    }
+    // Initialize table stream -> only listen on signIn.
+    _reminderStream = _supabaseClient
+        .channel("public:reminders")
+        .onPostgresChanges(
+            event: PostgresChangeEvent.insert,
+            schema: "public",
+            table: "reminders",
+            callback: handleUpsert)
+        .onPostgresChanges(
+            schema: "public",
+            table: "reminders",
+            event: PostgresChangeEvent.update,
+            callback: handleUpsert)
+        .onPostgresChanges(
+            schema: "public",
+            table: "reminders",
+            event: PostgresChangeEvent.delete,
+            callback: handleDelete);
+
+    // Listen to auth changes.
+    SupabaseService.instance.authSubscription.listen((AuthState data) async {
+      final AuthChangeEvent event = data.event;
+      switch (event) {
+        case AuthChangeEvent.signedIn:
+          await syncRepo();
+          // OPEN TABLE STREAM -> insert new data.
+          if (!_subscribed) {
+            _reminderStream.subscribe();
+            _subscribed = true;
+          }
+          break;
+        case AuthChangeEvent.tokenRefreshed:
+          if (!_subscribed) {
+            await syncRepo();
+            _reminderStream.subscribe();
+            _subscribed = true;
+          }
+          break;
+        case AuthChangeEvent.signedOut:
+          // CLOSE TABLE STREAM.
+          await _reminderStream.unsubscribe();
+          _subscribed = false;
+          break;
+        default:
+          break;
+      }
+      // if (event == AuthChangeEvent.signedIn) {
+      //   await syncRepo();
+      //   // OPEN TABLE STREAM -> insert new data.
+      //   if (!_subscribed) {
+      //     _reminderStream.subscribe();
+      //     _subscribed = true;
+      //   }
+      //   return;
+      // }
+      // if (event == AuthChangeEvent.tokenRefreshed) {
+      //   // If not listening to the stream, there hasn't been an update.
+      //   // Sync accordingly.
+      //   if (!_subscribed) {
+      //     await syncRepo();
+      //     _reminderStream.subscribe();
+      //     _subscribed = true;
+      //   }
+      //   return;
+      // }
+      // if (event == AuthChangeEvent.signedOut) {
+      //   // CLOSE TABLE STREAM.
+      //   await _reminderStream.unsubscribe();
+      //   _subscribed = false;
+      // }
+    });
+  }
 }

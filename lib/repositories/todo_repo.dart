@@ -1,8 +1,10 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:isar/isar.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../model/task/subtask.dart';
 import '../model/task/todo.dart';
 import '../services/isar_service.dart';
 import '../services/supabase_service.dart';
@@ -12,20 +14,27 @@ import '../util/exceptions.dart';
 import '../util/interfaces/repository/model/todo_repository.dart';
 import '../util/interfaces/sortable.dart';
 
-class ToDoRepo implements ToDoRepository {
-  // TODO: MAKE THESE IMPLEMENTATIONS SINGLETONS.
-
+// This notifies when receiving data from the internet.
+class ToDoRepo extends ChangeNotifier implements ToDoRepository {
   static final ToDoRepo _instance = ToDoRepo._internal();
 
   static ToDoRepo get instance => _instance;
 
   final SupabaseClient _supabaseClient =
       SupabaseService.instance.supabaseClient;
+
+  late final RealtimeChannel _toDoStream;
+
   final Isar _isarClient = IsarService.instance.isarClient;
+
+  bool get isConnected => SupabaseService.instance.isConnected;
+
+  int _toDoCount = 0;
+  bool _subscribed = false;
 
   @override
   Future<ToDo> create(ToDo toDo) async {
-    toDo.isSynced = (null != _supabaseClient.auth.currentSession);
+    toDo.isSynced = isConnected;
 
     late int? id;
     await _isarClient.writeTxn(() async {
@@ -39,7 +48,7 @@ class ToDoRepo implements ToDoRepository {
           "Isar Open: ${_isarClient.isOpen}");
     }
 
-    if (null != _supabaseClient.auth.currentSession) {
+    if (isConnected) {
       Map<String, dynamic> toDoEntity = toDo.toEntity();
       final List<Map<String, dynamic>> response =
           await _supabaseClient.from("toDos").insert(toDoEntity).select("id");
@@ -50,7 +59,8 @@ class ToDoRepo implements ToDoRepository {
         throw FailureToUploadException("Failed to sync ToDo on create\n"
             "ToDo: ${toDo.toString()}\n"
             "Time: ${DateTime.now()}\n\n"
-            "Supabase Open: ${null != _supabaseClient.auth.currentSession}");
+            "Supabase Open: $isConnected"
+            "Session expired: ${_supabaseClient.auth.currentSession?.isExpired}");
       }
     }
 
@@ -59,7 +69,7 @@ class ToDoRepo implements ToDoRepository {
 
   @override
   Future<ToDo> update(ToDo toDo) async {
-    toDo.isSynced = (null != _supabaseClient.auth.currentSession);
+    toDo.isSynced = isConnected;
 
     // This is just for error checking.
     late int? id;
@@ -74,7 +84,7 @@ class ToDoRepo implements ToDoRepository {
           "Isar Open: ${_isarClient.isOpen}");
     }
 
-    if (null != _supabaseClient.auth.currentSession) {
+    if (isConnected) {
       Map<String, dynamic> toDoEntity = toDo.toEntity();
       final List<Map<String, dynamic>> response =
           await _supabaseClient.from("toDos").upsert(toDoEntity).select("id");
@@ -84,7 +94,8 @@ class ToDoRepo implements ToDoRepository {
         throw FailureToUploadException("Failed to sync ToDo on update\n"
             "ToDo: ${toDo.toString()}\n"
             "Time: ${DateTime.now()}\n"
-            "Supabase Open: ${null != _supabaseClient.auth.currentSession}");
+            "Supabase Open: $isConnected"
+            "Session expired: ${_supabaseClient.auth.currentSession?.isExpired}");
       }
     }
     return toDo;
@@ -98,7 +109,7 @@ class ToDoRepo implements ToDoRepository {
     await _isarClient.writeTxn(() async {
       ids = List<int?>.empty(growable: true);
       for (ToDo toDo in toDos) {
-        toDo.isSynced = (null != _supabaseClient.auth.currentSession);
+        toDo.isSynced = (isConnected);
         id = await _isarClient.toDos.put(toDo);
         ids.add(id);
       }
@@ -110,7 +121,7 @@ class ToDoRepo implements ToDoRepository {
           "Isar Open: ${_isarClient.isOpen}");
     }
 
-    if (null != _supabaseClient.auth.currentSession) {
+    if (isConnected) {
       ids.clear();
       List<Map<String, dynamic>> toDoEntities =
           (toDos).map((toDo) => toDo.toEntity()).toList();
@@ -123,7 +134,8 @@ class ToDoRepo implements ToDoRepository {
         throw FailureToUploadException("Failed to sync toDos on update \n"
             "ToDo: ${toDos.toString()}\n"
             "Time: ${DateTime.now()}\n"
-            "Supabase Open: ${null != _supabaseClient.auth.currentSession}");
+            "Supabase Open: $isConnected"
+            "Session expired: ${_supabaseClient.auth.currentSession?.isExpired}");
       }
     }
   }
@@ -137,14 +149,15 @@ class ToDoRepo implements ToDoRepository {
   @override
   Future<void> remove(ToDo toDo) async {
     // Delete online
-    if (null != _supabaseClient.auth.currentSession) {
+    if (isConnected) {
       try {
         await _supabaseClient.from("toDos").delete().eq("id", toDo.id);
       } catch (error) {
         throw FailureToDeleteException("Failed to delete ToDo online\n"
             "ToDo: ${toDo.toString()}\n"
             "Time: ${DateTime.now()}\n"
-            "Supabase Open: ${null != _supabaseClient.auth.currentSession}");
+            "Supabase Open: $isConnected"
+            "Session expired: ${_supabaseClient.auth.currentSession?.isExpired}");
       }
     }
     // Delete local
@@ -155,13 +168,14 @@ class ToDoRepo implements ToDoRepository {
 
   @override
   Future<List<int>> emptyTrash() async {
-    if (null != _supabaseClient.auth.currentSession) {
+    if (isConnected) {
       try {
         await _supabaseClient.from("toDos").delete().eq("toDelete", true);
       } catch (error) {
         throw FailureToDeleteException("Failed to empty trash online\n"
             "Time: ${DateTime.now()}\n"
-            "Supabase Open: ${null != _supabaseClient.auth.currentSession}");
+            "Supabase Open: $isConnected"
+            "Session expired: ${_supabaseClient.auth.currentSession?.isExpired}");
       }
     }
 
@@ -179,6 +193,18 @@ class ToDoRepo implements ToDoRepository {
   }
 
   @override
+  Future<void> clearDB() async {
+    if (isConnected) {
+      // not sure whether or not to catch errors.
+      await _supabaseClient.from("toDos").delete().neq("customViewIndex", -2);
+    }
+
+    await _isarClient.writeTxn(() async {
+      await _isarClient.toDos.clear();
+    });
+  }
+
+  @override
   Future<List<int>> deleteFutures({required ToDo deleteFrom}) async {
     List<int> toDelete = await _isarClient.toDos
         .where()
@@ -190,7 +216,7 @@ class ToDoRepo implements ToDoRepository {
         .findAll();
 
     // Online
-    if (null != _supabaseClient.auth.currentSession) {
+    if (isConnected) {
       try {
         await _supabaseClient.from("toDos").delete().inFilter("id", toDelete);
       } catch (error) {
@@ -198,7 +224,8 @@ class ToDoRepo implements ToDoRepository {
             "Failed to delete future events online \n"
             "ToDo: ${deleteFrom.toString()}\n"
             "Time: ${DateTime.now()}\n"
-            "Supabase Open: ${null != _supabaseClient.auth.currentSession}");
+            "Supabase Open: $isConnected"
+            "Session expired: ${_supabaseClient.auth.currentSession?.isExpired}");
       }
     }
 
@@ -210,81 +237,138 @@ class ToDoRepo implements ToDoRepository {
     return toDelete;
   }
 
-  // TODO: refactor this to take a time limit?.
   @override
-  Future<void> deleteSweep() async {
-    List<int> toDeletes = await getDeleteIDs();
+  Future<void> deleteSweep({DateTime? upTo}) async {
+    List<int> toDeletes = await getDeleteIDs(deleteLimit: upTo);
+    List<int> subtaskIDs = List.empty(growable: true);
+    for (int id in toDeletes) {
+      subtaskIDs.addAll(await _isarClient.subtasks
+          .where()
+          .taskIDEqualTo(id)
+          .idProperty()
+          .findAll());
+    }
+
+    if (isConnected) {
+      try {
+        await _supabaseClient.from("toDos").delete().inFilter("id", toDeletes);
+        await _supabaseClient
+            .from("subtasks")
+            .delete()
+            .inFilter("id", subtaskIDs);
+      } catch (error) {
+        throw FailureToDeleteException("Failed to delete todos online \n"
+            "Time: ${DateTime.now()}\n"
+            "Supabase Open: $isConnected"
+            "Session expired: ${_supabaseClient.auth.currentSession?.isExpired}");
+      }
+    }
     await _isarClient.writeTxn(() async {
       await _isarClient.toDos.deleteAll(toDeletes);
+      await _isarClient.subtasks.deleteAll(subtaskIDs);
     });
   }
+
+  Future<int> getOnlineCount() async =>
+      _supabaseClient.from("toDos").count(CountOption.exact);
 
   @override
   Future<void> syncRepo() async {
-    if (null == _supabaseClient.auth.currentSession) {
-      return fetchRepo();
+    if (!isConnected) {
+      return;
     }
-    List<int> toDeletes = await getDeleteIDs();
-    if (toDeletes.isNotEmpty) {
-      try {
-        await _supabaseClient.from("toDos").delete().inFilter("id", toDeletes);
-      } catch (error) {
-        throw FailureToDeleteException("Failed to delete toDos on sync.\n"
-            "ids: ${toDeletes.toString()}\n"
-            "Time: ${DateTime.now()}\n"
-            "Supabase Open: ${null != _supabaseClient.auth.currentSession}");
+
+    // Get the set of unsynced data.
+    Set<ToDo> unsynced = await getUnsynced().then((_) => _.toSet());
+
+    // Get the online count.
+    _toDoCount = await getOnlineCount();
+
+    // Fetch new data -> by fetchRepo();
+    List<ToDo> onlineToDos = await fetchRepo();
+
+    List<ToDo> toInsert = List.empty(growable: true);
+    for (ToDo toDo in onlineToDos) {
+      ToDo? otherToDo = unsynced.lookup(toDo);
+      // Prioritize by last updated -> unsynced data will overwrite new data.
+      if (null != otherToDo &&
+          toDo.lastUpdated.isAfter(otherToDo.lastUpdated)) {
+        unsynced.remove(otherToDo);
       }
+      toInsert.add(toDo);
     }
 
-    // Get the non-uploaded stuff from Isar.
-    List<ToDo> unsyncedToDos = await getUnsynced();
+    // Put all new data in the db.
+    await _isarClient.writeTxn(() async {
+      await _isarClient.toDos.putAll(toInsert);
+    });
 
-    if (unsyncedToDos.isNotEmpty) {
-      List<Map<String, dynamic>> syncEntities = unsyncedToDos.map((toDo) {
-        toDo.isSynced = true;
-        return toDo.toEntity();
-      }).toList();
+    // Update the unsynced data.
+    await updateBatch(unsynced.toList());
 
-      final List<Map<String, dynamic>> responses =
-          await _supabaseClient.from("toDos").upsert(syncEntities).select("id");
+    if (onlineToDos.length < _toDoCount) {
+      // Give the db a moment to refresh.
+      await Future.delayed(const Duration(seconds: 1));
+      insertRemaining(totalFetched: onlineToDos.length).whenComplete(() {
+        notifyListeners();
+      });
+    }
 
-      List<int?> ids =
-          responses.map((response) => response["id"] as int?).toList();
+    notifyListeners();
+  }
 
-      if (ids.any((id) => null == id)) {
-        unsyncedToDos.map((toDo) => toDo.isSynced = false);
-        throw FailureToUploadException("Failed to sync toDos\n"
-            "ToDos: ${unsyncedToDos.toString()}\n"
-            "Time: ${DateTime.now()}\n"
-            "Supabase Open: ${null != _supabaseClient.auth.currentSession}");
+  Future<void> insertRemaining({required int totalFetched}) async {
+    List<ToDo> toInsert = List.empty(growable: true);
+    while (totalFetched < _toDoCount) {
+      List<ToDo>? newToDos = await fetchRepo(offset: totalFetched);
+
+      // If there is no data or connection is lost, break.
+      if (newToDos.isEmpty) {
+        break;
       }
+      toInsert.addAll(newToDos);
+      totalFetched += newToDos.length;
     }
-    fetchRepo();
+
+    await _isarClient.writeTxn(() async {
+      await _isarClient.toDos.putAll(toInsert);
+    });
   }
 
   @override
-  Future<void> fetchRepo() async {
-    late List<Map<String, dynamic>> toDoEntities;
+  Future<List<ToDo>> fetchRepo({int limit = 1000, int offset = 0}) async {
+    List<ToDo> data = List.empty(growable: true);
+    if (!isConnected) {
+      return data;
+    }
+    List<Map<String, dynamic>> toDoEntities = await _supabaseClient
+        .from("toDos")
+        .select()
+        .order("lastUpdated", ascending: false)
+        .range(offset, offset + limit);
 
-    await Future.delayed(const Duration(seconds: 1)).then((value) async {
-      if (null == _supabaseClient.auth.currentSession) {
-        return;
-      }
-      toDoEntities = await _supabaseClient.from("toDos").select();
+    for (Map<String, dynamic> entity in toDoEntities) {
+      data.add(ToDo.fromEntity(entity: entity));
+    }
+    return data;
+  }
 
-      if (toDoEntities.isEmpty) {
-        return;
-      }
-
-      List<ToDo> toDos =
-          toDoEntities.map((toDo) => ToDo.fromEntity(entity: toDo)).toList();
-      await _isarClient.writeTxn(() async {
-        await _isarClient.toDos.clear();
-        for (ToDo toDo in toDos) {
-          await _isarClient.toDos.put(toDo);
-        }
-      });
+  Future<void> handleUpsert(PostgresChangePayload payload) async {
+    ToDo toDo = ToDo.fromEntity(entity: payload.newRecord);
+    await _isarClient.writeTxn(() async {
+      await _isarClient.toDos.put(toDo);
     });
+
+    _toDoCount = await getOnlineCount();
+  }
+
+  Future<void> handleDelete(PostgresChangePayload payload) async {
+    int deleteID = payload.oldRecord["id"] as int;
+    await _isarClient.writeTxn(() async {
+      await _isarClient.toDos.delete(deleteID);
+    });
+
+    _toDoCount = await getOnlineCount();
   }
 
   @override
@@ -303,7 +387,7 @@ class ToDoRepo implements ToDoRepository {
           .findAll();
 
   @override
-  Future<List<ToDo>> mostRecent({int limit = 50}) async =>
+  Future<List<ToDo>> mostRecent({int limit = Constants.intMax}) async =>
       await _isarClient.toDos
           .where()
           .toDeleteEqualTo(false)
@@ -322,7 +406,9 @@ class ToDoRepo implements ToDoRepository {
 
   @override
   Future<List<ToDo>> getRepoList(
-          {int limit = 50, int offset = 0, bool completed = false}) async =>
+          {int limit = Constants.intMax,
+          int offset = 0,
+          bool completed = false}) async =>
       await _isarClient.toDos
           .where()
           .completedEqualTo(completed)
@@ -340,7 +426,7 @@ class ToDoRepo implements ToDoRepository {
 
   @override
   Future<List<ToDo>> getRepoListBy(
-      {int limit = 50,
+      {int limit = Constants.intMax,
       int offset = 0,
       bool completed = false,
       required SortableView<ToDo> sorter}) async {
@@ -506,7 +592,8 @@ class ToDoRepo implements ToDoRepository {
   }
 
   @override
-  Future<List<ToDo>> getDeleted({int limit = 50, int offset = 0}) async =>
+  Future<List<ToDo>> getDeleted(
+          {int limit = Constants.intMax, int offset = 0}) async =>
       await _isarClient.toDos
           .where()
           .toDeleteEqualTo(true)
@@ -523,7 +610,7 @@ class ToDoRepo implements ToDoRepository {
   @override
   Future<List<ToDo>> getCompleted(
           {required SortableView<ToDo> sorter,
-          int limit = 50,
+          int limit = Constants.intMax,
           int offset = 0}) async =>
       await getRepoListBy(
           sorter: sorter, limit: limit, offset: offset, completed: true);
@@ -531,7 +618,7 @@ class ToDoRepo implements ToDoRepository {
   @override
   Future<List<ToDo>> getMyDay(
       {required SortableView<ToDo> sorter,
-      int limit = 50,
+      int limit = Constants.intMax,
       int offset = 0}) async {
     switch (sorter.sortMethod) {
       case SortMethod.name:
@@ -719,22 +806,25 @@ class ToDoRepo implements ToDoRepository {
   }
 
   @override
-  Future<int> getMyDayWeight({int limit = 50}) async => await _isarClient.toDos
-      .where()
-      .myDayEqualTo(true)
-      .filter()
-      .toDeleteEqualTo(false)
-      .group((q) => q
-          .repeatableStateEqualTo(RepeatableState.normal)
-          .or()
-          .repeatableStateEqualTo(RepeatableState.delta))
-      .completedEqualTo(false)
-      .weightProperty()
-      .sum();
+  Future<int> getMyDayWeight({int limit = Constants.intMax}) async =>
+      await _isarClient.toDos
+          .where()
+          .myDayEqualTo(true)
+          .filter()
+          .toDeleteEqualTo(false)
+          .group((q) => q
+              .repeatableStateEqualTo(RepeatableState.normal)
+              .or()
+              .repeatableStateEqualTo(RepeatableState.delta))
+          // .completedEqualTo(false)
+          .weightProperty()
+          .sum();
 
   @override
   Future<List<ToDo>> getRepoByGroupID(
-          {required int groupID, int limit = 50, int offset = 0}) async =>
+          {required int groupID,
+          int limit = Constants.intMax,
+          int offset = 0}) async =>
       await _isarClient.toDos
           .where()
           .groupIDEqualTo(groupID)
@@ -830,7 +920,8 @@ class ToDoRepo implements ToDoRepository {
   }
 
   @override
-  Future<List<ToDo>> getUpcoming({int limit = 50, int offset = 0}) async =>
+  Future<List<ToDo>> getUpcoming(
+          {int limit = Constants.intMax, int offset = 0}) async =>
       await _isarClient.toDos
           .where()
           .dueDateGreaterThan(Constants.today)
@@ -847,11 +938,13 @@ class ToDoRepo implements ToDoRepository {
           .findAll();
 
   @override
-  Future<List<ToDo>> getOverdues({int limit = 50, int offset = 0}) async =>
+  Future<List<ToDo>> getOverdues(
+          {int limit = Constants.intMax, int offset = 0}) async =>
       await _isarClient.toDos
           .where()
-          .dueDateLessThan(Constants.today)
+          .dueDateIsNotNull()
           .filter()
+          .dueDateLessThan(Constants.today)
           .toDeleteEqualTo(false)
           .group((q) => q
               .repeatableStateEqualTo(RepeatableState.normal)
@@ -876,5 +969,82 @@ class ToDoRepo implements ToDoRepository {
               .repeatableStateEqualTo(RepeatableState.delta))
           .count();
 
-  ToDoRepo._internal();
+  // CONSTRUCTOR
+  ToDoRepo._internal() {
+    // I haven't faked the connection channels -> doesn't make sense to.
+    if (SupabaseService.instance.debug) {
+      return;
+    }
+    // Initialize table stream -> only listen on signIn.
+    _toDoStream = _supabaseClient
+        .channel("public:toDos")
+        .onPostgresChanges(
+            event: PostgresChangeEvent.insert,
+            schema: "public",
+            table: "toDos",
+            callback: handleUpsert)
+        .onPostgresChanges(
+            schema: "public",
+            table: "toDos",
+            event: PostgresChangeEvent.update,
+            callback: handleUpsert)
+        .onPostgresChanges(
+            schema: "public",
+            table: "toDos",
+            event: PostgresChangeEvent.delete,
+            callback: handleDelete);
+
+    // Listen to auth changes.
+    SupabaseService.instance.authSubscription.listen((AuthState data) async {
+      final AuthChangeEvent event = data.event;
+      switch (event) {
+        case AuthChangeEvent.signedIn:
+          await syncRepo();
+          // OPEN TABLE STREAM -> insert new data.
+          if (!_subscribed) {
+            _toDoStream.subscribe();
+            _subscribed = true;
+          }
+          break;
+        case AuthChangeEvent.tokenRefreshed:
+          // If not listening to the stream, there hasn't been an update.
+          // Sync accordingly.
+          if (!_subscribed) {
+            await syncRepo();
+            _toDoStream.subscribe();
+            _subscribed = true;
+          }
+          break;
+        case AuthChangeEvent.signedOut:
+          // CLOSE TABLE STREAM.
+          await _toDoStream.unsubscribe();
+          _subscribed = false;
+          break;
+        default:
+          break;
+      }
+      // if (event == AuthChangeEvent.signedIn) {
+      //   await syncRepo();
+      //   // OPEN TABLE STREAM -> insert new data.
+      //   if (!_subscribed) {
+      //     _toDoStream.subscribe();
+      //     _subscribed = true;
+      //   }
+      //   return;
+      // } else if (event == AuthChangeEvent.tokenRefreshed) {
+      //   // If not listening to the stream, there hasn't been an update.
+      //   // Sync accordingly.
+      //   if (!_subscribed) {
+      //     await syncRepo();
+      //     _toDoStream.subscribe();
+      //     _subscribed = true;
+      //   }
+      //   return;
+      // } else if (event == AuthChangeEvent.signedOut) {
+      //   // CLOSE TABLE STREAM.
+      //   await _toDoStream.unsubscribe();
+      //   _subscribed = false;
+      // }
+    });
+  }
 }

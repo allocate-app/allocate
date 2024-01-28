@@ -61,24 +61,31 @@ abstract class Constants {
 
   static const int tagDigits = 4;
 
-  static int maxUserCount = 5;
+  // FUTURE TODO: add user switching.
+  static int maxUserCount = 1;
+
+  // This might need to be shortened.
+  static const Duration userUpdateTime = Duration(seconds: 30);
 
   // Task weight/duration params
   static const int lowerBound = 1;
 
-  static const int upperBound = 5;
+  static const int upperBound = 3;
 
   static const int maxNumTasks = 10;
 
   static const Map<TaskType, int> numTasks = {
     TaskType.small: 0,
-    TaskType.large: 5,
+    TaskType.large: maxNumTasks ~/ 2,
     TaskType.huge: maxNumTasks,
   };
 
-  static const int maxTaskWeight = 5;
+  static const int maxTaskWeight = 10;
 
-  static const double maxTaskWeightDouble = 5;
+  static const double maxTaskWeightDouble = 10;
+
+  static const int maxSubtaskWeight = 5;
+  static const double maxSubtaskWeightDouble = 5;
 
   static double get defaultSidebarOpacity {
     if (Platform.isIOS || Platform.isAndroid) {
@@ -87,16 +94,28 @@ abstract class Constants {
     if (Platform.isWindows || Platform.isMacOS) {
       return 0;
     }
-    return 0.95;
+    return 0.85;
   }
 
-  static double get defaultScaffoldOpacity => 1.0;
+  static double get defaultScaffoldOpacity => 0.95;
 
-  // static const int maxWeight = maxTaskWeight * maxNumTasks;
+  static Effect get defaultWindowEffect {
+    if (Platform.isIOS || Platform.isAndroid) {
+      return Effect.disabled;
+    }
 
-  static int get medianWeight => maxTaskWeight * numTasks[TaskType.large]!;
+    if (Platform.isWindows) {
+      // There is a bug in w10 with the acrylic window effect
+      // Defaulting to aero
+      return Effect.aero;
+    }
 
-  static int get maxWeight => maxTaskWeight * numTasks[TaskType.huge]!;
+    return Effect.transparent;
+  }
+
+  static int get medianWeight => maxSubtaskWeight * numTasks[TaskType.large]!;
+
+  static int get maxWeight => maxSubtaskWeight * numTasks[TaskType.huge]!;
 
   // Application Params
 
@@ -383,10 +402,10 @@ abstract class Constants {
   static const double smallLandscapeDialogHeight = 500;
   static const double smallLandscapeDialogWidth = 700;
   static const double roadmapWidth = 500;
+  static const double usernameEditorMaxWidth = 300;
 
   // This is using _kWidth from Drawer. Atm it's 304, should be 360 according to M3.
   // I don't know if I wanna change it
-  // static const double navigationDrawerMinWidth = 100;
   static const double navigationDrawerMaxWidth = 304;
   static const double navigationDrawerMinThreshold = 100;
 
@@ -438,21 +457,26 @@ abstract class Constants {
 
   static const Map<int, Icon> batteryIcons = {
     0: Icon(Icons.battery_full_rounded),
-    1: Icon(Icons.battery_5_bar_rounded),
-    2: Icon(Icons.battery_4_bar_rounded),
-    3: Icon(Icons.battery_3_bar_rounded),
-    4: Icon(Icons.battery_2_bar_rounded),
-    5: Icon(Icons.battery_1_bar_rounded),
+    1: Icon(Icons.battery_6_bar_rounded),
+    2: Icon(Icons.battery_6_bar_rounded),
+    3: Icon(Icons.battery_5_bar_rounded),
+    4: Icon(Icons.battery_5_bar_rounded),
+    5: Icon(Icons.battery_4_bar_rounded),
+    6: Icon(Icons.battery_4_bar_rounded),
+    7: Icon(Icons.battery_3_bar_rounded),
+    8: Icon(Icons.battery_2_bar_rounded),
+    9: Icon(Icons.battery_1_bar_rounded),
+    10: Icon(Icons.battery_0_bar_rounded),
   };
 
-  static const Map<int, Icon> selectedBatteryIcons = {
-    0: Icon(Icons.battery_full_rounded),
-    1: Icon(Icons.battery_5_bar_rounded),
-    2: Icon(Icons.battery_4_bar_rounded),
-    3: Icon(Icons.battery_3_bar_rounded),
-    4: Icon(Icons.battery_2_bar_rounded),
-    5: Icon(Icons.battery_1_bar_rounded),
-  };
+  // static const Map<int, Icon> selectedBatteryIcons = {
+  //   0: Icon(Icons.battery_full_rounded),
+  //   1: Icon(Icons.battery_5_bar_rounded),
+  //   2: Icon(Icons.battery_4_bar_rounded),
+  //   3: Icon(Icons.battery_3_bar_rounded),
+  //   4: Icon(Icons.battery_2_bar_rounded),
+  //   5: Icon(Icons.battery_1_bar_rounded),
+  // };
   static const Map<Priority, Icon> priorityIcon = {
     Priority.low: Icon(Icons.low_priority_rounded),
     Priority.medium: Icon(Icons.flag_rounded),
@@ -471,9 +495,9 @@ abstract class Constants {
 
   static String deleteScheduleType(DeleteSchedule? schedule) =>
       switch (schedule) {
-        DeleteSchedule.day => "15 days",
-        DeleteSchedule.month => "30 days",
-        DeleteSchedule.year => "1 year",
+        DeleteSchedule.fifteenDays => "15 days",
+        DeleteSchedule.thirtyDays => "30 days",
+        DeleteSchedule.oneYear => "1 year",
         _ => "Forever"
       };
 

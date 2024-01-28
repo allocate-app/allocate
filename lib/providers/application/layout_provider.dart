@@ -1,8 +1,6 @@
-import 'dart:io';
 import 'dart:math';
 import 'dart:ui';
 
-import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
@@ -19,7 +17,6 @@ class LayoutProvider extends ChangeNotifier {
   bool _hugeScreen = false;
   bool _smallScreen = false;
 
-  bool _win11 = false;
   bool isTablet = false;
 
   // not sure if this is needed yet
@@ -42,8 +39,7 @@ class LayoutProvider extends ChangeNotifier {
     installerStore: "",
   );
 
-  final DeviceInfoPlugin _deviceInfoPlugin = DeviceInfoPlugin();
-  late WindowsDeviceInfo _windowsDeviceInfo;
+  PackageInfo get packageInfo => _packageInfo;
 
   int get myDayIndex => _myDayIndex;
 
@@ -158,31 +154,11 @@ class LayoutProvider extends ChangeNotifier {
               // This is because of dragging
               _navDrawerWidth < Constants.navigationDrawerMinThreshold));
 
-  // TODO: this is possibly best to put in themeprovider.
-  bool get win11 => _win11;
-
-  PackageInfo get packageInfo => _packageInfo;
-
-  // set win11(bool isWin11) {
-  //   _win11 = isWin11;
-  //   notifyListeners();
-  // }
-
   // CONSTRUCTOR
   LayoutProvider() {
-    init().whenComplete(() {
-      notifyListeners();
-    });
+    init().whenComplete(notifyListeners);
   }
-
-  // Right now, all that's needed is windows.
-  // io handles most other cases.
-  // Notifies.
   Future<void> init() async {
     _packageInfo = await PackageInfo.fromPlatform();
-    if (Platform.isWindows) {
-      _windowsDeviceInfo = await _deviceInfoPlugin.windowsInfo;
-      _win11 = (_windowsDeviceInfo.buildNumber >= 22000);
-    }
   }
 }

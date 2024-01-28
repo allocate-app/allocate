@@ -15,7 +15,6 @@ import '../../util/interfaces/repository/model/todo_repository.dart';
 import '../../util/sorting/group_sorter.dart';
 import '../viewmodels/user_viewmodel.dart';
 
-// Internal setters currently going mostly unused.
 class GroupProvider extends ChangeNotifier {
   bool _rebuild = true;
 
@@ -65,16 +64,8 @@ class GroupProvider extends ChangeNotifier {
   })  : sorter = userViewModel?.groupSorter ?? GroupSorter(),
         _groupRepo = groupRepository ?? GroupRepo.instance,
         _toDoRepo = toDoRepository ?? ToDoRepo.instance,
-        navKey = ValueNotifier<int>(0);
-
-  void startTimer() {
-    syncTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
-      if (userViewModel?.syncOnline ?? false) {
-        // _syncRepo();
-      } else {
-        // _groupService.clearDeletesLocalRepo();
-      }
-    });
+        navKey = ValueNotifier<int>(0) {
+    _groupRepo.addListener(notifyListeners);
   }
 
   void setUser({UserViewModel? newUser}) {
@@ -132,20 +123,6 @@ class GroupProvider extends ChangeNotifier {
       groupToDoCounts[id] = ValueNotifier<int>(count);
     }
   }
-
-  // Future<void> _syncRepo() async {
-  //   // Not quite sure how to handle this outside of gui warning.
-  //   try {
-  //     await _groupRepo.syncRepo();
-  //   } on FailureToDeleteException catch (e) {
-  //     log(e.cause);
-  //     return Future.error(e);
-  //   } on FailureToUploadException catch (e) {
-  //     log(e.cause);
-  //     return Future.error(e);
-  //   }
-  //   notifyListeners();
-  // }
 
   Future<void> createGroup(Group group) async {
     try {
@@ -270,6 +247,28 @@ class GroupProvider extends ChangeNotifier {
       return Future.error(e);
     }
     notifyListeners();
+  }
+
+  Future<void> dayReset() async {
+    DateTime? upTo = userViewModel?.deleteDate;
+    if (null != upTo) {
+      try {
+        await _groupRepo.deleteSweep(upTo: upTo);
+      } on FailureToDeleteException catch (e, stacktrace) {
+        log(e.cause, stackTrace: stacktrace);
+        return Future.error(e, stacktrace);
+      }
+    }
+  }
+
+  Future<void> clearDatabase() async {
+    curGroup = null;
+    groups = [];
+    secondaryGroups = [];
+    _rebuild = true;
+    groupNames.clear();
+    groupToDoCounts.clear();
+    await _groupRepo.clearDB();
   }
 
   Future<List<ToDo>> getToDosByGroupID(

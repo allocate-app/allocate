@@ -6,7 +6,6 @@ import 'package:intl/intl.dart';
 import 'package:isar/isar.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
-import '../../providers/model/user_provider.dart';
 import '../../providers/viewmodels/user_viewmodel.dart';
 import '../../services/isar_service.dart';
 import '../../services/supabase_service.dart';
@@ -15,6 +14,7 @@ import 'battery_meter.dart';
 import 'color_picker_dialog.dart';
 import 'expanded_listtile.dart';
 import 'padded_divider.dart';
+import 'simple_name_dialog.dart';
 import 'tiles.dart';
 
 abstract class SettingsScreenWidgets {
@@ -188,80 +188,91 @@ abstract class SettingsScreenWidgets {
 
   // TODO: this will need to change to UserModel.
   static Widget userQuickInfo(
-          {required UserProvider userProvider,
+          {required BuildContext context,
+          // Userprovider for user switcher.
+          // required UserProvider userProvider,
           required UserViewModel viewModel,
           EdgeInsetsGeometry outerPadding = EdgeInsets.zero}) =>
       Padding(
         padding: outerPadding,
-        child: Card(
-          elevation: 1,
-          shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.all(Radius.circular(Constants.circular)),
-          ),
-          child: InkWell(
-            borderRadius:
-                const BorderRadius.all(Radius.circular(Constants.circular)),
-            onTap: () {
-              // TODO: finish user editing dialog.
-              // THIS SHOULD OPEN UP A DIALOG TO CHANGE USERNAME + email.
-              print("Pressed tile");
-            },
-            child: Padding(
-              padding: EdgeInsets.zero,
-              child: Row(mainAxisSize: MainAxisSize.min, children: [
-                InkWell(
-                  borderRadius: const BorderRadius.all(
-                      Radius.circular(Constants.circular)),
-                  onTap: () {
-                    // TODO: finish USER SWITCHER
-                    // THIS SHOULD SWITCH USER
-                    print("Pressed icon");
-                  },
-                  child: const SizedBox(
-                    height: Constants.circleAvatarSplashRadius,
-                    width: Constants.circleAvatarSplashRadius,
-                    child: Center(
-                      child: Tooltip(
-                        message: "Switch Users",
-                        child: CircleAvatar(
-                          radius: Constants.circleAvatarRadius,
-                          child: Icon(Icons.switch_account_rounded),
+        child: Tooltip(
+          message: "Edit user",
+          child: Card(
+            elevation: 1,
+            shape: const RoundedRectangleBorder(
+              borderRadius:
+                  BorderRadius.all(Radius.circular(Constants.circular)),
+            ),
+            child: InkWell(
+              borderRadius:
+                  const BorderRadius.all(Radius.circular(Constants.circular)),
+              onTap: () async {
+                await showDialog(
+                    useRootNavigator: false,
+                    context: context,
+                    builder: (BuildContext context) =>
+                        const SimpleNameDialog());
+              },
+              child: Padding(
+                padding: EdgeInsets.zero,
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  InkWell(
+                    borderRadius: const BorderRadius.all(
+                        Radius.circular(Constants.circular)),
+                    onTap: () {
+                      // FUTURE TODO: finish USER SWITCHER
+                      // THIS SHOULD SWITCH USER
+
+                      Tiles.displayError(
+                          context: context,
+                          e: Exception("Feature not implemented."));
+                    },
+                    child: const SizedBox(
+                      height: Constants.circleAvatarSplashRadius,
+                      width: Constants.circleAvatarSplashRadius,
+                      child: Center(
+                        child: Tooltip(
+                          message: "Switch Users",
+                          child: CircleAvatar(
+                            radius: Constants.circleAvatarRadius,
+                            child: Icon(Icons.switch_account_rounded),
+                          ),
                         ),
                       ),
                     ),
                   ),
-                ),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.all(Constants.padding),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        AutoSizeText(
-                          // This tag doesn't serve any purpose.
-                          // "${viewModel.username} #${(null != viewModel.uuid) ? Constants.generateTag(viewModel.uuid!).toString().padLeft(Constants.tagDigits, "0") : Constants.generateTag(Constants.generateUuid()).toString().padLeft(Constants.tagDigits, "0")}",
-                          viewModel.username,
-                          style: Constants.xtraLargeBodyText,
-                          overflow: TextOverflow.visible,
-                          softWrap: false,
-                          maxLines: 1,
-                          minFontSize: Constants.huge,
-                        ),
-                        AutoSizeText(
-                          (null != viewModel.email)
-                              ? "Email ${viewModel.email}"
-                              : "Offline Only",
-                          overflow: TextOverflow.visible,
-                          softWrap: false,
-                          maxLines: 1,
-                          minFontSize: Constants.large,
-                        ),
-                      ],
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.all(Constants.padding),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          AutoSizeText(
+                            // This tag doesn't serve any purpose.
+                            // "${viewModel.username} #${(null != viewModel.uuid) ? Constants.generateTag(viewModel.uuid!).toString().padLeft(Constants.tagDigits, "0") : Constants.generateTag(Constants.generateUuid()).toString().padLeft(Constants.tagDigits, "0")}",
+                            viewModel.username,
+                            style: Constants.xtraLargeBodyText,
+                            overflow: TextOverflow.visible,
+                            softWrap: false,
+                            maxLines: 1,
+                            minFontSize: Constants.huge,
+                          ),
+                          AutoSizeText(
+                            (null != viewModel.email)
+                                ? "Email ${viewModel.email}"
+                                : "Offline Only",
+                            overflow: TextOverflow.visible,
+                            softWrap: false,
+                            maxLines: 1,
+                            minFontSize: Constants.large,
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                ),
-              ]),
+                ]),
+              ),
             ),
           ),
         ),
