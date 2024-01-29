@@ -124,6 +124,22 @@ class GroupProvider extends ChangeNotifier {
     }
   }
 
+  Future<void> syncRepo() async {
+    try {
+      await _groupRepo.syncRepo();
+    } on FailureToDeleteException catch (e, stacktrace) {
+      log(e.cause, stackTrace: stacktrace);
+      return Future.error(e, stacktrace);
+    } on FailureToUploadException catch (e, stacktrace) {
+      log(e.cause, stackTrace: stacktrace);
+      return Future.error(e, stacktrace);
+    } on Error catch (e, stacktrace) {
+      log("Unknown error", stackTrace: stacktrace);
+      return Future.error(UnexpectedErrorException(), stacktrace);
+    }
+    notifyListeners();
+  }
+
   Future<void> createGroup(Group group) async {
     try {
       curGroup = await _groupRepo.create(group);
@@ -134,6 +150,9 @@ class GroupProvider extends ChangeNotifier {
       log(e.cause);
       group.isSynced = false;
       return await updateGroup(group: group);
+    } on Error catch (e, stacktrace) {
+      log("Unknown error", stackTrace: stacktrace);
+      return Future.error(UnexpectedErrorException(), stacktrace);
     }
 
     groupNames[curGroup!.id] = curGroup!.name;
@@ -160,6 +179,9 @@ class GroupProvider extends ChangeNotifier {
     } on FailureToUpdateException catch (e) {
       log(e.cause);
       return Future.error(e);
+    } on Error catch (e, stacktrace) {
+      log("Unknown error", stackTrace: stacktrace);
+      return Future.error(UnexpectedErrorException(), stacktrace);
     }
     groupNames[curGroup!.id] = curGroup!.name;
   }
@@ -179,6 +201,9 @@ class GroupProvider extends ChangeNotifier {
     } on FailureToUpdateException catch (e) {
       log(e.cause);
       return Future.error(e);
+    } on Error catch (e, stacktrace) {
+      log("Unknown error", stackTrace: stacktrace);
+      return Future.error(UnexpectedErrorException(), stacktrace);
     }
   }
 
@@ -189,6 +214,9 @@ class GroupProvider extends ChangeNotifier {
     } on FailureToDeleteException catch (e) {
       log(e.cause);
       return Future.error(e);
+    } on Error catch (e, stacktrace) {
+      log("Unknown error", stackTrace: stacktrace);
+      return Future.error(UnexpectedErrorException(), stacktrace);
     }
 
     groupNames.remove(group.id);
@@ -206,6 +234,9 @@ class GroupProvider extends ChangeNotifier {
     } on FailureToDeleteException catch (e) {
       log(e.cause);
       return Future.error(e);
+    } on Error catch (e, stacktrace) {
+      log("Unknown error", stackTrace: stacktrace);
+      return Future.error(UnexpectedErrorException(), stacktrace);
     }
 
     notifyListeners();
@@ -224,6 +255,9 @@ class GroupProvider extends ChangeNotifier {
     } on FailureToUpdateException catch (e) {
       log(e.cause);
       return Future.error(e);
+    } on Error catch (e, stacktrace) {
+      log("Unknown error", stackTrace: stacktrace);
+      return Future.error(UnexpectedErrorException(), stacktrace);
     }
     notifyListeners();
   }
@@ -245,6 +279,9 @@ class GroupProvider extends ChangeNotifier {
     } on FailureToDeleteException catch (e) {
       log(e.cause);
       return Future.error(e);
+    } on Error catch (e, stacktrace) {
+      log("Unknown error", stackTrace: stacktrace);
+      return Future.error(UnexpectedErrorException(), stacktrace);
     }
     notifyListeners();
   }
@@ -257,6 +294,9 @@ class GroupProvider extends ChangeNotifier {
       } on FailureToDeleteException catch (e, stacktrace) {
         log(e.cause, stackTrace: stacktrace);
         return Future.error(e, stacktrace);
+      } on Error catch (e, stacktrace) {
+        log("Unknown error", stackTrace: stacktrace);
+        return Future.error(UnexpectedErrorException(), stacktrace);
       }
     }
   }
@@ -301,6 +341,9 @@ class GroupProvider extends ChangeNotifier {
     } on FailureToUploadException catch (e) {
       log(e.cause);
       return Future.error(e);
+    } on Error catch (e, stacktrace) {
+      log("Unknown error", stackTrace: stacktrace);
+      return Future.error(UnexpectedErrorException(), stacktrace);
     }
   }
 
@@ -325,6 +368,9 @@ class GroupProvider extends ChangeNotifier {
     } on FailureToUploadException catch (e) {
       log(e.cause);
       return Future.error(e);
+    } on Error catch (e, stacktrace) {
+      log("Unknown error", stackTrace: stacktrace);
+      return Future.error(UnexpectedErrorException(), stacktrace);
     }
   }
 

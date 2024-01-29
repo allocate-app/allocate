@@ -1,4 +1,3 @@
-import 'package:allocate/providers/model/user_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -14,7 +13,6 @@ import '../../widgets/paginating_listview.dart';
 import '../../widgets/tiles.dart';
 import '../sub_views/create_group.dart';
 
-// TODO: factor out userProvider.
 class GroupsListScreen extends StatefulWidget {
   const GroupsListScreen({super.key});
 
@@ -25,7 +23,6 @@ class GroupsListScreen extends StatefulWidget {
 class _GroupsListScreen extends State<GroupsListScreen> {
   late final GroupProvider groupProvider;
   late final ToDoProvider toDoProvider;
-  late final UserProvider userProvider;
 
   @override
   void initState() {
@@ -36,7 +33,6 @@ class _GroupsListScreen extends State<GroupsListScreen> {
   void initializeProviders() {
     groupProvider = Provider.of<GroupProvider>(context, listen: false);
     toDoProvider = Provider.of<ToDoProvider>(context, listen: false);
-    userProvider = Provider.of<UserProvider>(context, listen: false);
   }
 
   void initializeControllers() {}

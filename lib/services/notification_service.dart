@@ -8,9 +8,9 @@ import 'package:timezone/timezone.dart' as tz;
 import 'package:windows_notification/notification_message.dart';
 import 'package:windows_notification/windows_notification.dart';
 
-import '../providers/application/daily_reset_provider.dart';
 import '../util/constants.dart';
 import '../util/exceptions.dart';
+import 'daily_reset_service.dart';
 
 // Limitations: Linux build cannot currently handle notification clicks.
 // Plugin may eventually use the new desktop standard. In the meantime looking into dbus.
@@ -71,7 +71,7 @@ class NotificationService {
 
   // Timezone is already initialized in the reset scheduler.
   Future<void> init() async {
-    canSchedule = DailyResetProvider.instance.timezoneInitialized;
+    canSchedule = DailyResetService.instance.timezoneInitialized;
 
     if (!canSchedule) {
       return;

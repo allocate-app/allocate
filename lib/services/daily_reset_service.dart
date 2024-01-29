@@ -3,14 +3,14 @@ import 'package:schedulers/schedulers.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 
-import '../../util/constants.dart';
+import '../util/constants.dart';
 
 // Singleton class to notify daily resetting.
-class DailyResetProvider extends ChangeNotifier {
+class DailyResetService extends ChangeNotifier {
   bool timezoneInitialized = false;
-  static final DailyResetProvider _instance = DailyResetProvider._internal();
+  static final DailyResetService _instance = DailyResetService._internal();
 
-  static DailyResetProvider get instance => _instance;
+  static DailyResetService get instance => _instance;
 
   late TimeScheduler resetScheduler;
 
@@ -59,5 +59,5 @@ class DailyResetProvider extends ChangeNotifier {
     resetTimeScheduler();
   }
 
-  DailyResetProvider._internal();
+  DailyResetService._internal();
 }

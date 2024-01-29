@@ -429,7 +429,7 @@ class GroupRepo extends ChangeNotifier implements GroupRepository {
 
   GroupRepo._internal() {
     // I haven't faked the connection channels -> doesn't make sense to.
-    if (SupabaseService.instance.debug) {
+    if (SupabaseService.instance.offlineDebug) {
       return;
     }
     // Initialize table stream -> only listen on signIn.

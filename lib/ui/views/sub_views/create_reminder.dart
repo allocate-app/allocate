@@ -12,7 +12,6 @@ import '../../../providers/model/reminder_provider.dart';
 import '../../../providers/viewmodels/reminder_viewmodel.dart';
 import '../../../util/constants.dart';
 import '../../../util/enums.dart';
-import '../../../util/exceptions.dart';
 import '../../widgets/flushbars.dart';
 import '../../widgets/listtile_widgets.dart';
 import '../../widgets/padded_divider.dart';
@@ -131,11 +130,7 @@ class _CreateReminderScreen extends State<CreateReminderScreen> {
         .createReminder(
           vm.toModel(),
         )
-        .catchError((e) => Tiles.displayError(context: context, e: e),
-            test: (e) =>
-                e is FailureToCreateException ||
-                e is FailureToUploadException ||
-                e is FailureToScheduleException);
+        .catchError((e) => Tiles.displayError(context: context, e: e));
 
     await eventProvider
         .insertEventModel(model: reminderProvider.curReminder!, notify: true)

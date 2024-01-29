@@ -171,7 +171,7 @@ class SubtaskRepo extends ChangeNotifier implements SubtaskRepository {
           .filter()
           .toDeleteEqualTo(false)
           .sortByCustomViewIndex()
-          .thenByLastUpdated()
+          .thenByLastUpdatedDesc()
           .limit(limit)
           .count();
 
@@ -184,7 +184,7 @@ class SubtaskRepo extends ChangeNotifier implements SubtaskRepository {
           .filter()
           .toDeleteEqualTo(false)
           .sortByCustomViewIndex()
-          .thenByLastUpdated()
+          .thenByLastUpdatedDesc()
           .limit(limit)
           .weightProperty()
           .sum();
@@ -198,7 +198,7 @@ class SubtaskRepo extends ChangeNotifier implements SubtaskRepository {
           .filter()
           .toDeleteEqualTo(false)
           .sortByCustomViewIndex()
-          .thenByLastUpdated()
+          .thenByLastUpdatedDesc()
           .offset(offset)
           .limit(limit)
           .findAll();
@@ -403,7 +403,7 @@ class SubtaskRepo extends ChangeNotifier implements SubtaskRepository {
 
   SubtaskRepo._internal() {
     // I haven't faked the connection channels -> doesn't make sense to.
-    if (SupabaseService.instance.debug) {
+    if (SupabaseService.instance.offlineDebug) {
       return;
     }
     // Initialize table stream -> only listen on signIn.

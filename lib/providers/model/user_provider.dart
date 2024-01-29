@@ -1,14 +1,18 @@
 import 'dart:async';
 import 'dart:developer';
 
-import 'package:allocate/providers/application/daily_reset_provider.dart';
-import 'package:flutter/foundation.dart';
+import 'package:allocate/services/daily_reset_service.dart';
+import 'package:allocate/ui/widgets/tiles.dart';
+import 'package:allocate/util/enums.dart';
+import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../model/user/allocate_user.dart';
+import '../../services/application_service.dart';
 import '../../services/authentication_service.dart';
 import '../../services/supabase_service.dart';
 import '../../services/user_storage_service.dart';
+import '../../ui/widgets/multiple_user_dialog.dart';
 import '../../util/constants.dart';
 import '../../util/exceptions.dart';
 import '../../util/interfaces/authenticator.dart';
@@ -30,6 +34,8 @@ class UserProvider extends ChangeNotifier {
   bool shouldUpdate = false;
   bool updating = false;
 
+  // TODO: flags for verification.
+
   // FUTURE TODO: multiple user switching.
   int _userCount = 1;
 
@@ -47,12 +53,11 @@ class UserProvider extends ChangeNotifier {
 
   late Timer updateTimer;
 
-  // FUTURE TODO: user switching with secure-storage.
-  // TODO: call init on splash screen to handle multiple-users in db.
   UserProvider({this.viewModel, Authenticator? auth})
       : isConnected = ValueNotifier<bool>(false),
         myDayTotal = ValueNotifier<int>(0),
         _authenticationService = auth ?? AuthenticationService.instance {
+    _userStorageService.addListener(handleUserStateChange);
     init().whenComplete(notifyListeners);
   }
 
@@ -62,14 +67,126 @@ class UserProvider extends ChangeNotifier {
     if ((viewModel?.lastOpened.day ?? Constants.today.day - Constants.today.day)
             .abs() >
         0) {
-      DailyResetProvider.instance.dailyReset();
+      DailyResetService.instance.dailyReset();
     }
 
     updateTimer = Timer.periodic(Constants.userUpdateTime, requestUpdate);
   }
 
+  // This is the thingy used to handle user errors.
+  // Possibly use some sort of valuenotifier?
+  Future<void> handleUserStateChange() async {
+    switch (_userStorageService.status) {
+      case UserStatus.normal:
+        await setUser();
+        break;
+      case UserStatus.missing:
+        BuildContext? context =
+            ApplicationService.instance.globalNavigatorKey.currentContext;
+
+        if (null != context) {
+          Tiles.displayError(
+              context: context,
+              e: UserMissingException("User not found, resetting to default"));
+        }
+        resetUser();
+        break;
+      case UserStatus.multiple:
+        BuildContext? context =
+            ApplicationService.instance.globalNavigatorKey.currentContext;
+
+        List<AllocateUser?> failCache = _userStorageService.failureCache;
+
+        if (null != context) {
+          AllocateUser? desiredUser = await showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (BuildContext context) {
+              return MultipleUserDialog(users: failCache);
+            },
+          );
+
+          if (null == desiredUser) {
+            resetUser();
+            failCache.clear();
+            break;
+          }
+
+          failCache.remove(desiredUser);
+          for (AllocateUser? user in failCache) {
+            if (null != user) {
+              await _userStorageService.deleteUser(user: user);
+            }
+          }
+
+          viewModel?.fromModel(model: desiredUser);
+          shouldUpdate = true;
+          notifyListeners();
+          failCache.clear();
+          break;
+        }
+
+        // If for some reason the context is null, go with the most recently
+        // updated user.
+        failCache.sort((u1, u2) {
+          if (null == u1) {
+            return -1;
+          }
+          if (null == u2) {
+            return 1;
+          }
+
+          return u1.lastUpdated.compareTo(u2.lastUpdated);
+        });
+
+        AllocateUser? desiredUser = failCache.firstOrNull;
+        if (null == desiredUser) {
+          resetUser();
+          failCache.clear();
+          break;
+        }
+
+        failCache.remove(desiredUser);
+        for (AllocateUser? user in failCache) {
+          if (null != user) {
+            await _userStorageService.deleteUser(user: user);
+          }
+        }
+
+        viewModel?.fromModel(model: desiredUser);
+        shouldUpdate = true;
+        notifyListeners();
+        failCache.clear();
+        break;
+      // This will never execute, but the testing library
+      // will not work without this here.
+      default:
+        BuildContext? context =
+            ApplicationService.instance.globalNavigatorKey.currentContext;
+
+        if (null != context) {
+          Tiles.displayError(context: context, e: UnexpectedErrorException());
+        }
+        // Retry the user.
+        try {
+          await setUser();
+        } on UnexpectedErrorException catch (e, stacktrace) {
+          log(e.cause, stackTrace: stacktrace);
+          resetUser();
+          _userStorageService.failureCache.clear();
+        }
+        break;
+    }
+  }
+
+  void resetUser() {
+    viewModel?.clear();
+    shouldUpdate = true;
+    notifyListeners();
+  }
+
   void initSubscription() {
-    if (SupabaseService.instance.debug) {
+    if (SupabaseService.instance.offlineDebug) {
       return;
     }
     _connectionSubscription =
@@ -82,11 +199,46 @@ class UserProvider extends ChangeNotifier {
     });
   }
 
-  void requestUpdate(Timer timer) {
+  // Because this is happening in the background, I have no control
+  // over catching errors. If there is a context, this will show a snackbar.
+  void requestUpdate(Timer timer) async {
     if (!shouldUpdate || updating || null == viewModel) {
       return;
     }
-    updateUser();
+    try {
+      updateUser();
+      // This will always be a wrapped exception
+    } on FailureToUploadException catch (e) {
+      updating = false;
+      shouldUpdate = true;
+      globalGUIError(e);
+    } on FailureToUpdateException catch (e) {
+      updating = false;
+      shouldUpdate = true;
+      globalGUIError(e);
+    } on UnexpectedErrorException catch (e) {
+      updating = false;
+      shouldUpdate = false;
+      globalGUIError(e);
+    }
+  }
+
+  void globalGUIError(Exception? e) {
+    BuildContext? context =
+        ApplicationService.instance.globalNavigatorKey.currentContext;
+
+    // no way to alert the user.
+    if (null == context) {
+      return;
+    }
+
+    Tiles.displayError(context: context, e: e);
+  }
+
+  Future<void> syncUser() async {
+    // UserStorage catches exceptions -> will notify accordingly.
+    // UserProvider has a handling routine.
+    await _userStorageService.syncUser();
   }
 
   Future<void> updateUser() async {
@@ -96,11 +248,14 @@ class UserProvider extends ChangeNotifier {
     } on FailureToUpdateException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
       shouldUpdate = true;
-      return Future.error(e);
+      return Future.error(e, stacktrace);
     } on FailureToUploadException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
       shouldUpdate = true;
-      return Future.error(e);
+      return Future.error(e, stacktrace);
+    } on Error catch (e, stacktrace) {
+      log("Unknown error", stackTrace: stacktrace);
+      return Future.error(UnexpectedErrorException, stacktrace);
     }
     shouldUpdate = false;
     updating = false;
@@ -112,20 +267,38 @@ class UserProvider extends ChangeNotifier {
       viewModel?.uuid = await _authenticationService.signUpEmailPassword(
           email: email, password: password);
 
+      // These will force a rebuild + a local store.
       viewModel?.syncOnline = true;
-    } on SignUpFailedException catch (e) {
-      log(e.cause);
-      return Future.error(e);
+      viewModel?.email = email;
+    } on SignUpFailedException catch (e, stacktrace) {
+      log(e.cause, stackTrace: stacktrace);
+      return Future.error(e, stacktrace);
+    } on AuthException catch (e, stacktrace) {
+      log(e.message, stackTrace: stacktrace);
+      return Future.error(SignUpFailedException(e.message), stacktrace);
+    } on Error catch (e, stacktrace) {
+      log("Unknown error", stackTrace: stacktrace);
+      return Future.error(UnexpectedErrorException(), stacktrace);
     }
   }
 
   Future<void> signIn({required String email, required String password}) async {
     try {
-      await _authenticationService.signUpEmailPassword(
+      // On a successful auth change, UP will set isConnected.
+      await _authenticationService.signInEmailPassword(
           email: email, password: password);
     } on LoginFailedException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
+      return Future.error(e, stacktrace);
+    } on AuthException catch (e, stacktrace) {
+      log(e.message, stackTrace: stacktrace);
+      return Future.error(LoginFailedException(e.message), stacktrace);
+    } on Error catch (e, stacktrace) {
+      log("Unknown error", stackTrace: stacktrace);
+      return Future.error(UnexpectedErrorException(), stacktrace);
     }
+    // This is just to update the vm and force a rebuild.
+    // The user will be uploaded on the next sync sweep
     viewModel?.isSynced = SupabaseService.instance.isConnected;
   }
 
@@ -136,6 +309,12 @@ class UserProvider extends ChangeNotifier {
     } on FailureToUpdateException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
       return Future.error(e, stacktrace);
+    } on AuthException catch (e, stacktrace) {
+      log(e.message, stackTrace: stacktrace);
+      return Future.error(FailureToUpdateException(e.message), stacktrace);
+    } on Error catch (e, stacktrace) {
+      log("Unknown error", stackTrace: stacktrace);
+      return Future.error(UnexpectedErrorException(), stacktrace);
     }
   }
 
@@ -145,6 +324,12 @@ class UserProvider extends ChangeNotifier {
     } on FailureToUpdateException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
       return Future.error(e, stacktrace);
+    } on AuthException catch (e, stacktrace) {
+      log(e.message, stackTrace: stacktrace);
+      return Future.error(FailureToUpdateException(e.message), stacktrace);
+    } on Error catch (e, stacktrace) {
+      log("Unknown error", stackTrace: stacktrace);
+      return Future.error(UnexpectedErrorException(), stacktrace);
     }
   }
 
@@ -158,7 +343,19 @@ class UserProvider extends ChangeNotifier {
   }
 
   Future<void> signOut() async {
-    await _authenticationService.signOut();
+    // if the user is offline only, there is no need to sign out.
+    if (!(viewModel?.syncOnline ?? true)) {
+      return;
+    }
+    try {
+      await _authenticationService.signOut();
+    } on AuthException catch (e, stacktrace) {
+      log(e.message, stackTrace: stacktrace);
+      return Future.error(SignOutFailedException(e.message), stacktrace);
+    } on Error catch (e, stacktrace) {
+      log("Unknown error", stackTrace: stacktrace);
+      return Future.error(UnexpectedErrorException(), stacktrace);
+    }
   }
 
   // Get the user, initialize the viewmodel.
@@ -168,11 +365,12 @@ class UserProvider extends ChangeNotifier {
       if (null != user) {
         viewModel?.fromModel(model: user);
       }
-      // This has a reference to the list of multiple users.
-      // TODO: Handle in the gui -> SplashScrn.
     } on MultipleUsersException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
-      return Future.error(e, stacktrace);
+      handleUserStateChange();
+    } on Error catch (e, stacktrace) {
+      log("Unknown error", stackTrace: stacktrace);
+      return Future.error(UnexpectedErrorException(), stacktrace);
     }
     notifyListeners();
   }
@@ -182,12 +380,19 @@ class UserProvider extends ChangeNotifier {
     if (null != user) {
       try {
         await _userStorageService.deleteUser(user: user);
+        await signOut();
       } on FailureToDeleteException catch (e, stacktrace) {
         log(e.cause, stackTrace: stacktrace);
+        return Future.error(e, stacktrace);
+      } on AuthException catch (e, stacktrace) {
+        log(e.message, stackTrace: stacktrace);
+        return Future.error(SignOutFailedException(e.message), stacktrace);
+      } on Error catch (e, stacktrace) {
+        log("Unknown error", stackTrace: stacktrace);
+        return Future.error(UnexpectedErrorException(), stacktrace);
       }
     }
 
-    await signOut();
     viewModel?.clear();
     notifyListeners();
   }

@@ -11,7 +11,6 @@ import '../../../providers/model/subtask_provider.dart';
 import "../../../providers/viewmodels/routine_viewmodel.dart";
 import "../../../util/constants.dart";
 import "../../../util/enums.dart";
-import "../../../util/exceptions.dart";
 import "../../widgets/listtile_widgets.dart";
 import "../../widgets/padded_divider.dart";
 import "../../widgets/tiles.dart";
@@ -140,9 +139,7 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
         .whenComplete(() {
       vm.clear();
       Navigator.pop(context);
-    }).catchError((e) => Tiles.displayError(context: context, e: e),
-            test: (e) =>
-                e is FailureToCreateException || e is FailureToUploadException);
+    }).catchError((e) => Tiles.displayError(context: context, e: e));
   }
 
   Future<void> handleClose({required bool willDiscard}) async {

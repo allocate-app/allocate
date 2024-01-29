@@ -9,7 +9,6 @@ import '../../providers/model/group_provider.dart';
 import '../../providers/model/todo_provider.dart';
 import '../../util/constants.dart';
 import '../../util/enums.dart';
-import '../../util/exceptions.dart';
 import '../../util/interfaces/i_repeatable.dart';
 
 abstract class Subtitles {
@@ -211,7 +210,7 @@ abstract class Subtitles {
             future: groupProvider.getGroupName(id: id).catchError((e) {
               onError();
               return "";
-            }, test: (e) => e is GroupNotFoundException),
+            }),
             builder: (BuildContext context, AsyncSnapshot<String?> snapshot) {
               if (snapshot.connectionState == ConnectionState.done) {
                 String? name = snapshot.data;

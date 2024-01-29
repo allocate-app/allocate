@@ -19,6 +19,7 @@ import "views/routes.dart";
 
 part "app_router.gr.dart";
 
+// This needs to be fully refactored and is likely unnecessary.
 @AutoRouterConfig(replaceInRouteName: 'Page|Screen,Route')
 class AppRouter extends _$AppRouter {
   @override

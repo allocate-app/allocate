@@ -19,7 +19,7 @@ enum Effect {
   sidebar,
 }
 
-enum UserStatus { normal, missing, multiple }
+enum UserStatus { normal, missing, multiple, unknown }
 
 enum ThemeType { system, light, dark }
 

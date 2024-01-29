@@ -13,7 +13,6 @@ import '../../../providers/model/deadline_provider.dart';
 import '../../../providers/viewmodels/deadline_viewmodel.dart';
 import '../../../util/constants.dart';
 import '../../../util/enums.dart';
-import '../../../util/exceptions.dart';
 import '../../widgets/flushbars.dart';
 import '../../widgets/handle_repeatable_modal.dart';
 import '../../widgets/listtile_widgets.dart';
@@ -188,12 +187,7 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
               delta: newDeadline,
               single: updateSingle,
               delete: false)
-          .catchError((e) => Tiles.displayError(context: context, e: e),
-              test: (e) =>
-                  e is FailureToUpdateException ||
-                  e is FailureToUploadException ||
-                  e is InvalidRepeatingException ||
-                  e is FailureToDeleteException);
+          .catchError((e) => Tiles.displayError(context: context, e: e));
 
       return await eventProvider
           .updateEventModel(
@@ -206,12 +200,9 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
         Navigator.pop(context);
       });
     }
-    await deadlineProvider.updateDeadline(deadline: newDeadline).catchError(
-        (e) => Tiles.displayError(context: context, e: e),
-        test: (e) =>
-            e is FailureToUpdateException ||
-            e is FailureToUploadException ||
-            e is FailureToScheduleException);
+    await deadlineProvider
+        .updateDeadline(deadline: newDeadline)
+        .catchError((e) => Tiles.displayError(context: context, e: e));
 
     return await eventProvider
         .updateEventModel(
@@ -247,12 +238,7 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
               delta: newDeadline,
               single: deleteSingle,
               delete: true)
-          .catchError((e) => Tiles.displayError(context: context, e: e),
-              test: (e) =>
-                  e is InvalidRepeatingException ||
-                  e is FailureToUpdateException ||
-                  e is FailureToUploadException ||
-                  e is FailureToDeleteException);
+          .catchError((e) => Tiles.displayError(context: context, e: e));
 
       newDeadline.toDelete = true;
       return await eventProvider
@@ -267,9 +253,9 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
       });
     }
 
-    await deadlineProvider.deleteDeadline(deadline: newDeadline).catchError(
-        (e) => Tiles.displayError(context: context, e: e),
-        test: (e) => e is FailureToDeleteException);
+    await deadlineProvider
+        .deleteDeadline(deadline: newDeadline)
+        .catchError((e) => Tiles.displayError(context: context, e: e));
 
     newDeadline.toDelete = true;
     return await eventProvider

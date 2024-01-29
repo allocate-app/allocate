@@ -16,11 +16,16 @@ import "../../../providers/model/subtask_provider.dart";
 import "../../../providers/model/todo_provider.dart";
 import '../../../providers/model/user_provider.dart';
 import "../../../providers/viewmodels/user_viewmodel.dart";
+import "../../../services/supabase_service.dart";
 import "../../../util/constants.dart";
 import "../../../util/enums.dart";
+import "../../../util/exceptions.dart";
 import "../../../util/numbers.dart";
+import "../../widgets/flushbars.dart";
 import "../../widgets/screen_header.dart";
 import "../../widgets/settings_screen_widgets.dart";
+import "../../widgets/sign_in_dialog.dart";
+import "../../widgets/tiles.dart";
 import "loading_screen.dart";
 
 class UserSettingsScreen extends StatefulWidget {
@@ -53,6 +58,8 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
 
   late MenuController _scaffoldController;
   late MenuController _sidebarController;
+
+  bool get _offline => !SupabaseService.instance.isConnected;
 
   // Factor out into functions.
   @override
@@ -260,6 +267,7 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
     //   },
     // );
 
+    // Right now, this just updates the name -> doesn't really need to watch uuid.
     return Selector<UserViewModel, (String, String?, String?)>(
         selector: (BuildContext context, UserViewModel vm) =>
             (vm.username, vm.email, vm.uuid),
@@ -298,57 +306,114 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
   }
 
   Widget _buildAccountSection() {
-    return Selector2<UserViewModel, UserProvider, (bool, int)>(
-        selector: (BuildContext context, UserViewModel vm, UserProvider up) =>
-            (vm.syncOnline, up.userCount),
-        builder: (BuildContext context, (bool, int) value, Widget? child) =>
+    // possibly wrap in a valuelistenable for connection status.
+    // selector2 <vm, userprovider>,
+    return Selector<UserViewModel, bool>(
+        selector: (BuildContext context, UserViewModel vm) => vm.syncOnline,
+        builder: (BuildContext context, bool value, Widget? child) =>
             SettingsScreenWidgets.settingsSection(
               context: context,
               title: "Account",
               entries: [
-                (value.$1 || (kDebugMode && _mockOnline))
+                (value || (kDebugMode && _mockOnline))
                     ? SettingsScreenWidgets.tapTile(
                         leading: const Icon(Icons.sync_rounded),
                         title: "Sync now",
                         onTap: () async {
-                          //
-                          print("Sync now");
+                          if (!userProvider.isConnected.value) {
+                            Tiles.displayError(
+                                context: context,
+                                e: ConnectionException(
+                                    "No online connection, try signing in."));
+                            return;
+                          }
+
+                          await Future.wait([
+                            toDoProvider.syncRepo(),
+                            routineProvider.syncRepo(),
+                            deadlineProvider.syncRepo(),
+                            reminderProvider.syncRepo(),
+                            groupProvider.syncRepo(),
+                          ]);
                         })
                     : SettingsScreenWidgets.tapTile(
                         leading: const Icon(Icons.cloud_sync_rounded),
                         title: "Sign up for cloud backup",
-                        onTap: () {
-                          if (kDebugMode) {
-                            setState(() {
-                              _mockOnline = true;
-                            });
-                          }
-                          print("Sign up");
+                        onTap: () async {
+                          // TODO: hook up sign-in widget.
+                          await showDialog(
+                            context: context,
+                            barrierDismissible: true,
+                            builder: (BuildContext context) =>
+                                const SignInDialog(signUp: true),
+                          ).then((success) {
+                            // User dismissed.
+                            if (null == success) {
+                              return;
+                            }
+                            // Failures caught in the dialog.
+                            if (success) {
+                              // THIS NEEDS TO SET A VERIFICATION FLAG && a need a route.
+                              // Route needs to be a splash screen that verifies.
+                              Flushbars.createAlert(
+                                message:
+                                    "Check your email for an authentication link.",
+                                context: context,
+                              ).show(context);
+
+                              if (kDebugMode && _offline) {
+                                setState(() {
+                                  _mockOnline = true;
+                                });
+                              }
+                            }
+                          });
                         }),
-                if (value.$1 || (kDebugMode && _mockOnline))
+
+                // TODO: reset email dialog
+                if (value || (kDebugMode && _mockOnline))
                   SettingsScreenWidgets.tapTile(
                     leading: const Icon(Icons.email_rounded),
                     title: "Change email",
-                    onTap: () {
+                    onTap: () async {
+                      if (!userProvider.isConnected.value) {
+                        Tiles.displayError(
+                            context: context,
+                            e: ConnectionException(
+                                "No online connection, try signing in."));
+                        return;
+                      }
+
                       print("Edit Email");
                     },
                   ),
-                if (value.$1 || (kDebugMode && _mockOnline))
+                // TODO: reset password dialog
+                if (value || (kDebugMode && _mockOnline))
                   SettingsScreenWidgets.tapTile(
                       leading: const Icon(Icons.lock_reset_rounded),
                       title: "Reset password",
-                      onTap: () {
+                      onTap: () async {
+                        // This will change the connection status.
+                        if (!userProvider.isConnected.value) {
+                          Tiles.displayError(
+                              context: context,
+                              e: ConnectionException(
+                                  "No online connection, try signing in."));
+                          return;
+                        }
                         print("Edit Password");
                       }),
 
-                // This should also only appear with online connection.
-                if (value.$2 < Constants.maxUserCount)
-                  SettingsScreenWidgets.tapTile(
-                      leading: const Icon(Icons.account_circle_rounded),
-                      title: "Add new account",
-                      onTap: () {
-                        print("New Account");
-                      })
+                // This should probably also only appear with online connection.
+                // TODO: migrate to Selector2 if/when user switching is implemented
+                // if (value.$2 < Constants.maxUserCount &&
+                //     userProvider.isConnected.value)
+                //   SettingsScreenWidgets.tapTile(
+                //       leading: const Icon(Icons.account_circle_rounded),
+                //       title: "Add new account",
+                //       onTap: () {
+                //         print("New Account");
+                //       })
               ],
             ));
   }
@@ -495,7 +560,8 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
                 },
                 colorType: "Primary color",
                 icon: const Icon(Icons.eject_rounded),
-                showTrailing: Constants.defaultPrimaryColorSeed != value,
+                showTrailing:
+                    const Color(Constants.defaultPrimaryColorSeed) != value,
                 restoreDefault: () {
                   Tooltip.dismissAllToolTips();
                   themeProvider.primarySeed =
@@ -706,25 +772,54 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
                         color: Theme.of(context).colorScheme.tertiary),
                     title: "Sign out",
                     onTap: () async {
-                      if (kDebugMode) {
+                      // These will eventually be factored out.
+                      if (kDebugMode && _offline) {
                         setState(() {
                           _mockOnline = false;
                         });
                       }
-                      print("Sign out");
-                      // Sign out of supabase, then push to account switcher.
+
+                      // Future TODO: multi-user accounts.
+                      await userProvider.signOut().catchError(
+                          (e) => Tiles.displayError(context: context, e: e));
                     }),
               ],
             );
           }
-          // TODO: finish sign in dialog an hook up tile
-          if (vm.syncOnline) {
-            return SettingsScreenWidgets.tapTile(
-                leading: const Icon(Icons.login_rounded),
-                title: "Sign in",
-                onTap: () async {
-                  print("Sign in");
-                });
+          if (vm.syncOnline || (kDebugMode && !_mockOnline)) {
+            return SettingsScreenWidgets.settingsSection(
+              context: context,
+              title: "",
+              entries: [
+                SettingsScreenWidgets.tapTile(
+                    leading: const Icon(Icons.login_rounded),
+                    title: "Sign in",
+                    onTap: () async {
+                      await showDialog<bool?>(
+                        context: context,
+                        barrierDismissible: true,
+                        builder: (BuildContext context) => const SignInDialog(),
+                      ).then((success) {
+                        if (null == success) {
+                          return;
+                        }
+
+                        // Uh, on a successful sign in, everything should just rebuild.
+                        if (success) {
+                          Flushbars.createAlert(
+                            message: "Login successful.",
+                            context: context,
+                          ).show(context);
+                          if (kDebugMode && _offline) {
+                            setState(() {
+                              _mockOnline = true;
+                            });
+                          }
+                        }
+                      });
+                    }),
+              ],
+            );
           }
 
           return const SizedBox.shrink();
@@ -732,7 +827,7 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
   }
 
   // This should probably select userProvider.
-  _buildDeleteAccount() {
+  Widget _buildDeleteAccount() {
     return SettingsScreenWidgets.settingsSection(
       context: context,
       title: "",
@@ -768,20 +863,22 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
                       ));
                   await Future.wait(
                     [
+                      // This should notify -> resetting userVM, resets everything.
+                      userProvider.deleteUser(),
+
+                      // Delete local after user, in case of error, escapes early.
                       toDoProvider.clearDatabase(),
                       routineProvider.clearDatabase(),
                       reminderProvider.clearDatabase(),
                       deadlineProvider.clearDatabase(),
                       groupProvider.clearDatabase(),
                       subtaskProvider.clearDatabase(),
-
-                      // This should notify -> resetting userVM, resets everything.
-                      userProvider.deleteUser(),
                     ],
-                  ).whenComplete(() {
+                  ).then((_) {
                     layoutProvider.selectedPageIndex = 0;
                     Navigator.pop(context);
-                  });
+                  }).catchError(
+                      (e) => Tiles.displayError(context: context, e: e));
                 }
               });
             }),

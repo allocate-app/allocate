@@ -32,6 +32,9 @@ class AllocateUser with EquatableMixin implements Copyable<AllocateUser> {
   @Index()
   String username;
 
+  // Isar v3 isn't really the most secure
+  // Plan to refactor this to secure storage once user switching
+  // has been implemented.
   String? email;
 
   // Emotional bandwidth

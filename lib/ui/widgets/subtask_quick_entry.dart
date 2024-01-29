@@ -7,7 +7,6 @@ import 'package:provider/provider.dart';
 import '../../providers/model/subtask_provider.dart';
 import '../../providers/viewmodels/subtask_viewmodel.dart';
 import '../../util/constants.dart';
-import '../../util/exceptions.dart';
 
 class SubtaskQuickEntry extends StatefulWidget {
   const SubtaskQuickEntry({
@@ -155,12 +154,8 @@ class _SubtaskQuickEntry extends State<SubtaskQuickEntry> {
                                   .whenComplete(() {
                                 resetVM();
                                 nameEditingController.clear();
-                              }).catchError(
-                                      (e) => Tiles.displayError(
-                                          context: context, e: e),
-                                      test: (e) =>
-                                          e is FailureToCreateException ||
-                                          e is FailureToUploadException);
+                              }).catchError((e) => Tiles.displayError(
+                                      context: context, e: e));
                             }
                           : null);
                 }),

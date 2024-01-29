@@ -240,20 +240,6 @@ class RepeatableService {
           await _toDoRepository.delete(delta);
         }
 
-        // if (TaskType.small != newToDo.taskType) {
-        //   // Copy subtasks, update weight, update subtask model.
-        //   List<Subtask> subtasks = await _subtaskRepository.getRepoByTaskID(
-        //       id: toDo.id, limit: Constants.numTasks[toDo.taskType]!);
-        //   int weight = 0;
-        //   for (int i = 0; i < subtasks.length; i++) {
-        //     subtasks[i] =
-        //         subtasks[i].copyWith(completed: false, taskID: newToDo.id);
-        //     weight += subtasks[i].weight;
-        //   }
-        //   await _subtaskRepository.updateBatch(subtasks);
-        //   newToDo.weight = weight;
-        // }
-
         toDo.repeatable = false;
 
         return await _toDoRepository.updateBatch([toDo, newToDo]);

@@ -11,7 +11,6 @@ import '../../../providers/model/subtask_provider.dart';
 import "../../../providers/viewmodels/routine_viewmodel.dart";
 import "../../../util/constants.dart";
 import "../../../util/enums.dart";
-import "../../../util/exceptions.dart";
 import "../../widgets/listtile_widgets.dart";
 import "../../widgets/padded_divider.dart";
 import "../../widgets/tiles.dart";
@@ -139,9 +138,7 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
         .whenComplete(() {
       vm.clear();
       Navigator.pop(context);
-    }).catchError((e) => Tiles.displayError(context: context, e: e),
-            test: (e) =>
-                e is FailureToCreateException || e is FailureToUploadException);
+    }).catchError((e) => Tiles.displayError(context: context, e: e));
   }
 
   void handleClose({required bool willDiscard}) {
@@ -164,8 +161,7 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
     return await routineProvider.deleteRoutine().whenComplete(() {
       vm.clear();
       Navigator.pop(context);
-    }).catchError((e) => Tiles.displayError(context: context, e: e),
-        test: (e) => e is FailureToDeleteException);
+    }).catchError((e) => Tiles.displayError(context: context, e: e));
   }
 
   void onFetch({List<Subtask>? items}) {

@@ -84,6 +84,26 @@ class DeadlineProvider extends ChangeNotifier {
 
   List<SortMethod> get sortMethods => sorter.sortMethods;
 
+  Future<void> syncRepo() async {
+    try {
+      await _deadlineRepo.syncRepo();
+      await batchNotifications();
+    } on FailureToDeleteException catch (e, stacktrace) {
+      log(e.cause, stackTrace: stacktrace);
+      return Future.error(e, stacktrace);
+    } on FailureToUploadException catch (e, stacktrace) {
+      log(e.cause, stackTrace: stacktrace);
+      return Future.error(e, stacktrace);
+    } on FailureToScheduleException catch (e, stacktrace) {
+      log(e.cause, stackTrace: stacktrace);
+      return Future.error(e, stacktrace);
+    } on Error catch (e, stacktrace) {
+      log("Unknown error", stackTrace: stacktrace);
+      return Future.error(UnexpectedErrorException(), stacktrace);
+    }
+    notifyListeners();
+  }
+
   Future<void> createDeadline(Deadline deadline) async {
     try {
       curDeadline = await _deadlineRepo.create(deadline);
@@ -103,6 +123,9 @@ class DeadlineProvider extends ChangeNotifier {
       log(e.cause);
       deadline.isSynced = false;
       return await updateDeadline(deadline: deadline);
+    } on Error catch (e, stacktrace) {
+      log("Unknown error", stackTrace: stacktrace);
+      return Future.error(UnexpectedErrorException(), stacktrace);
     }
     notifyListeners();
   }
@@ -143,6 +166,9 @@ class DeadlineProvider extends ChangeNotifier {
       log(e.cause);
       await cancelNotification();
       return Future.error(e);
+    } on Error catch (e, stacktrace) {
+      log("Unknown error", stackTrace: stacktrace);
+      return Future.error(UnexpectedErrorException(), stacktrace);
     }
   }
 
@@ -154,6 +180,9 @@ class DeadlineProvider extends ChangeNotifier {
     } on FailureToDeleteException catch (e) {
       log(e.cause);
       return Future.error(e);
+    } on Error catch (e, stacktrace) {
+      log("Unknown error", stackTrace: stacktrace);
+      return Future.error(UnexpectedErrorException(), stacktrace);
     }
     notifyListeners();
   }
@@ -167,6 +196,9 @@ class DeadlineProvider extends ChangeNotifier {
     } on FailureToDeleteException catch (e) {
       log(e.cause);
       return Future.error(e);
+    } on Error catch (e, stacktrace) {
+      log("Unknown error", stackTrace: stacktrace);
+      return Future.error(UnexpectedErrorException(), stacktrace);
     }
 
     notifyListeners();
@@ -189,6 +221,9 @@ class DeadlineProvider extends ChangeNotifier {
     } on FailureToUpdateException catch (e) {
       log(e.cause);
       return Future.error(e);
+    } on Error catch (e, stacktrace) {
+      log("Unknown error", stackTrace: stacktrace);
+      return Future.error(UnexpectedErrorException(), stacktrace);
     }
     notifyListeners();
   }
@@ -200,20 +235,40 @@ class DeadlineProvider extends ChangeNotifier {
     } on FailureToDeleteException catch (e) {
       log(e.cause);
       return Future.error(e);
+    } on Error catch (e, stacktrace) {
+      log("Unknown error", stackTrace: stacktrace);
+      return Future.error(UnexpectedErrorException(), stacktrace);
     }
     notifyListeners();
   }
 
   Future<void> dayReset() async {
-    // TODO: schedule notifications.
-    DateTime? upTo = userViewModel?.deleteDate;
-    if (null != upTo) {
-      try {
+    try {
+      DateTime? upTo = userViewModel?.deleteDate;
+      if (null != upTo) {
         await _deadlineRepo.deleteSweep(upTo: upTo);
-      } on FailureToDeleteException catch (e, stacktrace) {
-        log(e.cause, stackTrace: stacktrace);
-        return Future.error(e, stacktrace);
       }
+      await batchNotifications();
+    } on FailureToDeleteException catch (e, stacktrace) {
+      log(e.cause, stackTrace: stacktrace);
+      return Future.error(e, stacktrace);
+    } on FailureToScheduleException catch (e, stacktrace) {
+      log(e.cause, stackTrace: stacktrace);
+      return Future.error(e, stacktrace);
+    } on Error catch (e, stacktrace) {
+      log("Unknown error", stackTrace: stacktrace);
+      return Future.error(UnexpectedErrorException(), stacktrace);
+    }
+  }
+
+  // This just schedules the next 10 upcoming notifications.
+  // There is a redundancy in repeatedly scheduling the same applications, but
+  // This is so that multiple devices remain somewhat synchronized
+  // without the need for online push notifications.
+  Future<void> batchNotifications() async {
+    List<Deadline> toSchedule = await _deadlineRepo.getWarnMes();
+    for (Deadline deadline in toSchedule) {
+      await scheduleNotification(deadline: deadline);
     }
   }
 
@@ -248,9 +303,13 @@ class DeadlineProvider extends ChangeNotifier {
     } on FailureToUploadException catch (e) {
       log(e.cause);
       return Future.error(e);
+    } on Error catch (e, stacktrace) {
+      log("Unknown error", stackTrace: stacktrace);
+      return Future.error(UnexpectedErrorException(), stacktrace);
     }
   }
 
+  // THIS IS AUTOMATED IN REPEATABLESERVICE.
   Future<void> nextRepeat({Deadline? deadline}) async {
     try {
       await _repeatService.nextRepeat(model: deadline ?? curDeadline!);
@@ -260,6 +319,9 @@ class DeadlineProvider extends ChangeNotifier {
     } on FailureToUploadException catch (e) {
       log(e.cause);
       return Future.error(e);
+    } on Error catch (e, stacktrace) {
+      log("Unknown error", stackTrace: stacktrace);
+      return Future.error(UnexpectedErrorException(), stacktrace);
     }
   }
 
@@ -274,6 +336,9 @@ class DeadlineProvider extends ChangeNotifier {
     } on InvalidRepeatingException catch (e) {
       log(e.cause);
       return Future.error(e);
+    } on Error catch (e, stacktrace) {
+      log("Unknown error", stackTrace: stacktrace);
+      return Future.error(UnexpectedErrorException(), stacktrace);
     }
     notifyListeners();
   }
@@ -297,6 +362,9 @@ class DeadlineProvider extends ChangeNotifier {
     } on FailureToUploadException catch (e) {
       log(e.cause);
       return Future.error(e);
+    } on Error catch (e, stacktrace) {
+      log("Unknown error", stackTrace: stacktrace);
+      return Future.error(UnexpectedErrorException(), stacktrace);
     }
   }
 
@@ -359,6 +427,9 @@ class DeadlineProvider extends ChangeNotifier {
     } on FailureToScheduleException catch (e, stacktrace) {
       log("${e.cause}\n $stacktrace");
       return Future.error(e);
+    } on Error catch (e, stacktrace) {
+      log("Unknown error", stackTrace: stacktrace);
+      return Future.error(UnexpectedErrorException(), stacktrace);
     }
   }
 

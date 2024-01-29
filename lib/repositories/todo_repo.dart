@@ -272,6 +272,8 @@ class ToDoRepo extends ChangeNotifier implements ToDoRepository {
   Future<int> getOnlineCount() async =>
       _supabaseClient.from("toDos").count(CountOption.exact);
 
+  // This doesn't currently throw exceptions, as these are technically less critical.
+  // Most function happens offline.
   @override
   Future<void> syncRepo() async {
     if (!isConnected) {
@@ -625,9 +627,9 @@ class ToDoRepo extends ChangeNotifier implements ToDoRepository {
         if (sorter.descending) {
           return await _isarClient.toDos
               .where()
-              .completedEqualTo(false)
-              .filter()
+              // .completedEqualTo(false)
               .myDayEqualTo(true)
+              .filter()
               .toDeleteEqualTo(false)
               .group((q) => q
                   .repeatableStateEqualTo(RepeatableState.normal)
@@ -641,9 +643,9 @@ class ToDoRepo extends ChangeNotifier implements ToDoRepository {
         }
         return await _isarClient.toDos
             .where()
-            .completedEqualTo(false)
-            .filter()
+            // .completedEqualTo(false)
             .myDayEqualTo(true)
+            .filter()
             .toDeleteEqualTo(false)
             .group((q) => q
                 .repeatableStateEqualTo(RepeatableState.normal)
@@ -658,9 +660,9 @@ class ToDoRepo extends ChangeNotifier implements ToDoRepository {
         if (sorter.descending) {
           return await _isarClient.toDos
               .where()
-              .completedEqualTo(false)
-              .filter()
+              // .completedEqualTo(false)
               .myDayEqualTo(true)
+              .filter()
               .toDeleteEqualTo(false)
               .group((q) => q
                   .repeatableStateEqualTo(RepeatableState.normal)
@@ -674,9 +676,9 @@ class ToDoRepo extends ChangeNotifier implements ToDoRepository {
         }
         return await _isarClient.toDos
             .where()
-            .completedEqualTo(false)
-            .filter()
+            // .completedEqualTo(false)
             .myDayEqualTo(true)
+            .filter()
             .toDeleteEqualTo(false)
             .group((q) => q
                 .repeatableStateEqualTo(RepeatableState.normal)
@@ -691,9 +693,9 @@ class ToDoRepo extends ChangeNotifier implements ToDoRepository {
         if (sorter.descending) {
           return await _isarClient.toDos
               .where()
-              .completedEqualTo(false)
-              .filter()
+              // .completedEqualTo(false)
               .myDayEqualTo(true)
+              .filter()
               .toDeleteEqualTo(false)
               .group((q) => q
                   .repeatableStateEqualTo(RepeatableState.normal)
@@ -707,9 +709,9 @@ class ToDoRepo extends ChangeNotifier implements ToDoRepository {
         }
         return await _isarClient.toDos
             .where()
-            .completedEqualTo(false)
-            .filter()
+            // .completedEqualTo(false)
             .myDayEqualTo(true)
+            .filter()
             .toDeleteEqualTo(false)
             .group((q) => q
                 .repeatableStateEqualTo(RepeatableState.normal)
@@ -724,9 +726,9 @@ class ToDoRepo extends ChangeNotifier implements ToDoRepository {
         if (sorter.descending) {
           return await _isarClient.toDos
               .where()
-              .completedEqualTo(false)
-              .filter()
+              // .completedEqualTo(false)
               .myDayEqualTo(true)
+              .filter()
               .toDeleteEqualTo(false)
               .group((q) => q
                   .repeatableStateEqualTo(RepeatableState.normal)
@@ -740,9 +742,9 @@ class ToDoRepo extends ChangeNotifier implements ToDoRepository {
         }
         return await _isarClient.toDos
             .where()
-            .completedEqualTo(false)
-            .filter()
+            // .completedEqualTo(false)
             .myDayEqualTo(true)
+            .filter()
             .toDeleteEqualTo(false)
             .group((q) => q
                 .repeatableStateEqualTo(RepeatableState.normal)
@@ -757,9 +759,9 @@ class ToDoRepo extends ChangeNotifier implements ToDoRepository {
         if (sorter.descending) {
           return await _isarClient.toDos
               .where()
-              .completedEqualTo(false)
-              .filter()
+              // .completedEqualTo(false)
               .myDayEqualTo(true)
+              .filter()
               .toDeleteEqualTo(false)
               .group((q) => q
                   .repeatableStateEqualTo(RepeatableState.normal)
@@ -773,9 +775,9 @@ class ToDoRepo extends ChangeNotifier implements ToDoRepository {
         }
         return await _isarClient.toDos
             .where()
-            .completedEqualTo(false)
-            .filter()
+            // .completedEqualTo(false)
             .myDayEqualTo(true)
+            .filter()
             .toDeleteEqualTo(false)
             .group((q) => q
                 .repeatableStateEqualTo(RepeatableState.normal)
@@ -789,9 +791,9 @@ class ToDoRepo extends ChangeNotifier implements ToDoRepository {
       default:
         return await _isarClient.toDos
             .where()
-            .completedEqualTo(false)
-            .filter()
+            // .completedEqualTo(false)
             .myDayEqualTo(true)
+            .filter()
             .toDeleteEqualTo(false)
             .group((q) => q
                 .repeatableStateEqualTo(RepeatableState.normal)
@@ -972,7 +974,7 @@ class ToDoRepo extends ChangeNotifier implements ToDoRepository {
   // CONSTRUCTOR
   ToDoRepo._internal() {
     // I haven't faked the connection channels -> doesn't make sense to.
-    if (SupabaseService.instance.debug) {
+    if (SupabaseService.instance.offlineDebug) {
       return;
     }
     // Initialize table stream -> only listen on signIn.

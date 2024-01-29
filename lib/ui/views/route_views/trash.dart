@@ -23,7 +23,6 @@ import '../../../providers/model/subtask_provider.dart';
 import '../../../providers/model/todo_provider.dart';
 import "../../../util/constants.dart";
 import "../../../util/enums.dart";
-import "../../../util/exceptions.dart";
 import "../../../util/interfaces/i_model.dart";
 import "../../widgets/check_delete_dialog.dart";
 import "../../widgets/expanded_listtile.dart";
@@ -237,8 +236,7 @@ class _TrashScreen extends State<TrashScreen> {
         groupProvider.emptyTrash(),
         subtaskProvider.emptyTrash(),
       ],
-    ).catchError((e) => Tiles.displayError(context: context, e: e),
-        test: (e) => e is FailureToDeleteException);
+    ).catchError((e) => Tiles.displayError(context: context, e: e));
   }
 
   // This needs to take a set.

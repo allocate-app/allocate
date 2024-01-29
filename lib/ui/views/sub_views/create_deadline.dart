@@ -12,7 +12,6 @@ import '../../../providers/model/deadline_provider.dart';
 import '../../../providers/viewmodels/deadline_viewmodel.dart';
 import '../../../util/constants.dart';
 import '../../../util/enums.dart';
-import '../../../util/exceptions.dart';
 import '../../widgets/flushbars.dart';
 import '../../widgets/listtile_widgets.dart';
 import '../../widgets/padded_divider.dart';
@@ -155,12 +154,9 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
 
   Future<void> handleCreate() async {
     vm.repeatable = Frequency.once != vm.frequency;
-    await deadlineProvider.createDeadline(vm.toModel()).catchError(
-        (e) => Tiles.displayError(context: context, e: e),
-        test: (e) =>
-            e is FailureToCreateException ||
-            e is FailureToUploadException ||
-            e is FailureToScheduleException);
+    await deadlineProvider
+        .createDeadline(vm.toModel())
+        .catchError((e) => Tiles.displayError(context: context, e: e));
 
     await eventProvider
         .insertEventModel(model: deadlineProvider.curDeadline!, notify: true)

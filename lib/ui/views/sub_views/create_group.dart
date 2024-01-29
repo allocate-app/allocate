@@ -15,7 +15,6 @@ import '../../../providers/viewmodels/group_viewmodel.dart';
 import '../../../providers/viewmodels/todo_viewmodel.dart';
 import '../../../util/constants.dart';
 import '../../../util/enums.dart';
-import '../../../util/exceptions.dart';
 import '../../widgets/expanded_listtile.dart';
 import '../../widgets/flushbars.dart';
 import '../../widgets/listtile_widgets.dart';
@@ -148,9 +147,7 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
       // This should clear on create
       //tVM.clear();
       Navigator.pop(context);
-    }).catchError((e) => Tiles.displayError(context: context, e: e),
-        test: (e) =>
-            e is FailureToCreateException || e is FailureToUpdateException);
+    }).catchError((e) => Tiles.displayError(context: context, e: e));
   }
 
   Future<void> handleSelection({
@@ -189,9 +186,7 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
         vm.clear();
         //tVM.clear();
         Navigator.pop(context);
-      }).catchError((e) => Tiles.displayError(context: context, e: e),
-          test: (e) =>
-              e is FailureToCreateException || e is FailureToUploadException);
+      }).catchError((e) => Tiles.displayError(context: context, e: e));
     }
     _checkClose.value = false;
   }
@@ -457,10 +452,7 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
                     initialGroup: MapEntry<String, int>(
                         (vm.name.isNotEmpty) ? vm.name : "New Group", vm.id),
                   )).catchError(
-              (e) => Tiles.displayError(context: context, e: e),
-              test: (e) =>
-                  e is FailureToCreateException ||
-                  e is FailureToUploadException),
+              (e) => Tiles.displayError(context: context, e: e)),
         )
       ],
     );

@@ -376,7 +376,8 @@ class ReminderRepo extends ChangeNotifier implements ReminderRepository {
           .findAll();
 
   @override
-  Future<List<Reminder>> mostRecent({int limit = 50}) async =>
+  Future<List<Reminder>> mostRecent(
+          {int limit = Constants.minLimitPerQuery}) async =>
       await _isarClient.reminders
           .where()
           .toDeleteEqualTo(false)
@@ -394,7 +395,8 @@ class ReminderRepo extends ChangeNotifier implements ReminderRepository {
       await _isarClient.reminders.where().idEqualTo(id).findFirst();
 
   @override
-  Future<List<Reminder>> getRepoList({int limit = 50, int offset = 0}) async =>
+  Future<List<Reminder>> getRepoList(
+          {int limit = Constants.minLimitPerQuery, int offset = 0}) async =>
       await _isarClient.reminders
           .where()
           .toDeleteEqualTo(false)
@@ -411,7 +413,7 @@ class ReminderRepo extends ChangeNotifier implements ReminderRepository {
 
   @override
   Future<List<Reminder>> getRepoListBy(
-      {int limit = 50,
+      {int limit = Constants.minLimitPerQuery,
       int offset = 0,
       required SortableView<Reminder> sorter}) async {
     switch (sorter.sortMethod) {
@@ -481,7 +483,8 @@ class ReminderRepo extends ChangeNotifier implements ReminderRepository {
   }
 
   @override
-  Future<List<Reminder>> getDeleted({int limit = 50, int offset = 0}) async =>
+  Future<List<Reminder>> getDeleted(
+          {int limit = Constants.minLimitPerQuery, int offset = 0}) async =>
       await _isarClient.reminders
           .where()
           .toDeleteEqualTo(true)
@@ -496,7 +499,8 @@ class ReminderRepo extends ChangeNotifier implements ReminderRepository {
           .findAll();
 
   @override
-  Future<List<Reminder>> getWarnMes({DateTime? now, int limit = 10}) async =>
+  Future<List<Reminder>> getWarnMes(
+          {DateTime? now, int limit = Constants.notificationLimit}) async =>
       await _isarClient.reminders
           .where()
           .dueDateGreaterThan(now ?? Constants.today)
@@ -592,7 +596,8 @@ class ReminderRepo extends ChangeNotifier implements ReminderRepository {
   }
 
   @override
-  Future<List<Reminder>> getUpcoming({int limit = 50, int offset = 0}) async =>
+  Future<List<Reminder>> getUpcoming(
+          {int limit = Constants.minLimitPerQuery, int offset = 0}) async =>
       await _isarClient.reminders
           .where()
           .dueDateGreaterThan(Constants.today)
@@ -609,7 +614,8 @@ class ReminderRepo extends ChangeNotifier implements ReminderRepository {
           .findAll();
 
   @override
-  Future<List<Reminder>> getOverdues({int limit = 50, int offset = 0}) async =>
+  Future<List<Reminder>> getOverdues(
+          {int limit = Constants.minLimitPerQuery, int offset = 0}) async =>
       await _isarClient.reminders
           .where()
           .dueDateLessThan(Constants.today)
@@ -627,7 +633,7 @@ class ReminderRepo extends ChangeNotifier implements ReminderRepository {
 
   ReminderRepo._internal() {
     // I haven't faked the connection channels -> doesn't make sense to.
-    if (SupabaseService.instance.debug) {
+    if (SupabaseService.instance.offlineDebug) {
       return;
     }
     // Initialize table stream -> only listen on signIn.

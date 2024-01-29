@@ -7,7 +7,6 @@ import '../../../providers/model/routine_provider.dart';
 import '../../../providers/model/subtask_provider.dart';
 import '../../../util/constants.dart';
 import '../../../util/enums.dart';
-import '../../../util/exceptions.dart';
 import '../../widgets/tiles.dart';
 
 // MIGRATE TO SELECTORS -> WATCH EACH ROUTINE
@@ -95,10 +94,9 @@ class _MyDayRoutines extends State<MyDayRoutines> {
     routine.weight = await routineProvider.getWeight(taskID: routine.id);
     routine.realDuration = routineProvider.calculateRealDuration(
         weight: routine.weight, duration: routine.expectedDuration);
-    return await routineProvider.updateRoutine(routine: routine).catchError(
-        (e) => Tiles.displayError(context: context, e: e),
-        test: (e) =>
-            e is FailureToUpdateException || e is FailureToUploadException);
+    return await routineProvider
+        .updateRoutine(routine: routine)
+        .catchError((e) => Tiles.displayError(context: context, e: e));
   }
 
   void onFetch({List<Subtask>? items, Set<Subtask>? itemSet}) {

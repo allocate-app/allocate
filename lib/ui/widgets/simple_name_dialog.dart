@@ -76,17 +76,11 @@ class _SimpleNameDialog extends State<SimpleNameDialog> {
               ),
               child: Padding(
                   padding: const EdgeInsets.all(Constants.doublePadding),
-                  child: Column(
+                  child: Row(
                     mainAxisSize: MainAxisSize.min,
-                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Expanded(
-                            child: _buildNameTile(),
-                          ),
-                        ],
+                      Expanded(
+                        child: _buildNameTile(),
                       ),
                     ],
                   )),

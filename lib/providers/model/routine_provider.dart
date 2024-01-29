@@ -245,6 +245,22 @@ class RoutineProvider extends ChangeNotifier {
     }
   }
 
+  Future<void> syncRepo() async {
+    try {
+      await _routineRepo.syncRepo();
+    } on FailureToDeleteException catch (e, stacktrace) {
+      log(e.cause, stackTrace: stacktrace);
+      return Future.error(e, stacktrace);
+    } on FailureToUploadException catch (e, stacktrace) {
+      log(e.cause, stackTrace: stacktrace);
+      return Future.error(e, stacktrace);
+    } on Error catch (e, stacktrace) {
+      log("Unknown error", stackTrace: stacktrace);
+      return Future.error(UnexpectedErrorException(), stacktrace);
+    }
+    notifyListeners();
+  }
+
   Future<void> createRoutine(Routine routine, int times) async {
     try {
       curRoutine = await _routineRepo.create(routine);
@@ -255,6 +271,9 @@ class RoutineProvider extends ChangeNotifier {
       log(e.cause, stackTrace: stacktrace);
       routine.isSynced = false;
       return updateRoutine(routine: routine, times: times);
+    } on Error catch (e, stacktrace) {
+      log("Unknown error", stackTrace: stacktrace);
+      return Future.error(UnexpectedErrorException(), stacktrace);
     }
 
     setDailyRoutine(timeOfDay: times, routine: curRoutine);
@@ -285,6 +304,9 @@ class RoutineProvider extends ChangeNotifier {
     } on FailureToUpdateException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
       return Future.error(e, stacktrace);
+    } on Error catch (e, stacktrace) {
+      log("Unknown error", stackTrace: stacktrace);
+      return Future.error(UnexpectedErrorException(), stacktrace);
     }
   }
 
@@ -301,6 +323,9 @@ class RoutineProvider extends ChangeNotifier {
     } on FailureToUpdateException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
       return Future.error(e, stacktrace);
+    } on Error catch (e, stacktrace) {
+      log("Unknown error", stackTrace: stacktrace);
+      return Future.error(UnexpectedErrorException(), stacktrace);
     }
     notifyListeners();
   }
@@ -327,6 +352,9 @@ class RoutineProvider extends ChangeNotifier {
     } on FailureToUpdateException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
       return Future.error(e, stacktrace);
+    } on Error catch (e, stacktrace) {
+      log("Unknown error", stackTrace: stacktrace);
+      return Future.error(UnexpectedErrorException(), stacktrace);
     }
   }
 
@@ -339,6 +367,9 @@ class RoutineProvider extends ChangeNotifier {
     } on FailureToDeleteException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
       return Future.error(e, stacktrace);
+    } on Error catch (e, stacktrace) {
+      log("Unknown error", stackTrace: stacktrace);
+      return Future.error(UnexpectedErrorException(), stacktrace);
     }
     notifyListeners();
   }
@@ -352,6 +383,9 @@ class RoutineProvider extends ChangeNotifier {
     } on FailureToDeleteException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
       return Future.error(e, stacktrace);
+    } on Error catch (e, stacktrace) {
+      log("Unknown error", stackTrace: stacktrace);
+      return Future.error(UnexpectedErrorException(), stacktrace);
     }
 
     notifyListeners();
@@ -370,6 +404,9 @@ class RoutineProvider extends ChangeNotifier {
     } on FailureToUpdateException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
       return Future.error(e, stacktrace);
+    } on Error catch (e, stacktrace) {
+      log("Unknown error", stackTrace: stacktrace);
+      return Future.error(UnexpectedErrorException(), stacktrace);
     }
     notifyListeners();
   }
@@ -388,6 +425,9 @@ class RoutineProvider extends ChangeNotifier {
     } on FailureToDeleteException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
       return Future.error(e, stacktrace);
+    } on Error catch (e, stacktrace) {
+      log("Unknown error", stackTrace: stacktrace);
+      return Future.error(UnexpectedErrorException(), stacktrace);
     }
     notifyListeners();
   }
@@ -400,6 +440,9 @@ class RoutineProvider extends ChangeNotifier {
       } on FailureToDeleteException catch (e, stacktrace) {
         log(e.cause, stackTrace: stacktrace);
         return Future.error(e, stacktrace);
+      } on Error catch (e, stacktrace) {
+        log("Unknown error", stackTrace: stacktrace);
+        return Future.error(UnexpectedErrorException(), stacktrace);
       }
     }
     await resetDailyRoutines();
@@ -438,6 +481,9 @@ class RoutineProvider extends ChangeNotifier {
     } on FailureToUploadException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
       return Future.error(e, stacktrace);
+    } on Error catch (e, stacktrace) {
+      log("Unknown error", stackTrace: stacktrace);
+      return Future.error(UnexpectedErrorException(), stacktrace);
     }
   }
 
@@ -459,6 +505,9 @@ class RoutineProvider extends ChangeNotifier {
     } on FailureToUploadException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
       return Future.error(e, stacktrace);
+    } on Error catch (e, stacktrace) {
+      log("Unknown error", stackTrace: stacktrace);
+      return Future.error(UnexpectedErrorException(), stacktrace);
     }
   }
 

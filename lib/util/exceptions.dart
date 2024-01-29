@@ -90,10 +90,10 @@ class SignUpFailedException implements Exception {
   toString() => cause;
 }
 
-class UserExistsException implements Exception {
+class SignOutFailedException implements Exception {
   String cause;
 
-  UserExistsException(this.cause);
+  SignOutFailedException(this.cause);
 
   @override
   toString() => cause;
@@ -109,9 +109,20 @@ class MultipleUsersException implements Exception {
   toString() => cause;
 }
 
+class UserExistsException implements Exception {
+  String cause;
+
+  UserExistsException(this.cause);
+
+  @override
+  toString() => cause;
+}
+
 class UserMissingException implements Exception {
   String cause;
+
   UserMissingException(this.cause);
+
   @override
   toString() => cause;
 }
@@ -125,19 +136,10 @@ class UserSyncException implements Exception {
   toString() => cause;
 }
 
-class UserException implements Exception {
+class ConnectionException implements Exception {
   String cause;
 
-  UserException(this.cause);
-
-  @override
-  toString() => cause;
-}
-
-class NoUserException implements Exception {
-  String cause;
-
-  NoUserException(this.cause);
+  ConnectionException(this.cause);
 
   @override
   toString() => cause;
@@ -147,6 +149,15 @@ class ObjectNotFoundException implements Exception {
   String cause;
 
   ObjectNotFoundException(this.cause);
+
+  @override
+  toString() => cause;
+}
+
+class UnexpectedErrorException implements Exception {
+  String cause = "An unexpected error occured";
+
+  UnexpectedErrorException();
 
   @override
   toString() => cause;

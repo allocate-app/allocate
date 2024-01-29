@@ -382,7 +382,8 @@ class DeadlineRepo extends ChangeNotifier implements DeadlineRepository {
           .findAll();
 
   @override
-  Future<List<Deadline>> mostRecent({int limit = 50}) async =>
+  Future<List<Deadline>> mostRecent(
+          {int limit = Constants.minLimitPerQuery}) async =>
       await _isarClient.deadlines
           .where()
           .toDeleteEqualTo(false)
@@ -400,7 +401,8 @@ class DeadlineRepo extends ChangeNotifier implements DeadlineRepository {
       await _isarClient.deadlines.where().idEqualTo(id).findFirst();
 
   @override
-  Future<List<Deadline>> getRepoList({int limit = 50, int offset = 0}) async =>
+  Future<List<Deadline>> getRepoList(
+          {int limit = Constants.minLimitPerQuery, int offset = 0}) async =>
       await _isarClient.deadlines
           .where()
           .toDeleteEqualTo(false)
@@ -417,7 +419,7 @@ class DeadlineRepo extends ChangeNotifier implements DeadlineRepository {
 
   @override
   Future<List<Deadline>> getRepoListBy(
-      {int limit = 50,
+      {int limit = Constants.minLimitPerQuery,
       int offset = 0,
       required SortableView<Deadline> sorter}) async {
     switch (sorter.sortMethod) {
@@ -517,7 +519,8 @@ class DeadlineRepo extends ChangeNotifier implements DeadlineRepository {
   }
 
   @override
-  Future<List<Deadline>> getDeleted({int limit = 50, int offset = 0}) async =>
+  Future<List<Deadline>> getDeleted(
+          {int limit = Constants.minLimitPerQuery, int offset = 0}) async =>
       await _isarClient.deadlines
           .where()
           .toDeleteEqualTo(true)
@@ -532,7 +535,8 @@ class DeadlineRepo extends ChangeNotifier implements DeadlineRepository {
           .findAll();
 
   @override
-  Future<List<Deadline>> getWarnMes({DateTime? now, int limit = 10}) async =>
+  Future<List<Deadline>> getWarnMes(
+          {DateTime? now, int limit = Constants.notificationLimit}) async =>
       await _isarClient.deadlines
           .where()
           .warnMeEqualTo(true)
@@ -628,7 +632,8 @@ class DeadlineRepo extends ChangeNotifier implements DeadlineRepository {
   }
 
   @override
-  Future<List<Deadline>> getUpcoming({int limit = 50, int offset = 0}) async =>
+  Future<List<Deadline>> getUpcoming(
+          {int limit = Constants.minLimitPerQuery, int offset = 0}) async =>
       await _isarClient.deadlines
           .where()
           .dueDateGreaterThan(Constants.today)
@@ -645,7 +650,8 @@ class DeadlineRepo extends ChangeNotifier implements DeadlineRepository {
           .findAll();
 
   @override
-  Future<List<Deadline>> getOverdues({int limit = 50, int offset = 0}) async =>
+  Future<List<Deadline>> getOverdues(
+          {int limit = Constants.minLimitPerQuery, int offset = 0}) async =>
       _isarClient.deadlines
           .where()
           .dueDateIsNotNull()
@@ -664,7 +670,7 @@ class DeadlineRepo extends ChangeNotifier implements DeadlineRepository {
 
   DeadlineRepo._internal() {
     // I haven't faked the connection channels -> doesn't make sense to.
-    if (SupabaseService.instance.debug) {
+    if (SupabaseService.instance.offlineDebug) {
       return;
     }
     // Initialize table stream -> only listen on signIn.

@@ -280,6 +280,7 @@ abstract class Constants {
   static final offsetIn =
       Tween(begin: const Offset(1, 0), end: const Offset(0, 0));
 
+  static const int flushbarDuration = 300;
   static const int animationDelay = 200;
   static const int subtaskDelay = 100;
   static const int hitDelay = 150;
@@ -292,6 +293,9 @@ abstract class Constants {
 
   // Pagination:
   static const int minLimitPerQuery = 50;
+
+  // Notifications
+  static const int notificationLimit = 20;
 
   // This is approximately 2Million elements;
   // change accordingly

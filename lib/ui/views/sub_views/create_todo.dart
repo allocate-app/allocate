@@ -18,7 +18,6 @@ import '../../../providers/model/user_provider.dart';
 import "../../../providers/viewmodels/todo_viewmodel.dart";
 import "../../../util/constants.dart";
 import "../../../util/enums.dart";
-import "../../../util/exceptions.dart";
 import "../../widgets/listtile_widgets.dart";
 import "../../widgets/padded_divider.dart";
 import "../../widgets/search_recents_bar.dart";
@@ -193,10 +192,9 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
 
   Future<void> handleCreate() async {
     vm.repeatable = Frequency.once != vm.frequency;
-    await toDoProvider.createToDo(vm.toModel()).catchError(
-        (e) => Tiles.displayError(context: context, e: e),
-        test: (e) =>
-            e is FailureToCreateException || e is FailureToUploadException);
+    await toDoProvider
+        .createToDo(vm.toModel())
+        .catchError((e) => Tiles.displayError(context: context, e: e));
 
     if (null != vm.groupID) {
       groupProvider.setToDoCount(id: vm.groupID!);

@@ -13,7 +13,6 @@ import '../../../providers/model/reminder_provider.dart';
 import '../../../providers/viewmodels/reminder_viewmodel.dart';
 import '../../../util/constants.dart';
 import '../../../util/enums.dart';
-import '../../../util/exceptions.dart';
 import '../../widgets/flushbars.dart';
 import '../../widgets/handle_repeatable_modal.dart';
 import '../../widgets/listtile_widgets.dart';
@@ -159,12 +158,7 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
               delta: newReminder,
               single: updateSingle,
               delete: false)
-          .catchError((e) => Tiles.displayError(context: context, e: e),
-              test: (e) =>
-                  e is FailureToUpdateException ||
-                  e is FailureToUploadException ||
-                  e is InvalidRepeatingException ||
-                  e is FailureToDeleteException);
+          .catchError((e) => Tiles.displayError(context: context, e: e));
 
       return await eventProvider
           .updateEventModel(
@@ -175,12 +169,9 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
       });
     }
 
-    await reminderProvider.updateReminder(reminder: newReminder).catchError(
-        (e) => Tiles.displayError(context: context, e: e),
-        test: (e) =>
-            e is FailureToCreateException ||
-            e is FailureToUploadException ||
-            e is FailureToScheduleException);
+    await reminderProvider
+        .updateReminder(reminder: newReminder)
+        .catchError((e) => Tiles.displayError(context: context, e: e));
 
     return await eventProvider
         .updateEventModel(oldModel: _prev, newModel: newReminder, notify: true)
@@ -212,12 +203,7 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
               delta: newReminder,
               single: deleteSingle,
               delete: true)
-          .catchError((e) => Tiles.displayError(context: context, e: e),
-              test: (e) =>
-                  e is FailureToUpdateException ||
-                  e is FailureToUploadException ||
-                  e is InvalidRepeatingException ||
-                  e is FailureToDeleteException);
+          .catchError((e) => Tiles.displayError(context: context, e: e));
 
       newReminder.toDelete = true;
       return await eventProvider
@@ -229,10 +215,9 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
       });
     }
 
-    await reminderProvider.deleteReminder().catchError(
-        (e) => Tiles.displayError(context: context, e: e),
-        test: (e) =>
-            e is FailureToCreateException || e is FailureToUploadException);
+    await reminderProvider
+        .deleteReminder()
+        .catchError((e) => Tiles.displayError(context: context, e: e));
 
     newReminder.toDelete = true;
     return await eventProvider

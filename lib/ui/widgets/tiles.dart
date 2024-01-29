@@ -29,7 +29,6 @@ import '../../providers/viewmodels/todo_viewmodel.dart';
 import '../../ui/widgets/time_dialog.dart';
 import '../../util/constants.dart';
 import '../../util/enums.dart';
-import '../../util/exceptions.dart';
 import '../../util/interfaces/i_model.dart';
 import '../../util/numbers.dart';
 import '../views/sub_views/create_routine.dart';
@@ -256,19 +255,14 @@ abstract class Tiles {
 
       await toDoProvider
           .handleRepeating(toDo: toDo, single: deleteSingle, delete: true)
-          .catchError((e) => displayError(context: context, e: e),
-              test: (e) =>
-                  e is InvalidRepeatingException ||
-                  e is FailureToUpdateException ||
-                  e is FailureToUploadException ||
-                  e is FailureToDeleteException);
+          .catchError((e) => displayError(context: context, e: e));
 
       return await eventProvider.updateEventModel(oldModel: toDo);
     }
 
     await toDoProvider.deleteToDo(toDo: toDo).catchError(
-        (e) => displayError(context: context, e: e),
-        test: (e) => e is FailureToDeleteException);
+          (e) => displayError(context: context, e: e),
+        );
     if (null != toDo.groupID) {
       groupProvider.setToDoCount(id: toDo.groupID!);
     }
@@ -418,17 +412,8 @@ abstract class Tiles {
                     }
                     return await routineProvider
                         .deleteRoutine(routine: routine)
-                        .catchError((e) {
-                      Flushbar? error;
-
-                      error = Flushbars.createError(
-                        message: e.cause,
-                        context: context,
-                        dismissCallback: () => error?.dismiss(),
-                      );
-
-                      error.show(context);
-                    }, test: (e) => e is FailureToDeleteException);
+                        .catchError(
+                            (e) => displayError(context: context, e: e));
                   }
                   return await showDialog<List<bool>?>(
                       barrierDismissible: true,
@@ -453,17 +438,8 @@ abstract class Tiles {
 
                     await routineProvider
                         .deleteRoutine(routine: routine)
-                        .catchError((e) {
-                      Flushbar? error;
-
-                      error = Flushbars.createError(
-                        message: e.cause,
-                        context: context,
-                        dismissCallback: () => error?.dismiss(),
-                      );
-
-                      error.show(context);
-                    }, test: (e) => e is FailureToDeleteException);
+                        .catchError(
+                            (e) => displayError(context: context, e: e));
                   });
                 },
               )),
@@ -640,19 +616,14 @@ abstract class Tiles {
       await deadlineProvider
           .handleRepeating(
               deadline: deadline, single: deleteSingle, delete: true)
-          .catchError((e) => displayError(context: context, e: e),
-              test: (e) =>
-                  e is InvalidRepeatingException ||
-                  e is FailureToUpdateException ||
-                  e is FailureToUploadException ||
-                  e is FailureToDeleteException);
+          .catchError((e) => displayError(context: context, e: e));
 
       return await eventProvider.updateEventModel(oldModel: deadline);
     }
 
-    await deadlineProvider.deleteDeadline(deadline: deadline).catchError(
-        (e) => displayError(context: context, e: e),
-        test: (e) => e is FailureToDeleteException);
+    await deadlineProvider
+        .deleteDeadline(deadline: deadline)
+        .catchError((e) => displayError(context: context, e: e));
 
     return await eventProvider.updateEventModel(oldModel: deadline);
   }
@@ -819,19 +790,14 @@ abstract class Tiles {
       await reminderProvider
           .handleRepeating(
               reminder: reminder, single: deleteSingle, delete: true)
-          .catchError((e) => displayError(context: context, e: e),
-              test: (e) =>
-                  e is InvalidRepeatingException ||
-                  e is FailureToUpdateException ||
-                  e is FailureToUploadException ||
-                  e is FailureToDeleteException);
+          .catchError((e) => displayError(context: context, e: e));
 
       return await eventProvider.updateEventModel(oldModel: reminder);
     }
 
-    await reminderProvider.deleteReminder(reminder: reminder).catchError(
-        (e) => displayError(context: context, e: e),
-        test: (e) => e is FailureToDeleteException);
+    await reminderProvider
+        .deleteReminder(reminder: reminder)
+        .catchError((e) => displayError(context: context, e: e));
 
     return await eventProvider.updateEventModel(oldModel: reminder);
   }
@@ -1244,18 +1210,14 @@ abstract class Tiles {
                   return;
                 }
                 await showDialog(
-                        barrierDismissible: true,
-                        useRootNavigator: false,
-                        context: context,
-                        builder: (BuildContext context) {
-                          Provider.of<SubtaskViewModel>(context, listen: false)
-                              .fromModel(model: subtask);
-                          return const UpdateSubtaskScreen();
-                        })
-                    .catchError((e) => displayError(context: context, e: e),
-                        test: (e) =>
-                            e is FailureToUpdateException ||
-                            e is FailureToUploadException);
+                    barrierDismissible: true,
+                    useRootNavigator: false,
+                    context: context,
+                    builder: (BuildContext context) {
+                      Provider.of<SubtaskViewModel>(context, listen: false)
+                          .fromModel(model: subtask);
+                      return const UpdateSubtaskScreen();
+                    }).catchError((e) => displayError(context: context, e: e));
               },
               onChanged: ({bool? value, Subtask? subtask}) async {
                 if (null == subtask) {
@@ -1264,10 +1226,7 @@ abstract class Tiles {
                 subtask.completed = value!;
                 await subtaskProvider
                     .updateSubtask(subtask: subtask)
-                    .catchError((e) => displayError(context: context, e: e),
-                        test: (e) =>
-                            e is FailureToUpdateException ||
-                            e is FailureToUploadException);
+                    .catchError((e) => displayError(context: context, e: e));
               },
               onRemoved: ({Subtask? subtask}) async {
                 if (null == subtask) {
@@ -1280,8 +1239,7 @@ abstract class Tiles {
 
                 await subtaskProvider
                     .deleteSubtask(subtask: subtask)
-                    .catchError((e) => displayError(context: context, e: e),
-                        test: (e) => e is FailureToDeleteException);
+                    .catchError((e) => displayError(context: context, e: e));
               },
               onReorder: (int oldIndex, int newIndex) async {
                 await subtaskProvider
@@ -1289,10 +1247,7 @@ abstract class Tiles {
                         subtasks: subtasks,
                         oldIndex: oldIndex,
                         newIndex: newIndex)
-                    .catchError((e) => displayError(context: context, e: e),
-                        test: (e) =>
-                            e is FailureToUpdateException ||
-                            e is FailureToUploadException);
+                    .catchError((e) => displayError(context: context, e: e));
               }),
           if (subtasks.length < limit)
             SubtaskQuickEntry(
@@ -1410,10 +1365,7 @@ abstract class Tiles {
               tooltip: "Reset routine",
               onPressed: () async => await routineProvider
                   .resetRoutineSubtasks(routine: routine)
-                  .catchError((e) => displayError(context: context, e: e),
-                      test: (e) =>
-                          e is FailureToUpdateException ||
-                          e is FailureToUploadException)),
+                  .catchError((e) => displayError(context: context, e: e))),
           IconButton(
             tooltip: "Remove routine",
             icon: const Icon(Icons.remove_circle_outline_rounded),

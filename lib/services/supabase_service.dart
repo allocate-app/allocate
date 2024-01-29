@@ -3,7 +3,6 @@ import "dart:async";
 import "package:mocktail/mocktail.dart";
 import "package:supabase_flutter/supabase_flutter.dart";
 
-// TODO: fix this once usr done. Upgrade broke stuff.
 class SupabaseService {
   static final SupabaseService _instance = SupabaseService._internal();
 
@@ -23,7 +22,8 @@ class SupabaseService {
       !_supabaseClient.auth.currentSession!.isExpired;
 
   bool _debug = false;
-  bool get debug => _debug;
+
+  bool get offlineDebug => _debug;
 
   Future<void> init(
       {required String supabaseUrl,

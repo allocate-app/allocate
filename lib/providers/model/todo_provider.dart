@@ -127,7 +127,7 @@ class ToDoProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> _syncRepo() async {
+  Future<void> syncRepo() async {
     try {
       await _toDoRepo.syncRepo();
     } on FailureToDeleteException catch (e, stacktrace) {
@@ -136,6 +136,9 @@ class ToDoProvider extends ChangeNotifier {
     } on FailureToUploadException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
       return Future.error(e, stacktrace);
+    } on Error catch (e, stacktrace) {
+      log("Unknown error", stackTrace: stacktrace);
+      return Future.error(UnexpectedErrorException(), stacktrace);
     }
     notifyListeners();
   }
@@ -158,6 +161,9 @@ class ToDoProvider extends ChangeNotifier {
       log(e.cause, stackTrace: stacktrace);
       toDo.isSynced = false;
       return await updateToDo(toDo: toDo);
+    } on Error catch (e, stacktrace) {
+      log("Unknown error", stackTrace: stacktrace);
+      return Future.error(UnexpectedErrorException(), stacktrace);
     }
 
     notifyListeners();
@@ -194,6 +200,9 @@ class ToDoProvider extends ChangeNotifier {
     } on FailureToUpdateException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
       return Future.error(e, stacktrace);
+    } on Error catch (e, stacktrace) {
+      log("Unknown error", stackTrace: stacktrace);
+      return Future.error(UnexpectedErrorException(), stacktrace);
     }
   }
 
@@ -218,6 +227,9 @@ class ToDoProvider extends ChangeNotifier {
     } on FailureToUpdateException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
       return Future.error(e, stacktrace);
+    } on Error catch (e, stacktrace) {
+      log("Unknown error", stackTrace: stacktrace);
+      return Future.error(UnexpectedErrorException(), stacktrace);
     }
   }
 
@@ -234,6 +246,9 @@ class ToDoProvider extends ChangeNotifier {
     } on FailureToUpdateException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
       return Future.error(e, stacktrace);
+    } on Error catch (e, stacktrace) {
+      log("Unknown error", stackTrace: stacktrace);
+      return Future.error(UnexpectedErrorException(), stacktrace);
     }
     notifyListeners();
   }
@@ -247,6 +262,9 @@ class ToDoProvider extends ChangeNotifier {
     } on FailureToDeleteException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
       return Future.error(e, stacktrace);
+    } on Error catch (e, stacktrace) {
+      log("Unknown error", stackTrace: stacktrace);
+      return Future.error(UnexpectedErrorException(), stacktrace);
     }
 
     notifyListeners();
@@ -261,6 +279,9 @@ class ToDoProvider extends ChangeNotifier {
     } on FailureToDeleteException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
       return Future.error(e, stacktrace);
+    } on Error catch (e, stacktrace) {
+      log("Unknown error", stackTrace: stacktrace);
+      return Future.error(UnexpectedErrorException(), stacktrace);
     }
 
     notifyListeners();
@@ -282,6 +303,9 @@ class ToDoProvider extends ChangeNotifier {
     } on FailureToUpdateException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
       return Future.error(e, stacktrace);
+    } on Error catch (e, stacktrace) {
+      log("Unknown error", stackTrace: stacktrace);
+      return Future.error(UnexpectedErrorException(), stacktrace);
     }
     notifyListeners();
   }
@@ -300,6 +324,9 @@ class ToDoProvider extends ChangeNotifier {
     } on FailureToDeleteException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
       return Future.error(e, stacktrace);
+    } on Error catch (e, stacktrace) {
+      log("Unknown error", stackTrace: stacktrace);
+      return Future.error(UnexpectedErrorException(), stacktrace);
     }
     notifyListeners();
   }
@@ -326,6 +353,9 @@ class ToDoProvider extends ChangeNotifier {
     } on FailureToUpdateException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
       return Future.error(e, stacktrace);
+    } on Error catch (e, stacktrace) {
+      log("Unknown error", stackTrace: stacktrace);
+      return Future.error(UnexpectedErrorException(), stacktrace);
     }
   }
 
@@ -333,7 +363,7 @@ class ToDoProvider extends ChangeNotifier {
   Future<void> resetMyDay() async {
     List<ToDo> previousMyDay = await _toDoRepo.getMyDay(sorter: sorter);
 
-    for (ToDo toDo in toDos) {
+    for (ToDo toDo in previousMyDay) {
       if (toDo.completed) {
         toDo.myDay = false;
       }
@@ -362,6 +392,9 @@ class ToDoProvider extends ChangeNotifier {
     } on FailureToUploadException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
       return Future.error(e, stacktrace);
+    } on Error catch (e, stacktrace) {
+      log("Unknown error", stackTrace: stacktrace);
+      return Future.error(UnexpectedErrorException(), stacktrace);
     }
   }
 
@@ -374,6 +407,9 @@ class ToDoProvider extends ChangeNotifier {
     } on FailureToUploadException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
       return Future.error(e, stacktrace);
+    } on Error catch (e, stacktrace) {
+      log("Unknown error", stackTrace: stacktrace);
+      return Future.error(UnexpectedErrorException(), stacktrace);
     }
   }
 
@@ -388,6 +424,9 @@ class ToDoProvider extends ChangeNotifier {
     } on InvalidRepeatingException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
       return Future.error(e, stacktrace);
+    } on Error catch (e, stacktrace) {
+      log("Unknown error", stackTrace: stacktrace);
+      return Future.error(UnexpectedErrorException(), stacktrace);
     }
     notifyListeners();
   }
@@ -412,6 +451,9 @@ class ToDoProvider extends ChangeNotifier {
     } on FailureToUploadException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
       return Future.error(e, stacktrace);
+    } on Error catch (e, stacktrace) {
+      log("Unknown error", stackTrace: stacktrace);
+      return Future.error(UnexpectedErrorException(), stacktrace);
     }
   }
 

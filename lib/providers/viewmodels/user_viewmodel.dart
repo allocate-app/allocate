@@ -375,7 +375,7 @@ class UserViewModel extends ChangeNotifier
       DeleteSchedule.thirtyDays =>
         Constants.today.copyWith(day: Constants.today.day - 30),
       DeleteSchedule.oneYear =>
-        Constants.today.copyWith(day: Constants.today.year - 1),
+        Constants.today.copyWith(year: Constants.today.year - 1),
       _ => null,
     };
   }

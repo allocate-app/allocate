@@ -60,6 +60,9 @@ class UserStorageService extends ChangeNotifier {
     }
   }
 
+  // Because this is running in the background and not always called by
+  // a provider, these are implemented to notify instead of stop execution.
+  // Exceptions should still be thrown, as they indicate unintended execution.
   Future<void> syncUser({AllocateUser? onlineUser}) async {
     if (!isConnected) {
       return;
@@ -137,6 +140,8 @@ class UserStorageService extends ChangeNotifier {
       log(e.cause, stackTrace: stacktrace);
       _status = UserStatus.missing;
       notifyListeners();
+    } on Error catch (e, stacktrace) {
+      log("Unknown error", stackTrace: stacktrace);
     }
   }
 
@@ -220,6 +225,7 @@ class UserStorageService extends ChangeNotifier {
 
     // TODO: refactor this logic once multi-user implementation
     if (users.length > 1) {
+      _failureCache = users;
       throw MultipleUsersException(
           "Multiple users in database.\n"
           "Users Length: ${users.length}",
@@ -231,7 +237,7 @@ class UserStorageService extends ChangeNotifier {
 
   UserStorageService._internal() {
     // I haven't faked the connection channels -> doesn't make sense to.
-    if (SupabaseService.instance.debug) {
+    if (SupabaseService.instance.offlineDebug) {
       return;
     }
     // Initialize table stream -> only listen on signIn.

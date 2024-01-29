@@ -10,7 +10,6 @@ import 'package:provider/provider.dart';
 import 'package:window_manager/window_manager.dart';
 
 import '../model/task/todo.dart';
-import '../providers/application/daily_reset_provider.dart';
 import '../providers/application/event_provider.dart';
 import '../providers/application/layout_provider.dart';
 import '../providers/application/search_provider.dart';
@@ -29,6 +28,8 @@ import '../providers/viewmodels/routine_viewmodel.dart';
 import '../providers/viewmodels/subtask_viewmodel.dart';
 import '../providers/viewmodels/todo_viewmodel.dart';
 import '../providers/viewmodels/user_viewmodel.dart';
+import '../services/application_service.dart';
+import '../services/daily_reset_service.dart';
 import '../services/isar_service.dart';
 import '../services/notification_service.dart';
 import '../services/supabase_service.dart';
@@ -92,7 +93,7 @@ void main() async {
   }
 
   // GLOBAL APP SCHEDULER
-  DailyResetProvider.instance.init();
+  DailyResetService.instance.init();
 
   await Future.wait([
     IsarService.instance.init(debug: true),
@@ -230,6 +231,8 @@ class _LocalTester extends State<LocalTester> with WindowListener {
   // late ThemeProvider themeProvider;
   late UserProvider userProvider;
 
+  late GlobalKey<NavigatorState> navigatorKey;
+
   @override
   void initState() {
     if (!Platform.isAndroid && !Platform.isIOS) {
@@ -240,6 +243,7 @@ class _LocalTester extends State<LocalTester> with WindowListener {
     // testListView();
 
     userProvider = Provider.of<UserProvider>(context, listen: false);
+    navigatorKey = ApplicationService.instance.globalNavigatorKey;
 
     super.initState();
   }
@@ -310,6 +314,7 @@ class _LocalTester extends State<LocalTester> with WindowListener {
       builder: (BuildContext context, ThemeProvider value, Widget? child) {
         return TitlebarSafeArea(
           child: MaterialApp(
+            navigatorKey: navigatorKey,
             theme: value.lightTheme,
             darkTheme: value.darkTheme,
             highContrastTheme: value.highContrastLight,

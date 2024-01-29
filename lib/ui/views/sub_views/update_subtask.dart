@@ -6,7 +6,6 @@ import '../../../providers/application/layout_provider.dart';
 import '../../../providers/model/subtask_provider.dart';
 import '../../../providers/viewmodels/subtask_viewmodel.dart';
 import '../../../util/constants.dart';
-import '../../../util/exceptions.dart';
 import '../../widgets/listtile_widgets.dart';
 import '../../widgets/padded_divider.dart';
 import '../../widgets/tiles.dart';
@@ -98,10 +97,8 @@ class _UpdateSubtaskScreen extends State<UpdateSubtaskScreen> {
                               .whenComplete(() {
                             vm.clear();
                             Navigator.pop(context);
-                          }).catchError(
-                                  (e) => Tiles.displayError(
-                                      context: context, e: e),
-                                  test: (e) => e is FailureToDeleteException);
+                          }).catchError((e) =>
+                                  Tiles.displayError(context: context, e: e));
                         },
                         handleUpdate: () async {
                           if (validateData()) {

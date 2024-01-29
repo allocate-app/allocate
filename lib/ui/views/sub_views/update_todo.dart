@@ -18,7 +18,6 @@ import '../../../providers/model/user_provider.dart';
 import "../../../providers/viewmodels/todo_viewmodel.dart";
 import "../../../util/constants.dart";
 import "../../../util/enums.dart";
-import "../../../util/exceptions.dart";
 import "../../widgets/flushbars.dart";
 import "../../widgets/handle_repeatable_modal.dart";
 import "../../widgets/listtile_widgets.dart";
@@ -121,7 +120,6 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
     subtasksAnchorController = MenuController();
   }
 
-  // TODO: refactor once proper error msging implemented in providers.
   void initGroupName() {
     if (null != widget.initialGroup) {
       groupEditingController.value =
@@ -250,12 +248,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
       await toDoProvider
           .handleRepeating(
               toDo: _prev, delta: newToDo, single: updateSingle, delete: false)
-          .catchError((e) => Tiles.displayError(context: context, e: e),
-              test: (e) =>
-                  e is FailureToUpdateException ||
-                  e is FailureToUploadException ||
-                  e is InvalidRepeatingException ||
-                  e is FailureToDeleteException);
+          .catchError((e) => Tiles.displayError(context: context, e: e));
 
       return await eventProvider
           .updateEventModel(
@@ -269,10 +262,9 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
       });
     }
 
-    await toDoProvider.updateToDo(toDo: newToDo).catchError(
-        (e) => Tiles.displayError(context: context, e: e),
-        test: (e) =>
-            e is FailureToUpdateException || e is FailureToUploadException);
+    await toDoProvider
+        .updateToDo(toDo: newToDo)
+        .catchError((e) => Tiles.displayError(context: context, e: e));
 
     return await eventProvider
         .updateEventModel(
@@ -305,12 +297,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
       await toDoProvider
           .handleRepeating(
               toDo: _prev, delta: newToDo, single: deleteSingle, delete: true)
-          .catchError((e) => Tiles.displayError(context: context, e: e),
-              test: (e) =>
-                  e is InvalidRepeatingException ||
-                  e is FailureToUpdateException ||
-                  e is FailureToUploadException ||
-                  e is FailureToDeleteException);
+          .catchError((e) => Tiles.displayError(context: context, e: e));
       newToDo.toDelete = true;
       return await eventProvider
           .updateEventModel(
@@ -324,9 +311,9 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
       });
     }
 
-    await toDoProvider.deleteToDo(toDo: newToDo).catchError(
-        (e) => Tiles.displayError(context: context, e: e),
-        test: (e) => e is FailureToDeleteException);
+    await toDoProvider
+        .deleteToDo(toDo: newToDo)
+        .catchError((e) => Tiles.displayError(context: context, e: e));
 
     newToDo.toDelete = true;
     return await eventProvider

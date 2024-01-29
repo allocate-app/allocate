@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'dart:ui';
 
-import 'package:allocate/util/exceptions.dart';
 import "package:auto_route/auto_route.dart";
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/foundation.dart';
@@ -10,7 +9,6 @@ import 'package:flutter_acrylic/widgets/transparent_macos_sidebar.dart';
 import "package:provider/provider.dart";
 
 import '../../../model/task/group.dart';
-import '../../../providers/application/daily_reset_provider.dart';
 import '../../../providers/application/layout_provider.dart';
 import '../../../providers/application/search_provider.dart';
 import '../../../providers/application/theme_provider.dart';
@@ -22,6 +20,7 @@ import '../../../providers/model/subtask_provider.dart';
 import '../../../providers/model/todo_provider.dart';
 import '../../../providers/model/user_provider.dart';
 import '../../../providers/viewmodels/user_viewmodel.dart';
+import '../../../services/daily_reset_service.dart';
 import '../../../services/repeatable_service.dart';
 import '../../../services/supabase_service.dart';
 import '../../../util/constants.dart';
@@ -47,7 +46,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreen extends State<HomeScreen> {
-  final DailyResetProvider dailyResetProvider = DailyResetProvider.instance;
+  final DailyResetService dailyResetProvider = DailyResetService.instance;
   late final ToDoProvider toDoProvider;
   late final RoutineProvider routineProvider;
   late final ReminderProvider reminderProvider;
@@ -164,9 +163,9 @@ class _HomeScreen extends State<HomeScreen> {
       reminderProvider.dayReset(),
       groupProvider.dayReset(),
       subtaskProvider.dayReset(),
-    ]).catchError((e) => Tiles.displayError(context: context, e: e),
-        test: (e) =>
-            e is FailureToUpdateException || e is FailureToDeleteException);
+    ]).catchError(
+      (e) => Tiles.displayError(context: context, e: e),
+    );
   }
 
   @override
@@ -333,8 +332,6 @@ class _HomeScreen extends State<HomeScreen> {
           ),
           Tooltip(
             message: "Remaining energy for tasks",
-            // This should select for UserViewModel & userProvider
-            // TODO: refactor. ValueListenable -> selector.
             child: ValueListenableBuilder<int>(
               valueListenable: userProvider.myDayTotal,
               builder: (BuildContext context, int myDay, Widget? child) {

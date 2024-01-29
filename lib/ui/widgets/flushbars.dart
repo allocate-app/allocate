@@ -16,7 +16,8 @@ abstract class Flushbars {
     void Function()? dismissCallback,
   }) =>
       Flushbar(
-          animationDuration: const Duration(milliseconds: 300),
+          animationDuration:
+              const Duration(milliseconds: Constants.flushbarDuration),
           message: message,
           flushbarPosition: FlushbarPosition.TOP,
           margin: const EdgeInsets.symmetric(
@@ -43,14 +44,15 @@ abstract class Flushbars {
   static Flushbar createAlert({
     required String message,
     required BuildContext context,
-    Color alertColor = Colors.amber,
+    Color? alertColor,
     Color? textColor,
     Color? backgroundColor,
     Duration duration = const Duration(seconds: 1),
     void Function()? dismissCallback,
   }) =>
       Flushbar(
-          animationDuration: const Duration(milliseconds: 300),
+          animationDuration:
+              const Duration(milliseconds: Constants.flushbarDuration),
           message: message,
           flushbarPosition: FlushbarPosition.TOP,
           margin: const EdgeInsets.symmetric(
@@ -67,7 +69,7 @@ abstract class Flushbars {
           icon: Icon(
             Icons.error_outline,
             size: 28,
-            color: alertColor,
+            color: alertColor ?? Theme.of(context).colorScheme.primary,
           ),
           mainButton: TextButton(
             onPressed: dismissCallback,

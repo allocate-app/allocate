@@ -15,7 +15,6 @@ import '../../util/interfaces/repository/model/reminder_repository.dart';
 import '../../util/sorting/reminder_sorter.dart';
 import '../viewmodels/user_viewmodel.dart';
 
-// TODO: change schedule notification logic.
 class ReminderProvider extends ChangeNotifier {
   bool _rebuild = true;
 
@@ -87,6 +86,26 @@ class ReminderProvider extends ChangeNotifier {
 
   List<SortMethod> get sortMethods => sorter.sortMethods;
 
+  Future<void> syncRepo() async {
+    try {
+      await _reminderRepo.syncRepo();
+      await batchNotifications();
+    } on FailureToDeleteException catch (e, stacktrace) {
+      log(e.cause, stackTrace: stacktrace);
+      return Future.error(e, stacktrace);
+    } on FailureToUploadException catch (e, stacktrace) {
+      log(e.cause, stackTrace: stacktrace);
+      return Future.error(e, stacktrace);
+    } on FailureToScheduleException catch (e, stacktrace) {
+      log(e.cause, stackTrace: stacktrace);
+      return Future.error(e, stacktrace);
+    } on Error catch (e, stacktrace) {
+      log("Unknown error", stackTrace: stacktrace);
+      return Future.error(UnexpectedErrorException(), stacktrace);
+    }
+    notifyListeners();
+  }
+
   Future<void> createReminder(Reminder reminder) async {
     try {
       curReminder = await _reminderRepo.create(reminder);
@@ -103,6 +122,9 @@ class ReminderProvider extends ChangeNotifier {
       log(e.cause, stackTrace: stacktrace);
       reminder.isSynced = false;
       return await updateReminder(reminder: reminder);
+    } on Error catch (e, stacktrace) {
+      log("Unknown error", stackTrace: stacktrace);
+      return Future.error(UnexpectedErrorException(), stacktrace);
     }
     notifyListeners();
   }
@@ -140,6 +162,9 @@ class ReminderProvider extends ChangeNotifier {
       log(e.cause, stackTrace: stacktrace);
       await cancelNotification();
       return Future.error(e, stacktrace);
+    } on Error catch (e, stacktrace) {
+      log("Unknown error", stackTrace: stacktrace);
+      return Future.error(UnexpectedErrorException(), stacktrace);
     }
   }
 
@@ -151,6 +176,9 @@ class ReminderProvider extends ChangeNotifier {
     } on FailureToDeleteException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
       return Future.error(e, stacktrace);
+    } on Error catch (e, stacktrace) {
+      log("Unknown error", stackTrace: stacktrace);
+      return Future.error(UnexpectedErrorException(), stacktrace);
     }
     notifyListeners();
   }
@@ -164,6 +192,9 @@ class ReminderProvider extends ChangeNotifier {
     } on FailureToDeleteException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
       return Future.error(e, stacktrace);
+    } on Error catch (e, stacktrace) {
+      log("Unknown error", stackTrace: stacktrace);
+      return Future.error(UnexpectedErrorException(), stacktrace);
     }
 
     notifyListeners();
@@ -186,6 +217,9 @@ class ReminderProvider extends ChangeNotifier {
     } on FailureToUpdateException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
       return Future.error(e, stacktrace);
+    } on Error catch (e, stacktrace) {
+      log("Unknown error", stackTrace: stacktrace);
+      return Future.error(UnexpectedErrorException(), stacktrace);
     }
     notifyListeners();
   }
@@ -197,19 +231,36 @@ class ReminderProvider extends ChangeNotifier {
     } on FailureToDeleteException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
       return Future.error(e, stacktrace);
+    } on Error catch (e, stacktrace) {
+      log("Unknown error", stackTrace: stacktrace);
+      return Future.error(UnexpectedErrorException(), stacktrace);
     }
     notifyListeners();
   }
 
   Future<void> dayReset() async {
-    DateTime? upTo = userViewModel?.deleteDate;
-    if (null != upTo) {
-      try {
+    try {
+      DateTime? upTo = userViewModel?.deleteDate;
+      if (null != upTo) {
         await _reminderRepo.deleteSweep(upTo: upTo);
-      } on FailureToDeleteException catch (e, stacktrace) {
-        log(e.cause, stackTrace: stacktrace);
-        return Future.error(e, stacktrace);
       }
+      await batchNotifications();
+    } on FailureToDeleteException catch (e, stacktrace) {
+      log(e.cause, stackTrace: stacktrace);
+      return Future.error(e, stacktrace);
+    } on FailureToScheduleException catch (e, stacktrace) {
+      log(e.cause, stackTrace: stacktrace);
+      return Future.error(e, stacktrace);
+    } on Error catch (e, stacktrace) {
+      log("Unknown error", stackTrace: stacktrace);
+      return Future.error(UnexpectedErrorException(), stacktrace);
+    }
+  }
+
+  Future<void> batchNotifications() async {
+    List<Reminder> toSchedule = await _reminderRepo.getWarnMes();
+    for (Reminder reminder in toSchedule) {
+      await scheduleNotification(reminder: reminder);
     }
   }
 
@@ -245,6 +296,9 @@ class ReminderProvider extends ChangeNotifier {
     } on FailureToUploadException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
       return Future.error(e, stacktrace);
+    } on Error catch (e, stacktrace) {
+      log("Unknown error", stackTrace: stacktrace);
+      return Future.error(UnexpectedErrorException(), stacktrace);
     }
   }
 
@@ -257,6 +311,9 @@ class ReminderProvider extends ChangeNotifier {
     } on FailureToUploadException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
       return Future.error(e, stacktrace);
+    } on Error catch (e, stacktrace) {
+      log("Unknown error", stackTrace: stacktrace);
+      return Future.error(UnexpectedErrorException(), stacktrace);
     }
   }
 
@@ -271,6 +328,9 @@ class ReminderProvider extends ChangeNotifier {
     } on InvalidRepeatingException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
       return Future.error(e, stacktrace);
+    } on Error catch (e, stacktrace) {
+      log("Unknown error", stackTrace: stacktrace);
+      return Future.error(UnexpectedErrorException(), stacktrace);
     }
     notifyListeners();
   }
@@ -294,6 +354,9 @@ class ReminderProvider extends ChangeNotifier {
     } on FailureToUploadException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
       return Future.error(e, stacktrace);
+    } on Error catch (e, stacktrace) {
+      log("Unknown error", stackTrace: stacktrace);
+      return Future.error(UnexpectedErrorException(), stacktrace);
     }
   }
 
@@ -354,6 +417,9 @@ class ReminderProvider extends ChangeNotifier {
     } on FailureToScheduleException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
       return Future.error(e, stacktrace);
+    } on Error catch (e, stacktrace) {
+      log("Unknown error", stackTrace: stacktrace);
+      return Future.error(UnexpectedErrorException(), stacktrace);
     }
   }
 

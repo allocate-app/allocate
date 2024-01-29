@@ -4,7 +4,7 @@ import '../util/exceptions.dart';
 import '../util/interfaces/authenticator.dart';
 import 'supabase_service.dart';
 
-// TODO: finish this once deep-linking set up.
+// TODO: finish this once deep-linking set up -> I believe this needs some sort pragma.
 class AuthenticationService implements Authenticator {
   static final AuthenticationService _instance =
       AuthenticationService._internal();
