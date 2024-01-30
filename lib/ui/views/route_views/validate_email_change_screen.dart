@@ -19,17 +19,17 @@ import "../../app_router.dart";
 import "../../widgets/tiles.dart";
 import "loading_screen.dart";
 
-// This should just play the loading animation
-// set the home-page-index to settings screen, and pop open the dialog.
+// Basically just push the loading screen, set the new email, load the settings-screen index and route to home screen.
 @RoutePage()
-class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+class ValidateEmailChangeScreen extends StatefulWidget {
+  const ValidateEmailChangeScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreen();
+  State<ValidateEmailChangeScreen> createState() =>
+      _ValidateEmailChangeScreen();
 }
 
-class _LoginScreen extends State<LoginScreen> {
+class _ValidateEmailChangeScreen extends State<ValidateEmailChangeScreen> {
   final DailyResetService dailyResetProvider = DailyResetService.instance;
 
   @override
@@ -54,8 +54,10 @@ class _LoginScreen extends State<LoginScreen> {
     // This implies the app is already running.
     if (up.initialized) {
       User? user = SupabaseService.instance.supabaseClient.auth.currentUser;
-      // Get the new user id -> should be overwritten by a sync routine anyway.
-      up.viewModel?.uuid = user?.id;
+      // Get the new email, if it's somehow null, get the old email (should be the new one).
+      // Assuming supabase has properly deeplinked.
+      up.viewModel?.email =
+          user?.newEmail ?? user?.email ?? up.viewModel?.email;
       return;
     }
 
@@ -78,9 +80,11 @@ class _LoginScreen extends State<LoginScreen> {
       NotificationService.instance.init(),
     ]);
 
-    // Set the uuid accordingly - should be overwritten on next sync routine.
+    // Set the email accordingly.
     User? user = SupabaseService.instance.supabaseClient.auth.currentUser;
-    up.viewModel?.uuid = user?.id;
+    // Get the new email, if it's somehow null, get the old email (should be the new one).
+    // Assuming supabase has properly deeplinked.
+    up.viewModel?.email = user?.newEmail ?? user?.email ?? up.viewModel?.email;
   }
 
   Future<void> dayReset() async {

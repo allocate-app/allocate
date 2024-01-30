@@ -22,11 +22,16 @@ class IsarService {
 
   bool _debug = false;
 
+  late bool _initialized;
+
   late Isar _isarClient;
 
   Isar get isarClient => _isarClient;
 
   Future<void> init({bool? debug}) async {
+    if (_initialized) {
+      return;
+    }
     _debug = debug ?? _debug;
     if (_debug) {
       await Isar.initializeIsarCore(download: true);
@@ -42,6 +47,7 @@ class IsarService {
       AllocateUserSchema,
       DeadlineSchema
     ], directory: dbStorageDir.path);
+    _initialized = true;
   }
 
   Future<void> dispose() async {

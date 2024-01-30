@@ -68,6 +68,11 @@ class GroupProvider extends ChangeNotifier {
     _groupRepo.addListener(notifyListeners);
   }
 
+  Future<void> init() async {
+    _groupRepo.init();
+    notifyListeners();
+  }
+
   void setUser({UserViewModel? newUser}) {
     userViewModel = newUser;
     sorter = userViewModel?.groupSorter ?? sorter;

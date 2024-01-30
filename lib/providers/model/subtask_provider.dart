@@ -37,6 +37,11 @@ class SubtaskProvider extends ChangeNotifier {
     _subtaskRepo.addListener(notifyListeners);
   }
 
+  Future<void> init() async {
+    _subtaskRepo.init();
+    notifyListeners();
+  }
+
   void setUser({UserViewModel? newUser}) {
     userViewModel = newUser;
     notifyListeners();

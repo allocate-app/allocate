@@ -17,6 +17,8 @@ import '../../util/sorting/todo_sorter.dart';
 import '../viewmodels/user_viewmodel.dart';
 
 // TODO: IMPLEMENT PROPER GUI ERROR MSGS.
+// NOTE: This will crash if the repository is not initialized.
+// This is intentional so that I don't goof up.
 class ToDoProvider extends ChangeNotifier {
   bool _rebuild = true;
 
@@ -69,11 +71,12 @@ class ToDoProvider extends ChangeNotifier {
         sorter = userViewModel?.toDoSorter ?? ToDoSorter() {
     // This bubbles up state.
     _toDoRepo.addListener(notifyListeners);
-    init().whenComplete(notifyListeners);
   }
 
   Future<void> init() async {
+    _toDoRepo.init();
     myDayWeight = await getMyDayWeight();
+    notifyListeners();
   }
 
   void setUser({UserViewModel? newUser}) {

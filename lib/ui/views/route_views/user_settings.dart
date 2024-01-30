@@ -1,6 +1,7 @@
 import "dart:io";
 
 import "package:allocate/ui/widgets/check_delete_dialog.dart";
+import "package:allocate/ui/widgets/update_email_dialog.dart";
 import "package:flutter/foundation.dart";
 import "package:flutter/material.dart";
 import "package:intl/intl.dart";
@@ -38,7 +39,6 @@ class UserSettingsScreen extends StatefulWidget {
 class _UserSettingsScreen extends State<UserSettingsScreen> {
   // For testing
   late bool _mockOnline;
-
   late final UserProvider userProvider;
   late final UserViewModel vm;
   late final ToDoProvider toDoProvider;
@@ -76,7 +76,7 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
     groupProvider = Provider.of<GroupProvider>(context, listen: false);
     subtaskProvider = Provider.of<SubtaskProvider>(context, listen: false);
 
-    _mockOnline = true;
+    _mockOnline = false;
 
     _scaffoldController = MenuController();
     _sidebarController = MenuController();
@@ -306,75 +306,17 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
   }
 
   Widget _buildAccountSection() {
-    // possibly wrap in a valuelistenable for connection status.
-    // selector2 <vm, userprovider>,
-    return Selector<UserViewModel, bool>(
-        selector: (BuildContext context, UserViewModel vm) => vm.syncOnline,
-        builder: (BuildContext context, bool value, Widget? child) =>
-            SettingsScreenWidgets.settingsSection(
+    return ValueListenableBuilder<bool>(
+        valueListenable: userProvider.isConnected,
+        builder: (BuildContext context, bool isConnected, Widget? child) {
+          if (isConnected || (kDebugMode && _mockOnline)) {
+            return SettingsScreenWidgets.settingsSection(
               context: context,
               title: "Account",
               entries: [
-                (value || (kDebugMode && _mockOnline))
-                    ? SettingsScreenWidgets.tapTile(
-                        leading: const Icon(Icons.sync_rounded),
-                        title: "Sync now",
-                        onTap: () async {
-                          if (!userProvider.isConnected.value) {
-                            Tiles.displayError(
-                                context: context,
-                                e: ConnectionException(
-                                    "No online connection, try signing in."));
-                            return;
-                          }
-
-                          await Future.wait([
-                            toDoProvider.syncRepo(),
-                            routineProvider.syncRepo(),
-                            deadlineProvider.syncRepo(),
-                            reminderProvider.syncRepo(),
-                            groupProvider.syncRepo(),
-                          ]);
-                        })
-                    : SettingsScreenWidgets.tapTile(
-                        leading: const Icon(Icons.cloud_sync_rounded),
-                        title: "Sign up for cloud backup",
-                        onTap: () async {
-                          // TODO: hook up sign-in widget.
-                          await showDialog(
-                            context: context,
-                            barrierDismissible: true,
-                            builder: (BuildContext context) =>
-                                const SignInDialog(signUp: true),
-                          ).then((success) {
-                            // User dismissed.
-                            if (null == success) {
-                              return;
-                            }
-                            // Failures caught in the dialog.
-                            if (success) {
-                              // THIS NEEDS TO SET A VERIFICATION FLAG && a need a route.
-                              // Route needs to be a splash screen that verifies.
-                              Flushbars.createAlert(
-                                message:
-                                    "Check your email for an authentication link.",
-                                context: context,
-                              ).show(context);
-
-                              if (kDebugMode && _offline) {
-                                setState(() {
-                                  _mockOnline = true;
-                                });
-                              }
-                            }
-                          });
-                        }),
-
-                // TODO: reset email dialog
-                if (value || (kDebugMode && _mockOnline))
-                  SettingsScreenWidgets.tapTile(
-                    leading: const Icon(Icons.email_rounded),
-                    title: "Change email",
+                SettingsScreenWidgets.tapTile(
+                    leading: const Icon(Icons.sync_rounded),
+                    title: "Sync now",
                     onTap: () async {
                       if (!userProvider.isConnected.value) {
                         Tiles.displayError(
@@ -384,38 +326,85 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
                         return;
                       }
 
-                      print("Edit Email");
-                    },
-                  ),
-                // TODO: reset password dialog
-                if (value || (kDebugMode && _mockOnline))
-                  SettingsScreenWidgets.tapTile(
-                      leading: const Icon(Icons.lock_reset_rounded),
-                      title: "Reset password",
-                      onTap: () async {
-                        // This will change the connection status.
-                        if (!userProvider.isConnected.value) {
-                          Tiles.displayError(
-                              context: context,
-                              e: ConnectionException(
-                                  "No online connection, try signing in."));
-                          return;
-                        }
-                        print("Edit Password");
-                      }),
+                      await Future.wait([
+                        toDoProvider.syncRepo(),
+                        routineProvider.syncRepo(),
+                        deadlineProvider.syncRepo(),
+                        reminderProvider.syncRepo(),
+                        groupProvider.syncRepo(),
+                      ]);
+                    }),
+                SettingsScreenWidgets.tapTile(
+                  leading: const Icon(Icons.email_rounded),
+                  title: "Change email",
+                  onTap: () async {
+                    if (!userProvider.isConnected.value) {
+                      Tiles.displayError(
+                          context: context,
+                          e: ConnectionException(
+                              "No online connection, try signing in."));
+                      return;
+                    }
 
-                // This should probably also only appear with online connection.
-                // TODO: migrate to Selector2 if/when user switching is implemented
-                // if (value.$2 < Constants.maxUserCount &&
-                //     userProvider.isConnected.value)
-                //   SettingsScreenWidgets.tapTile(
-                //       leading: const Icon(Icons.account_circle_rounded),
-                //       title: "Add new account",
-                //       onTap: () {
-                //         print("New Account");
-                //       })
+                    await showDialog<bool?>(
+                        context: context,
+                        builder: (BuildContext context) =>
+                            const UpdateEmailDialog()).then((success) {
+                      if (null == success) {
+                        return;
+                      }
+
+                      // Uh, on a successful sign in, everything should just rebuild.
+                      if (success) {
+                        Flushbars.createAlert(
+                          message: "Check new email to confirm change.",
+                          context: context,
+                        ).show(context);
+                        if (kDebugMode && _offline) {
+                          setState(() {
+                            _mockOnline = true;
+                          });
+                        }
+                      }
+                    });
+                  },
+                ),
               ],
-            ));
+            );
+          }
+
+          // This should both send OTP + Challenge.
+          return SettingsScreenWidgets.tapTile(
+              leading: const Icon(Icons.cloud_sync_rounded),
+              title: "Sign in to cloud backup",
+              onTap: () async {
+                await showDialog(
+                  context: context,
+                  barrierDismissible: true,
+                  builder: (BuildContext context) => const SignInDialog(),
+                ).then((signUp) {
+                  // User dismissed.
+                  if (null == signUp) {
+                    return;
+                  }
+                  // Failures caught in the dialog.
+                  if (signUp) {
+                    // THIS NEEDS TO SET A VERIFICATION FLAG && a need a route.
+                    // Route needs to be a splash screen that verifies.
+                    Flushbars.createAlert(
+                      message: "Check your email for an OTP.",
+                      context: context,
+                    ).show(context);
+                  }
+
+                  if (kDebugMode && _offline) {
+                    setState(() {
+                      _mockOnline = true;
+                    });
+                  }
+                });
+              });
+        });
   }
 
   Widget _buildGeneralSection() {
@@ -786,43 +775,41 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
               ],
             );
           }
-          if (vm.syncOnline || (kDebugMode && !_mockOnline)) {
-            return SettingsScreenWidgets.settingsSection(
-              context: context,
-              title: "",
-              entries: [
-                SettingsScreenWidgets.tapTile(
-                    leading: const Icon(Icons.login_rounded),
-                    title: "Sign in",
-                    onTap: () async {
-                      await showDialog<bool?>(
-                        context: context,
-                        barrierDismissible: true,
-                        builder: (BuildContext context) => const SignInDialog(),
-                      ).then((success) {
-                        if (null == success) {
-                          return;
-                        }
-
-                        // Uh, on a successful sign in, everything should just rebuild.
-                        if (success) {
-                          Flushbars.createAlert(
-                            message: "Login successful.",
-                            context: context,
-                          ).show(context);
-                          if (kDebugMode && _offline) {
-                            setState(() {
-                              _mockOnline = true;
-                            });
-                          }
-                        }
-                      });
-                    }),
-              ],
-            );
-          }
-
           return const SizedBox.shrink();
+          // Going with OTP
+          // return SettingsScreenWidgets.settingsSection(
+          //   context: context,
+          //   title: "",
+          //   entries: [
+          //     SettingsScreenWidgets.tapTile(
+          //         leading: const Icon(Icons.login_rounded),
+          //         title: "Sign in",
+          //         onTap: () async {
+          //           await showDialog<bool?>(
+          //             context: context,
+          //             barrierDismissible: true,
+          //             builder: (BuildContext context) => const SignInDialog(),
+          //           ).then((success) {
+          //             if (null == success) {
+          //               return;
+          //             }
+          //
+          //             // Uh, on a successful sign in, everything should just rebuild.
+          //             if (success) {
+          //               Flushbars.createAlert(
+          //                 message: "Login successful.",
+          //                 context: context,
+          //               ).show(context);
+          //               if (kDebugMode && _offline) {
+          //                 setState(() {
+          //                   _mockOnline = true;
+          //                 });
+          //               }
+          //             }
+          //           });
+          //         }),
+          //   ],
+          // );
         });
   }
 

@@ -1,15 +1,18 @@
-import 'dart:convert';
 import 'dart:io';
 
+import 'package:auto_route/auto_route.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import "package:flutter_local_notifications/flutter_local_notifications.dart";
 import 'package:schedulers/schedulers.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:windows_notification/notification_message.dart';
 import 'package:windows_notification/windows_notification.dart';
 
+import '../ui/app_router.dart';
 import '../util/constants.dart';
 import '../util/exceptions.dart';
+import 'application_service.dart';
 import 'daily_reset_service.dart';
 
 // Limitations: Linux build cannot currently handle notification clicks.
@@ -19,6 +22,7 @@ class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
 
   late bool canSchedule = true;
+  late bool _initialized = false;
 
   // Linux/Windows only.
   late final Map<int, TimeScheduler> desktopLocalNotifications = {};
@@ -71,6 +75,10 @@ class NotificationService {
 
   // Timezone is already initialized in the reset scheduler.
   Future<void> init() async {
+    if (_initialized) {
+      return;
+    }
+
     canSchedule = DailyResetService.instance.timezoneInitialized;
 
     if (!canSchedule) {
@@ -98,6 +106,7 @@ class NotificationService {
     await flutterLocalNotificationsPlugin.initialize(initSettings,
         onDidReceiveNotificationResponse: onDidReceiveNotificationResponse);
 
+    _initialized = true;
     return await handleAppLaunch();
   }
 
@@ -245,40 +254,24 @@ class NotificationService {
     await flutterLocalNotificationsPlugin.cancelAll();
   }
 
-  // TODO: refactor this to just route to the notifications scrn.
   @pragma('vm: entry-point')
   Future<void> onDidReceiveNotificationResponse(
       NotificationResponse? notificationResponse) async {
+    BuildContext? context =
+        ApplicationService.instance.globalNavigatorKey.currentContext;
+
+    // If this doesn't work, set the index in the applicationService.
+    if (null == context) {
+      return;
+    }
+
     final String? payload = notificationResponse?.payload;
+
     if (null == payload) {
-      // Go through regular routing routine.
       return;
     }
-    LineSplitter lineSplitter = const LineSplitter();
-    List<String> entities = lineSplitter.convert(payload);
 
-    // TODO: Remove payload. Just route to "Notifications Pg"
-    // In the payload, log the index value to send as an arg.
-
-    if (entities.isEmpty || entities.length > 2) {
-      // Go through regular routing routine.
-      return;
-    }
-    // Eventual TODO: Send the payload as an arg to reminders screen -> Then, await show update dialog.
-
-    // First string is the type, second is the id.
-    switch (entities[0]) {
-      case "DEADLINE":
-        // Route to deadline screen, get by notification ID.
-        // Design UI to take multiple args for initstate.
-        break;
-      case "REMINDER":
-        // Route to reminder screen, get by notification id.
-        break;
-      default:
-        // Regular routing.
-        break;
-    }
+    AutoRouter.of(context).navigate(HomeRoute(index: 1));
   }
 
   bool validateNotificationDate({DateTime? notificationDate}) {

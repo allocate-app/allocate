@@ -2,6 +2,8 @@ import '../../i_model.dart';
 import '../../sortable.dart';
 
 abstract interface class Repository<T extends IModel> {
+  void init();
+
   Future<T> create(T t);
 
   Future<T> update(T t);

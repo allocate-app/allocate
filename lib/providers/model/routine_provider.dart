@@ -65,11 +65,12 @@ class RoutineProvider extends ChangeNotifier {
         _routineRepo = routineRepository ?? RoutineRepo.instance,
         _subtaskRepo = subtaskRepository ?? SubtaskRepo.instance {
     _routineRepo.addListener(notifyListeners);
-    init().whenComplete(notifyListeners);
   }
 
   Future<void> init() async {
+    _routineRepo.init();
     await setDailyRoutines();
+    notifyListeners();
   }
 
   Routine? get curMorning => _curMorning;

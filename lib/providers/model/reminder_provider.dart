@@ -63,6 +63,11 @@ class ReminderProvider extends ChangeNotifier {
     _reminderRepo.addListener(notifyListeners);
   }
 
+  Future<void> init() async {
+    _reminderRepo.init();
+    notifyListeners();
+  }
+
   void setUser({UserViewModel? newUser}) {
     userViewModel = newUser;
     sorter = userViewModel?.reminderSorter ?? sorter;

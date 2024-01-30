@@ -5,6 +5,7 @@ import 'package:isar/isar.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import "../model/user/allocate_user.dart";
+import '../util/constants.dart';
 import '../util/enums.dart';
 import '../util/exceptions.dart';
 import 'isar_service.dart';
@@ -71,13 +72,13 @@ class UserStorageService extends ChangeNotifier {
     AllocateUser? localUser;
 
     try {
+      onlineUser = onlineUser ?? await fetchUser();
       localUser = await getUser();
       if (null == localUser) {
         throw UserMissingException("Local user missing from DB\n"
             "Users size: ${_isarClient.allocateUsers.countSync()}\n");
       }
 
-      onlineUser = onlineUser ?? await fetchUser();
       if (onlineUser != localUser) {
         throw MultipleUsersException(
             "Users do not match\n"
@@ -87,6 +88,7 @@ class UserStorageService extends ChangeNotifier {
       }
 
       // Grab the most recent user -> if it is the local one, just put back.
+      // On a new sign in -> multiple users exception is thrown.
       AllocateUser toPut;
       if (localUser.lastUpdated.isAfter(onlineUser.lastUpdated)) {
         toPut = localUser;
@@ -118,7 +120,8 @@ class UserStorageService extends ChangeNotifier {
       // Fetching from Supabase can result in this error.
       // This implies there is no online user, or there is a connection issue.
       // If a local user exists, send it to supabase.
-      // Otherwise,
+      // Otherwise, there are missing data -> handle in UP.
+      // Hopefully in the gui, otherwise just clear.
     } on UserSyncException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
       if (null != localUser) {
@@ -126,16 +129,50 @@ class UserStorageService extends ChangeNotifier {
       }
       _status = UserStatus.missing;
       notifyListeners();
+
+      // This can either be a case of a faulty sign-in, or an old account + new device.
+      // If online is null, there is a problem.
     } on MultipleUsersException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
-      _status = UserStatus.multiple;
-      if (null != e.users) {
-        _failureCache = e.users!;
+
+      // If the online user is null -> handle in UP.
+      // This should never really happen, as the other exception should be caught.
+      if (null == onlineUser) {
+        _status = UserStatus.multiple;
+        if (null != e.users) {
+          _failureCache = e.users!;
+        } else {
+          _failureCache = [onlineUser, localUser];
+        }
         notifyListeners();
         return;
       }
 
-      _failureCache = [onlineUser, localUser];
+      // Otherwise, use the new online user.
+      AllocateUser toPut = onlineUser.copyWith(
+        windowEffect: localUser?.windowEffect ?? Constants.defaultWindowEffect,
+        themeType: localUser?.themeType ?? ThemeType.system,
+        toneMapping: localUser?.toneMapping ?? ToneMapping.system,
+        primarySeed:
+            localUser?.primarySeed ?? Constants.defaultPrimaryColorSeed,
+        secondarySeed: localUser?.secondarySeed,
+        tertiarySeed: localUser?.tertiarySeed,
+        scaffoldOpacity:
+            localUser?.scaffoldOpacity ?? Constants.defaultScaffoldOpacity,
+        sidebarOpacity:
+            localUser?.sidebarOpacity ?? Constants.defaultSidebarOpacity,
+        useUltraHighContrast: localUser?.useUltraHighContrast ?? false,
+        reduceMotion: localUser?.reduceMotion ?? false,
+      );
+
+      toPut.id = onlineUser.id;
+      await _isarClient.writeTxn(() async {
+        await _isarClient.allocateUsers.clear();
+        await _isarClient.allocateUsers.put(toPut);
+      });
+      _status = UserStatus.normal;
+      notifyListeners();
+      return;
     } on UserMissingException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
       _status = UserStatus.missing;

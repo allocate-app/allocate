@@ -33,8 +33,9 @@ class UserProvider extends ChangeNotifier {
 
   bool shouldUpdate = false;
   bool updating = false;
+  bool _initialized = false;
 
-  // TODO: flags for verification.
+  bool get initialized => _initialized;
 
   // FUTURE TODO: multiple user switching.
   int _userCount = 1;
@@ -58,10 +59,14 @@ class UserProvider extends ChangeNotifier {
         myDayTotal = ValueNotifier<int>(0),
         _authenticationService = auth ?? AuthenticationService.instance {
     _userStorageService.addListener(handleUserStateChange);
-    init().whenComplete(notifyListeners);
   }
 
   Future<void> init() async {
+    // This should never happen.
+    if (_initialized) {
+      return;
+    }
+    _initialized = true;
     initSubscription();
     await setUser();
     if ((viewModel?.lastOpened.day ?? Constants.today.day - Constants.today.day)
@@ -71,6 +76,7 @@ class UserProvider extends ChangeNotifier {
     }
 
     updateTimer = Timer.periodic(Constants.userUpdateTime, requestUpdate);
+    notifyListeners();
   }
 
   // This is the thingy used to handle user errors.
@@ -261,16 +267,13 @@ class UserProvider extends ChangeNotifier {
     updating = false;
   }
 
-  Future<void> signUp({required String email, required String password}) async {
+  Future<void> signInOTP({required String email}) async {
     try {
-      // This also throws UserExistsException -> catch accordingly
-      viewModel?.uuid = await _authenticationService.signUpEmailPassword(
-          email: email, password: password);
+      viewModel?.email = await _authenticationService.signInOTP(email: email);
 
       // These will force a rebuild + a local store.
       viewModel?.syncOnline = true;
-      viewModel?.email = email;
-    } on SignUpFailedException catch (e, stacktrace) {
+    } on LoginFailedException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
       return Future.error(e, stacktrace);
     } on AuthException catch (e, stacktrace) {
@@ -282,28 +285,48 @@ class UserProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> signIn({required String email, required String password}) async {
+  Future<void> verifyOTP({required String email, required String token}) async {
     try {
-      // On a successful auth change, UP will set isConnected.
-      await _authenticationService.signInEmailPassword(
-          email: email, password: password);
+      viewModel?.uuid =
+          await _authenticationService.verifyOTP(email: email, token: token);
+      await syncUser();
     } on LoginFailedException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
       return Future.error(e, stacktrace);
     } on AuthException catch (e, stacktrace) {
       log(e.message, stackTrace: stacktrace);
-      return Future.error(LoginFailedException(e.message), stacktrace);
+      return Future.error(SignUpFailedException(e.message), stacktrace);
     } on Error catch (e, stacktrace) {
       log("Unknown error", stackTrace: stacktrace);
       return Future.error(UnexpectedErrorException(), stacktrace);
     }
-    // This is just to update the vm and force a rebuild.
-    // The user will be uploaded on the next sync sweep
-    viewModel?.isSynced = SupabaseService.instance.isConnected;
   }
+
+  // Future<void> signIn({required String email, required String password}) async {
+  //   try {
+  //     // On a successful auth change, UP will set isConnected.
+  //     await _authenticationService.signInEmailPassword(
+  //         email: email, password: password);
+  //   } on LoginFailedException catch (e, stacktrace) {
+  //     log(e.cause, stackTrace: stacktrace);
+  //     return Future.error(e, stacktrace);
+  //   } on AuthException catch (e, stacktrace) {
+  //     log(e.message, stackTrace: stacktrace);
+  //     return Future.error(LoginFailedException(e.message), stacktrace);
+  //   } on Error catch (e, stacktrace) {
+  //     log("Unknown error", stackTrace: stacktrace);
+  //     return Future.error(UnexpectedErrorException(), stacktrace);
+  //   }
+  //   // This is just to update the vm and force a rebuild.
+  //   // The user will be uploaded on the next sync sweep
+  //
+  //   viewModel?.email = email;
+  //   viewModel?.isSynced = SupabaseService.instance.isConnected;
+  // }
 
   Future<void> updateEmail({required String newEmail}) async {
     try {
+      // THIS IS STILL THE OLD EMAIL -> Only changes on verify.
       viewModel?.email =
           await _authenticationService.updateEmail(newEmail: newEmail);
     } on FailureToUpdateException catch (e, stacktrace) {
@@ -318,29 +341,46 @@ class UserProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> updatePassword({required String newPassword}) async {
-    try {
-      await _authenticationService.updatePassword(newPassword: newPassword);
-    } on FailureToUpdateException catch (e, stacktrace) {
-      log(e.cause, stackTrace: stacktrace);
-      return Future.error(e, stacktrace);
-    } on AuthException catch (e, stacktrace) {
-      log(e.message, stackTrace: stacktrace);
-      return Future.error(FailureToUpdateException(e.message), stacktrace);
-    } on Error catch (e, stacktrace) {
-      log("Unknown error", stackTrace: stacktrace);
-      return Future.error(UnexpectedErrorException(), stacktrace);
-    }
-  }
+  // GOING WITH OTP.
+  // Future<void> updatePassword({required String newPassword}) async {
+  //   try {
+  //     await _authenticationService.updatePassword(newPassword: newPassword);
+  //   } on FailureToUpdateException catch (e, stacktrace) {
+  //     log(e.cause, stackTrace: stacktrace);
+  //     return Future.error(e, stacktrace);
+  //   } on AuthException catch (e, stacktrace) {
+  //     log(e.message, stackTrace: stacktrace);
+  //     return Future.error(FailureToUpdateException(e.message), stacktrace);
+  //   } on Error catch (e, stacktrace) {
+  //     log("Unknown error", stackTrace: stacktrace);
+  //     return Future.error(UnexpectedErrorException(), stacktrace);
+  //   }
+  // }
 
   // On sign-up.
-  Future<void> resendConfirmation({required String email}) async {
-    await _authenticationService.resendConfirmation(email: email);
-  }
+  // Future<void> resendConfirmation({required String email}) async {
+  //   try {
+  //     await _authenticationService.resendConfirmation(email: email);
+  //   } on AuthException catch (e, stacktrace) {
+  //     log(e.message, stackTrace: stacktrace);
+  //     return Future.error(LoginFailedException(e.message), stacktrace);
+  //   } on Error catch (e, stacktrace) {
+  //     log("Unknown error", stackTrace: stacktrace);
+  //     return Future.error(UnexpectedErrorException(), stacktrace);
+  //   }
+  // }
 
-  Future<void> resendEmailChange({required String newEmail}) async {
-    await _authenticationService.resendEmailChange(newEmail: newEmail);
-  }
+  // Future<void> resendEmailChange({required String newEmail}) async {
+  //   try {
+  //     await _authenticationService.resendEmailChange(newEmail: newEmail);
+  //   } on AuthException catch (e, stacktrace) {
+  //     log(e.message, stackTrace: stacktrace);
+  //     return Future.error(LoginFailedException(e.message), stacktrace);
+  //   } on Error catch (e, stacktrace) {
+  //     log("Unknown error", stackTrace: stacktrace);
+  //     return Future.error(UnexpectedErrorException(), stacktrace);
+  //   }
+  // }
 
   Future<void> signOut() async {
     // if the user is offline only, there is no need to sign out.

@@ -95,6 +95,8 @@ void main() async {
   // GLOBAL APP SCHEDULER
   DailyResetService.instance.init();
 
+  // For all intents and purposes here, it's fine to keep as is.
+  // in main, this will need to be refactored to use the splash screen.
   await Future.wait([
     IsarService.instance.init(debug: true),
     SupabaseService.instance.init(
@@ -125,7 +127,10 @@ void main() async {
             create: (BuildContext context) => UserProvider(
                 viewModel: Provider.of<UserViewModel>(context, listen: false)),
             update: (BuildContext context, UserViewModel vm, UserProvider? up) {
-              up = up ?? UserProvider(viewModel: vm);
+              if (null == up) {
+                up = UserProvider(viewModel: vm);
+                up.init();
+              }
               up.shouldUpdate = true;
               return up;
             }),
@@ -136,8 +141,12 @@ void main() async {
                           .viewModel,
                 ),
             update: (BuildContext context, UserProvider up, ToDoProvider? tp) {
-              tp?.setUser(newUser: up.viewModel);
-              return tp ?? ToDoProvider(userViewModel: up.viewModel);
+              if (null == tp) {
+                tp = ToDoProvider();
+                tp.init();
+              }
+              tp.setUser(newUser: up.viewModel);
+              return tp;
             }),
         ChangeNotifierProxyProvider<UserProvider, RoutineProvider>(
             create: (BuildContext context) => RoutineProvider(
@@ -147,11 +156,12 @@ void main() async {
                 ),
             update:
                 (BuildContext context, UserProvider up, RoutineProvider? rp) {
-              rp?.setUser(newUser: up.viewModel);
-              return rp ??
-                  RoutineProvider(
-                    userViewModel: up.viewModel,
-                  );
+              if (null == rp) {
+                rp = RoutineProvider();
+                rp.init();
+              }
+              rp.setUser(newUser: up.viewModel);
+              return rp;
             }),
         ChangeNotifierProxyProvider<UserProvider, SubtaskProvider>(
             create: (BuildContext context) => SubtaskProvider(
@@ -159,8 +169,12 @@ void main() async {
                     .viewModel),
             update:
                 (BuildContext context, UserProvider up, SubtaskProvider? sp) {
-              sp?.setUser(newUser: up.viewModel);
-              return sp ?? SubtaskProvider(userViewModel: up.viewModel);
+              if (null == sp) {
+                sp = SubtaskProvider();
+                sp.init();
+              }
+              sp.setUser(newUser: up.viewModel);
+              return sp;
             }),
         ChangeNotifierProxyProvider<UserProvider, ReminderProvider>(
             create: (BuildContext context) => ReminderProvider(
@@ -170,8 +184,12 @@ void main() async {
                 ),
             update:
                 (BuildContext context, UserProvider up, ReminderProvider? rp) {
-              rp?.setUser(newUser: up.viewModel);
-              return rp ?? ReminderProvider(userViewModel: up.viewModel);
+              if (null == rp) {
+                rp = ReminderProvider();
+                rp.init();
+              }
+              rp.setUser(newUser: up.viewModel);
+              return rp;
             }),
         ChangeNotifierProxyProvider<UserProvider, DeadlineProvider>(
             create: (BuildContext context) => DeadlineProvider(
@@ -179,16 +197,24 @@ void main() async {
                     .viewModel),
             update:
                 (BuildContext context, UserProvider up, DeadlineProvider? dp) {
-              dp?.setUser(newUser: up.viewModel);
-              return dp ?? DeadlineProvider(userViewModel: up.viewModel);
+              if (null == dp) {
+                dp = DeadlineProvider();
+                dp.init();
+              }
+              dp.setUser(newUser: up.viewModel);
+              return dp;
             }),
         ChangeNotifierProxyProvider<UserProvider, GroupProvider>(
             create: (BuildContext context) => GroupProvider(
                 userViewModel: Provider.of<UserProvider>(context, listen: false)
                     .viewModel),
             update: (BuildContext context, UserProvider up, GroupProvider? gp) {
-              gp?.setUser(newUser: up.viewModel);
-              return gp ?? GroupProvider(userViewModel: up.viewModel);
+              if (null == gp) {
+                gp = GroupProvider();
+                gp.init();
+              }
+              gp.setUser(newUser: up.viewModel);
+              return gp;
             }),
         ChangeNotifierProxyProvider<UserProvider, ThemeProvider>(
             create: (BuildContext context) => ThemeProvider(
@@ -200,22 +226,25 @@ void main() async {
             }),
         ChangeNotifierProxyProvider<UserProvider, SearchProvider>(
             create: (BuildContext context) => SearchProvider<IModel>(
-                  userModel: null,
+                  userModel: Provider.of<UserProvider>(context, listen: false)
+                      .viewModel,
                 ),
             update:
                 (BuildContext context, UserProvider up, SearchProvider? sp) {
-              sp?.userModel = null;
-              return sp ?? SearchProvider(userModel: null);
+              sp?.userModel = up.viewModel;
+              return sp ?? SearchProvider(userModel: up.viewModel);
             }),
         ChangeNotifierProxyProvider<UserProvider, EventProvider>(
             create: (BuildContext context) => EventProvider(
                   focusedDay: Constants.today,
-                  userModel: null,
+                  userModel: Provider.of<UserProvider>(context, listen: false)
+                      .viewModel,
                 ),
             update: (BuildContext context, UserProvider up, EventProvider? ep) {
-              ep?.userModel = null;
+              ep?.userModel = up.viewModel;
               return ep ??
-                  EventProvider(focusedDay: Constants.today, userModel: null);
+                  EventProvider(
+                      focusedDay: Constants.today, userModel: up.viewModel);
             }),
       ], child: const LocalTester())));
 }
@@ -228,7 +257,6 @@ class LocalTester extends StatefulWidget {
 }
 
 class _LocalTester extends State<LocalTester> with WindowListener {
-  // late ThemeProvider themeProvider;
   late UserProvider userProvider;
 
   late GlobalKey<NavigatorState> navigatorKey;

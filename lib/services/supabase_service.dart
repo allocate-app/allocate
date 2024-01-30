@@ -15,7 +15,8 @@ class SupabaseService {
 
   Stream<AuthState> get authSubscription => _authSubscription;
 
-  // late final StreamSubscription<AuthState> authSubscription;
+  // This is just to avoid any goof-ups.
+  late final bool _initialized;
 
   bool get isConnected =>
       null != _supabaseClient.auth.currentSession &&
@@ -29,6 +30,10 @@ class SupabaseService {
       {required String supabaseUrl,
       required String anonKey,
       SupabaseClient? client}) async {
+    if (_initialized) {
+      return;
+    }
+
     if (null != client) {
       _debug = true;
       _supabaseClient = client;
@@ -49,6 +54,7 @@ class SupabaseService {
     // if (_supabaseClient.auth.currentSession?.isExpired ?? false) {
     //   await _supabaseClient.auth.refreshSession();
     // }
+    _initialized = true;
   }
 
   SupabaseService._internal();

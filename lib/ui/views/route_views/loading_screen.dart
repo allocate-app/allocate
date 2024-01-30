@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../widgets/debug_placeholder.dart';
 
+// TODO: this needs to be finished.
 class LoadingScreen extends StatelessWidget {
   const LoadingScreen({super.key});
 

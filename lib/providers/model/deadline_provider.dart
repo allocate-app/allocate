@@ -61,6 +61,11 @@ class DeadlineProvider extends ChangeNotifier {
     _deadlineRepo.addListener(notifyListeners);
   }
 
+  Future<void> init() async {
+    _deadlineRepo.init();
+    notifyListeners();
+  }
+
   void setUser({UserViewModel? newUser}) {
     userViewModel = newUser;
     sorter = userViewModel?.deadlineSorter ?? sorter;

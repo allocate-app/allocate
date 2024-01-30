@@ -1,5 +1,12 @@
 import '../model/user/allocate_user.dart';
 
+class BuildFailureException implements Exception {
+  String cause;
+  BuildFailureException(this.cause);
+  @override
+  toString() => cause;
+}
+
 class FailureToCreateException implements Exception {
   String cause;
 

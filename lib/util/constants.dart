@@ -26,6 +26,9 @@ abstract class Constants {
     defaultValue: "",
   );
 
+  static const String loginDeeplink = "io.allocate://login";
+  static const String emailDeeplink = "io.allocate://validate-email";
+
   static File appIcon = File("assets/placeholder.png");
   static File roadMap = File("ROADMAP.md");
 

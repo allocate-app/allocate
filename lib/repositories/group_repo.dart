@@ -17,16 +17,101 @@ class GroupRepo extends ChangeNotifier implements GroupRepository {
 
   static GroupRepo get instance => _instance;
 
-  final SupabaseClient _supabaseClient =
-      SupabaseService.instance.supabaseClient;
+  late final SupabaseClient _supabaseClient;
   late final RealtimeChannel _groupStream;
 
-  final Isar _isarClient = IsarService.instance.isarClient;
+  late final Isar _isarClient;
 
   bool get isConnected => SupabaseService.instance.isConnected;
 
   int _groupCount = 0;
   bool _subscribed = false;
+  bool _initialized = false;
+
+  @override
+  void init() {
+    if (_initialized) {
+      return;
+    }
+    _isarClient = IsarService.instance.isarClient;
+    _supabaseClient = SupabaseService.instance.supabaseClient;
+    _initialized = true;
+    // I haven't faked the connection channels -> doesn't make sense to.
+    if (SupabaseService.instance.offlineDebug) {
+      return;
+    }
+    // Initialize table stream -> only listen on signIn.
+    _groupStream = _supabaseClient
+        .channel("public:groups")
+        .onPostgresChanges(
+            event: PostgresChangeEvent.insert,
+            schema: "public",
+            table: "groups",
+            callback: handleUpsert)
+        .onPostgresChanges(
+            schema: "public",
+            table: "groups",
+            event: PostgresChangeEvent.update,
+            callback: handleUpsert)
+        .onPostgresChanges(
+            schema: "public",
+            table: "groups",
+            event: PostgresChangeEvent.delete,
+            callback: handleDelete);
+
+    // Listen to auth changes.
+    SupabaseService.instance.authSubscription.listen((AuthState data) async {
+      final AuthChangeEvent event = data.event;
+      switch (event) {
+        case AuthChangeEvent.signedIn:
+          await syncRepo();
+          // OPEN TABLE STREAM -> insert new data.
+          if (!_subscribed) {
+            _groupStream.subscribe();
+            _subscribed = true;
+          }
+          break;
+        case AuthChangeEvent.tokenRefreshed:
+          if (!_subscribed) {
+            await syncRepo();
+            _groupStream.subscribe();
+            _subscribed = true;
+          }
+          break;
+        case AuthChangeEvent.signedOut:
+          // CLOSE TABLE STREAM.
+          await _groupStream.unsubscribe();
+          _subscribed = false;
+          break;
+        default:
+          break;
+      }
+      // if (event == AuthChangeEvent.signedIn) {
+      //   await syncRepo();
+      //   // OPEN TABLE STREAM -> insert new data.
+      //   if (!_subscribed) {
+      //     _groupStream.subscribe();
+      //     _subscribed = true;
+      //   }
+      //   return;
+      // }
+      // if (event == AuthChangeEvent.tokenRefreshed) {
+      //   // If not listening to the stream, there hasn't been an update.
+      //   // Sync accordingly.
+      //   if (!_subscribed) {
+      //     await syncRepo();
+      //     _groupStream.subscribe();
+      //     _subscribed = true;
+      //   }
+      //   return;
+      // }
+      // if (event == AuthChangeEvent.signedOut) {
+      //   // CLOSE TABLE STREAM.
+      //   await _groupStream.unsubscribe();
+      //   _subscribed = false;
+      // }
+    });
+  }
 
   @override
   Future<Group> create(Group group) async {
@@ -427,81 +512,5 @@ class GroupRepo extends ChangeNotifier implements GroupRepository {
   Future<List<Group>> getUnsynced() async =>
       await _isarClient.groups.filter().isSyncedEqualTo(false).findAll();
 
-  GroupRepo._internal() {
-    // I haven't faked the connection channels -> doesn't make sense to.
-    if (SupabaseService.instance.offlineDebug) {
-      return;
-    }
-    // Initialize table stream -> only listen on signIn.
-    _groupStream = _supabaseClient
-        .channel("public:groups")
-        .onPostgresChanges(
-            event: PostgresChangeEvent.insert,
-            schema: "public",
-            table: "groups",
-            callback: handleUpsert)
-        .onPostgresChanges(
-            schema: "public",
-            table: "groups",
-            event: PostgresChangeEvent.update,
-            callback: handleUpsert)
-        .onPostgresChanges(
-            schema: "public",
-            table: "groups",
-            event: PostgresChangeEvent.delete,
-            callback: handleDelete);
-
-    // Listen to auth changes.
-    SupabaseService.instance.authSubscription.listen((AuthState data) async {
-      final AuthChangeEvent event = data.event;
-      switch (event) {
-        case AuthChangeEvent.signedIn:
-          await syncRepo();
-          // OPEN TABLE STREAM -> insert new data.
-          if (!_subscribed) {
-            _groupStream.subscribe();
-            _subscribed = true;
-          }
-          break;
-        case AuthChangeEvent.tokenRefreshed:
-          if (!_subscribed) {
-            await syncRepo();
-            _groupStream.subscribe();
-            _subscribed = true;
-          }
-          break;
-        case AuthChangeEvent.signedOut:
-          // CLOSE TABLE STREAM.
-          await _groupStream.unsubscribe();
-          _subscribed = false;
-          break;
-        default:
-          break;
-      }
-      // if (event == AuthChangeEvent.signedIn) {
-      //   await syncRepo();
-      //   // OPEN TABLE STREAM -> insert new data.
-      //   if (!_subscribed) {
-      //     _groupStream.subscribe();
-      //     _subscribed = true;
-      //   }
-      //   return;
-      // }
-      // if (event == AuthChangeEvent.tokenRefreshed) {
-      //   // If not listening to the stream, there hasn't been an update.
-      //   // Sync accordingly.
-      //   if (!_subscribed) {
-      //     await syncRepo();
-      //     _groupStream.subscribe();
-      //     _subscribed = true;
-      //   }
-      //   return;
-      // }
-      // if (event == AuthChangeEvent.signedOut) {
-      //   // CLOSE TABLE STREAM.
-      //   await _groupStream.unsubscribe();
-      //   _subscribed = false;
-      // }
-    });
-  }
+  GroupRepo._internal();
 }
