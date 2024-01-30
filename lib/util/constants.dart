@@ -278,6 +278,9 @@ abstract class Constants {
   static const int repeatingLimit = calendarLimit ~/ 2;
 
   // GUI constants.
+  static const double loadingArcSize = 200;
+  static const double minLoadGraphicScale = 1;
+  static const double maxLoadGraphicScale = 3;
   static const Duration dragDelayTime = Duration(milliseconds: 225);
 
   static final offsetIn =

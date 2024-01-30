@@ -12,6 +12,7 @@ class BatteryMeter extends StatefulWidget {
     this.showDifference = false,
     this.forward = false,
     this.alertUser = true,
+    this.showText = true,
     this.constraints = const BoxConstraints(),
   });
 
@@ -21,6 +22,7 @@ class BatteryMeter extends StatefulWidget {
   final bool showDifference;
   final bool forward;
   final bool alertUser;
+  final bool showText;
   final BoxConstraints constraints;
 
   @override
@@ -79,13 +81,14 @@ class _BatteryMeter extends State<BatteryMeter> {
                         bottomRight: Radius.circular(Constants.circular)),
                     color: Theme.of(context).colorScheme.outline,
                   ))),
-          AutoSizeText(
-              "${((widget.showDifference) ? widget.max - widget.weight : widget.weight).toInt()}",
-              minFontSize: Constants.large,
-              softWrap: false,
-              maxLines: 1,
-              overflow: TextOverflow.visible,
-              style: Constants.hugeHeaderStyle),
+          if (widget.showText)
+            AutoSizeText(
+                "${((widget.showDifference) ? widget.max - widget.weight : widget.weight).toInt()}",
+                minFontSize: Constants.large,
+                softWrap: false,
+                maxLines: 1,
+                overflow: TextOverflow.visible,
+                style: Constants.hugeHeaderStyle),
         ]),
       ),
     );
