@@ -95,12 +95,20 @@ abstract class Constants {
       return 1.0;
     }
     if (Platform.isWindows || Platform.isMacOS) {
-      return 0;
+      return 0.0;
     }
     return 0.85;
   }
 
-  static double get defaultScaffoldOpacity => 0.95;
+  static double get defaultScaffoldOpacity{
+    if(Platform.isAndroid || Platform.isIOS){
+      return 1.0;
+    }
+    if(Platform.isWindows || Platform.isMacOS){
+      return 0;
+    }
+    return 0.95;
+  }
 
   static Effect get defaultWindowEffect {
     if (Platform.isIOS || Platform.isAndroid) {
@@ -111,6 +119,10 @@ abstract class Constants {
       // There is a bug in w10 with the acrylic window effect
       // Defaulting to aero
       return Effect.aero;
+    }
+
+    if(Platform.isMacOS){
+      return Effect.mica;
     }
 
     return Effect.transparent;

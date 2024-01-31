@@ -88,6 +88,7 @@ class ThemeProvider extends ChangeNotifier {
     userViewModel?.themeType = newThemeType;
     generateThemes();
     notifyListeners();
+    _setWindowEffect(effect: _windowEffect);
   }
 
   ToneMapping get toneMapping => _toneMapping;
@@ -105,8 +106,8 @@ class ThemeProvider extends ChangeNotifier {
   set windowEffect(Effect newEffect) {
     _windowEffect = newEffect;
     userViewModel?.windowEffect = newEffect;
-    _setWindowEffect(effect: _windowEffect);
     notifyListeners();
+    _setWindowEffect(effect: _windowEffect);
   }
 
   bool get useUltraHighContrast => _useUltraHighContrast;
@@ -172,8 +173,7 @@ class ThemeProvider extends ChangeNotifier {
 
   void setUser({UserViewModel? newUser}) {
     userViewModel = newUser;
-    init();
-    notifyListeners();
+    init().then((_) => notifyListeners());
   }
 
   ThemeProvider({this.userViewModel}) {
@@ -221,7 +221,7 @@ class ThemeProvider extends ChangeNotifier {
     // Set the window effect for desktop. Runs asynchronously, should be set by the time
     // the splash screen is done.
     if (!Platform.isIOS || !Platform.isAndroid) {
-      _setWindowEffect(effect: _windowEffect);
+     await _setWindowEffect(effect: _windowEffect);
     }
   }
 
@@ -303,7 +303,7 @@ class ThemeProvider extends ChangeNotifier {
     };
   }
 
-  Future<void> _setWindowEffect({Effect effect = Effect.disabled}) async {
+  Future<void> _setWindowEffect({Effect effect = Effect.transparent}) async {
     if (Platform.isIOS || Platform.isAndroid) {
       return;
     }
@@ -314,7 +314,7 @@ class ThemeProvider extends ChangeNotifier {
       return;
     }
 
-    await _setWinMacWindow(effect: WindowEffect.sidebar);
+    await _setWinMacWindow(effect: effect);
   }
 
   Future<void> _setWinMacWindow({
@@ -327,18 +327,35 @@ class ThemeProvider extends ChangeNotifier {
             ? Constants.windowsDefaultLight
             : Constants.windowsDefaultDark;
 
-    Window.setEffect(
-      effect: effect,
+    bool darkMode = _determineDarkMode(brightness: brightness);
+
+    await Window.setEffect(
+      effect: getWindowEffect(effect:effect),
       color: backgroundColor,
-      dark: brightness == Brightness.dark,
+      dark: darkMode,
     );
 
-    if (Platform.isMacOS && _themeType != ThemeType.system) {
+    if (Platform.isMacOS) {
       await Window.overrideMacOSBrightness(
-        dark: brightness == Brightness.dark,
+        dark: darkMode,
       );
     }
   }
+
+  bool _determineDarkMode({Brightness brightness = Brightness.dark}) => switch(_themeType){
+    ThemeType.system => Brightness.dark == brightness,
+    ThemeType.dark => true,
+    _ => false,
+  };
+
+  WindowEffect getWindowEffect({Effect effect = Effect.transparent}) => switch(effect){
+    Effect.acrylic => WindowEffect.acrylic,
+    Effect.aero => WindowEffect.aero,
+    Effect.mica => WindowEffect.mica,
+    Effect.sidebar => WindowEffect.sidebar,
+    Effect.transparent => WindowEffect.transparent,
+    Effect.disabled => WindowEffect.solid,
+  };
 
 // uservm needs to access this in its default constructor.
 // Effect get defaultWindowEffect {

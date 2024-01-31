@@ -79,6 +79,10 @@ void main() async {
 
     // This is for default sizing.
     await windowManager.ensureInitialized();
+    // This is for flutter acrylic.
+    await Window.initialize();
+    await Window.makeTitlebarTransparent();
+    await Window.enableFullSizeContentView();
 
     await windowManager.setResizable(true);
     WindowOptions windowOptions = const WindowOptions(

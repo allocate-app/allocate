@@ -256,31 +256,36 @@ class _HomeScreen extends State<HomeScreen> {
               end: layoutProvider.drawerOpened ? 1 : 0.0,
             ),
             builder: (BuildContext context, double value, Widget? child) {
-              return Material(
-                child: Ink(
-                  color: Color.lerp(Theme.of(context).colorScheme.surface,
-                      Theme.of(context).colorScheme.outlineVariant, value),
-                  child: InkWell(
-                    mouseCursor: SystemMouseCursors.resizeLeftRight,
-                    onHover: (value) {},
-                    onTapUp: (TapUpDetails details) {
-                      if (!layoutProvider.drawerOpened) {
-                        layoutProvider.navDrawerWidth =
-                            Constants.navigationDrawerMaxWidth;
-                      } else {
-                        layoutProvider.navDrawerWidth = 0;
-                      }
-                      layoutProvider.drawerOpened =
-                          !layoutProvider.drawerOpened;
-                    },
-                    child: VerticalDivider(
-                      width: lerpDouble(Constants.verticalDividerThickness * 3,
-                          Constants.verticalDividerThickness, value),
-                      thickness: lerpDouble(
-                          Constants.verticalDividerThickness * 3,
-                          Constants.verticalDividerThickness,
-                          value),
-                      color: Colors.transparent,
+              return TransparentMacOSSidebar(
+                effect: themeProvider.getWindowEffect(effect:themeProvider.windowEffect),
+                child: Material(
+                  color: Colors.transparent,
+                  shadowColor: Colors.transparent,
+                  child: Ink(
+                    color: (Platform.isWindows || Platform.isMacOS)? Colors.transparent :Color.lerp(Theme.of(context).colorScheme.surface,
+                        Theme.of(context).colorScheme.outlineVariant, value),
+                    child: InkWell(
+                      mouseCursor: SystemMouseCursors.resizeLeftRight,
+                      onHover: (value) {},
+                      onTapUp: (TapUpDetails details) {
+                        if (!layoutProvider.drawerOpened) {
+                          layoutProvider.navDrawerWidth =
+                              Constants.navigationDrawerMaxWidth;
+                        } else {
+                          layoutProvider.navDrawerWidth = 0;
+                        }
+                        layoutProvider.drawerOpened =
+                            !layoutProvider.drawerOpened;
+                      },
+                      child: VerticalDivider(
+                        width: lerpDouble(Constants.verticalDividerThickness * 3,
+                            Constants.verticalDividerThickness, value),
+                        thickness: lerpDouble(
+                            Constants.verticalDividerThickness * 3,
+                            Constants.verticalDividerThickness,
+                            value),
+                        color: Colors.transparent,
+                      ),
                     ),
                   ),
                 ),
