@@ -22,7 +22,7 @@ class IsarService {
 
   bool _debug = false;
 
-  late bool _initialized;
+  late bool _initialized = false;
 
   late Isar _isarClient;
 

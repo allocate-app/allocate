@@ -16,7 +16,7 @@ class SupabaseService {
   Stream<AuthState> get authSubscription => _authSubscription;
 
   // This is just to avoid any goof-ups.
-  late final bool _initialized;
+  late bool _initialized = false;
 
   bool get isConnected =>
       null != _supabaseClient.auth.currentSession &&

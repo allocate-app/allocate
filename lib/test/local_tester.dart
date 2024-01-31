@@ -97,6 +97,7 @@ void main() async {
 
   // For all intents and purposes here, it's fine to keep as is.
   // in main, this will need to be refactored to use the splash screen.
+  // Init needs to be called
   await Future.wait([
     IsarService.instance.init(debug: true),
     SupabaseService.instance.init(
@@ -124,98 +125,116 @@ void main() async {
         ChangeNotifierProvider<LayoutProvider>(create: (_) => LayoutProvider()),
 
         ChangeNotifierProxyProvider<UserViewModel, UserProvider>(
-            create: (BuildContext context) => UserProvider(
-                viewModel: Provider.of<UserViewModel>(context, listen: false)),
-            update: (BuildContext context, UserViewModel vm, UserProvider? up) {
-              if (null == up) {
-                up = UserProvider(viewModel: vm);
-                up.init();
-              }
-              up.shouldUpdate = true;
-              return up;
-            }),
+            create: (BuildContext context) {
+          UserProvider up = UserProvider(
+              viewModel: Provider.of<UserViewModel>(context, listen: false));
+          up.init();
+          return up;
+        }, update: (BuildContext context, UserViewModel vm, UserProvider? up) {
+          if (null == up) {
+            up = UserProvider(viewModel: vm);
+            up.init();
+          }
+          up.shouldUpdate = true;
+          return up;
+        }),
         ChangeNotifierProxyProvider<UserProvider, ToDoProvider>(
-            create: (BuildContext context) => ToDoProvider(
-                  userViewModel:
-                      Provider.of<UserProvider>(context, listen: false)
-                          .viewModel,
-                ),
-            update: (BuildContext context, UserProvider up, ToDoProvider? tp) {
-              if (null == tp) {
-                tp = ToDoProvider();
-                tp.init();
-              }
-              tp.setUser(newUser: up.viewModel);
-              return tp;
-            }),
+            create: (BuildContext context) {
+          ToDoProvider tp = ToDoProvider(
+            userViewModel:
+                Provider.of<UserProvider>(context, listen: false).viewModel,
+          );
+          tp.init();
+          return tp;
+        }, update: (BuildContext context, UserProvider up, ToDoProvider? tp) {
+          if (null == tp) {
+            tp = ToDoProvider();
+            tp.init();
+          }
+          tp.setUser(newUser: up.viewModel);
+          return tp;
+        }),
         ChangeNotifierProxyProvider<UserProvider, RoutineProvider>(
-            create: (BuildContext context) => RoutineProvider(
-                  userViewModel:
-                      Provider.of<UserProvider>(context, listen: false)
-                          .viewModel,
-                ),
-            update:
+            create: (BuildContext context) {
+          RoutineProvider rp = RoutineProvider(
+            userViewModel:
+                Provider.of<UserProvider>(context, listen: false).viewModel,
+          );
+          rp.init();
+          return rp;
+        }, update:
                 (BuildContext context, UserProvider up, RoutineProvider? rp) {
-              if (null == rp) {
-                rp = RoutineProvider();
-                rp.init();
-              }
-              rp.setUser(newUser: up.viewModel);
-              return rp;
-            }),
+          if (null == rp) {
+            rp = RoutineProvider();
+            rp.init();
+          }
+          rp.setUser(newUser: up.viewModel);
+          return rp;
+        }),
         ChangeNotifierProxyProvider<UserProvider, SubtaskProvider>(
-            create: (BuildContext context) => SubtaskProvider(
-                userViewModel: Provider.of<UserProvider>(context, listen: false)
-                    .viewModel),
-            update:
+            create: (BuildContext context) {
+          SubtaskProvider sp = SubtaskProvider(
+              userViewModel:
+                  Provider.of<UserProvider>(context, listen: false).viewModel);
+          sp.init();
+          return sp;
+        }, update:
                 (BuildContext context, UserProvider up, SubtaskProvider? sp) {
-              if (null == sp) {
-                sp = SubtaskProvider();
-                sp.init();
-              }
-              sp.setUser(newUser: up.viewModel);
-              return sp;
-            }),
+          if (null == sp) {
+            sp = SubtaskProvider();
+            sp.init();
+          }
+          sp.setUser(newUser: up.viewModel);
+          return sp;
+        }),
         ChangeNotifierProxyProvider<UserProvider, ReminderProvider>(
-            create: (BuildContext context) => ReminderProvider(
-                  userViewModel:
-                      Provider.of<UserProvider>(context, listen: false)
-                          .viewModel,
-                ),
-            update:
+            create: (BuildContext context) {
+          ReminderProvider rp = ReminderProvider(
+            userViewModel:
+                Provider.of<UserProvider>(context, listen: false).viewModel,
+          );
+          rp.init();
+          return rp;
+        }, update:
                 (BuildContext context, UserProvider up, ReminderProvider? rp) {
-              if (null == rp) {
-                rp = ReminderProvider();
-                rp.init();
-              }
-              rp.setUser(newUser: up.viewModel);
-              return rp;
-            }),
+          if (null == rp) {
+            rp = ReminderProvider();
+            rp.init();
+          }
+          rp.setUser(newUser: up.viewModel);
+          return rp;
+        }),
         ChangeNotifierProxyProvider<UserProvider, DeadlineProvider>(
-            create: (BuildContext context) => DeadlineProvider(
-                userViewModel: Provider.of<UserProvider>(context, listen: false)
-                    .viewModel),
-            update:
+            create: (BuildContext context) {
+          DeadlineProvider dp = DeadlineProvider(
+              userViewModel:
+                  Provider.of<UserProvider>(context, listen: false).viewModel);
+          dp.init();
+          return dp;
+        }, update:
                 (BuildContext context, UserProvider up, DeadlineProvider? dp) {
-              if (null == dp) {
-                dp = DeadlineProvider();
-                dp.init();
-              }
-              dp.setUser(newUser: up.viewModel);
-              return dp;
-            }),
+          if (null == dp) {
+            dp = DeadlineProvider();
+            dp.init();
+          }
+          dp.setUser(newUser: up.viewModel);
+          return dp;
+        }),
         ChangeNotifierProxyProvider<UserProvider, GroupProvider>(
-            create: (BuildContext context) => GroupProvider(
-                userViewModel: Provider.of<UserProvider>(context, listen: false)
-                    .viewModel),
-            update: (BuildContext context, UserProvider up, GroupProvider? gp) {
-              if (null == gp) {
-                gp = GroupProvider();
-                gp.init();
-              }
-              gp.setUser(newUser: up.viewModel);
-              return gp;
-            }),
+            create: (BuildContext context) {
+          GroupProvider gp = GroupProvider(
+              userViewModel:
+                  Provider.of<UserProvider>(context, listen: false).viewModel);
+          gp.init();
+          return gp;
+        }, update: (BuildContext context, UserProvider up, GroupProvider? gp) {
+          if (null == gp) {
+            gp = GroupProvider();
+            gp.init();
+          }
+          gp.setUser(newUser: up.viewModel);
+          return gp;
+        }),
         ChangeNotifierProxyProvider<UserProvider, ThemeProvider>(
             create: (BuildContext context) => ThemeProvider(
                 userViewModel: Provider.of<UserProvider>(context, listen: false)
