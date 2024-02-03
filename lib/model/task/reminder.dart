@@ -158,7 +158,8 @@ class Reminder with EquatableMixin implements Copyable<Reminder>, IRepeatable {
         repeatSkip = entity["repeatSkip"] as int,
         isSynced = true,
         toDelete = entity["toDelete"] as bool,
-        lastUpdated = DateTime.parse(entity["lastUpdated"]);
+        lastUpdated =
+            DateTime.tryParse(entity["lastUpdated"]) ?? Constants.today;
 
   Map<String, dynamic> toEntity() => {
         "id": id,

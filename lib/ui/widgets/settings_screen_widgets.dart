@@ -260,7 +260,7 @@ abstract class SettingsScreenWidgets {
                           ),
                           AutoSizeText(
                             (null != viewModel.email)
-                                ? "Email ${viewModel.email}"
+                                ? "Email: ${viewModel.email}"
                                 : "Offline Only",
                             overflow: TextOverflow.visible,
                             softWrap: false,

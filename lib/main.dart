@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import "package:flutter/services.dart";
 import "package:flutter_acrylic/flutter_acrylic.dart";
 import "package:provider/provider.dart";
+import "package:win32_registry/win32_registry.dart";
 import "package:window_manager/window_manager.dart";
 
 import "providers/providers.dart";
@@ -34,6 +35,16 @@ void main() async {
     WindowOptions windowOptions = const WindowOptions(
       minimumSize: Constants.minDesktopSize,
     );
+
+    // For windows -> register deeplinking.
+    if (Platform.isWindows) {
+      await register(Constants.scheme);
+    }
+
+    // For flutter acrylic.
+    await Window.initialize();
+    await Window.makeTitlebarTransparent();
+    await Window.enableFullSizeContentView();
 
     await windowManager.waitUntilReadyToShow(windowOptions, () async {
       await windowManager.show();
@@ -210,6 +221,10 @@ class _MyAppState extends State<MyApp> {
             ThemeType.system => ThemeMode.system,
           },
           routerConfig: _appRouter.config(deepLinkBuilder: (deeplink) {
+            if (deeplink.path.contains("home")) {
+              return DeepLink([HomeRoute(index: 0)]);
+            }
+
             if (deeplink.path.contains("login")) {
               return const DeepLink([LoginRoute()]);
             }
@@ -220,10 +235,33 @@ class _MyAppState extends State<MyApp> {
             // This is just "root".
             return DeepLink.defaultPath;
           }),
-          routerDelegate: _appRouter.delegate(),
-          routeInformationParser: _appRouter.defaultRouteParser(),
+          // These are no longer needed
+          // routerDelegate: _appRouter.delegate(),
+          // routeInformationParser: _appRouter.defaultRouteParser(),
         ),
       );
     });
   }
+}
+
+// WINDOWS REGISTERRING DEEPLINKING
+Future<void> register(String scheme) async {
+  String appPath = Platform.resolvedExecutable;
+
+  String protocolRegKey = 'Software\\Classes\\$scheme';
+  RegistryValue protocolRegValue = const RegistryValue(
+    'URL Protocol',
+    RegistryValueType.string,
+    '',
+  );
+  String protocolCmdRegKey = 'shell\\open\\command';
+  RegistryValue protocolCmdRegValue = RegistryValue(
+    '',
+    RegistryValueType.string,
+    '"$appPath" "%1"',
+  );
+
+  final regKey = Registry.currentUser.createKey(protocolRegKey);
+  regKey.createValue(protocolRegValue);
+  regKey.createKey(protocolCmdRegKey).createValue(protocolCmdRegValue);
 }

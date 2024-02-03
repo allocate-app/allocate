@@ -16,15 +16,15 @@ class UserStorageService extends ChangeNotifier {
 
   static UserStorageService get instance => _instance;
 
-  final SupabaseClient _supabaseClient =
-      SupabaseService.instance.supabaseClient;
-  final Isar _isarClient = IsarService.instance.isarClient;
+  late final SupabaseClient _supabaseClient;
+  late final Isar _isarClient;
 
   late final RealtimeChannel _userStream;
 
   bool get isConnected => SupabaseService.instance.isConnected;
 
   bool _subscribed = false;
+  bool _initialized = false;
 
   UserStatus _status = UserStatus.normal;
 
@@ -33,6 +33,71 @@ class UserStorageService extends ChangeNotifier {
   List<AllocateUser?> _failureCache = [];
 
   List<AllocateUser?> get failureCache => _failureCache;
+
+  String get uuid => _supabaseClient.auth.currentUser?.id ?? "";
+
+  void init() {
+    if (_initialized) {
+      return;
+    }
+    _isarClient = IsarService.instance.isarClient;
+    _supabaseClient = SupabaseService.instance.supabaseClient;
+    _initialized = true;
+
+    // I haven't faked the connection channels -> doesn't make sense to.
+    if (SupabaseService.instance.offlineDebug) {
+      return;
+    }
+    // Initialize table stream -> only listen on signIn.
+    _userStream = _supabaseClient
+        .channel("public:allocateUsers")
+        .onPostgresChanges(
+            event: PostgresChangeEvent.insert,
+            schema: "public",
+            table: "allocateUsers",
+            callback: handleUpsert)
+        .onPostgresChanges(
+            schema: "public",
+            table: "users",
+            event: PostgresChangeEvent.update,
+            callback: handleUpsert)
+        .onPostgresChanges(
+            schema: "public",
+            table: "users",
+            event: PostgresChangeEvent.delete,
+            callback: handleDelete);
+
+    // Listen to auth changes.
+    SupabaseService.instance.authSubscription.listen((AuthState data) async {
+      final AuthChangeEvent event = data.event;
+      switch (event) {
+        case AuthChangeEvent.signedIn:
+          await syncUser();
+          // OPEN TABLE STREAM -> insert new data.
+          if (!_subscribed) {
+            _userStream.subscribe();
+            _subscribed = true;
+          }
+          break;
+        case AuthChangeEvent.tokenRefreshed:
+          // If not listening to the stream, there hasn't been an update.
+          // Sync accordingly.
+          if (!_subscribed) {
+            await syncUser();
+            _userStream.subscribe();
+            _subscribed = true;
+          }
+          break;
+        case AuthChangeEvent.signedOut:
+          // CLOSE TABLE STREAM.
+          await _userStream.unsubscribe();
+          _subscribed = false;
+          break;
+        default:
+          break;
+      }
+    });
+  }
 
   Future<void> updateUser({required AllocateUser user}) async {
     user.isSynced = isConnected;
@@ -185,8 +250,11 @@ class UserStorageService extends ChangeNotifier {
   Future<AllocateUser> fetchUser() async {
     // This should always only catch one user
     try {
-      Map<String, dynamic>? userEntity =
-          await _supabaseClient.from("allocateUsers").select().maybeSingle();
+      Map<String, dynamic>? userEntity = await _supabaseClient
+          .from("allocateUsers")
+          .select()
+          .eq("uuid", uuid)
+          .maybeSingle();
       if (null == userEntity) {
         throw Error();
       }
@@ -272,59 +340,5 @@ class UserStorageService extends ChangeNotifier {
     return users.first;
   }
 
-  UserStorageService._internal() {
-    // I haven't faked the connection channels -> doesn't make sense to.
-    if (SupabaseService.instance.offlineDebug) {
-      return;
-    }
-    // Initialize table stream -> only listen on signIn.
-    _userStream = _supabaseClient
-        .channel("public:allocateUsers")
-        .onPostgresChanges(
-            event: PostgresChangeEvent.insert,
-            schema: "public",
-            table: "allocateUsers",
-            callback: handleUpsert)
-        .onPostgresChanges(
-            schema: "public",
-            table: "users",
-            event: PostgresChangeEvent.update,
-            callback: handleUpsert)
-        .onPostgresChanges(
-            schema: "public",
-            table: "users",
-            event: PostgresChangeEvent.delete,
-            callback: handleDelete);
-
-    // Listen to auth changes.
-    SupabaseService.instance.authSubscription.listen((AuthState data) async {
-      final AuthChangeEvent event = data.event;
-      switch (event) {
-        case AuthChangeEvent.signedIn:
-          await syncUser();
-          // OPEN TABLE STREAM -> insert new data.
-          if (!_subscribed) {
-            _userStream.subscribe();
-            _subscribed = true;
-          }
-          break;
-        case AuthChangeEvent.tokenRefreshed:
-          // If not listening to the stream, there hasn't been an update.
-          // Sync accordingly.
-          if (!_subscribed) {
-            await syncUser();
-            _userStream.subscribe();
-            _subscribed = true;
-          }
-          break;
-        case AuthChangeEvent.signedOut:
-          // CLOSE TABLE STREAM.
-          await _userStream.unsubscribe();
-          _subscribed = false;
-          break;
-        default:
-          break;
-      }
-    });
-  }
+  UserStorageService._internal();
 }

@@ -68,7 +68,8 @@ class Routine with EquatableMixin implements Copyable<Routine>, IModel {
         customViewIndex = entity["customViewIndex"] as int,
         isSynced = true,
         toDelete = entity["toDelete"] as bool,
-        lastUpdated = DateTime.parse(entity["lastUpdated"]);
+        lastUpdated =
+            DateTime.tryParse(entity["lastUpdated"]) ?? Constants.today;
 
   Map<String, dynamic> toEntity() => {
         "id": id,

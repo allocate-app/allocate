@@ -26,6 +26,8 @@ class SubtaskRepo extends ChangeNotifier implements SubtaskRepository {
   bool _subscribed = false;
   bool _initialized = false;
 
+  String get uuid => _supabaseClient.auth.currentUser?.id ?? "";
+
   @override
   void init() {
     if (_initialized) {
@@ -365,6 +367,7 @@ class SubtaskRepo extends ChangeNotifier implements SubtaskRepository {
     List<Map<String, dynamic>> subtaskEntities = await _supabaseClient
         .from("subtasks")
         .select()
+        .eq("uuid", uuid)
         .order("lastUpdated", ascending: false)
         .range(offset, offset + limit);
 

@@ -120,11 +120,12 @@ class Deadline with EquatableMixin implements Copyable<Deadline>, IRepeatable {
         warnMe = entity["warnMe"] as bool,
         priority = Priority.values[entity["priority"]],
         repeatableState = RepeatableState.values[entity["repeatableState"]],
-        repeatable = entity["repeatable"],
+        repeatable = entity["repeatable"] as bool,
         frequency = Frequency.values[entity["frequency"]],
         repeatDays = entity["repeatDays"] as List<bool>,
         repeatSkip = entity["repeatSkip"] as int,
-        lastUpdated = DateTime.parse(entity["lastUpdated"]),
+        lastUpdated =
+            DateTime.tryParse(entity["lastUpdated"]) ?? Constants.today,
         toDelete = entity["toDelete"] as bool,
         isSynced = true;
 

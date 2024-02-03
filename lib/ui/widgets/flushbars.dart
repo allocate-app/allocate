@@ -15,6 +15,7 @@ abstract class Flushbars {
     Duration duration = const Duration(seconds: 1),
     void Function()? dismissCallback,
   }) =>
+      // TODO: maxWidth.
       Flushbar(
           animationDuration:
               const Duration(milliseconds: Constants.flushbarDuration),

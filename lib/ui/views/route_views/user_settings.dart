@@ -38,6 +38,7 @@ class UserSettingsScreen extends StatefulWidget {
 
 class _UserSettingsScreen extends State<UserSettingsScreen> {
   // For testing
+  // Mock online needs to be removed.
   late bool _mockOnline;
   late final UserProvider userProvider;
   late final UserViewModel vm;
@@ -59,6 +60,7 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
   late MenuController _scaffoldController;
   late MenuController _sidebarController;
 
+  // LOOOL - Factor this out pls.
   bool get _offline => !SupabaseService.instance.isConnected;
 
   // Factor out into functions.
@@ -362,7 +364,7 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
                         ).show(context);
                         if (kDebugMode && _offline) {
                           setState(() {
-                            _mockOnline = true;
+                            // _mockOnline = true;
                           });
                         }
                       }
@@ -374,36 +376,41 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
           }
 
           // This should both send OTP + Challenge.
-          return SettingsScreenWidgets.tapTile(
-              leading: const Icon(Icons.cloud_sync_rounded),
-              title: "Sign in to cloud backup",
-              onTap: () async {
-                await showDialog(
-                  context: context,
-                  barrierDismissible: true,
-                  builder: (BuildContext context) => const SignInDialog(),
-                ).then((signUp) {
-                  // User dismissed.
-                  if (null == signUp) {
-                    return;
-                  }
-                  // Failures caught in the dialog.
-                  if (signUp) {
-                    // THIS NEEDS TO SET A VERIFICATION FLAG && a need a route.
-                    // Route needs to be a splash screen that verifies.
-                    Flushbars.createAlert(
-                      message: "Check your email for an OTP.",
-                      context: context,
-                    ).show(context);
-                  }
+          return SettingsScreenWidgets.settingsSection(
+              context: context,
+              title: "Account",
+              entries: [
+                SettingsScreenWidgets.tapTile(
+                    leading: const Icon(Icons.cloud_sync_rounded),
+                    title: "Sign in to cloud backup",
+                    onTap: () async {
+                      await showDialog(
+                        context: context,
+                        barrierDismissible: true,
+                        builder: (BuildContext context) => const SignInDialog(),
+                      ).then((signUp) {
+                        // User dismissed.
+                        if (null == signUp) {
+                          return;
+                        }
+                        // Failures caught in the dialog.
+                        if (signUp) {
+                          // THIS NEEDS TO SET A VERIFICATION FLAG && a need a route.
+                          // Route needs to be a splash screen that verifies.
+                          Flushbars.createAlert(
+                            message: "Check your email for an OTP.",
+                            context: context,
+                          ).show(context);
+                        }
 
-                  if (kDebugMode && _offline) {
-                    setState(() {
-                      _mockOnline = true;
-                    });
-                  }
-                });
-              });
+                        if (kDebugMode && _offline) {
+                          setState(() {
+                            // _mockOnline = true;
+                          });
+                        }
+                      });
+                    }),
+              ]);
         });
   }
 

@@ -12,8 +12,13 @@ class AuthenticationService implements Authenticator {
       AuthenticationService._internal();
 
   static AuthenticationService get instance => _instance;
-  final SupabaseClient _supabaseClient =
-      SupabaseService.instance.supabaseClient;
+
+  late final SupabaseClient _supabaseClient;
+
+  @override
+  void init() {
+    _supabaseClient = SupabaseService.instance.supabaseClient;
+  }
 
   // Creation happens on OTP link generation.
   @override

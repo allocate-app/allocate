@@ -65,23 +65,30 @@ class _SplashScreen extends State<SplashScreen> {
       throw BuildFailureException("App has not been configured");
     }
 
-    await Future.wait([
-      IsarService.instance.init(),
-      SupabaseService.instance.init(
-        supabaseUrl: Constants.supabaseURL,
-        anonKey: Constants.supabaseAnnonKey,
-      ),
-      Provider.of<ToDoProvider>(context, listen: false).init(),
-      Provider.of<RoutineProvider>(context, listen: false).init(),
-      Provider.of<SubtaskProvider>(context, listen: false).init(),
-      Provider.of<ReminderProvider>(context, listen: false).init(),
-      Provider.of<DeadlineProvider>(context, listen: false).init(),
-      Provider.of<GroupProvider>(context, listen: false).init(),
-      // This will trigger a day reset if the user has opened the app across a day.
-      Provider.of<UserProvider>(context, listen: false).init(),
-      // It might be smarter to return an index instead.
-      NotificationService.instance.init(),
-    ]);
+    // DBs need to be initialized before providers.
+
+    await Future.wait(
+      [
+        IsarService.instance.init(),
+        SupabaseService.instance.init(
+          supabaseUrl: Constants.supabaseURL,
+          anonKey: Constants.supabaseAnnonKey,
+        ),
+      ],
+    ).then((_) async {
+      await Future.wait([
+        Provider.of<ToDoProvider>(context, listen: false).init(),
+        Provider.of<RoutineProvider>(context, listen: false).init(),
+        Provider.of<SubtaskProvider>(context, listen: false).init(),
+        Provider.of<ReminderProvider>(context, listen: false).init(),
+        Provider.of<DeadlineProvider>(context, listen: false).init(),
+        Provider.of<GroupProvider>(context, listen: false).init(),
+        // This will trigger a day reset if the user has opened the app across a day.
+        Provider.of<UserProvider>(context, listen: false).init(),
+        // It might be smarter to return an index instead.
+        NotificationService.instance.init(),
+      ]);
+    });
   }
 
   Future<void> dayReset() async {

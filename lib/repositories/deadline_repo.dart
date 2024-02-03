@@ -30,6 +30,8 @@ class DeadlineRepo extends ChangeNotifier implements DeadlineRepository {
   bool _subscribed = false;
   bool _initialized = false;
 
+  String get uuid => _supabaseClient.auth.currentUser?.id ?? "";
+
   @override
   void init() {
     if (_initialized) {
@@ -425,6 +427,7 @@ class DeadlineRepo extends ChangeNotifier implements DeadlineRepository {
     List<Map<String, dynamic>> deadlineEntities = await _supabaseClient
         .from("deadlines")
         .select()
+        .eq("uuid", uuid)
         .order("lastUpdated", ascending: false)
         .range(offset, offset + limit);
 

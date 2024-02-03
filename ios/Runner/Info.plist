@@ -47,7 +47,6 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
-	<!-- TODO: Fix this if bugged -->
 	  <key>CFBundleURLTypes</key>
       <array>
         <dict>
@@ -55,7 +54,7 @@
           <string>Editor</string>
           <key>CFBundleURLSchemes</key>
           <array>
-            <string>io.supabase.allocate</string>
+            <string>io.allocate</string>
           </array>
         </dict>
       </array>

@@ -27,6 +27,8 @@ class ReminderRepo extends ChangeNotifier implements ReminderRepository {
   bool _subscribed = false;
   bool _initialized = false;
 
+  String get uuid => _supabaseClient.auth.currentUser?.id ?? "";
+
   @override
   void init() {
     if (_initialized) {
@@ -420,6 +422,7 @@ class ReminderRepo extends ChangeNotifier implements ReminderRepository {
     List<Map<String, dynamic>> reminderEntities = await _supabaseClient
         .from("reminders")
         .select()
+        .eq("uuid", uuid)
         .order("lastUpdated", ascending: false)
         .range(offset, offset + limit);
 

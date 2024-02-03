@@ -125,6 +125,7 @@ class AllocateUser with EquatableMixin implements Copyable<AllocateUser> {
       : id = entity["id"] as int,
         uuid = entity["uuid"] as String,
         username = entity["username"] as String,
+        email = entity["email"] as String,
         bandwidth = entity["bandwidth"] as int,
         checkDelete = entity["checkDelete"],
         checkClose = entity["checkClose"],
@@ -141,48 +142,48 @@ class AllocateUser with EquatableMixin implements Copyable<AllocateUser> {
         groupSorter = (null != entity["groupSort"])
             ? GroupSorter(
                 descending: entity["groupDesc"],
-                sortMethod: entity["groupSort"])
+                sortMethod: SortMethod.values[entity["groupSort"]])
             : null,
         deadlineSorter = (null != entity["deadlineSort"])
             ? DeadlineSorter(
                 descending: entity["deadlineDesc"],
-                sortMethod: entity["deadlineSort"])
+                sortMethod: SortMethod.values[entity["deadlineSort"]])
             : null,
         reminderSorter = (null != entity["reminderSort"])
             ? ReminderSorter(
                 descending: entity["reminderDesc"],
-                sortMethod: entity["reminderSort"])
+                sortMethod: SortMethod.values[entity["reminderSort"]])
             : null,
         routineSorter = (null != entity["routineSort"])
             ? RoutineSorter(
                 descending: entity["routineDesc"],
-                sortMethod: entity["routineSort"],
-              )
+                sortMethod: SortMethod.values[entity["routineSort"]])
             : null,
         toDoSorter = (null != entity["toDoSort"])
             ? ToDoSorter(
                 descending: entity["toDoDesc"],
-                sortMethod: entity["toDoSort"],
-              )
+                sortMethod: SortMethod.values[entity["toDoSort"]])
             : null,
         isSynced = true,
         syncOnline = true,
         deleteSchedule = DeleteSchedule.values[entity["deleteSchedule"]],
-        lastOpened = DateTime.parse(entity["lastOpened"]),
-        lastUpdated = DateTime.parse(entity["lastUpdated"]),
-        // Local Parameters
-        windowEffect = Effect.disabled,
-        scaffoldOpacity = 100,
-        sidebarOpacity = 100,
+        lastOpened = DateTime.tryParse(entity["lastOpened"]) ?? Constants.today,
+        lastUpdated =
+            DateTime.tryParse(entity["lastUpdated"]) ?? Constants.today,
+        // Local Parameters -> THESE ARE OVERWRITTEN
+        windowEffect = Constants.defaultWindowEffect,
+        scaffoldOpacity = Constants.defaultScaffoldOpacity,
+        sidebarOpacity = Constants.defaultSidebarOpacity,
         toDelete = false;
 
   // TODO: supabase - link user table by user.auth.uuid + email.
   Map<String, dynamic> toEntity() => {
         "id": id,
         // TODO: remove this -> should already be in table.
-        "uuid": uuid,
+        // "uuid": uuid,
         // TODO: remove this -> should already be in table.
-        "email": email,
+        // Correction: -> set using auth session during deserialization.
+        // "email": email,
         "username": username,
         "bandwidth": bandwidth,
         "checkDelete": checkDelete,
@@ -192,13 +193,13 @@ class AllocateUser with EquatableMixin implements Copyable<AllocateUser> {
         "curEveID": curEveID,
         "themeType": themeType.index,
         "toneMapping": toneMapping.index,
-        "windowEffect": windowEffect,
+        // "windowEffect": windowEffect,
         "primarySeed": primarySeed,
         "secondarySeed": secondarySeed,
         "tertiarySeed": tertiarySeed,
         "useUltraHighContrast": useUltraHighContrast,
         "reduceMotion": reduceMotion,
-        "groupSort": groupSorter?.sortMethod,
+        "groupSort": groupSorter?.sortMethod.index,
         "groupDesc": groupSorter?.descending,
         "deadlineSort": deadlineSorter?.sortMethod,
         "deadlineDesc": deadlineSorter?.descending,

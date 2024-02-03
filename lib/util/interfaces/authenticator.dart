@@ -4,6 +4,8 @@ abstract interface class Authenticator {
   // Future<void> signInEmailPassword(
   //     {required String email, required String password});
 
+  void init();
+
   Future<String> signInOTP({required String email});
 
   Future<void> signOut();

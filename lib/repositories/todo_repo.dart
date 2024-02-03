@@ -32,6 +32,8 @@ class ToDoRepo extends ChangeNotifier implements ToDoRepository {
   bool _subscribed = false;
   bool _initialized = false;
 
+  String get uuid => _supabaseClient.auth.currentUser?.id ?? "";
+
   @override
   void init() {
     if (_initialized) {
@@ -432,6 +434,7 @@ class ToDoRepo extends ChangeNotifier implements ToDoRepository {
     List<Map<String, dynamic>> toDoEntities = await _supabaseClient
         .from("toDos")
         .select()
+        .eq("uuid", uuid)
         .order("lastUpdated", ascending: false)
         .range(offset, offset + limit);
 

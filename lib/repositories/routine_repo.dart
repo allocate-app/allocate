@@ -31,6 +31,8 @@ class RoutineRepo extends ChangeNotifier implements RoutineRepository {
   bool _subscribed = false;
   bool _initialized = false;
 
+  String get uuid => _supabaseClient.auth.currentUser?.id ?? "";
+
   @override
   void init() {
     if (_initialized) {
@@ -415,6 +417,7 @@ class RoutineRepo extends ChangeNotifier implements RoutineRepository {
     List<Map<String, dynamic>> routineEntities = await _supabaseClient
         .from("routines")
         .select()
+        .eq("uuid", uuid)
         .order("lastUpdated", ascending: false)
         .range(offset, offset + limit);
 

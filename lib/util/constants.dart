@@ -26,6 +26,8 @@ abstract class Constants {
     defaultValue: "",
   );
 
+  static const String scheme = "io.allocate";
+
   static const String loginDeeplink = "io.allocate://login";
   static const String emailDeeplink = "io.allocate://validate-email";
 
@@ -100,11 +102,11 @@ abstract class Constants {
     return 0.85;
   }
 
-  static double get defaultScaffoldOpacity{
-    if(Platform.isAndroid || Platform.isIOS){
+  static double get defaultScaffoldOpacity {
+    if (Platform.isAndroid || Platform.isIOS) {
       return 1.0;
     }
-    if(Platform.isWindows || Platform.isMacOS){
+    if (Platform.isWindows || Platform.isMacOS) {
       return 0;
     }
     return 0.95;
@@ -121,7 +123,7 @@ abstract class Constants {
       return Effect.aero;
     }
 
-    if(Platform.isMacOS){
+    if (Platform.isMacOS) {
       return Effect.mica;
     }
 

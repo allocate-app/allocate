@@ -261,6 +261,7 @@ class NotificationService {
         ApplicationService.instance.globalNavigatorKey.currentContext;
 
     // If this doesn't work, set the index in the applicationService.
+    // Oh, can also just GRAB THE ROUTER *** .
     if (null == context) {
       return;
     }

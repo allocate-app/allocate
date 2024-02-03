@@ -14,11 +14,11 @@ class AppRouter extends _$AppRouter {
   @override
   List<AutoRoute> get routes => [
         AutoRoute(path: "/", page: SplashRoute.page, initial: true),
-        AutoRoute(path: "home", page: HomeRoute.page, initial: false),
+        AutoRoute(path: "/home", page: HomeRoute.page, initial: false),
         // These should be deep-links.
-        AutoRoute(path: "login", page: LoginRoute.page, initial: false),
+        AutoRoute(path: "/login", page: LoginRoute.page, initial: false),
         AutoRoute(
-            path: "validate-email",
+            path: "/validate-email",
             page: ValidateEmailChangeRoute.page,
             initial: false),
       ];

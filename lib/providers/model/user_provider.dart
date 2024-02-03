@@ -67,6 +67,8 @@ class UserProvider extends ChangeNotifier {
       return;
     }
     _initialized = true;
+    _userStorageService.init();
+    _authenticationService.init();
     initSubscription();
     await setUser();
     if ((viewModel?.lastOpened.day ?? Constants.today.day - Constants.today.day)

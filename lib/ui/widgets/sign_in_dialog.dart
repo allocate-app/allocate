@@ -105,6 +105,7 @@ class _SignInDialog extends State<SignInDialog> {
                         mainAxisAlignment: MainAxisAlignment.start,
                         children: [
                           Expanded(
+                            flex: 3,
                             child: AutoSizeText(
                               "Sign In",
                               softWrap: false,
@@ -140,12 +141,28 @@ class _SignInDialog extends State<SignInDialog> {
                       ),
                     ),
                     Padding(
-                      padding: const EdgeInsets.all(Constants.padding),
-                      child: _buildSignInButton(),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.all(Constants.padding),
-                      child: _buildChallengeButton(),
+                      padding: const EdgeInsets.symmetric(
+                          vertical: Constants.padding),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.only(
+                                  right: Constants.padding),
+                              child: _buildSignInButton(),
+                            ),
+                          ),
+                          Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.only(
+                                  left: Constants.padding),
+                              child: _buildChallengeButton(),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
@@ -169,8 +186,8 @@ class _SignInDialog extends State<SignInDialog> {
   Widget _buildTokenTile() => Tiles.nameTile(
         context: context,
         controller: _tokenController,
-        hintText: "Password",
-        labelText: "Password",
+        hintText: "One-Time-Password",
+        labelText: "One-Time-Password",
         errorText: null,
         handleClear: () {
           _tokenController.clear();

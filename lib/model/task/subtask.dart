@@ -56,14 +56,15 @@ class Subtask
 
   Subtask.fromEntity({required Map<String, dynamic> entity})
       : id = entity["id"] as int,
+        customViewIndex = entity["customViewIndex"] as int,
         name = entity["name"] as String,
         completed = entity["completed"] as bool,
         weight = entity["weight"] as int,
         taskID = entity["taskID"] as int?,
-        lastUpdated = DateTime.parse(entity["lastUpdated"]),
         isSynced = true,
         toDelete = entity["toDelete"] as bool,
-        customViewIndex = entity["customViewIndex"] as int;
+        lastUpdated =
+            DateTime.tryParse(entity["lastUpdated"]) ?? Constants.today;
 
   Map<String, dynamic> toEntity() => {
         "id": id,

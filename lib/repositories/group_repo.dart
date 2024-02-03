@@ -28,6 +28,8 @@ class GroupRepo extends ChangeNotifier implements GroupRepository {
   bool _subscribed = false;
   bool _initialized = false;
 
+  String get uuid => _supabaseClient.auth.currentUser?.id ?? "";
+
   @override
   void init() {
     if (_initialized) {
@@ -390,6 +392,7 @@ class GroupRepo extends ChangeNotifier implements GroupRepository {
     List<Map<String, dynamic>> groupEntities = await _supabaseClient
         .from("groups")
         .select()
+        .eq("uuid", uuid)
         .order("lastUpdated", ascending: false)
         .range(offset, offset + limit);
 
