@@ -33,7 +33,7 @@
           <dict>
               <key>CFBundleURLName</key>
               <!-- abstract name for this URL type (you can leave it blank) -->
-              <string></string>
+              <string>deeplink</string>
               <key>CFBundleURLSchemes</key>
               <array>
                   <string>io.allocate</string>

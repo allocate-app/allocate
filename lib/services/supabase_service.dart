@@ -31,6 +31,8 @@ class SupabaseService {
       required String anonKey,
       SupabaseClient? client}) async {
     if (_initialized) {
+      print("should early return");
+      // may have to try catch.
       return;
     }
 

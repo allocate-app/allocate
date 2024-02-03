@@ -5,6 +5,7 @@ import "package:auto_route/auto_route.dart";
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/foundation.dart';
 import "package:flutter/material.dart";
+import 'package:flutter_acrylic/widgets/titlebar_safe_area.dart';
 import 'package:flutter_acrylic/widgets/transparent_macos_sidebar.dart';
 import "package:provider/provider.dart";
 
@@ -194,41 +195,43 @@ class _HomeScreen extends State<HomeScreen> {
     return Row(children: [
       // This is a workaround for a standard navigation drawer
       // until m3 spec is fully implemented in flutter.
-      TweenAnimationBuilder<double>(
-          duration: Duration(
-              milliseconds:
-                  (layoutProvider.dragging) ? 0 : Constants.drawerSlideTime),
-          curve: Curves.easeOutQuint,
-          tween: Tween<double>(
-            begin: layoutProvider.drawerOpened
-                ? layoutProvider.navDrawerWidth
-                : 0.0,
-            end: layoutProvider.drawerOpened
-                ? layoutProvider.navDrawerWidth
-                : 0.0,
-          ),
-          builder: (BuildContext context, double value, Widget? child) {
-            //TransparentMacOSSidebar
-            return TransparentMacOSSidebar(
-              child: Container(
-                width: value,
-                clipBehavior: Clip.hardEdge,
-                decoration: const BoxDecoration(),
-                child: OverflowBox(
-                  minWidth: Constants.navigationDrawerMaxWidth,
-                  maxWidth: Constants.navigationDrawerMaxWidth,
-                  child: Consumer<ThemeProvider>(builder: (BuildContext context,
-                      ThemeProvider value, Widget? child) {
-                    return DesktopDrawerWrapper(
-                      elevation: value.sidebarElevation,
-                      drawer: buildNavigationDrawer(
-                          context: context, largeScreen: true),
-                    );
-                  }),
+      TitlebarSafeArea(
+        child: TweenAnimationBuilder<double>(
+            duration: Duration(
+                milliseconds:
+                    (layoutProvider.dragging) ? 0 : Constants.drawerSlideTime),
+            curve: Curves.easeOutQuint,
+            tween: Tween<double>(
+              begin: layoutProvider.drawerOpened
+                  ? layoutProvider.navDrawerWidth
+                  : 0.0,
+              end: layoutProvider.drawerOpened
+                  ? layoutProvider.navDrawerWidth
+                  : 0.0,
+            ),
+            builder: (BuildContext context, double value, Widget? child) {
+              //TransparentMacOSSidebar
+              return TransparentMacOSSidebar(
+                child: Container(
+                  width: value,
+                  clipBehavior: Clip.hardEdge,
+                  decoration: const BoxDecoration(),
+                  child: OverflowBox(
+                    minWidth: Constants.navigationDrawerMaxWidth,
+                    maxWidth: Constants.navigationDrawerMaxWidth,
+                    child: Consumer<ThemeProvider>(builder: (BuildContext context,
+                        ThemeProvider value, Widget? child) {
+                      return DesktopDrawerWrapper(
+                        elevation: value.sidebarElevation,
+                        drawer: buildNavigationDrawer(
+                            context: context, largeScreen: true),
+                      );
+                    }),
+                  ),
                 ),
-              ),
-            );
-          }),
+              );
+            }),
+      ),
       GestureDetector(
         behavior: HitTestBehavior.translucent,
         supportedDevices: PointerDeviceKind.values.toSet(),

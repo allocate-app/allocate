@@ -51,7 +51,7 @@ class _LoginScreen extends State<LoginScreen> {
 
   Future<void> init() async {
     UserProvider up = Provider.of<UserProvider>(context, listen: false);
-    // This implies the app is already running.
+    // This implies the app is already running. -> NOPE, doesn't work.
     if (up.initialized) {
       User? user = SupabaseService.instance.supabaseClient.auth.currentUser;
       // Get the new user id -> should be overwritten by a sync routine anyway.
@@ -61,26 +61,36 @@ class _LoginScreen extends State<LoginScreen> {
 
     // If for some reason these have already been initialized, they will
     // just skip the routines.
-    await Future.wait([
-      IsarService.instance.init(),
-      SupabaseService.instance.init(
-        supabaseUrl: Constants.supabaseURL,
-        anonKey: Constants.supabaseAnnonKey,
-      ),
-      Provider.of<ToDoProvider>(context, listen: false).init(),
-      Provider.of<RoutineProvider>(context, listen: false).init(),
-      Provider.of<SubtaskProvider>(context, listen: false).init(),
-      Provider.of<ReminderProvider>(context, listen: false).init(),
-      Provider.of<DeadlineProvider>(context, listen: false).init(),
-      Provider.of<GroupProvider>(context, listen: false).init(),
-      // This will trigger a day reset if the user has opened the app across a day.
-      Provider.of<UserProvider>(context, listen: false).init(),
-      NotificationService.instance.init(),
-    ]);
 
-    // Set the uuid accordingly - should be overwritten on next sync routine.
-    User? user = SupabaseService.instance.supabaseClient.auth.currentUser;
-    up.viewModel?.uuid = user?.id;
+    // DBs need to be initialized before providers.
+
+    await Future.wait(
+      [
+        IsarService.instance.init(),
+        SupabaseService.instance.init(
+          supabaseUrl: Constants.supabaseURL,
+          anonKey: Constants.supabaseAnnonKey,
+        ),
+      ],
+    ).then((_) async {
+      await Future.wait([
+        Provider.of<ToDoProvider>(context, listen: false).init(),
+        Provider.of<RoutineProvider>(context, listen: false).init(),
+        Provider.of<SubtaskProvider>(context, listen: false).init(),
+        Provider.of<ReminderProvider>(context, listen: false).init(),
+        Provider.of<DeadlineProvider>(context, listen: false).init(),
+        Provider.of<GroupProvider>(context, listen: false).init(),
+        // This will trigger a day reset if the user has opened the app across a day.
+        Provider.of<UserProvider>(context, listen: false).init(),
+        // It might be smarter to return an index instead.
+        NotificationService.instance.init(),
+      ]);
+    }).whenComplete((){
+      // Set the uuid accordingly - should be overwritten on next sync routine.
+      User? user = SupabaseService.instance.supabaseClient.auth.currentUser;
+      up.viewModel?.uuid = user?.id;
+    });
+
   }
 
   Future<void> dayReset() async {

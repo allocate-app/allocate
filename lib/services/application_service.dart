@@ -1,5 +1,7 @@
-import 'package:flutter/material.dart';
+import 'dart:async';
 
+import 'package:flutter/material.dart';
+import 'package:app_links/app_links.dart';
 import '../ui/app_router.dart';
 
 class ApplicationService {
@@ -13,6 +15,7 @@ class ApplicationService {
 
   // This is req'd for handling major errors, eg. multiple users existing, missing user, etc.
   GlobalKey<NavigatorState> get globalNavigatorKey => _appRouter.navigatorKey;
+
 
   ApplicationService._internal();
 }
