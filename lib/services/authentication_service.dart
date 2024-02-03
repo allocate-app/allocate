@@ -42,7 +42,7 @@ class AuthenticationService implements Authenticator {
     final response = await _supabaseClient.auth.verifyOTP(
       email: email,
       token: token,
-      type: OtpType.email,
+      type: OtpType.magiclink,
     );
     if (null == response.user || null == response.user?.id) {
       throw LoginFailedException(

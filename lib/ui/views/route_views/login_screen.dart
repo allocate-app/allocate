@@ -21,6 +21,7 @@ import "loading_screen.dart";
 
 // This should just play the loading animation
 // set the home-page-index to settings screen, and pop open the dialog.
+// TODO: this needs to be re-thought ->
 @RoutePage()
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -85,12 +86,11 @@ class _LoginScreen extends State<LoginScreen> {
         // It might be smarter to return an index instead.
         NotificationService.instance.init(),
       ]);
-    }).whenComplete((){
+    }).whenComplete(() {
       // Set the uuid accordingly - should be overwritten on next sync routine.
       User? user = SupabaseService.instance.supabaseClient.auth.currentUser;
       up.viewModel?.uuid = user?.id;
     });
-
   }
 
   Future<void> dayReset() async {

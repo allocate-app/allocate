@@ -97,7 +97,7 @@ class UserProvider extends ChangeNotifier {
               context: context,
               e: UserMissingException("User not found, resetting to default"));
         }
-        resetUser();
+        await resetUser();
         break;
       case UserStatus.multiple:
         BuildContext? context =
@@ -115,7 +115,7 @@ class UserProvider extends ChangeNotifier {
           );
 
           if (null == desiredUser) {
-            resetUser();
+            await resetUser();
             failCache.clear();
             break;
           }
@@ -149,7 +149,7 @@ class UserProvider extends ChangeNotifier {
 
         AllocateUser? desiredUser = failCache.firstOrNull;
         if (null == desiredUser) {
-          resetUser();
+          await resetUser();
           failCache.clear();
           break;
         }
@@ -187,9 +187,11 @@ class UserProvider extends ChangeNotifier {
     }
   }
 
-  void resetUser() {
-    viewModel?.clear();
-    shouldUpdate = true;
+  Future<void> resetUser() async {
+    _userStorageService.clearDB();
+    // Always try for the online user.
+    await setUser();
+    // shouldUpdate = true;
     notifyListeners();
   }
 
@@ -246,7 +248,11 @@ class UserProvider extends ChangeNotifier {
   Future<void> syncUser() async {
     // UserStorage catches exceptions -> will notify accordingly.
     // UserProvider has a handling routine.
-    await _userStorageService.syncUser();
+    try {
+      await _userStorageService.syncUser();
+    } on Error catch (e, stacktrace) {
+      log(e.toString(), stackTrace: stacktrace);
+    }
   }
 
   Future<void> updateUser() async {
@@ -386,9 +392,6 @@ class UserProvider extends ChangeNotifier {
 
   Future<void> signOut() async {
     // if the user is offline only, there is no need to sign out.
-    if (!(viewModel?.syncOnline ?? true)) {
-      return;
-    }
     try {
       await _authenticationService.signOut();
     } on AuthException catch (e, stacktrace) {
@@ -409,7 +412,7 @@ class UserProvider extends ChangeNotifier {
       }
     } on MultipleUsersException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
-      handleUserStateChange();
+      await handleUserStateChange();
     } on Error catch (e, stacktrace) {
       log("Unknown error", stackTrace: stacktrace);
       return Future.error(UnexpectedErrorException(), stacktrace);

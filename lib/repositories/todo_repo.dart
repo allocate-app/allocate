@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:developer';
 
 import 'package:flutter/foundation.dart';
 import 'package:isar/isar.dart';
@@ -15,6 +16,7 @@ import '../util/interfaces/repository/model/todo_repository.dart';
 import '../util/interfaces/sortable.dart';
 
 // This notifies when receiving data from the internet.
+// TODO: Refactor all Repos: must try for online first -> Update + Create
 class ToDoRepo extends ChangeNotifier implements ToDoRepository {
   static final ToDoRepo _instance = ToDoRepo._internal();
 
@@ -125,19 +127,10 @@ class ToDoRepo extends ChangeNotifier implements ToDoRepository {
     toDo.isSynced = isConnected;
 
     late int? id;
-    await _isarClient.writeTxn(() async {
-      id = await _isarClient.toDos.put(toDo);
-    });
-
-    if (null == id) {
-      throw FailureToCreateException("Failed to create ToDo locally \n"
-          "ToDo: ${toDo.toString()}\n"
-          "Time: ${DateTime.now()}\n"
-          "Isar Open: ${_isarClient.isOpen}");
-    }
 
     if (isConnected) {
       Map<String, dynamic> toDoEntity = toDo.toEntity();
+      toDoEntity["uuid"] = _supabaseClient.auth.currentUser!.id;
       final List<Map<String, dynamic>> response =
           await _supabaseClient.from("toDos").insert(toDoEntity).select("id");
 
@@ -152,6 +145,17 @@ class ToDoRepo extends ChangeNotifier implements ToDoRepository {
       }
     }
 
+    await _isarClient.writeTxn(() async {
+      id = await _isarClient.toDos.put(toDo);
+    });
+
+    if (null == id) {
+      throw FailureToCreateException("Failed to create ToDo locally \n"
+          "ToDo: ${toDo.toString()}\n"
+          "Time: ${DateTime.now()}\n"
+          "Isar Open: ${_isarClient.isOpen}");
+    }
+
     return toDo;
   }
 
@@ -161,19 +165,10 @@ class ToDoRepo extends ChangeNotifier implements ToDoRepository {
 
     // This is just for error checking.
     late int? id;
-    await _isarClient.writeTxn(() async {
-      id = await _isarClient.toDos.put(toDo);
-    });
-
-    if (null == id) {
-      throw FailureToUpdateException("Failed to update ToDo locally\n"
-          "ToDo: ${toDo.toString()}\n"
-          "Time: ${DateTime.now()}\n"
-          "Isar Open: ${_isarClient.isOpen}");
-    }
 
     if (isConnected) {
       Map<String, dynamic> toDoEntity = toDo.toEntity();
+      toDoEntity["uuid"] = _supabaseClient.auth.currentUser!.id;
       final List<Map<String, dynamic>> response =
           await _supabaseClient.from("toDos").upsert(toDoEntity).select("id");
 
@@ -186,6 +181,17 @@ class ToDoRepo extends ChangeNotifier implements ToDoRepository {
             "Session expired: ${_supabaseClient.auth.currentSession?.isExpired}");
       }
     }
+    await _isarClient.writeTxn(() async {
+      id = await _isarClient.toDos.put(toDo);
+    });
+
+    if (null == id) {
+      throw FailureToUpdateException("Failed to update ToDo locally\n"
+          "ToDo: ${toDo.toString()}\n"
+          "Time: ${DateTime.now()}\n"
+          "Isar Open: ${_isarClient.isOpen}");
+    }
+
     return toDo;
   }
 
@@ -439,7 +445,11 @@ class ToDoRepo extends ChangeNotifier implements ToDoRepository {
         .range(offset, offset + limit);
 
     for (Map<String, dynamic> entity in toDoEntities) {
-      data.add(ToDo.fromEntity(entity: entity));
+      try {
+        data.add(ToDo.fromEntity(entity: entity));
+      } on Error catch (e, stacktrace) {
+        log(e.toString(), stackTrace: stacktrace);
+      }
     }
     return data;
   }

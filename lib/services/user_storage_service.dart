@@ -58,12 +58,12 @@ class UserStorageService extends ChangeNotifier {
             callback: handleUpsert)
         .onPostgresChanges(
             schema: "public",
-            table: "users",
+            table: "allocateUsers",
             event: PostgresChangeEvent.update,
             callback: handleUpsert)
         .onPostgresChanges(
             schema: "public",
-            table: "users",
+            table: "allocateUsers",
             event: PostgresChangeEvent.delete,
             callback: handleDelete);
 
@@ -102,18 +102,13 @@ class UserStorageService extends ChangeNotifier {
   Future<void> updateUser({required AllocateUser user}) async {
     user.isSynced = isConnected;
     late int? id;
-    await _isarClient.writeTxn(() async {
-      id = await _isarClient.allocateUsers.put(user);
-    });
-    if (null == id) {
-      throw FailureToUpdateException("Failed to update user locally\n "
-          "User: $user\n Time: ${DateTime.now()}\n"
-          "Isar Open: ${_isarClient.isOpen}");
-    }
     if (isConnected) {
       Map<String, dynamic> userEntity = user.toEntity();
-      final List<Map<String, dynamic>> response =
-          await _supabaseClient.from("users").upsert(userEntity).select("id");
+      userEntity["uuid"] = _supabaseClient.auth.currentUser!.id;
+      final List<Map<String, dynamic>> response = await _supabaseClient
+          .from("allocateUsers")
+          .upsert(userEntity)
+          .select("id");
 
       id = response.last["id"];
       if (null == id) {
@@ -124,11 +119,21 @@ class UserStorageService extends ChangeNotifier {
             "Session expired: ${_supabaseClient.auth.currentSession?.isExpired}");
       }
     }
+
+    await _isarClient.writeTxn(() async {
+      id = await _isarClient.allocateUsers.put(user);
+    });
+    if (null == id) {
+      throw FailureToUpdateException("Failed to update user locally\n "
+          "User: $user\n Time: ${DateTime.now()}\n"
+          "Isar Open: ${_isarClient.isOpen}");
+    }
   }
 
   // Because this is running in the background and not always called by
   // a provider, these are implemented to notify instead of stop execution.
   // Exceptions should still be thrown, as they indicate unintended execution.
+  // This needs to be refactored -> based on whether the user is synced
   Future<void> syncUser({AllocateUser? onlineUser}) async {
     if (!isConnected) {
       return;
@@ -137,12 +142,13 @@ class UserStorageService extends ChangeNotifier {
     AllocateUser? localUser;
 
     try {
-      onlineUser = onlineUser ?? await fetchUser();
       localUser = await getUser();
       if (null == localUser) {
         throw UserMissingException("Local user missing from DB\n"
             "Users size: ${_isarClient.allocateUsers.countSync()}\n");
       }
+
+      onlineUser = onlineUser ?? await fetchUser();
 
       if (onlineUser != localUser) {
         throw MultipleUsersException(
@@ -174,9 +180,7 @@ class UserStorageService extends ChangeNotifier {
         toPut.id = localUser.id;
       }
 
-      await _isarClient.writeTxn(() async {
-        await _isarClient.allocateUsers.put(toPut);
-      });
+      await updateUser(user: toPut);
 
       _status = UserStatus.normal;
 
@@ -331,6 +335,7 @@ class UserStorageService extends ChangeNotifier {
     // TODO: refactor this logic once multi-user implementation
     if (users.length > 1) {
       _failureCache = users;
+      _status = UserStatus.multiple;
       throw MultipleUsersException(
           "Multiple users in database.\n"
           "Users Length: ${users.length}",
@@ -338,6 +343,21 @@ class UserStorageService extends ChangeNotifier {
     }
 
     return users.first;
+  }
+
+  Future<void> clearDB() async {
+    await _isarClient.writeTxn(() async {
+      await _isarClient.allocateUsers.clear();
+    });
+    _status = UserStatus.normal;
+
+    try {
+      // I don't quite remember what I was thinking here;
+      AllocateUser? onlineUser = await fetchUser();
+      await updateUser(user: onlineUser);
+    } on Error catch (e) {
+      return;
+    }
   }
 
   UserStorageService._internal();

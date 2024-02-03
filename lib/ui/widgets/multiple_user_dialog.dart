@@ -80,6 +80,7 @@ class _MultipleUserDialog extends State<MultipleUserDialog> {
                       thumbVisibility: true,
                       controller: _scrollController,
                       child: ListView.separated(
+                        shrinkWrap: true,
                         controller: _scrollController,
                         physics: _scrollPhysics,
                         itemCount: _users.length,

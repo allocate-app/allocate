@@ -207,7 +207,7 @@ class AllocateUser with EquatableMixin implements Copyable<AllocateUser> {
         "routineDesc": routineSorter?.descending,
         "reminderSort": reminderSorter?.sortMethod,
         "reminderDesc": reminderSorter?.descending,
-        "toDoSorter": toDoSorter?.sortMethod,
+        "toDoSort": toDoSorter?.sortMethod,
         "toDoDesc": toDoSorter?.descending,
         "deleteSchedule": deleteSchedule.index,
         "lastOpened": lastOpened.toIso8601String(),

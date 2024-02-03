@@ -334,6 +334,8 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
                         deadlineProvider.syncRepo(),
                         reminderProvider.syncRepo(),
                         groupProvider.syncRepo(),
+                        // This should probably just run the update function.
+                        userProvider.updateUser(),
                       ]);
                     }),
                 SettingsScreenWidgets.tapTile(

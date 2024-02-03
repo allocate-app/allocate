@@ -8,7 +8,6 @@ import '../../providers/application/layout_provider.dart';
 import '../../providers/model/user_provider.dart';
 import '../../util/constants.dart';
 
-// TODO: THIS NEEDS EMAIL + OTP
 class SignInDialog extends StatefulWidget {
   const SignInDialog({super.key});
 
@@ -192,7 +191,9 @@ class _SignInDialog extends State<SignInDialog> {
         handleClear: () {
           _tokenController.clear();
         },
-        onEditingComplete: () {},
+        onEditingComplete: () {
+          // TODO: factor out function to verifyOTP
+        },
       );
 
   Widget _buildSignInButton() => ValueListenableBuilder(
@@ -235,8 +236,9 @@ class _SignInDialog extends State<SignInDialog> {
                     return;
                   }
                   await userProvider
-                      .signInOTP(
+                      .verifyOTP(
                     email: _emailController.text,
+                    token: _tokenController.text,
                   )
                       .then((_) {
                     Navigator.pop(context, true);
