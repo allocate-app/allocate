@@ -13,6 +13,7 @@ import '../../../providers/model/deadline_provider.dart';
 import '../../../providers/viewmodels/deadline_viewmodel.dart';
 import '../../../util/constants.dart';
 import '../../../util/enums.dart';
+import '../../../util/exceptions.dart';
 import '../../widgets/flushbars.dart';
 import '../../widgets/handle_repeatable_modal.dart';
 import '../../widgets/listtile_widgets.dart';
@@ -166,6 +167,7 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
     return valid;
   }
 
+  // The error snackbar is causing an issue with popping the context..
   Future<void> handleUpdate() async {
     Deadline newDeadline = vm.toModel();
     if (_prev.frequency != Frequency.once &&
@@ -187,8 +189,32 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
               delta: newDeadline,
               single: updateSingle,
               delete: false)
-          .catchError((e) => Tiles.displayError(context: context, e: e));
-
+          .catchError((e) {
+            Tiles.displayError(e: e);
+            vm.clear();
+            Navigator.pop(context);
+            return;
+          }, test: (e) => e is FailureToUpdateException)
+          .catchError((e) => Tiles.displayError(e: e))
+          .whenComplete(() async {
+            return await eventProvider
+                .updateEventModel(
+              oldModel: _prev,
+              newModel: newDeadline,
+              notify: true,
+            )
+                .whenComplete(() {
+              vm.clear();
+              Navigator.pop(context);
+            });
+          });
+    }
+    await deadlineProvider
+        .updateDeadline(deadline: newDeadline)
+        .catchError((e) async {
+      Tiles.displayError(e: e);
+      // await Future.delayed(const Duration(seconds: 20));
+    }).whenComplete(() async {
       return await eventProvider
           .updateEventModel(
         oldModel: _prev,
@@ -199,20 +225,6 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
         vm.clear();
         Navigator.pop(context);
       });
-    }
-    await deadlineProvider
-        .updateDeadline(deadline: newDeadline)
-        .catchError((e) => Tiles.displayError(context: context, e: e));
-
-    return await eventProvider
-        .updateEventModel(
-      oldModel: _prev,
-      newModel: newDeadline,
-      notify: true,
-    )
-        .whenComplete(() {
-      vm.clear();
-      Navigator.pop(context);
     });
   }
 
@@ -238,7 +250,7 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
               delta: newDeadline,
               single: deleteSingle,
               delete: true)
-          .catchError((e) => Tiles.displayError(context: context, e: e));
+          .catchError((e) => Tiles.displayError(e: e));
 
       newDeadline.toDelete = true;
       return await eventProvider
@@ -255,7 +267,7 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
 
     await deadlineProvider
         .deleteDeadline(deadline: newDeadline)
-        .catchError((e) => Tiles.displayError(context: context, e: e));
+        .catchError((e) => Tiles.displayError(e: e));
 
     newDeadline.toDelete = true;
     return await eventProvider

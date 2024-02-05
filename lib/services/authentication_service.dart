@@ -37,19 +37,55 @@ class AuthenticationService implements Authenticator {
   }
 
   @override
-  Future<String> verifyOTP(
+  Future<String> verifySignInOTP(
       {required String email, required String token}) async {
-    final response = await _supabaseClient.auth.verifyOTP(
+    late final AuthResponse response;
+
+    // try {
+    //   response = await _supabaseClient.auth.verifyOTP(
+    //     email: email,
+    //     token: token,
+    //     type: OtpType.magiclink,
+    //   );
+    // } on Error {
+    //   response = await _supabaseClient.auth.verifyOTP(
+    //     email: email,
+    //     token: token,
+    //     type: OtpType.signup,
+    //   );
+    // }
+    // According to supabase, this SHOULD work.
+    // I think it might have been my edge-function causing problems -TEST THIS.
+    response = await _supabaseClient.auth.verifyOTP(
       email: email,
       token: token,
-      type: OtpType.magiclink,
+      type: OtpType.email,
     );
+
     if (null == response.user || null == response.user?.id) {
       throw LoginFailedException(
           "Invalid email/token\nemail: $email\ntoken: $token");
     }
 
     return response.user!.id;
+  }
+
+  @override
+  Future<String> verifyEmailChangeOTP(
+      {required String email, required String token}) async {
+    late final AuthResponse response;
+
+    response = await _supabaseClient.auth
+        .verifyOTP(email: email, token: token, type: OtpType.emailChange);
+
+    // MAAAYBE?
+    if (null == response.user || null == response.user?.newEmail) {
+      throw EmailChangeException("Invalid email/token\nemail: $email\n"
+          "token: $token\nresponseEmail: ${response.user?.email}\n"
+          "responseNewEmail:${response.user?.newEmail}");
+    }
+
+    return email;
   }
 
   @override

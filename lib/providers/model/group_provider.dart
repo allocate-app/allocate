@@ -24,7 +24,6 @@ class GroupProvider extends ChangeNotifier {
     _rebuild = rebuild;
     if (_rebuild) {
       groups = [];
-      secondaryGroups = [];
       notifyListeners();
     }
   }
@@ -33,7 +32,6 @@ class GroupProvider extends ChangeNotifier {
     _rebuild = rebuild;
     if (_rebuild) {
       groups = [];
-      secondaryGroups = [];
     }
   }
 

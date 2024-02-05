@@ -5,9 +5,13 @@ import 'package:flex_seed_scheme/flex_seed_scheme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_acrylic/flutter_acrylic.dart';
+import 'package:provider/provider.dart';
 import 'package:window_manager/window_manager.dart';
 
-import '../ui/views/route_views/loading_screen.dart';
+import '../providers/application/layout_provider.dart';
+import '../providers/model/user_provider.dart';
+import '../services/application_service.dart';
+import '../ui/widgets/update_email_dialog.dart';
 import '../util/constants.dart';
 
 // This may require providers. Right now, this is just so I can build GUI things without
@@ -24,7 +28,7 @@ void main() async {
     await windowManager.setResizable(true);
     // TODO: implement windows transparent titlebar.
     WindowOptions windowOptions = const WindowOptions(
-      minimumSize: Constants.minDesktopSize,
+      minimumSize: Constants.testDesktopSize,
     );
 
     await windowManager.waitUntilReadyToShow(windowOptions, () async {
@@ -36,9 +40,40 @@ void main() async {
   }
 
   // TESTING WIDGETS
-  Widget testWidget = const LoadingScreen();
+  // Widget testWidget = const LoadingScreen();
+  Widget testWidget = Scaffold(
+    body: Builder(builder: (BuildContext context) {
+      return Center(
+          child: FilledButton(
+              child: const Text("Email Dialog"),
+              onPressed: () async {
+                await showDialog(
+                    context: context,
+                    builder: (BuildContext context) {
+                      return const UpdateEmailDialog();
+                    });
+              }));
+    }),
+  );
+  // Widget testWidget = Scaffold(
+  //   body: Builder(builder: (BuildContext context) {
+  //     return Center(
+  //         child: FilledButton(
+  //             child: const Text("Sign-In Dialog"),
+  //             onPressed: () async {
+  //               await showDialog(
+  //                   context: context,
+  //                   builder: (BuildContext context) {
+  //                     return const SignInDialog();
+  //                   });
+  //             }));
+  //   }),
+  // );
 
-  runApp(WidgetTester(testWidget: testWidget));
+  runApp(MultiProvider(providers: [
+    ChangeNotifierProvider<LayoutProvider>(create: (_) => LayoutProvider()),
+    ChangeNotifierProvider<UserProvider>(create: (_) => UserProvider()),
+  ], child: WidgetTester(testWidget: testWidget)));
 }
 
 class WidgetTester extends StatefulWidget {
@@ -51,6 +86,17 @@ class WidgetTester extends StatefulWidget {
 }
 
 class _WidgetTester extends State<WidgetTester> {
+  late final LayoutProvider layoutProvider;
+
+  @override
+  void initState() {
+    super.initState();
+    layoutProvider = Provider.of<LayoutProvider>(context, listen: false);
+    // NOTE: this does throw an exception -> but it should be fine.
+    layoutProvider.drawerOpened = false;
+    layoutProvider.isMobile = Platform.isAndroid || Platform.isIOS;
+  }
+
   // Basic themes.
   ThemeData lightTheme = ThemeData(
     colorScheme: SeedColorScheme.fromSeeds(
@@ -68,12 +114,18 @@ class _WidgetTester extends State<WidgetTester> {
   );
 
   @override
-  Widget build(BuildContext context) => TitlebarSafeArea(
-        child: MaterialApp(
-          theme: lightTheme,
-          darkTheme: darkTheme,
-          themeMode: ThemeMode.system,
-          home: widget.testWidget,
-        ),
-      );
+  Widget build(BuildContext context) {
+    layoutProvider.size = MediaQuery.sizeOf(context);
+    layoutProvider.isTablet = layoutProvider.isMobile &&
+        (layoutProvider.size.shortestSide > Constants.smallScreen);
+    return TitlebarSafeArea(
+      child: MaterialApp(
+        navigatorKey: ApplicationService.instance.globalNavigatorKey,
+        theme: lightTheme,
+        darkTheme: darkTheme,
+        themeMode: ThemeMode.system,
+        home: widget.testWidget,
+      ),
+    );
+  }
 }

@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import '../../providers/application/layout_provider.dart';
 import '../../providers/model/user_provider.dart';
 import '../../util/constants.dart';
+import '../../util/exceptions.dart';
 
 class UpdateEmailDialog extends StatefulWidget {
   const UpdateEmailDialog({super.key});
@@ -16,68 +17,129 @@ class UpdateEmailDialog extends StatefulWidget {
 }
 
 class _UpdateEmailDialog extends State<UpdateEmailDialog> {
-  late final TextEditingController _oldController;
-  late final TextEditingController _newController;
+  late final TextEditingController _oldEmailController;
+  late final TextEditingController _newEmailController;
+  late final TextEditingController _tokenController;
   late final LayoutProvider layoutProvider;
   late final UserProvider userProvider;
 
-  late final ValueNotifier<bool> validSubmit;
-  late final ValueNotifier<String?> _errorText;
+  late final ValueNotifier<bool> validRequest;
+  late final ValueNotifier<bool> validChallenge;
+  late final ValueNotifier<bool> validNew;
+  late final ValueNotifier<bool> validOld;
+  late final ValueNotifier<bool> validToken;
 
   @override
   void initState() {
     super.initState();
     layoutProvider = Provider.of<LayoutProvider>(context, listen: false);
     userProvider = Provider.of<UserProvider>(context, listen: false);
-    validSubmit = ValueNotifier<bool>(false);
-    _errorText = ValueNotifier<String?>(null);
-    _oldController = TextEditingController();
-    _newController = TextEditingController();
-    _oldController.addListener(announceOld);
-    _newController.addListener(announceNew);
+    validRequest = ValueNotifier<bool>(false);
+    validChallenge = ValueNotifier<bool>(false);
+    validNew = ValueNotifier<bool>(false);
+    validOld = ValueNotifier<bool>(false);
+    validToken = ValueNotifier<bool>(false);
+    _oldEmailController = TextEditingController();
+    _newEmailController = TextEditingController();
+    _tokenController = TextEditingController();
+    _oldEmailController.addListener(announceOld);
+    _newEmailController.addListener(announceNew);
+    _tokenController.addListener(announceToken);
   }
 
   @override
   void dispose() {
-    _oldController.removeListener(announceOld);
-    _newController.removeListener(announceNew);
-    _oldController.dispose();
-    _newController.dispose();
+    _oldEmailController.removeListener(announceOld);
+    _newEmailController.removeListener(announceNew);
+    _oldEmailController.dispose();
+    _newEmailController.dispose();
     super.dispose();
   }
 
   // This is just because of listener signatures
   void announceOld() {
-    announceText(_oldController);
+    announceText(_oldEmailController);
   }
 
   void announceNew() {
-    announceText(_newController);
+    announceText(_newEmailController);
+  }
+
+  void announceToken() {
+    announceText(_tokenController);
   }
 
   void announceText(TextEditingController controller) {
-    _errorText.value = null;
     SemanticsService.announce(controller.text, Directionality.of(context));
 
-    validSubmit.value =
-        _oldController.text.isNotEmpty && _newController.text.isNotEmpty;
+    validNew.value = _newEmailController.text.isNotEmpty;
+    validOld.value = _oldEmailController.text.isNotEmpty;
+    validToken.value = _tokenController.text.isNotEmpty;
+
+    validRequest.value = validNew.value && validOld.value;
+    validChallenge.value = validNew.value && validToken.value;
   }
 
-  bool validateEmailPassword() {
+  bool validateEmails() {
+    if (!validateOldEmail()) {
+      return false;
+    }
+    return validateNewEmail();
+  }
+
+  bool validateOldEmail() {
+    if (!_oldEmailController.text.contains(RegExp(r"^.*@.*\..*$"))) {
+      Tiles.displayError(
+          e: InvalidInputException("Old Email: Invalid email format"));
+      return false;
+    }
+    return true;
+  }
+
+  bool validateNewEmail() {
+    if (!_newEmailController.text.contains(RegExp(r".*@.*\..*$"))) {
+      Tiles.displayError(
+          e: InvalidInputException("New Email: Invalid email format"));
+      return false;
+    }
+
+    if (_oldEmailController.text == _newEmailController.text) {
+      Tiles.displayError(
+          e: InvalidInputException("New email matches previous email."));
+      return false;
+    }
+    return true;
+  }
+
+  bool validateToken() {
     bool valid = true;
-
-    if (_oldController.text != userProvider.viewModel?.email) {
-      Tiles.displayError(
-          context: context, e: Exception("Previous email incorrect"));
+    if (_tokenController.text.isEmpty ||
+        !_tokenController.text.contains(RegExp(r"^[0-9]{6}$"))) {
       valid = false;
-    }
-    if (_oldController.text == _newController.text) {
-      Tiles.displayError(
-          context: context, e: Exception("New email matches previous email."));
-      valid = false;
-    }
 
+      Tiles.displayError(e: InvalidInputException("Invalid 6-digit token"));
+    }
     return valid;
+  }
+
+  Future<void> handleVerify() async {
+    if (!validateToken()) {
+      return;
+    }
+    if (!validateNewEmail()) {
+      return;
+    }
+
+    await userProvider
+        .verifiyEmailChange(
+      newEmail: _newEmailController.text,
+      token: _tokenController.text,
+    )
+        .then((_) {
+      Navigator.pop(context);
+    }).catchError((e) async {
+      Tiles.displayError(e: e);
+    });
   }
 
   @override
@@ -100,6 +162,7 @@ class _UpdateEmailDialog extends State<UpdateEmailDialog> {
                         mainAxisAlignment: MainAxisAlignment.start,
                         children: [
                           Expanded(
+                            flex: 3,
                             child: AutoSizeText(
                               "Update Email",
                               softWrap: false,
@@ -109,12 +172,10 @@ class _UpdateEmailDialog extends State<UpdateEmailDialog> {
                               style: Constants.largeHeaderStyle,
                             ),
                           ),
-                          Flexible(
-                            child: FittedBox(
-                              fit: BoxFit.fill,
-                              child: Icon(Icons.send_rounded,
-                                  size: Constants.lgIconSize),
-                            ),
+                          FittedBox(
+                            fit: BoxFit.fill,
+                            child: Icon(Icons.send_rounded,
+                                size: Constants.lgIconSize),
                           ),
                         ]),
                     Padding(
@@ -135,34 +196,34 @@ class _UpdateEmailDialog extends State<UpdateEmailDialog> {
                       ),
                     ),
                     Padding(
+                      padding: const EdgeInsets.symmetric(
+                          vertical: Constants.padding),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [Expanded(child: _buildTokenTile())],
+                      ),
+                    ),
+                    Padding(
                       padding: const EdgeInsets.only(top: Constants.padding),
                       child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           mainAxisSize: MainAxisSize.min,
                           children: [
+                            // TODO: factor this out. -> token challenge instead.
                             Expanded(
                               child: Padding(
                                 padding: const EdgeInsets.only(
                                     right: Constants.padding),
-                                child: FilledButton.tonalIcon(
-                                    icon: const Icon(Icons.close_rounded),
-                                    onPressed: () {
-                                      Navigator.pop(context, false);
-                                    },
-                                    label: const AutoSizeText("Cancel",
-                                        softWrap: false,
-                                        overflow: TextOverflow.visible,
-                                        maxLines: 1,
-                                        minFontSize: Constants.large)),
+                                child: _buildEmailUpdateButton(),
                               ),
                             ),
+
                             Expanded(
-                              child: Padding(
-                                padding: const EdgeInsets.only(
-                                    left: Constants.padding),
-                                child: _buildSignInButton(),
-                              ),
-                            )
+                                child: Padding(
+                              padding: const EdgeInsets.only(
+                                  left: Constants.padding),
+                              child: _buildChallengeButton(),
+                            )),
                           ]),
                     ),
                   ],
@@ -171,59 +232,93 @@ class _UpdateEmailDialog extends State<UpdateEmailDialog> {
         ),
       );
 
-  Widget _buildOldTile() => Tiles.nameTile(
-        context: context,
-        controller: _oldController,
-        hintText: "Old Email",
-        labelText: "Old Email",
-        errorText: null,
-        handleClear: () {
-          // This should still fire the listener.
-          _oldController.clear();
-        },
-        onEditingComplete: () {},
-      );
-
-  Widget _buildNewTile() => ValueListenableBuilder(
-        valueListenable: _errorText,
-        builder: (BuildContext context, String? value, Widget? child) =>
+  Widget _buildOldTile() => ValueListenableBuilder(
+        valueListenable: validOld,
+        builder: (BuildContext context, bool value, Widget? child) =>
             Tiles.nameTile(
           context: context,
-          controller: _newController,
-          hintText: "New Email",
-          labelText: "New Email",
-          errorText: value,
+          controller: _oldEmailController,
+          hintText: "Old Email",
+          labelText: "Old Email",
+          errorText: null,
           handleClear: () {
-            _newController.clear();
+            // This should still fire the listener.
+            _oldEmailController.clear();
           },
           onEditingComplete: () {},
         ),
       );
 
-  Widget _buildSignInButton() => ValueListenableBuilder(
-      valueListenable: validSubmit,
+  Widget _buildNewTile() => ValueListenableBuilder(
+        valueListenable: validNew,
+        builder: (BuildContext context, bool value, Widget? child) =>
+            Tiles.nameTile(
+          context: context,
+          controller: _newEmailController,
+          hintText: "New Email",
+          labelText: "New Email",
+          errorText: null,
+          handleClear: () {
+            _newEmailController.clear();
+          },
+          onEditingComplete: () {},
+        ),
+      );
+
+  Widget _buildTokenTile() => ValueListenableBuilder(
+        valueListenable: validToken,
+        builder: (BuildContext context, bool value, Widget? child) =>
+            Tiles.nameTile(
+          context: context,
+          controller: _tokenController,
+          hintText: "One-Time-Password",
+          labelText: "One-Time-Password",
+          errorText: null,
+          handleClear: () {
+            _tokenController.clear();
+          },
+          onEditingComplete: (validChallenge.value) ? handleVerify : () {},
+        ),
+      );
+
+  Widget _buildChallengeButton() => ValueListenableBuilder(
+      valueListenable: validChallenge,
+      builder: (BuildContext context, bool valid, Widget? child) {
+        return FilledButton.icon(
+          icon: const Icon(Icons.mark_email_read_rounded),
+          onPressed: (valid) ? handleVerify : null,
+          label: const AutoSizeText(
+            "Confirm (OTP)",
+          ),
+        );
+      });
+
+  Widget _buildEmailUpdateButton() => ValueListenableBuilder(
+      valueListenable: validRequest,
       builder: (BuildContext context, bool valid, Widget? child) {
         return FilledButton.icon(
           icon: const Icon(Icons.email_rounded),
           onPressed: (valid)
               ? () async {
-                  if (!validateEmailPassword()) {
+                  if (!validateEmails()) {
                     return;
                   }
                   await userProvider
                       .updateEmail(
-                        newEmail: _newController.text,
-                      )
-                      .then((_) => Navigator.pop(context, true))
-                      .catchError((e) async {
-                    Tiles.displayError(context: context, e: e);
+                    newEmail: _newEmailController.text,
+                  )
+                      .then((_) {
+                    Tiles.displayAlert(
+                        message: "Check your new email for an OTP to confirm");
+                  }).catchError((e) async {
+                    Tiles.displayError(e: e);
                   });
                 }
               : null,
-          label: const AutoSizeText("Update Email",
-              softWrap: false,
+          label: const AutoSizeText("Request Update",
+              softWrap: true,
               overflow: TextOverflow.visible,
-              maxLines: 1,
+              maxLines: 2,
               minFontSize: Constants.large),
         );
       });

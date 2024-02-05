@@ -16,7 +16,8 @@ import '../util/interfaces/repository/model/todo_repository.dart';
 import '../util/interfaces/sortable.dart';
 
 // This notifies when receiving data from the internet.
-// TODO: Refactor all Repos: must try for online first -> Update + Create
+// Deemed unnecessary to store uuid, but uuid req'd for RLS
+// All maps must have a uuid column.
 class ToDoRepo extends ChangeNotifier implements ToDoRepository {
   static final ToDoRepo _instance = ToDoRepo._internal();
 
@@ -35,6 +36,8 @@ class ToDoRepo extends ChangeNotifier implements ToDoRepository {
   bool _initialized = false;
 
   String get uuid => _supabaseClient.auth.currentUser?.id ?? "";
+
+  String? currentUserID;
 
   @override
   void init() {
@@ -72,19 +75,24 @@ class ToDoRepo extends ChangeNotifier implements ToDoRepository {
     SupabaseService.instance.authSubscription.listen((AuthState data) async {
       final AuthChangeEvent event = data.event;
       switch (event) {
-        case AuthChangeEvent.signedIn:
-          await syncRepo();
+        case AuthChangeEvent.initialSession:
+          await handleUserChange();
           // OPEN TABLE STREAM -> insert new data.
+          if (!_subscribed) {
+            _toDoStream.subscribe();
+            _subscribed = true;
+          }
+        case AuthChangeEvent.signedIn:
+          await handleUserChange();
+          // This should close and re-open the subscription?
           if (!_subscribed) {
             _toDoStream.subscribe();
             _subscribed = true;
           }
           break;
         case AuthChangeEvent.tokenRefreshed:
-          // If not listening to the stream, there hasn't been an update.
-          // Sync accordingly.
           if (!_subscribed) {
-            await syncRepo();
+            await handleUserChange();
             _toDoStream.subscribe();
             _subscribed = true;
           }
@@ -97,36 +105,47 @@ class ToDoRepo extends ChangeNotifier implements ToDoRepository {
         default:
           break;
       }
-      // if (event == AuthChangeEvent.signedIn) {
-      //   await syncRepo();
-      //   // OPEN TABLE STREAM -> insert new data.
-      //   if (!_subscribed) {
-      //     _toDoStream.subscribe();
-      //     _subscribed = true;
-      //   }
-      //   return;
-      // } else if (event == AuthChangeEvent.tokenRefreshed) {
-      //   // If not listening to the stream, there hasn't been an update.
-      //   // Sync accordingly.
-      //   if (!_subscribed) {
-      //     await syncRepo();
-      //     _toDoStream.subscribe();
-      //     _subscribed = true;
-      //   }
-      //   return;
-      // } else if (event == AuthChangeEvent.signedOut) {
-      //   // CLOSE TABLE STREAM.
-      //   await _toDoStream.unsubscribe();
-      //   _subscribed = false;
-      // }
     });
   }
 
+  Future<void> handleUserChange() async {
+    String? newID = _supabaseClient.auth.currentUser?.id;
+
+    if (newID == currentUserID) {
+      return syncRepo();
+    }
+
+    // In the case that the previous currentUserID was null.
+    // This implies a new login, or a fresh open.
+    // if not online, this will just early return.
+    if (null == currentUserID) {
+      currentUserID = newID;
+      return await syncRepo();
+    }
+
+    // This implies there is a new user -> clear the DB
+    // and insert the new user.
+    currentUserID = newID;
+    return await swapRepo();
+  }
+
+  // Offline first -> local operation first.
   @override
   Future<ToDo> create(ToDo toDo) async {
     toDo.isSynced = isConnected;
 
     late int? id;
+
+    await _isarClient.writeTxn(() async {
+      id = await _isarClient.toDos.put(toDo);
+    });
+
+    if (null == id) {
+      throw FailureToCreateException("Failed to create ToDo locally \n"
+          "ToDo: ${toDo.toString()}\n"
+          "Time: ${DateTime.now()}\n"
+          "Isar Open: ${_isarClient.isOpen}");
+    }
 
     if (isConnected) {
       Map<String, dynamic> toDoEntity = toDo.toEntity();
@@ -145,26 +164,27 @@ class ToDoRepo extends ChangeNotifier implements ToDoRepository {
       }
     }
 
-    await _isarClient.writeTxn(() async {
-      id = await _isarClient.toDos.put(toDo);
-    });
-
-    if (null == id) {
-      throw FailureToCreateException("Failed to create ToDo locally \n"
-          "ToDo: ${toDo.toString()}\n"
-          "Time: ${DateTime.now()}\n"
-          "Isar Open: ${_isarClient.isOpen}");
-    }
-
     return toDo;
   }
 
+  // Offline first -> local first
   @override
   Future<ToDo> update(ToDo toDo) async {
     toDo.isSynced = isConnected;
 
     // This is just for error checking.
     late int? id;
+
+    await _isarClient.writeTxn(() async {
+      id = await _isarClient.toDos.put(toDo);
+    });
+
+    if (null == id) {
+      throw FailureToUpdateException("Failed to update ToDo locally\n"
+          "ToDo: ${toDo.toString()}\n"
+          "Time: ${DateTime.now()}\n"
+          "Isar Open: ${_isarClient.isOpen}");
+    }
 
     if (isConnected) {
       Map<String, dynamic> toDoEntity = toDo.toEntity();
@@ -180,16 +200,6 @@ class ToDoRepo extends ChangeNotifier implements ToDoRepository {
             "Supabase Open: $isConnected"
             "Session expired: ${_supabaseClient.auth.currentSession?.isExpired}");
       }
-    }
-    await _isarClient.writeTxn(() async {
-      id = await _isarClient.toDos.put(toDo);
-    });
-
-    if (null == id) {
-      throw FailureToUpdateException("Failed to update ToDo locally\n"
-          "ToDo: ${toDo.toString()}\n"
-          "Time: ${DateTime.now()}\n"
-          "Isar Open: ${_isarClient.isOpen}");
     }
 
     return toDo;
@@ -217,8 +227,11 @@ class ToDoRepo extends ChangeNotifier implements ToDoRepository {
 
     if (isConnected) {
       ids.clear();
-      List<Map<String, dynamic>> toDoEntities =
-          (toDos).map((toDo) => toDo.toEntity()).toList();
+      List<Map<String, dynamic>> toDoEntities = (toDos).map((toDo) {
+        Map<String, dynamic> entity = toDo.toEntity();
+        entity["uuid"] = _supabaseClient.auth.currentUser!.id;
+        return entity;
+      }).toList();
       final List<Map<String, dynamic>> responses =
           await _supabaseClient.from("toDos").upsert(toDoEntities).select("id");
 
@@ -293,6 +306,12 @@ class ToDoRepo extends ChangeNotifier implements ToDoRepository {
       await _supabaseClient.from("toDos").delete().neq("customViewIndex", -2);
     }
 
+    await _isarClient.writeTxn(() async {
+      await _isarClient.toDos.clear();
+    });
+  }
+
+  Future<void> clearLocal() async {
     await _isarClient.writeTxn(() async {
       await _isarClient.toDos.clear();
     });
@@ -452,6 +471,11 @@ class ToDoRepo extends ChangeNotifier implements ToDoRepository {
       }
     }
     return data;
+  }
+
+  Future<void> swapRepo() async {
+    await clearLocal();
+    await syncRepo();
   }
 
   Future<void> handleUpsert(PostgresChangePayload payload) async {

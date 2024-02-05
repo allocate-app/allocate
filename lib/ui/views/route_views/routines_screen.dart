@@ -103,6 +103,7 @@ class _RoutinesListScreen extends State<RoutinesListScreen> {
                 const EdgeInsets.symmetric(vertical: Constants.halfPadding),
             context: context,
             onTap: () async => await showDialog(
+              useRootNavigator: false,
               barrierDismissible: false,
               context: context,
               builder: (BuildContext context) => const CreateRoutineScreen(),

@@ -18,6 +18,7 @@ import '../../../providers/model/user_provider.dart';
 import "../../../providers/viewmodels/todo_viewmodel.dart";
 import "../../../util/constants.dart";
 import "../../../util/enums.dart";
+import "../../../util/exceptions.dart";
 import "../../widgets/flushbars.dart";
 import "../../widgets/handle_repeatable_modal.dart";
 import "../../widgets/listtile_widgets.dart";
@@ -230,6 +231,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
     return valid;
   }
 
+  // These need to function in spite of an online error.
   Future<void> handleUpdate() async {
     ToDo newToDo = vm.toModel();
     if (_prev.frequency != Frequency.once &&
@@ -248,36 +250,46 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
       await toDoProvider
           .handleRepeating(
               toDo: _prev, delta: newToDo, single: updateSingle, delete: false)
-          .catchError((e) => Tiles.displayError(context: context, e: e));
-
-      return await eventProvider
-          .updateEventModel(
-        oldModel: _prev,
-        newModel: newToDo,
-        notify: true,
-      )
-          .whenComplete(() {
-        vm.clear();
-        Navigator.pop(context);
+          .catchError((e) => Tiles.displayError(e: e))
+          .whenComplete(() async {
+        return await eventProvider
+            .updateEventModel(
+          oldModel: _prev,
+          newModel: newToDo,
+          notify: true,
+        )
+            .whenComplete(() {
+          vm.clear();
+          Navigator.pop(context);
+        });
       });
     }
 
     await toDoProvider
         .updateToDo(toDo: newToDo)
-        .catchError((e) => Tiles.displayError(context: context, e: e));
-
-    return await eventProvider
-        .updateEventModel(
-      oldModel: _prev,
-      newModel: newToDo,
-      notify: true,
-    )
-        .whenComplete(() {
-      vm.clear();
-      Navigator.pop(context);
-    });
+        .catchError((e) {
+          Tiles.displayError(e: e);
+          vm.clear();
+          Navigator.pop(context);
+          return;
+        }, test: (e) => e is FailureToUpdateException)
+        .catchError((e) => Tiles.displayError(e: e))
+        .whenComplete(() async {
+          return await eventProvider
+              .updateEventModel(
+            oldModel: _prev,
+            newModel: newToDo,
+            notify: true,
+          )
+              .whenComplete(() {
+            vm.clear();
+            Navigator.pop(context);
+          });
+        });
   }
 
+  // These need to function in spite of an online error.
+  // TODO: this needs refactoring -> pop context then show the flushbar.
   Future<void> handleDelete() async {
     ToDo newToDo = vm.toModel();
     if (_prev.frequency != Frequency.once &&
@@ -297,7 +309,26 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
       await toDoProvider
           .handleRepeating(
               toDo: _prev, delta: newToDo, single: deleteSingle, delete: true)
-          .catchError((e) => Tiles.displayError(context: context, e: e));
+          .catchError((e) => Tiles.displayError(e: e))
+          .whenComplete(() async {
+        newToDo.toDelete = true;
+        return await eventProvider
+            .updateEventModel(
+          oldModel: _prev,
+          newModel: newToDo,
+          notify: true,
+        )
+            .whenComplete(() {
+          vm.clear();
+          Navigator.pop(context);
+        });
+      });
+    }
+
+    await toDoProvider
+        .deleteToDo(toDo: newToDo)
+        .catchError((e) => Tiles.displayError(e: e))
+        .whenComplete(() async {
       newToDo.toDelete = true;
       return await eventProvider
           .updateEventModel(
@@ -309,22 +340,6 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
         vm.clear();
         Navigator.pop(context);
       });
-    }
-
-    await toDoProvider
-        .deleteToDo(toDo: newToDo)
-        .catchError((e) => Tiles.displayError(context: context, e: e));
-
-    newToDo.toDelete = true;
-    return await eventProvider
-        .updateEventModel(
-      oldModel: _prev,
-      newModel: newToDo,
-      notify: true,
-    )
-        .whenComplete(() {
-      vm.clear();
-      Navigator.pop(context);
     });
   }
 

@@ -151,11 +151,11 @@ class _SubtaskQuickEntry extends State<SubtaskQuickEntry> {
                           ? () async {
                               await subtaskProvider
                                   .createSubtask(vm.toModel())
+                                  .catchError((e) => Tiles.displayError(e: e))
                                   .whenComplete(() {
                                 resetVM();
                                 nameEditingController.clear();
-                              }).catchError((e) => Tiles.displayError(
-                                      context: context, e: e));
+                              });
                             }
                           : null);
                 }),

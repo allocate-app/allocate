@@ -104,6 +104,7 @@ class _DeadlinesListScreen extends State<DeadlinesListScreen> {
                   const EdgeInsets.symmetric(vertical: Constants.halfPadding),
               context: context,
               onTap: () async => await showDialog(
+                useRootNavigator: false,
                 barrierDismissible: false,
                 context: context,
                 builder: (BuildContext context) => const CreateDeadlineScreen(),

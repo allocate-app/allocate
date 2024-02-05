@@ -2,7 +2,6 @@ import "dart:io";
 
 import "package:allocate/ui/widgets/check_delete_dialog.dart";
 import "package:allocate/ui/widgets/update_email_dialog.dart";
-import "package:flutter/foundation.dart";
 import "package:flutter/material.dart";
 import "package:intl/intl.dart";
 import "package:provider/provider.dart";
@@ -17,7 +16,6 @@ import "../../../providers/model/subtask_provider.dart";
 import "../../../providers/model/todo_provider.dart";
 import '../../../providers/model/user_provider.dart';
 import "../../../providers/viewmodels/user_viewmodel.dart";
-import "../../../services/supabase_service.dart";
 import "../../../util/constants.dart";
 import "../../../util/enums.dart";
 import "../../../util/exceptions.dart";
@@ -39,7 +37,7 @@ class UserSettingsScreen extends StatefulWidget {
 class _UserSettingsScreen extends State<UserSettingsScreen> {
   // For testing
   // Mock online needs to be removed.
-  late bool _mockOnline;
+  // late bool _mockOnline;
   late final UserProvider userProvider;
   late final UserViewModel vm;
   late final ToDoProvider toDoProvider;
@@ -60,8 +58,7 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
   late MenuController _scaffoldController;
   late MenuController _sidebarController;
 
-  // LOOOL - Factor this out pls.
-  bool get _offline => !SupabaseService.instance.isConnected;
+  // bool get _debugOffline => !SupabaseService.instance.offlineDebug;
 
   // Factor out into functions.
   @override
@@ -78,7 +75,7 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
     groupProvider = Provider.of<GroupProvider>(context, listen: false);
     subtaskProvider = Provider.of<SubtaskProvider>(context, listen: false);
 
-    _mockOnline = false;
+    // _mockOnline = false;
 
     _scaffoldController = MenuController();
     _sidebarController = MenuController();
@@ -159,7 +156,7 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
                                     EdgeInsets.all(Constants.halfPadding - 1),
                                 child: SizedBox.shrink(),
                               ),
-                              _buildSignInOut(),
+                              _buildSignOut(),
                               _buildDeleteAccount(),
                             ],
                           ),
@@ -233,7 +230,7 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
                     // ABOUT
                     _buildAboutSection(),
                     // SIGN OUT
-                    _buildSignInOut(),
+                    _buildSignOut(),
 
                     // DELETE ACCOUNT
                     _buildDeleteAccount(),
@@ -269,19 +266,22 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
     //   },
     // );
 
-    // Right now, this just updates the name -> doesn't really need to watch uuid.
-    return Selector<UserViewModel, (String, String?, String?)>(
-        selector: (BuildContext context, UserViewModel vm) =>
-            (vm.username, vm.email, vm.uuid),
-        builder: (BuildContext context, (String, String?, String?) watchInfo,
-            Widget? child) {
-          return SettingsScreenWidgets.userQuickInfo(
-            context: context,
-            // userProvider: value,
-            viewModel: vm,
-            outerPadding: const EdgeInsets.only(bottom: Constants.halfPadding),
-          );
-        });
+    return ValueListenableBuilder(
+        valueListenable: userProvider.isConnected,
+        builder: (BuildContext context, bool online, Widget? child) =>
+            Selector<UserViewModel, (String, String?)>(
+                selector: (BuildContext context, UserViewModel vm) =>
+                    (vm.username, vm.email),
+                builder: (BuildContext context, (String, String?) watchInfo,
+                    Widget? child) {
+                  return SettingsScreenWidgets.userQuickInfo(
+                    context: context,
+                    viewModel: vm,
+                    connected: online,
+                    outerPadding:
+                        const EdgeInsets.only(bottom: Constants.halfPadding),
+                  );
+                }));
   }
 
   Widget _buildEnergyTile({double maxScale = 1.5}) {
@@ -311,7 +311,9 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
     return ValueListenableBuilder<bool>(
         valueListenable: userProvider.isConnected,
         builder: (BuildContext context, bool isConnected, Widget? child) {
-          if (isConnected || (kDebugMode && _mockOnline)) {
+          if (isConnected
+              // || (kDebugMode && _mockOnline)
+              ) {
             return SettingsScreenWidgets.settingsSection(
               context: context,
               title: "Account",
@@ -322,7 +324,6 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
                     onTap: () async {
                       if (!userProvider.isConnected.value) {
                         Tiles.displayError(
-                            context: context,
                             e: ConnectionException(
                                 "No online connection, try signing in."));
                         return;
@@ -344,13 +345,13 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
                   onTap: () async {
                     if (!userProvider.isConnected.value) {
                       Tiles.displayError(
-                          context: context,
                           e: ConnectionException(
                               "No online connection, try signing in."));
                       return;
                     }
 
                     await showDialog<bool?>(
+                        useRootNavigator: false,
                         context: context,
                         builder: (BuildContext context) =>
                             const UpdateEmailDialog()).then((success) {
@@ -364,11 +365,12 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
                           message: "Check new email to confirm change.",
                           context: context,
                         ).show(context);
-                        if (kDebugMode && _offline) {
-                          setState(() {
-                            // _mockOnline = true;
-                          });
-                        }
+
+                        // if (kDebugMode && _debugOffline) {
+                        //   setState(() {
+                        //     // _mockOnline = true;
+                        //   });
+                        // }
                       }
                     });
                   },
@@ -378,6 +380,7 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
           }
 
           // This should both send OTP + Challenge.
+          // When application is -OPEN- should just resume state? I unno. The deeplink builder is super busted.
           return SettingsScreenWidgets.settingsSection(
               context: context,
               title: "Account",
@@ -387,30 +390,11 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
                     title: "Sign in to cloud backup",
                     onTap: () async {
                       await showDialog(
+                        useRootNavigator: false,
                         context: context,
                         barrierDismissible: true,
                         builder: (BuildContext context) => const SignInDialog(),
-                      ).then((signUp) {
-                        // User dismissed.
-                        if (null == signUp) {
-                          return;
-                        }
-                        // Failures caught in the dialog.
-                        if (signUp) {
-                          // THIS NEEDS TO SET A VERIFICATION FLAG && a need a route.
-                          // Route needs to be a splash screen that verifies.
-                          Flushbars.createAlert(
-                            message: "Check your email for an OTP.",
-                            context: context,
-                          ).show(context);
-                        }
-
-                        if (kDebugMode && _offline) {
-                          setState(() {
-                            // _mockOnline = true;
-                          });
-                        }
-                      });
+                      );
                     }),
               ]);
         });
@@ -756,11 +740,13 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
         ]);
   }
 
-  Widget _buildSignInOut() {
+  Widget _buildSignOut() {
     return ValueListenableBuilder(
         valueListenable: userProvider.isConnected,
         builder: (BuildContext context, bool value, Widget? child) {
-          if ((value || (kDebugMode && _mockOnline))) {
+          if (value
+              // || (kDebugMode && _mockOnline)
+              ) {
             return SettingsScreenWidgets.settingsSection(
               context: context,
               title: "",
@@ -770,55 +756,22 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
                         color: Theme.of(context).colorScheme.tertiary),
                     title: "Sign out",
                     onTap: () async {
-                      // These will eventually be factored out.
-                      if (kDebugMode && _offline) {
-                        setState(() {
-                          _mockOnline = false;
-                        });
-                      }
+                      // // These will eventually be factored out.
+                      // if (kDebugMode && _debugOffline) {
+                      //   setState(() {
+                      //     _mockOnline = false;
+                      //   });
+                      // }
 
                       // Future TODO: multi-user accounts.
-                      await userProvider.signOut().catchError(
-                          (e) => Tiles.displayError(context: context, e: e));
+                      await userProvider
+                          .signOut()
+                          .catchError((e) => Tiles.displayError(e: e));
                     }),
               ],
             );
           }
           return const SizedBox.shrink();
-          // Going with OTP
-          // return SettingsScreenWidgets.settingsSection(
-          //   context: context,
-          //   title: "",
-          //   entries: [
-          //     SettingsScreenWidgets.tapTile(
-          //         leading: const Icon(Icons.login_rounded),
-          //         title: "Sign in",
-          //         onTap: () async {
-          //           await showDialog<bool?>(
-          //             context: context,
-          //             barrierDismissible: true,
-          //             builder: (BuildContext context) => const SignInDialog(),
-          //           ).then((success) {
-          //             if (null == success) {
-          //               return;
-          //             }
-          //
-          //             // Uh, on a successful sign in, everything should just rebuild.
-          //             if (success) {
-          //               Flushbars.createAlert(
-          //                 message: "Login successful.",
-          //                 context: context,
-          //               ).show(context);
-          //               if (kDebugMode && _offline) {
-          //                 setState(() {
-          //                   _mockOnline = true;
-          //                 });
-          //               }
-          //             }
-          //           });
-          //         }),
-          //   ],
-          // );
         });
   }
 
@@ -860,6 +813,7 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
                   await Future.wait(
                     [
                       // This should notify -> resetting userVM, resets everything.
+                      // Deleting an online user will cascade
                       userProvider.deleteUser(),
 
                       // Delete local after user, in case of error, escapes early.
@@ -873,8 +827,10 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
                   ).then((_) {
                     layoutProvider.selectedPageIndex = 0;
                     Navigator.pop(context);
-                  }).catchError(
-                      (e) => Tiles.displayError(context: context, e: e));
+                  }).catchError((e) {
+                    Navigator.pop(context);
+                    Tiles.displayError(e: e);
+                  });
                 }
               });
             }),

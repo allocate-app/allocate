@@ -1,18 +1,18 @@
 import 'dart:io';
 import 'dart:math';
 
-import 'package:another_flushbar/flushbar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:provider/provider.dart';
 
+import '../../../model/task/deadline.dart';
 import '../../../providers/application/event_provider.dart';
 import '../../../providers/application/layout_provider.dart';
 import '../../../providers/model/deadline_provider.dart';
 import '../../../providers/viewmodels/deadline_viewmodel.dart';
 import '../../../util/constants.dart';
 import '../../../util/enums.dart';
-import '../../widgets/flushbars.dart';
+import '../../../util/exceptions.dart';
 import '../../widgets/listtile_widgets.dart';
 import '../../widgets/padded_divider.dart';
 import '../../widgets/tiles.dart';
@@ -127,15 +127,8 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
             warnDate: vm.mergeDateTime(date: vm.warnDate, time: vm.warnTime))) {
       valid = false;
 
-      Flushbar? error;
-
-      error = Flushbars.createError(
-        message: "Warn date must be later than now.",
-        context: context,
-        dismissCallback: () => error?.dismiss(),
-      );
-
-      error.show(context);
+      Tiles.displayError(
+          e: InvalidDateException("Warn date must be later than now."));
     }
 
     if (null == vm.startDate || null == vm.dueDate) {
@@ -152,18 +145,29 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
     return valid;
   }
 
+  // This should still run even if the online throws.
+  // If local create fails, something is very wrong => pop context and escape
   Future<void> handleCreate() async {
     vm.repeatable = Frequency.once != vm.frequency;
+    Deadline newDeadline = vm.toModel();
     await deadlineProvider
-        .createDeadline(vm.toModel())
-        .catchError((e) => Tiles.displayError(context: context, e: e));
-
-    await eventProvider
-        .insertEventModel(model: deadlineProvider.curDeadline!, notify: true)
-        .whenComplete(() {
-      vm.clear();
-      Navigator.pop(context);
-    });
+        .createDeadline(newDeadline)
+        .catchError((e) {
+          Tiles.displayError(e: e);
+          vm.clear();
+          Navigator.pop(context);
+          return;
+        }, test: (e) => e is FailureToCreateException)
+        .catchError((e) => Tiles.displayError(e: e))
+        .whenComplete(() async {
+          await eventProvider
+              .insertEventModel(
+                  model: deadlineProvider.curDeadline!, notify: true)
+              .whenComplete(() {
+            vm.clear();
+            Navigator.pop(context);
+          });
+        });
   }
 
   void handleClose({required bool willDiscard}) {

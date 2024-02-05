@@ -29,6 +29,7 @@ class GroupRepo extends ChangeNotifier implements GroupRepository {
   bool _initialized = false;
 
   String get uuid => _supabaseClient.auth.currentUser?.id ?? "";
+  String? currentUserID;
 
   @override
   void init() {
@@ -65,9 +66,16 @@ class GroupRepo extends ChangeNotifier implements GroupRepository {
     SupabaseService.instance.authSubscription.listen((AuthState data) async {
       final AuthChangeEvent event = data.event;
       switch (event) {
-        case AuthChangeEvent.signedIn:
-          await syncRepo();
+        case AuthChangeEvent.initialSession:
+          await handleUserChange();
           // OPEN TABLE STREAM -> insert new data.
+          if (!_subscribed) {
+            _groupStream.subscribe();
+            _subscribed = true;
+          }
+        case AuthChangeEvent.signedIn:
+          await handleUserChange();
+          // This should close and re-open the subscription?
           if (!_subscribed) {
             _groupStream.subscribe();
             _subscribed = true;
@@ -75,7 +83,7 @@ class GroupRepo extends ChangeNotifier implements GroupRepository {
           break;
         case AuthChangeEvent.tokenRefreshed:
           if (!_subscribed) {
-            await syncRepo();
+            await handleUserChange();
             _groupStream.subscribe();
             _subscribed = true;
           }
@@ -88,31 +96,28 @@ class GroupRepo extends ChangeNotifier implements GroupRepository {
         default:
           break;
       }
-      // if (event == AuthChangeEvent.signedIn) {
-      //   await syncRepo();
-      //   // OPEN TABLE STREAM -> insert new data.
-      //   if (!_subscribed) {
-      //     _groupStream.subscribe();
-      //     _subscribed = true;
-      //   }
-      //   return;
-      // }
-      // if (event == AuthChangeEvent.tokenRefreshed) {
-      //   // If not listening to the stream, there hasn't been an update.
-      //   // Sync accordingly.
-      //   if (!_subscribed) {
-      //     await syncRepo();
-      //     _groupStream.subscribe();
-      //     _subscribed = true;
-      //   }
-      //   return;
-      // }
-      // if (event == AuthChangeEvent.signedOut) {
-      //   // CLOSE TABLE STREAM.
-      //   await _groupStream.unsubscribe();
-      //   _subscribed = false;
-      // }
     });
+  }
+
+  Future<void> handleUserChange() async {
+    String? newID = _supabaseClient.auth.currentUser?.id;
+
+    if (newID == currentUserID) {
+      return syncRepo();
+    }
+
+    // In the case that the previous currentUserID was null.
+    // This implies a new login, or a fresh open.
+    // if not online, this will just early return.
+    if (null == currentUserID) {
+      currentUserID = newID;
+      return await syncRepo();
+    }
+
+    // This implies there is a new user -> clear the DB
+    // and insert the new user.
+    currentUserID = newID;
+    return await swapRepo();
   }
 
   @override
@@ -133,6 +138,7 @@ class GroupRepo extends ChangeNotifier implements GroupRepository {
 
     if (isConnected) {
       Map<String, dynamic> groupEntity = group.toEntity();
+      groupEntity["uuid"] = uuid;
       final List<Map<String, dynamic>> response =
           await _supabaseClient.from("groups").insert(groupEntity).select("id");
       id = response.last["id"];
@@ -161,8 +167,9 @@ class GroupRepo extends ChangeNotifier implements GroupRepository {
 
     if (isConnected) {
       Map<String, dynamic> groupEntity = group.toEntity();
+      groupEntity["uuid"] = uuid;
       final List<Map<String, dynamic>> response =
-          await _supabaseClient.from("groups").update(groupEntity).select("id");
+          await _supabaseClient.from("groups").upsert(groupEntity).select("id");
 
       id = response.last["id"];
 
@@ -198,8 +205,11 @@ class GroupRepo extends ChangeNotifier implements GroupRepository {
 
     if (isConnected) {
       ids.clear();
-      List<Map<String, dynamic>> groupEntities =
-          groups.map((group) => group.toEntity()).toList();
+      List<Map<String, dynamic>> groupEntities = groups.map((group) {
+        Map<String, dynamic> entity = group.toEntity();
+        entity["uuid"] = uuid;
+        return entity;
+      }).toList();
       for (Map<String, dynamic> groupEntity in groupEntities) {
         final List<Map<String, dynamic>> response = await _supabaseClient
             .from("groups")
@@ -280,6 +290,12 @@ class GroupRepo extends ChangeNotifier implements GroupRepository {
     });
   }
 
+  Future<void> clearLocal() async {
+    await _isarClient.writeTxn(() async {
+      await _isarClient.groups.clear();
+    });
+  }
+
   @override
   Future<void> deleteSweep({DateTime? upTo}) async {
     List<int> toDeletes = await getDeleteIDs(deleteLimit: upTo);
@@ -294,7 +310,9 @@ class GroupRepo extends ChangeNotifier implements GroupRepository {
         toDo.groupID = null;
         toDo.groupIndex = -1;
         toDos.add(toDo);
-        entities.add(toDo.toEntity());
+        Map<String, dynamic> entity = toDo.toEntity();
+        entity["uuid"] = uuid;
+        entities.add(entity);
       }
     }
 
@@ -400,6 +418,11 @@ class GroupRepo extends ChangeNotifier implements GroupRepository {
       data.add(Group.fromEntity(entity: entity));
     }
     return data;
+  }
+
+  Future<void> swapRepo() async {
+    await clearLocal();
+    await syncRepo();
   }
 
   Future<void> handleUpsert(PostgresChangePayload payload) async {

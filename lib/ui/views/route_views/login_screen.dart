@@ -22,6 +22,7 @@ import "loading_screen.dart";
 // This should just play the loading animation
 // set the home-page-index to settings screen, and pop open the dialog.
 // TODO: this needs to be re-thought ->
+// TODO: refactor this out. Just set the login screen.
 @RoutePage()
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -102,7 +103,10 @@ class _LoginScreen extends State<LoginScreen> {
       Provider.of<DeadlineProvider>(context, listen: false).dayReset(),
       Provider.of<GroupProvider>(context, listen: false).dayReset(),
       Provider.of<UserProvider>(context, listen: false).dayReset(),
-    ]).catchError((e) => Tiles.displayError(context: context, e: e));
+    ]).catchError((e) {
+      Tiles.displayError(e: e);
+      return [];
+    });
   }
 
   @override

@@ -20,6 +20,8 @@ import "../../widgets/tiles.dart";
 import "loading_screen.dart";
 
 // Basically just push the loading screen, set the new email, load the settings-screen index and route to home screen.
+// TODO: -> Refactor this out.
+// Just deeplink with an initial starting index.
 @RoutePage()
 class ValidateEmailChangeScreen extends StatefulWidget {
   const ValidateEmailChangeScreen({super.key});
@@ -96,7 +98,10 @@ class _ValidateEmailChangeScreen extends State<ValidateEmailChangeScreen> {
       Provider.of<DeadlineProvider>(context, listen: false).dayReset(),
       Provider.of<GroupProvider>(context, listen: false).dayReset(),
       Provider.of<UserProvider>(context, listen: false).dayReset(),
-    ]).catchError((e) => Tiles.displayError(context: context, e: e));
+    ]).catchError((e) {
+      Tiles.displayError(e: e);
+      return [];
+    });
   }
 
   @override

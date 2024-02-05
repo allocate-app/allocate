@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'dart:math';
 
-import 'package:another_flushbar/flushbar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:provider/provider.dart';
@@ -13,7 +12,7 @@ import '../../../providers/model/reminder_provider.dart';
 import '../../../providers/viewmodels/reminder_viewmodel.dart';
 import '../../../util/constants.dart';
 import '../../../util/enums.dart';
-import '../../widgets/flushbars.dart';
+import '../../../util/exceptions.dart';
 import '../../widgets/handle_repeatable_modal.dart';
 import '../../widgets/listtile_widgets.dart';
 import '../../widgets/padded_divider.dart';
@@ -111,15 +110,7 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
     if (null == vm.mergeDateTime(date: vm.dueDate, time: vm.dueTime)) {
       valid = false;
 
-      Flushbar? error;
-
-      error = Flushbars.createError(
-        message: "Due Date required.",
-        context: context,
-        dismissCallback: () => error?.dismiss(),
-      );
-
-      error.show(context);
+      Tiles.displayError(e: InvalidDateException("Due Date required"));
     }
 
     if (vm.frequency == Frequency.custom) {
@@ -158,8 +149,24 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
               delta: newReminder,
               single: updateSingle,
               delete: false)
-          .catchError((e) => Tiles.displayError(context: context, e: e));
+          .catchError((e) => Tiles.displayError(e: e))
+          .whenComplete(() async {
+        return await eventProvider
+            .updateEventModel(
+                oldModel: _prev, newModel: newReminder, notify: true)
+            .whenComplete(() {
+          vm.clear();
+          Navigator.pop(context);
+        });
+      });
+    }
 
+    await reminderProvider
+        .updateReminder(reminder: newReminder)
+        .catchError((e) async {
+      Tiles.displayError(e: e);
+      await Future.delayed(const Duration(seconds: 20));
+    }).whenComplete(() async {
       return await eventProvider
           .updateEventModel(
               oldModel: _prev, newModel: newReminder, notify: true)
@@ -167,17 +174,6 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
         vm.clear();
         Navigator.pop(context);
       });
-    }
-
-    await reminderProvider
-        .updateReminder(reminder: newReminder)
-        .catchError((e) => Tiles.displayError(context: context, e: e));
-
-    return await eventProvider
-        .updateEventModel(oldModel: _prev, newModel: newReminder, notify: true)
-        .whenComplete(() {
-      vm.clear();
-      Navigator.pop(context);
     });
   }
 
@@ -203,32 +199,34 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
               delta: newReminder,
               single: deleteSingle,
               delete: true)
-          .catchError((e) => Tiles.displayError(context: context, e: e));
-
-      newReminder.toDelete = true;
-      return await eventProvider
-          .updateEventModel(
-              oldModel: _prev, newModel: newReminder, notify: true)
-          .whenComplete(() {
-        vm.clear();
-        Navigator.pop(context);
+          .catchError((e) => Tiles.displayError(e: e))
+          .whenComplete(() async {
+        newReminder.toDelete = true;
+        return await eventProvider
+            .updateEventModel(
+                oldModel: _prev, newModel: newReminder, notify: true)
+            .whenComplete(() {
+          vm.clear();
+          Navigator.pop(context);
+        });
       });
     }
 
     await reminderProvider
         .deleteReminder()
-        .catchError((e) => Tiles.displayError(context: context, e: e));
-
-    newReminder.toDelete = true;
-    return await eventProvider
-        .updateEventModel(
-      oldModel: _prev,
-      newModel: newReminder,
-      notify: true,
-    )
-        .whenComplete(() {
-      vm.clear();
-      Navigator.pop(context);
+        .catchError((e) => Tiles.displayError(e: e))
+        .whenComplete(() async {
+      newReminder.toDelete = true;
+      return await eventProvider
+          .updateEventModel(
+        oldModel: _prev,
+        newModel: newReminder,
+        notify: true,
+      )
+          .whenComplete(() {
+        vm.clear();
+        Navigator.pop(context);
+      });
     });
   }
 

@@ -221,7 +221,7 @@ class ThemeProvider extends ChangeNotifier {
     // Set the window effect for desktop. Runs asynchronously, should be set by the time
     // the splash screen is done.
     if (!Platform.isIOS || !Platform.isAndroid) {
-     await _setWindowEffect(effect: _windowEffect);
+      await _setWindowEffect(effect: _windowEffect);
     }
   }
 
@@ -330,7 +330,7 @@ class ThemeProvider extends ChangeNotifier {
     bool darkMode = _determineDarkMode(brightness: brightness);
 
     await Window.setEffect(
-      effect: getWindowEffect(effect:effect),
+      effect: getWindowEffect(effect: effect),
       color: backgroundColor,
       dark: darkMode,
     );
@@ -342,20 +342,22 @@ class ThemeProvider extends ChangeNotifier {
     }
   }
 
-  bool _determineDarkMode({Brightness brightness = Brightness.dark}) => switch(_themeType){
-    ThemeType.system => Brightness.dark == brightness,
-    ThemeType.dark => true,
-    _ => false,
-  };
+  bool _determineDarkMode({Brightness brightness = Brightness.dark}) =>
+      switch (_themeType) {
+        ThemeType.system => Brightness.dark == brightness,
+        ThemeType.dark => true,
+        _ => false,
+      };
 
-  WindowEffect getWindowEffect({Effect effect = Effect.transparent}) => switch(effect){
-    Effect.acrylic => WindowEffect.acrylic,
-    Effect.aero => WindowEffect.aero,
-    Effect.mica => WindowEffect.mica,
-    Effect.sidebar => WindowEffect.sidebar,
-    Effect.transparent => WindowEffect.transparent,
-    Effect.disabled => WindowEffect.solid,
-  };
+  WindowEffect getWindowEffect({Effect effect = Effect.transparent}) =>
+      switch (effect) {
+        Effect.acrylic => WindowEffect.acrylic,
+        Effect.aero => WindowEffect.aero,
+        Effect.mica => WindowEffect.mica,
+        Effect.sidebar => WindowEffect.sidebar,
+        Effect.transparent => WindowEffect.transparent,
+        Effect.disabled => WindowEffect.solid,
+      };
 
 // uservm needs to access this in its default constructor.
 // Effect get defaultWindowEffect {

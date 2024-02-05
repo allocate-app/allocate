@@ -2,12 +2,13 @@
 
 ## In Progress
 
-- Online functionality
+- Online Testing
 - Release
 - Licensing
 
 ## Planned
 
+- Multiple user switching
 - Documentation
 - Keybinds & shortcuts
 - Context menus

@@ -186,17 +186,23 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
   }
 
   Future<void> handleUpdate() async {
-    await groupProvider.updateGroup(group: vm.toModel()).whenComplete(() {
+    await groupProvider
+        .updateGroup(group: vm.toModel())
+        .catchError((e) => Tiles.displayError(e: e))
+        .whenComplete(() {
       vm.clear();
       Navigator.pop(context);
-    }).catchError((e) => Tiles.displayError(context: context, e: e));
+    });
   }
 
   Future<void> handleDelete() async {
-    await groupProvider.deleteGroup().whenComplete(() {
+    await groupProvider
+        .deleteGroup()
+        .catchError((e) => Tiles.displayError(e: e))
+        .whenComplete(() {
       vm.clear();
       Navigator.pop(context);
-    }).catchError((e) => Tiles.displayError(context: context, e: e));
+    });
   }
 
   void onFetch({List<ToDo>? items}) {
@@ -458,8 +464,7 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
               builder: (BuildContext context) => CreateToDoScreen(
                     initialGroup: MapEntry<String, int>(
                         (vm.name.isNotEmpty) ? vm.name : "New Group", vm.id),
-                  )).catchError(
-              (e) => Tiles.displayError(context: context, e: e)),
+                  )).catchError((e) => Tiles.displayError(e: e)),
         )
       ],
     );

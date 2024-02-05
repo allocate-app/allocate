@@ -236,7 +236,10 @@ class _TrashScreen extends State<TrashScreen> {
         groupProvider.emptyTrash(),
         subtaskProvider.emptyTrash(),
       ],
-    ).catchError((e) => Tiles.displayError(context: context, e: e));
+    ).catchError((e) {
+      Tiles.displayError(e: e);
+      return [];
+    });
   }
 
   // This needs to take a set.

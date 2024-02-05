@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../model/task/reminder.dart';
 import '../services/isar_service.dart';
+import '../services/notification_service.dart';
 import '../services/supabase_service.dart';
 import '../util/constants.dart';
 import '../util/enums.dart';
@@ -28,6 +29,8 @@ class ReminderRepo extends ChangeNotifier implements ReminderRepository {
   bool _initialized = false;
 
   String get uuid => _supabaseClient.auth.currentUser?.id ?? "";
+
+  String? currentUserID;
 
   @override
   void init() {
@@ -66,9 +69,16 @@ class ReminderRepo extends ChangeNotifier implements ReminderRepository {
     SupabaseService.instance.authSubscription.listen((AuthState data) async {
       final AuthChangeEvent event = data.event;
       switch (event) {
-        case AuthChangeEvent.signedIn:
-          await syncRepo();
+        case AuthChangeEvent.initialSession:
+          await handleUserChange();
           // OPEN TABLE STREAM -> insert new data.
+          if (!_subscribed) {
+            _reminderStream.subscribe();
+            _subscribed = true;
+          }
+        case AuthChangeEvent.signedIn:
+          await handleUserChange();
+          // This should close and re-open the subscription?
           if (!_subscribed) {
             _reminderStream.subscribe();
             _subscribed = true;
@@ -76,7 +86,7 @@ class ReminderRepo extends ChangeNotifier implements ReminderRepository {
           break;
         case AuthChangeEvent.tokenRefreshed:
           if (!_subscribed) {
-            await syncRepo();
+            await handleUserChange();
             _reminderStream.subscribe();
             _subscribed = true;
           }
@@ -89,31 +99,29 @@ class ReminderRepo extends ChangeNotifier implements ReminderRepository {
         default:
           break;
       }
-      // if (event == AuthChangeEvent.signedIn) {
-      //   await syncRepo();
-      //   // OPEN TABLE STREAM -> insert new data.
-      //   if (!_subscribed) {
-      //     _reminderStream.subscribe();
-      //     _subscribed = true;
-      //   }
-      //   return;
-      // }
-      // if (event == AuthChangeEvent.tokenRefreshed) {
-      //   // If not listening to the stream, there hasn't been an update.
-      //   // Sync accordingly.
-      //   if (!_subscribed) {
-      //     await syncRepo();
-      //     _reminderStream.subscribe();
-      //     _subscribed = true;
-      //   }
-      //   return;
-      // }
-      // if (event == AuthChangeEvent.signedOut) {
-      //   // CLOSE TABLE STREAM.
-      //   await _reminderStream.unsubscribe();
-      //   _subscribed = false;
-      // }
     });
+  }
+
+  Future<void> handleUserChange() async {
+    String? newID = _supabaseClient.auth.currentUser?.id;
+
+    // Realtime Changes will handle updated data.
+    if (newID == currentUserID) {
+      return syncRepo();
+    }
+
+    // In the case that the previous currentUserID was null.
+    // This implies a new login, or a fresh open.
+    // if not online, this will just early return.
+    if (null == currentUserID) {
+      currentUserID = newID;
+      return await syncRepo();
+    }
+
+    // This implies there is a new user -> clear the DB
+    // and insert the new user.
+    currentUserID = newID;
+    return await swapRepo();
   }
 
   @override
@@ -133,6 +141,7 @@ class ReminderRepo extends ChangeNotifier implements ReminderRepository {
 
     if (isConnected) {
       Map<String, dynamic> reminderEntity = reminder.toEntity();
+      reminderEntity["uuid"] = uuid;
       final List<Map<String, dynamic>> response = await _supabaseClient
           .from("reminders")
           .insert(reminderEntity)
@@ -167,9 +176,10 @@ class ReminderRepo extends ChangeNotifier implements ReminderRepository {
 
     if (isConnected) {
       Map<String, dynamic> reminderEntity = reminder.toEntity();
+      reminderEntity["uuid"] = uuid;
       final List<Map<String, dynamic>> response = await _supabaseClient
           .from("reminders")
-          .update(reminderEntity)
+          .upsert(reminderEntity)
           .select("id");
 
       id = response.last["id"];
@@ -206,8 +216,11 @@ class ReminderRepo extends ChangeNotifier implements ReminderRepository {
 
     if (isConnected) {
       ids.clear();
-      List<Map<String, dynamic>> reminderEntities =
-          reminders.map((reminder) => reminder.toEntity()).toList();
+      List<Map<String, dynamic>> reminderEntities = reminders.map((reminder) {
+        Map<String, dynamic> entity = reminder.toEntity();
+        entity["uuid"] = uuid;
+        return entity;
+      }).toList();
       final List<Map<String, dynamic>> responses = await _supabaseClient
           .from("reminders")
           .upsert(reminderEntities)
@@ -285,6 +298,12 @@ class ReminderRepo extends ChangeNotifier implements ReminderRepository {
           .neq("customViewIndex", -2);
     }
 
+    await _isarClient.writeTxn(() async {
+      await _isarClient.reminders.clear();
+    });
+  }
+
+  Future<void> clearLocal() async {
     await _isarClient.writeTxn(() async {
       await _isarClient.reminders.clear();
     });
@@ -387,7 +406,8 @@ class ReminderRepo extends ChangeNotifier implements ReminderRepository {
     if (onlineReminders.length < _reminderCount) {
       // Give the db a moment to refresh.
       await Future.delayed(const Duration(seconds: 1));
-      insertRemaining(totalFetched: onlineReminders.length).whenComplete(() {
+      return insertRemaining(totalFetched: onlineReminders.length)
+          .whenComplete(() {
         notifyListeners();
       });
     }
@@ -430,6 +450,12 @@ class ReminderRepo extends ChangeNotifier implements ReminderRepository {
       data.add(Reminder.fromEntity(entity: entity));
     }
     return data;
+  }
+
+  Future<void> swapRepo() async {
+    NotificationService.instance.cancelAllNotifications();
+    await clearLocal();
+    await syncRepo();
   }
 
   Future<void> handleUpsert(PostgresChangePayload payload) async {

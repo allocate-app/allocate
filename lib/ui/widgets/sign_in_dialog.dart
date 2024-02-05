@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import '../../providers/application/layout_provider.dart';
 import '../../providers/model/user_provider.dart';
 import '../../util/constants.dart';
+import '../../util/exceptions.dart';
 
 class SignInDialog extends StatefulWidget {
   const SignInDialog({super.key});
@@ -23,6 +24,7 @@ class _SignInDialog extends State<SignInDialog> {
 
   late final ValueNotifier<bool> validSignup;
   late final ValueNotifier<bool> validChallenge;
+  late final ValueNotifier<bool> validToken;
 
   @override
   void initState() {
@@ -31,6 +33,7 @@ class _SignInDialog extends State<SignInDialog> {
     userProvider = Provider.of<UserProvider>(context, listen: false);
     validSignup = ValueNotifier<bool>(false);
     validChallenge = ValueNotifier<bool>(false);
+    validToken = ValueNotifier<bool>(false);
 
     _emailController = TextEditingController();
     _tokenController = TextEditingController();
@@ -59,29 +62,52 @@ class _SignInDialog extends State<SignInDialog> {
   void announceText(TextEditingController controller) {
     SemanticsService.announce(controller.text, Directionality.of(context));
     validSignup.value = _emailController.text.isNotEmpty;
-    validChallenge.value =
-        _emailController.text.isNotEmpty && _tokenController.text.isNotEmpty;
+    validToken.value = _tokenController.text.isNotEmpty;
+
+    validChallenge.value = validSignup.value && validToken.value;
   }
 
   bool validateEmail() {
     bool valid = true;
-    if (!_emailController.text.contains(RegExp(r".*@.*\..*"), 1)) {
+    if (!_emailController.text.contains(RegExp(r"^.*@.*\..*$"))) {
       valid = false;
-      Tiles.displayError(
-          context: context, e: Exception("Invalid email format"));
+      Tiles.displayError(e: InvalidInputException("Invalid email format"));
     }
 
     return valid;
   }
 
+  // 6-digit OTP
   bool validateToken() {
     bool valid = true;
-    if (_tokenController.text.isEmpty) {
+    if (_tokenController.text.isEmpty ||
+        !_tokenController.text.contains(RegExp(r"^[0-9]{6}$"))) {
       valid = false;
 
-      Tiles.displayError(context: context, e: Exception("Invalid token"));
+      Tiles.displayError(e: InvalidInputException("Invalid 6-digit token"));
     }
+
     return valid;
+  }
+
+  Future<void> handleVerify() async {
+    if (!validateToken()) {
+      return;
+    }
+    if (!validateEmail()) {
+      return;
+    }
+
+    await userProvider
+        .verifyOTP(
+      email: _emailController.text,
+      token: _tokenController.text,
+    )
+        .then((_) {
+      Navigator.pop(context);
+    }).catchError((e) async {
+      Tiles.displayError(e: e);
+    });
   }
 
   @override
@@ -114,12 +140,10 @@ class _SignInDialog extends State<SignInDialog> {
                               style: Constants.largeHeaderStyle,
                             ),
                           ),
-                          Flexible(
-                            child: FittedBox(
-                              fit: BoxFit.fill,
-                              child: Icon(Icons.send_rounded,
-                                  size: Constants.lgIconSize),
-                            ),
+                          FittedBox(
+                            fit: BoxFit.fill,
+                            child: Icon(Icons.send_rounded,
+                                size: Constants.lgIconSize),
                           ),
                         ]),
                     Padding(
@@ -169,31 +193,37 @@ class _SignInDialog extends State<SignInDialog> {
         ),
       );
 
-  Widget _buildEmailTile() => Tiles.nameTile(
-        context: context,
-        controller: _emailController,
-        hintText: "Email",
-        labelText: "Email",
-        errorText: null,
-        handleClear: () {
-          // This should still fire the listener.
-          _emailController.clear();
-        },
-        onEditingComplete: () {},
+  Widget _buildEmailTile() => ValueListenableBuilder(
+        valueListenable: validSignup,
+        builder: (BuildContext context, bool value, Widget? child) =>
+            Tiles.nameTile(
+          context: context,
+          controller: _emailController,
+          hintText: "Email",
+          labelText: "Email",
+          errorText: null,
+          handleClear: () {
+            // This should still fire the listener.
+            _emailController.clear();
+          },
+          onEditingComplete: () {},
+        ),
       );
 
-  Widget _buildTokenTile() => Tiles.nameTile(
-        context: context,
-        controller: _tokenController,
-        hintText: "One-Time-Password",
-        labelText: "One-Time-Password",
-        errorText: null,
-        handleClear: () {
-          _tokenController.clear();
-        },
-        onEditingComplete: () {
-          // TODO: factor out function to verifyOTP
-        },
+  Widget _buildTokenTile() => ValueListenableBuilder(
+        valueListenable: validToken,
+        builder: (BuildContext context, bool value, Widget? child) =>
+            Tiles.nameTile(
+          context: context,
+          controller: _tokenController,
+          hintText: "One-Time-Password",
+          labelText: "One-Time-Password",
+          errorText: null,
+          handleClear: () {
+            _tokenController.clear();
+          },
+          onEditingComplete: (validChallenge.value) ? handleVerify : () {},
+        ),
       );
 
   Widget _buildSignInButton() => ValueListenableBuilder(
@@ -211,16 +241,16 @@ class _SignInDialog extends State<SignInDialog> {
                     email: _emailController.text,
                   )
                       .then((_) {
-                    Navigator.pop(context, true);
+                    Tiles.displayAlert(message: "Check your email for an OTP");
                   }).catchError((e) async {
-                    Tiles.displayError(context: context, e: e);
+                    Tiles.displayError(e: e);
                   });
                 }
               : null,
-          label: const AutoSizeText("Sign up",
-              softWrap: false,
+          label: const AutoSizeText("Get OTP",
+              softWrap: true,
               overflow: TextOverflow.visible,
-              maxLines: 1,
+              maxLines: 2,
               minFontSize: Constants.large),
         );
       });
@@ -230,23 +260,7 @@ class _SignInDialog extends State<SignInDialog> {
       builder: (BuildContext context, bool valid, Widget? child) {
         return FilledButton.icon(
           icon: const Icon(Icons.login_rounded),
-          onPressed: (valid)
-              ? () async {
-                  if (!validateEmail()) {
-                    return;
-                  }
-                  await userProvider
-                      .verifyOTP(
-                    email: _emailController.text,
-                    token: _tokenController.text,
-                  )
-                      .then((_) {
-                    Navigator.pop(context, true);
-                  }).catchError((e) async {
-                    Tiles.displayError(context: context, e: e);
-                  });
-                }
-              : null,
+          onPressed: (valid) ? handleVerify : null,
           label: const AutoSizeText("Sign In",
               softWrap: false,
               overflow: TextOverflow.visible,

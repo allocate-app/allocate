@@ -12,7 +12,10 @@ abstract interface class Authenticator {
 
   Future<String?> updateEmail({required String newEmail});
 
-  Future<String> verifyOTP({required String email, required String token});
+  Future<String> verifySignInOTP(
+      {required String email, required String token});
+  Future<String> verifyEmailChangeOTP(
+      {required String email, required String token});
 
 // Future<void> updatePassword({required String newPassword});
 //

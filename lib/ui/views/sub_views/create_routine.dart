@@ -4,6 +4,7 @@ import "package:flutter/material.dart";
 import "package:flutter/semantics.dart";
 import "package:provider/provider.dart";
 
+import "../../../model/task/routine.dart";
 import "../../../model/task/subtask.dart";
 import "../../../providers/application/layout_provider.dart";
 import '../../../providers/model/routine_provider.dart';
@@ -11,6 +12,7 @@ import '../../../providers/model/subtask_provider.dart';
 import "../../../providers/viewmodels/routine_viewmodel.dart";
 import "../../../util/constants.dart";
 import "../../../util/enums.dart";
+import "../../../util/exceptions.dart";
 import "../../widgets/listtile_widgets.dart";
 import "../../widgets/padded_divider.dart";
 import "../../widgets/tiles.dart";
@@ -133,13 +135,23 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
     return valid;
   }
 
+  // This should still run even if the online throws.
+  // If local create fails, something is very wrong => pop context and escape
   Future<void> handleCreate() async {
+    Routine newRoutine = vm.toModel();
     await routineProvider
-        .createRoutine(vm.toModel(), vm.routineTimes)
+        .createRoutine(newRoutine, vm.routineTimes)
+        .catchError((e) {
+          Tiles.displayError(e: e);
+          vm.clear();
+          Navigator.pop(context);
+          return;
+        }, test: (e) => e is FailureToCreateException)
+        .catchError((e) => Tiles.displayError(e: e))
         .whenComplete(() {
-      vm.clear();
-      Navigator.pop(context);
-    }).catchError((e) => Tiles.displayError(context: context, e: e));
+          vm.clear();
+          Navigator.pop(context);
+        });
   }
 
   Future<void> handleClose({required bool willDiscard}) async {
@@ -147,7 +159,10 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
       for (Subtask st in vm.subtasks) {
         st.toDelete = true;
       }
-      await subtaskProvider.updateBatch(subtasks: vm.subtasks).whenComplete(() {
+      await subtaskProvider
+          .updateBatch(subtasks: vm.subtasks)
+          .catchError((e) => Tiles.displayError(e: e))
+          .whenComplete(() {
         vm.clear();
         Navigator.pop(context);
       });

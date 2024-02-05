@@ -9,6 +9,7 @@ import "package:provider/provider.dart";
 
 import "../../../model/task/group.dart";
 import "../../../model/task/subtask.dart";
+import "../../../model/task/todo.dart";
 import '../../../providers/application/event_provider.dart';
 import "../../../providers/application/layout_provider.dart";
 import '../../../providers/model/group_provider.dart';
@@ -18,6 +19,7 @@ import '../../../providers/model/user_provider.dart';
 import "../../../providers/viewmodels/todo_viewmodel.dart";
 import "../../../util/constants.dart";
 import "../../../util/enums.dart";
+import "../../../util/exceptions.dart";
 import "../../widgets/listtile_widgets.dart";
 import "../../widgets/padded_divider.dart";
 import "../../widgets/search_recents_bar.dart";
@@ -190,24 +192,34 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
     return valid;
   }
 
+  // This should still run even if the online throws.
+  // If local create fails, something is very wrong => pop context and escape
   Future<void> handleCreate() async {
     vm.repeatable = Frequency.once != vm.frequency;
+    ToDo newToDo = vm.toModel();
     await toDoProvider
-        .createToDo(vm.toModel())
-        .catchError((e) => Tiles.displayError(context: context, e: e));
+        .createToDo(newToDo)
+        .catchError((e) {
+          Tiles.displayError(e: e);
+          vm.clear();
+          Navigator.pop(context);
+          return;
+        }, test: (e) => e is FailureToCreateException)
+        .catchError((e) => Tiles.displayError(e: e))
+        .whenComplete(() async {
+          if (null != vm.groupID) {
+            groupProvider.setToDoCount(id: vm.groupID!);
+          }
 
-    if (null != vm.groupID) {
-      groupProvider.setToDoCount(id: vm.groupID!);
-    }
-
-    await eventProvider
-        .insertEventModel(model: toDoProvider.curToDo!, notify: true)
-        .whenComplete(
-      () {
-        vm.clear();
-        Navigator.pop(context);
-      },
-    );
+          await eventProvider
+              .insertEventModel(model: newToDo, notify: true)
+              .whenComplete(
+            () {
+              vm.clear();
+              Navigator.pop(context);
+            },
+          );
+        });
   }
 
   Future<void> handleClose({required bool willDiscard}) async {
@@ -215,7 +227,10 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
       for (Subtask st in vm.subtasks) {
         st.toDelete = true;
       }
-      await subtaskProvider.updateBatch(subtasks: vm.subtasks).whenComplete(() {
+      await subtaskProvider
+          .updateBatch(subtasks: vm.subtasks)
+          .catchError((e) => Tiles.displayError(e: e))
+          .whenComplete(() {
         vm.clear();
         Navigator.pop(context);
       });

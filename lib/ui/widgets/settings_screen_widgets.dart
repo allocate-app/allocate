@@ -186,12 +186,12 @@ abstract class SettingsScreenWidgets {
             : null,
       );
 
-  // TODO: this will need to change to UserModel.
   static Widget userQuickInfo(
           {required BuildContext context,
           // Userprovider for user switcher.
           // required UserProvider userProvider,
           required UserViewModel viewModel,
+          bool connected = false,
           EdgeInsetsGeometry outerPadding = EdgeInsets.zero}) =>
       Padding(
         padding: outerPadding,
@@ -224,7 +224,6 @@ abstract class SettingsScreenWidgets {
                       // THIS SHOULD SWITCH USER
 
                       Tiles.displayError(
-                          context: context,
                           e: Exception("Feature not implemented."));
                     },
                     child: const SizedBox(
@@ -259,7 +258,7 @@ abstract class SettingsScreenWidgets {
                             minFontSize: Constants.huge,
                           ),
                           AutoSizeText(
-                            (null != viewModel.email)
+                            (connected)
                                 ? "Email: ${viewModel.email}"
                                 : "Offline Only",
                             overflow: TextOverflow.visible,

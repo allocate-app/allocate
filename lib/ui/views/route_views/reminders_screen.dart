@@ -102,6 +102,7 @@ class _RemindersListScreen extends State<RemindersListScreen> {
                     const EdgeInsets.symmetric(vertical: Constants.halfPadding),
                 context: context,
                 onTap: () async => await showDialog(
+                  useRootNavigator: false,
                   barrierDismissible: false,
                   context: context,
                   builder: (BuildContext context) =>

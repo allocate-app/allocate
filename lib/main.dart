@@ -3,7 +3,6 @@ import "dart:io";
 import "dart:ui";
 
 import "package:allocate/util/enums.dart";
-import "package:app_links/app_links.dart";
 import "package:auto_route/auto_route.dart";
 import 'package:flutter/material.dart';
 import "package:flutter/services.dart";
@@ -201,68 +200,69 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   late final AppRouter _appRouter;
-  late AppLinks _appLinks;
-  StreamSubscription<Uri>? _subscription;
+
+  // Having difficulty getting applinks to work with approuter.
+  // late AppLinks _appLinks;
+  // StreamSubscription<Uri>? _subscription;
 
   @override
   void initState() {
     super.initState();
     _appRouter = ApplicationService.instance.appRouter;
-    _appLinks = AppLinks();
-    _initDeepLinking();
+    // _appLinks = AppLinks();
+    // _initDeepLinking();
   }
 
   @override
-  void dispose(){
-    _subscription?.cancel();
+  void dispose() {
+    // _subscription?.cancel();
     super.dispose();
   }
 
-  Future<void> _initDeepLinking() async{
-    _appLinks = AppLinks();
-
-    final Uri? appLink = await _appLinks.getInitialAppLink();
-    if(null != appLink){
-      print("initial appLink: $appLink");
-      handleAppLink(appLink);
-    }
-
-    _subscription = _appLinks.uriLinkStream.listen((uri){
-      print("appLink: $uri");
-      handleAppLink(uri);
-    });
-    print("debug");
-  }
-
-  void handleAppLink(Uri uri){
-   String path = uri.toString();
-   if(path.isEmpty){
-     print("empty");
-     return;
-   }
-
-   if(path.contains("login")){
-     print("login");
-    _appRouter.navigate(const LoginRoute());
-    return;
-   }
-   if(path.contains("validate-email")){
-     print("validate-email");
-     _appRouter.navigate(const ValidateEmailChangeRoute());
-     return;
-   }
-
-   if(path.contains("home")){
-     print("home");
-     if(!Provider.of<UserProvider>(context, listen: false).initialized){
-       _appRouter.navigate(SplashRoute());
-       return;
-     }
-     _appRouter.navigate(HomeRoute(index: 0));
-     return;
-   }
-
-  }
+  // Future<void> _initDeepLinking() async{
+  //   _appLinks = AppLinks();
+  //
+  //   final Uri? appLink = await _appLinks.getInitialAppLink();
+  //   if(null != appLink){
+  //     print("initial appLink: $appLink");
+  //     handleAppLink(appLink);
+  //   }
+  //
+  //   _subscription = _appLinks.uriLinkStream.listen((uri){
+  //     print("appLink: $uri");
+  //     handleAppLink(uri);
+  //   });
+  //   print("debug");
+  // }
+  //
+  // void handleAppLink(Uri uri){
+  //  String path = uri.toString();
+  //  if(path.isEmpty){
+  //    print("empty");
+  //    return;
+  //  }
+  //
+  //  if(path.contains("login")){
+  //    print("login");
+  //   _appRouter.navigate(const LoginRoute());
+  //   return;
+  //  }
+  //  if(path.contains("validate-email")){
+  //    print("validate-email");
+  //    _appRouter.navigate(const ValidateEmailChangeRoute());
+  //    return;
+  //  }
+  //
+  //  if(path.contains("home")){
+  //    print("home");
+  //    if(!Provider.of<UserProvider>(context, listen: false).initialized){
+  //      _appRouter.navigate(SplashRoute());
+  //      return;
+  //    }
+  //    _appRouter.navigate(HomeRoute(index: 0));
+  //    return;
+  //  }
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -278,26 +278,49 @@ class _MyAppState extends State<MyApp> {
           ThemeType.dark => ThemeMode.dark,
           ThemeType.system => ThemeMode.system,
         },
-        routerConfig: _appRouter.config(),
-        // routerConfig: _appRouter.config(deepLinkBuilder: (deeplink) {
-        //   // These seem to be busted - waiting on pkg maintainer
-        //   if (deeplink.path.contains("home")) {
-        //     if(!Provider.of<UserProvider>(context, listen: false).initialized){
-        //       return DeepLink.defaultPath;
-        //     }
-        //     return DeepLink([HomeRoute(index: 0)]);
-        //   }
-        //
-        //   if (deeplink.path.contains("login")) {
-        //     return const DeepLink([LoginRoute()]);
-        //   }
-        //   if (deeplink.path.contains("validate-email")) {
-        //     return const DeepLink([ValidateEmailChangeRoute()]);
-        //   }
-        //
-        //   // This is just "root".
-        //   return DeepLink.defaultPath;
-        // }),
+        // routerConfig: _appRouter.config(),
+        routerConfig: _appRouter.config(deepLinkBuilder: (deeplink) {
+          // These seem to be busted - waiting on pkg maintainer
+          if (deeplink.path.contains("home")) {
+            if (_appRouter.isRouteActive("/home")) {
+              return DeepLink([HomeRoute(index: 0)]);
+            }
+            return DeepLink([SplashRoute(initialIndex: 0)]);
+          }
+
+          if (deeplink.path.contains("login")) {
+            if (_appRouter.isRouteActive("/home")) {
+              return DeepLink([
+                HomeRoute(
+                    index:
+                        Constants.viewRoutes.indexOf(Constants.settingsScreen))
+              ]);
+            }
+            return DeepLink([
+              SplashRoute(
+                  initialIndex:
+                      Constants.viewRoutes.indexOf(Constants.settingsScreen))
+            ]);
+          }
+
+          if (deeplink.path.contains("validate-email")) {
+            if (_appRouter.isRouteActive("/home")) {
+              return DeepLink([
+                HomeRoute(
+                    index:
+                        Constants.viewRoutes.indexOf(Constants.settingsScreen))
+              ]);
+            }
+            return DeepLink([
+              SplashRoute(
+                  initialIndex:
+                      Constants.viewRoutes.indexOf(Constants.settingsScreen))
+            ]);
+          }
+
+          // This is just "root".
+          return DeepLink.defaultPath;
+        }),
         // These are no longer needed
         // routerDelegate: _appRouter.delegate(),
         // routeInformationParser: _appRouter.defaultRouteParser(),

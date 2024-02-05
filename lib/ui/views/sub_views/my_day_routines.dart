@@ -96,7 +96,7 @@ class _MyDayRoutines extends State<MyDayRoutines> {
         weight: routine.weight, duration: routine.expectedDuration);
     return await routineProvider
         .updateRoutine(routine: routine)
-        .catchError((e) => Tiles.displayError(context: context, e: e));
+        .catchError((e) => Tiles.displayError(e: e));
   }
 
   void onFetch({List<Subtask>? items, Set<Subtask>? itemSet}) {

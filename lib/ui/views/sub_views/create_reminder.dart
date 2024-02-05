@@ -1,18 +1,18 @@
 import 'dart:io';
 import 'dart:math';
 
-import 'package:another_flushbar/flushbar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:provider/provider.dart';
 
+import '../../../model/task/reminder.dart';
 import '../../../providers/application/event_provider.dart';
 import '../../../providers/application/layout_provider.dart';
 import '../../../providers/model/reminder_provider.dart';
 import '../../../providers/viewmodels/reminder_viewmodel.dart';
 import '../../../util/constants.dart';
 import '../../../util/enums.dart';
-import '../../widgets/flushbars.dart';
+import '../../../util/exceptions.dart';
 import '../../widgets/listtile_widgets.dart';
 import '../../widgets/padded_divider.dart';
 import '../../widgets/tiles.dart';
@@ -103,15 +103,8 @@ class _CreateReminderScreen extends State<CreateReminderScreen> {
         dueDate: vm.mergeDateTime(date: vm.dueDate, time: vm.dueTime))) {
       valid = false;
 
-      Flushbar? error;
-
-      error = Flushbars.createError(
-        message: "Due date must be later than now.",
-        context: context,
-        dismissCallback: () => error?.dismiss(),
-      );
-
-      error.show(context);
+      Tiles.displayError(
+          e: InvalidDateException("Due date must be later than now."));
     }
 
     if (vm.frequency == Frequency.custom) {
@@ -124,20 +117,28 @@ class _CreateReminderScreen extends State<CreateReminderScreen> {
     return valid;
   }
 
+  // This should still run even if the online throws.
+  // If local create fails, something is very wrong => pop context and escape
   Future<void> handleCreate() async {
     vm.repeatable = Frequency.once != vm.frequency;
+    Reminder newReminder = vm.toModel();
     await reminderProvider
-        .createReminder(
-          vm.toModel(),
-        )
-        .catchError((e) => Tiles.displayError(context: context, e: e));
-
-    await eventProvider
-        .insertEventModel(model: reminderProvider.curReminder!, notify: true)
-        .whenComplete(() {
-      vm.clear();
-      Navigator.pop(context);
-    });
+        .createReminder(newReminder)
+        .catchError((e) {
+          Tiles.displayError(e: e);
+          vm.clear();
+          Navigator.pop(context);
+          return;
+        }, test: (e) => e is FailureToCreateException)
+        .catchError((e) => Tiles.displayError(e: e))
+        .whenComplete(() async {
+          await eventProvider
+              .insertEventModel(model: newReminder, notify: true)
+              .whenComplete(() {
+            vm.clear();
+            Navigator.pop(context);
+          });
+        });
   }
 
   void handleClose({required bool willDiscard}) {

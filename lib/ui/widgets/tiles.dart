@@ -14,6 +14,7 @@ import '../../model/task/routine.dart';
 import '../../model/task/subtask.dart';
 import '../../model/task/todo.dart';
 import '../../providers/application/event_provider.dart';
+import '../../providers/application/layout_provider.dart';
 import '../../providers/model/deadline_provider.dart';
 import '../../providers/model/group_provider.dart';
 import '../../providers/model/reminder_provider.dart';
@@ -26,6 +27,7 @@ import '../../providers/viewmodels/reminder_viewmodel.dart';
 import '../../providers/viewmodels/routine_viewmodel.dart';
 import '../../providers/viewmodels/subtask_viewmodel.dart';
 import '../../providers/viewmodels/todo_viewmodel.dart';
+import '../../services/application_service.dart';
 import '../../ui/widgets/time_dialog.dart';
 import '../../util/constants.dart';
 import '../../util/enums.dart';
@@ -255,13 +257,13 @@ abstract class Tiles {
 
       await toDoProvider
           .handleRepeating(toDo: toDo, single: deleteSingle, delete: true)
-          .catchError((e) => displayError(context: context, e: e));
+          .catchError((e) => displayError(e: e));
 
       return await eventProvider.updateEventModel(oldModel: toDo);
     }
 
     await toDoProvider.deleteToDo(toDo: toDo).catchError(
-          (e) => displayError(context: context, e: e),
+          (e) => displayError(e: e),
         );
     if (null != toDo.groupID) {
       groupProvider.setToDoCount(id: toDo.groupID!);
@@ -412,8 +414,7 @@ abstract class Tiles {
                     }
                     return await routineProvider
                         .deleteRoutine(routine: routine)
-                        .catchError(
-                            (e) => displayError(context: context, e: e));
+                        .catchError((e) => displayError(e: e));
                   }
                   return await showDialog<List<bool>?>(
                       barrierDismissible: true,
@@ -438,8 +439,7 @@ abstract class Tiles {
 
                     await routineProvider
                         .deleteRoutine(routine: routine)
-                        .catchError(
-                            (e) => displayError(context: context, e: e));
+                        .catchError((e) => displayError(e: e));
                   });
                 },
               )),
@@ -616,14 +616,14 @@ abstract class Tiles {
       await deadlineProvider
           .handleRepeating(
               deadline: deadline, single: deleteSingle, delete: true)
-          .catchError((e) => displayError(context: context, e: e));
+          .catchError((e) => displayError(e: e));
 
       return await eventProvider.updateEventModel(oldModel: deadline);
     }
 
     await deadlineProvider
         .deleteDeadline(deadline: deadline)
-        .catchError((e) => displayError(context: context, e: e));
+        .catchError((e) => displayError(e: e));
 
     return await eventProvider.updateEventModel(oldModel: deadline);
   }
@@ -790,14 +790,14 @@ abstract class Tiles {
       await reminderProvider
           .handleRepeating(
               reminder: reminder, single: deleteSingle, delete: true)
-          .catchError((e) => displayError(context: context, e: e));
+          .catchError((e) => displayError(e: e));
 
       return await eventProvider.updateEventModel(oldModel: reminder);
     }
 
     await reminderProvider
         .deleteReminder(reminder: reminder)
-        .catchError((e) => displayError(context: context, e: e));
+        .catchError((e) => displayError(e: e));
 
     return await eventProvider.updateEventModel(oldModel: reminder);
   }
@@ -1043,7 +1043,8 @@ abstract class Tiles {
             useRootNavigator: false,
             context: context,
             builder: (BuildContext context) {
-              Provider.of<GroupViewModel>(context, listen: false);
+              Provider.of<GroupViewModel>(context, listen: false)
+                  .fromModel(model: group);
               return const UpdateGroupScreen();
             });
       },
@@ -1217,7 +1218,7 @@ abstract class Tiles {
                       Provider.of<SubtaskViewModel>(context, listen: false)
                           .fromModel(model: subtask);
                       return const UpdateSubtaskScreen();
-                    }).catchError((e) => displayError(context: context, e: e));
+                    }).catchError((e) => displayError(e: e));
               },
               onChanged: ({bool? value, Subtask? subtask}) async {
                 if (null == subtask) {
@@ -1226,7 +1227,7 @@ abstract class Tiles {
                 subtask.completed = value!;
                 await subtaskProvider
                     .updateSubtask(subtask: subtask)
-                    .catchError((e) => displayError(context: context, e: e));
+                    .catchError((e) => displayError(e: e));
               },
               onRemoved: ({Subtask? subtask}) async {
                 if (null == subtask) {
@@ -1239,7 +1240,7 @@ abstract class Tiles {
 
                 await subtaskProvider
                     .deleteSubtask(subtask: subtask)
-                    .catchError((e) => displayError(context: context, e: e));
+                    .catchError((e) => displayError(e: e));
               },
               onReorder: (int oldIndex, int newIndex) async {
                 await subtaskProvider
@@ -1247,7 +1248,10 @@ abstract class Tiles {
                         subtasks: subtasks,
                         oldIndex: oldIndex,
                         newIndex: newIndex)
-                    .catchError((e) => displayError(context: context, e: e));
+                    .catchError((e) {
+                  displayError(e: e);
+                  return subtasks;
+                });
               }),
           if (subtasks.length < limit)
             SubtaskQuickEntry(
@@ -1365,7 +1369,7 @@ abstract class Tiles {
               tooltip: "Reset routine",
               onPressed: () async => await routineProvider
                   .resetRoutineSubtasks(routine: routine)
-                  .catchError((e) => displayError(context: context, e: e))),
+                  .catchError((e) => displayError(e: e))),
           IconButton(
             tooltip: "Remove routine",
             icon: const Icon(Icons.remove_circle_outline_rounded),
@@ -1758,6 +1762,7 @@ abstract class Tiles {
                 icon: const Icon(Icons.clear_rounded), onPressed: handleClear)
             : null,
         onTap: () async => await showDialog<int>(
+            useRootNavigator: false,
             context: context,
             builder: (BuildContext context) =>
                 DurationDialog(duration: expectedDuration)).then(handleUpdate),
@@ -1864,6 +1869,7 @@ abstract class Tiles {
               : null,
           onTap: () async {
             await showDialog<List<DateTime?>?>(
+                useRootNavigator: false,
                 context: context,
                 builder: (BuildContext context) {
                   return DateRangeDialog(
@@ -1977,6 +1983,7 @@ abstract class Tiles {
                   ]),
             onTap: () async {
               await showDialog<List<TimeOfDay?>?>(
+                  useRootNavigator: false,
                   context: context,
                   builder: (BuildContext context) {
                     return TimeDialog(startTime: startTime, dueTime: dueTime);
@@ -2028,6 +2035,7 @@ abstract class Tiles {
                     warn: showDate,
                     onTap: () async {
                       await showDialog<Map<String, dynamic>?>(
+                          useRootNavigator: false,
                           context: context,
                           builder: (BuildContext context) {
                             return DateTimeDialog(
@@ -2100,6 +2108,7 @@ abstract class Tiles {
                   ),
             onTap: () async {
               await showDialog<Map<String, dynamic>?>(
+                  useRootNavigator: false,
                   context: context,
                   builder: (BuildContext context) {
                     return DateTimeDialog(
@@ -2534,15 +2543,62 @@ abstract class Tiles {
       );
 
   // ERRORS:
+  static void displayError({Exception? e}) {
+    BuildContext? context =
+        ApplicationService.instance.globalNavigatorKey.currentState?.context;
+    // If there's no context, assume there is no scrn.
+    if (null == context) {
+      return;
+    }
 
-  static displayError<T>({required BuildContext context, Exception? e}) {
-    Flushbar? error;
-    error = Flushbars.createError(
-      context: context,
-      message: e.toString(),
-      dismissCallback: () => error?.dismiss(),
-    );
+    LayoutProvider lp = Provider.of<LayoutProvider>(context, listen: false);
 
-    error.show(context);
+    double maxWidth = lp.width;
+    double? offset;
+    if (lp.drawerOpened && (!lp.isMobile || lp.isTablet)) {
+      maxWidth -= lp.navDrawerWidth;
+      offset = lp.navDrawerWidth;
+    }
+
+    displayFlushbar(
+        context: context,
+        flushbar: Flushbars.createError(
+          maxWidth: maxWidth,
+          leftMarginOffset: offset,
+          context: context,
+          message: e.toString(),
+        ));
+  }
+
+  static void displayAlert({String message = ""}) {
+    BuildContext? context =
+        ApplicationService.instance.globalNavigatorKey.currentState?.context;
+    // If there's no context, assume there is no scrn.
+    if (null == context) {
+      return;
+    }
+
+    LayoutProvider lp = Provider.of<LayoutProvider>(context, listen: false);
+
+    double maxWidth = lp.width;
+    double? offset;
+    if (lp.drawerOpened) {
+      maxWidth -= lp.navDrawerWidth;
+      offset = lp.navDrawerWidth;
+    }
+
+    displayFlushbar(
+        context: context,
+        flushbar: Flushbars.createAlert(
+          maxWidth: maxWidth,
+          leftMarginOffset: offset,
+          context: context,
+          message: message,
+        ));
+  }
+
+  static void displayFlushbar(
+      {required BuildContext context, required Flushbar flushbar}) {
+    flushbar.show(context);
   }
 }

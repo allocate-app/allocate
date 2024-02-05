@@ -147,7 +147,7 @@ class ReminderProvider extends ChangeNotifier {
     }
 
     try {
-      curReminder = await _reminderRepo.update(curReminder!);
+      curReminder = await _reminderRepo.update(reminder);
       if (curReminder!.repeatable) {
         Reminder? template =
             await _reminderRepo.getTemplate(repeatID: curReminder!.repeatID!);
@@ -168,6 +168,7 @@ class ReminderProvider extends ChangeNotifier {
       await cancelNotification();
       return Future.error(e, stacktrace);
     } on Error catch (e, stacktrace) {
+      log(e.toString());
       log("Unknown error", stackTrace: stacktrace);
       return Future.error(UnexpectedErrorException(), stacktrace);
     }
@@ -403,6 +404,7 @@ class ReminderProvider extends ChangeNotifier {
     return await _reminderRepo.getByID(id: id);
   }
 
+  // TODO:  This should really escape if null
   Future<void> scheduleNotification({Reminder? reminder}) async {
     reminder = reminder ?? curReminder!;
     if (null == reminder.dueDate) {

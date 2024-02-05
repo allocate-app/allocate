@@ -9,28 +9,34 @@ abstract class Flushbars {
     required BuildContext context,
     Color? errorColor,
     Color? textColor,
-    // Return to this later.
-    // Color? actionColor,
+    double? maxWidth,
+    double? leftMarginOffset,
     Color? backgroundColor,
-    Duration duration = const Duration(seconds: 1),
+    Duration duration =
+        const Duration(milliseconds: Constants.snackbarDuration),
     void Function()? dismissCallback,
   }) =>
-      // TODO: maxWidth.
       Flushbar(
+          maxWidth: maxWidth,
+          forwardAnimationCurve: Curves.fastEaseInToSlowEaseOut,
+          reverseAnimationCurve: Curves.fastEaseInToSlowEaseOut,
           animationDuration:
-              const Duration(milliseconds: Constants.flushbarDuration),
+              const Duration(milliseconds: Constants.snackbarEaseInDuration),
+          shouldIconPulse: true,
           message: message,
-          flushbarPosition: FlushbarPosition.TOP,
-          margin: const EdgeInsets.symmetric(
-              horizontal: Constants.padding, vertical: Constants.doublePadding),
+          flushbarPosition: FlushbarPosition.BOTTOM,
+          margin: EdgeInsets.only(
+              right: Constants.padding * 1.5,
+              left: Constants.padding * 1.5 + (leftMarginOffset ?? 0),
+              top: Constants.doublePadding * 1.5,
+              bottom: Constants.doublePadding * 1.5),
           padding: const EdgeInsets.all(Constants.padding),
           borderRadius:
               const BorderRadius.all(Radius.circular(Constants.semiCircular)),
           duration: duration,
-          backgroundColor: backgroundColor ??
-              Theme.of(context).snackBarTheme.backgroundColor ??
-              const Color(0xFF323232),
-          messageColor: textColor,
+          backgroundColor: Theme.of(context).colorScheme.secondaryContainer,
+          messageColor:
+              textColor ?? Theme.of(context).colorScheme.onSecondaryContainer,
           isDismissible: true,
           icon: Icon(
             Icons.error_outline,
@@ -38,7 +44,10 @@ abstract class Flushbars {
             color: errorColor ?? Constants.errorColor(context: context),
           ),
           mainButton: TextButton(
-            onPressed: dismissCallback,
+            onPressed: dismissCallback ??
+                () {
+                  Navigator.pop(context);
+                },
             child: const Text("Dismiss"),
           ));
 
@@ -47,25 +56,34 @@ abstract class Flushbars {
     required BuildContext context,
     Color? alertColor,
     Color? textColor,
+    double? maxWidth,
+    double? leftMarginOffset,
     Color? backgroundColor,
-    Duration duration = const Duration(seconds: 1),
+    Duration duration =
+        const Duration(milliseconds: Constants.snackbarDuration),
     void Function()? dismissCallback,
   }) =>
       Flushbar(
+          maxWidth: maxWidth,
+          forwardAnimationCurve: Curves.fastEaseInToSlowEaseOut,
+          reverseAnimationCurve: Curves.fastEaseInToSlowEaseOut,
           animationDuration:
-              const Duration(milliseconds: Constants.flushbarDuration),
+              const Duration(milliseconds: Constants.snackbarEaseInDuration),
+          shouldIconPulse: true,
           message: message,
-          flushbarPosition: FlushbarPosition.TOP,
-          margin: const EdgeInsets.symmetric(
-              horizontal: Constants.padding, vertical: Constants.doublePadding),
+          flushbarPosition: FlushbarPosition.BOTTOM,
+          margin: EdgeInsets.only(
+              right: Constants.padding * 1.5,
+              left: Constants.padding * 1.5 + (leftMarginOffset ?? 0),
+              top: Constants.doublePadding * 1.5,
+              bottom: Constants.doublePadding * 1.5),
           padding: const EdgeInsets.all(Constants.padding),
           borderRadius:
               const BorderRadius.all(Radius.circular(Constants.semiCircular)),
           duration: duration,
-          backgroundColor: backgroundColor ??
-              Theme.of(context).snackBarTheme.backgroundColor ??
-              const Color(0xFF323232),
-          messageColor: textColor,
+          backgroundColor: Theme.of(context).colorScheme.secondaryContainer,
+          messageColor:
+              textColor ?? Theme.of(context).colorScheme.onSecondaryContainer,
           isDismissible: true,
           icon: Icon(
             Icons.error_outline,
@@ -73,7 +91,10 @@ abstract class Flushbars {
             color: alertColor ?? Theme.of(context).colorScheme.primary,
           ),
           mainButton: TextButton(
-            onPressed: dismissCallback,
+            onPressed: dismissCallback ??
+                () {
+                  Navigator.pop(context);
+                },
             child: const Text("Dismiss"),
           ));
 }

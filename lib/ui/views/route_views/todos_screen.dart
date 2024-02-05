@@ -100,6 +100,7 @@ class _ToDosListScreen extends State<ToDosListScreen> {
                   const EdgeInsets.symmetric(vertical: Constants.halfPadding),
               context: context,
               onTap: () async => await showDialog(
+                useRootNavigator: false,
                 barrierDismissible: false,
                 context: context,
                 builder: (BuildContext context) => const CreateToDoScreen(),

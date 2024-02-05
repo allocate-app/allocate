@@ -14,55 +14,27 @@ I hope that, one day, this app will be fully accessible, at the moment, it is no
 
 This is not yet ready for release, but if you would like to play with the project,
 feel free to clone the project and build using Flutter. You will require a supabase api key
-(and a full online implementation).
+or to refactor to an online backend of your choosing.
 
-Main has not been fully implemented, but the application can be run using
-the NavigationTester class, used for Integration testing. The database will delete on a graceful
-application close - remove the default flag when Initializing IsarService to persist the data.
+Online is implemented but not fully tested.
 
 ## What has been implemented so far:
 
-Basic offline functionality CRUD:
+Full offline functionality:
 -Creating tasks, routines, deadlines, reminders, task grouping
--Repeating tasks, reminders, deadlines (partially)
+-Repeating tasks, reminders, deadlines
 -Theme modifications
 -Accessibility modifications (partially)
 
 ## What still requires implementation:
 
--Main Application and routing
--User accounts
--Online data synchronization
+-Online testing
 -Usage documentation
 
 ## Roadmap and future plans:
 
--see [ROADMAP.md]{ROADMAP.md}
+-see [ROADMAP.md](ROADMAP.md)
 
 ## How to use:
 
 - TBD
-
-[//]: # (## Getting Started)
-
-[//]: # ()
-
-[//]: # (This project is a starting point for a Flutter application.)
-
-[//]: # ()
-
-[//]: # (A few resources to get you started if this is your first Flutter project:)
-
-[//]: # ()
-
-[//]: # (- [Lab: Write your first Flutter app]&#40;https://docs.flutter.dev/get-started/codelab&#41;)
-
-[//]: # (- [Cookbook: Useful Flutter samples]&#40;https://docs.flutter.dev/cookbook&#41;)
-
-[//]: # ()
-
-[//]: # (For help getting started with Flutter development, view the)
-
-[//]: # ([online documentation]&#40;https://docs.flutter.dev/&#41;, which offers tutorials,)
-
-[//]: # (samples, guidance on mobile development, and a full API reference.)

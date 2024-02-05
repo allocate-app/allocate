@@ -190,6 +190,7 @@ abstract class ListTileWidgets {
         ),
         onPressed: () async {
           await showDialog<void>(
+            useRootNavigator: false,
             context: currentContext,
             builder: (BuildContext context) {
               return Dialog(

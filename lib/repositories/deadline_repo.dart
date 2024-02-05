@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../model/task/deadline.dart';
 import '../services/isar_service.dart';
+import '../services/notification_service.dart';
 import '../services/supabase_service.dart';
 import '../util/constants.dart';
 import '../util/enums.dart';
@@ -31,6 +32,7 @@ class DeadlineRepo extends ChangeNotifier implements DeadlineRepository {
   bool _initialized = false;
 
   String get uuid => _supabaseClient.auth.currentUser?.id ?? "";
+  String? currentUserID;
 
   @override
   void init() {
@@ -67,9 +69,16 @@ class DeadlineRepo extends ChangeNotifier implements DeadlineRepository {
     SupabaseService.instance.authSubscription.listen((AuthState data) async {
       final AuthChangeEvent event = data.event;
       switch (event) {
-        case AuthChangeEvent.signedIn:
-          await syncRepo();
+        case AuthChangeEvent.initialSession:
+          await handleUserChange();
           // OPEN TABLE STREAM -> insert new data.
+          if (!_subscribed) {
+            _deadlineStream.subscribe();
+            _subscribed = true;
+          }
+        case AuthChangeEvent.signedIn:
+          await handleUserChange();
+          // This should close and re-open the subscription?
           if (!_subscribed) {
             _deadlineStream.subscribe();
             _subscribed = true;
@@ -77,7 +86,7 @@ class DeadlineRepo extends ChangeNotifier implements DeadlineRepository {
           break;
         case AuthChangeEvent.tokenRefreshed:
           if (!_subscribed) {
-            await syncRepo();
+            await handleUserChange();
             _deadlineStream.subscribe();
             _subscribed = true;
           }
@@ -90,32 +99,30 @@ class DeadlineRepo extends ChangeNotifier implements DeadlineRepository {
         default:
           break;
       }
-      // if (event == AuthChangeEvent.signedIn) {
-      //   await syncRepo();
-      //   // OPEN TABLE STREAM -> insert new data.
-      //   if (!_subscribed) {
-      //     _deadlineStream.subscribe();
-      //     _subscribed = true;
-      //   }
-      //   return;
-      // }
-      // if (event == AuthChangeEvent.tokenRefreshed) {
-      //   // If not listening to the stream, there hasn't been an update.
-      //   // Sync accordingly.
-      //   if (!_subscribed) {
-      //     await syncRepo();
-      //     _deadlineStream.subscribe();
-      //     _subscribed = true;
-      //   }
-      //   return;
-      // }
-      // if (event == AuthChangeEvent.signedOut) {
-      //   // CLOSE TABLE STREAM.
-      //   await _deadlineStream.unsubscribe();
-      //   _subscribed = false;
-      // }
     });
     _initialized = true;
+  }
+
+  Future<void> handleUserChange() async {
+    String? newID = _supabaseClient.auth.currentUser?.id;
+
+    // Realtime Changes will handle updated data.
+    if (newID == currentUserID) {
+      return syncRepo();
+    }
+
+    // In the case that the previous currentUserID was null.
+    // This implies a new login, or a fresh open.
+    // if not online, this will just early return.
+    if (null == currentUserID) {
+      currentUserID = newID;
+      return await syncRepo();
+    }
+
+    // This implies there is a new user -> clear the DB
+    // and insert the new user.
+    currentUserID = newID;
+    return await swapRepo();
   }
 
   @override
@@ -136,6 +143,7 @@ class DeadlineRepo extends ChangeNotifier implements DeadlineRepository {
 
     if (isConnected) {
       Map<String, dynamic> deadlineEntity = deadline.toEntity();
+      deadlineEntity["uuid"] = uuid;
       final List<Map<String, dynamic>> response = await _supabaseClient
           .from("deadlines")
           .insert(deadlineEntity)
@@ -170,9 +178,10 @@ class DeadlineRepo extends ChangeNotifier implements DeadlineRepository {
 
     if (isConnected) {
       Map<String, dynamic> deadlineEntity = deadline.toEntity();
+      deadlineEntity["uuid"] = uuid;
       final List<Map<String, dynamic>> response = await _supabaseClient
           .from("deadlines")
-          .update(deadlineEntity)
+          .upsert(deadlineEntity)
           .select("id");
 
       id = response.last["id"];
@@ -209,8 +218,11 @@ class DeadlineRepo extends ChangeNotifier implements DeadlineRepository {
 
     if (isConnected) {
       ids.clear();
-      List<Map<String, dynamic>> deadlineEntities =
-          deadlines.map((deadline) => deadline.toEntity()).toList();
+      List<Map<String, dynamic>> deadlineEntities = deadlines.map((deadline) {
+        Map<String, dynamic> entity = deadline.toEntity();
+        entity["uuid"] = uuid;
+        return entity;
+      }).toList();
       for (Map<String, dynamic> deadlineEntity in deadlineEntities) {
         final List<Map<String, dynamic>> response = await _supabaseClient
             .from("deadlines")
@@ -289,6 +301,12 @@ class DeadlineRepo extends ChangeNotifier implements DeadlineRepository {
           .neq("customViewIndex", -2);
     }
 
+    await _isarClient.writeTxn(() async {
+      await _isarClient.deadlines.clear();
+    });
+  }
+
+  Future<void> clearLocal() async {
     await _isarClient.writeTxn(() async {
       await _isarClient.deadlines.clear();
     });
@@ -435,6 +453,14 @@ class DeadlineRepo extends ChangeNotifier implements DeadlineRepository {
       data.add(Deadline.fromEntity(entity: entity));
     }
     return data;
+  }
+
+  Future<void> swapRepo() async {
+    NotificationService.instance.cancelAllNotifications();
+    _deadlineStream.unsubscribe();
+    _subscribed = false;
+    await clearLocal();
+    await syncRepo();
   }
 
   Future<void> handleUpsert(PostgresChangePayload payload) async {

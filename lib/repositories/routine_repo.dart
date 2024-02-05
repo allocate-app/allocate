@@ -32,6 +32,7 @@ class RoutineRepo extends ChangeNotifier implements RoutineRepository {
   bool _initialized = false;
 
   String get uuid => _supabaseClient.auth.currentUser?.id ?? "";
+  String? currentUserID;
 
   @override
   void init() {
@@ -70,8 +71,15 @@ class RoutineRepo extends ChangeNotifier implements RoutineRepository {
     SupabaseService.instance.authSubscription.listen((AuthState data) async {
       final AuthChangeEvent event = data.event;
       switch (event) {
+        case AuthChangeEvent.initialSession:
+          await handleUserChange();
+          if (!_subscribed) {
+            _routineStream.subscribe();
+            _subscribed = true;
+          }
+          break;
         case AuthChangeEvent.signedIn:
-          await syncRepo();
+          await handleUserChange();
           // OPEN TABLE STREAM -> insert new data.
           if (!_subscribed) {
             _routineStream.subscribe();
@@ -82,7 +90,7 @@ class RoutineRepo extends ChangeNotifier implements RoutineRepository {
           // If not listening to the stream, there hasn't been an update.
           // Sync accordingly.
           if (!_subscribed) {
-            await syncRepo();
+            await handleUserChange();
             _routineStream.subscribe();
             _subscribed = true;
           }
@@ -95,31 +103,29 @@ class RoutineRepo extends ChangeNotifier implements RoutineRepository {
         default:
           break;
       }
-      // if (event == AuthChangeEvent.signedIn) {
-      //   await syncRepo();
-      //   // OPEN TABLE STREAM -> insert new data.
-      //   if (!_subscribed) {
-      //     _routineStream.subscribe();
-      //     _subscribed = true;
-      //   }
-      //   return;
-      // }
-      // if (event == AuthChangeEvent.tokenRefreshed) {
-      //   // If not listening to the stream, there hasn't been an update.
-      //   // Sync accordingly.
-      //   if (!_subscribed) {
-      //     await syncRepo();
-      //     _routineStream.subscribe();
-      //     _subscribed = true;
-      //   }
-      //   return;
-      // }
-      // if (event == AuthChangeEvent.signedOut) {
-      //   // CLOSE TABLE STREAM.
-      //   await _routineStream.unsubscribe();
-      //   _subscribed = false;
-      // }
     });
+  }
+
+  Future<void> handleUserChange() async {
+    String? newID = _supabaseClient.auth.currentUser?.id;
+
+    // Realtime Changes will handle updated data.
+    if (newID == currentUserID) {
+      return syncRepo();
+    }
+
+    // In the case that the previous currentUserID was null.
+    // This implies a new login, or a fresh open.
+    // if not online, this will just early return.
+    if (null == currentUserID) {
+      currentUserID = newID;
+      return await syncRepo();
+    }
+
+    // This implies there is a new user -> clear the DB
+    // and insert the new user.
+    currentUserID = newID;
+    return await swapRepo();
   }
 
   @override
@@ -141,6 +147,7 @@ class RoutineRepo extends ChangeNotifier implements RoutineRepository {
 
     if (isConnected) {
       Map<String, dynamic> routineEntity = routine.toEntity();
+      routineEntity["uuid"] = uuid;
       final List<Map<String, dynamic>> response = await _supabaseClient
           .from("routines")
           .insert(routineEntity)
@@ -178,6 +185,7 @@ class RoutineRepo extends ChangeNotifier implements RoutineRepository {
 
     if (isConnected) {
       Map<String, dynamic> routineEntity = routine.toEntity();
+      routineEntity["uuid"] = uuid;
       final List<Map<String, dynamic>> response = await _supabaseClient
           .from("routines")
           .upsert(routineEntity)
@@ -221,8 +229,12 @@ class RoutineRepo extends ChangeNotifier implements RoutineRepository {
 
     if (isConnected) {
       ids.clear();
-      List<Map<String, dynamic>> routineEntities =
-          routines.map((routine) => routine.toEntity()).toList();
+      List<Map<String, dynamic>> routineEntities = routines.map((routine) {
+        Map<String, dynamic> entity = routine.toEntity();
+
+        entity["uuid"] = uuid;
+        return entity;
+      }).toList();
       final List<Map<String, dynamic>> response = await _supabaseClient
           .from("routines")
           .upsert(routineEntities)
@@ -305,8 +317,13 @@ class RoutineRepo extends ChangeNotifier implements RoutineRepository {
     });
   }
 
-  // To avoid unnecessary id list passing -> just deleting subtasks here.
+  Future<void> clearLocal() async {
+    await _isarClient.writeTxn(() async {
+      await _isarClient.routines.clear();
+    });
+  }
 
+  // To avoid unnecessary id list passing -> just deleting subtasks here.
   @override
   Future<void> deleteSweep({DateTime? upTo}) async {
     List<int> toDeletes = await getDeleteIDs(deleteLimit: upTo);
@@ -425,6 +442,11 @@ class RoutineRepo extends ChangeNotifier implements RoutineRepository {
       data.add(Routine.fromEntity(entity: entity));
     }
     return data;
+  }
+
+  Future<void> swapRepo() async {
+    await clearLocal();
+    await syncRepo();
   }
 
   Future<void> handleUpsert(PostgresChangePayload payload) async {

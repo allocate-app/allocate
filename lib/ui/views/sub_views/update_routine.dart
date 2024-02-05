@@ -135,10 +135,11 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
   Future<void> handleUpdate() async {
     await routineProvider
         .updateRoutine(routine: vm.toModel(), times: vm.routineTimes)
+        .catchError((e) => Tiles.displayError(e: e))
         .whenComplete(() {
       vm.clear();
       Navigator.pop(context);
-    }).catchError((e) => Tiles.displayError(context: context, e: e));
+    });
   }
 
   void handleClose({required bool willDiscard}) {
@@ -161,7 +162,7 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
     return await routineProvider.deleteRoutine().whenComplete(() {
       vm.clear();
       Navigator.pop(context);
-    }).catchError((e) => Tiles.displayError(context: context, e: e));
+    }).catchError((e) => Tiles.displayError(e: e));
   }
 
   void onFetch({List<Subtask>? items}) {

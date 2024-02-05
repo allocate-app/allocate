@@ -64,7 +64,7 @@ class Subtask
         isSynced = true,
         toDelete = entity["toDelete"] as bool,
         lastUpdated =
-            DateTime.tryParse(entity["lastUpdated"]) ?? Constants.today;
+            DateTime.tryParse(entity["lastUpdated"] ?? "") ?? Constants.today;
 
   Map<String, dynamic> toEntity() => {
         "id": id,

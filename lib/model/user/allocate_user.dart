@@ -167,9 +167,10 @@ class AllocateUser with EquatableMixin implements Copyable<AllocateUser> {
         isSynced = true,
         syncOnline = true,
         deleteSchedule = DeleteSchedule.values[entity["deleteSchedule"]],
-        lastOpened = DateTime.tryParse(entity["lastOpened"]) ?? Constants.today,
+        lastOpened =
+            DateTime.tryParse(entity["lastOpened"] ?? "") ?? Constants.today,
         lastUpdated =
-            DateTime.tryParse(entity["lastUpdated"]) ?? Constants.today,
+            DateTime.tryParse(entity["lastUpdated"] ?? "") ?? Constants.today,
         // Local Parameters -> THESE ARE OVERWRITTEN
         windowEffect = Constants.defaultWindowEffect,
         scaffoldOpacity = Constants.defaultScaffoldOpacity,
@@ -179,11 +180,9 @@ class AllocateUser with EquatableMixin implements Copyable<AllocateUser> {
   // TODO: supabase - link user table by user.auth.uuid + email.
   Map<String, dynamic> toEntity() => {
         "id": id,
-        // TODO: remove this -> should already be in table.
+        // Already in table -> set automatically
         // "uuid": uuid,
-        // TODO: remove this -> should already be in table.
-        // Correction: -> set using auth session during deserialization.
-        // "email": email,
+        "email": email,
         "username": username,
         "bandwidth": bandwidth,
         "checkDelete": checkDelete,

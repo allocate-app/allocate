@@ -21,6 +21,7 @@ import '../../../providers/model/subtask_provider.dart';
 import '../../../providers/model/todo_provider.dart';
 import '../../../providers/model/user_provider.dart';
 import '../../../providers/viewmodels/user_viewmodel.dart';
+import '../../../services/application_service.dart';
 import '../../../services/daily_reset_service.dart';
 import '../../../services/repeatable_service.dart';
 import '../../../services/supabase_service.dart';
@@ -105,6 +106,11 @@ class _HomeScreen extends State<HomeScreen> {
         widget.index != layoutProvider.selectedPageIndex) {
       layoutProvider.initPageIndex = widget.index!;
     }
+
+    // Reset the initial index in ApplicationService ->
+    // This route is only pushed on an application launch, relaunch,
+    // Or a deeplink routing.
+    ApplicationService.instance.initialPageIndex = null;
   }
 
   void initializeControllers() {
@@ -165,7 +171,10 @@ class _HomeScreen extends State<HomeScreen> {
       groupProvider.dayReset(),
       subtaskProvider.dayReset(),
     ]).catchError(
-      (e) => Tiles.displayError(context: context, e: e),
+      (e) {
+        Tiles.displayError(e: e);
+        return [];
+      },
     );
   }
 
@@ -219,8 +228,9 @@ class _HomeScreen extends State<HomeScreen> {
                   child: OverflowBox(
                     minWidth: Constants.navigationDrawerMaxWidth,
                     maxWidth: Constants.navigationDrawerMaxWidth,
-                    child: Consumer<ThemeProvider>(builder: (BuildContext context,
-                        ThemeProvider value, Widget? child) {
+                    child: Consumer<ThemeProvider>(builder:
+                        (BuildContext context, ThemeProvider value,
+                            Widget? child) {
                       return DesktopDrawerWrapper(
                         elevation: value.sidebarElevation,
                         drawer: buildNavigationDrawer(
@@ -260,13 +270,18 @@ class _HomeScreen extends State<HomeScreen> {
             ),
             builder: (BuildContext context, double value, Widget? child) {
               return TransparentMacOSSidebar(
-                effect: themeProvider.getWindowEffect(effect:themeProvider.windowEffect),
+                effect: themeProvider.getWindowEffect(
+                    effect: themeProvider.windowEffect),
                 child: Material(
                   color: Colors.transparent,
                   shadowColor: Colors.transparent,
                   child: Ink(
-                    color: (Platform.isWindows || Platform.isMacOS)? Colors.transparent :Color.lerp(Theme.of(context).colorScheme.surface,
-                        Theme.of(context).colorScheme.outlineVariant, value),
+                    color: (Platform.isWindows || Platform.isMacOS)
+                        ? Colors.transparent
+                        : Color.lerp(
+                            Theme.of(context).colorScheme.surface,
+                            Theme.of(context).colorScheme.outlineVariant,
+                            value),
                     child: InkWell(
                       mouseCursor: SystemMouseCursors.resizeLeftRight,
                       onHover: (value) {},
@@ -281,8 +296,10 @@ class _HomeScreen extends State<HomeScreen> {
                             !layoutProvider.drawerOpened;
                       },
                       child: VerticalDivider(
-                        width: lerpDouble(Constants.verticalDividerThickness * 3,
-                            Constants.verticalDividerThickness, value),
+                        width: lerpDouble(
+                            Constants.verticalDividerThickness * 3,
+                            Constants.verticalDividerThickness,
+                            value),
                         thickness: lerpDouble(
                             Constants.verticalDividerThickness * 3,
                             Constants.verticalDividerThickness,
@@ -434,12 +451,17 @@ class _HomeScreen extends State<HomeScreen> {
                             Text(value[0].toUpperCase())),
               ),
 
-              title: Selector<UserViewModel, String>(
-                  selector: (BuildContext context, UserViewModel vm) =>
-                      vm.username,
-                  builder:
-                      (BuildContext context, String value, Widget? child) =>
-                          Text(value)),
+              title: ValueListenableBuilder(
+                valueListenable: userProvider.isConnected,
+                builder: (BuildContext context, bool online, Widget? child) =>
+                    Selector<UserViewModel, String>(
+                        selector: (BuildContext context, UserViewModel vm) =>
+                            vm.username,
+                        builder: (BuildContext context, String value,
+                                Widget? child) =>
+                            Text(value)),
+              ),
+
               // Possible TODO: Refactor this to use an enum.
               subtitle: (null !=
                       SupabaseService

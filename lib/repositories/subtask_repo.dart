@@ -28,6 +28,8 @@ class SubtaskRepo extends ChangeNotifier implements SubtaskRepository {
 
   String get uuid => _supabaseClient.auth.currentUser?.id ?? "";
 
+  String? currentUserID;
+
   @override
   void init() {
     if (_initialized) {
@@ -65,9 +67,16 @@ class SubtaskRepo extends ChangeNotifier implements SubtaskRepository {
     SupabaseService.instance.authSubscription.listen((AuthState data) async {
       final AuthChangeEvent event = data.event;
       switch (event) {
-        case AuthChangeEvent.signedIn:
-          await syncRepo();
+        case AuthChangeEvent.initialSession:
+          await handleUserChange();
           // OPEN TABLE STREAM -> insert new data.
+          if (!_subscribed) {
+            _subtaskStream.subscribe();
+            _subscribed = true;
+          }
+        case AuthChangeEvent.signedIn:
+          await handleUserChange();
+          // This should close and re-open the subscription?
           if (!_subscribed) {
             _subtaskStream.subscribe();
             _subscribed = true;
@@ -75,7 +84,7 @@ class SubtaskRepo extends ChangeNotifier implements SubtaskRepository {
           break;
         case AuthChangeEvent.tokenRefreshed:
           if (!_subscribed) {
-            await syncRepo();
+            await handleUserChange();
             _subtaskStream.subscribe();
             _subscribed = true;
           }
@@ -88,31 +97,29 @@ class SubtaskRepo extends ChangeNotifier implements SubtaskRepository {
         default:
           break;
       }
-      // if (event == AuthChangeEvent.signedIn) {
-      //   await syncRepo();
-      //   // OPEN TABLE STREAM -> insert new data.
-      //   if (!_subscribed) {
-      //     _subtaskStream.subscribe();
-      //     _subscribed = true;
-      //   }
-      //   return;
-      // }
-      // if (event == AuthChangeEvent.tokenRefreshed) {
-      //   // If not listening to the stream, there hasn't been an update.
-      //   // Sync accordingly.
-      //   if (!_subscribed) {
-      //     await syncRepo();
-      //     _subtaskStream.subscribe();
-      //     _subscribed = true;
-      //   }
-      //   return;
-      // }
-      // if (event == AuthChangeEvent.signedOut) {
-      //   // CLOSE TABLE STREAM.
-      //   await _subtaskStream.unsubscribe();
-      //   _subscribed = false;
-      // }
     });
+  }
+
+  Future<void> handleUserChange() async {
+    String? newID = _supabaseClient.auth.currentUser?.id;
+
+    // Realtime Changes will handle updated data.
+    if (newID == currentUserID) {
+      return syncRepo();
+    }
+
+    // In the case that the previous currentUserID was null.
+    // This implies a new login, or a fresh open.
+    // if not online, this will just early return.
+    if (null == currentUserID) {
+      currentUserID = newID;
+      return await syncRepo();
+    }
+
+    // This implies there is a new user -> clear the DB
+    // and insert the new user.
+    currentUserID = newID;
+    return await swapRepo();
   }
 
   @override
@@ -132,6 +139,7 @@ class SubtaskRepo extends ChangeNotifier implements SubtaskRepository {
 
     if (isConnected) {
       Map<String, dynamic> subtaskEntity = subtask.toEntity();
+      subtaskEntity["uuid"] = uuid;
       final List<Map<String, dynamic>> response =
           await _supabaseClient.from("ts").insert(subtaskEntity).select("id");
 
@@ -209,6 +217,12 @@ class SubtaskRepo extends ChangeNotifier implements SubtaskRepository {
           .neq("customViewIndex", -2);
     }
 
+    await _isarClient.writeTxn(() async {
+      await _isarClient.subtasks.clear();
+    });
+  }
+
+  Future<void> clearLocal() async {
     await _isarClient.writeTxn(() async {
       await _isarClient.subtasks.clear();
     });
@@ -377,6 +391,11 @@ class SubtaskRepo extends ChangeNotifier implements SubtaskRepository {
     return data;
   }
 
+  Future<void> swapRepo() async {
+    await clearLocal();
+    await syncRepo();
+  }
+
   Future<void> handleUpsert(PostgresChangePayload payload) async {
     Subtask subtask = Subtask.fromEntity(entity: payload.newRecord);
     await _isarClient.writeTxn(() async {
@@ -414,6 +433,7 @@ class SubtaskRepo extends ChangeNotifier implements SubtaskRepository {
 
     if (isConnected) {
       Map<String, dynamic> subtaskEntity = subtask.toEntity();
+      subtaskEntity["uuid"] = uuid;
       final List<Map<String, dynamic>> response =
           await _supabaseClient.from("ts").upsert(subtaskEntity).select("id");
 
@@ -451,8 +471,11 @@ class SubtaskRepo extends ChangeNotifier implements SubtaskRepository {
 
     if (isConnected) {
       ids.clear();
-      List<Map<String, dynamic>> subtaskEntities =
-          subtasks.map((subtask) => subtask.toEntity()).toList();
+      List<Map<String, dynamic>> subtaskEntities = subtasks.map((subtask) {
+        Map<String, dynamic> entity = subtask.toEntity();
+        entity["uuid"] = uuid;
+        return entity;
+      }).toList();
       final List<Map<String, dynamic>> responses = await _supabaseClient
           .from("subtasks")
           .upsert(subtaskEntities)

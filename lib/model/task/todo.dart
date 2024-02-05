@@ -146,7 +146,7 @@ class ToDo with EquatableMixin implements Copyable<ToDo>, IRepeatable {
         isSynced = true,
         toDelete = entity["toDelete"] as bool,
         lastUpdated =
-            DateTime.tryParse(entity["lastUpdated"]) ?? Constants.today;
+            DateTime.tryParse(entity["lastUpdated"] ?? "") ?? Constants.today;
 
   // No id for syncing - assigned via autoincrement online.
   Map<String, dynamic> toEntity() => {

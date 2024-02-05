@@ -112,6 +112,7 @@ class _GroupsListScreen extends State<GroupsListScreen> {
               const EdgeInsets.symmetric(vertical: Constants.halfPadding),
           context: context,
           onTap: () async => await showDialog(
+            useRootNavigator: false,
             barrierDismissible: false,
             context: context,
             builder: (BuildContext context) => const CreateGroupScreen(),

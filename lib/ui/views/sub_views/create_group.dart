@@ -15,6 +15,7 @@ import '../../../providers/viewmodels/group_viewmodel.dart';
 import '../../../providers/viewmodels/todo_viewmodel.dart';
 import '../../../util/constants.dart';
 import '../../../util/enums.dart';
+import '../../../util/exceptions.dart';
 import '../../widgets/expanded_listtile.dart';
 import '../../widgets/flushbars.dart';
 import '../../widgets/listtile_widgets.dart';
@@ -141,13 +142,24 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
     return valid;
   }
 
+  // This should still run even if the online throws.
+  // If local create fails, something is very wrong => pop context and escape
   Future<void> handleCreate() async {
-    await groupProvider.createGroup(vm.toModel()).whenComplete(() {
-      vm.clear();
-      // This should clear on create
-      //tVM.clear();
-      Navigator.pop(context);
-    }).catchError((e) => Tiles.displayError(context: context, e: e));
+    await groupProvider
+        .createGroup(vm.toModel())
+        .catchError((e) {
+          Tiles.displayError(e: e);
+          vm.clear();
+          Navigator.pop(context);
+          return;
+        }, test: (e) => e is FailureToCreateException)
+        .catchError((e) => Tiles.displayError(e: e))
+        .whenComplete(() {
+          vm.clear();
+          // This should clear on create
+          //tVM.clear();
+          Navigator.pop(context);
+        });
   }
 
   Future<void> handleSelection({
@@ -182,11 +194,14 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
       for (ToDo toDo in vm.toDos) {
         toDo.groupID = null;
       }
-      return await toDoProvider.updateBatch(toDos: vm.toDos).whenComplete(() {
+      return await toDoProvider
+          .updateBatch(toDos: vm.toDos)
+          .catchError((e) => Tiles.displayError(e: e))
+          .whenComplete(() {
         vm.clear();
         //tVM.clear();
         Navigator.pop(context);
-      }).catchError((e) => Tiles.displayError(context: context, e: e));
+      });
     }
     _checkClose.value = false;
   }
@@ -451,8 +466,7 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
               builder: (BuildContext context) => CreateToDoScreen(
                     initialGroup: MapEntry<String, int>(
                         (vm.name.isNotEmpty) ? vm.name : "New Group", vm.id),
-                  )).catchError(
-              (e) => Tiles.displayError(context: context, e: e)),
+                  )).catchError((e) => Tiles.displayError(e: e)),
         )
       ],
     );

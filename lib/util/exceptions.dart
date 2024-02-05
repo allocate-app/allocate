@@ -2,7 +2,9 @@ import '../model/user/allocate_user.dart';
 
 class BuildFailureException implements Exception {
   String cause;
+
   BuildFailureException(this.cause);
+
   @override
   toString() => cause;
 }
@@ -79,10 +81,37 @@ class InvalidEventItemException implements Exception {
   toString() => cause;
 }
 
+class InvalidDateException implements Exception {
+  String cause;
+
+  InvalidDateException(this.cause);
+
+  @override
+  toString() => cause;
+}
+
+class InvalidInputException implements Exception {
+  String cause;
+
+  InvalidInputException(this.cause);
+
+  @override
+  toString() => cause;
+}
+
 class LoginFailedException implements Exception {
   String cause;
 
   LoginFailedException(this.cause);
+
+  @override
+  toString() => cause;
+}
+
+class EmailChangeException implements Exception {
+  String cause;
+
+  EmailChangeException(this.cause);
 
   @override
   toString() => cause;
@@ -108,9 +137,9 @@ class SignOutFailedException implements Exception {
 
 class MultipleUsersException implements Exception {
   String cause;
-  List<AllocateUser>? users;
+  List<AllocateUser> users;
 
-  MultipleUsersException(this.cause, {this.users});
+  MultipleUsersException(this.cause, {required this.users});
 
   @override
   toString() => cause;

@@ -1,8 +1,6 @@
 import 'dart:io';
 
-import 'package:auto_route/auto_route.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import "package:flutter_local_notifications/flutter_local_notifications.dart";
 import 'package:schedulers/schedulers.dart';
 import 'package:timezone/timezone.dart' as tz;
@@ -257,22 +255,21 @@ class NotificationService {
   @pragma('vm: entry-point')
   Future<void> onDidReceiveNotificationResponse(
       NotificationResponse? notificationResponse) async {
-    BuildContext? context =
-        ApplicationService.instance.globalNavigatorKey.currentContext;
-
-    // If this doesn't work, set the index in the applicationService.
-    // Oh, can also just GRAB THE ROUTER *** .
-    if (null == context) {
-      return;
-    }
-
     final String? payload = notificationResponse?.payload;
 
     if (null == payload) {
       return;
     }
 
-    AutoRouter.of(context).navigate(HomeRoute(index: 1));
+    ApplicationService as = ApplicationService.instance;
+
+    // Set the routing to Notifications.
+    as.initialPageIndex = 1;
+
+    // If the app is already open, push to home
+    if (as.appRouter.isRouteActive("/home")) {
+      as.appRouter.navigate(HomeRoute(index: 1));
+    }
   }
 
   bool validateNotificationDate({DateTime? notificationDate}) {
