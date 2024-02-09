@@ -1,6 +1,7 @@
 import 'dart:developer';
 
 import 'package:allocate/services/daily_reset_service.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:isar/isar.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -99,6 +100,21 @@ class UserStorageService extends ChangeNotifier {
         default:
           break;
       }
+    });
+
+    // This is for online stuff.
+    SupabaseService.instance.connectionSubscription
+        .listen((ConnectivityResult result) async {
+      if (result == ConnectivityResult.none) {
+        return;
+      }
+
+      // This is to give enough time for the internet to check.
+      await Future.delayed(const Duration(seconds: 10));
+      if (!isConnected) {
+        return;
+      }
+      await handleUserChange();
     });
   }
 
@@ -355,9 +371,8 @@ class UserStorageService extends ChangeNotifier {
       return null;
     }
 
-    // TODO: refactor this logic once multi-user implementation
-    // TODO: refactor this more -> Clean it up and try to get rid of
-    // messaging?
+    // TODO: multi-user -> handle in secure storage.
+    // Isar v3 is not encrypted.
     if (users.length > 1) {
       _failureCache = users;
       _status = UserStatus.multiple;

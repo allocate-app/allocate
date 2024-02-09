@@ -1,3 +1,4 @@
+import 'package:allocate/ui/blurred_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -103,12 +104,14 @@ class _DeadlinesListScreen extends State<DeadlinesListScreen> {
               outerPadding:
                   const EdgeInsets.symmetric(vertical: Constants.halfPadding),
               context: context,
-              onTap: () async => await showDialog(
-                useRootNavigator: false,
-                barrierDismissible: false,
-                context: context,
-                builder: (BuildContext context) => const CreateDeadlineScreen(),
-              ),
+              onTap: () async => await blurredNonDismissible(
+                  context: context, dialog: const CreateDeadlineScreen()),
+              // await showDialog(
+              //   useRootNavigator: false,
+              //   barrierDismissible: false,
+              //   context: context,
+              //   builder: (BuildContext context) => const CreateDeadlineScreen(),
+              // ),
             ),
             Flexible(
               child: PaginatingListview<Deadline>(

@@ -10,6 +10,7 @@ import '../../providers/viewmodels/user_viewmodel.dart';
 import '../../services/isar_service.dart';
 import '../../services/supabase_service.dart';
 import '../../util/constants.dart';
+import '../blurred_dialog.dart';
 import 'battery_meter.dart';
 import 'color_picker_dialog.dart';
 import 'expanded_listtile.dart';
@@ -140,15 +141,21 @@ abstract class SettingsScreenWidgets {
               borderRadius: Constants.circular,
               onSelectFocus: false,
               onSelect: () async {
-                Color? newColor = await showDialog<Color?>(
-                    useRootNavigator: false,
+                Color? newColor = await blurredDismissible(
                     context: context,
-                    builder: (BuildContext context) {
-                      return ColorPickerDialog(
-                        oldColor: color,
-                        colorType: colorType,
-                      );
-                    });
+                    dialog: ColorPickerDialog(
+                      oldColor: color,
+                      colorType: colorType,
+                    ));
+                // await showDialog<Color?>(
+                //     useRootNavigator: false,
+                //     context: context,
+                //     builder: (BuildContext context) {
+                //       return ColorPickerDialog(
+                //         oldColor: color,
+                //         colorType: colorType,
+                //       );
+                //     });
                 if (Colors.transparent == newColor ||
                     null == newColor ||
                     newColor == color ||
@@ -159,15 +166,22 @@ abstract class SettingsScreenWidgets {
               }),
         ),
         onTap: () async {
-          Color? newColor = await showDialog<Color?>(
-              useRootNavigator: false,
+          Color? newColor = await blurredDismissible(
               context: context,
-              builder: (BuildContext context) {
-                return ColorPickerDialog(
-                  oldColor: color,
-                  colorType: colorType,
-                );
-              });
+              dialog: ColorPickerDialog(
+                oldColor: color,
+                colorType: colorType,
+              ));
+
+          // await showDialog<Color?>(
+          //     useRootNavigator: false,
+          //     context: context,
+          //     builder: (BuildContext context) {
+          //       return ColorPickerDialog(
+          //         oldColor: color,
+          //         colorType: colorType,
+          //       );
+          //     });
 
           if (Colors.transparent == newColor ||
               null == newColor ||
@@ -207,11 +221,13 @@ abstract class SettingsScreenWidgets {
               borderRadius:
                   const BorderRadius.all(Radius.circular(Constants.circular)),
               onTap: () async {
-                await showDialog(
-                    useRootNavigator: false,
-                    context: context,
-                    builder: (BuildContext context) =>
-                        const SimpleNameDialog());
+                await blurredDismissible(
+                    context: context, dialog: const SimpleNameDialog());
+                // showDialog(
+                //     useRootNavigator: false,
+                //     context: context,
+                //     builder: (BuildContext context) =>
+                //         const SimpleNameDialog());
               },
               child: Padding(
                 padding: EdgeInsets.zero,
@@ -219,7 +235,7 @@ abstract class SettingsScreenWidgets {
                   InkWell(
                     borderRadius: const BorderRadius.all(
                         Radius.circular(Constants.circular)),
-                    onTap: () {
+                    onTap: () async {
                       // FUTURE TODO: finish USER SWITCHER
                       // THIS SHOULD SWITCH USER
 
@@ -567,7 +583,7 @@ abstract class SettingsScreenWidgets {
     // db size in MiB.
     int dbMiB = dbBytes ~/ (1024 * 1024);
     int storageLocal = dbMiB * 100 ~/ 2048;
-    int storageOnline = dbSize * 100 ~/ 50;
+    int storageOnline = dbSize * 100 ~/ 500;
 
     return Dialog(
       insetPadding: const EdgeInsets.all(Constants.mobileDialogPadding),

@@ -1,3 +1,4 @@
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:isar/isar.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -41,6 +42,7 @@ class DeadlineRepo extends ChangeNotifier implements DeadlineRepository {
     }
     _isarClient = IsarService.instance.isarClient;
     _supabaseClient = SupabaseService.instance.supabaseClient;
+    _initialized = true;
 
     // I haven't faked the connection channels -> doesn't make sense to.
     if (SupabaseService.instance.offlineDebug) {
@@ -100,7 +102,21 @@ class DeadlineRepo extends ChangeNotifier implements DeadlineRepository {
           break;
       }
     });
-    _initialized = true;
+
+    // This is for online stuff.
+    SupabaseService.instance.connectionSubscription
+        .listen((ConnectivityResult result) async {
+      if (result == ConnectivityResult.none) {
+        return;
+      }
+
+      // This is to give enough time for the internet to check.
+      await Future.delayed(const Duration(seconds: 10));
+      if (!isConnected) {
+        return;
+      }
+      await handleUserChange();
+    });
   }
 
   Future<void> handleUserChange() async {

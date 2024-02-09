@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart';
 import "package:flutter/material.dart";
 import 'package:flutter_acrylic/widgets/titlebar_safe_area.dart';
 import 'package:flutter_acrylic/widgets/transparent_macos_sidebar.dart';
+import 'package:flutter_expandable_fab/flutter_expandable_fab.dart';
 import "package:provider/provider.dart";
 
 import '../../../model/task/group.dart';
@@ -24,15 +25,16 @@ import '../../../providers/viewmodels/user_viewmodel.dart';
 import '../../../services/application_service.dart';
 import '../../../services/daily_reset_service.dart';
 import '../../../services/repeatable_service.dart';
-import '../../../services/supabase_service.dart';
 import '../../../util/constants.dart';
 import '../../../util/enums.dart';
 import '../../../util/interfaces/i_model.dart';
+import '../../blurred_dialog.dart';
 import '../../widgets/battery_meter.dart';
 import '../../widgets/desktop_drawer_wrapper.dart';
 import '../../widgets/expanded_listtile.dart';
 import '../../widgets/global_model_search.dart';
 import '../../widgets/listviews.dart';
+import '../../widgets/main_floating_action_button.dart';
 import '../../widgets/padded_divider.dart';
 import '../../widgets/tiles.dart';
 import '../sub_views/create_group.dart';
@@ -63,6 +65,7 @@ class _HomeScreen extends State<HomeScreen> {
   late final ScrollController navScrollController;
 
   late final ScrollPhysics scrollPhysics;
+  late final GlobalKey<ExpandableFabState> _fabKey;
 
   @override
   void initState() {
@@ -107,6 +110,7 @@ class _HomeScreen extends State<HomeScreen> {
       layoutProvider.initPageIndex = widget.index!;
     }
 
+    _fabKey = GlobalKey<ExpandableFabState>();
     // Reset the initial index in ApplicationService ->
     // This route is only pushed on an application launch, relaunch,
     // Or a deeplink routing.
@@ -161,7 +165,7 @@ class _HomeScreen extends State<HomeScreen> {
   }
 
   Future<void> dayReset() async {
-    Future.wait([
+    await Future.wait([
       RepeatableService.instance.generateNextRepeats(),
       userProvider.dayReset(),
       toDoProvider.dayReset(),
@@ -171,8 +175,8 @@ class _HomeScreen extends State<HomeScreen> {
       groupProvider.dayReset(),
       subtaskProvider.dayReset(),
     ]).catchError(
-      (e) {
-        Tiles.displayError(e: e);
+      (e) async {
+        await Tiles.displayError(e: e);
         return [];
       },
     );
@@ -318,6 +322,10 @@ class _HomeScreen extends State<HomeScreen> {
             backgroundColor: Theme.of(context)
                 .scaffoldBackgroundColor
                 .withOpacity(themeProvider.scaffoldOpacity),
+            floatingActionButtonLocation: ExpandableFab.location,
+            floatingActionButton: MainFloatingActionButton(
+              fabKey: _fabKey,
+            ),
             appBar: buildAppBar(mobile: false),
             body: SafeArea(
                 child: Constants
@@ -333,6 +341,10 @@ class _HomeScreen extends State<HomeScreen> {
             .withOpacity(themeProvider.scaffoldOpacity),
         appBar: buildAppBar(mobile: true),
         drawer: buildNavigationDrawer(context: context, largeScreen: false),
+        floatingActionButtonLocation: ExpandableFab.location,
+        floatingActionButton: MainFloatingActionButton(
+          fabKey: _fabKey,
+        ),
         body: SafeArea(
             child:
                 Constants.viewRoutes[layoutProvider.selectedPageIndex].view));
@@ -450,7 +462,6 @@ class _HomeScreen extends State<HomeScreen> {
                         (BuildContext context, String value, Widget? child) =>
                             Text(value[0].toUpperCase())),
               ),
-
               title: ValueListenableBuilder(
                 valueListenable: userProvider.isConnected,
                 builder: (BuildContext context, bool online, Widget? child) =>
@@ -461,16 +472,13 @@ class _HomeScreen extends State<HomeScreen> {
                                 Widget? child) =>
                             Text(value)),
               ),
-
-              // Possible TODO: Refactor this to use an enum.
-              subtitle: (null !=
-                      SupabaseService
-                          .instance.supabaseClient.auth.currentSession)
-                  ? const Text("Online")
-                  : const Text("Offline"),
+              subtitle: ValueListenableBuilder(
+                valueListenable: userProvider.isConnected,
+                builder: (BuildContext context, bool online, Widget? child) =>
+                    online ? const Text("Online") : const Text("Offline"),
+              ),
               onTap: () {
                 resetProviders();
-                // TODO: come up with a clever way to avoid looping.
                 layoutProvider.selectedPageIndex =
                     Constants.viewRoutes.indexOf(Constants.settingsScreen);
                 if (!largeScreen) {
@@ -561,12 +569,14 @@ class _HomeScreen extends State<HomeScreen> {
                 Tiles.addTile(
                     title: "Add New",
                     onTap: () async {
-                      await showDialog(
-                          barrierDismissible: false,
-                          useRootNavigator: false,
-                          context: context,
-                          builder: (BuildContext context) =>
-                              const CreateGroupScreen());
+                      await blurredNonDismissible(
+                          context: context, dialog: const CreateGroupScreen());
+                      // await showDialog(
+                      //     barrierDismissible: false,
+                      //     useRootNavigator: false,
+                      //     context: context,
+                      //     builder: (BuildContext context) =>
+                      //         const CreateGroupScreen());
                     }),
 
                 ValueListenableBuilder(

@@ -50,33 +50,39 @@ class SubtaskProvider extends ChangeNotifier {
   Future<void> syncRepo() async {
     try {
       await _subtaskRepo.syncRepo();
+      notifyListeners();
     } on FailureToDeleteException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
+      notifyListeners();
       return Future.error(e, stacktrace);
     } on FailureToUploadException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
+      notifyListeners();
       return Future.error(e, stacktrace);
     } on Error catch (e, stacktrace) {
       log("Unknown error", stackTrace: stacktrace);
+      notifyListeners();
       return Future.error(UnexpectedErrorException(), stacktrace);
     }
-    notifyListeners();
   }
 
   Future<void> createSubtask(Subtask subtask) async {
     try {
       curSubtask = await _subtaskRepo.create(subtask);
+      notifyListeners();
     } on FailureToUploadException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
+      notifyListeners();
       return Future.error(e, stacktrace);
     } on FailureToUpdateException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
+      notifyListeners();
       return Future.error(e, stacktrace);
     } on Error catch (e, stacktrace) {
       log("Unknown error", stackTrace: stacktrace);
+      notifyListeners();
       return Future.error(UnexpectedErrorException(), stacktrace);
     }
-    notifyListeners();
   }
 
   Future<void> updateSubtask({Subtask? subtask}) async {
@@ -84,17 +90,20 @@ class SubtaskProvider extends ChangeNotifier {
     subtask.lastUpdated = DateTime.now();
     try {
       curSubtask = await _subtaskRepo.update(subtask);
+      notifyListeners();
     } on FailureToUploadException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
+      notifyListeners();
       return Future.error(e, stacktrace);
     } on FailureToUpdateException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
+      notifyListeners();
       return Future.error(e, stacktrace);
     } on Error catch (e, stacktrace) {
       log("Unknown error", stackTrace: stacktrace);
+      notifyListeners();
       return Future.error(UnexpectedErrorException(), stacktrace);
     }
-    notifyListeners();
   }
 
   Future<void> updateBatch({List<Subtask>? subtasks}) async {
@@ -104,44 +113,51 @@ class SubtaskProvider extends ChangeNotifier {
     }
     try {
       await _subtaskRepo.updateBatch(subtasks);
+      notifyListeners();
     } on FailureToUploadException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
+      notifyListeners();
       return Future.error(e, stacktrace);
     } on FailureToUpdateException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
+      notifyListeners();
       return Future.error(e, stacktrace);
     } on Error catch (e, stacktrace) {
       log("Unknown error", stackTrace: stacktrace);
+      notifyListeners();
       return Future.error(UnexpectedErrorException(), stacktrace);
     }
-    notifyListeners();
   }
 
   Future<void> deleteSubtask({required Subtask subtask}) async {
     try {
       await _subtaskRepo.delete(subtask);
+      notifyListeners();
     } on FailureToDeleteException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
+      notifyListeners();
       return Future.error(e, stacktrace);
     } on Error catch (e, stacktrace) {
       log("Unknown error", stackTrace: stacktrace);
+      notifyListeners();
       return Future.error(UnexpectedErrorException(), stacktrace);
     }
-    notifyListeners();
   }
 
   // ATM, no real need to restore -> Subtasks aren't deleted until parent object is removed
   Future<void> emptyTrash() async {
     try {
       await _subtaskRepo.emptyTrash();
+      notifyListeners();
     } on FailureToDeleteException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
+      notifyListeners();
       return Future.error(e, stacktrace);
     } on Error catch (e, stacktrace) {
       log("Unknown error", stackTrace: stacktrace);
+      notifyListeners();
       return Future.error(UnexpectedErrorException(), stacktrace);
     }
-    notifyListeners();
   }
 
   Future<void> dayReset() async {

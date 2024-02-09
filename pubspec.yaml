@@ -73,6 +73,9 @@ dependencies:
   loading_animation_widget: ^1.2.0+4
   win32_registry: ^1.1.2
   app_links: ^3.5.0
+  connectivity_plus: ^5.0.2
+  internet_connection_checker: ^1.0.0+1
+  flutter_expandable_fab: ^2.0.0
   
 
 

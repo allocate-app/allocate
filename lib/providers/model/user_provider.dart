@@ -4,7 +4,9 @@ import 'dart:developer';
 import 'package:allocate/services/daily_reset_service.dart';
 import 'package:allocate/ui/widgets/tiles.dart';
 import 'package:allocate/util/enums.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
+import 'package:internet_connection_checker/internet_connection_checker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../model/user/allocate_user.dart';
@@ -12,6 +14,7 @@ import '../../services/application_service.dart';
 import '../../services/authentication_service.dart';
 import '../../services/supabase_service.dart';
 import '../../services/user_storage_service.dart';
+import '../../ui/blurred_dialog.dart';
 import '../../ui/widgets/multiple_user_dialog.dart';
 import '../../util/constants.dart';
 import '../../util/exceptions.dart';
@@ -27,7 +30,8 @@ class UserProvider extends ChangeNotifier {
   // This may not be needed.
   late ValueNotifier<bool> isConnected;
 
-  late StreamSubscription<AuthState> _connectionSubscription;
+  late StreamSubscription<AuthState> _supabaseSubscription;
+  late StreamSubscription<ConnectivityResult> _connectivitySubscription;
 
   late ValueNotifier<int> myDayTotal;
 
@@ -53,6 +57,8 @@ class UserProvider extends ChangeNotifier {
   UserViewModel? viewModel;
 
   late Timer updateTimer;
+
+  // TODO: keep a DB total && use to warn users of impending size limits.
 
   UserProvider({this.viewModel, Authenticator? auth})
       : isConnected = ValueNotifier<bool>(false),
@@ -90,8 +96,8 @@ class UserProvider extends ChangeNotifier {
         BuildContext? context =
             ApplicationService.instance.globalNavigatorKey.currentContext;
 
-        if (null != context) {
-          Tiles.displayError(
+        if (null != context && context.mounted) {
+          await Tiles.displayError(
               e: UserMissingException("User not found, resetting to default"));
         }
 
@@ -105,14 +111,16 @@ class UserProvider extends ChangeNotifier {
         List<AllocateUser?> failCache = _userStorageService.failureCache;
 
         if (null != context) {
-          AllocateUser? desiredUser = await showDialog(
-            useRootNavigator: false,
-            context: context,
-            barrierDismissible: false,
-            builder: (BuildContext context) {
-              return MultipleUserDialog(users: failCache);
-            },
-          );
+          AllocateUser? desiredUser = await blurredNonDismissible(
+              context: context, dialog: MultipleUserDialog(users: failCache));
+          // showDialog(
+          //   useRootNavigator: false,
+          //   context: context,
+          //   barrierDismissible: false,
+          //   builder: (BuildContext context) {
+          //     return MultipleUserDialog(users: failCache);
+          //   },
+          // );
 
           if (null == desiredUser) {
             await resetUser();
@@ -159,8 +167,8 @@ class UserProvider extends ChangeNotifier {
         BuildContext? context =
             ApplicationService.instance.globalNavigatorKey.currentContext;
 
-        if (null != context) {
-          Tiles.displayError(e: UnexpectedErrorException());
+        if (null != context && context.mounted) {
+          await Tiles.displayError(e: UnexpectedErrorException());
         }
         // Retry the user.
         try {
@@ -184,7 +192,7 @@ class UserProvider extends ChangeNotifier {
       return;
     }
 
-    _connectionSubscription =
+    _supabaseSubscription =
         SupabaseService.instance.authSubscription.listen((AuthState data) {
       if (AuthChangeEvent.signedOut == data.event) {
         isConnected.value = false;
@@ -192,6 +200,13 @@ class UserProvider extends ChangeNotifier {
       }
       bool connection = SupabaseService.instance.isConnected;
       isConnected.value = connection;
+    });
+
+    _connectivitySubscription = SupabaseService.instance.connectionSubscription
+        .listen((ConnectivityResult result) async {
+      // This is a bit inefficient to grab twice, but this is for syncing + GUI.
+      isConnected.value = await InternetConnectionChecker().hasConnection &&
+          SupabaseService.instance.isConnected;
     });
   }
 
@@ -219,16 +234,16 @@ class UserProvider extends ChangeNotifier {
     }
   }
 
-  void globalGUIError(Exception? e) {
+  Future<void> globalGUIError(Exception? e) async {
     BuildContext? context =
         ApplicationService.instance.globalNavigatorKey.currentContext;
 
     // no way to alert the user.
-    if (null == context) {
+    if (null == context || !context.mounted) {
       return;
     }
 
-    Tiles.displayError(e: e);
+    await Tiles.displayError(e: e);
   }
 
   Future<void> syncUser() async {
@@ -236,6 +251,7 @@ class UserProvider extends ChangeNotifier {
     // UserProvider has a handling routine.
     try {
       await _userStorageService.syncUser();
+      await setUser();
     } on Error catch (e, stacktrace) {
       log(e.toString(), stackTrace: stacktrace);
     }
@@ -350,20 +366,24 @@ class UserProvider extends ChangeNotifier {
     try {
       AllocateUser? user = await _userStorageService.getUser();
       if (null != user) {
-        // PUT the user in the database.
         viewModel?.fromModel(model: user);
-        shouldUpdate = true;
-        await updateUser();
+      } else {
+        viewModel?.clear();
       }
+
+      shouldUpdate = true;
+      await updateUser();
+      notifyListeners();
     } on MultipleUsersException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
       await handleUserStateChange();
+      notifyListeners();
       // This should crash the app.
     } on Error catch (e, stacktrace) {
       log("Unknown error", stackTrace: stacktrace);
+      notifyListeners();
       return Future.error(UnexpectedErrorException(), stacktrace);
     }
-    notifyListeners();
   }
 
   Future<void> deleteUser() async {

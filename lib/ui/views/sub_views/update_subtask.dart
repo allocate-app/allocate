@@ -6,7 +6,6 @@ import '../../../providers/application/layout_provider.dart';
 import '../../../providers/model/subtask_provider.dart';
 import '../../../providers/viewmodels/subtask_viewmodel.dart';
 import '../../../util/constants.dart';
-import '../../../util/exceptions.dart';
 import '../../widgets/listtile_widgets.dart';
 import '../../widgets/padded_divider.dart';
 import '../../widgets/tiles.dart';
@@ -95,26 +94,23 @@ class _UpdateSubtaskScreen extends State<UpdateSubtaskScreen> {
                         handleDelete: () async {
                           await subtaskProvider
                               .deleteSubtask(subtask: vm.toModel())
-                              .whenComplete(() {
+                              .catchError((e) async {
+                            await Tiles.displayError(e: e);
+                          }).whenComplete(() {
                             vm.clear();
                             Navigator.pop(context);
-                          }).catchError((e) => Tiles.displayError(e: e));
+                          });
                         },
                         handleUpdate: () async {
                           if (validateData()) {
                             await subtaskProvider
                                 .updateSubtask(subtask: vm.toModel())
-                                .catchError((e) {
-                                  Tiles.displayError(e: e);
-                                  vm.clear();
-                                  Navigator.pop(context);
-                                  return;
-                                }, test: (e) => e is FailureToUpdateException)
-                                .catchError((e) => Tiles.displayError(e: e))
-                                .whenComplete(() {
-                                  vm.clear();
-                                  Navigator.pop(context);
-                                });
+                                .catchError((e) async {
+                              await Tiles.displayError(e: e);
+                            }).whenComplete(() {
+                              vm.clear();
+                              Navigator.pop(context);
+                            });
                           }
                         }),
                   ])),

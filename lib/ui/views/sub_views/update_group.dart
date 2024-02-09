@@ -15,6 +15,7 @@ import '../../../providers/viewmodels/group_viewmodel.dart';
 import '../../../providers/viewmodels/todo_viewmodel.dart';
 import '../../../util/constants.dart';
 import '../../../util/enums.dart';
+import '../../blurred_dialog.dart';
 import '../../widgets/expanded_listtile.dart';
 import '../../widgets/flushbars.dart';
 import '../../widgets/listtile_widgets.dart';
@@ -186,20 +187,18 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
   }
 
   Future<void> handleUpdate() async {
-    await groupProvider
-        .updateGroup(group: vm.toModel())
-        .catchError((e) => Tiles.displayError(e: e))
-        .whenComplete(() {
+    await groupProvider.updateGroup(group: vm.toModel()).catchError((e) async {
+      await Tiles.displayError(e: e);
+    }).whenComplete(() {
       vm.clear();
       Navigator.pop(context);
     });
   }
 
   Future<void> handleDelete() async {
-    await groupProvider
-        .deleteGroup()
-        .catchError((e) => Tiles.displayError(e: e))
-        .whenComplete(() {
+    await groupProvider.deleteGroup().catchError((e) async {
+      await Tiles.displayError(e: e);
+    }).whenComplete(() {
       vm.clear();
       Navigator.pop(context);
     });
@@ -433,14 +432,16 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
                   if (null == toDo) {
                     return;
                   }
-                  return await showDialog(
-                      barrierDismissible: false,
-                      useRootNavigator: false,
-                      context: context,
-                      builder: (BuildContext context) {
-                        tVM.fromModel(model: toDo);
-                        return const UpdateToDoScreen();
-                      });
+                  return await blurredNonDismissible(
+                      context: context, dialog: const UpdateToDoScreen());
+                  // showDialog(
+                  //     barrierDismissible: false,
+                  //     useRootNavigator: false,
+                  //     context: context,
+                  //     builder: (BuildContext context) {
+                  //       tVM.fromModel(model: toDo);
+                  //       return const UpdateToDoScreen();
+                  //     });
                 },
               );
             }),
@@ -457,14 +458,20 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
         ),
         Tiles.addTile(
           title: "Add Task",
-          onTap: () async => await showDialog(
-              barrierDismissible: false,
-              useRootNavigator: false,
+          onTap: () async => await blurredNonDismissible(
               context: context,
-              builder: (BuildContext context) => CreateToDoScreen(
-                    initialGroup: MapEntry<String, int>(
-                        (vm.name.isNotEmpty) ? vm.name : "New Group", vm.id),
-                  )).catchError((e) => Tiles.displayError(e: e)),
+              dialog: CreateToDoScreen(
+                initialGroup: MapEntry<String, int>(
+                    (vm.name.isNotEmpty) ? vm.name : "New Group", vm.id),
+              )),
+          // showDialog(
+          //     barrierDismissible: false,
+          //     useRootNavigator: false,
+          //     context: context,
+          //     builder: (BuildContext context) => CreateToDoScreen(
+          //           initialGroup: MapEntry<String, int>(
+          //               (vm.name.isNotEmpty) ? vm.name : "New Group", vm.id),
+          //         )).catchError((e) => Tiles.displayError(e: e)),
         )
       ],
     );

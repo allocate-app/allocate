@@ -1,3 +1,4 @@
+import 'package:allocate/ui/blurred_dialog.dart';
 import 'package:another_flushbar/flushbar.dart';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:auto_size_text_field/auto_size_text_field.dart';
@@ -149,15 +150,19 @@ abstract class Tiles {
               await toDoProvider.updateToDo(toDo: toDo);
             }),
         onTap: () async {
-          await showDialog(
-              barrierDismissible: false,
-              useRootNavigator: false,
-              context: context,
-              builder: (BuildContext context) {
-                Provider.of<ToDoViewModel>(context, listen: false)
-                    .fromModel(model: toDo);
-                return const UpdateToDoScreen();
-              });
+          Provider.of<ToDoViewModel>(context, listen: false)
+              .fromModel(model: toDo);
+          await blurredNonDismissible(
+              context: context, dialog: const UpdateToDoScreen());
+          // await showDialog(
+          //     barrierDismissible: false,
+          //     useRootNavigator: false,
+          //     context: context,
+          //     builder: (BuildContext context) {
+          //       Provider.of<ToDoViewModel>(context, listen: false)
+          //           .fromModel(model: toDo);
+          //       return const UpdateToDoScreen();
+          //     });
         },
         trailing: Row(mainAxisSize: MainAxisSize.min, children: [
           ListTileWidgets.toDoBatteryRow(toDo: toDo),
@@ -185,15 +190,20 @@ abstract class Tiles {
                         groupProvider: groupProvider,
                         eventProvider: eventProvider);
                   }
-                  return await showDialog<List<bool>?>(
-                      barrierDismissible: true,
-                      context: context,
-                      useRootNavigator: false,
-                      builder: (BuildContext context) {
-                        return CheckDeleteDialog(
-                            dontAsk: !checkDelete, type: "Task");
-                        // Dialog function.
-                      }).then((results) async {
+                  return await blurredDismissible(
+                          context: context,
+                          dialog: CheckDeleteDialog(
+                              dontAsk: !checkDelete, type: "Task"))
+                      // await showDialog<List<bool>?>(
+                      //   barrierDismissible: true,
+                      //   context: context,
+                      //   useRootNavigator: false,
+                      //   builder: (BuildContext context) {
+                      //     return CheckDeleteDialog(
+                      //         dontAsk: !checkDelete, type: "Task");
+                      //     // Dialog function.
+                      //   })
+                      .then((results) async {
                     if (null == results) {
                       return;
                     }
@@ -327,15 +337,19 @@ abstract class Tiles {
               await toDoProvider.updateToDo(toDo: toDo);
             }),
         onTap: () async {
-          await showDialog(
-              barrierDismissible: false,
-              useRootNavigator: false,
-              context: context,
-              builder: (BuildContext context) {
-                Provider.of<ToDoViewModel>(context, listen: false)
-                    .fromModel(model: toDo);
-                return const UpdateToDoScreen();
-              });
+          Provider.of<ToDoViewModel>(context, listen: false)
+              .fromModel(model: toDo);
+          await blurredNonDismissible(
+              context: context, dialog: const UpdateToDoScreen());
+          // showDialog(
+          //     barrierDismissible: false,
+          //     useRootNavigator: false,
+          //     context: context,
+          //     builder: (BuildContext context) {
+          //       Provider.of<ToDoViewModel>(context, listen: false)
+          //           .fromModel(model: toDo);
+          //       return const UpdateToDoScreen();
+          //     });
         },
         trailing: Row(mainAxisSize: MainAxisSize.min, children: [
           ListTileWidgets.toDoBatteryRow(toDo: toDo),
@@ -390,16 +404,21 @@ abstract class Tiles {
         subtitle: Subtitles.subtaskSubtitle(
             subtaskCount: routineProvider.getSubtaskCount(id: routine.id)),
         onTap: () async {
-          await showDialog(
-              barrierDismissible: false,
-              useRootNavigator: false,
-              context: context,
-              builder: (BuildContext context) {
-                Provider.of<RoutineViewModel>(context, listen: false).fromModel(
-                    model: routine,
-                    times: routineProvider.getRoutineTime(routine: routine));
-                return const UpdateRoutineScreen();
-              });
+          Provider.of<RoutineViewModel>(context, listen: false).fromModel(
+              model: routine,
+              times: routineProvider.getRoutineTime(routine: routine));
+          await blurredNonDismissible(
+              context: context, dialog: const UpdateRoutineScreen());
+          // await showDialog(
+          //     barrierDismissible: false,
+          //     useRootNavigator: false,
+          //     context: context,
+          //     builder: (BuildContext context) {
+          //       Provider.of<RoutineViewModel>(context, listen: false).fromModel(
+          //           model: routine,
+          //           times: routineProvider.getRoutineTime(routine: routine));
+          //       return const UpdateRoutineScreen();
+          //     });
         },
         trailing: Row(mainAxisSize: MainAxisSize.min, children: [
           ListTileWidgets.routineBatteryRow(routine: routine),
@@ -416,15 +435,23 @@ abstract class Tiles {
                         .deleteRoutine(routine: routine)
                         .catchError((e) => displayError(e: e));
                   }
-                  return await showDialog<List<bool>?>(
-                      barrierDismissible: true,
-                      useRootNavigator: false,
-                      context: context,
-                      builder: (BuildContext context) {
-                        return CheckDeleteDialog(
-                            dontAsk: !checkDelete, type: "Routine");
-                        // Dialog function.
-                      }).then((results) async {
+                  return await blurredDismissible(
+                    context: context,
+                    dialog: CheckDeleteDialog(
+                      dontAsk: !checkDelete,
+                      type: "Routine",
+                    ),
+                  )
+                      // showDialog<List<bool>?>(
+                      //     barrierDismissible: true,
+                      //     useRootNavigator: false,
+                      //     context: context,
+                      //     builder: (BuildContext context) {
+                      //       return CheckDeleteDialog(
+                      //           dontAsk: !checkDelete, type: "Routine");
+                      //       // Dialog function.
+                      //     })
+                      .then((results) async {
                     if (null == results) {
                       return;
                     }
@@ -513,15 +540,19 @@ abstract class Tiles {
           priority: deadline.priority,
         ),
         onTap: () async {
-          await showDialog(
-              barrierDismissible: false,
-              useRootNavigator: false,
-              context: context,
-              builder: (BuildContext context) {
-                Provider.of<DeadlineViewModel>(context, listen: false)
-                    .fromModel(model: deadline);
-                return const UpdateDeadlineScreen();
-              });
+          Provider.of<DeadlineViewModel>(context, listen: false)
+              .fromModel(model: deadline);
+          await blurredNonDismissible(
+              context: context, dialog: const UpdateDeadlineScreen());
+          // await showDialog(
+          //     barrierDismissible: false,
+          //     useRootNavigator: false,
+          //     context: context,
+          //     builder: (BuildContext context) {
+          //       Provider.of<DeadlineViewModel>(context, listen: false)
+          //           .fromModel(model: deadline);
+          //       return const UpdateDeadlineScreen();
+          //     });
         },
         trailing: Row(mainAxisSize: MainAxisSize.min, children: [
           Padding(
@@ -547,15 +578,22 @@ abstract class Tiles {
                         deadlineProvider: deadlineProvider,
                         eventProvider: eventProvider);
                   }
-                  return await showDialog<List<bool>?>(
-                      barrierDismissible: true,
-                      useRootNavigator: false,
-                      context: context,
-                      builder: (BuildContext context) {
-                        return CheckDeleteDialog(
-                            dontAsk: !checkDelete, type: "Deadline");
-                        // Dialog function.
-                      }).then((results) async {
+                  return await blurredDismissible(
+                          context: context,
+                          dialog: CheckDeleteDialog(
+                            dontAsk: !checkDelete,
+                            type: "Deadline",
+                          ))
+                      // await showDialog<List<bool>?>(
+                      //   barrierDismissible: true,
+                      //   useRootNavigator: false,
+                      //   context: context,
+                      //   builder: (BuildContext context) {
+                      //     return CheckDeleteDialog(
+                      //         dontAsk: !checkDelete, type: "Deadline");
+                      //     // Dialog function.
+                      //   })
+                      .then((results) async {
                     if (null == results) {
                       return;
                     }
@@ -688,15 +726,19 @@ abstract class Tiles {
           dueDate: reminder.dueDate,
         ),
         onTap: () async {
-          await showDialog(
-              barrierDismissible: false,
-              useRootNavigator: false,
-              context: context,
-              builder: (BuildContext context) {
-                Provider.of<ReminderViewModel>(context, listen: false)
-                    .fromModel(model: reminder);
-                return const UpdateReminderScreen();
-              });
+          Provider.of<ReminderViewModel>(context, listen: false)
+              .fromModel(model: reminder);
+          await blurredNonDismissible(
+              context: context, dialog: const UpdateReminderScreen());
+          // showDialog(
+          //     barrierDismissible: false,
+          //     useRootNavigator: false,
+          //     context: context,
+          //     builder: (BuildContext context) {
+          //       Provider.of<ReminderViewModel>(context, listen: false)
+          //           .fromModel(model: reminder);
+          //       return const UpdateReminderScreen();
+          //     });
         },
         trailing: Row(mainAxisSize: MainAxisSize.min, children: [
           Padding(
@@ -722,15 +764,20 @@ abstract class Tiles {
                         reminderProvider: reminderProvider,
                         eventProvider: eventProvider);
                   }
-                  return await showDialog<List<bool>?>(
-                      barrierDismissible: true,
-                      useRootNavigator: false,
-                      context: context,
-                      builder: (BuildContext context) {
-                        return CheckDeleteDialog(
-                            dontAsk: !checkDelete, type: "Reminder");
-                        // Dialog function.
-                      }).then((results) async {
+                  return await blurredDismissible(
+                          context: context,
+                          dialog: CheckDeleteDialog(
+                              dontAsk: !checkDelete, type: "Reminder"))
+                      // await showDialog<List<bool>?>(
+                      //   barrierDismissible: true,
+                      //   useRootNavigator: false,
+                      //   context: context,
+                      //   builder: (BuildContext context) {
+                      //     return CheckDeleteDialog(
+                      //         dontAsk: !checkDelete, type: "Reminder");
+                      //     // Dialog function.
+                      //   })
+                      .then((results) async {
                     if (null == results) {
                       return;
                     }
@@ -817,20 +864,23 @@ abstract class Tiles {
     ToDoProvider toDoProvider =
         Provider.of<ToDoProvider>(context, listen: false);
 
-    // TODO: possibly make expand conditional.
     return ExpandedListTile(
         key: ValueKey(group.id),
         initiallyExpanded: true,
         leading: ListTileWidgets.groupListViewIcon(onPressed: () async {
-          await showDialog(
-              barrierDismissible: false,
-              useRootNavigator: false,
-              context: context,
-              builder: (BuildContext context) {
-                Provider.of<GroupViewModel>(context, listen: false)
-                    .fromModel(model: group);
-                return const UpdateGroupScreen();
-              });
+          Provider.of<GroupViewModel>(context, listen: false)
+              .fromModel(model: group);
+          await blurredNonDismissible(
+              context: context, dialog: const UpdateGroupScreen());
+          // await showDialog(
+          //     barrierDismissible: false,
+          //     useRootNavigator: false,
+          //     context: context,
+          //     builder: (BuildContext context) {
+          //       Provider.of<GroupViewModel>(context, listen: false)
+          //           .fromModel(model: group);
+          //       return const UpdateGroupScreen();
+          //     });
         }),
         trailing: Row(mainAxisSize: MainAxisSize.min, children: [
           Padding(
@@ -844,15 +894,22 @@ abstract class Tiles {
                     }
                     return await groupProvider.deleteGroup(group: group);
                   }
-                  return await showDialog<List<bool>?>(
-                      barrierDismissible: true,
-                      useRootNavigator: false,
-                      context: context,
-                      builder: (BuildContext context) {
-                        return CheckDeleteDialog(
-                            dontAsk: !checkDelete, type: "Group");
-                        // Dialog function.
-                      }).then((results) async {
+                  return await blurredDismissible(
+                          context: context,
+                          dialog: CheckDeleteDialog(
+                            dontAsk: !checkDelete,
+                            type: "Group",
+                          ))
+                      // await showDialog<List<bool>?>(
+                      //   barrierDismissible: true,
+                      //   useRootNavigator: false,
+                      //   context: context,
+                      //   builder: (BuildContext context) {
+                      //     return CheckDeleteDialog(
+                      //         dontAsk: !checkDelete, type: "Group");
+                      //     // Dialog function.
+                      //   })
+                      .then((results) async {
                     if (null == results) {
                       return;
                     }
@@ -922,16 +979,20 @@ abstract class Tiles {
                     if (null == toDo) {
                       return;
                     }
-                    await showDialog(
-                        barrierDismissible: false,
-                        useRootNavigator: false,
-                        context: context,
-                        builder: (BuildContext context) {
-                          Provider.of<ToDoViewModel>(context, listen: false)
-                              .fromModel(model: toDo);
-
-                          return const UpdateToDoScreen();
-                        });
+                    Provider.of<ToDoViewModel>(context, listen: false)
+                        .fromModel(model: toDo);
+                    await blurredNonDismissible(
+                        context: context, dialog: const UpdateToDoScreen());
+                    // await showDialog(
+                    //     barrierDismissible: false,
+                    //     useRootNavigator: false,
+                    //     context: context,
+                    //     builder: (BuildContext context) {
+                    //       Provider.of<ToDoViewModel>(context, listen: false)
+                    //           .fromModel(model: toDo);
+                    //
+                    //       return const UpdateToDoScreen();
+                    //     });
                   },
                   handleRemove: ({ToDo? toDo}) async {
                     if (null == toDo) {
@@ -973,14 +1034,20 @@ abstract class Tiles {
           addTile(
               title: "New Task",
               onTap: () async {
-                await showDialog(
-                    barrierDismissible: false,
-                    useRootNavigator: false,
-                    context: context,
-                    builder: (BuildContext context) => CreateToDoScreen(
-                          initialGroup:
-                              MapEntry<String, int>(group.name, group.id),
-                        ));
+                await blurredNonDismissible(
+                  context: context,
+                  dialog: CreateToDoScreen(
+                    initialGroup: MapEntry<String, int>(group.name, group.id),
+                  ),
+                );
+                // await showDialog(
+                //     barrierDismissible: false,
+                //     useRootNavigator: false,
+                //     context: context,
+                //     builder: (BuildContext context) => CreateToDoScreen(
+                //           initialGroup:
+                //               MapEntry<String, int>(group.name, group.id),
+                //         ));
               })
         ]);
   }
@@ -1038,15 +1105,19 @@ abstract class Tiles {
         minFontSize: Constants.large,
       ),
       onTap: () async {
-        await showDialog(
-            barrierDismissible: false,
-            useRootNavigator: false,
-            context: context,
-            builder: (BuildContext context) {
-              Provider.of<GroupViewModel>(context, listen: false)
-                  .fromModel(model: group);
-              return const UpdateGroupScreen();
-            });
+        Provider.of<GroupViewModel>(context, listen: false)
+            .fromModel(model: group);
+        await blurredNonDismissible(
+            context: context, dialog: const UpdateGroupScreen());
+        // await showDialog(
+        //     barrierDismissible: false,
+        //     useRootNavigator: false,
+        //     context: context,
+        //     builder: (BuildContext context) {
+        //       Provider.of<GroupViewModel>(context, listen: false)
+        //           .fromModel(model: group);
+        //       return const UpdateGroupScreen();
+        //     });
       },
       trailing: Subtitles.groupSubtitle(
           toDoCount: groupProvider.getToDoCount(id: group.id)!),
@@ -1210,15 +1281,20 @@ abstract class Tiles {
                 if (null == subtask) {
                   return;
                 }
-                await showDialog(
-                    barrierDismissible: true,
-                    useRootNavigator: false,
-                    context: context,
-                    builder: (BuildContext context) {
-                      Provider.of<SubtaskViewModel>(context, listen: false)
-                          .fromModel(model: subtask);
-                      return const UpdateSubtaskScreen();
-                    }).catchError((e) => displayError(e: e));
+                Provider.of<SubtaskViewModel>(context, listen: false)
+                    .fromModel(model: subtask);
+                await blurredNonDismissible(
+                    context: context, dialog: const UpdateSubtaskScreen());
+                // await showDialog(
+                //     barrierDismissible: true,
+                //     useRootNavigator: false,
+                //     context: context,
+                //     builder: (BuildContext context) {
+                //       Provider.of<SubtaskViewModel>(context, listen: false)
+                //           .fromModel(model: subtask);
+                //       return const UpdateSubtaskScreen();
+                //     });
+                //.catchError((e) => displayError(e: e));
               },
               onChanged: ({bool? value, Subtask? subtask}) async {
                 if (null == subtask) {
@@ -1312,15 +1388,19 @@ abstract class Tiles {
         addTile(
             title: "New Routine",
             onTap: () async {
-              await showDialog(
-                  context: context,
-                  barrierDismissible: false,
-                  useRootNavigator: false,
-                  builder: (BuildContext context) {
-                    Provider.of<RoutineViewModel>(context, listen: false)
-                        .initRoutineTimes = times;
-                    return const CreateRoutineScreen();
-                  });
+              Provider.of<RoutineViewModel>(context, listen: false)
+                  .initRoutineTimes = times;
+              await blurredNonDismissible(
+                  context: context, dialog: const CreateRoutineScreen());
+              // await showDialog(
+              //     context: context,
+              //     barrierDismissible: false,
+              //     useRootNavigator: false,
+              //     builder: (BuildContext context) {
+              //       Provider.of<RoutineViewModel>(context, listen: false)
+              //           .initRoutineTimes = times;
+              //       return const CreateRoutineScreen();
+              //     });
             }),
       ],
     );
@@ -1347,18 +1427,23 @@ abstract class Tiles {
           times: times,
           routine: routine,
           onPressed: () async {
-            await showDialog(
-                context: context,
-                barrierDismissible: false,
-                useRootNavigator: false,
-                builder: (BuildContext context) {
-                  Provider.of<RoutineViewModel>(context, listen: false)
-                      .fromModel(
-                          model: routine,
-                          times:
-                              routineProvider.getRoutineTime(routine: routine));
-                  return const UpdateRoutineScreen();
-                });
+            Provider.of<RoutineViewModel>(context, listen: false).fromModel(
+                model: routine,
+                times: routineProvider.getRoutineTime(routine: routine));
+            await blurredNonDismissible(
+                context: context, dialog: const UpdateRoutineScreen());
+            // await showDialog(
+            //     context: context,
+            //     barrierDismissible: false,
+            //     useRootNavigator: false,
+            //     builder: (BuildContext context) {
+            //       Provider.of<RoutineViewModel>(context, listen: false)
+            //           .fromModel(
+            //               model: routine,
+            //               times:
+            //                   routineProvider.getRoutineTime(routine: routine));
+            //       return const UpdateRoutineScreen();
+            //     });
           }),
       title: routine.name,
       trailing: Row(
@@ -1761,11 +1846,15 @@ abstract class Tiles {
             ? IconButton(
                 icon: const Icon(Icons.clear_rounded), onPressed: handleClear)
             : null,
-        onTap: () async => await showDialog<int>(
-            useRootNavigator: false,
-            context: context,
-            builder: (BuildContext context) =>
-                DurationDialog(duration: expectedDuration)).then(handleUpdate),
+        onTap: () async => await blurredDismissible<int?>(
+                context: context,
+                dialog: DurationDialog(duration: expectedDuration))
+            // showDialog<int>(
+            //     useRootNavigator: false,
+            //     context: context,
+            //     builder: (BuildContext context) =>
+            //         DurationDialog(duration: expectedDuration))
+            .then(handleUpdate),
       ),
     );
   }
@@ -1868,13 +1957,18 @@ abstract class Tiles {
                   icon: const Icon(Icons.clear), onPressed: handleClear)
               : null,
           onTap: () async {
-            await showDialog<List<DateTime?>?>(
-                useRootNavigator: false,
-                context: context,
-                builder: (BuildContext context) {
-                  return DateRangeDialog(
-                      startDate: startDate, dueDate: dueDate);
-                }).then((newDates) {
+            await blurredDismissible<List<DateTime?>?>(
+                    context: context,
+                    dialog:
+                        DateRangeDialog(startDate: startDate, dueDate: dueDate))
+                // await showDialog<List<DateTime?>?>(
+                //     useRootNavigator: false,
+                //     context: context,
+                //     builder: (BuildContext context) {
+                //       return DateRangeDialog(
+                //           startDate: startDate, dueDate: dueDate);
+                //     })
+                .then((newDates) {
               if (null == newDates) {
                 return handleUpdate(newStart: startDate, newDue: dueDate);
               }
@@ -1982,12 +2076,17 @@ abstract class Tiles {
                           ),
                   ]),
             onTap: () async {
-              await showDialog<List<TimeOfDay?>?>(
-                  useRootNavigator: false,
-                  context: context,
-                  builder: (BuildContext context) {
-                    return TimeDialog(startTime: startTime, dueTime: dueTime);
-                  }).then((newTimes) {
+              await blurredDismissible<List<TimeOfDay?>?>(
+                      context: context,
+                      dialog:
+                          TimeDialog(startTime: startTime, dueTime: dueTime))
+                  // await showDialog<List<TimeOfDay?>?>(
+                  //     useRootNavigator: false,
+                  //     context: context,
+                  //     builder: (BuildContext context) {
+                  //       return TimeDialog(startTime: startTime, dueTime: dueTime);
+                  //     })
+                  .then((newTimes) {
                 if (null == newTimes) {
                   return handleUpdate(newStart: startTime, newDue: dueTime);
                 }
@@ -2034,16 +2133,24 @@ abstract class Tiles {
                 ? ListTileWidgets.alertIconButton(
                     warn: showDate,
                     onTap: () async {
-                      await showDialog<Map<String, dynamic>?>(
-                          useRootNavigator: false,
-                          context: context,
-                          builder: (BuildContext context) {
-                            return DateTimeDialog(
-                              header: dialogHeader,
-                              date: date,
-                              time: time,
-                            );
-                          }).then((newDateTime) {
+                      await blurredDismissible<Map<String, dynamic>?>(
+                              context: context,
+                              dialog: DateTimeDialog(
+                                header: dialogHeader,
+                                date: date,
+                                time: time,
+                              ))
+                          // await showDialog<Map<String, dynamic>?>(
+                          //     useRootNavigator: false,
+                          //     context: context,
+                          //     builder: (BuildContext context) {
+                          //       return DateTimeDialog(
+                          //         header: dialogHeader,
+                          //         date: date,
+                          //         time: time,
+                          //       );
+                          //     })
+                          .then((newDateTime) {
                         if (null == newDateTime) {
                           return handleUpdate(newDate: date, newTime: time);
                         }
@@ -2107,16 +2214,24 @@ abstract class Tiles {
                     maxLines: 2,
                   ),
             onTap: () async {
-              await showDialog<Map<String, dynamic>?>(
-                  useRootNavigator: false,
-                  context: context,
-                  builder: (BuildContext context) {
-                    return DateTimeDialog(
-                      header: dialogHeader,
-                      date: date,
-                      time: time,
-                    );
-                  }).then((newDateTime) {
+              await blurredDismissible<Map<String, dynamic>?>(
+                      context: context,
+                      dialog: DateTimeDialog(
+                        header: dialogHeader,
+                        date: date,
+                        time: time,
+                      ))
+                  // await showDialog<Map<String, dynamic>?>(
+                  //     useRootNavigator: false,
+                  //     context: context,
+                  //     builder: (BuildContext context) {
+                  //       return DateTimeDialog(
+                  //         header: dialogHeader,
+                  //         date: date,
+                  //         time: time,
+                  //       );
+                  //     })
+                  .then((newDateTime) {
                 if (null == newDateTime) {
                   return handleUpdate(newDate: date, newTime: time);
                 }
@@ -2170,17 +2285,26 @@ abstract class Tiles {
                   maxLines: 1,
                   softWrap: false),
           onTap: () async {
-            await showDialog<Map<String, dynamic>?>(
-                context: context,
-                useRootNavigator: false,
-                builder: (BuildContext context) {
-                  return FrequencyDialog(
-                    frequency: frequency,
-                    weekdays: weekdays,
-                    repeatSkip: repeatSkip,
-                    startDate: startDate,
-                  );
-                }).then((newFrequency) {
+            await blurredDismissible(
+                    context: context,
+                    dialog: FrequencyDialog(
+                      frequency: frequency,
+                      weekdays: weekdays,
+                      repeatSkip: repeatSkip,
+                      startDate: startDate,
+                    ))
+                // await showDialog<Map<String, dynamic>?>(
+                //     context: context,
+                //     useRootNavigator: false,
+                //     builder: (BuildContext context) {
+                //       return FrequencyDialog(
+                //         frequency: frequency,
+                //         weekdays: weekdays,
+                //         repeatSkip: repeatSkip,
+                //         startDate: startDate,
+                //       );
+                //     })
+                .then((newFrequency) {
               if (null == newFrequency) {
                 return handleUpdate(
                   newFreq: frequency,
@@ -2338,12 +2462,13 @@ abstract class Tiles {
           default:
             return;
         }
+        await blurredNonDismissible(context: context, dialog: dialog);
 
-        await showDialog(
-            barrierDismissible: false,
-            useRootNavigator: false,
-            context: context,
-            builder: (BuildContext context) => dialog);
+        // await showDialog(
+        //     barrierDismissible: false,
+        //     useRootNavigator: false,
+        //     context: context,
+        //     builder: (BuildContext context) => dialog);
       },
       subtitle: Subtitles.eventSubtitle(
         context: context,
@@ -2543,7 +2668,11 @@ abstract class Tiles {
       );
 
   // ERRORS:
-  static void displayError({Exception? e}) {
+  static Future<void> displayError({Exception? e}) async {
+    if (null == e) {
+      return;
+    }
+
     BuildContext? context =
         ApplicationService.instance.globalNavigatorKey.currentState?.context;
     // If there's no context, assume there is no scrn.
@@ -2560,7 +2689,7 @@ abstract class Tiles {
       offset = lp.navDrawerWidth;
     }
 
-    displayFlushbar(
+    await displayFlushbar(
         context: context,
         flushbar: Flushbars.createError(
           maxWidth: maxWidth,
@@ -2570,7 +2699,7 @@ abstract class Tiles {
         ));
   }
 
-  static void displayAlert({String message = ""}) {
+  static Future<void> displayAlert({String message = ""}) async {
     BuildContext? context =
         ApplicationService.instance.globalNavigatorKey.currentState?.context;
     // If there's no context, assume there is no scrn.
@@ -2587,7 +2716,7 @@ abstract class Tiles {
       offset = lp.navDrawerWidth;
     }
 
-    displayFlushbar(
+    await displayFlushbar(
         context: context,
         flushbar: Flushbars.createAlert(
           maxWidth: maxWidth,
@@ -2597,8 +2726,8 @@ abstract class Tiles {
         ));
   }
 
-  static void displayFlushbar(
-      {required BuildContext context, required Flushbar flushbar}) {
-    flushbar.show(context);
+  static Future<void> displayFlushbar(
+      {required BuildContext context, required Flushbar flushbar}) async {
+    await flushbar.show(context);
   }
 }

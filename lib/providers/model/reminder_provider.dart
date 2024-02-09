@@ -95,20 +95,24 @@ class ReminderProvider extends ChangeNotifier {
     try {
       await _reminderRepo.syncRepo();
       await batchNotifications();
+      notifyListeners();
     } on FailureToDeleteException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
+      notifyListeners();
       return Future.error(e, stacktrace);
     } on FailureToUploadException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
+      notifyListeners();
       return Future.error(e, stacktrace);
     } on FailureToScheduleException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
+      notifyListeners();
       return Future.error(e, stacktrace);
     } on Error catch (e, stacktrace) {
       log("Unknown error", stackTrace: stacktrace);
+      notifyListeners();
       return Future.error(UnexpectedErrorException(), stacktrace);
     }
-    notifyListeners();
   }
 
   Future<void> createReminder(Reminder reminder) async {
@@ -119,19 +123,22 @@ class ReminderProvider extends ChangeNotifier {
       if (curReminder!.repeatable) {
         await createTemplate(reminder: curReminder);
       }
+      notifyListeners();
     } on FailureToCreateException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
-      await cancelNotification();
+      await cancelNotification(reminder: reminder);
+      notifyListeners();
       return Future.error(e, stacktrace);
     } on FailureToUploadException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
       reminder.isSynced = false;
+      notifyListeners();
       return await updateReminder(reminder: reminder);
     } on Error catch (e, stacktrace) {
       log("Unknown error", stackTrace: stacktrace);
+      notifyListeners();
       return Future.error(UnexpectedErrorException(), stacktrace);
     }
-    notifyListeners();
   }
 
   Future<void> updateReminder({Reminder? reminder}) async {
@@ -156,37 +163,46 @@ class ReminderProvider extends ChangeNotifier {
           await createTemplate(reminder: curReminder!);
         }
       }
-      await cancelNotification(reminder: curReminder);
+      // Notifications don't need to be canceled on update.
+      // await cancelNotification(reminder: curReminder);
       if (validateDueDate(dueDate: curReminder!.dueDate)) {
         await scheduleNotification(reminder: curReminder);
       }
+      notifyListeners();
     } on FailureToUploadException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
+      notifyListeners();
       return Future.error(e, stacktrace);
     } on FailureToUpdateException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
-      await cancelNotification();
+      await cancelNotification(reminder: reminder);
+      notifyListeners();
       return Future.error(e, stacktrace);
     } on Error catch (e, stacktrace) {
       log(e.toString());
       log("Unknown error", stackTrace: stacktrace);
+      notifyListeners();
       return Future.error(UnexpectedErrorException(), stacktrace);
     }
   }
 
   Future<void> deleteReminder({Reminder? reminder}) async {
-    reminder = reminder ?? curReminder!;
-    await cancelNotification(reminder: reminder);
+    if (null == reminder) {
+      return;
+    }
     try {
+      await cancelNotification(reminder: reminder);
       await _reminderRepo.delete(reminder);
+      notifyListeners();
     } on FailureToDeleteException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
+      notifyListeners();
       return Future.error(e, stacktrace);
     } on Error catch (e, stacktrace) {
       log("Unknown error", stackTrace: stacktrace);
+      notifyListeners();
       return Future.error(UnexpectedErrorException(), stacktrace);
     }
-    notifyListeners();
   }
 
   Future<void> removeReminder({Reminder? reminder}) async {
@@ -195,15 +211,16 @@ class ReminderProvider extends ChangeNotifier {
     }
     try {
       await _reminderRepo.remove(reminder);
+      notifyListeners();
     } on FailureToDeleteException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
+      notifyListeners();
       return Future.error(e, stacktrace);
     } on Error catch (e, stacktrace) {
       log("Unknown error", stackTrace: stacktrace);
+      notifyListeners();
       return Future.error(UnexpectedErrorException(), stacktrace);
     }
-
-    notifyListeners();
   }
 
   Future<void> restoreReminder({Reminder? reminder}) async {
@@ -217,31 +234,36 @@ class ReminderProvider extends ChangeNotifier {
     reminder.repeatID = Constants.generateID();
     try {
       curReminder = await _reminderRepo.update(reminder);
+      notifyListeners();
     } on FailureToUploadException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
+      notifyListeners();
       return Future.error(e, stacktrace);
     } on FailureToUpdateException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
+      notifyListeners();
       return Future.error(e, stacktrace);
     } on Error catch (e, stacktrace) {
       log("Unknown error", stackTrace: stacktrace);
+      notifyListeners();
       return Future.error(UnexpectedErrorException(), stacktrace);
     }
-    notifyListeners();
   }
 
   Future<void> emptyTrash() async {
     try {
       List<int> ids = await _reminderRepo.emptyTrash();
       await _notificationService.cancelMultiple(ids: ids);
+      notifyListeners();
     } on FailureToDeleteException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
+      notifyListeners();
       return Future.error(e, stacktrace);
     } on Error catch (e, stacktrace) {
       log("Unknown error", stackTrace: stacktrace);
+      notifyListeners();
       return Future.error(UnexpectedErrorException(), stacktrace);
     }
-    notifyListeners();
   }
 
   Future<void> dayReset() async {
@@ -331,14 +353,16 @@ class ReminderProvider extends ChangeNotifier {
     try {
       await _repeatService.handleRepeating(
           oldModel: reminder, newModel: delta, single: single, delete: delete);
+      notifyListeners();
     } on InvalidRepeatingException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
+      notifyListeners();
       return Future.error(e, stacktrace);
     } on Error catch (e, stacktrace) {
       log("Unknown error", stackTrace: stacktrace);
+      notifyListeners();
       return Future.error(UnexpectedErrorException(), stacktrace);
     }
-    notifyListeners();
   }
 
   Future<void> createTemplate({Reminder? reminder}) async {
@@ -404,12 +428,12 @@ class ReminderProvider extends ChangeNotifier {
     return await _reminderRepo.getByID(id: id);
   }
 
-  // TODO:  This should really escape if null
   Future<void> scheduleNotification({Reminder? reminder}) async {
-    reminder = reminder ?? curReminder!;
-    if (null == reminder.dueDate) {
+    reminder = reminder ?? curReminder;
+    if (null == reminder || null == reminder.dueDate) {
       return;
     }
+
     String newDue = Jiffy.parseFromDateTime(reminder.dueDate!)
         .toLocal()
         .format(pattern: "MMM d, hh:mm a")
@@ -431,7 +455,9 @@ class ReminderProvider extends ChangeNotifier {
   }
 
   Future<void> cancelNotification({Reminder? reminder}) async {
-    reminder = reminder ?? curReminder!;
+    if (null == reminder) {
+      return;
+    }
     await _notificationService.cancelNotification(id: reminder.notificationID!);
   }
 

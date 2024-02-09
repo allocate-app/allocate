@@ -95,7 +95,7 @@ class _LoginScreen extends State<LoginScreen> {
   }
 
   Future<void> dayReset() async {
-    Future.wait([
+    await Future.wait([
       Provider.of<ToDoProvider>(context, listen: false).dayReset(),
       Provider.of<RoutineProvider>(context, listen: false).dayReset(),
       Provider.of<SubtaskProvider>(context, listen: false).dayReset(),
@@ -103,8 +103,8 @@ class _LoginScreen extends State<LoginScreen> {
       Provider.of<DeadlineProvider>(context, listen: false).dayReset(),
       Provider.of<GroupProvider>(context, listen: false).dayReset(),
       Provider.of<UserProvider>(context, listen: false).dayReset(),
-    ]).catchError((e) {
-      Tiles.displayError(e: e);
+    ]).catchError((e) async {
+      await Tiles.displayError(e: e);
       return [];
     });
   }

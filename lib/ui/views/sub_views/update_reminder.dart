@@ -149,31 +149,27 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
               delta: newReminder,
               single: updateSingle,
               delete: false)
-          .catchError((e) => Tiles.displayError(e: e))
-          .whenComplete(() async {
-        return await eventProvider
-            .updateEventModel(
-                oldModel: _prev, newModel: newReminder, notify: true)
-            .whenComplete(() {
-          vm.clear();
-          Navigator.pop(context);
-        });
+          .then((_) async {
+        await eventProvider.updateEventModel(
+            oldModel: _prev, newModel: newReminder, notify: true);
+      }).catchError((e) async {
+        await Tiles.displayError(e: e);
+      }).whenComplete(() {
+        vm.clear();
+        Navigator.pop(context);
       });
     }
 
     await reminderProvider
         .updateReminder(reminder: newReminder)
-        .catchError((e) async {
-      Tiles.displayError(e: e);
-      await Future.delayed(const Duration(seconds: 20));
-    }).whenComplete(() async {
-      return await eventProvider
-          .updateEventModel(
-              oldModel: _prev, newModel: newReminder, notify: true)
-          .whenComplete(() {
-        vm.clear();
-        Navigator.pop(context);
-      });
+        .then((_) async {
+      await eventProvider.updateEventModel(
+          oldModel: _prev, newModel: newReminder, notify: true);
+    }).catchError((e) async {
+      await Tiles.displayError(e: e);
+    }).whenComplete(() {
+      vm.clear();
+      Navigator.pop(context);
     });
   }
 
@@ -193,40 +189,37 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
       if (null == deleteSingle) {
         return;
       }
+
       await reminderProvider
           .handleRepeating(
               reminder: _prev,
               delta: newReminder,
               single: deleteSingle,
               delete: true)
-          .catchError((e) => Tiles.displayError(e: e))
-          .whenComplete(() async {
+          .then((_) async {
         newReminder.toDelete = true;
-        return await eventProvider
-            .updateEventModel(
-                oldModel: _prev, newModel: newReminder, notify: true)
-            .whenComplete(() {
-          vm.clear();
-          Navigator.pop(context);
-        });
-      });
-    }
-
-    await reminderProvider
-        .deleteReminder()
-        .catchError((e) => Tiles.displayError(e: e))
-        .whenComplete(() async {
-      newReminder.toDelete = true;
-      return await eventProvider
-          .updateEventModel(
-        oldModel: _prev,
-        newModel: newReminder,
-        notify: true,
-      )
-          .whenComplete(() {
+        await eventProvider.updateEventModel(
+            oldModel: _prev, newModel: newReminder, notify: true);
+      }).catchError((e) async {
+        await Tiles.displayError(e: e);
+      }).whenComplete(() {
         vm.clear();
         Navigator.pop(context);
       });
+    }
+
+    await reminderProvider.deleteReminder().then((_) async {
+      newReminder.toDelete = true;
+      await eventProvider.updateEventModel(
+        oldModel: _prev,
+        newModel: newReminder,
+        notify: true,
+      );
+    }).catchError((e) async {
+      await Tiles.displayError(e: e);
+    }).whenComplete(() {
+      vm.clear();
+      Navigator.pop(context);
     });
   }
 

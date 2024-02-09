@@ -1,7 +1,8 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:another_flushbar/flushbar.dart';
+import 'package:allocate/ui/blurred_dialog.dart';
+import 'package:allocate/util/exceptions.dart';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
@@ -15,9 +16,7 @@ import '../../../providers/viewmodels/group_viewmodel.dart';
 import '../../../providers/viewmodels/todo_viewmodel.dart';
 import '../../../util/constants.dart';
 import '../../../util/enums.dart';
-import '../../../util/exceptions.dart';
 import '../../widgets/expanded_listtile.dart';
-import '../../widgets/flushbars.dart';
 import '../../widgets/listtile_widgets.dart';
 import '../../widgets/listviews.dart';
 import '../../widgets/padded_divider.dart';
@@ -145,36 +144,19 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
   // This should still run even if the online throws.
   // If local create fails, something is very wrong => pop context and escape
   Future<void> handleCreate() async {
-    await groupProvider
-        .createGroup(vm.toModel())
-        .catchError((e) {
-          Tiles.displayError(e: e);
-          vm.clear();
-          Navigator.pop(context);
-          return;
-        }, test: (e) => e is FailureToCreateException)
-        .catchError((e) => Tiles.displayError(e: e))
-        .whenComplete(() {
-          vm.clear();
-          // This should clear on create
-          //tVM.clear();
-          Navigator.pop(context);
-        });
+    await groupProvider.createGroup(vm.toModel()).catchError((e) async {
+      await Tiles.displayError(e: e);
+    }).whenComplete(() {
+      vm.clear();
+      Navigator.pop(context);
+    });
   }
 
   Future<void> handleSelection({
     required int id,
   }) async {
     ToDo? toDo = await toDoProvider.getToDoByID(id: id).catchError((_) {
-      Flushbar? error;
-
-      error = Flushbars.createError(
-        message: "Error with Task Retrieval",
-        context: context,
-        dismissCallback: () => error?.dismiss(),
-      );
-
-      error.show(context);
+      Tiles.displayError(e: TaskNotFoundException("Error with task Retrieval"));
       return null;
     });
     if (null == toDo) {
@@ -196,10 +178,10 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
       }
       return await toDoProvider
           .updateBatch(toDos: vm.toDos)
-          .catchError((e) => Tiles.displayError(e: e))
-          .whenComplete(() {
+          .catchError((e) async {
+        await Tiles.displayError(e: e);
+      }).whenComplete(() {
         vm.clear();
-        //tVM.clear();
         Navigator.pop(context);
       });
     }
@@ -435,14 +417,16 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
                   if (null == toDo) {
                     return;
                   }
-                  return await showDialog(
-                      barrierDismissible: false,
-                      useRootNavigator: false,
-                      context: context,
-                      builder: (BuildContext context) {
-                        tVM.fromModel(model: toDo);
-                        return const UpdateToDoScreen();
-                      });
+                  return await blurredNonDismissible(
+                      context: context, dialog: const UpdateToDoScreen());
+                  // await showDialog(
+                  //   barrierDismissible: false,
+                  //   useRootNavigator: false,
+                  //   context: context,
+                  //   builder: (BuildContext context) {
+                  //     tVM.fromModel(model: toDo);
+                  //     return const UpdateToDoScreen();
+                  //   });
                 },
               );
             }),
@@ -459,14 +443,20 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
         ),
         Tiles.addTile(
           title: "Add Task",
-          onTap: () async => await showDialog(
-              barrierDismissible: false,
-              useRootNavigator: false,
+          onTap: () async => blurredNonDismissible(
               context: context,
-              builder: (BuildContext context) => CreateToDoScreen(
-                    initialGroup: MapEntry<String, int>(
-                        (vm.name.isNotEmpty) ? vm.name : "New Group", vm.id),
-                  )).catchError((e) => Tiles.displayError(e: e)),
+              dialog: CreateToDoScreen(
+                initialGroup: MapEntry<String, int>(
+                    (vm.name.isNotEmpty) ? vm.name : "New Group", vm.id),
+              )),
+          // await showDialog(
+          //     barrierDismissible: false,
+          //     useRootNavigator: false,
+          //     context: context,
+          //     builder: (BuildContext context) => CreateToDoScreen(
+          //           initialGroup: MapEntry<String, int>(
+          //               (vm.name.isNotEmpty) ? vm.name : "New Group", vm.id),
+          //         )).catchError((e) => Tiles.displayError(e: e)),
         )
       ],
     );

@@ -24,6 +24,7 @@ import '../../../providers/model/todo_provider.dart';
 import "../../../util/constants.dart";
 import "../../../util/enums.dart";
 import "../../../util/interfaces/i_model.dart";
+import "../../blurred_dialog.dart";
 import "../../widgets/check_delete_dialog.dart";
 import "../../widgets/expanded_listtile.dart";
 import "../../widgets/listviews.dart";
@@ -151,15 +152,22 @@ class _TrashScreen extends State<TrashScreen> {
   // Refactor delete dialog.
   Future<void> handleRemove({required IModel model}) async {
     if (toDoProvider.userViewModel?.checkDelete ?? true) {
-      List<bool>? results = await showDialog(
-          useRootNavigator: false,
-          context: context,
-          builder: (BuildContext context) {
-            return CheckDeleteDialog(
-              type: toBeginningOfSentenceCase(model.modelType.name)!,
-              dontAsk: !(toDoProvider.userViewModel?.checkDelete ?? true),
-            );
-          });
+      List<bool>? results = await blurredDismissible(
+        context: context,
+        dialog: CheckDeleteDialog(
+          type: toBeginningOfSentenceCase(model.modelType.name)!,
+          dontAsk: !(toDoProvider.userViewModel?.checkDelete ?? true),
+        ),
+      );
+      // await showDialog(
+      //     useRootNavigator: false,
+      //     context: context,
+      //     builder: (BuildContext context) {
+      //       return CheckDeleteDialog(
+      //         type: toBeginningOfSentenceCase(model.modelType.name)!,
+      //         dontAsk: !(toDoProvider.userViewModel?.checkDelete ?? true),
+      //       );
+      //     });
 
       if (null == results) {
         // Need to repaint bc of fade animation
@@ -209,16 +217,23 @@ class _TrashScreen extends State<TrashScreen> {
     if (noDeletes) {
       return;
     }
-    List<bool>? results = await showDialog(
-      useRootNavigator: false,
+    List<bool>? results = await blurredDismissible(
       context: context,
-      builder: (BuildContext context) {
-        return const CheckDeleteDialog(
-          headerOverride: "Empty Trash?",
-          showCheckbox: false,
-        );
-      },
+      dialog: const CheckDeleteDialog(
+        headerOverride: "Empty Trash?",
+        showCheckbox: false,
+      ),
     );
+    // await showDialog(
+    //   useRootNavigator: false,
+    //   context: context,
+    //   builder: (BuildContext context) {
+    //     return const CheckDeleteDialog(
+    //       headerOverride: "Empty Trash?",
+    //       showCheckbox: false,
+    //     );
+    //   },
+    // );
     if (null == results) {
       return;
     }
@@ -236,8 +251,8 @@ class _TrashScreen extends State<TrashScreen> {
         groupProvider.emptyTrash(),
         subtaskProvider.emptyTrash(),
       ],
-    ).catchError((e) {
-      Tiles.displayError(e: e);
+    ).catchError((e) async {
+      await Tiles.displayError(e: e);
       return [];
     });
   }

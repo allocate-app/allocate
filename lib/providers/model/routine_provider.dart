@@ -249,36 +249,41 @@ class RoutineProvider extends ChangeNotifier {
   Future<void> syncRepo() async {
     try {
       await _routineRepo.syncRepo();
+      notifyListeners();
     } on FailureToDeleteException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
+      notifyListeners();
       return Future.error(e, stacktrace);
     } on FailureToUploadException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
+      notifyListeners();
       return Future.error(e, stacktrace);
     } on Error catch (e, stacktrace) {
       log("Unknown error", stackTrace: stacktrace);
+      notifyListeners();
       return Future.error(UnexpectedErrorException(), stacktrace);
     }
-    notifyListeners();
   }
 
   Future<void> createRoutine(Routine routine, int times) async {
     try {
       curRoutine = await _routineRepo.create(routine);
+      setDailyRoutine(timeOfDay: times, routine: curRoutine);
+      notifyListeners();
     } on FailureToCreateException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
+      notifyListeners();
       return Future.error(e, stacktrace);
     } on FailureToUploadException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
       routine.isSynced = false;
+      notifyListeners();
       return updateRoutine(routine: routine, times: times);
     } on Error catch (e, stacktrace) {
       log("Unknown error", stackTrace: stacktrace);
+      notifyListeners();
       return Future.error(UnexpectedErrorException(), stacktrace);
     }
-
-    setDailyRoutine(timeOfDay: times, routine: curRoutine);
-    notifyListeners();
   }
 
   Future<void> updateRoutine({Routine? routine, int? times}) async {
@@ -301,12 +306,15 @@ class RoutineProvider extends ChangeNotifier {
       curRoutine = await _routineRepo.update(routine);
     } on FailureToUploadException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
+      notifyListeners();
       return Future.error(e, stacktrace);
     } on FailureToUpdateException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
+      notifyListeners();
       return Future.error(e, stacktrace);
     } on Error catch (e, stacktrace) {
       log("Unknown error", stackTrace: stacktrace);
+      notifyListeners();
       return Future.error(UnexpectedErrorException(), stacktrace);
     }
   }
@@ -318,46 +326,49 @@ class RoutineProvider extends ChangeNotifier {
     }
     try {
       await _routineRepo.updateBatch(routines);
+      notifyListeners();
     } on FailureToUploadException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
+      notifyListeners();
       return Future.error(e, stacktrace);
     } on FailureToUpdateException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
+      notifyListeners();
       return Future.error(e, stacktrace);
     } on Error catch (e, stacktrace) {
       log("Unknown error", stackTrace: stacktrace);
-      return Future.error(UnexpectedErrorException(), stacktrace);
-    }
-    notifyListeners();
-  }
-
-  Future<void> _updateSubtasks(
-      {required List<Subtask> subtasks, required int taskID}) async {
-    int i = 0;
-
-    // This eliminates empty subtasks.
-    for (Subtask st in subtasks) {
-      if (st.name != "") {
-        st.taskID = taskID;
-        st.customViewIndex = i++;
-        st.lastUpdated = DateTime.now();
-      } else {
-        st.toDelete = true;
-      }
-    }
-    try {
-      await _subtaskRepo.updateBatch(subtasks);
-    } on FailureToUploadException catch (e, stacktrace) {
-      log(e.cause, stackTrace: stacktrace);
-      return Future.error(e, stacktrace);
-    } on FailureToUpdateException catch (e, stacktrace) {
-      log(e.cause, stackTrace: stacktrace);
-      return Future.error(e, stacktrace);
-    } on Error catch (e, stacktrace) {
-      log("Unknown error", stackTrace: stacktrace);
+      notifyListeners();
       return Future.error(UnexpectedErrorException(), stacktrace);
     }
   }
+
+  // Future<void> _updateSubtasks(
+  //     {required List<Subtask> subtasks, required int taskID}) async {
+  //   int i = 0;
+  //
+  //   // This eliminates empty subtasks.
+  //   for (Subtask st in subtasks) {
+  //     if (st.name != "") {
+  //       st.taskID = taskID;
+  //       st.customViewIndex = i++;
+  //       st.lastUpdated = DateTime.now();
+  //     } else {
+  //       st.toDelete = true;
+  //     }
+  //   }
+  //   try {
+  //     await _subtaskRepo.updateBatch(subtasks);
+  //   } on FailureToUploadException catch (e, stacktrace) {
+  //     log(e.cause, stackTrace: stacktrace);
+  //     return Future.error(e, stacktrace);
+  //   } on FailureToUpdateException catch (e, stacktrace) {
+  //     log(e.cause, stackTrace: stacktrace);
+  //     return Future.error(e, stacktrace);
+  //   } on Error catch (e, stacktrace) {
+  //     log("Unknown error", stackTrace: stacktrace);
+  //     return Future.error(UnexpectedErrorException(), stacktrace);
+  //   }
+  // }
 
   Future<void> deleteRoutine({Routine? routine}) async {
     if (null == routine) {
@@ -365,14 +376,16 @@ class RoutineProvider extends ChangeNotifier {
     }
     try {
       await _routineRepo.delete(routine);
+      notifyListeners();
     } on FailureToDeleteException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
+      notifyListeners();
       return Future.error(e, stacktrace);
     } on Error catch (e, stacktrace) {
       log("Unknown error", stackTrace: stacktrace);
+      notifyListeners();
       return Future.error(UnexpectedErrorException(), stacktrace);
     }
-    notifyListeners();
   }
 
   Future<void> removeRoutine({Routine? routine}) async {
@@ -381,15 +394,16 @@ class RoutineProvider extends ChangeNotifier {
     }
     try {
       await _routineRepo.remove(routine);
+      notifyListeners();
     } on FailureToDeleteException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
+      notifyListeners();
       return Future.error(e, stacktrace);
     } on Error catch (e, stacktrace) {
       log("Unknown error", stackTrace: stacktrace);
+      notifyListeners();
       return Future.error(UnexpectedErrorException(), stacktrace);
     }
-
-    notifyListeners();
   }
 
   Future<void> restoreRoutine({Routine? routine}) async {
@@ -399,17 +413,20 @@ class RoutineProvider extends ChangeNotifier {
     routine.toDelete = false;
     try {
       curRoutine = await _routineRepo.update(routine);
+      notifyListeners();
     } on FailureToUploadException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
+      notifyListeners();
       return Future.error(e, stacktrace);
     } on FailureToUpdateException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
+      notifyListeners();
       return Future.error(e, stacktrace);
     } on Error catch (e, stacktrace) {
       log("Unknown error", stackTrace: stacktrace);
+      notifyListeners();
       return Future.error(UnexpectedErrorException(), stacktrace);
     }
-    notifyListeners();
   }
 
   Future<void> emptyTrash() async {
@@ -423,14 +440,16 @@ class RoutineProvider extends ChangeNotifier {
         await _subtaskRepo.updateBatch(subtasks);
         routineSubtaskCounts.remove(id);
       }
+      notifyListeners();
     } on FailureToDeleteException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
+      notifyListeners();
       return Future.error(e, stacktrace);
     } on Error catch (e, stacktrace) {
       log("Unknown error", stackTrace: stacktrace);
+      notifyListeners();
       return Future.error(UnexpectedErrorException(), stacktrace);
     }
-    notifyListeners();
   }
 
   Future<void> dayReset() async {

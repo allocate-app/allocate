@@ -20,6 +20,7 @@ import "../../../util/constants.dart";
 import "../../../util/enums.dart";
 import "../../../util/exceptions.dart";
 import "../../../util/numbers.dart";
+import "../../blurred_dialog.dart";
 import "../../widgets/flushbars.dart";
 import "../../widgets/screen_header.dart";
 import "../../widgets/settings_screen_widgets.dart";
@@ -335,7 +336,7 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
                         deadlineProvider.syncRepo(),
                         reminderProvider.syncRepo(),
                         groupProvider.syncRepo(),
-                        // This should probably just run the update function.
+                        // This should probably just run the update function?
                         userProvider.updateUser(),
                       ]);
                     }),
@@ -344,17 +345,19 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
                   title: "Change email",
                   onTap: () async {
                     if (!userProvider.isConnected.value) {
-                      Tiles.displayError(
+                      await Tiles.displayError(
                           e: ConnectionException(
                               "No online connection, try signing in."));
                       return;
                     }
-
-                    await showDialog<bool?>(
-                        useRootNavigator: false,
-                        context: context,
-                        builder: (BuildContext context) =>
-                            const UpdateEmailDialog()).then((success) {
+                    await blurredDismissible(
+                            context: context, dialog: const UpdateEmailDialog())
+                        // await showDialog<bool?>(
+                        //     useRootNavigator: false,
+                        //     context: context,
+                        //     builder: (BuildContext context) =>
+                        //         const UpdateEmailDialog())
+                        .then((success) {
                       if (null == success) {
                         return;
                       }
@@ -389,12 +392,14 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
                     leading: const Icon(Icons.cloud_sync_rounded),
                     title: "Sign in to cloud backup",
                     onTap: () async {
-                      await showDialog(
-                        useRootNavigator: false,
-                        context: context,
-                        barrierDismissible: true,
-                        builder: (BuildContext context) => const SignInDialog(),
-                      );
+                      await blurredDismissible(
+                          context: context, dialog: const SignInDialog());
+                      // await showDialog(
+                      //   useRootNavigator: false,
+                      //   context: context,
+                      //   barrierDismissible: true,
+                      //   builder: (BuildContext context) => const SignInDialog(),
+                      // );
                     }),
               ]);
         });
@@ -703,38 +708,49 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
               title: "About",
               onTap: () async {
                 // Future TODO: Implement MacOS specific code for opening "about" window.
-                await showDialog(
-                    context: context,
-                    useRootNavigator: false,
-                    builder: (BuildContext context) {
-                      return SettingsScreenWidgets.aboutDialog(
-                        packageInfo: layoutProvider.packageInfo,
-                      );
-                    });
+                await blurredDismissible(
+                  context: context,
+                  dialog: SettingsScreenWidgets.aboutDialog(
+                      packageInfo: layoutProvider.packageInfo),
+                );
+                // await showDialog(
+                //     context: context,
+                //     useRootNavigator: false,
+                //     builder: (BuildContext context) {
+                //       return SettingsScreenWidgets.aboutDialog(
+                //         packageInfo: layoutProvider.packageInfo,
+                //       );
+                //     });
               }),
 
           SettingsScreenWidgets.tapTile(
               leading: const Icon(Icons.medical_information_rounded),
               title: "Debug Information",
               onTap: () async {
-                await showDialog(
+                await blurredDismissible(
                     context: context,
-                    useRootNavigator: false,
-                    builder: (BuildContext context) {
-                      return SettingsScreenWidgets.debugInfoDialog(
-                          viewModel: vm);
-                    });
+                    dialog:
+                        SettingsScreenWidgets.debugInfoDialog(viewModel: vm));
+                // await showDialog(
+                //     context: context,
+                //     useRootNavigator: false,
+                //     builder: (BuildContext context) {
+                //       return SettingsScreenWidgets.debugInfoDialog(viewModel: vm);
+                //     });
               }),
           SettingsScreenWidgets.tapTile(
               leading: const Icon(Icons.add_road_rounded),
               title: "Roadmap",
               onTap: () async {
-                await showDialog(
+                await blurredDismissible(
                     context: context,
-                    useRootNavigator: false,
-                    builder: (BuildContext context) {
-                      return SettingsScreenWidgets.roadmapDialog();
-                    });
+                    dialog: SettingsScreenWidgets.roadmapDialog());
+                // await showDialog(
+                //     context: context,
+                //     useRootNavigator: false,
+                //     builder: (BuildContext context) {
+                //       return SettingsScreenWidgets.roadmapDialog();
+                //     });
               }),
           // TODO: THIS MAY NEED AN EXTERNAL LICENSING SECTION.
         ]);
@@ -764,9 +780,9 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
                       // }
 
                       // Future TODO: multi-user accounts.
-                      await userProvider
-                          .signOut()
-                          .catchError((e) => Tiles.displayError(e: e));
+                      await userProvider.signOut().catchError((e) async {
+                        await Tiles.displayError(e: e);
+                      });
                     }),
               ],
             );
@@ -787,15 +803,22 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
             textColor: Theme.of(context).colorScheme.error,
             title: "Delete account",
             onTap: () async {
-              await showDialog<List<bool>?>(
-                  context: context,
-                  useRootNavigator: false,
-                  builder: (BuildContext context) {
-                    return const CheckDeleteDialog(
-                      type: "Account",
-                      showCheckbox: false,
-                    );
-                  }).then((deleteInfo) async {
+              await blurredDismissible<List<bool>?>(
+                      context: context,
+                      dialog: const CheckDeleteDialog(
+                        type: "Account",
+                        showCheckbox: false,
+                      ))
+                  // await showDialog<List<bool>?>(
+                  //     context: context,
+                  //     useRootNavigator: false,
+                  //     builder: (BuildContext context) {
+                  //       return const CheckDeleteDialog(
+                  //         type: "Account",
+                  //         showCheckbox: false,
+                  //       );
+                  //     })
+                  .then((deleteInfo) async {
                 if (null == deleteInfo) {
                   return;
                 }
@@ -826,10 +849,10 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
                     ],
                   ).then((_) {
                     layoutProvider.selectedPageIndex = 0;
+                  }).catchError((e) async {
+                    await Tiles.displayError(e: e);
+                  }).whenComplete(() {
                     Navigator.pop(context);
-                  }).catchError((e) {
-                    Navigator.pop(context);
-                    Tiles.displayError(e: e);
                   });
                 }
               });

@@ -1,3 +1,4 @@
+import 'package:allocate/ui/blurred_dialog.dart';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -155,11 +156,12 @@ class _GlobalModelSearch extends State<GlobalModelSearch> {
   }
 
   Future<void> openDialog({required Widget dialog}) async {
-    await showDialog(
-        barrierDismissible: false,
-        useRootNavigator: false,
-        context: context,
-        builder: (BuildContext context) => dialog);
+    await blurredNonDismissible(context: context, dialog: dialog);
+    // await showDialog(
+    //     barrierDismissible: false,
+    //     useRootNavigator: false,
+    //     context: context,
+    //     builder: (BuildContext context) => dialog);
   }
 
   @override

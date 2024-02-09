@@ -72,6 +72,15 @@ class GroupNotFoundException implements Exception {
   toString() => cause;
 }
 
+class TaskNotFoundException implements Exception {
+  String cause;
+
+  TaskNotFoundException(this.cause);
+
+  @override
+  toString() => cause;
+}
+
 class InvalidEventItemException implements Exception {
   String cause;
 

@@ -7,6 +7,7 @@ import '../../../providers/model/group_provider.dart';
 import '../../../providers/model/todo_provider.dart';
 import '../../../util/constants.dart';
 import '../../../util/enums.dart';
+import '../../blurred_dialog.dart';
 import '../../widgets/listview_header.dart';
 import '../../widgets/listviews.dart';
 import '../../widgets/paginating_listview.dart';
@@ -99,12 +100,14 @@ class _ToDosListScreen extends State<ToDosListScreen> {
               outerPadding:
                   const EdgeInsets.symmetric(vertical: Constants.halfPadding),
               context: context,
-              onTap: () async => await showDialog(
-                useRootNavigator: false,
-                barrierDismissible: false,
-                context: context,
-                builder: (BuildContext context) => const CreateToDoScreen(),
-              ),
+              onTap: () async => await blurredNonDismissible(
+                  context: context, dialog: const CreateToDoScreen()),
+              // await showDialog(
+              //   useRootNavigator: false,
+              //   barrierDismissible: false,
+              //   context: context,
+              //   builder: (BuildContext context) => const CreateToDoScreen(),
+              // ),
             ),
             Flexible(
               child: PaginatingListview<ToDo>(

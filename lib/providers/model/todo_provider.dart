@@ -133,17 +133,20 @@ class ToDoProvider extends ChangeNotifier {
   Future<void> syncRepo() async {
     try {
       await _toDoRepo.syncRepo();
+      notifyListeners();
     } on FailureToDeleteException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
+      notifyListeners();
       return Future.error(e, stacktrace);
     } on FailureToUploadException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
+      notifyListeners();
       return Future.error(e, stacktrace);
     } on Error catch (e, stacktrace) {
       log("Unknown error", stackTrace: stacktrace);
+      notifyListeners();
       return Future.error(UnexpectedErrorException(), stacktrace);
     }
-    notifyListeners();
   }
 
   Future<void> createToDo(ToDo toDo) async {
@@ -159,13 +162,16 @@ class ToDoProvider extends ChangeNotifier {
       }
     } on FailureToCreateException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
+      notifyListeners();
       return Future.error(e, stacktrace);
     } on FailureToUploadException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
+      notifyListeners();
       toDo.isSynced = false;
       return await updateToDo(toDo: toDo);
     } on Error catch (e, stacktrace) {
       log("Unknown error", stackTrace: stacktrace);
+      notifyListeners();
       return Future.error(UnexpectedErrorException(), stacktrace);
     }
 
@@ -199,42 +205,45 @@ class ToDoProvider extends ChangeNotifier {
       myDayWeight = await getMyDayWeight();
     } on FailureToUploadException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
+      notifyListeners();
       return Future.error(e, stacktrace);
     } on FailureToUpdateException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
+      notifyListeners();
       return Future.error(e, stacktrace);
     } on Error catch (e, stacktrace) {
       log("Unknown error", stackTrace: stacktrace);
+      notifyListeners();
       return Future.error(UnexpectedErrorException(), stacktrace);
     }
   }
 
-  Future<void> _updateSubtasks(
-      {required List<Subtask> subtasks, required int taskID}) async {
-    int i = 0;
-    // This eliminates empty subtasks and maintains proper order.
-    for (Subtask st in subtasks) {
-      if (st.name != "") {
-        st.taskID = taskID;
-        st.customViewIndex = i++;
-        st.lastUpdated = DateTime.now();
-      } else {
-        st.toDelete = true;
-      }
-    }
-    try {
-      await _subtaskRepo.updateBatch(subtasks);
-    } on FailureToUploadException catch (e, stacktrace) {
-      log(e.cause, stackTrace: stacktrace);
-      return Future.error(e, stacktrace);
-    } on FailureToUpdateException catch (e, stacktrace) {
-      log(e.cause, stackTrace: stacktrace);
-      return Future.error(e, stacktrace);
-    } on Error catch (e, stacktrace) {
-      log("Unknown error", stackTrace: stacktrace);
-      return Future.error(UnexpectedErrorException(), stacktrace);
-    }
-  }
+  // Future<void> _updateSubtasks(
+  //     {required List<Subtask> subtasks, required int taskID}) async {
+  //   int i = 0;
+  //   // This eliminates empty subtasks and maintains proper order.
+  //   for (Subtask st in subtasks) {
+  //     if (st.name != "") {
+  //       st.taskID = taskID;
+  //       st.customViewIndex = i++;
+  //       st.lastUpdated = DateTime.now();
+  //     } else {
+  //       st.toDelete = true;
+  //     }
+  //   }
+  //   try {
+  //     await _subtaskRepo.updateBatch(subtasks);
+  //   } on FailureToUploadException catch (e, stacktrace) {
+  //     log(e.cause, stackTrace: stacktrace);
+  //     return Future.error(e, stacktrace);
+  //   } on FailureToUpdateException catch (e, stacktrace) {
+  //     log(e.cause, stackTrace: stacktrace);
+  //     return Future.error(e, stacktrace);
+  //   } on Error catch (e, stacktrace) {
+  //     log("Unknown error", stackTrace: stacktrace);
+  //     return Future.error(UnexpectedErrorException(), stacktrace);
+  //   }
+  // }
 
   Future<void> updateBatch({List<ToDo>? toDos}) async {
     toDos = toDos ?? this.toDos;
@@ -243,17 +252,20 @@ class ToDoProvider extends ChangeNotifier {
     }
     try {
       await _toDoRepo.updateBatch(toDos);
+      notifyListeners();
     } on FailureToUploadException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
+      notifyListeners();
       return Future.error(e, stacktrace);
     } on FailureToUpdateException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
+      notifyListeners();
       return Future.error(e, stacktrace);
     } on Error catch (e, stacktrace) {
       log("Unknown error", stackTrace: stacktrace);
+      notifyListeners();
       return Future.error(UnexpectedErrorException(), stacktrace);
     }
-    notifyListeners();
   }
 
   Future<void> deleteToDo({ToDo? toDo}) async {
@@ -262,15 +274,16 @@ class ToDoProvider extends ChangeNotifier {
     }
     try {
       await _toDoRepo.delete(toDo);
+      notifyListeners();
     } on FailureToDeleteException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
+      notifyListeners();
       return Future.error(e, stacktrace);
     } on Error catch (e, stacktrace) {
       log("Unknown error", stackTrace: stacktrace);
+      notifyListeners();
       return Future.error(UnexpectedErrorException(), stacktrace);
     }
-
-    notifyListeners();
   }
 
   Future<void> removeToDo({ToDo? toDo}) async {
@@ -279,15 +292,16 @@ class ToDoProvider extends ChangeNotifier {
     }
     try {
       await _toDoRepo.remove(toDo);
+      notifyListeners();
     } on FailureToDeleteException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
+      notifyListeners();
       return Future.error(e, stacktrace);
     } on Error catch (e, stacktrace) {
       log("Unknown error", stackTrace: stacktrace);
+      notifyListeners();
       return Future.error(UnexpectedErrorException(), stacktrace);
     }
-
-    notifyListeners();
   }
 
   Future<void> restoreToDo({ToDo? toDo}) async {
@@ -300,17 +314,20 @@ class ToDoProvider extends ChangeNotifier {
     toDo.repeatID = Constants.generateID();
     try {
       curToDo = await _toDoRepo.update(toDo);
+      notifyListeners();
     } on FailureToUploadException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
+      notifyListeners();
       return Future.error(e, stacktrace);
     } on FailureToUpdateException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
+      notifyListeners();
       return Future.error(e, stacktrace);
     } on Error catch (e, stacktrace) {
       log("Unknown error", stackTrace: stacktrace);
+      notifyListeners();
       return Future.error(UnexpectedErrorException(), stacktrace);
     }
-    notifyListeners();
   }
 
   Future<void> emptyTrash() async {
@@ -324,14 +341,16 @@ class ToDoProvider extends ChangeNotifier {
         await _subtaskRepo.updateBatch(subtasks);
         toDoSubtaskCounts.remove(id);
       }
+      notifyListeners();
     } on FailureToDeleteException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
+      notifyListeners();
       return Future.error(e, stacktrace);
     } on Error catch (e, stacktrace) {
       log("Unknown error", stackTrace: stacktrace);
+      notifyListeners();
       return Future.error(UnexpectedErrorException(), stacktrace);
     }
-    notifyListeners();
   }
 
   Future<void> clearDatabase() async {
@@ -350,14 +369,18 @@ class ToDoProvider extends ChangeNotifier {
         await _toDoRepo.deleteSweep(upTo: upTo);
       }
       await resetMyDay();
+      notifyListeners();
     } on FailureToDeleteException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
+      notifyListeners();
       return Future.error(e, stacktrace);
     } on FailureToUpdateException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
+      notifyListeners();
       return Future.error(e, stacktrace);
     } on Error catch (e, stacktrace) {
       log("Unknown error", stackTrace: stacktrace);
+      notifyListeners();
       return Future.error(UnexpectedErrorException(), stacktrace);
     }
   }
@@ -424,14 +447,16 @@ class ToDoProvider extends ChangeNotifier {
     try {
       await _repeatService.handleRepeating(
           oldModel: toDo, newModel: delta, single: single, delete: delete);
+      notifyListeners();
     } on InvalidRepeatingException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
+      notifyListeners();
       return Future.error(e, stacktrace);
     } on Error catch (e, stacktrace) {
       log("Unknown error", stackTrace: stacktrace);
+      notifyListeners();
       return Future.error(UnexpectedErrorException(), stacktrace);
     }
-    notifyListeners();
   }
 
   Future<void> createTemplate({ToDo? toDo}) async {

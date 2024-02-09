@@ -12,7 +12,6 @@ import '../../../providers/model/subtask_provider.dart';
 import "../../../providers/viewmodels/routine_viewmodel.dart";
 import "../../../util/constants.dart";
 import "../../../util/enums.dart";
-import "../../../util/exceptions.dart";
 import "../../widgets/listtile_widgets.dart";
 import "../../widgets/padded_divider.dart";
 import "../../widgets/tiles.dart";
@@ -141,17 +140,12 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
     Routine newRoutine = vm.toModel();
     await routineProvider
         .createRoutine(newRoutine, vm.routineTimes)
-        .catchError((e) {
-          Tiles.displayError(e: e);
-          vm.clear();
-          Navigator.pop(context);
-          return;
-        }, test: (e) => e is FailureToCreateException)
-        .catchError((e) => Tiles.displayError(e: e))
-        .whenComplete(() {
-          vm.clear();
-          Navigator.pop(context);
-        });
+        .catchError((e) async {
+      await Tiles.displayError(e: e);
+    }).whenComplete(() {
+      vm.clear();
+      Navigator.pop(context);
+    });
   }
 
   Future<void> handleClose({required bool willDiscard}) async {
@@ -161,8 +155,9 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
       }
       await subtaskProvider
           .updateBatch(subtasks: vm.subtasks)
-          .catchError((e) => Tiles.displayError(e: e))
-          .whenComplete(() {
+          .catchError((e) async {
+        await Tiles.displayError(e: e);
+      }).whenComplete(() {
         vm.clear();
         Navigator.pop(context);
       });

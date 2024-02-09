@@ -19,7 +19,6 @@ import '../../../providers/model/user_provider.dart';
 import "../../../providers/viewmodels/todo_viewmodel.dart";
 import "../../../util/constants.dart";
 import "../../../util/enums.dart";
-import "../../../util/exceptions.dart";
 import "../../widgets/listtile_widgets.dart";
 import "../../widgets/padded_divider.dart";
 import "../../widgets/search_recents_bar.dart";
@@ -197,29 +196,21 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
   Future<void> handleCreate() async {
     vm.repeatable = Frequency.once != vm.frequency;
     ToDo newToDo = vm.toModel();
-    await toDoProvider
-        .createToDo(newToDo)
-        .catchError((e) {
-          Tiles.displayError(e: e);
-          vm.clear();
-          Navigator.pop(context);
-          return;
-        }, test: (e) => e is FailureToCreateException)
-        .catchError((e) => Tiles.displayError(e: e))
-        .whenComplete(() async {
-          if (null != vm.groupID) {
-            groupProvider.setToDoCount(id: vm.groupID!);
-          }
+    await toDoProvider.createToDo(newToDo).then((_) async {
+      if (null != vm.groupID) {
+        // This will catch if there is a valid ToDo in the database.
+        groupProvider.setToDoCount(id: vm.groupID!);
+      }
 
-          await eventProvider
-              .insertEventModel(model: newToDo, notify: true)
-              .whenComplete(
-            () {
-              vm.clear();
-              Navigator.pop(context);
-            },
-          );
-        });
+      // If the ToDo was put in the db, the calendar can be refreshed.
+      // This is more or less a convenience method.
+      await eventProvider.insertEventModel(model: newToDo, notify: true);
+    }).catchError((e) async {
+      await Tiles.displayError(e: e);
+    }).whenComplete(() {
+      vm.clear();
+      Navigator.pop(context);
+    });
   }
 
   Future<void> handleClose({required bool willDiscard}) async {
@@ -229,8 +220,9 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
       }
       await subtaskProvider
           .updateBatch(subtasks: vm.subtasks)
-          .catchError((e) => Tiles.displayError(e: e))
-          .whenComplete(() {
+          .catchError((e) async {
+        await Tiles.displayError(e: e);
+      }).whenComplete(() {
         vm.clear();
         Navigator.pop(context);
       });

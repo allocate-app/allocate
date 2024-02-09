@@ -18,7 +18,6 @@ import '../../../providers/model/user_provider.dart';
 import "../../../providers/viewmodels/todo_viewmodel.dart";
 import "../../../util/constants.dart";
 import "../../../util/enums.dart";
-import "../../../util/exceptions.dart";
 import "../../widgets/flushbars.dart";
 import "../../widgets/handle_repeatable_modal.dart";
 import "../../widgets/listtile_widgets.dart";
@@ -247,49 +246,38 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
       if (null == updateSingle) {
         return;
       }
+
       await toDoProvider
           .handleRepeating(
               toDo: _prev, delta: newToDo, single: updateSingle, delete: false)
-          .catchError((e) => Tiles.displayError(e: e))
-          .whenComplete(() async {
-        return await eventProvider
-            .updateEventModel(
+          .then((_) async {
+        await eventProvider.updateEventModel(
           oldModel: _prev,
           newModel: newToDo,
           notify: true,
-        )
-            .whenComplete(() {
-          vm.clear();
-          Navigator.pop(context);
-        });
+        );
+      }).catchError((e) async {
+        await Tiles.displayError(e: e);
+      }).whenComplete(() {
+        vm.clear();
+        Navigator.pop(context);
       });
     }
 
-    await toDoProvider
-        .updateToDo(toDo: newToDo)
-        .catchError((e) {
-          Tiles.displayError(e: e);
-          vm.clear();
-          Navigator.pop(context);
-          return;
-        }, test: (e) => e is FailureToUpdateException)
-        .catchError((e) => Tiles.displayError(e: e))
-        .whenComplete(() async {
-          return await eventProvider
-              .updateEventModel(
-            oldModel: _prev,
-            newModel: newToDo,
-            notify: true,
-          )
-              .whenComplete(() {
-            vm.clear();
-            Navigator.pop(context);
-          });
-        });
+    await toDoProvider.updateToDo(toDo: newToDo).then((_) async {
+      await eventProvider.updateEventModel(
+        oldModel: _prev,
+        newModel: newToDo,
+        notify: true,
+      );
+    }).catchError((e) async {
+      await Tiles.displayError(e: e);
+    }).whenComplete(() {
+      vm.clear();
+      Navigator.pop(context);
+    });
   }
 
-  // These need to function in spite of an online error.
-  // TODO: this needs refactoring -> pop context then show the flushbar.
   Future<void> handleDelete() async {
     ToDo newToDo = vm.toModel();
     if (_prev.frequency != Frequency.once &&
@@ -306,41 +294,42 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
       if (null == deleteSingle) {
         return;
       }
+
+      // For all intents and purposes, only one error is probably relevant.
+      // If this gets overwritten, it'll be by a related error.
+      // Null errors are just ignored.
       await toDoProvider
           .handleRepeating(
               toDo: _prev, delta: newToDo, single: deleteSingle, delete: true)
-          .catchError((e) => Tiles.displayError(e: e))
-          .whenComplete(() async {
+          .then((_) async {
         newToDo.toDelete = true;
-        return await eventProvider
-            .updateEventModel(
+        await eventProvider.updateEventModel(
           oldModel: _prev,
           newModel: newToDo,
           notify: true,
-        )
-            .whenComplete(() {
-          vm.clear();
-          Navigator.pop(context);
-        });
-      });
-    }
-
-    await toDoProvider
-        .deleteToDo(toDo: newToDo)
-        .catchError((e) => Tiles.displayError(e: e))
-        .whenComplete(() async {
-      newToDo.toDelete = true;
-      return await eventProvider
-          .updateEventModel(
-        oldModel: _prev,
-        newModel: newToDo,
-        notify: true,
-      )
-          .whenComplete(() {
+        );
+      }).catchError((e) async {
+        await Tiles.displayError(e: e);
+      }).whenComplete(() {
         vm.clear();
         Navigator.pop(context);
       });
+    }
+
+    await toDoProvider.deleteToDo(toDo: newToDo).then((_) async {
+      newToDo.toDelete = true;
+      await eventProvider.updateEventModel(
+        oldModel: _prev,
+        newModel: newToDo,
+        notify: true,
+      );
+    }).catchError((e) async {
+      await Tiles.displayError(e: e);
+    }).whenComplete(() {
+      vm.clear();
+      Navigator.pop(context);
     });
+    ;
   }
 
   Future<void> handleClose({required bool willDiscard}) async {

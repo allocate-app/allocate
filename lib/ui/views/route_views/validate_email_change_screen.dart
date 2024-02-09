@@ -90,7 +90,7 @@ class _ValidateEmailChangeScreen extends State<ValidateEmailChangeScreen> {
   }
 
   Future<void> dayReset() async {
-    Future.wait([
+    await Future.wait([
       Provider.of<ToDoProvider>(context, listen: false).dayReset(),
       Provider.of<RoutineProvider>(context, listen: false).dayReset(),
       Provider.of<SubtaskProvider>(context, listen: false).dayReset(),

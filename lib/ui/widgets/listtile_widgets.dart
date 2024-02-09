@@ -6,6 +6,7 @@ import '../../model/task/todo.dart';
 import '../../util/constants.dart';
 import '../../util/enums.dart';
 import '../../util/numbers.dart';
+import '../blurred_dialog.dart';
 
 abstract class ListTileWidgets {
   static Widget outlinedIcon(
@@ -171,6 +172,7 @@ abstract class ListTileWidgets {
     };
   }
 
+  // TODO: factor the dialog out into a widget. This is hard to read.
   static Widget routineIcon({
     required BuildContext currentContext,
     double scale = 1,
@@ -189,160 +191,323 @@ abstract class ListTileWidgets {
           ),
         ),
         onPressed: () async {
-          await showDialog<void>(
-            useRootNavigator: false,
-            context: currentContext,
-            builder: (BuildContext context) {
-              return Dialog(
-                  child: ConstrainedBox(
-                constraints: const BoxConstraints(
-                    maxWidth: Constants.smallLandscapeDialogWidth),
-                child: Padding(
-                  padding: const EdgeInsets.all(Constants.doublePadding),
-                  child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Row(
-                            mainAxisAlignment: MainAxisAlignment.start,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Expanded(
-                                child: AutoSizeText(
-                                  "Set Routine Time",
-                                  style: Constants.headerStyle,
-                                  softWrap: true,
-                                  overflow: TextOverflow.visible,
-                                  maxLines: 2,
-                                  minFontSize: Constants.medium,
-                                ),
-                              )
-                            ]),
-                        const Flexible(
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            mainAxisSize: MainAxisSize.max,
-                            children: [
-                              Expanded(
-                                  flex: 4,
-                                  child: AutoSizeText(
-                                    "Morning | Afternoon | Evening ",
-                                    style: Constants.largeHeaderStyle,
-                                    softWrap: true,
-                                    overflow: TextOverflow.visible,
-                                    maxLines: 1,
-                                    minFontSize: Constants.medium,
+          await blurredDismissible(
+                  context: currentContext,
+                  dialog: Dialog(
+                      child: ConstrainedBox(
+                    constraints: const BoxConstraints(
+                        maxWidth: Constants.smallLandscapeDialogWidth),
+                    child: Padding(
+                      padding: const EdgeInsets.all(Constants.doublePadding),
+                      child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Row(
+                                mainAxisAlignment: MainAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Expanded(
+                                    child: AutoSizeText(
+                                      "Set Routine Time",
+                                      style: Constants.headerStyle,
+                                      softWrap: true,
+                                      overflow: TextOverflow.visible,
+                                      maxLines: 2,
+                                      minFontSize: Constants.medium,
+                                    ),
+                                  )
+                                ]),
+                            const Flexible(
+                              child: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                mainAxisSize: MainAxisSize.max,
+                                children: [
+                                  Expanded(
+                                      flex: 4,
+                                      child: AutoSizeText(
+                                        "Morning | Afternoon | Evening ",
+                                        style: Constants.largeHeaderStyle,
+                                        softWrap: true,
+                                        overflow: TextOverflow.visible,
+                                        maxLines: 1,
+                                        minFontSize: Constants.medium,
+                                      )),
+                                  Flexible(
+                                    child: FittedBox(
+                                        fit: BoxFit.fill,
+                                        child: Icon(Icons.schedule_outlined,
+                                            size: Constants.lgIconSize)),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceEvenly,
+                                mainAxisSize: MainAxisSize.max,
+                                children: [
+                                  Flexible(
+                                      child: Padding(
+                                    padding:
+                                        const EdgeInsets.all(Constants.padding),
+                                    child: FittedBox(
+                                        fit: BoxFit.fill,
+                                        child: (times & 1 == 1)
+                                            ? IconButton.filledTonal(
+                                                iconSize:
+                                                    Constants.hugeIconSize,
+                                                icon: const Icon(
+                                                    Icons.wb_twilight_rounded),
+                                                onPressed: () {
+                                                  times ^= 1;
+                                                  Navigator.pop(currentContext);
+                                                })
+                                            : IconButton.outlined(
+                                                iconSize:
+                                                    Constants.hugeIconSize,
+                                                icon: const Icon(
+                                                    Icons.wb_twilight_rounded),
+                                                onPressed: () {
+                                                  times ^= 1;
+                                                  Navigator.pop(currentContext);
+                                                })),
                                   )),
-                              Flexible(
+                                  Flexible(
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(
+                                          Constants.padding),
+                                      child: FittedBox(
+                                          fit: BoxFit.fill,
+                                          child: (times & 2 == 2)
+                                              ? IconButton.filledTonal(
+                                                  iconSize:
+                                                      Constants.hugeIconSize,
+                                                  icon: const Icon(Icons
+                                                      .lunch_dining_rounded),
+                                                  onPressed: () {
+                                                    times ^= 2;
+                                                    Navigator.pop(
+                                                        currentContext);
+                                                  })
+                                              : IconButton.outlined(
+                                                  iconSize:
+                                                      Constants.hugeIconSize,
+                                                  icon: const Icon(Icons
+                                                      .lunch_dining_rounded),
+                                                  onPressed: () {
+                                                    times ^= 2;
+                                                    Navigator.pop(
+                                                        currentContext);
+                                                  })),
+                                    ),
+                                  ),
+                                  Flexible(
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(
+                                          Constants.padding),
+                                      child: FittedBox(
+                                          fit: BoxFit.fill,
+                                          child: (times & 4 == 4)
+                                              ? IconButton.filledTonal(
+                                                  iconSize:
+                                                      Constants.hugeIconSize,
+                                                  icon: const Icon(
+                                                      Icons.bed_rounded),
+                                                  onPressed: () {
+                                                    times ^= 4;
+                                                    Navigator.pop(
+                                                        currentContext);
+                                                  })
+                                              : IconButton.outlined(
+                                                  iconSize:
+                                                      Constants.hugeIconSize,
+                                                  icon: const Icon(
+                                                      Icons.bed_rounded),
+                                                  onPressed: () {
+                                                    times ^= 4;
+                                                    Navigator.pop(
+                                                        currentContext);
+                                                  })),
+                                    ),
+                                  )
+                                ]),
+                            Flexible(
+                                child: Padding(
+                              padding: const EdgeInsets.all(Constants.padding),
+                              child: Tooltip(
+                                message: "Clear all",
                                 child: FittedBox(
                                     fit: BoxFit.fill,
-                                    child: Icon(Icons.schedule_outlined,
-                                        size: Constants.lgIconSize)),
+                                    child: IconButton.outlined(
+                                        iconSize: Constants.medIconSize,
+                                        icon: const Icon(Icons
+                                            .remove_circle_outline_rounded),
+                                        onPressed: () {
+                                          times = 0;
+                                          Navigator.pop(currentContext);
+                                        })),
                               ),
-                            ],
-                          ),
-                        ),
-                        Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                            mainAxisSize: MainAxisSize.max,
-                            children: [
-                              Flexible(
-                                  child: Padding(
-                                padding:
-                                    const EdgeInsets.all(Constants.padding),
-                                child: FittedBox(
-                                    fit: BoxFit.fill,
-                                    child: (times & 1 == 1)
-                                        ? IconButton.filledTonal(
-                                            iconSize: Constants.hugeIconSize,
-                                            icon: const Icon(
-                                                Icons.wb_twilight_rounded),
-                                            onPressed: () {
-                                              times ^= 1;
-                                              Navigator.pop(context);
-                                            })
-                                        : IconButton.outlined(
-                                            iconSize: Constants.hugeIconSize,
-                                            icon: const Icon(
-                                                Icons.wb_twilight_rounded),
-                                            onPressed: () {
-                                              times ^= 1;
-                                              Navigator.pop(context);
-                                            })),
-                              )),
-                              Flexible(
-                                child: Padding(
-                                  padding:
-                                      const EdgeInsets.all(Constants.padding),
-                                  child: FittedBox(
-                                      fit: BoxFit.fill,
-                                      child: (times & 2 == 2)
-                                          ? IconButton.filledTonal(
-                                              iconSize: Constants.hugeIconSize,
-                                              icon: const Icon(
-                                                  Icons.lunch_dining_rounded),
-                                              onPressed: () {
-                                                times ^= 2;
-                                                Navigator.pop(context);
-                                              })
-                                          : IconButton.outlined(
-                                              iconSize: Constants.hugeIconSize,
-                                              icon: const Icon(
-                                                  Icons.lunch_dining_rounded),
-                                              onPressed: () {
-                                                times ^= 2;
-                                                Navigator.pop(context);
-                                              })),
-                                ),
-                              ),
-                              Flexible(
-                                child: Padding(
-                                  padding:
-                                      const EdgeInsets.all(Constants.padding),
-                                  child: FittedBox(
-                                      fit: BoxFit.fill,
-                                      child: (times & 4 == 4)
-                                          ? IconButton.filledTonal(
-                                              iconSize: Constants.hugeIconSize,
-                                              icon:
-                                                  const Icon(Icons.bed_rounded),
-                                              onPressed: () {
-                                                times ^= 4;
-                                                Navigator.pop(context);
-                                              })
-                                          : IconButton.outlined(
-                                              iconSize: Constants.hugeIconSize,
-                                              icon:
-                                                  const Icon(Icons.bed_rounded),
-                                              onPressed: () {
-                                                times ^= 4;
-                                                Navigator.pop(context);
-                                              })),
-                                ),
-                              )
-                            ]),
-                        Flexible(
-                            child: Padding(
-                          padding: const EdgeInsets.all(Constants.padding),
-                          child: Tooltip(
-                            message: "Clear all",
-                            child: FittedBox(
-                                fit: BoxFit.fill,
-                                child: IconButton.outlined(
-                                    iconSize: Constants.medIconSize,
-                                    icon: const Icon(
-                                        Icons.remove_circle_outline_rounded),
-                                    onPressed: () {
-                                      times = 0;
-                                      Navigator.pop(context);
-                                    })),
-                          ),
-                        )),
-                      ]),
-                ),
-              ));
-            },
-          ).then((_) => handleRoutineTimeChange(newRoutineTimes: times));
+                            )),
+                          ]),
+                    ),
+                  )))
+              // await showDialog<void>(
+              //   useRootNavigator: false,
+              //   context: currentContext,
+              //   builder: (BuildContext context) {
+              //     return Dialog(
+              //         child: ConstrainedBox(
+              //       constraints: const BoxConstraints(
+              //           maxWidth: Constants.smallLandscapeDialogWidth),
+              //       child: Padding(
+              //         padding: const EdgeInsets.all(Constants.doublePadding),
+              //         child: Column(
+              //             mainAxisSize: MainAxisSize.min,
+              //             mainAxisAlignment: MainAxisAlignment.center,
+              //             children: [
+              //               const Row(
+              //                   mainAxisAlignment: MainAxisAlignment.start,
+              //                   mainAxisSize: MainAxisSize.min,
+              //                   children: [
+              //                     Expanded(
+              //                       child: AutoSizeText(
+              //                         "Set Routine Time",
+              //                         style: Constants.headerStyle,
+              //                         softWrap: true,
+              //                         overflow: TextOverflow.visible,
+              //                         maxLines: 2,
+              //                         minFontSize: Constants.medium,
+              //                       ),
+              //                     )
+              //                   ]),
+              //               const Flexible(
+              //                 child: Row(
+              //                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              //                   mainAxisSize: MainAxisSize.max,
+              //                   children: [
+              //                     Expanded(
+              //                         flex: 4,
+              //                         child: AutoSizeText(
+              //                           "Morning | Afternoon | Evening ",
+              //                           style: Constants.largeHeaderStyle,
+              //                           softWrap: true,
+              //                           overflow: TextOverflow.visible,
+              //                           maxLines: 1,
+              //                           minFontSize: Constants.medium,
+              //                         )),
+              //                     Flexible(
+              //                       child: FittedBox(
+              //                           fit: BoxFit.fill,
+              //                           child: Icon(Icons.schedule_outlined,
+              //                               size: Constants.lgIconSize)),
+              //                     ),
+              //                   ],
+              //                 ),
+              //               ),
+              //               Row(
+              //                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              //                   mainAxisSize: MainAxisSize.max,
+              //                   children: [
+              //                     Flexible(
+              //                         child: Padding(
+              //                       padding:
+              //                           const EdgeInsets.all(Constants.padding),
+              //                       child: FittedBox(
+              //                           fit: BoxFit.fill,
+              //                           child: (times & 1 == 1)
+              //                               ? IconButton.filledTonal(
+              //                                   iconSize: Constants.hugeIconSize,
+              //                                   icon: const Icon(
+              //                                       Icons.wb_twilight_rounded),
+              //                                   onPressed: () {
+              //                                     times ^= 1;
+              //                                     Navigator.pop(context);
+              //                                   })
+              //                               : IconButton.outlined(
+              //                                   iconSize: Constants.hugeIconSize,
+              //                                   icon: const Icon(
+              //                                       Icons.wb_twilight_rounded),
+              //                                   onPressed: () {
+              //                                     times ^= 1;
+              //                                     Navigator.pop(context);
+              //                                   })),
+              //                     )),
+              //                     Flexible(
+              //                       child: Padding(
+              //                         padding:
+              //                             const EdgeInsets.all(Constants.padding),
+              //                         child: FittedBox(
+              //                             fit: BoxFit.fill,
+              //                             child: (times & 2 == 2)
+              //                                 ? IconButton.filledTonal(
+              //                                     iconSize: Constants.hugeIconSize,
+              //                                     icon: const Icon(
+              //                                         Icons.lunch_dining_rounded),
+              //                                     onPressed: () {
+              //                                       times ^= 2;
+              //                                       Navigator.pop(context);
+              //                                     })
+              //                                 : IconButton.outlined(
+              //                                     iconSize: Constants.hugeIconSize,
+              //                                     icon: const Icon(
+              //                                         Icons.lunch_dining_rounded),
+              //                                     onPressed: () {
+              //                                       times ^= 2;
+              //                                       Navigator.pop(context);
+              //                                     })),
+              //                       ),
+              //                     ),
+              //                     Flexible(
+              //                       child: Padding(
+              //                         padding:
+              //                             const EdgeInsets.all(Constants.padding),
+              //                         child: FittedBox(
+              //                             fit: BoxFit.fill,
+              //                             child: (times & 4 == 4)
+              //                                 ? IconButton.filledTonal(
+              //                                     iconSize: Constants.hugeIconSize,
+              //                                     icon:
+              //                                         const Icon(Icons.bed_rounded),
+              //                                     onPressed: () {
+              //                                       times ^= 4;
+              //                                       Navigator.pop(context);
+              //                                     })
+              //                                 : IconButton.outlined(
+              //                                     iconSize: Constants.hugeIconSize,
+              //                                     icon:
+              //                                         const Icon(Icons.bed_rounded),
+              //                                     onPressed: () {
+              //                                       times ^= 4;
+              //                                       Navigator.pop(context);
+              //                                     })),
+              //                       ),
+              //                     )
+              //                   ]),
+              //               Flexible(
+              //                   child: Padding(
+              //                 padding: const EdgeInsets.all(Constants.padding),
+              //                 child: Tooltip(
+              //                   message: "Clear all",
+              //                   child: FittedBox(
+              //                       fit: BoxFit.fill,
+              //                       child: IconButton.outlined(
+              //                           iconSize: Constants.medIconSize,
+              //                           icon: const Icon(
+              //                               Icons.remove_circle_outline_rounded),
+              //                           onPressed: () {
+              //                             times = 0;
+              //                             Navigator.pop(context);
+              //                           })),
+              //                 ),
+              //               )),
+              //             ]),
+              //       ),
+              //     ));
+              //   },
+              // )
+              .then((_) => handleRoutineTimeChange(newRoutineTimes: times));
         },
         child: routineGlyph(times: times),
       ),

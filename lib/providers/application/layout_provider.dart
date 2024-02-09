@@ -158,6 +158,7 @@ class LayoutProvider extends ChangeNotifier {
   LayoutProvider() {
     init().whenComplete(notifyListeners);
   }
+
   Future<void> init() async {
     _packageInfo = await PackageInfo.fromPlatform();
   }

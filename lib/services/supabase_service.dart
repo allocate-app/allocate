@@ -1,5 +1,7 @@
 import "dart:async";
 
+import "package:connectivity_plus/connectivity_plus.dart";
+import "package:internet_connection_checker/internet_connection_checker.dart";
 import "package:mocktail/mocktail.dart";
 import "package:supabase_flutter/supabase_flutter.dart";
 
@@ -10,15 +12,23 @@ class SupabaseService {
 
   late SupabaseClient _supabaseClient;
   late Stream<AuthState> _authSubscription;
+  late Stream<ConnectivityResult> _connectionSubscription;
 
   SupabaseClient get supabaseClient => _supabaseClient;
 
   Stream<AuthState> get authSubscription => _authSubscription;
 
+  Stream<ConnectivityResult> get connectionSubscription =>
+      _connectionSubscription;
+
   // This is just to avoid any goof-ups.
   late bool _initialized = false;
 
+  // This is for internet connection
+  bool hasInternet = false;
+
   bool get isConnected =>
+      hasInternet &&
       null != _supabaseClient.auth.currentSession &&
       !_supabaseClient.auth.currentSession!.isExpired;
 
@@ -49,12 +59,18 @@ class SupabaseService {
 
     // Initialize stream.
     _authSubscription = _supabaseClient.auth.onAuthStateChange;
+    _connectionSubscription = Connectivity().onConnectivityChanged;
+    _connectionSubscription.listen(updateConnectionStatus);
 
     // Supabase refreshes automatically while the app is open.
     // if (_supabaseClient.auth.currentSession?.isExpired ?? false) {
     //   await _supabaseClient.auth.refreshSession();
     // }
     _initialized = true;
+  }
+
+  Future<void> updateConnectionStatus(ConnectivityResult result) async {
+    hasInternet = await InternetConnectionChecker().hasConnection;
   }
 
   SupabaseService._internal();

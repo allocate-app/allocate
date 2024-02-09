@@ -117,28 +117,17 @@ class _CreateReminderScreen extends State<CreateReminderScreen> {
     return valid;
   }
 
-  // This should still run even if the online throws.
-  // If local create fails, something is very wrong => pop context and escape
   Future<void> handleCreate() async {
     vm.repeatable = Frequency.once != vm.frequency;
     Reminder newReminder = vm.toModel();
-    await reminderProvider
-        .createReminder(newReminder)
-        .catchError((e) {
-          Tiles.displayError(e: e);
-          vm.clear();
-          Navigator.pop(context);
-          return;
-        }, test: (e) => e is FailureToCreateException)
-        .catchError((e) => Tiles.displayError(e: e))
-        .whenComplete(() async {
-          await eventProvider
-              .insertEventModel(model: newReminder, notify: true)
-              .whenComplete(() {
-            vm.clear();
-            Navigator.pop(context);
-          });
-        });
+    await reminderProvider.createReminder(newReminder).then((_) async {
+      await eventProvider.insertEventModel(model: newReminder, notify: true);
+    }).catchError((e) async {
+      await Tiles.displayError(e: e);
+    }).whenComplete(() {
+      vm.clear();
+      Navigator.pop(context);
+    });
   }
 
   void handleClose({required bool willDiscard}) {

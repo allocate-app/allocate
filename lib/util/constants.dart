@@ -292,15 +292,19 @@ abstract class Constants {
   static const int repeatingLimit = calendarLimit ~/ 2;
 
   // GUI constants.
+  static const double overlayBlur = 15;
   static const double loadingArcSize = 200;
   static const double minLoadGraphicScale = 1;
   static const double maxLoadGraphicScale = 3;
+  static const double minFabScale = 0.6;
+  static const double maxFabScale = 1;
   static const Duration dragDelayTime = Duration(milliseconds: 225);
 
   static final offsetIn =
       Tween(begin: const Offset(1, 0), end: const Offset(0, 0));
 
   // In Milliseconds
+  static const int blurDuration = 250;
   static const int snackbarEaseInDuration = 300;
   static const int snackbarDuration = 4000;
   static const int animationDelay = 200;

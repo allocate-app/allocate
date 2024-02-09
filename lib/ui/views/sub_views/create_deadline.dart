@@ -150,24 +150,16 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
   Future<void> handleCreate() async {
     vm.repeatable = Frequency.once != vm.frequency;
     Deadline newDeadline = vm.toModel();
-    await deadlineProvider
-        .createDeadline(newDeadline)
-        .catchError((e) {
-          Tiles.displayError(e: e);
-          vm.clear();
-          Navigator.pop(context);
-          return;
-        }, test: (e) => e is FailureToCreateException)
-        .catchError((e) => Tiles.displayError(e: e))
-        .whenComplete(() async {
-          await eventProvider
-              .insertEventModel(
-                  model: deadlineProvider.curDeadline!, notify: true)
-              .whenComplete(() {
-            vm.clear();
-            Navigator.pop(context);
-          });
-        });
+
+    await deadlineProvider.createDeadline(newDeadline).then((_) async {
+      await eventProvider.insertEventModel(
+          model: deadlineProvider.curDeadline!, notify: true);
+    }).catchError((e) async {
+      await Tiles.displayError(e: e);
+    }).whenComplete(() {
+      vm.clear();
+      Navigator.pop(context);
+    });
   }
 
   void handleClose({required bool willDiscard}) {

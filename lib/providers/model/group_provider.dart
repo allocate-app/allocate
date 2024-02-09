@@ -20,6 +20,8 @@ class GroupProvider extends ChangeNotifier {
 
   bool get rebuild => _rebuild;
 
+  // Secondary groups update separately
+  // According to the main gui
   set rebuild(bool rebuild) {
     _rebuild = rebuild;
     if (_rebuild) {
@@ -130,37 +132,42 @@ class GroupProvider extends ChangeNotifier {
   Future<void> syncRepo() async {
     try {
       await _groupRepo.syncRepo();
+      notifyListeners();
     } on FailureToDeleteException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
+      notifyListeners();
       return Future.error(e, stacktrace);
     } on FailureToUploadException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
+      notifyListeners();
       return Future.error(e, stacktrace);
     } on Error catch (e, stacktrace) {
       log("Unknown error", stackTrace: stacktrace);
+      notifyListeners();
       return Future.error(UnexpectedErrorException(), stacktrace);
     }
-    notifyListeners();
   }
 
   Future<void> createGroup(Group group) async {
     try {
       curGroup = await _groupRepo.create(group);
+      notifyListeners();
     } on FailureToCreateException catch (e) {
       log(e.cause);
+      notifyListeners();
       return Future.error(e);
     } on FailureToUploadException catch (e) {
       log(e.cause);
       group.isSynced = false;
+      notifyListeners();
       return await updateGroup(group: group);
     } on Error catch (e, stacktrace) {
       log("Unknown error", stackTrace: stacktrace);
+      notifyListeners();
       return Future.error(UnexpectedErrorException(), stacktrace);
     }
 
     groupNames[curGroup!.id] = curGroup!.name;
-
-    notifyListeners();
   }
 
   Future<void> updateGroup({Group? group}) async {
@@ -189,43 +196,43 @@ class GroupProvider extends ChangeNotifier {
     groupNames[curGroup!.id] = curGroup!.name;
   }
 
-  Future<void> _updateToDos(
-      {required List<ToDo> toDos, required int groupID}) async {
-    int i = 0;
-    for (ToDo toDo in toDos) {
-      toDo.groupID = groupID;
-      toDo.customViewIndex = i++;
-    }
-    try {
-      await _toDoRepo.updateBatch(toDos);
-    } on FailureToUploadException catch (e) {
-      log(e.cause);
-      return Future.error(e);
-    } on FailureToUpdateException catch (e) {
-      log(e.cause);
-      return Future.error(e);
-    } on Error catch (e, stacktrace) {
-      log("Unknown error", stackTrace: stacktrace);
-      return Future.error(UnexpectedErrorException(), stacktrace);
-    }
-  }
+  // Future<void> _updateToDos(
+  //     {required List<ToDo> toDos, required int groupID}) async {
+  //   int i = 0;
+  //   for (ToDo toDo in toDos) {
+  //     toDo.groupID = groupID;
+  //     toDo.customViewIndex = i++;
+  //   }
+  //   try {
+  //     await _toDoRepo.updateBatch(toDos);
+  //   } on FailureToUploadException catch (e) {
+  //     log(e.cause);
+  //     return Future.error(e);
+  //   } on FailureToUpdateException catch (e) {
+  //     log(e.cause);
+  //     return Future.error(e);
+  //   } on Error catch (e, stacktrace) {
+  //     log("Unknown error", stackTrace: stacktrace);
+  //     return Future.error(UnexpectedErrorException(), stacktrace);
+  //   }
+  // }
 
   Future<void> deleteGroup({Group? group}) async {
     group = group ?? curGroup!;
     try {
       await _groupRepo.delete(group);
+      groupNames.remove(group.id);
+      groupToDoCounts.remove(group.id);
+      notifyListeners();
     } on FailureToDeleteException catch (e) {
       log(e.cause);
+      notifyListeners();
       return Future.error(e);
     } on Error catch (e, stacktrace) {
       log("Unknown error", stackTrace: stacktrace);
+      notifyListeners();
       return Future.error(UnexpectedErrorException(), stacktrace);
     }
-
-    groupNames.remove(group.id);
-    groupToDoCounts.remove(group.id);
-
-    notifyListeners();
   }
 
   Future<void> removeGroup({Group? group}) async {
@@ -234,15 +241,16 @@ class GroupProvider extends ChangeNotifier {
     }
     try {
       await _groupRepo.remove(group);
+      notifyListeners();
     } on FailureToDeleteException catch (e) {
       log(e.cause);
+      notifyListeners();
       return Future.error(e);
     } on Error catch (e, stacktrace) {
       log("Unknown error", stackTrace: stacktrace);
+      notifyListeners();
       return Future.error(UnexpectedErrorException(), stacktrace);
     }
-
-    notifyListeners();
   }
 
   Future<void> restoreGroup({Group? group}) async {
@@ -252,17 +260,20 @@ class GroupProvider extends ChangeNotifier {
     group.toDelete = false;
     try {
       curGroup = await _groupRepo.update(group);
+      notifyListeners();
     } on FailureToUploadException catch (e) {
       log(e.cause);
+      notifyListeners();
       return Future.error(e);
     } on FailureToUpdateException catch (e) {
       log(e.cause);
+      notifyListeners();
       return Future.error(e);
     } on Error catch (e, stacktrace) {
       log("Unknown error", stackTrace: stacktrace);
+      notifyListeners();
       return Future.error(UnexpectedErrorException(), stacktrace);
     }
-    notifyListeners();
   }
 
   Future<void> emptyTrash() async {
@@ -279,14 +290,16 @@ class GroupProvider extends ChangeNotifier {
         groupNames.remove(id);
         groupToDoCounts.remove(id);
       }
+      notifyListeners();
     } on FailureToDeleteException catch (e) {
       log(e.cause);
+      notifyListeners();
       return Future.error(e);
     } on Error catch (e, stacktrace) {
       log("Unknown error", stackTrace: stacktrace);
+      notifyListeners();
       return Future.error(UnexpectedErrorException(), stacktrace);
     }
-    notifyListeners();
   }
 
   Future<void> dayReset() async {
