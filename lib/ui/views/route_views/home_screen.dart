@@ -255,7 +255,8 @@ class _HomeScreen extends State<HomeScreen> {
   }
 
   Widget _buildDesktop({required BuildContext context}) {
-    return Row(children: [
+    return Row(
+        children: [
       // This is a workaround for a standard navigation drawer
       // until m3 spec is fully implemented in flutter.
       TitlebarSafeArea(
@@ -463,6 +464,18 @@ class _HomeScreen extends State<HomeScreen> {
             layoutProvider.drawerOpened = false;
             layoutProvider.navDrawerWidth = 1.0;
           });
+    }
+
+    if(Platform.isMacOS){
+      return TitlebarSafeArea(
+        child: IconButton(
+            hoverColor: Colors.transparent,
+            icon: const Icon(Icons.menu_rounded),
+            onPressed: () {
+              layoutProvider.drawerOpened = true;
+              layoutProvider.navDrawerWidth = Constants.navigationDrawerMaxWidth;
+            }),
+      );
     }
     return IconButton(
         icon: const Icon(Icons.menu_rounded),

@@ -121,6 +121,7 @@ class DeadlineRepo extends ChangeNotifier implements DeadlineRepository {
       }
       await handleUserChange();
     });
+
     // This is for watching db size.
     _isarClient.deadlines.watchLazy().listen((_) async {
       await IsarService.instance.updateDBSize();

@@ -276,7 +276,7 @@ abstract class SettingsScreenWidgets {
                             (connected)
                                 ? "Email: ${viewModel.email}"
                                 : "Offline Only",
-                            overflow: TextOverflow.visible,
+                            overflow: TextOverflow.ellipsis,
                             softWrap: false,
                             maxLines: 1,
                             minFontSize: Constants.large,

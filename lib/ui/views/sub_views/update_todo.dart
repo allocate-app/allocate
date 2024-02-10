@@ -329,7 +329,6 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
       vm.clear();
       Navigator.pop(context);
     });
-    ;
   }
 
   Future<void> handleClose({required bool willDiscard}) async {

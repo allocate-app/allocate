@@ -113,8 +113,8 @@ class _UpdateEmailDialog extends State<UpdateEmailDialog> {
 
   bool validateToken() {
     bool valid = true;
-    if (_tokenController.text.isEmpty ||
-        !_tokenController.text.contains(RegExp(r"^[0-9]{6}$"))) {
+    if (_tokenController.text.trim().isEmpty ||
+        !_tokenController.text.trim().contains(RegExp(r"^[0-9]{6}$"))) {
       valid = false;
 
       Tiles.displayError(e: InvalidInputException("Invalid 6-digit token"));
@@ -132,8 +132,8 @@ class _UpdateEmailDialog extends State<UpdateEmailDialog> {
 
     await userProvider
         .verifiyEmailChange(
-      newEmail: _newEmailController.text,
-      token: _tokenController.text,
+      newEmail: _newEmailController.text.trim(),
+      token: _tokenController.text.trim(),
     )
         .then((_) {
       Navigator.pop(context);
@@ -305,7 +305,7 @@ class _UpdateEmailDialog extends State<UpdateEmailDialog> {
                   }
                   await userProvider
                       .updateEmail(
-                    newEmail: _newEmailController.text,
+                    newEmail: _newEmailController.text.trim(),
                   )
                       .then((_) {
                     Tiles.displayAlert(

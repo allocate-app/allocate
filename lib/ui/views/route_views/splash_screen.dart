@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../providers/application/layout_provider.dart';
 import '../../../providers/model/deadline_provider.dart';
@@ -61,10 +60,7 @@ class _SplashScreen extends State<SplashScreen> {
 
   Future<void> init() async {
     // Check to see if supabase => the app is already opened.
-    try {
-      SupabaseClient testClient = SupabaseService.instance.supabaseClient;
-      return;
-    } finally {
+    // This can be refactored out.
       // Initialize Isar.
       // Initialize Supabase.
       // Initialize Providers.
@@ -74,7 +70,6 @@ class _SplashScreen extends State<SplashScreen> {
       if (Constants.supabaseURL.isEmpty || Constants.supabaseAnnonKey.isEmpty) {
         throw BuildFailureException("App has not been configured");
       }
-
       // DBs need to be initialized before providers.
 
       await Future.wait(
@@ -100,7 +95,6 @@ class _SplashScreen extends State<SplashScreen> {
         // The splash screen is going too fast.
         await Future.delayed(const Duration(seconds: 1));
       });
-    }
   }
 
   Future<void> dayReset() async {

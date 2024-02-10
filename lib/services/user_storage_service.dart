@@ -148,7 +148,7 @@ class UserStorageService extends ChangeNotifier {
 
   Future<void> updateUser({required AllocateUser user}) async {
     user.isSynced = isConnected;
-    user.uuid = _supabaseClient.auth.currentUser!.id;
+    user.uuid = _supabaseClient.auth.currentUser?.id;
     late int? id;
 
     await _isarClient.writeTxn(() async {
