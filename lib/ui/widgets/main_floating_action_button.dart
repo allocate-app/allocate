@@ -28,63 +28,60 @@ class _MainFloatingActionButton extends State<MainFloatingActionButton> {
   // This
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(Constants.padding),
-      child: ExpandableFab(
-        key: _key,
-        overlayStyle: ExpandableFabOverlayStyle(blur: Constants.overlayBlur),
-        openButtonBuilder: RotateFloatingActionButtonBuilder(
-          fabSize: ExpandableFabSize.regular,
-          child: const Icon(Icons.add_rounded),
+    return ExpandableFab(
+      key: _key,
+      overlayStyle: ExpandableFabOverlayStyle(blur: Constants.overlayBlur),
+      openButtonBuilder: RotateFloatingActionButtonBuilder(
+        fabSize: ExpandableFabSize.regular,
+        child: const Icon(Icons.add_rounded),
+        shape: const CircleBorder(),
+      ),
+      closeButtonBuilder: RotateFloatingActionButtonBuilder(
+        fabSize: ExpandableFabSize.small,
+        child: const Icon(Icons.close_rounded),
+        shape: const CircleBorder(),
+      ),
+      children: [
+        FloatingActionButton(
           shape: const CircleBorder(),
+          onPressed: () async {
+            await blurredNonDismissible(
+                context: context, dialog: const CreateToDoScreen());
+            final ExpandableFabState? state = _key.currentState;
+            if (null != state) {
+              state.toggle();
+            }
+          },
+          child: const Tooltip(
+              message: "New Task", child: Icon(Icons.task_rounded)),
         ),
-        closeButtonBuilder: RotateFloatingActionButtonBuilder(
-          fabSize: ExpandableFabSize.small,
-          child: const Icon(Icons.close_rounded),
-          shape: const CircleBorder(),
-        ),
-        children: [
-          FloatingActionButton(
+        FloatingActionButton(
             shape: const CircleBorder(),
+            child: const Tooltip(
+                message: "New Deadline",
+                child: Icon(Icons.announcement_rounded)),
             onPressed: () async {
               await blurredNonDismissible(
-                  context: context, dialog: const CreateToDoScreen());
+                  context: context, dialog: const CreateDeadlineScreen());
+
               final ExpandableFabState? state = _key.currentState;
               if (null != state) {
                 state.toggle();
               }
-            },
+            }),
+        FloatingActionButton(
+            shape: const CircleBorder(),
             child: const Tooltip(
-                message: "New Task", child: Icon(Icons.task_rounded)),
-          ),
-          FloatingActionButton(
-              shape: const CircleBorder(),
-              child: const Tooltip(
-                  message: "New Deadline",
-                  child: Icon(Icons.announcement_rounded)),
-              onPressed: () async {
-                await blurredNonDismissible(
-                    context: context, dialog: const CreateDeadlineScreen());
-
-                final ExpandableFabState? state = _key.currentState;
-                if (null != state) {
-                  state.toggle();
-                }
-              }),
-          FloatingActionButton(
-              shape: const CircleBorder(),
-              child: const Tooltip(
-                  message: "New Reminder", child: Icon(Icons.push_pin_rounded)),
-              onPressed: () async {
-                await blurredNonDismissible(
-                    context: context, dialog: const CreateReminderScreen());
-                final ExpandableFabState? state = _key.currentState;
-                if (null != state) {
-                  state.toggle();
-                }
-              }),
-        ],
-      ),
+                message: "New Reminder", child: Icon(Icons.push_pin_rounded)),
+            onPressed: () async {
+              await blurredNonDismissible(
+                  context: context, dialog: const CreateReminderScreen());
+              final ExpandableFabState? state = _key.currentState;
+              if (null != state) {
+                state.toggle();
+              }
+            }),
+      ],
     );
   }
 }
