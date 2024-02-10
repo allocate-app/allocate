@@ -26,7 +26,11 @@ class RoutineRepo extends ChangeNotifier implements RoutineRepository {
 
   late final Isar _isarClient;
 
-  bool get isConnected => SupabaseService.instance.isConnected;
+  bool get isConnected =>
+      SupabaseService.instance.isConnected &&
+      IsarService.instance.dbSize.value < Constants.supabaseLimit;
+
+  bool get dbFull => IsarService.instance.dbSize.value >= Constants.isarLimit;
 
   int _routineCount = 0;
   bool _subscribed = false;
@@ -120,6 +124,11 @@ class RoutineRepo extends ChangeNotifier implements RoutineRepository {
       }
       await handleUserChange();
     });
+
+    // This is for watching db size.
+    _isarClient.routines.watchLazy().listen((_) async {
+      await IsarService.instance.updateDBSize();
+    });
   }
 
   Future<void> handleUserChange() async {
@@ -146,6 +155,10 @@ class RoutineRepo extends ChangeNotifier implements RoutineRepository {
 
   @override
   Future<Routine> create(Routine routine) async {
+    if (dbFull) {
+      throw LocalLimitExceededException(
+          "Database is full. Size: ${IsarService.instance.dbSize.value / 1000000}");
+    }
     routine.isSynced = isConnected;
 
     late int? id;

@@ -66,8 +66,15 @@ abstract class Constants {
 
   static const int tagDigits = 4;
 
-  // FUTURE TODO: add user switching.
+  // FUTURE TODO: add STORED user switching.
   static int maxUserCount = 1;
+
+  // 500 MB.
+  static int supabaseLimit = 1000000 * 500;
+  static double alertThreshold = 0.85;
+
+  // 2 GB
+  static int isarLimit = 1000000000 * 2;
 
   // This might need to be shortened.
   static const Duration userUpdateTime = Duration(seconds: 30);

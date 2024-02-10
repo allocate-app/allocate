@@ -49,11 +49,6 @@ class RoutineProvider extends ChangeNotifier {
   Routine? _curAfternoon;
   Routine? _curEvening;
 
-  // For testing
-  int? _morningID;
-  int? _aftID;
-  int? _eveID;
-
   final Map<int, ValueNotifier<int>> routineSubtaskCounts = {};
 
   // CONSTRUCTOR
@@ -82,22 +77,16 @@ class RoutineProvider extends ChangeNotifier {
   set curMorning(Routine? newRoutine) {
     _curMorning = newRoutine;
     userViewModel?.curMornID = newRoutine?.id;
-    // For testing
-    _morningID = newRoutine?.id;
   }
 
   set curAfternoon(Routine? newRoutine) {
     _curAfternoon = newRoutine;
     userViewModel?.curAftID = newRoutine?.id;
-    // For testing
-    _aftID = newRoutine?.id;
   }
 
   set curEvening(Routine? newRoutine) {
     _curEvening = newRoutine;
     userViewModel?.curEveID = newRoutine?.id;
-    // For testing
-    _eveID = newRoutine?.id;
   }
 
   void clearRoutines() {

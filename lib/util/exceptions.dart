@@ -27,6 +27,13 @@ class FailureToUploadException implements Exception {
   toString() => cause;
 }
 
+class LocalLimitExceededException implements Exception {
+  String cause;
+  LocalLimitExceededException(this.cause);
+  @override
+  toString() => cause;
+}
+
 class FailureToDeleteException implements Exception {
   String cause;
 

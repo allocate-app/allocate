@@ -3,7 +3,6 @@ import 'package:flex_color_picker/flex_color_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:intl/intl.dart';
-import 'package:isar/isar.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 import '../../providers/viewmodels/user_viewmodel.dart';
@@ -576,14 +575,9 @@ abstract class SettingsScreenWidgets {
     bool connected =
         null != SupabaseService.instance.supabaseClient.auth.currentSession;
 
-    Isar isar = IsarService.instance.isarClient;
-    int dbBytes = isar.getSizeSync();
-    // db size in MB.
-    int dbSize = dbBytes ~/ (1000 * 1000);
-    // db size in MiB.
-    int dbMiB = dbBytes ~/ (1024 * 1024);
-    int storageLocal = dbMiB * 100 ~/ 2048;
-    int storageOnline = dbSize * 100 ~/ 500;
+    double dbBytes = IsarService.instance.dbSize.value.toDouble();
+    int onlinePercent = (dbBytes / Constants.supabaseLimit.toDouble()).round();
+    int offlinePercent = (dbBytes / Constants.isarLimit.toDouble()).round();
 
     return Dialog(
       insetPadding: const EdgeInsets.all(Constants.mobileDialogPadding),
@@ -672,10 +666,12 @@ abstract class SettingsScreenWidgets {
                   Align(
                     alignment: Alignment.centerRight,
                     child: AutoSizeText(
-                      viewModel.uuid ?? "N/A",
+                      (null == viewModel.uuid)
+                          ? "N/A"
+                          : "${viewModel.uuid!.substring(0, viewModel.uuid!.length ~/ 2)}\n${viewModel.uuid!.substring(viewModel.uuid!.length ~/ 2)}",
                       minFontSize: Constants.large,
-                      maxLines: 1,
-                      softWrap: false,
+                      maxLines: 2,
+                      softWrap: true,
                       overflow: TextOverflow.visible,
                     ),
                   ),
@@ -720,7 +716,7 @@ abstract class SettingsScreenWidgets {
                   Align(
                     alignment: Alignment.centerRight,
                     child: AutoSizeText(
-                      "$dbSize MB",
+                      "${dbBytes / 1000000} MB",
                       minFontSize: Constants.large,
                       maxLines: 1,
                       softWrap: false,
@@ -744,7 +740,7 @@ abstract class SettingsScreenWidgets {
                   Align(
                     alignment: Alignment.centerRight,
                     child: AutoSizeText(
-                      "${100 - storageLocal}%",
+                      "${100 - offlinePercent}%",
                       minFontSize: Constants.large,
                       maxLines: 1,
                       softWrap: false,
@@ -768,7 +764,7 @@ abstract class SettingsScreenWidgets {
                   Align(
                     alignment: Alignment.centerRight,
                     child: AutoSizeText(
-                      "${100 - storageOnline}%",
+                      "${100 - onlinePercent}%",
                       minFontSize: Constants.large,
                       maxLines: 1,
                       softWrap: false,

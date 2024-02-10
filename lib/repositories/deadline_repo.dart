@@ -26,7 +26,11 @@ class DeadlineRepo extends ChangeNotifier implements DeadlineRepository {
 
   late final Isar _isarClient;
 
-  bool get isConnected => SupabaseService.instance.isConnected;
+  bool get isConnected =>
+      SupabaseService.instance.isConnected &&
+      IsarService.instance.dbSize.value < Constants.supabaseLimit;
+
+  bool get dbFull => IsarService.instance.dbSize.value >= Constants.isarLimit;
 
   int _deadlineCount = 0;
   bool _subscribed = false;
@@ -117,6 +121,10 @@ class DeadlineRepo extends ChangeNotifier implements DeadlineRepository {
       }
       await handleUserChange();
     });
+    // This is for watching db size.
+    _isarClient.deadlines.watchLazy().listen((_) async {
+      await IsarService.instance.updateDBSize();
+    });
   }
 
   Future<void> handleUserChange() async {
@@ -143,6 +151,10 @@ class DeadlineRepo extends ChangeNotifier implements DeadlineRepository {
 
   @override
   Future<Deadline> create(Deadline deadline) async {
+    if (dbFull) {
+      throw LocalLimitExceededException(
+          "Database is full. Size: ${IsarService.instance.dbSize.value / 1000000}");
+    }
     deadline.isSynced = isConnected;
     late int? id;
 

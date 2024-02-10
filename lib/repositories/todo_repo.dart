@@ -30,7 +30,11 @@ class ToDoRepo extends ChangeNotifier implements ToDoRepository {
 
   late final Isar _isarClient;
 
-  bool get isConnected => SupabaseService.instance.isConnected;
+  bool get isConnected =>
+      SupabaseService.instance.isConnected &&
+      IsarService.instance.dbSize.value < Constants.supabaseLimit;
+
+  bool get dbFull => IsarService.instance.dbSize.value >= Constants.isarLimit;
 
   int _toDoCount = 0;
   bool _subscribed = false;
@@ -122,6 +126,11 @@ class ToDoRepo extends ChangeNotifier implements ToDoRepository {
       }
       await handleUserChange();
     });
+
+    // This is for watching db size.
+    _isarClient.toDos.watchLazy().listen((_) async {
+      await IsarService.instance.updateDBSize();
+    });
   }
 
   Future<void> handleUserChange() async {
@@ -148,6 +157,10 @@ class ToDoRepo extends ChangeNotifier implements ToDoRepository {
   // Offline first -> local operation first.
   @override
   Future<ToDo> create(ToDo toDo) async {
+    if (dbFull) {
+      throw LocalLimitExceededException(
+          "Database is full. Size: ${IsarService.instance.dbSize.value / 1000000}");
+    }
     // Get sync => Supabase + internet
 
     toDo.isSynced = isConnected;

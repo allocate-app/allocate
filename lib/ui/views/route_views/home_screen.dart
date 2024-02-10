@@ -24,6 +24,7 @@ import '../../../providers/model/user_provider.dart';
 import '../../../providers/viewmodels/user_viewmodel.dart';
 import '../../../services/application_service.dart';
 import '../../../services/daily_reset_service.dart';
+import '../../../services/isar_service.dart';
 import '../../../services/repeatable_service.dart';
 import '../../../util/constants.dart';
 import '../../../util/enums.dart';
@@ -125,6 +126,9 @@ class _HomeScreen extends State<HomeScreen> {
         : const ClampingScrollPhysics();
 
     scrollPhysics = AlwaysScrollableScrollPhysics(parent: parentPhysics);
+
+    // Stream for watching Isar Db.
+    IsarService.instance.dbSize.addListener(alertSizeLimit);
   }
 
   void updateMyDay() {
@@ -189,13 +193,59 @@ class _HomeScreen extends State<HomeScreen> {
     dailyResetProvider.removeListener(dayReset);
     groupProvider.removeListener(resetNavGroups);
     navScrollController.dispose();
+    IsarService.instance.dbSize.removeListener(alertSizeLimit);
     super.dispose();
+  }
+
+  void alertSizeLimit() {
+    double dbSize = IsarService.instance.dbSize.value.toDouble();
+
+    double onlineRatio = (dbSize / Constants.supabaseLimit.toDouble());
+    double offlineRatio = (dbSize / Constants.isarLimit.toDouble());
+
+    // If reaching the limit of the offline database, the online one has already been well-exceeded.
+    if (offlineRatio >= Constants.alertThreshold) {
+      ScaffoldMessenger.of(context).showMaterialBanner(
+        MaterialBanner(
+          padding: const EdgeInsets.all(Constants.halfPadding),
+          content: Text("Offline storage at ${(offlineRatio * 100).round()}%"),
+          leading: Icon(Icons.error_outline_rounded,
+              color: Theme.of(context).colorScheme.error),
+          actions: [
+            TextButton(
+                onPressed: () {
+                  ScaffoldMessenger.of(context).hideCurrentMaterialBanner();
+                },
+                child: const Text("Dismiss")),
+          ],
+        ),
+      );
+      return;
+    }
+
+    if (onlineRatio >= Constants.alertThreshold) {
+      ScaffoldMessenger.of(context).showMaterialBanner(
+        MaterialBanner(
+          padding: const EdgeInsets.all(Constants.halfPadding),
+          content: Text("Online storage at ${(onlineRatio * 100).round()}%"),
+          leading: Icon(Icons.error_outline_rounded,
+              color: Theme.of(context).colorScheme.error),
+          actions: [
+            TextButton(
+                onPressed: () {
+                  ScaffoldMessenger.of(context).hideCurrentMaterialBanner();
+                },
+                child: const Text("Dismiss")),
+          ],
+        ),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     layoutProvider.size = MediaQuery.sizeOf(context);
-    print("MQ: ${layoutProvider.size}");
+    // print("MQ: ${layoutProvider.size}");
     return Consumer<LayoutProvider>(
         builder: (BuildContext context, LayoutProvider value, Widget? child) {
       return (value.largeScreen)

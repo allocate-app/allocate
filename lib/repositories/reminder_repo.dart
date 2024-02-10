@@ -23,7 +23,11 @@ class ReminderRepo extends ChangeNotifier implements ReminderRepository {
 
   late final Isar _isarClient;
 
-  bool get isConnected => SupabaseService.instance.isConnected;
+  bool get isConnected =>
+      SupabaseService.instance.isConnected &&
+      IsarService.instance.dbSize.value < Constants.supabaseLimit;
+
+  bool get dbFull => IsarService.instance.dbSize.value >= Constants.isarLimit;
 
   int _reminderCount = 0;
   bool _subscribed = false;
@@ -116,6 +120,11 @@ class ReminderRepo extends ChangeNotifier implements ReminderRepository {
       }
       await handleUserChange();
     });
+
+    // This is for watching db size.
+    _isarClient.reminders.watchLazy().listen((_) async {
+      await IsarService.instance.updateDBSize();
+    });
   }
 
   Future<void> handleUserChange() async {
@@ -142,6 +151,10 @@ class ReminderRepo extends ChangeNotifier implements ReminderRepository {
 
   @override
   Future<Reminder> create(Reminder reminder) async {
+    if (dbFull) {
+      throw LocalLimitExceededException(
+          "Database is full. Size: ${IsarService.instance.dbSize.value / 1000000}");
+    }
     reminder.isSynced = isConnected;
     late int? id;
 

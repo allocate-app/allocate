@@ -28,60 +28,63 @@ class _MainFloatingActionButton extends State<MainFloatingActionButton> {
   // This
   @override
   Widget build(BuildContext context) {
-    return ExpandableFab(
-      key: _key,
-      overlayStyle: ExpandableFabOverlayStyle(blur: Constants.overlayBlur),
-      openButtonBuilder: RotateFloatingActionButtonBuilder(
-        fabSize: ExpandableFabSize.regular,
-        child: const Icon(Icons.add_rounded),
-        shape: const CircleBorder(),
-      ),
-      closeButtonBuilder: RotateFloatingActionButtonBuilder(
-        fabSize: ExpandableFabSize.small,
-        child: const Icon(Icons.close_rounded),
-        shape: const CircleBorder(),
-      ),
-      children: [
-        FloatingActionButton(
+    return Padding(
+      padding: const EdgeInsets.all(Constants.padding),
+      child: ExpandableFab(
+        key: _key,
+        overlayStyle: ExpandableFabOverlayStyle(blur: Constants.overlayBlur),
+        openButtonBuilder: RotateFloatingActionButtonBuilder(
+          fabSize: ExpandableFabSize.regular,
+          child: const Icon(Icons.add_rounded),
           shape: const CircleBorder(),
-          onPressed: () async {
-            await blurredNonDismissible(
-                context: context, dialog: const CreateToDoScreen());
-            final ExpandableFabState? state = _key.currentState;
-            if (null != state) {
-              state.toggle();
-            }
-          },
-          child: const Tooltip(
-              message: "New Task", child: Icon(Icons.task_rounded)),
         ),
-        FloatingActionButton(
+        closeButtonBuilder: RotateFloatingActionButtonBuilder(
+          fabSize: ExpandableFabSize.small,
+          child: const Icon(Icons.close_rounded),
+          shape: const CircleBorder(),
+        ),
+        children: [
+          FloatingActionButton(
             shape: const CircleBorder(),
-            child: const Tooltip(
-                message: "New Deadline",
-                child: Icon(Icons.announcement_rounded)),
             onPressed: () async {
               await blurredNonDismissible(
-                  context: context, dialog: const CreateDeadlineScreen());
+                  context: context, dialog: const CreateToDoScreen());
+              final ExpandableFabState? state = _key.currentState;
+              if (null != state) {
+                state.toggle();
+              }
+            },
+            child: const Tooltip(
+                message: "New Task", child: Icon(Icons.task_rounded)),
+          ),
+          FloatingActionButton(
+              shape: const CircleBorder(),
+              child: const Tooltip(
+                  message: "New Deadline",
+                  child: Icon(Icons.announcement_rounded)),
+              onPressed: () async {
+                await blurredNonDismissible(
+                    context: context, dialog: const CreateDeadlineScreen());
 
-              final ExpandableFabState? state = _key.currentState;
-              if (null != state) {
-                state.toggle();
-              }
-            }),
-        FloatingActionButton(
-            shape: const CircleBorder(),
-            child: const Tooltip(
-                message: "New Reminder", child: Icon(Icons.push_pin_rounded)),
-            onPressed: () async {
-              await blurredNonDismissible(
-                  context: context, dialog: const CreateReminderScreen());
-              final ExpandableFabState? state = _key.currentState;
-              if (null != state) {
-                state.toggle();
-              }
-            }),
-      ],
+                final ExpandableFabState? state = _key.currentState;
+                if (null != state) {
+                  state.toggle();
+                }
+              }),
+          FloatingActionButton(
+              shape: const CircleBorder(),
+              child: const Tooltip(
+                  message: "New Reminder", child: Icon(Icons.push_pin_rounded)),
+              onPressed: () async {
+                await blurredNonDismissible(
+                    context: context, dialog: const CreateReminderScreen());
+                final ExpandableFabState? state = _key.currentState;
+                if (null != state) {
+                  state.toggle();
+                }
+              }),
+        ],
+      ),
     );
   }
 }

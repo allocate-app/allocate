@@ -21,7 +21,11 @@ class SubtaskRepo extends ChangeNotifier implements SubtaskRepository {
 
   late final Isar _isarClient;
 
-  bool get isConnected => SupabaseService.instance.isConnected;
+  bool get isConnected =>
+      SupabaseService.instance.isConnected &&
+      IsarService.instance.dbSize.value < Constants.supabaseLimit;
+
+  bool get dbFull => IsarService.instance.dbSize.value >= Constants.isarLimit;
 
   int _subtaskCount = 0;
   bool _subscribed = false;
@@ -114,6 +118,11 @@ class SubtaskRepo extends ChangeNotifier implements SubtaskRepository {
       }
       await handleUserChange();
     });
+
+    // This is for watching db size.
+    _isarClient.subtasks.watchLazy().listen((_) async {
+      await IsarService.instance.updateDBSize();
+    });
   }
 
   Future<void> handleUserChange() async {
@@ -140,6 +149,10 @@ class SubtaskRepo extends ChangeNotifier implements SubtaskRepository {
 
   @override
   Future<Subtask> create(Subtask subtask) async {
+    if (dbFull) {
+      throw LocalLimitExceededException(
+          "Database is full. Size: ${IsarService.instance.dbSize.value / 1000000}");
+    }
     subtask.isSynced = isConnected;
     late int? id;
     await _isarClient.writeTxn(() async {
