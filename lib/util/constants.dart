@@ -31,7 +31,7 @@ abstract class Constants {
   static const String loginDeeplink = "io.allocate://login";
   static const String emailDeeplink = "io.allocate://validate-email";
 
-  static File appIcon = File("assets/placeholder.png");
+  static File appIcon = File("assets/allocatelogo.png");
   static File roadMap = File("ROADMAP.md");
 
   // TODO: change as appropriate.

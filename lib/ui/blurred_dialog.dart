@@ -16,7 +16,11 @@ Future<T?> blurredDismissible<T>({
     transitionDuration: const Duration(milliseconds: Constants.blurDuration),
     pageBuilder: (BuildContext context, Animation<double> animation,
         Animation<double> secondaryAnimation) {
-      return dialog;
+      return SafeArea(child: GestureDetector(
+          onTap:(){
+            FocusScope.of(context).unfocus();
+          },
+          child: dialog));
     },
     transitionBuilder: (BuildContext context, Animation<double> animation,
         Animation<double> secondaryAnimation, Widget? child) {
@@ -44,7 +48,11 @@ Future<T?> blurredNonDismissible<T>({
     transitionDuration: const Duration(milliseconds: Constants.blurDuration),
     pageBuilder: (BuildContext context, Animation<double> animation,
         Animation<double> secondaryAnimation) {
-      return dialog;
+      return SafeArea(child: GestureDetector(
+          onTap: (){
+            FocusScope.of(context).unfocus();
+          },
+          child: dialog));
     },
     transitionBuilder: (BuildContext context, Animation<double> animation,
         Animation<double> secondaryAnimation, Widget? child) {

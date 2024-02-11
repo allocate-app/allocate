@@ -1622,7 +1622,10 @@ abstract class Tiles {
                     labelText: labelText,
                   ),
                   controller: controller,
-                  onEditingComplete: onEditingComplete,
+                  onEditingComplete: (){
+                    onEditingComplete();
+                    FocusScope.of(context).unfocus();
+                  },
                   onChanged: onChanged,
                 ),
               ),
@@ -2711,7 +2714,7 @@ abstract class Tiles {
 
     double maxWidth = lp.width;
     double? offset;
-    if (lp.drawerOpened) {
+    if (lp.drawerOpened && (!lp.isMobile || lp.isTablet)) {
       maxWidth -= lp.navDrawerWidth;
       offset = lp.navDrawerWidth;
     }
