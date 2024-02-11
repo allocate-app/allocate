@@ -118,6 +118,8 @@ class _SplashScreen extends State<SplashScreen> {
     layoutProvider.size = MediaQuery.sizeOf(context);
     layoutProvider.isTablet = layoutProvider.isMobile &&
         (layoutProvider.size.shortestSide > Constants.smallScreen);
-    return const DragToResizeArea(child: LoadingScreen());
+    return (Platform.isWindows)
+        ? const DragToResizeArea(child: LoadingScreen())
+        : const LoadingScreen();
   }
 }

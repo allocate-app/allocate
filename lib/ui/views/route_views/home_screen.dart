@@ -248,14 +248,21 @@ class _HomeScreen extends State<HomeScreen> {
   Widget build(BuildContext context) {
     layoutProvider.size = MediaQuery.sizeOf(context);
     // print("MQ: ${layoutProvider.size}");
-    return DragToResizeArea(
-      child: Consumer<LayoutProvider>(
-          builder: (BuildContext context, LayoutProvider value, Widget? child) {
-        return (value.largeScreen)
-            ? _buildDesktop(context: context)
-            : _buildMobile(context: context);
-      }),
-    );
+    return (Platform.isWindows)
+        ? DragToResizeArea(
+            child: Consumer<LayoutProvider>(builder:
+                (BuildContext context, LayoutProvider value, Widget? child) {
+              return (value.largeScreen)
+                  ? _buildDesktop(context: context)
+                  : _buildMobile(context: context);
+            }),
+          )
+        : Consumer<LayoutProvider>(builder:
+            (BuildContext context, LayoutProvider value, Widget? child) {
+            return (value.largeScreen)
+                ? _buildDesktop(context: context)
+                : _buildMobile(context: context);
+          });
   }
 
   Widget _buildDesktop({required BuildContext context}) {
