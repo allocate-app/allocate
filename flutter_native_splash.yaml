@@ -1,0 +1,10 @@
+flutter_native_splash:
+  color: "#DDDDDD"
+  color_dark: "#222222"
+  image: assets/allocatelogo.png
+  image_dark: assets/allocatelogo.png
+  android_12:
+    color: "#DDDDDD"
+    color_dark: "#222222"
+    image: assets/allocatelogo.png
+    image_dark: assets/allocatelogo.png

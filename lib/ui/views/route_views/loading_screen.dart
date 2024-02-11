@@ -73,15 +73,23 @@ class LoadingScreen extends StatelessWidget {
             alignment: Alignment.center,
             child: BatteryMeter(
               forward: true,
-              scale: 1,
+              scale: 1.1,
               showText: false,
               weight: 1,
               max: 1,
               // This is just to force a default ratio
               constraints: BoxConstraints(
-                maxWidth: 150,
+                maxWidth: 130,
                 maxHeight: 150,
               ),
+            ),
+          ),
+          Align(
+            alignment: const Alignment(0, 0.02),
+            child: Icon(
+              Icons.check_rounded,
+              size: Constants.loadingGraphicIconSize,
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8),
             ),
           ),
         ]),

@@ -371,6 +371,7 @@ abstract class Constants {
   static const double smIconSize = 20;
   static const double medIconSize = 35;
   static const double lgIconSize = 50;
+  static const double loadingGraphicIconSize = 150;
   static const double hugeIconSize = 100;
   static const double appIconSize = 400;
 

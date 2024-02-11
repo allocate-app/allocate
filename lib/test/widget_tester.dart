@@ -2,16 +2,15 @@ import 'dart:io';
 import 'dart:ui';
 
 import 'package:allocate/providers/providers.dart';
-import 'package:allocate/ui/widgets/main_floating_action_button.dart';
 import 'package:flex_seed_scheme/flex_seed_scheme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_acrylic/flutter_acrylic.dart';
-import 'package:flutter_expandable_fab/flutter_expandable_fab.dart';
 import 'package:provider/provider.dart';
 import 'package:window_manager/window_manager.dart';
 
 import '../services/application_service.dart';
+import '../ui/views/route_views/loading_screen.dart';
 import '../util/constants.dart';
 
 // This may require providers. Right now, this is just so I can build GUI things without
@@ -40,7 +39,7 @@ void main() async {
   }
 
   // TESTING WIDGETS
-  // Widget testWidget = const LoadingScreen();
+  Widget testWidget = const LoadingScreen();
   // Widget testWidget = Scaffold(
   //   body: Builder(builder: (BuildContext context) {
   //     return Center(
@@ -70,10 +69,10 @@ void main() async {
   //   }),
   // );
 
-  Widget testWidget = Scaffold(
-      body: const Center(child: Text("FAB TESTER")),
-      floatingActionButtonLocation: ExpandableFab.location,
-      floatingActionButton: const MainFloatingActionButton());
+  // Widget testWidget = Scaffold(
+  //     body: const Center(child: Text("FAB TESTER")),
+  //     floatingActionButtonLocation: ExpandableFab.location,
+  //     floatingActionButton: const MainFloatingActionButton());
 
   runApp(MultiProvider(providers: [
     ChangeNotifierProvider<LayoutProvider>(create: (_) {
