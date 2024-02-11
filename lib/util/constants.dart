@@ -31,13 +31,12 @@ abstract class Constants {
   static const String loginDeeplink = "io.allocate://login";
   static const String emailDeeplink = "io.allocate://validate-email";
 
-  // Logo needs to be redone + smaller icon for about scrn.
-  static File appIcon = File("assets/allocatelogo.png");
+  static File appIcon = File("assets/allocateaboutlogo.png");
   static File roadMap = File("ROADMAP.md");
 
   // TODO: change as appropriate.
   static const String licenseInfo =
-      "Copyright © 2024 Jordan Clayton.\n Planning to be Licensed under MIT.";
+      "Copyright © 2024 Jordan Clayton.\n MIT License.";
 
   // Windows notifications appID needs to be null in packaged mode.
   static String? get windowsApplicationID =>

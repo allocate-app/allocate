@@ -21,13 +21,7 @@ Future<T?> blurredDismissible<T>({
       // There does not seem to be a way to skirt the barrier for the windows taskbar.
 
       return Stack(children: [
-        SafeArea(
-            child: GestureDetector(
-                behavior: HitTestBehavior.translucent,
-                onTap: () {
-                  FocusScope.of(context).unfocus();
-                },
-                child: dialog)),
+        SafeArea(child: dialog),
         if (Platform.isWindows) ...windowsTitlebar(),
       ]);
     },
