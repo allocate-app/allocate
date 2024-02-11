@@ -77,6 +77,7 @@ dependencies:
   internet_connection_checker: ^1.0.0+1
   flutter_expandable_fab: ^2.0.0
   flutter_native_splash: ^2.3.10
+  fluentui_system_icons: ^1.1.226
 
 
 

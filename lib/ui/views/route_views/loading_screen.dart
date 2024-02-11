@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:math';
 import 'dart:ui';
 
@@ -7,6 +8,7 @@ import 'package:loading_animation_widget/loading_animation_widget.dart';
 import '../../../util/constants.dart';
 import '../../../util/numbers.dart';
 import '../../widgets/battery_meter.dart';
+import '../../widgets/windows_titlebar.dart';
 
 class LoadingScreen extends StatelessWidget {
   const LoadingScreen({super.key});
@@ -20,10 +22,13 @@ class LoadingScreen extends StatelessWidget {
       body: OverflowBox(
         minWidth: 100,
         minHeight: 100,
-        child: loadingGraphic(
-          context: context,
-          scale: scale,
-        ),
+        child: Stack(children: [
+          loadingGraphic(
+            context: context,
+            scale: scale,
+          ),
+          if (Platform.isWindows) ...windowsTitlebar(),
+        ]),
       ),
     );
   }
@@ -84,14 +89,14 @@ class LoadingScreen extends StatelessWidget {
               ),
             ),
           ),
-          Align(
-            alignment: const Alignment(0, 0.02),
-            child: Icon(
-              Icons.check_rounded,
-              size: Constants.loadingGraphicIconSize,
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8),
-            ),
-          ),
+          // Align(
+          //   alignment: const Alignment(0, 0.02),
+          //   child: Icon(
+          //     Icons.check_rounded,
+          //     size: Constants.loadingGraphicIconSize,
+          //     color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8),
+          //   ),
+          // ),
         ]),
       );
 }

@@ -308,7 +308,7 @@ class ThemeProvider extends ChangeNotifier {
       return;
     }
 
-    _useTransparency = (Effect.disabled != effect);
+    useTransparency = (Effect.disabled != effect);
 
     if (Platform.isLinux) {
       return;

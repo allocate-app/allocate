@@ -32,9 +32,13 @@ void main() async {
   } else {
     await windowManager.ensureInitialized();
     await windowManager.setResizable(true);
+    if (Platform.isWindows) {
+      await windowManager.setAsFrameless();
+    }
     // TODO: implement windows transparent titlebar.
     WindowOptions windowOptions = const WindowOptions(
       minimumSize: Constants.minDesktopSize,
+      center: true,
     );
 
     // For windows -> register deeplinking.

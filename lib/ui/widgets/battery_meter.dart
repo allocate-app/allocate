@@ -1,3 +1,5 @@
+import "dart:io";
+
 import "package:auto_size_text/auto_size_text.dart";
 import "package:flutter/material.dart";
 
@@ -82,13 +84,25 @@ class _BatteryMeter extends State<BatteryMeter> {
                     color: Theme.of(context).colorScheme.outline,
                   ))),
           if (widget.showText)
-            AutoSizeText(
-                "${((widget.showDifference) ? widget.max - widget.weight : widget.weight).toInt()}",
-                minFontSize: Constants.large,
-                softWrap: false,
-                maxLines: 1,
-                overflow: TextOverflow.visible,
-                style: Constants.hugeHeaderStyle),
+            (Platform.isWindows)
+                ? Positioned(
+                    top: 3,
+                    // Windows has some weird text scaling.
+                    child: AutoSizeText(
+                        "${((widget.showDifference) ? widget.max - widget.weight : widget.weight).toInt()}",
+                        minFontSize: Constants.large,
+                        softWrap: false,
+                        maxLines: 1,
+                        overflow: TextOverflow.visible,
+                        style: Constants.hugeHeaderStyle),
+                  )
+                : AutoSizeText(
+                    "${((widget.showDifference) ? widget.max - widget.weight : widget.weight).toInt()}",
+                    minFontSize: Constants.large,
+                    softWrap: false,
+                    maxLines: 1,
+                    overflow: TextOverflow.visible,
+                    style: Constants.hugeHeaderStyle),
         ]),
       ),
     );

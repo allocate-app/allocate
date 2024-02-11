@@ -9,6 +9,7 @@ import 'package:flutter_acrylic/widgets/titlebar_safe_area.dart';
 import 'package:flutter_acrylic/widgets/transparent_macos_sidebar.dart';
 import 'package:flutter_expandable_fab/flutter_expandable_fab.dart';
 import "package:provider/provider.dart";
+import 'package:window_manager/window_manager.dart';
 
 import '../../../model/task/group.dart';
 import '../../../providers/application/layout_provider.dart';
@@ -38,6 +39,7 @@ import '../../widgets/listviews.dart';
 import '../../widgets/main_floating_action_button.dart';
 import '../../widgets/padded_divider.dart';
 import '../../widgets/tiles.dart';
+import '../../widgets/windows_titlebar.dart';
 import '../sub_views/create_group.dart';
 
 @RoutePage()
@@ -246,143 +248,154 @@ class _HomeScreen extends State<HomeScreen> {
   Widget build(BuildContext context) {
     layoutProvider.size = MediaQuery.sizeOf(context);
     // print("MQ: ${layoutProvider.size}");
-    return Consumer<LayoutProvider>(
-        builder: (BuildContext context, LayoutProvider value, Widget? child) {
-      return (value.largeScreen)
-          ? _buildDesktop(context: context)
-          : _buildMobile(context: context);
-    });
+    return DragToResizeArea(
+      child: Consumer<LayoutProvider>(
+          builder: (BuildContext context, LayoutProvider value, Widget? child) {
+        return (value.largeScreen)
+            ? _buildDesktop(context: context)
+            : _buildMobile(context: context);
+      }),
+    );
   }
 
   Widget _buildDesktop({required BuildContext context}) {
-    return Row(
-        children: [
-      // This is a workaround for a standard navigation drawer
-      // until m3 spec is fully implemented in flutter.
-      TitlebarSafeArea(
-        child: TweenAnimationBuilder<double>(
-            duration: Duration(
-                milliseconds:
-                    (layoutProvider.dragging) ? 0 : Constants.drawerSlideTime),
-            curve: Curves.easeOutQuint,
-            tween: Tween<double>(
-              begin: layoutProvider.drawerOpened
-                  ? layoutProvider.navDrawerWidth
-                  : 0.0,
-              end: layoutProvider.drawerOpened
-                  ? layoutProvider.navDrawerWidth
-                  : 0.0,
-            ),
-            builder: (BuildContext context, double value, Widget? child) {
-              //TransparentMacOSSidebar
-              return TransparentMacOSSidebar(
-                child: Container(
-                  width: value,
-                  clipBehavior: Clip.hardEdge,
-                  decoration: const BoxDecoration(),
-                  child: OverflowBox(
-                    minWidth: Constants.navigationDrawerMaxWidth,
-                    maxWidth: Constants.navigationDrawerMaxWidth,
-                    child: Consumer<ThemeProvider>(builder:
-                        (BuildContext context, ThemeProvider value,
-                            Widget? child) {
-                      return DesktopDrawerWrapper(
-                        elevation: value.sidebarElevation,
-                        drawer: buildNavigationDrawer(
-                            context: context, largeScreen: true),
-                      );
-                    }),
-                  ),
+    return Stack(
+      children: [
+        Row(children: [
+          // This is a workaround for a standard navigation drawer
+          // until m3 spec is fully implemented in flutter.
+          TitlebarSafeArea(
+            child: TweenAnimationBuilder<double>(
+                duration: Duration(
+                    milliseconds: (layoutProvider.dragging)
+                        ? 0
+                        : Constants.drawerSlideTime),
+                curve: Curves.easeOutQuint,
+                tween: Tween<double>(
+                  begin: layoutProvider.drawerOpened
+                      ? layoutProvider.navDrawerWidth
+                      : 0.0,
+                  end: layoutProvider.drawerOpened
+                      ? layoutProvider.navDrawerWidth
+                      : 0.0,
                 ),
-              );
-            }),
-      ),
-      GestureDetector(
-        behavior: HitTestBehavior.translucent,
-        supportedDevices: PointerDeviceKind.values.toSet(),
-        onHorizontalDragEnd: (DragEndDetails details) {
-          layoutProvider.dragging = false;
-          if ((0 - layoutProvider.navDrawerWidth).abs() <=
-              precisionErrorTolerance) {
-            layoutProvider.drawerOpened = false;
-          }
-        },
-        onHorizontalDragUpdate: (DragUpdateDetails details) {
-          if (!layoutProvider.drawerOpened) {
-            layoutProvider.drawerOpened = !layoutProvider.drawerOpened;
-          }
-          layoutProvider.dragging = true;
-          layoutProvider.navDrawerWidth =
-              (layoutProvider.navDrawerWidth + details.delta.dx)
-                  .clamp(0, Constants.navigationDrawerMaxWidth);
-        },
-        child: TweenAnimationBuilder<double>(
-            duration: const Duration(milliseconds: Constants.drawerSlideTime),
-            curve: Curves.easeInQuint,
-            tween: Tween<double>(
-              begin: layoutProvider.drawerOpened ? 1 : 0.0,
-              end: layoutProvider.drawerOpened ? 1 : 0.0,
-            ),
-            builder: (BuildContext context, double value, Widget? child) {
-              return TransparentMacOSSidebar(
-                effect: themeProvider.getWindowEffect(
-                    effect: themeProvider.windowEffect),
-                child: Material(
-                  color: Colors.transparent,
-                  shadowColor: Colors.transparent,
-                  child: Ink(
-                    color: (Platform.isWindows || Platform.isMacOS)
-                        ? Colors.transparent
-                        : Color.lerp(
-                            Theme.of(context).colorScheme.surface,
-                            Theme.of(context).colorScheme.outlineVariant,
-                            value),
-                    child: InkWell(
-                      mouseCursor: SystemMouseCursors.resizeLeftRight,
-                      onHover: (value) {},
-                      onTapUp: (TapUpDetails details) {
-                        if (!layoutProvider.drawerOpened) {
-                          layoutProvider.navDrawerWidth =
-                              Constants.navigationDrawerMaxWidth;
-                        } else {
-                          layoutProvider.navDrawerWidth = 0;
-                        }
-                        layoutProvider.drawerOpened =
-                            !layoutProvider.drawerOpened;
-                      },
-                      child: VerticalDivider(
-                        width: lerpDouble(
-                            Constants.verticalDividerThickness * 3,
-                            Constants.verticalDividerThickness,
-                            value),
-                        thickness: lerpDouble(
-                            Constants.verticalDividerThickness * 3,
-                            Constants.verticalDividerThickness,
-                            value),
-                        color: Colors.transparent,
+                builder: (BuildContext context, double value, Widget? child) {
+                  //TransparentMacOSSidebar
+                  return TransparentMacOSSidebar(
+                    child: Container(
+                      width: value,
+                      clipBehavior: Clip.hardEdge,
+                      decoration: const BoxDecoration(),
+                      child: OverflowBox(
+                        minWidth: Constants.navigationDrawerMaxWidth,
+                        maxWidth: Constants.navigationDrawerMaxWidth,
+                        child: Consumer<ThemeProvider>(builder:
+                            (BuildContext context, ThemeProvider value,
+                                Widget? child) {
+                          return DesktopDrawerWrapper(
+                            elevation: value.sidebarElevation,
+                            drawer: buildNavigationDrawer(
+                                context: context, largeScreen: true),
+                          );
+                        }),
                       ),
                     ),
-                  ),
+                  );
+                }),
+          ),
+          GestureDetector(
+            behavior: HitTestBehavior.translucent,
+            supportedDevices: PointerDeviceKind.values.toSet(),
+            onHorizontalDragEnd: (DragEndDetails details) {
+              layoutProvider.dragging = false;
+              if ((0 - layoutProvider.navDrawerWidth).abs() <=
+                  precisionErrorTolerance) {
+                layoutProvider.drawerOpened = false;
+              }
+            },
+            onHorizontalDragUpdate: (DragUpdateDetails details) {
+              if (!layoutProvider.drawerOpened) {
+                layoutProvider.drawerOpened = !layoutProvider.drawerOpened;
+              }
+              layoutProvider.dragging = true;
+              layoutProvider.navDrawerWidth =
+                  (layoutProvider.navDrawerWidth + details.delta.dx)
+                      .clamp(0, Constants.navigationDrawerMaxWidth);
+            },
+            child: TweenAnimationBuilder<double>(
+                duration:
+                    const Duration(milliseconds: Constants.drawerSlideTime),
+                curve: Curves.easeInQuint,
+                tween: Tween<double>(
+                  begin: layoutProvider.drawerOpened ? 1 : 0.0,
+                  end: layoutProvider.drawerOpened ? 1 : 0.0,
                 ),
-              );
-            }),
-      ),
+                builder: (BuildContext context, double value, Widget? child) {
+                  return TransparentMacOSSidebar(
+                    effect: themeProvider.getWindowEffect(
+                        effect: themeProvider.windowEffect),
+                    child: Material(
+                      color: Colors.transparent,
+                      shadowColor: Colors.transparent,
+                      child: Ink(
+                        color: (Platform.isWindows || Platform.isMacOS)
+                            ? Colors.transparent
+                            : Color.lerp(
+                                Theme.of(context).colorScheme.surface,
+                                Theme.of(context).colorScheme.outlineVariant,
+                                value),
+                        child: InkWell(
+                          mouseCursor: SystemMouseCursors.resizeLeftRight,
+                          onHover: (value) {},
+                          onTapUp: (TapUpDetails details) {
+                            if (!layoutProvider.drawerOpened) {
+                              layoutProvider.navDrawerWidth =
+                                  Constants.navigationDrawerMaxWidth;
+                            } else {
+                              layoutProvider.navDrawerWidth = 0;
+                            }
+                            layoutProvider.drawerOpened =
+                                !layoutProvider.drawerOpened;
+                          },
+                          child: VerticalDivider(
+                            width: lerpDouble(
+                                Constants.verticalDividerThickness * 3,
+                                Constants.verticalDividerThickness,
+                                value),
+                            thickness: lerpDouble(
+                                Constants.verticalDividerThickness * 3,
+                                Constants.verticalDividerThickness,
+                                value),
+                            color: Colors.transparent,
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                }),
+          ),
 
-      Expanded(
-        child: Scaffold(
-            backgroundColor: Theme.of(context)
-                .scaffoldBackgroundColor
-                .withOpacity(themeProvider.scaffoldOpacity),
-            floatingActionButtonLocation: ExpandableFab.location,
-            floatingActionButton: MainFloatingActionButton(
-              fabKey: _fabKey,
-            ),
-            appBar: buildAppBar(mobile: false),
-            body: SafeArea(
-                child: Constants
-                    .viewRoutes[layoutProvider.selectedPageIndex].view)),
-      )
-    ]);
+          Expanded(
+            child: Consumer<ThemeProvider>(builder:
+                (BuildContext context, ThemeProvider value, Widget? child) {
+              return Scaffold(
+                  backgroundColor: Theme.of(context)
+                      .scaffoldBackgroundColor
+                      .withOpacity(themeProvider.scaffoldOpacity),
+                  floatingActionButtonLocation: ExpandableFab.location,
+                  floatingActionButton: MainFloatingActionButton(
+                    fabKey: _fabKey,
+                  ),
+                  appBar: buildAppBar(mobile: false),
+                  body: SafeArea(
+                      child: Constants
+                          .viewRoutes[layoutProvider.selectedPageIndex].view));
+            }),
+          )
+        ]),
+        if (Platform.isWindows) ...windowsTitlebar()
+      ],
+    );
   }
 
   Widget _buildMobile({required BuildContext context}) {
@@ -466,14 +479,15 @@ class _HomeScreen extends State<HomeScreen> {
           });
     }
 
-    if(Platform.isMacOS){
+    if (Platform.isMacOS) {
       return TitlebarSafeArea(
         child: IconButton(
             hoverColor: Colors.transparent,
             icon: const Icon(Icons.menu_rounded),
             onPressed: () {
               layoutProvider.drawerOpened = true;
-              layoutProvider.navDrawerWidth = Constants.navigationDrawerMaxWidth;
+              layoutProvider.navDrawerWidth =
+                  Constants.navigationDrawerMaxWidth;
             }),
       );
     }

@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:window_manager/window_manager.dart';
 
 import '../../../providers/application/layout_provider.dart';
 import '../../../providers/model/deadline_provider.dart';
@@ -61,40 +62,40 @@ class _SplashScreen extends State<SplashScreen> {
   Future<void> init() async {
     // Check to see if supabase => the app is already opened.
     // This can be refactored out.
-      // Initialize Isar.
-      // Initialize Supabase.
-      // Initialize Providers.
-      dailyResetProvider.addListener(dayReset);
-      layoutProvider.isMobile = Platform.isIOS || Platform.isAndroid;
+    // Initialize Isar.
+    // Initialize Supabase.
+    // Initialize Providers.
+    dailyResetProvider.addListener(dayReset);
+    layoutProvider.isMobile = Platform.isIOS || Platform.isAndroid;
 
-      if (Constants.supabaseURL.isEmpty || Constants.supabaseAnnonKey.isEmpty) {
-        throw BuildFailureException("App has not been configured");
-      }
-      // DBs need to be initialized before providers.
+    if (Constants.supabaseURL.isEmpty || Constants.supabaseAnnonKey.isEmpty) {
+      throw BuildFailureException("App has not been configured");
+    }
+    // DBs need to be initialized before providers.
 
-      await Future.wait(
-        [
-          IsarService.instance.init(),
-          SupabaseService.instance.init(
-            supabaseUrl: Constants.supabaseURL,
-            anonKey: Constants.supabaseAnnonKey,
-          ),
-        ],
-      ).then((_) async {
-        await Future.wait([
-          Provider.of<ToDoProvider>(context, listen: false).init(),
-          Provider.of<RoutineProvider>(context, listen: false).init(),
-          Provider.of<SubtaskProvider>(context, listen: false).init(),
-          Provider.of<ReminderProvider>(context, listen: false).init(),
-          Provider.of<DeadlineProvider>(context, listen: false).init(),
-          Provider.of<GroupProvider>(context, listen: false).init(),
-          Provider.of<UserProvider>(context, listen: false).init(),
-          NotificationService.instance.init(),
-        ]);
+    await Future.wait(
+      [
+        IsarService.instance.init(),
+        SupabaseService.instance.init(
+          supabaseUrl: Constants.supabaseURL,
+          anonKey: Constants.supabaseAnnonKey,
+        ),
+      ],
+    ).then((_) async {
+      await Future.wait([
+        Provider.of<ToDoProvider>(context, listen: false).init(),
+        Provider.of<RoutineProvider>(context, listen: false).init(),
+        Provider.of<SubtaskProvider>(context, listen: false).init(),
+        Provider.of<ReminderProvider>(context, listen: false).init(),
+        Provider.of<DeadlineProvider>(context, listen: false).init(),
+        Provider.of<GroupProvider>(context, listen: false).init(),
+        Provider.of<UserProvider>(context, listen: false).init(),
+        NotificationService.instance.init(),
+      ]);
 
-        // The splash screen is going too fast.
-        await Future.delayed(const Duration(seconds: 1));
-      });
+      // The splash screen is going too fast.
+      await Future.delayed(const Duration(seconds: 1));
+    });
   }
 
   Future<void> dayReset() async {
@@ -117,6 +118,6 @@ class _SplashScreen extends State<SplashScreen> {
     layoutProvider.size = MediaQuery.sizeOf(context);
     layoutProvider.isTablet = layoutProvider.isMobile &&
         (layoutProvider.size.shortestSide > Constants.smallScreen);
-    return const LoadingScreen();
+    return const DragToResizeArea(child: LoadingScreen());
   }
 }
