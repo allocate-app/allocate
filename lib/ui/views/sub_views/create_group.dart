@@ -417,6 +417,8 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
                   if (null == toDo) {
                     return;
                   }
+
+                  tVM.fromModel(model: toDo);
                   return await blurredNonDismissible(
                       context: context, dialog: const UpdateToDoScreen());
                   // await showDialog(
