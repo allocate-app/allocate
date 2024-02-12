@@ -168,8 +168,10 @@ class SubtaskRepo extends ChangeNotifier implements SubtaskRepository {
     if (isConnected) {
       Map<String, dynamic> subtaskEntity = subtask.toEntity();
       subtaskEntity["uuid"] = uuid;
-      final List<Map<String, dynamic>> response =
-          await _supabaseClient.from("ts").insert(subtaskEntity).select("id");
+      final List<Map<String, dynamic>> response = await _supabaseClient
+          .from("subtasks")
+          .insert(subtaskEntity)
+          .select("id");
 
       id = response.last["id"];
 
@@ -462,8 +464,10 @@ class SubtaskRepo extends ChangeNotifier implements SubtaskRepository {
     if (isConnected) {
       Map<String, dynamic> subtaskEntity = subtask.toEntity();
       subtaskEntity["uuid"] = uuid;
-      final List<Map<String, dynamic>> response =
-          await _supabaseClient.from("ts").upsert(subtaskEntity).select("id");
+      final List<Map<String, dynamic>> response = await _supabaseClient
+          .from("subtasks")
+          .upsert(subtaskEntity)
+          .select("id");
 
       id = response.last["id"];
       if (null == id) {

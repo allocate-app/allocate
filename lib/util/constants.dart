@@ -78,7 +78,7 @@ abstract class Constants {
   static int isarLimit = 1000000000 * 2;
 
   // This might need to be shortened.
-  static const Duration userUpdateTime = Duration(seconds: 30);
+  static const Duration userUpdateTime = Duration(seconds: 5);
 
   // Task weight/duration params
   static const int lowerBound = 1;

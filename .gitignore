@@ -72,3 +72,12 @@ doc/api/
 /snap/gui/
 /ios/Runner/Assets.xcassets/
 /lib/ui/app_router.gr.dart
+/build.sh
+/linux/packaging/
+/distribute_options.yaml
+/make_config_appimage.yaml
+/make_config_debian.yaml
+/make_config_exe.yaml
+/make_config_macos.yaml
+/make_config_msix.yaml
+/make_config_rpm.yaml

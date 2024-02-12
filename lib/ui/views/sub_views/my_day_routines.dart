@@ -26,17 +26,16 @@ class _MyDayRoutines extends State<MyDayRoutines> {
 
   @override
   void initState() {
+    super.initState();
     initializeProviders();
     initializeControllers();
-    resetRoutines();
-    super.initState();
+    updateSubtasks();
   }
 
   void initializeProviders() {
     routineProvider = Provider.of<RoutineProvider>(context, listen: false);
     subtaskProvider = Provider.of<SubtaskProvider>(context, listen: false);
-    routineProvider.addListener(resetRoutines);
-    subtaskProvider.addListener(resetRoutines);
+    subtaskProvider.addListener(updateSubtasks);
   }
 
   void initializeControllers() {
@@ -47,56 +46,73 @@ class _MyDayRoutines extends State<MyDayRoutines> {
   @override
   void dispose() {
     mainScrollController.dispose();
-    routineProvider.removeListener(resetRoutines);
-    subtaskProvider.removeListener(resetRoutines);
+    subtaskProvider.removeListener(updateSubtasks);
     super.dispose();
   }
 
-  Future<void> resetRoutines() async {
-    await resetSubtasks(routine: routineProvider.curMorning);
-    if (routineProvider.curMorning == routineProvider.curAfternoon) {
-      routineProvider.curAfternoon?.subtasks =
-          routineProvider.curMorning?.subtasks ?? [];
-    } else {
-      await resetSubtasks(routine: routineProvider.curAfternoon);
-    }
-
-    if (routineProvider.curMorning == routineProvider.curEvening) {
-      routineProvider.curEvening?.subtasks =
-          routineProvider.curMorning?.subtasks ?? [];
-    } else if (routineProvider.curAfternoon == routineProvider.curEvening) {
-      routineProvider.curEvening?.subtasks =
-          routineProvider.curAfternoon?.subtasks ?? [];
-    } else {
-      await resetSubtasks(routine: routineProvider.curEvening);
-    }
+  Future<void> updateSubtasks() async {
+    await updateWeights();
+    await getSubtasks();
     if (mounted) {
       setState(() {});
     }
   }
 
-  Future<void> resetSubtasks({Routine? routine}) async {
-    if (null == routine) {
-      return;
+  Future<void> getSubtasks() async {
+    if (null != routineProvider.curMorning) {
+      routineProvider.curMorning!.subtasks =
+          await routineProvider.getSubtasks(id: routineProvider.curMorning!.id);
+      routineProvider.setSubtaskCount(
+          id: routineProvider.curMorning!.id,
+          count: routineProvider.curMorning!.subtasks.length);
     }
 
-    List<Subtask> newSubtasks =
-        await routineProvider.getSubtasks(id: routine.id);
-
-    if (!(routineProvider.userViewModel?.reduceMotion ?? false)) {
-      onFetch(items: newSubtasks, itemSet: routine.subtasks.toSet());
+    if (null != routineProvider.curAfternoon) {
+      routineProvider.curAfternoon!.subtasks = await routineProvider
+          .getSubtasks(id: routineProvider.curAfternoon!.id);
+      routineProvider.setSubtaskCount(
+          id: routineProvider.curAfternoon!.id,
+          count: routineProvider.curAfternoon!.subtasks.length);
     }
 
-    routine.subtasks = newSubtasks;
+    if (null != routineProvider.curEvening) {
+      routineProvider.curEvening!.subtasks =
+          await routineProvider.getSubtasks(id: routineProvider.curEvening!.id);
+      routineProvider.setSubtaskCount(
+          id: routineProvider.curEvening!.id,
+          count: routineProvider.curEvening!.subtasks.length);
+    }
+  }
 
-    routineProvider.setSubtaskCount(
-        id: routine.id, count: routine.subtasks.length);
-    routine.weight = await routineProvider.getWeight(taskID: routine.id);
-    routine.realDuration = routineProvider.calculateRealDuration(
-        weight: routine.weight, duration: routine.expectedDuration);
-    return await routineProvider
-        .updateRoutine(routine: routine)
-        .catchError((e) => Tiles.displayError(e: e));
+  Future<void> updateWeights() async {
+    List<Routine> toUpdate = [];
+    if (null != routineProvider.curMorning) {
+      int weight = await routineProvider.getWeight(
+          taskID: routineProvider.curMorning!.id);
+      if (weight != routineProvider.curMorning!.weight) {
+        routineProvider.curMorning!.weight = weight;
+        toUpdate.add(routineProvider.curMorning!);
+      }
+    }
+
+    if (null != routineProvider.curAfternoon) {
+      int weight = await routineProvider.getWeight(
+          taskID: routineProvider.curAfternoon!.id);
+      if (weight != routineProvider.curAfternoon!.weight) {
+        routineProvider.curAfternoon!.weight = weight;
+        toUpdate.add(routineProvider.curAfternoon!);
+      }
+    }
+
+    if (null != routineProvider.curEvening) {
+      int weight = await routineProvider.getWeight(
+          taskID: routineProvider.curEvening!.id);
+      if (weight != routineProvider.curEvening!.weight) {
+        routineProvider.curEvening!.weight = weight;
+        toUpdate.add(routineProvider.curEvening!);
+      }
+    }
+    await routineProvider.updateBatch(routines: toUpdate);
   }
 
   void onFetch({List<Subtask>? items, Set<Subtask>? itemSet}) {
@@ -174,6 +190,10 @@ class _MyDayRoutines extends State<MyDayRoutines> {
                       routine: routineProvider.curEvening!,
                       times: 4)
                   : Tiles.emptyRoutineTile(context: context, times: 4),
+            ),
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: Constants.quadPadding),
+              child: SizedBox.shrink(),
             ),
           ]),
     );

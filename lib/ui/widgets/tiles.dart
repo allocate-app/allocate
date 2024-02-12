@@ -1170,7 +1170,7 @@ abstract class Tiles {
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Constants.batteryIcons[subtask.weight]!,
+              Constants.batteryIcons[subtask.weight * 2]!,
               AutoSizeText(
                 "${subtask.weight}",
                 overflow: TextOverflow.visible,
@@ -1285,16 +1285,6 @@ abstract class Tiles {
                     .fromModel(model: subtask);
                 await blurredNonDismissible(
                     context: context, dialog: const UpdateSubtaskScreen());
-                // await showDialog(
-                //     barrierDismissible: true,
-                //     useRootNavigator: false,
-                //     context: context,
-                //     builder: (BuildContext context) {
-                //       Provider.of<SubtaskViewModel>(context, listen: false)
-                //           .fromModel(model: subtask);
-                //       return const UpdateSubtaskScreen();
-                //     });
-                //.catchError((e) => displayError(e: e));
               },
               onChanged: ({bool? value, Subtask? subtask}) async {
                 if (null == subtask) {
@@ -1622,7 +1612,7 @@ abstract class Tiles {
                     labelText: labelText,
                   ),
                   controller: controller,
-                  onEditingComplete: (){
+                  onEditingComplete: () {
                     onEditingComplete();
                     FocusScope.of(context).unfocus();
                   },
@@ -1706,6 +1696,7 @@ abstract class Tiles {
     double max = Constants.maxTaskWeightDouble,
     int? divisions = Constants.maxTaskWeight,
     MenuController? controller,
+    bool subtask = false,
     void Function(double? value)? handleWeightChange,
     void Function(double? value)? onChangeEnd,
     void Function()? onOpen,
@@ -1734,7 +1725,9 @@ abstract class Tiles {
         builder:
             (BuildContext context, MenuController controller, Widget? child) {
           return IconButton(
-              icon: Constants.batteryIcons[weight.toInt()]!,
+              icon: (subtask)
+                  ? Constants.batteryIcons[weight.toInt() * 2]!
+                  : Constants.batteryIcons[weight.toInt()]!,
               onPressed: () {
                 if (controller.isOpen) {
                   return controller.close();

@@ -77,16 +77,19 @@ class RoutineProvider extends ChangeNotifier {
   set curMorning(Routine? newRoutine) {
     _curMorning = newRoutine;
     userViewModel?.curMornID = newRoutine?.id;
+    resetRoutineSubtasks(routine: _curMorning);
   }
 
   set curAfternoon(Routine? newRoutine) {
     _curAfternoon = newRoutine;
     userViewModel?.curAftID = newRoutine?.id;
+    resetRoutineSubtasks(routine: _curAfternoon);
   }
 
   set curEvening(Routine? newRoutine) {
     _curEvening = newRoutine;
     userViewModel?.curEveID = newRoutine?.id;
+    resetRoutineSubtasks(routine: _curEvening);
   }
 
   void clearRoutines() {
@@ -151,7 +154,7 @@ class RoutineProvider extends ChangeNotifier {
   void setUser({UserViewModel? newUser}) {
     userViewModel = newUser;
     sorter = userViewModel?.routineSorter ?? sorter;
-    notifyListeners();
+    setDailyRoutines().then((_) => notifyListeners());
   }
 
   int getRoutineTime({Routine? routine}) {
@@ -177,8 +180,8 @@ class RoutineProvider extends ChangeNotifier {
         ? await _routineRepo.getByID(id: userViewModel!.curAftID!)
         : null;
 
-    _curEvening = (null != userViewModel?.curAftID)
-        ? await _routineRepo.getByID(id: userViewModel!.curAftID!)
+    _curEvening = (null != userViewModel?.curEveID)
+        ? await _routineRepo.getByID(id: userViewModel!.curEveID!)
         : null;
     notifyListeners();
   }

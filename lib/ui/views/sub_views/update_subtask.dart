@@ -184,7 +184,7 @@ class _UpdateSubtaskScreen extends State<UpdateSubtaskScreen> {
               maxWidth: 200,
             ),
             weight: value.toDouble(),
-            max: Constants.maxTaskWeightDouble,
+            max: Constants.maxSubtaskWeightDouble,
             slider: Tiles.weightSlider(
                 max: Constants.maxSubtaskWeightDouble,
                 divisions: Constants.maxSubtaskWeight,

@@ -42,7 +42,12 @@ class _SubtaskQuickEntry extends State<SubtaskQuickEntry> {
   late MenuController menuController;
 
   late final SubtaskProvider subtaskProvider;
+
+  // I ended up reusing this widget in multiple spots.
+  // The ViewModel is bound to the context.
   late final SubtaskViewModel vm;
+  late int _weight;
+  late String _name;
 
   @override
   void initState() {
@@ -70,6 +75,7 @@ class _SubtaskQuickEntry extends State<SubtaskQuickEntry> {
     String newText = nameEditingController.text;
     SemanticsService.announce(newText, Directionality.of(context));
     vm.name = newText;
+    _name = newText;
   }
 
   void resetVM() {
@@ -77,6 +83,17 @@ class _SubtaskQuickEntry extends State<SubtaskQuickEntry> {
         weight: widget.weight.toInt(),
         taskID: widget.taskID,
         customViewIndex: widget.taskIndex);
+    _weight = widget.weight.toInt();
+    _name = "";
+  }
+
+  void setVM() {
+    vm.initWith(
+      weight: _weight,
+      taskID: widget.taskID,
+      customViewIndex: widget.taskIndex,
+      name: _name,
+    );
   }
 
   @override
@@ -116,6 +133,7 @@ class _SubtaskQuickEntry extends State<SubtaskQuickEntry> {
                           )),
                       onEditingComplete: () {
                         vm.name = nameEditingController.text;
+                        _name = nameEditingController.text;
                       }),
                 );
               },
@@ -125,8 +143,9 @@ class _SubtaskQuickEntry extends State<SubtaskQuickEntry> {
                     vm.weight,
                 builder: (BuildContext context, int value, Widget? child) {
                   return Tiles.weightAnchor(
+                      subtask: true,
                       controller: menuController,
-                      weight: vm.weight.toDouble(),
+                      weight: _weight.toDouble(),
                       max: Constants.maxSubtaskWeightDouble,
                       divisions: Constants.maxSubtaskWeight,
                       onOpen: widget.onOpen,
@@ -139,6 +158,7 @@ class _SubtaskQuickEntry extends State<SubtaskQuickEntry> {
                           return;
                         }
                         vm.weight = value.toInt();
+                        _weight = vm.weight;
                       });
                 }),
             Selector<SubtaskViewModel, String>(
@@ -147,8 +167,12 @@ class _SubtaskQuickEntry extends State<SubtaskQuickEntry> {
                 builder: (BuildContext context, String value, Widget? child) {
                   return IconButton.filled(
                       icon: const Icon(Icons.add_rounded),
-                      onPressed: (vm.name.isNotEmpty)
+                      onPressed: (nameEditingController.text.isNotEmpty)
                           ? () async {
+                              // This is because I goofed.
+                              // I forgot that multiple widgets use this
+                              // ViewModel at once.
+                              setVM();
                               await subtaskProvider
                                   .createSubtask(vm.toModel())
                                   .catchError((e) {

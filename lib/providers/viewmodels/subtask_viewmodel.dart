@@ -62,8 +62,10 @@ class SubtaskViewModel extends ChangeNotifier implements ViewModel<Subtask> {
     _toDelete = false;
   }
 
-  void initWith({int? weight, int? taskID, int? customViewIndex}) {
+  void initWith(
+      {int? weight, int? taskID, int? customViewIndex, String? name}) {
     clear();
+    _name = name ?? _name;
     _weight = weight ?? _weight;
     _taskID = taskID ?? _taskID;
     _customViewIndex = customViewIndex ?? _customViewIndex;

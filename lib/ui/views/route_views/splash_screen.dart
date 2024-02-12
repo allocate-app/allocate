@@ -44,7 +44,7 @@ class _SplashScreen extends State<SplashScreen> {
     super.initState();
     layoutProvider = Provider.of<LayoutProvider>(context, listen: false);
 
-    init().whenComplete(() {
+    init().then((_) {
       // ROUTE TO HOME PAGE, send the initial index.
       // Unless it has been set by NavigatorService
       AutoRouter.of(context).navigate(HomeRoute(
@@ -94,7 +94,7 @@ class _SplashScreen extends State<SplashScreen> {
       ]);
 
       // The splash screen is going too fast.
-      await Future.delayed(const Duration(seconds: 1));
+      await Future.delayed(const Duration(seconds: 2));
     });
   }
 
