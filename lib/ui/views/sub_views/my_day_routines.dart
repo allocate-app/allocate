@@ -152,45 +152,89 @@ class _MyDayRoutines extends State<MyDayRoutines> {
           physics: scrollPhysics,
           shrinkWrap: true,
           children: [
-            Padding(
-              padding: const EdgeInsets.only(bottom: Constants.padding),
-              child: (null != routineProvider.curMorning)
-                  ? Tiles.filledRoutineTile(
-                      context: context,
-                      onSubtaskRemove:
-                          (routineProvider.userViewModel?.reduceMotion ?? false)
-                              ? null
-                              : onRemove,
-                      routine: routineProvider.curMorning!,
-                      times: 1)
-                  : Tiles.emptyRoutineTile(context: context, times: 1),
-            ),
-            Padding(
-              padding: const EdgeInsets.only(bottom: Constants.padding),
-              child: (null != routineProvider.curAfternoon)
-                  ? Tiles.filledRoutineTile(
-                      context: context,
-                      onSubtaskRemove:
-                          (routineProvider.userViewModel?.reduceMotion ?? false)
-                              ? null
-                              : onRemove,
-                      routine: routineProvider.curAfternoon!,
-                      times: 2)
-                  : Tiles.emptyRoutineTile(context: context, times: 2),
-            ),
-            Padding(
-              padding: const EdgeInsets.only(bottom: Constants.padding),
-              child: (null != routineProvider.curEvening)
-                  ? Tiles.filledRoutineTile(
-                      context: context,
-                      onSubtaskRemove:
-                          (routineProvider.userViewModel?.reduceMotion ?? false)
-                              ? null
-                              : onRemove,
-                      routine: routineProvider.curEvening!,
-                      times: 4)
-                  : Tiles.emptyRoutineTile(context: context, times: 4),
-            ),
+            Selector<RoutineProvider, Routine?>(
+                selector: (BuildContext context, RoutineProvider rp) =>
+                    rp.curMorning,
+                builder: (BuildContext context, Routine? value, Widget? child) {
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: Constants.padding),
+                    child: (null != value)
+                        ? Tiles.filledRoutineTile(
+                            context: context,
+                            onSubtaskRemove:
+                                (routineProvider.userViewModel?.reduceMotion ??
+                                        false)
+                                    ? null
+                                    : onRemove,
+                            routine: value,
+                            times: 1)
+                        : Tiles.emptyRoutineTile(context: context, times: 1),
+                  );
+                }),
+            Selector<RoutineProvider, Routine?>(
+                selector: (BuildContext context, RoutineProvider rp) =>
+                    rp.curAfternoon,
+                builder: (BuildContext context, Routine? value, Widget? child) {
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: Constants.padding),
+                    child: (null != value)
+                        ? Tiles.filledRoutineTile(
+                            context: context,
+                            onSubtaskRemove:
+                                (routineProvider.userViewModel?.reduceMotion ??
+                                        false)
+                                    ? null
+                                    : onRemove,
+                            routine: value,
+                            times: 2)
+                        : Tiles.emptyRoutineTile(context: context, times: 2),
+                  );
+                }),
+            Selector<RoutineProvider, Routine?>(
+                selector: (BuildContext context, RoutineProvider rp) =>
+                    rp.curEvening,
+                builder: (BuildContext context, Routine? value, Widget? child) {
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: Constants.padding),
+                    child: (null != value)
+                        ? Tiles.filledRoutineTile(
+                            context: context,
+                            onSubtaskRemove:
+                                (routineProvider.userViewModel?.reduceMotion ??
+                                        false)
+                                    ? null
+                                    : onRemove,
+                            routine: value,
+                            times: 4)
+                        : Tiles.emptyRoutineTile(context: context, times: 4),
+                  );
+                }),
+            // Padding(
+            //   padding: const EdgeInsets.only(bottom: Constants.padding),
+            //   child: (null != routineProvider.curAfternoon)
+            //       ? Tiles.filledRoutineTile(
+            //           context: context,
+            //           onSubtaskRemove:
+            //               (routineProvider.userViewModel?.reduceMotion ?? false)
+            //                   ? null
+            //                   : onRemove,
+            //           routine: routineProvider.curAfternoon!,
+            //           times: 2)
+            //       : Tiles.emptyRoutineTile(context: context, times: 2),
+            // ),
+            // Padding(
+            //   padding: const EdgeInsets.only(bottom: Constants.padding),
+            //   child: (null != routineProvider.curEvening)
+            //       ? Tiles.filledRoutineTile(
+            //           context: context,
+            //           onSubtaskRemove:
+            //               (routineProvider.userViewModel?.reduceMotion ?? false)
+            //                   ? null
+            //                   : onRemove,
+            //           routine: routineProvider.curEvening!,
+            //           times: 4)
+            //       : Tiles.emptyRoutineTile(context: context, times: 4),
+            // ),
             const Padding(
               padding: EdgeInsets.symmetric(vertical: Constants.quadPadding),
               child: SizedBox.shrink(),

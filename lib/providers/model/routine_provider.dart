@@ -78,18 +78,21 @@ class RoutineProvider extends ChangeNotifier {
     _curMorning = newRoutine;
     userViewModel?.curMornID = newRoutine?.id;
     resetRoutineSubtasks(routine: _curMorning);
+    notifyListeners();
   }
 
   set curAfternoon(Routine? newRoutine) {
     _curAfternoon = newRoutine;
     userViewModel?.curAftID = newRoutine?.id;
     resetRoutineSubtasks(routine: _curAfternoon);
+    notifyListeners();
   }
 
   set curEvening(Routine? newRoutine) {
     _curEvening = newRoutine;
     userViewModel?.curEveID = newRoutine?.id;
     resetRoutineSubtasks(routine: _curEvening);
+    notifyListeners();
   }
 
   void clearRoutines() {
