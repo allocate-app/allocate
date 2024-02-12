@@ -58,11 +58,16 @@ class DeadlineProvider extends ChangeNotifier {
       : _deadlineRepo = deadlineRepo ?? DeadlineRepo.instance,
         _repeatService = repeatableService ?? RepeatableService.instance,
         sorter = userViewModel?.deadlineSorter ?? DeadlineSorter() {
-    _deadlineRepo.addListener(notifyListeners);
+    _deadlineRepo.addListener(scheduleAndNotify);
   }
 
   Future<void> init() async {
     _deadlineRepo.init();
+    notifyListeners();
+  }
+
+  Future<void> scheduleAndNotify() async {
+    await batchNotifications();
     notifyListeners();
   }
 
@@ -440,6 +445,12 @@ class DeadlineProvider extends ChangeNotifier {
     if (null == deadline.dueDate || null == deadline.warnDate) {
       return;
     }
+
+    if (!_notificationService.validateNotificationDate(notificationDate: deadline.warnDate)){
+      return;
+    }
+
+
     String newDue = Jiffy.parseFromDateTime(deadline.dueDate!)
         .toLocal()
         .format(pattern: "MMM d, hh:mm a")

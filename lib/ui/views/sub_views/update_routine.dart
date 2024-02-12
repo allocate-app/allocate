@@ -53,6 +53,7 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
 
   void initializeProviders() {
     routineProvider = Provider.of<RoutineProvider>(context, listen: false);
+    layoutProvider = Provider.of<LayoutProvider>(context, listen: false);
 
     vm = Provider.of<RoutineViewModel>(context, listen: false);
 

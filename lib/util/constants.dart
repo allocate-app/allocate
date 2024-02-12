@@ -344,7 +344,7 @@ abstract class Constants {
 
   // This is just for testing mobile formats.
   // On my main machine, this works out to 320 x 320 logical pixels.
-  static const Size testDesktopSize = Size(432, 700);
+  static const Size testDesktopSize = Size(300, 300);
 
   // Color
   static double tabBarOpacity = 0.5;

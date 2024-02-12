@@ -4,6 +4,7 @@ import "dart:ui";
 
 import "package:allocate/util/enums.dart";
 import "package:auto_route/auto_route.dart";
+import "package:flutter/foundation.dart";
 import 'package:flutter/material.dart';
 import "package:flutter/services.dart";
 import "package:flutter_acrylic/flutter_acrylic.dart";
@@ -35,9 +36,9 @@ void main() async {
     if (Platform.isWindows) {
       await windowManager.setAsFrameless();
     }
-    // TODO: implement windows transparent titlebar.
+
     WindowOptions windowOptions = const WindowOptions(
-      minimumSize: Constants.minDesktopSize,
+      minimumSize: (kDebugMode) ? Constants.testDesktopSize : Constants.minDesktopSize,
       center: true,
     );
 

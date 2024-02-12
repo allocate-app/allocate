@@ -124,17 +124,6 @@ class _MyDayToDos extends State<MyDayToDos> {
                         toDos: items,
                         smallScreen: layoutProvider.smallScreen,
                         onRemove: onRemove,
-                        checkboxAnimateBeforeUpdate: (
-                            {required ToDo toDo, required int index}) async {
-                          if (mounted) {
-                            setState(() {});
-                          }
-                          await Future.delayed(const Duration(
-                              milliseconds: Constants.animationDelay));
-                          if (null != onRemove) {
-                            await onRemove(item: toDo);
-                          }
-                        },
                       );
                     }
                     return ListViews.immutableMyDay(
@@ -142,17 +131,6 @@ class _MyDayToDos extends State<MyDayToDos> {
                       toDos: items,
                       smallScreen: layoutProvider.smallScreen,
                       onRemove: onRemove,
-                      checkboxAnimateBeforeUpdate: (
-                          {required ToDo toDo, required int index}) async {
-                        if (mounted) {
-                          setState(() {});
-                        }
-                        await Future.delayed(const Duration(
-                            milliseconds: Constants.animationDelay));
-                        if (null != onRemove) {
-                          await onRemove(item: toDo);
-                        }
-                      },
                     );
                   }),
             ),

@@ -93,7 +93,12 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
 
   @override
   void dispose() {
-    super.dispose();
+    userProvider.shouldUpdate = true;
+    userProvider.updateUser().catchError((e) async {
+      await Tiles.displayError(e: e);
+    }).whenComplete((){
+      super.dispose();
+    });
   }
 
   void anchorWatchScroll() {
@@ -336,8 +341,7 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
                         deadlineProvider.syncRepo(),
                         reminderProvider.syncRepo(),
                         groupProvider.syncRepo(),
-                        // This should probably just run the update function?
-                        userProvider.updateUser(),
+                        userProvider.syncUser(),
                       ]);
                     }),
                 SettingsScreenWidgets.tapTile(

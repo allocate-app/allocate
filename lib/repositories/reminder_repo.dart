@@ -493,6 +493,7 @@ class ReminderRepo extends ChangeNotifier implements ReminderRepository {
     });
 
     _reminderCount = await getOnlineCount();
+    notifyListeners();
   }
 
   Future<void> handleDelete(PostgresChangePayload payload) async {
@@ -502,6 +503,7 @@ class ReminderRepo extends ChangeNotifier implements ReminderRepository {
     });
 
     _reminderCount = await getOnlineCount();
+    notifyListeners();
   }
 
   @override

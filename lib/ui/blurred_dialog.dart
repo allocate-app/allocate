@@ -3,6 +3,7 @@ import 'dart:ui';
 
 import 'package:allocate/ui/widgets/windows_titlebar.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_acrylic/flutter_acrylic.dart';
 
 import '../util/constants.dart';
 
@@ -10,6 +11,7 @@ Future<T?> blurredDismissible<T>({
   required BuildContext context,
   required Widget dialog,
 }) {
+
   return showGeneralDialog<T>(
     context: context,
     barrierDismissible: true,
@@ -21,7 +23,7 @@ Future<T?> blurredDismissible<T>({
       // There does not seem to be a way to skirt the barrier for the windows taskbar.
 
       return Stack(children: [
-        SafeArea(child: dialog),
+        TitlebarSafeArea(child: SafeArea(child: dialog)),
         if (Platform.isWindows) ...windowsTitlebar(),
       ]);
     },
@@ -52,13 +54,15 @@ Future<T?> blurredNonDismissible<T>({
     pageBuilder: (BuildContext context, Animation<double> animation,
         Animation<double> secondaryAnimation) {
       return Stack(children: [
-        SafeArea(
-            child: GestureDetector(
-                behavior: HitTestBehavior.translucent,
-                onTap: () {
-                  FocusScope.of(context).unfocus();
-                },
-                child: dialog)),
+        TitlebarSafeArea(
+          child: SafeArea(
+              child: GestureDetector(
+                  behavior: HitTestBehavior.translucent,
+                  onTap: () {
+                    FocusScope.of(context).unfocus();
+                  },
+                  child: dialog)),
+        ),
         if (Platform.isWindows) ...windowsTitlebar(),
       ]);
     },

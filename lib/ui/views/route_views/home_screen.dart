@@ -244,25 +244,43 @@ class _HomeScreen extends State<HomeScreen> {
     }
   }
 
+  void handlePop(bool didPop){
+    // Open the navigation drawer if mobile.
+    if(layoutProvider.smallScreen){
+      Scaffold.of(context).openDrawer();
+    }
+    // Otherwise, assume the swipe is to open the nav drawer.
+    layoutProvider.navDrawerWidth = Constants.navigationDrawerMaxWidth;
+    layoutProvider.drawerOpened = true;
+  }
+
   @override
   Widget build(BuildContext context) {
     layoutProvider.size = MediaQuery.sizeOf(context);
     // print("MQ: ${layoutProvider.size}");
     return (Platform.isWindows)
-        ? DragToResizeArea(
-            child: Consumer<LayoutProvider>(builder:
-                (BuildContext context, LayoutProvider value, Widget? child) {
+        ? PopScope(
+          canPop: false,
+          onPopInvoked: handlePop,
+          child: DragToResizeArea(
+              child: Consumer<LayoutProvider>(builder:
+                  (BuildContext context, LayoutProvider value, Widget? child) {
+                return (value.largeScreen)
+                    ? _buildDesktop(context: context)
+                    : _buildMobile(context: context);
+              }),
+            ),
+        )
+        : PopScope(
+          canPop: false,
+          onPopInvoked: handlePop,
+          child: Consumer<LayoutProvider>(builder:
+              (BuildContext context, LayoutProvider value, Widget? child) {
               return (value.largeScreen)
                   ? _buildDesktop(context: context)
                   : _buildMobile(context: context);
             }),
-          )
-        : Consumer<LayoutProvider>(builder:
-            (BuildContext context, LayoutProvider value, Widget? child) {
-            return (value.largeScreen)
-                ? _buildDesktop(context: context)
-                : _buildMobile(context: context);
-          });
+        );
   }
 
   Widget _buildDesktop({required BuildContext context}) {
@@ -386,13 +404,14 @@ class _HomeScreen extends State<HomeScreen> {
             child: Consumer<ThemeProvider>(builder:
                 (BuildContext context, ThemeProvider value, Widget? child) {
               return Scaffold(
-                  backgroundColor: Theme.of(context)
+                  backgroundColor: (!(Platform.isIOS || Platform.isAndroid)) ? Theme.of(context)
                       .scaffoldBackgroundColor
-                      .withOpacity(themeProvider.scaffoldOpacity),
+                      .withOpacity(themeProvider.scaffoldOpacity) : Theme.of(context).scaffoldBackgroundColor,
                   floatingActionButtonLocation: ExpandableFab.location,
                   floatingActionButton: MainFloatingActionButton(
                     fabKey: _fabKey,
                   ),
+                  resizeToAvoidBottomInset: false,
                   appBar: buildAppBar(mobile: false),
                   body: SafeArea(
                       child: Constants
@@ -407,15 +426,16 @@ class _HomeScreen extends State<HomeScreen> {
 
   Widget _buildMobile({required BuildContext context}) {
     return Scaffold(
-        backgroundColor: Theme.of(context)
+        backgroundColor: (!(Platform.isIOS || Platform.isAndroid)) ?  Theme.of(context)
             .scaffoldBackgroundColor
-            .withOpacity(themeProvider.scaffoldOpacity),
+            .withOpacity(themeProvider.scaffoldOpacity) : Theme.of(context).scaffoldBackgroundColor,
         appBar: buildAppBar(mobile: true),
         drawer: buildNavigationDrawer(context: context, largeScreen: false),
         floatingActionButtonLocation: ExpandableFab.location,
         floatingActionButton: MainFloatingActionButton(
           fabKey: _fabKey,
         ),
+        resizeToAvoidBottomInset: false,
         body: SafeArea(
             child:
                 Constants.viewRoutes[layoutProvider.selectedPageIndex].view));
@@ -468,6 +488,16 @@ class _HomeScreen extends State<HomeScreen> {
   Widget getAppBarLeading({bool mobile = false}) {
     if (mobile) {
       return Builder(builder: (BuildContext context) {
+        if (Platform.isMacOS){
+          return TitlebarSafeArea(
+            child: IconButton(
+                hoverColor: Colors.transparent,
+                icon: const Icon(Icons.menu_rounded),
+                onPressed: () {
+                  Scaffold.of(context).openDrawer();
+                }),
+          );
+        }
         return IconButton(
             icon: const Icon(Icons.menu_rounded),
             onPressed: () {
@@ -509,7 +539,7 @@ class _HomeScreen extends State<HomeScreen> {
   Widget buildNavigationDrawer(
       {required BuildContext context, bool largeScreen = false}) {
     return NavigationDrawer(
-        backgroundColor: (largeScreen)
+        backgroundColor: (largeScreen && (!(Platform.isIOS || Platform.isAndroid)))
             ? Theme.of(context)
                 .colorScheme
                 .surface

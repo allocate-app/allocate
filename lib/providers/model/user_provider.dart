@@ -217,7 +217,8 @@ class UserProvider extends ChangeNotifier {
       return;
     }
     try {
-      updateUser();
+      await updateUser();
+      notifyListeners();
       // This will always be a wrapped exception
     } on FailureToUploadException catch (e) {
       updating = false;
@@ -250,8 +251,13 @@ class UserProvider extends ChangeNotifier {
     // UserStorage catches exceptions -> will notify accordingly.
     // UserProvider has a handling routine.
     try {
-      await _userStorageService.syncUser();
-      await setUser();
+      if(shouldUpdate){
+        await _userStorageService.updateUser(user: viewModel!.toModel());
+      } else{
+        await _userStorageService.syncUser();
+        await setUser();
+      }
+
     } on Error catch (e, stacktrace) {
       log(e.toString(), stackTrace: stacktrace);
     }
@@ -261,6 +267,7 @@ class UserProvider extends ChangeNotifier {
     updating = true;
     try {
       await _userStorageService.updateUser(user: viewModel!.toModel());
+      notifyListeners();
     } on FailureToUpdateException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
       shouldUpdate = true;
@@ -369,10 +376,10 @@ class UserProvider extends ChangeNotifier {
         viewModel?.fromModel(model: user);
       } else {
         viewModel?.clear();
+        shouldUpdate = true;
+        await updateUser();
       }
 
-      shouldUpdate = true;
-      await updateUser();
       notifyListeners();
     } on MultipleUsersException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);

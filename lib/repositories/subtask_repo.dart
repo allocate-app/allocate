@@ -433,6 +433,7 @@ class SubtaskRepo extends ChangeNotifier implements SubtaskRepository {
     });
 
     _subtaskCount = await getOnlineCount();
+    notifyListeners();
   }
 
   Future<void> handleDelete(PostgresChangePayload payload) async {
@@ -442,6 +443,7 @@ class SubtaskRepo extends ChangeNotifier implements SubtaskRepository {
     });
 
     _subtaskCount = await getOnlineCount();
+    notifyListeners();
   }
 
   @override

@@ -484,6 +484,7 @@ class RoutineRepo extends ChangeNotifier implements RoutineRepository {
     });
 
     _routineCount = await getOnlineCount();
+    notifyListeners();
   }
 
   Future<void> handleDelete(PostgresChangePayload payload) async {
@@ -493,6 +494,7 @@ class RoutineRepo extends ChangeNotifier implements RoutineRepository {
     });
 
     _routineCount = await getOnlineCount();
+    notifyListeners();
   }
 
   @override

@@ -515,6 +515,7 @@ class ToDoRepo extends ChangeNotifier implements ToDoRepository {
     });
 
     _toDoCount = await getOnlineCount();
+    notifyListeners();
   }
 
   Future<void> handleDelete(PostgresChangePayload payload) async {
@@ -524,6 +525,7 @@ class ToDoRepo extends ChangeNotifier implements ToDoRepository {
     });
 
     _toDoCount = await getOnlineCount();
+    notifyListeners();
   }
 
   @override

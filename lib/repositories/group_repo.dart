@@ -460,6 +460,7 @@ class GroupRepo extends ChangeNotifier implements GroupRepository {
     });
 
     _groupCount = await getOnlineCount();
+    notifyListeners();
   }
 
   Future<void> handleDelete(PostgresChangePayload payload) async {
@@ -469,6 +470,7 @@ class GroupRepo extends ChangeNotifier implements GroupRepository {
     });
 
     _groupCount = await getOnlineCount();
+    notifyListeners();
   }
 
   @override

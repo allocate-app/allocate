@@ -311,13 +311,16 @@ class UserStorageService extends ChangeNotifier {
     await _isarClient.writeTxn(() async {
       await _isarClient.allocateUsers.put(onlineUser);
     });
+    notifyListeners();
   }
+
 
   Future<void> handleDelete(PostgresChangePayload payload) async {
     int deleteID = payload.oldRecord["id"] as int;
     await _isarClient.writeTxn(() async {
       await _isarClient.allocateUsers.delete(deleteID);
     });
+    notifyListeners();
   }
 
   Future<void> deleteUser({required AllocateUser user}) async {

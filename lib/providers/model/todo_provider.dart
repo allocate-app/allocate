@@ -70,12 +70,17 @@ class ToDoProvider extends ChangeNotifier {
         _repeatService = repeatService ?? RepeatableService.instance,
         sorter = userViewModel?.toDoSorter ?? ToDoSorter() {
     // This bubbles up state.
-    _toDoRepo.addListener(notifyListeners);
+    _toDoRepo.addListener(refreshMyDayAndNotify);
   }
 
   Future<void> init() async {
     _toDoRepo.init();
     myDayWeight = await getMyDayWeight();
+    notifyListeners();
+  }
+
+  Future<void> refreshMyDayAndNotify() async {
+    myDayWeight = await _toDoRepo.getMyDayWeight();
     notifyListeners();
   }
 
@@ -202,7 +207,9 @@ class ToDoProvider extends ChangeNotifier {
           await createTemplate(toDo: curToDo!);
         }
       }
-      myDayWeight = await getMyDayWeight();
+      if(toDo.myDay){
+        myDayWeight = await getMyDayWeight();
+      }
     } on FailureToUploadException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
       notifyListeners();

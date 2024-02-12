@@ -119,7 +119,10 @@ class _SplashScreen extends State<SplashScreen> {
     layoutProvider.isTablet = layoutProvider.isMobile &&
         (layoutProvider.size.shortestSide > Constants.smallScreen);
     return (Platform.isWindows)
-        ? const DragToResizeArea(child: LoadingScreen())
-        : const LoadingScreen();
+        ? const PopScope(canPop: false,
+        child: DragToResizeArea(child: LoadingScreen()))
+        : const PopScope(
+      canPop: false,
+        child: LoadingScreen());
   }
 }

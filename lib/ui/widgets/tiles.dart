@@ -132,11 +132,13 @@ abstract class Tiles {
                       : Constants.smIconSize,
                 ),
               ),
-            AutoSizeText(toDo.name,
-                overflow: TextOverflow.ellipsis,
-                minFontSize: Constants.large,
-                softWrap: false,
-                maxLines: 2),
+            Expanded(
+              child: AutoSizeText(toDo.name,
+                  overflow: TextOverflow.ellipsis,
+                  minFontSize: Constants.large,
+                  softWrap: false,
+                  maxLines: 2),
+            ),
           ],
         ),
         subtitle: Subtitles.toDoSubtitle(
@@ -319,11 +321,13 @@ abstract class Tiles {
           children: [
             if (Frequency.once != toDo.frequency)
               const Icon(Icons.restart_alt_rounded),
-            AutoSizeText(toDo.name,
-                overflow: TextOverflow.ellipsis,
-                minFontSize: Constants.large,
-                softWrap: false,
-                maxLines: 2),
+            Expanded(
+              child: AutoSizeText(toDo.name,
+                  overflow: TextOverflow.ellipsis,
+                  minFontSize: Constants.large,
+                  softWrap: false,
+                  maxLines: 2),
+            ),
           ],
         ),
         subtitle: Subtitles.toDoSubtitle(
@@ -396,11 +400,16 @@ abstract class Tiles {
               routineProvider.setDailyRoutine(
                   timeOfDay: newRoutineTimes, routine: routine);
             }),
-        title: AutoSizeText(routine.name,
-            overflow: TextOverflow.ellipsis,
-            minFontSize: Constants.large,
-            softWrap: false,
-            maxLines: 2),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children:[ Expanded(
+            child: AutoSizeText(routine.name,
+                overflow: TextOverflow.ellipsis,
+                minFontSize: Constants.large,
+                softWrap: false,
+                maxLines: 2),
+          ),]
+        ),
         subtitle: Subtitles.subtaskSubtitle(
             subtaskCount: routineProvider.getSubtaskCount(id: routine.id)),
         onTap: () async {
@@ -525,11 +534,13 @@ abstract class Tiles {
                     message: "Repeating event: modified",
                     child: Icon(Icons.change_history_rounded)),
               ),
-            AutoSizeText(deadline.name,
-                overflow: TextOverflow.ellipsis,
-                minFontSize: Constants.large,
-                softWrap: false,
-                maxLines: 2),
+            Expanded(
+              child: AutoSizeText(deadline.name,
+                  overflow: TextOverflow.ellipsis,
+                  minFontSize: Constants.large,
+                  softWrap: false,
+                  maxLines: 2),
+            ),
           ],
         ),
         subtitle: Subtitles.deadlineSubtitle(
@@ -713,11 +724,13 @@ abstract class Tiles {
                     message: "Repeating event: modified",
                     child: Icon(Icons.change_history_rounded)),
               ),
-            AutoSizeText(reminder.name,
-                overflow: TextOverflow.ellipsis,
-                minFontSize: Constants.large,
-                softWrap: false,
-                maxLines: 2),
+            Expanded(
+              child: AutoSizeText(reminder.name,
+                  overflow: TextOverflow.ellipsis,
+                  minFontSize: Constants.large,
+                  softWrap: false,
+                  maxLines: 2),
+            ),
           ],
         ),
         subtitle: Subtitles.reminderSubtitle(
@@ -930,12 +943,19 @@ abstract class Tiles {
             ReorderableDragStartListener(
                 index: index, child: const Icon(Icons.drag_handle_rounded))
         ]),
-        title: AutoSizeText(
-          group.name,
-          maxLines: 1,
-          overflow: TextOverflow.visible,
-          softWrap: false,
-          minFontSize: Constants.large,
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Expanded(
+              child: AutoSizeText(
+                group.name,
+                maxLines: 1,
+                overflow: TextOverflow.visible,
+                softWrap: false,
+                minFontSize: Constants.large,
+              ),
+            ),
+          ],
         ),
         subtitle: Subtitles.groupSubtitle(
             toDoCount: groupProvider.getToDoCount(id: group.id)!),
@@ -1097,12 +1117,19 @@ abstract class Tiles {
       shape: const RoundedRectangleBorder(
           borderRadius:
               BorderRadius.all(Radius.circular(Constants.semiCircular))),
-      title: AutoSizeText(
-        group.name,
-        maxLines: 1,
-        overflow: TextOverflow.visible,
-        softWrap: false,
-        minFontSize: Constants.large,
+      title: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Expanded(
+            child: AutoSizeText(
+              group.name,
+              maxLines: 1,
+              overflow: TextOverflow.visible,
+              softWrap: false,
+              minFontSize: Constants.large,
+            ),
+          ),
+        ],
       ),
       onTap: () async {
         Provider.of<GroupViewModel>(context, listen: false)
@@ -1160,11 +1187,18 @@ abstract class Tiles {
           contentPadding:
               const EdgeInsets.symmetric(horizontal: Constants.padding),
           onChanged: onChanged,
-          title: AutoSizeText(subtask.name,
-              overflow: TextOverflow.ellipsis,
-              minFontSize: Constants.large,
-              softWrap: false,
-              maxLines: 2),
+          title: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Expanded(
+                child: AutoSizeText(subtask.name,
+                    overflow: TextOverflow.ellipsis,
+                    minFontSize: Constants.large,
+                    softWrap: false,
+                    maxLines: 2),
+              ),
+            ],
+          ),
           onTap: onTap,
           value: subtask.completed,
           trailing: Row(
@@ -1205,11 +1239,18 @@ abstract class Tiles {
         key: ValueKey(toDo.id),
         value: toDo.completed,
         onChanged: onChanged,
-        title: AutoSizeText(toDo.name,
-            overflow: TextOverflow.ellipsis,
-            minFontSize: Constants.large,
-            softWrap: false,
-            maxLines: 2),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Expanded(
+              child: AutoSizeText(toDo.name,
+                  overflow: TextOverflow.ellipsis,
+                  minFontSize: Constants.large,
+                  softWrap: false,
+                  maxLines: 2),
+            ),
+          ],
+        ),
         onTap: onTap,
         trailing: Row(mainAxisSize: MainAxisSize.min, children: [
           Row(mainAxisSize: MainAxisSize.min, children: [
@@ -1222,12 +1263,14 @@ abstract class Tiles {
                         outMin: 0,
                         outMax: 5)
                     .toInt()]!,
-            AutoSizeText(
-              "${toDo.weight}",
-              overflow: TextOverflow.visible,
-              minFontSize: Constants.large,
-              softWrap: false,
-              maxLines: 1,
+            Flexible(
+              child: AutoSizeText(
+                "${toDo.weight}",
+                overflow: TextOverflow.visible,
+                minFontSize: Constants.large,
+                softWrap: false,
+                maxLines: 1,
+              ),
             ),
           ]),
           Padding(
@@ -1264,11 +1307,18 @@ abstract class Tiles {
     return ExpandedListTile(
         leading: leading,
         outerPadding: outerPadding,
-        title: AutoSizeText(title ?? "Steps",
-            maxLines: 1,
-            overflow: TextOverflow.visible,
-            softWrap: false,
-            minFontSize: Constants.small),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Expanded(
+              child: AutoSizeText(title ?? "Steps",
+                  maxLines: 1,
+                  overflow: TextOverflow.visible,
+                  softWrap: false,
+                  minFontSize: Constants.small),
+            ),
+          ],
+        ),
         subtitle: Subtitles.subtaskSubtitle(subtaskCount: subtaskCount),
         trailing: trailing,
         children: [
@@ -1353,11 +1403,18 @@ abstract class Tiles {
       leading: ListTileWidgets.myDayRoutineIcon(times: times, onPressed: null),
       title: Padding(
         padding: const EdgeInsets.symmetric(vertical: Constants.padding),
-        child: AutoSizeText("$type Routine",
-            maxLines: 1,
-            overflow: TextOverflow.visible,
-            softWrap: false,
-            minFontSize: Constants.large),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Expanded(
+              child: AutoSizeText("$type Routine",
+                  maxLines: 1,
+                  overflow: TextOverflow.visible,
+                  softWrap: false,
+                  minFontSize: Constants.large),
+            ),
+          ],
+        ),
       ),
       children: [
         SearchRecentsBar<Routine>(
@@ -1495,12 +1552,19 @@ abstract class Tiles {
             }
           },
         ),
-        title: AutoSizeText(
-            "${(showCategory) ? "${toBeginningOfSentenceCase(model.modelType.name)}: " : ""}${model.name}",
-            maxLines: 1,
-            overflow: TextOverflow.visible,
-            softWrap: false,
-            minFontSize: Constants.large),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Expanded(
+              child: AutoSizeText(
+                  "${(showCategory) ? "${toBeginningOfSentenceCase(model.modelType.name)}: " : ""}${model.name}",
+                  maxLines: 1,
+                  overflow: TextOverflow.visible,
+                  softWrap: false,
+                  minFontSize: Constants.large),
+            ),
+          ],
+        ),
         subtitle: switch (model.modelType) {
           ModelType.task => Subtitles.toDoSubtitle(
               groupID: (model as ToDo).groupID,
@@ -1611,6 +1675,9 @@ abstract class Tiles {
                     errorText: errorText,
                     labelText: labelText,
                   ),
+                  onTap: (){
+                    Scrollable.ensureVisible(context);
+                  },
                   controller: controller,
                   onEditingComplete: () {
                     onEditingComplete();
@@ -1754,6 +1821,9 @@ abstract class Tiles {
             controller: controller,
             maxLines: maxLines,
             minLines: minLines,
+            onTap: (){
+              Scrollable.ensureVisible(context);
+            },
             minFontSize: minFontSize ?? Constants.large,
             decoration: InputDecoration(
               isDense: isDense,
@@ -1833,11 +1903,18 @@ abstract class Tiles {
                   ),
                 ],
               )
-            : const AutoSizeText("Expected Duration: ",
-                overflow: TextOverflow.visible,
-                minFontSize: Constants.small,
-                maxLines: 2,
-                softWrap: true),
+            : const Row(
+          mainAxisSize: MainAxisSize.min,
+              children: [
+                Expanded(
+                  child: AutoSizeText("Expected Duration: ",
+                      overflow: TextOverflow.visible,
+                      minFontSize: Constants.small,
+                      maxLines: 2,
+                      softWrap: true),
+                ),
+              ],
+            ),
         trailing: (expectedDuration > 0)
             ? IconButton(
                 icon: const Icon(Icons.clear_rounded), onPressed: handleClear)
@@ -1875,13 +1952,20 @@ abstract class Tiles {
               borderRadius:
                   BorderRadius.all(Radius.circular(Constants.semiCircular))),
           title: (null == startDate && null == dueDate)
-              ? const AutoSizeText(
-                  "Add Dates",
-                  softWrap: true,
-                  overflow: TextOverflow.visible,
-                  maxLines: 2,
-                  minFontSize: Constants.small,
-                )
+              ? const Row(
+            mainAxisSize: MainAxisSize.min,
+                children: [
+                  Expanded(
+                    child: AutoSizeText(
+                        "Add Dates",
+                        softWrap: true,
+                        overflow: TextOverflow.visible,
+                        maxLines: 2,
+                        minFontSize: Constants.small,
+                      ),
+                  ),
+                ],
+              )
               : Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -1996,13 +2080,18 @@ abstract class Tiles {
                 borderRadius:
                     BorderRadius.all(Radius.circular(Constants.semiCircular))),
             title: (null == startTime && null == dueTime)
-                ? const AutoSizeText(
-                    "Add Times",
-                    overflow: TextOverflow.visible,
-                    minFontSize: Constants.large,
-                    maxLines: 2,
-                    softWrap: true,
-                  )
+                ? const Row(
+              mainAxisSize: MainAxisSize.min,
+                  children: [
+                    AutoSizeText(
+                        "Add Times",
+                        overflow: TextOverflow.visible,
+                        minFontSize: Constants.large,
+                        maxLines: 2,
+                        softWrap: true,
+                      ),
+                  ],
+                )
                 : Row(children: [
                     (null == startTime)
                         ? const Flexible(
@@ -2202,13 +2291,20 @@ abstract class Tiles {
                             ),
                           ),
                   ])
-                : AutoSizeText(
-                    unsetDateText,
-                    overflow: TextOverflow.visible,
-                    softWrap: true,
-                    minFontSize: Constants.medium,
-                    maxLines: 2,
-                  ),
+                : Row(
+              mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Expanded(
+                      child: AutoSizeText(
+                          unsetDateText,
+                          overflow: TextOverflow.visible,
+                          softWrap: true,
+                          minFontSize: Constants.medium,
+                          maxLines: 2,
+                        ),
+                    ),
+                  ],
+                ),
             onTap: () async {
               await blurredDismissible<Map<String, dynamic>?>(
                       context: context,
@@ -2269,17 +2365,26 @@ abstract class Tiles {
           shape: const RoundedRectangleBorder(
               borderRadius:
                   BorderRadius.all(Radius.circular(Constants.semiCircular))),
-          title: (frequency == Frequency.once)
-              ? const AutoSizeText("Set Recurring?",
-                  overflow: TextOverflow.visible,
-                  minFontSize: Constants.small,
-                  maxLines: 2,
-                  softWrap: true)
-              : AutoSizeText(toBeginningOfSentenceCase(frequency.name)!,
-                  overflow: TextOverflow.visible,
-                  minFontSize: Constants.small,
-                  maxLines: 1,
-                  softWrap: false),
+          title: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              (frequency == Frequency.once)
+                  ? const Expanded(
+                    child: AutoSizeText("Set Recurring?",
+                        overflow: TextOverflow.visible,
+                        minFontSize: Constants.small,
+                        maxLines: 2,
+                        softWrap: true),
+                  )
+                  : Expanded(
+                    child: AutoSizeText(toBeginningOfSentenceCase(frequency.name)!,
+                        overflow: TextOverflow.visible,
+                        minFontSize: Constants.small,
+                        maxLines: 1,
+                        softWrap: false),
+                  ),
+            ],
+          ),
           onTap: () async {
             await blurredDismissible(
                     context: context,
@@ -2404,12 +2509,19 @@ abstract class Tiles {
         shape: const RoundedRectangleBorder(
             borderRadius:
                 BorderRadius.all(Radius.circular(Constants.semiCircular))),
-        title: AutoSizeText(
-          title,
-          overflow: TextOverflow.visible,
-          softWrap: true,
-          minFontSize: Constants.medium,
-          maxLines: 2,
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Expanded(
+              child: AutoSizeText(
+                title,
+                overflow: TextOverflow.visible,
+                softWrap: true,
+                minFontSize: Constants.medium,
+                maxLines: 2,
+              ),
+            ),
+          ],
         ),
         onTap: (canAdd || myDay) ? toggleMyDay : null);
   }
@@ -2430,12 +2542,19 @@ abstract class Tiles {
       shape: const RoundedRectangleBorder(
           borderRadius:
               BorderRadius.all(Radius.circular(Constants.semiCircular))),
-      title: AutoSizeText(
-        event.model.name,
-        minFontSize: Constants.large,
-        maxLines: 1,
-        overflow: TextOverflow.visible,
-        softWrap: false,
+      title: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Expanded(
+            child: AutoSizeText(
+              event.model.name,
+              minFontSize: Constants.large,
+              maxLines: 1,
+              overflow: TextOverflow.visible,
+              softWrap: false,
+            ),
+          ),
+        ],
       ),
       onTap: () async {
         late Widget dialog;
@@ -2496,11 +2615,18 @@ abstract class Tiles {
           shape: const RoundedRectangleBorder(
               borderRadius:
                   BorderRadius.all(Radius.circular(Constants.semiCircular))),
-          title: AutoSizeText(
-            title,
-            maxLines: 1,
-            softWrap: false,
-            overflow: TextOverflow.visible,
+          title: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Expanded(
+                child: AutoSizeText(
+                  title,
+                  maxLines: 1,
+                  softWrap: false,
+                  overflow: TextOverflow.visible,
+                ),
+              ),
+            ],
           ),
           onTap: onTap,
           trailing: trailing);
@@ -2517,11 +2643,18 @@ abstract class Tiles {
         shape: const RoundedRectangleBorder(
             borderRadius:
                 BorderRadius.all(Radius.circular(Constants.semiCircular))),
-        title: AutoSizeText(
-          title,
-          maxLines: 1,
-          softWrap: false,
-          overflow: TextOverflow.visible,
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Expanded(
+              child: AutoSizeText(
+                title,
+                maxLines: 1,
+                softWrap: false,
+                overflow: TextOverflow.visible,
+              ),
+            ),
+          ],
         ),
         onTap: onTap,
       );
@@ -2541,12 +2674,19 @@ abstract class Tiles {
             child: Icon(Icons.add_rounded,
                 color: Theme.of(context).colorScheme.onSurfaceVariant),
           ),
-          title: const AutoSizeText(
-            "Create New",
-            overflow: TextOverflow.visible,
-            softWrap: false,
-            maxLines: 1,
-            minFontSize: Constants.large,
+          title: const Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Expanded(
+                child: AutoSizeText(
+                  "Create New",
+                  overflow: TextOverflow.visible,
+                  softWrap: false,
+                  maxLines: 1,
+                  minFontSize: Constants.large,
+                ),
+              ),
+            ],
           ),
           contentPadding: const EdgeInsets.all(Constants.padding),
           shape: const RoundedRectangleBorder(
@@ -2567,11 +2707,18 @@ abstract class Tiles {
             borderRadius:
                 BorderRadius.all(Radius.circular(Constants.semiCircular))),
         leading: const Icon(Icons.add_rounded),
-        title: AutoSizeText(title,
-            maxLines: 1,
-            overflow: TextOverflow.visible,
-            softWrap: false,
-            minFontSize: Constants.large),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Expanded(
+              child: AutoSizeText(title,
+                  maxLines: 1,
+                  overflow: TextOverflow.visible,
+                  softWrap: false,
+                  minFontSize: Constants.large),
+            ),
+          ],
+        ),
         onTap: onTap,
       );
 
@@ -2584,12 +2731,17 @@ abstract class Tiles {
               borderRadius:
                   BorderRadius.all(Radius.circular(Constants.semiCircular))),
           leading: const Icon(Icons.redo_rounded),
-          title: const AutoSizeText(
-            "Load more",
-            maxLines: 1,
-            overflow: TextOverflow.visible,
-            softWrap: false,
-            minFontSize: Constants.large,
+          title: const Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [Expanded(
+              child: AutoSizeText(
+                "Load more",
+                maxLines: 1,
+                overflow: TextOverflow.visible,
+                softWrap: false,
+                minFontSize: Constants.large,
+              ),
+            ),]
           ),
           onTap: onTap);
 
@@ -2601,12 +2753,17 @@ abstract class Tiles {
               borderRadius:
                   BorderRadius.all(Radius.circular(Constants.semiCircular))),
           leading: const Icon(Icons.refresh_rounded),
-          title: const AutoSizeText(
-            "Reset",
-            maxLines: 1,
-            overflow: TextOverflow.visible,
-            softWrap: false,
-            minFontSize: Constants.large,
+          title: const Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [Expanded(
+              child: AutoSizeText(
+                "Reset",
+                maxLines: 1,
+                overflow: TextOverflow.visible,
+                softWrap: false,
+                minFontSize: Constants.large,
+              ),
+            ),]
           ),
           onTap: onTap);
 

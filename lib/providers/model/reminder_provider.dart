@@ -60,11 +60,16 @@ class ReminderProvider extends ChangeNotifier {
       : sorter = userViewModel?.reminderSorter ?? ReminderSorter(),
         _repeatService = repeatableService ?? RepeatableService.instance,
         _reminderRepo = reminderRepository ?? ReminderRepo.instance {
-    _reminderRepo.addListener(notifyListeners);
+    _reminderRepo.addListener(scheduleAndNotify);
   }
 
   Future<void> init() async {
     _reminderRepo.init();
+    notifyListeners();
+  }
+
+  Future<void> scheduleAndNotify() async {
+    await batchNotifications();
     notifyListeners();
   }
 
@@ -431,6 +436,10 @@ class ReminderProvider extends ChangeNotifier {
   Future<void> scheduleNotification({Reminder? reminder}) async {
     reminder = reminder ?? curReminder;
     if (null == reminder || null == reminder.dueDate) {
+      return;
+    }
+
+    if(!_notificationService.validateNotificationDate(notificationDate: reminder.dueDate)){
       return;
     }
 

@@ -45,12 +45,12 @@ class _MainFloatingActionButton extends State<MainFloatingActionButton> {
         FloatingActionButton(
           shape: const CircleBorder(),
           onPressed: () async {
-            await blurredNonDismissible(
-                context: context, dialog: const CreateToDoScreen());
             final ExpandableFabState? state = _key.currentState;
             if (null != state) {
               state.toggle();
             }
+            await blurredNonDismissible(
+                context: context, dialog: const CreateToDoScreen());
           },
           child: const Tooltip(
               message: "New Task", child: Icon(Icons.task_rounded)),
@@ -61,25 +61,27 @@ class _MainFloatingActionButton extends State<MainFloatingActionButton> {
                 message: "New Deadline",
                 child: Icon(Icons.announcement_rounded)),
             onPressed: () async {
-              await blurredNonDismissible(
-                  context: context, dialog: const CreateDeadlineScreen());
 
               final ExpandableFabState? state = _key.currentState;
               if (null != state) {
                 state.toggle();
               }
+
+              await blurredNonDismissible(
+                  context: context, dialog: const CreateDeadlineScreen());
             }),
         FloatingActionButton(
             shape: const CircleBorder(),
             child: const Tooltip(
                 message: "New Reminder", child: Icon(Icons.push_pin_rounded)),
             onPressed: () async {
-              await blurredNonDismissible(
-                  context: context, dialog: const CreateReminderScreen());
               final ExpandableFabState? state = _key.currentState;
               if (null != state) {
                 state.toggle();
               }
+
+              await blurredNonDismissible(
+                  context: context, dialog: const CreateReminderScreen());
             }),
       ],
     );

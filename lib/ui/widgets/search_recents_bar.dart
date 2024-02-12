@@ -94,6 +94,9 @@ class _SearchRecents<T extends IModel> extends State<SearchRecentsBar<T>> {
           viewConstraints: const BoxConstraints(
               maxHeight: Constants.maxSearchSideBeforeScroll),
           barHintText: widget.hintText,
+          onTap: (){
+           Scrollable.ensureVisible(context);
+          },
           searchController: searchController,
           suggestionsBuilder:
               (BuildContext context, SearchController controller) {

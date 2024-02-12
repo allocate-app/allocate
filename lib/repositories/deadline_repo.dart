@@ -498,6 +498,7 @@ class DeadlineRepo extends ChangeNotifier implements DeadlineRepository {
     });
 
     _deadlineCount = await getOnlineCount();
+    notifyListeners();
   }
 
   Future<void> handleDelete(PostgresChangePayload payload) async {
@@ -507,6 +508,7 @@ class DeadlineRepo extends ChangeNotifier implements DeadlineRepository {
     });
 
     _deadlineCount = await getOnlineCount();
+    notifyListeners();
   }
 
   // Search + Most Recent
