@@ -94,9 +94,8 @@ class GroupRepo extends ChangeNotifier implements GroupRepository {
           }
           break;
         case AuthChangeEvent.signedOut:
-          // CLOSE TABLE STREAM.
-          await _groupStream.unsubscribe();
-          _subscribed = false;
+          // await _groupStream.unsubscribe();
+          // _subscribed = false;
           break;
         default:
           break;

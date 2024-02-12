@@ -97,9 +97,8 @@ class ReminderRepo extends ChangeNotifier implements ReminderRepository {
           }
           break;
         case AuthChangeEvent.signedOut:
-          // CLOSE TABLE STREAM.
-          await _reminderStream.unsubscribe();
-          _subscribed = false;
+          // await _reminderStream.unsubscribe();
+          // _subscribed = false;
           break;
         default:
           break;

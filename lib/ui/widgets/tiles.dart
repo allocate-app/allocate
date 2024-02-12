@@ -15,7 +15,7 @@ import '../../model/task/routine.dart';
 import '../../model/task/subtask.dart';
 import '../../model/task/todo.dart';
 import '../../providers/application/event_provider.dart';
-import '../../providers/application/layout_provider.dart';
+// import '../../providers/application/layout_provider.dart';
 import '../../providers/model/deadline_provider.dart';
 import '../../providers/model/group_provider.dart';
 import '../../providers/model/reminder_provider.dart';
@@ -2683,20 +2683,20 @@ abstract class Tiles {
       return;
     }
 
-    LayoutProvider lp = Provider.of<LayoutProvider>(context, listen: false);
-
-    double maxWidth = lp.width;
-    double? offset;
-    if (lp.drawerOpened && (!lp.isMobile || lp.isTablet)) {
-      maxWidth -= lp.navDrawerWidth;
-      offset = lp.navDrawerWidth;
-    }
+    // LayoutProvider lp = Provider.of<LayoutProvider>(context, listen: false);
+    //
+    // double maxWidth = lp.width;
+    // double? offset;
+    // if (lp.drawerOpened && (!lp.isMobile || lp.isTablet)) {
+    //   maxWidth -= lp.navDrawerWidth;
+    //   offset = lp.navDrawerWidth;
+    // }
 
     await displayFlushbar(
         context: context,
         flushbar: Flushbars.createError(
-          maxWidth: maxWidth,
-          leftMarginOffset: offset,
+          // maxWidth: maxWidth,
+          // leftMarginOffset: offset,
           context: context,
           message: e.toString(),
         ));
@@ -2710,20 +2710,20 @@ abstract class Tiles {
       return;
     }
 
-    LayoutProvider lp = Provider.of<LayoutProvider>(context, listen: false);
-
-    double maxWidth = lp.width;
-    double? offset;
-    if (lp.drawerOpened && (!lp.isMobile || lp.isTablet)) {
-      maxWidth -= lp.navDrawerWidth;
-      offset = lp.navDrawerWidth;
-    }
+    // LayoutProvider lp = Provider.of<LayoutProvider>(context, listen: false);
+    //
+    // double maxWidth = lp.width;
+    // double? offset;
+    // if (lp.drawerOpened && (!lp.isMobile || lp.isTablet)) {
+    //   maxWidth -= lp.navDrawerWidth;
+    //   offset = lp.navDrawerWidth;
+    // }
 
     await displayFlushbar(
         context: context,
         flushbar: Flushbars.createAlert(
-          maxWidth: maxWidth,
-          leftMarginOffset: offset,
+          // maxWidth: maxWidth,
+          // leftMarginOffset: offset,
           context: context,
           message: message,
         ));

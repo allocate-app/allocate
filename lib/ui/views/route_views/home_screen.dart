@@ -506,7 +506,7 @@ class _HomeScreen extends State<HomeScreen> {
         });
   }
 
-  NavigationDrawer buildNavigationDrawer(
+  Widget buildNavigationDrawer(
       {required BuildContext context, bool largeScreen = false}) {
     return NavigationDrawer(
         backgroundColor: (largeScreen)
@@ -528,7 +528,7 @@ class _HomeScreen extends State<HomeScreen> {
         children: [
           Padding(
             padding: const EdgeInsets.only(
-              top: Constants.doublePadding,
+              top: Constants.padding,
               bottom: Constants.padding,
               right: Constants.padding,
               left: Constants.padding,

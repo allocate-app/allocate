@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:uuid/uuid.dart';
 
@@ -31,8 +32,8 @@ abstract class Constants {
   static const String loginDeeplink = "io.allocate://login";
   static const String emailDeeplink = "io.allocate://validate-email";
 
-  static File appIcon = File("assets/allocateaboutlogo.png");
-  static File roadMap = File("ROADMAP.md");
+  static AssetImage appIcon = const AssetImage("assets/allocateaboutlogo.png");
+  static Future<String> roadMap = rootBundle.loadString("ROADMAP.md");
 
   // TODO: change as appropriate.
   static const String licenseInfo =

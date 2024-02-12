@@ -93,9 +93,8 @@ class UserStorageService extends ChangeNotifier {
           }
           break;
         case AuthChangeEvent.signedOut:
-          // CLOSE TABLE STREAM.
-          await _userStream.unsubscribe();
-          _subscribed = false;
+          // await _userStream.unsubscribe();
+          // _subscribed = false;
           break;
         default:
           break;

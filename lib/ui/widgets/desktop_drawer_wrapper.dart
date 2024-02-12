@@ -1,12 +1,14 @@
 // This is a workaround for the lack of standard nav drawer in m3.
 // Eventually this will be rendered unnecessary.
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 
 class DesktopDrawerWrapper extends StatelessWidget {
   const DesktopDrawerWrapper(
       {super.key, required this.drawer, this.elevation = 0});
 
-  final NavigationDrawer drawer;
+  final Widget drawer;
   final double elevation;
 
   @override
@@ -14,7 +16,7 @@ class DesktopDrawerWrapper extends StatelessWidget {
     return MediaQuery.removePadding(
         context: context,
         removeBottom: true,
-        removeTop: true,
+        removeTop: (!(Platform.isIOS || Platform.isAndroid)),
         removeLeft: true,
         removeRight: true,
         child: Theme(

@@ -98,9 +98,8 @@ class DeadlineRepo extends ChangeNotifier implements DeadlineRepository {
           }
           break;
         case AuthChangeEvent.signedOut:
-          // CLOSE TABLE STREAM.
-          await _deadlineStream.unsubscribe();
-          _subscribed = false;
+          // await _deadlineStream.unsubscribe();
+          // _subscribed = false;
           break;
         default:
           break;
@@ -486,8 +485,8 @@ class DeadlineRepo extends ChangeNotifier implements DeadlineRepository {
 
   Future<void> swapRepo() async {
     NotificationService.instance.cancelAllNotifications();
-    _deadlineStream.unsubscribe();
-    _subscribed = false;
+    // _deadlineStream.unsubscribe();
+    // _subscribed = false;
     await clearLocal();
     await syncRepo();
   }

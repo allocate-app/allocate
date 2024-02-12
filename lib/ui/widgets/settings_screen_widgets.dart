@@ -502,7 +502,7 @@ abstract class SettingsScreenWidgets {
                       maxWidth: Constants.appIconSize,
                       maxHeight: Constants.appIconSize,
                     ),
-                    child: Image.file(Constants.appIcon, fit: BoxFit.fill),
+                    child: Image(image: Constants.appIcon, fit: BoxFit.fill),
                   ),
                 ),
                 AutoSizeText(
@@ -537,37 +537,43 @@ abstract class SettingsScreenWidgets {
   static Widget roadmapDialog() {
     // This is unlikely to be very large - so sync for now.
     // Stream will require a stateful widget.
-    String body = Constants.roadMap.readAsStringSync();
-    return Dialog(
-      insetPadding: const EdgeInsets.all(Constants.outerDialogPadding),
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: Constants.roadmapWidth),
-        child: Padding(
-          padding: const EdgeInsets.all(Constants.doublePadding),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Flexible(
-                child: ConstrainedBox(
-                    constraints: const BoxConstraints(
-                      maxHeight: Constants.smallLandscapeDialogHeight,
-                    ),
-                    child: Markdown(
-                      data: body,
-                      styleSheet: MarkdownStyleSheet(
-                        h1: Constants.hugeHeaderStyle,
-                        h2: Constants.largeHeaderStyle,
-                        h3: Constants.headerStyle,
-                      ),
-                      styleSheetTheme: MarkdownStyleSheetBaseTheme.material,
-                      shrinkWrap: true,
-                    )),
+    return FutureBuilder<String>(
+      future: Constants.roadMap, builder: (BuildContext context, AsyncSnapshot<String> snapshot) { if(snapshot.hasData && null != snapshot.data){
+        String body = snapshot.data!;
+        return Dialog(
+          insetPadding: const EdgeInsets.all(Constants.outerDialogPadding),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: Constants.roadmapWidth),
+            child: Padding(
+              padding: const EdgeInsets.all(Constants.doublePadding),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Flexible(
+                    child: ConstrainedBox(
+                        constraints: const BoxConstraints(
+                          maxHeight: Constants.smallLandscapeDialogHeight,
+                        ),
+                        child: Markdown(
+                          data: body,
+                          styleSheet: MarkdownStyleSheet(
+                            h1: Constants.hugeHeaderStyle,
+                            h2: Constants.largeHeaderStyle,
+                            h3: Constants.headerStyle,
+                          ),
+                          styleSheetTheme: MarkdownStyleSheetBaseTheme.material,
+                          shrinkWrap: true,
+                        )),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+    }
+      return const Center(child: CircularProgressIndicator());
+      }
     );
   }
 

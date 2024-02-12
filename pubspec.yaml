@@ -115,6 +115,7 @@ flutter:
 
   assets:
     - assets/allocatelogo.png
+    - assets/allocateaboutlogo.png
     - ROADMAP.md
 
   # An image asset can refer to one or more resolution-specific "variants", see

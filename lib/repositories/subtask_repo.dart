@@ -95,9 +95,8 @@ class SubtaskRepo extends ChangeNotifier implements SubtaskRepository {
           }
           break;
         case AuthChangeEvent.signedOut:
-          // CLOSE TABLE STREAM.
-          await _subtaskStream.unsubscribe();
-          _subscribed = false;
+          // await _subtaskStream.unsubscribe();
+          // _subscribed = false;
           break;
         default:
           break;

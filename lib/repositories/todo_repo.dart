@@ -103,9 +103,8 @@ class ToDoRepo extends ChangeNotifier implements ToDoRepository {
           }
           break;
         case AuthChangeEvent.signedOut:
-          // CLOSE TABLE STREAM.
-          await _toDoStream.unsubscribe();
-          _subscribed = false;
+          // await _toDoStream.unsubscribe();
+          // _subscribed = false;
           break;
         default:
           break;

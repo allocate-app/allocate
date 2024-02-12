@@ -101,9 +101,8 @@ class RoutineRepo extends ChangeNotifier implements RoutineRepository {
           }
           break;
         case AuthChangeEvent.signedOut:
-          // CLOSE TABLE STREAM.
-          await _routineStream.unsubscribe();
-          _subscribed = false;
+          // await _routineStream.unsubscribe();
+          // _subscribed = false;
           break;
         default:
           break;
