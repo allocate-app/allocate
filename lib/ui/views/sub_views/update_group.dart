@@ -432,6 +432,7 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
                   if (null == toDo) {
                     return;
                   }
+                  tVM.fromModel(model: toDo);
                   return await blurredNonDismissible(
                       context: context, dialog: const UpdateToDoScreen());
                   // showDialog(
