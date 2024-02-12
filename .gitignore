@@ -81,3 +81,4 @@ doc/api/
 /make_config_macos.yaml
 /make_config_msix.yaml
 /make_config_rpm.yaml
+/dist/
