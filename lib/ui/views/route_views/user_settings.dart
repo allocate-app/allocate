@@ -96,9 +96,8 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
     userProvider.shouldUpdate = true;
     userProvider.updateUser().catchError((e) async {
       await Tiles.displayError(e: e);
-    }).whenComplete((){
-      super.dispose();
     });
+    super.dispose();
   }
 
   void anchorWatchScroll() {

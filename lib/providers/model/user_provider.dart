@@ -77,11 +77,18 @@ class UserProvider extends ChangeNotifier {
     _authenticationService.init();
     initSubscription();
     await setUser();
-    if ((viewModel?.lastOpened.day ?? Constants.today.day - Constants.today.day)
-            .abs() >
-        0) {
+    if ((viewModel?.lastOpened.copyWith(
+                hour: 0,
+                minute: 0,
+                second: 0,
+                millisecond: 0,
+                microsecond: 0) ??
+            Constants.today)
+        .isAfter(Constants.today)) {
       DailyResetService.instance.dailyReset();
     }
+
+    viewModel?.lastOpened = DateTime.now();
 
     updateTimer = Timer.periodic(Constants.userUpdateTime, requestUpdate);
     notifyListeners();
@@ -251,13 +258,12 @@ class UserProvider extends ChangeNotifier {
     // UserStorage catches exceptions -> will notify accordingly.
     // UserProvider has a handling routine.
     try {
-      if(shouldUpdate){
+      if (shouldUpdate) {
         await _userStorageService.updateUser(user: viewModel!.toModel());
-      } else{
+      } else {
         await _userStorageService.syncUser();
         await setUser();
       }
-
     } on Error catch (e, stacktrace) {
       log(e.toString(), stackTrace: stacktrace);
     }
