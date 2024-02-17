@@ -341,6 +341,7 @@ abstract class Constants {
 
   // In LP
   static const Size minDesktopSize = Size(500, 500);
+  static const Size defaultSize = Size(1000, 700);
 
   // This is just for testing mobile formats.
   // On my main machine, this works out to 320 x 320 logical pixels.
