@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:developer';
 
 import 'package:allocate/model/task/subtask.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
@@ -128,6 +129,8 @@ class RoutineRepo extends ChangeNotifier implements RoutineRepository {
     _isarClient.routines.watchLazy().listen((_) async {
       await IsarService.instance.updateDBSize();
     });
+
+    handleUserChange();
   }
 
   Future<void> handleUserChange() async {
@@ -459,15 +462,19 @@ class RoutineRepo extends ChangeNotifier implements RoutineRepository {
     if (!isConnected) {
       return data;
     }
-    List<Map<String, dynamic>> routineEntities = await _supabaseClient
-        .from("routines")
-        .select()
-        .eq("uuid", uuid)
-        .order("lastUpdated", ascending: false)
-        .range(offset, offset + limit);
+    try {
+      List<Map<String, dynamic>> routineEntities = await _supabaseClient
+          .from("routines")
+          .select()
+          .eq("uuid", uuid)
+          .order("lastUpdated", ascending: false)
+          .range(offset, offset + limit);
 
-    for (Map<String, dynamic> entity in routineEntities) {
-      data.add(Routine.fromEntity(entity: entity));
+      for (Map<String, dynamic> entity in routineEntities) {
+        data.add(Routine.fromEntity(entity: entity));
+      }
+    } on Error catch (e, stacktrace) {
+      log(e.toString(), stackTrace: stacktrace);
     }
     return data;
   }

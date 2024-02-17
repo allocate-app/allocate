@@ -561,7 +561,10 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                         child: PaddedDivider(padding: Constants.padding),
                       ),
 
-                      _buildSearchBar(),
+                      SafeArea(
+                        child: _buildSearchBar(
+                            padding: const EdgeInsets.all(Constants.padding)),
+                      ),
 
                       const Padding(
                         padding:

@@ -58,8 +58,6 @@ class UserProvider extends ChangeNotifier {
 
   late Timer updateTimer;
 
-  // TODO: keep a DB total && use to warn users of impending size limits.
-
   UserProvider({this.viewModel, Authenticator? auth})
       : isConnected = ValueNotifier<bool>(false),
         myDayTotal = ValueNotifier<int>(0),
@@ -343,7 +341,7 @@ class UserProvider extends ChangeNotifier {
   Future<void> verifiyEmailChange(
       {required String newEmail, required String token}) async {
     try {
-      // THIS IS STILL THE OLD EMAIL -> Only changes on verify.
+      // THIS IS THE NEW EMAIL - Test this at some point.
       viewModel?.email = await _authenticationService.verifyEmailChangeOTP(
           email: newEmail, token: token);
 

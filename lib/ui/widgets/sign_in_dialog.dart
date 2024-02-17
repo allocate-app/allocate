@@ -97,17 +97,29 @@ class _SignInDialog extends State<SignInDialog> {
     if (!validateEmail()) {
       return;
     }
+    // Prevent spamming OTP challenge.
+    bool valid = validChallenge.value;
 
-    await userProvider
-        .verifyOTP(
-      email: _emailController.text.trim(),
-      token: _tokenController.text.trim(),
-    )
-        .then((_) {
+    validChallenge.value = false;
+    await Future.wait(
+      [
+        userProvider.verifyOTP(
+          email: _emailController.text.trim(),
+          token: _tokenController.text.trim(),
+        ),
+        // Give supabase a moment to ensure connection.
+        Future.delayed(const Duration(seconds: 3))
+      ],
+    ).then((_) {
+      if (!userProvider.isConnected.value) {
+        throw LoginFailedException("Sign-in error, please retry.");
+      }
+
       Navigator.pop(context);
     }).catchError((e) async {
-      Tiles.displayError(e: e);
+      await Tiles.displayError(e: e);
     });
+    validChallenge.value = valid;
   }
 
   @override
@@ -236,6 +248,11 @@ class _SignInDialog extends State<SignInDialog> {
                   if (!validateEmail()) {
                     return;
                   }
+
+                  // Prevent user spamming button.
+                  bool valid = validSignup.value;
+                  validSignup.value = false;
+
                   await userProvider
                       .signInOTP(
                     email: _emailController.text.trim(),
@@ -245,6 +262,10 @@ class _SignInDialog extends State<SignInDialog> {
                   }).catchError((e) async {
                     Tiles.displayError(e: e);
                   });
+
+                  // Supabase rate limited - 6 second delay to send OTP.
+                  await Future.delayed(const Duration(seconds: 3));
+                  validSignup.value = valid;
                 }
               : null,
           label: const AutoSizeText("Get OTP",

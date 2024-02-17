@@ -5,6 +5,7 @@ import "dart:ui";
 import "package:allocate/util/enums.dart";
 import "package:auto_route/auto_route.dart";
 import "package:flutter/foundation.dart";
+import "package:flutter/gestures.dart";
 import 'package:flutter/material.dart';
 import "package:flutter/services.dart";
 import "package:flutter_acrylic/flutter_acrylic.dart";
@@ -38,7 +39,8 @@ void main() async {
     }
 
     WindowOptions windowOptions = const WindowOptions(
-      minimumSize: (kDebugMode) ? Constants.testDesktopSize : Constants.minDesktopSize,
+      minimumSize:
+          (kDebugMode) ? Constants.testDesktopSize : Constants.minDesktopSize,
       center: true,
     );
 
@@ -274,6 +276,10 @@ class _MyAppState extends State<MyApp> {
     return Consumer<ThemeProvider>(
         builder: (BuildContext context, ThemeProvider value, Widget? child) {
       return MaterialApp.router(
+        // Two-finger scroll fix.
+        scrollBehavior: ScrollConfiguration.of(context).copyWith(
+          multitouchDragStrategy: MultitouchDragStrategy.latestPointer,
+        ),
         theme: value.lightTheme,
         darkTheme: value.darkTheme,
         highContrastTheme: value.highContrastLight,

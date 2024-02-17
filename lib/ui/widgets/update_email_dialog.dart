@@ -130,16 +130,24 @@ class _UpdateEmailDialog extends State<UpdateEmailDialog> {
       return;
     }
 
-    await userProvider
-        .verifiyEmailChange(
-      newEmail: _newEmailController.text.trim(),
-      token: _tokenController.text.trim(),
-    )
-        .then((_) {
+    // Prevent spamming OTP challenge.
+    bool valid = validChallenge.value;
+
+    validChallenge.value = false;
+
+    await Future.wait([
+      userProvider.verifiyEmailChange(
+        newEmail: _newEmailController.text.trim(),
+        token: _tokenController.text.trim(),
+      ),
+      Future.delayed(const Duration(seconds: 3)),
+    ]).then((_) {
       Navigator.pop(context);
     }).catchError((e) async {
       Tiles.displayError(e: e);
     });
+
+    validChallenge.value = valid;
   }
 
   @override
@@ -303,6 +311,9 @@ class _UpdateEmailDialog extends State<UpdateEmailDialog> {
                   if (!validateEmails()) {
                     return;
                   }
+                  // Rate limited, 6 sec wait.
+                  bool valid = validRequest.value;
+                  validRequest.value = false;
                   await userProvider
                       .updateEmail(
                     newEmail: _newEmailController.text.trim(),
@@ -313,6 +324,8 @@ class _UpdateEmailDialog extends State<UpdateEmailDialog> {
                   }).catchError((e) async {
                     Tiles.displayError(e: e);
                   });
+                  await Future.delayed(const Duration(seconds: 6));
+                  validRequest.value = valid;
                 }
               : null,
           label: const AutoSizeText("Request Update",

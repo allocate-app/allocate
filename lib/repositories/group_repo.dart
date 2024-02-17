@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:isar/isar.dart';
@@ -121,6 +123,7 @@ class GroupRepo extends ChangeNotifier implements GroupRepository {
     _isarClient.groups.watchLazy().listen((_) async {
       await IsarService.instance.updateDBSize();
     });
+    handleUserChange();
   }
 
   Future<void> handleUserChange() async {
@@ -435,15 +438,19 @@ class GroupRepo extends ChangeNotifier implements GroupRepository {
     if (!isConnected) {
       return data;
     }
-    List<Map<String, dynamic>> groupEntities = await _supabaseClient
-        .from("groups")
-        .select()
-        .eq("uuid", uuid)
-        .order("lastUpdated", ascending: false)
-        .range(offset, offset + limit);
+    try {
+      List<Map<String, dynamic>> groupEntities = await _supabaseClient
+          .from("groups")
+          .select()
+          .eq("uuid", uuid)
+          .order("lastUpdated", ascending: false)
+          .range(offset, offset + limit);
 
-    for (Map<String, dynamic> entity in groupEntities) {
-      data.add(Group.fromEntity(entity: entity));
+      for (Map<String, dynamic> entity in groupEntities) {
+        data.add(Group.fromEntity(entity: entity));
+      }
+    } on Error catch (e, stacktrace) {
+      log(e.toString(), stackTrace: stacktrace);
     }
     return data;
   }

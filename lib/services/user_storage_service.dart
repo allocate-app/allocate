@@ -115,6 +115,8 @@ class UserStorageService extends ChangeNotifier {
       }
       await handleUserChange();
     });
+
+    handleUserChange();
   }
 
   void resetStatus() {
@@ -313,7 +315,6 @@ class UserStorageService extends ChangeNotifier {
     });
     notifyListeners();
   }
-
 
   Future<void> handleDelete(PostgresChangePayload payload) async {
     int deleteID = payload.oldRecord["id"] as int;

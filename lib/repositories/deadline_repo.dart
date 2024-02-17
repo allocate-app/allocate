@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:isar/isar.dart';
@@ -125,6 +127,8 @@ class DeadlineRepo extends ChangeNotifier implements DeadlineRepository {
     _isarClient.deadlines.watchLazy().listen((_) async {
       await IsarService.instance.updateDBSize();
     });
+
+    handleUserChange();
   }
 
   Future<void> handleUserChange() async {
@@ -470,15 +474,19 @@ class DeadlineRepo extends ChangeNotifier implements DeadlineRepository {
     if (!isConnected) {
       return data;
     }
-    List<Map<String, dynamic>> deadlineEntities = await _supabaseClient
-        .from("deadlines")
-        .select()
-        .eq("uuid", uuid)
-        .order("lastUpdated", ascending: false)
-        .range(offset, offset + limit);
+    try {
+      List<Map<String, dynamic>> deadlineEntities = await _supabaseClient
+          .from("deadlines")
+          .select()
+          .eq("uuid", uuid)
+          .order("lastUpdated", ascending: false)
+          .range(offset, offset + limit);
 
-    for (Map<String, dynamic> entity in deadlineEntities) {
-      data.add(Deadline.fromEntity(entity: entity));
+      for (Map<String, dynamic> entity in deadlineEntities) {
+        data.add(Deadline.fromEntity(entity: entity));
+      }
+    } on Error catch (e, stacktrace) {
+      log(e.toString(), stackTrace: stacktrace);
     }
     return data;
   }

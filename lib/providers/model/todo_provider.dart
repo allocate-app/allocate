@@ -207,9 +207,8 @@ class ToDoProvider extends ChangeNotifier {
           await createTemplate(toDo: curToDo!);
         }
       }
-      if(toDo.myDay){
-        myDayWeight = await getMyDayWeight();
-      }
+
+      myDayWeight = await getMyDayWeight();
     } on FailureToUploadException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
       notifyListeners();

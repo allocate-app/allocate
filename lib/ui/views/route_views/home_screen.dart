@@ -3,7 +3,6 @@ import 'dart:ui';
 
 import "package:auto_route/auto_route.dart";
 import 'package:auto_size_text/auto_size_text.dart';
-import 'package:flutter/foundation.dart';
 import "package:flutter/material.dart";
 import 'package:flutter_acrylic/widgets/titlebar_safe_area.dart';
 import 'package:flutter_acrylic/widgets/transparent_macos_sidebar.dart';
@@ -12,6 +11,7 @@ import "package:provider/provider.dart";
 import 'package:window_manager/window_manager.dart';
 
 import '../../../model/task/group.dart';
+import '../../../providers/application/event_provider.dart';
 import '../../../providers/application/layout_provider.dart';
 import '../../../providers/application/search_provider.dart';
 import '../../../providers/application/theme_provider.dart';
@@ -52,7 +52,7 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreen();
 }
 
-class _HomeScreen extends State<HomeScreen> {
+class _HomeScreen extends State<HomeScreen> with WidgetsBindingObserver {
   final DailyResetService dailyResetProvider = DailyResetService.instance;
   late final ToDoProvider toDoProvider;
   late final RoutineProvider routineProvider;
@@ -64,6 +64,7 @@ class _HomeScreen extends State<HomeScreen> {
   late final ThemeProvider themeProvider;
   late final SearchProvider searchProvider;
   late final LayoutProvider layoutProvider;
+  late final EventProvider eventProvider;
 
   late final ScrollController navScrollController;
 
@@ -73,6 +74,7 @@ class _HomeScreen extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     initializeProviders();
     initializeParams();
     initializeControllers();
@@ -91,6 +93,7 @@ class _HomeScreen extends State<HomeScreen> {
     themeProvider = Provider.of<ThemeProvider>(context, listen: false);
     searchProvider = Provider.of<SearchProvider>(context, listen: false);
 
+    eventProvider = Provider.of<EventProvider>(context, listen: false);
     layoutProvider = Provider.of<LayoutProvider>(context, listen: false);
 
     toDoProvider.addListener(updateMyDay);
@@ -188,6 +191,20 @@ class _HomeScreen extends State<HomeScreen> {
     );
   }
 
+  Future<void> syncOnline() async {
+    await Future.wait([
+      userProvider.syncUser(),
+      toDoProvider.syncRepo(),
+      routineProvider.syncRepo(),
+      deadlineProvider.syncRepo(),
+      reminderProvider.syncRepo(),
+      groupProvider.syncRepo(),
+      subtaskProvider.syncRepo(),
+    ]);
+
+    await eventProvider.resetCalendar();
+  }
+
   @override
   void dispose() {
     toDoProvider.removeListener(updateMyDay);
@@ -196,7 +213,15 @@ class _HomeScreen extends State<HomeScreen> {
     groupProvider.removeListener(resetNavGroups);
     navScrollController.dispose();
     IsarService.instance.dbSize.removeListener(alertSizeLimit);
+    WidgetsBinding.instance.removeObserver(this);
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) async {
+    if (AppLifecycleState.resumed == state && userProvider.isConnected.value) {
+      await syncOnline();
+    }
   }
 
   void alertSizeLimit() {
@@ -244,14 +269,33 @@ class _HomeScreen extends State<HomeScreen> {
     }
   }
 
-  void handlePop(bool didPop){
+  void handlePop(bool didPop) {
     // Open the navigation drawer if mobile.
-    if(layoutProvider.smallScreen){
+    if (layoutProvider.smallScreen) {
       Scaffold.of(context).openDrawer();
     }
     // Otherwise, assume the swipe is to open the nav drawer.
     layoutProvider.navDrawerWidth = Constants.navigationDrawerMaxWidth;
     layoutProvider.drawerOpened = true;
+  }
+
+  void handleDragEnd(DragEndDetails details) {
+    layoutProvider.dragging = false;
+    if ((0 - layoutProvider.navDrawerWidth).abs() <=
+        Constants.navigationDrawerCloseThreshold) {
+      layoutProvider.navDrawerWidth = 0;
+      layoutProvider.drawerOpened = false;
+    }
+  }
+
+  void handleDragUpdate(DragUpdateDetails details) {
+    if (!layoutProvider.drawerOpened) {
+      layoutProvider.drawerOpened = !layoutProvider.drawerOpened;
+    }
+    layoutProvider.dragging = true;
+    layoutProvider.navDrawerWidth =
+        (layoutProvider.navDrawerWidth + details.delta.dx)
+            .clamp(0, Constants.navigationDrawerMaxWidth);
   }
 
   @override
@@ -260,9 +304,9 @@ class _HomeScreen extends State<HomeScreen> {
     // print("MQ: ${layoutProvider.size}");
     return (Platform.isWindows)
         ? PopScope(
-          canPop: false,
-          onPopInvoked: handlePop,
-          child: DragToResizeArea(
+            canPop: false,
+            onPopInvoked: handlePop,
+            child: DragToResizeArea(
               child: Consumer<LayoutProvider>(builder:
                   (BuildContext context, LayoutProvider value, Widget? child) {
                 return (value.largeScreen)
@@ -270,17 +314,17 @@ class _HomeScreen extends State<HomeScreen> {
                     : _buildMobile(context: context);
               }),
             ),
-        )
+          )
         : PopScope(
-          canPop: false,
-          onPopInvoked: handlePop,
-          child: Consumer<LayoutProvider>(builder:
-              (BuildContext context, LayoutProvider value, Widget? child) {
+            canPop: false,
+            onPopInvoked: handlePop,
+            child: Consumer<LayoutProvider>(builder:
+                (BuildContext context, LayoutProvider value, Widget? child) {
               return (value.largeScreen)
                   ? _buildDesktop(context: context)
                   : _buildMobile(context: context);
             }),
-        );
+          );
   }
 
   Widget _buildDesktop({required BuildContext context}) {
@@ -289,64 +333,57 @@ class _HomeScreen extends State<HomeScreen> {
         Row(children: [
           // This is a workaround for a standard navigation drawer
           // until m3 spec is fully implemented in flutter.
-          TitlebarSafeArea(
-            child: TweenAnimationBuilder<double>(
-                duration: Duration(
-                    milliseconds: (layoutProvider.dragging)
-                        ? 0
-                        : Constants.drawerSlideTime),
-                curve: Curves.easeOutQuint,
-                tween: Tween<double>(
-                  begin: layoutProvider.drawerOpened
-                      ? layoutProvider.navDrawerWidth
-                      : 0.0,
-                  end: layoutProvider.drawerOpened
-                      ? layoutProvider.navDrawerWidth
-                      : 0.0,
-                ),
-                builder: (BuildContext context, double value, Widget? child) {
-                  //TransparentMacOSSidebar
-                  return TransparentMacOSSidebar(
-                    child: Container(
-                      width: value,
-                      clipBehavior: Clip.hardEdge,
-                      decoration: const BoxDecoration(),
-                      child: OverflowBox(
-                        minWidth: Constants.navigationDrawerMaxWidth,
-                        maxWidth: Constants.navigationDrawerMaxWidth,
-                        child: Consumer<ThemeProvider>(builder:
-                            (BuildContext context, ThemeProvider value,
-                                Widget? child) {
-                          return DesktopDrawerWrapper(
-                            elevation: value.sidebarElevation,
-                            drawer: buildNavigationDrawer(
-                                context: context, largeScreen: true),
-                          );
-                        }),
+          // Slideable for touchscreens
+          GestureDetector(
+            behavior: HitTestBehavior.translucent,
+            supportedDevices: const {PointerDeviceKind.touch},
+            onHorizontalDragEnd: handleDragEnd,
+            onHorizontalDragUpdate: handleDragUpdate,
+            child: TitlebarSafeArea(
+              child: TweenAnimationBuilder<double>(
+                  duration: Duration(
+                      milliseconds: (layoutProvider.dragging)
+                          ? 0
+                          : Constants.drawerSlideTime),
+                  curve: Curves.easeOutQuint,
+                  tween: Tween<double>(
+                    begin: layoutProvider.drawerOpened
+                        ? layoutProvider.navDrawerWidth
+                        : 0.0,
+                    end: layoutProvider.drawerOpened
+                        ? layoutProvider.navDrawerWidth
+                        : 0.0,
+                  ),
+                  builder: (BuildContext context, double value, Widget? child) {
+                    //TransparentMacOSSidebar
+                    return TransparentMacOSSidebar(
+                      child: Container(
+                        width: value,
+                        clipBehavior: Clip.hardEdge,
+                        decoration: const BoxDecoration(),
+                        child: OverflowBox(
+                          minWidth: Constants.navigationDrawerMaxWidth,
+                          maxWidth: Constants.navigationDrawerMaxWidth,
+                          child: Consumer<ThemeProvider>(builder:
+                              (BuildContext context, ThemeProvider value,
+                                  Widget? child) {
+                            return DesktopDrawerWrapper(
+                              elevation: value.sidebarElevation,
+                              drawer: buildNavigationDrawer(
+                                  context: context, largeScreen: true),
+                            );
+                          }),
+                        ),
                       ),
-                    ),
-                  );
-                }),
+                    );
+                  }),
+            ),
           ),
           GestureDetector(
             behavior: HitTestBehavior.translucent,
             supportedDevices: PointerDeviceKind.values.toSet(),
-            onHorizontalDragEnd: (DragEndDetails details) {
-              layoutProvider.dragging = false;
-              if ((0 - layoutProvider.navDrawerWidth).abs() <=
-                  precisionErrorTolerance) {
-                layoutProvider.drawerOpened = false;
-              }
-            },
-            onHorizontalDragUpdate: (DragUpdateDetails details) {
-              if (!layoutProvider.drawerOpened) {
-                layoutProvider.drawerOpened = !layoutProvider.drawerOpened;
-              }
-              layoutProvider.dragging = true;
-              layoutProvider.navDrawerWidth =
-                  (layoutProvider.navDrawerWidth + details.delta.dx)
-                      .clamp(0, Constants.navigationDrawerMaxWidth);
-            },
+            onHorizontalDragEnd: handleDragEnd,
+            onHorizontalDragUpdate: handleDragUpdate,
             child: TweenAnimationBuilder<double>(
                 duration:
                     const Duration(milliseconds: Constants.drawerSlideTime),
@@ -404,9 +441,11 @@ class _HomeScreen extends State<HomeScreen> {
             child: Consumer<ThemeProvider>(builder:
                 (BuildContext context, ThemeProvider value, Widget? child) {
               return Scaffold(
-                  backgroundColor: (!(Platform.isIOS || Platform.isAndroid)) ? Theme.of(context)
-                      .scaffoldBackgroundColor
-                      .withOpacity(themeProvider.scaffoldOpacity) : Theme.of(context).scaffoldBackgroundColor,
+                  backgroundColor: (!(Platform.isIOS || Platform.isAndroid))
+                      ? Theme.of(context)
+                          .scaffoldBackgroundColor
+                          .withOpacity(themeProvider.scaffoldOpacity)
+                      : Theme.of(context).scaffoldBackgroundColor,
                   floatingActionButtonLocation: ExpandableFab.location,
                   floatingActionButton: MainFloatingActionButton(
                     fabKey: _fabKey,
@@ -426,9 +465,11 @@ class _HomeScreen extends State<HomeScreen> {
 
   Widget _buildMobile({required BuildContext context}) {
     return Scaffold(
-        backgroundColor: (!(Platform.isIOS || Platform.isAndroid)) ?  Theme.of(context)
-            .scaffoldBackgroundColor
-            .withOpacity(themeProvider.scaffoldOpacity) : Theme.of(context).scaffoldBackgroundColor,
+        backgroundColor: (!(Platform.isIOS || Platform.isAndroid))
+            ? Theme.of(context)
+                .scaffoldBackgroundColor
+                .withOpacity(themeProvider.scaffoldOpacity)
+            : Theme.of(context).scaffoldBackgroundColor,
         appBar: buildAppBar(mobile: true),
         drawer: buildNavigationDrawer(context: context, largeScreen: false),
         floatingActionButtonLocation: ExpandableFab.location,
@@ -488,7 +529,7 @@ class _HomeScreen extends State<HomeScreen> {
   Widget getAppBarLeading({bool mobile = false}) {
     if (mobile) {
       return Builder(builder: (BuildContext context) {
-        if (Platform.isMacOS){
+        if (Platform.isMacOS) {
           return TitlebarSafeArea(
             child: IconButton(
                 hoverColor: Colors.transparent,
@@ -539,12 +580,13 @@ class _HomeScreen extends State<HomeScreen> {
   Widget buildNavigationDrawer(
       {required BuildContext context, bool largeScreen = false}) {
     return NavigationDrawer(
-        backgroundColor: (largeScreen && (!(Platform.isIOS || Platform.isAndroid)))
-            ? Theme.of(context)
-                .colorScheme
-                .surface
-                .withOpacity(themeProvider.sidebarOpacity)
-            : null,
+        backgroundColor:
+            (largeScreen && (!(Platform.isIOS || Platform.isAndroid)))
+                ? Theme.of(context)
+                    .colorScheme
+                    .surface
+                    .withOpacity(themeProvider.sidebarOpacity)
+                : null,
         onDestinationSelected: (index) {
           layoutProvider.selectedPageIndex = index;
 

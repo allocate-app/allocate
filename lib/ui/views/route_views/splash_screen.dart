@@ -93,8 +93,8 @@ class _SplashScreen extends State<SplashScreen> {
         NotificationService.instance.init(),
       ]);
 
-      // The splash screen is going too fast.
-      await Future.delayed(const Duration(seconds: 2));
+      // Splash screen should linger to give enough time for syncing.
+      await Future.delayed(const Duration(seconds: 3));
     });
   }
 
@@ -119,10 +119,8 @@ class _SplashScreen extends State<SplashScreen> {
     layoutProvider.isTablet = layoutProvider.isMobile &&
         (layoutProvider.size.shortestSide > Constants.smallScreen);
     return (Platform.isWindows)
-        ? const PopScope(canPop: false,
-        child: DragToResizeArea(child: LoadingScreen()))
-        : const PopScope(
-      canPop: false,
-        child: LoadingScreen());
+        ? const PopScope(
+            canPop: false, child: DragToResizeArea(child: LoadingScreen()))
+        : const PopScope(canPop: false, child: LoadingScreen());
   }
 }

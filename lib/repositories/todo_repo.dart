@@ -130,6 +130,8 @@ class ToDoRepo extends ChangeNotifier implements ToDoRepository {
     _isarClient.toDos.watchLazy().listen((_) async {
       await IsarService.instance.updateDBSize();
     });
+
+    handleUserChange();
   }
 
   Future<void> handleUserChange() async {
@@ -486,20 +488,21 @@ class ToDoRepo extends ChangeNotifier implements ToDoRepository {
     if (!isConnected) {
       return data;
     }
-    List<Map<String, dynamic>> toDoEntities = await _supabaseClient
-        .from("toDos")
-        .select()
-        .eq("uuid", uuid)
-        .order("lastUpdated", ascending: false)
-        .range(offset, offset + limit);
 
-    for (Map<String, dynamic> entity in toDoEntities) {
-      try {
+    try {
+      List<Map<String, dynamic>> toDoEntities = await _supabaseClient
+          .from("toDos")
+          .select()
+          .eq("uuid", uuid)
+          .order("lastUpdated", ascending: false)
+          .range(offset, offset + limit);
+      for (Map<String, dynamic> entity in toDoEntities) {
         data.add(ToDo.fromEntity(entity: entity));
-      } on Error catch (e, stacktrace) {
-        log(e.toString(), stackTrace: stacktrace);
       }
+    } on Error catch (e, stacktrace) {
+      log(e.toString(), stackTrace: stacktrace);
     }
+
     return data;
   }
 

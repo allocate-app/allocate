@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:isar/isar.dart';
@@ -124,6 +126,8 @@ class ReminderRepo extends ChangeNotifier implements ReminderRepository {
     _isarClient.reminders.watchLazy().listen((_) async {
       await IsarService.instance.updateDBSize();
     });
+
+    handleUserChange();
   }
 
   Future<void> handleUserChange() async {
@@ -467,15 +471,19 @@ class ReminderRepo extends ChangeNotifier implements ReminderRepository {
     if (!isConnected) {
       return data;
     }
-    List<Map<String, dynamic>> reminderEntities = await _supabaseClient
-        .from("reminders")
-        .select()
-        .eq("uuid", uuid)
-        .order("lastUpdated", ascending: false)
-        .range(offset, offset + limit);
+    try {
+      List<Map<String, dynamic>> reminderEntities = await _supabaseClient
+          .from("reminders")
+          .select()
+          .eq("uuid", uuid)
+          .order("lastUpdated", ascending: false)
+          .range(offset, offset + limit);
 
-    for (Map<String, dynamic> entity in reminderEntities) {
-      data.add(Reminder.fromEntity(entity: entity));
+      for (Map<String, dynamic> entity in reminderEntities) {
+        data.add(Reminder.fromEntity(entity: entity));
+      }
+    } on Error catch (e, stacktrace) {
+      log(e.toString(), stackTrace: stacktrace);
     }
     return data;
   }

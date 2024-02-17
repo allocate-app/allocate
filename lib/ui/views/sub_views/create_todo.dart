@@ -447,7 +447,10 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                         child: PaddedDivider(padding: Constants.padding),
                       ),
 
-                      _buildSearchBar(),
+                      SafeArea(
+                        child: _buildSearchBar(
+                            padding: const EdgeInsets.all(Constants.padding)),
+                      ),
 
                       const Padding(
                         padding:

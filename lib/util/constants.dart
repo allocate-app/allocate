@@ -447,15 +447,16 @@ abstract class Constants {
   // I don't know if I wanna change it
   static const double navigationDrawerMaxWidth = 304;
   static const double navigationDrawerMinThreshold = 100;
+  static const double navigationDrawerCloseThreshold = 10;
 
   static const double verticalDividerThickness = 3;
 
   // This is approximate
   static const int navDestinationHeight = 56;
 
-  // KEEP THESE AS IS.
-  static const double hugeScreen = 1000;
-  static const double largeScreen = 700;
+  // hugescreen needs a larger breakpoint to accommodate scrn.
+  static const double hugeScreen = 1200;
+  static const double largeScreen = 850;
 
   static const double smallScreen = 450;
 
