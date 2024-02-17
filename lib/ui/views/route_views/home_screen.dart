@@ -282,7 +282,7 @@ class _HomeScreen extends State<HomeScreen> with WidgetsBindingObserver {
   void handleDragEnd(DragEndDetails details) {
     layoutProvider.dragging = false;
     if ((0 - layoutProvider.navDrawerWidth).abs() <=
-        Constants.navigationDrawerCloseThreshold) {
+        ((layoutProvider.isMobile)? Constants.navigationDrawerMinThreshold :Constants.navigationDrawerCloseThreshold)) {
       layoutProvider.navDrawerWidth = 0;
       layoutProvider.drawerOpened = false;
     }

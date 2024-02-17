@@ -39,6 +39,7 @@ class _MainFloatingActionButton extends State<MainFloatingActionButton> {
     return Stack(
       children: [
         if (Provider.of<UserProvider>(context, listen: false).isConnected.value)
+          // This works poorly -> TODO: fix.
           Padding(
             padding: const EdgeInsets.only(
                 bottom: Constants.quadPadding * 2 + Constants.doublePadding,
