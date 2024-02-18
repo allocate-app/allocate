@@ -35,6 +35,7 @@ class GroupViewModel extends ChangeNotifier
     _id = model.id;
     _customViewIndex = model.customViewIndex;
     _name = model.name;
+    _description = model.description;
     _isSynced = model.isSynced;
     _toDelete = model.toDelete;
     _toDos = model.toDos;
@@ -97,18 +98,21 @@ class GroupViewModel extends ChangeNotifier
   }
 
   bool get isSynced => _isSynced;
+
   set isSynced(bool synced) {
     _isSynced = synced;
     notifyListeners();
   }
 
   bool get toDelete => _toDelete;
+
   set toDelete(bool synced) {
     _toDelete = synced;
     notifyListeners();
   }
 
   List<ToDo> get toDos => _toDos;
+
   set toDos(List<ToDo> newToDos) {
     _toDos = newToDos;
     notifyListeners();
