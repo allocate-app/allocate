@@ -318,7 +318,7 @@ abstract class Constants {
   static const int animationDelay = 200;
   static const int subtaskDelay = 100;
   static const int hitDelay = 150;
-  static const int fadeInTime = 300;
+  static const int fadeInTime = 800;
   static const int drawerSlideTime = 500;
   static const int slideInTime = 300;
   static const int footerTime = 600;
@@ -341,7 +341,8 @@ abstract class Constants {
 
   // In LP
   static const Size minDesktopSize = Size(500, 500);
-  static const Size defaultSize = Size(1000, 700);
+  static const Size defaultMacOSSize = Size(850, 600);
+  static const Size defaultSize = Size(1280, 720);
 
   // This is just for testing mobile formats.
   // On my main machine, this works out to 320 x 320 logical pixels.
@@ -449,6 +450,7 @@ abstract class Constants {
   static const double navigationDrawerMaxWidth = 304;
   static const double navigationDrawerMinThreshold = 100;
   static const double navigationDrawerCloseThreshold = 10;
+  static const double navigationDrawerMobileCloseThreshold = 50;
 
   static const double verticalDividerThickness = 3;
 
@@ -477,8 +479,8 @@ abstract class Constants {
   static const double quadPadding = padding * 4;
   static const double outerDialogPadding = 30;
   static const double mobileDialogPadding = 10;
-  static const EdgeInsets fabPadding =
-      EdgeInsets.only(bottom: Constants.quadPadding * 2);
+  static const EdgeInsets fabPadding = EdgeInsets.only(bottom: quadPadding * 2);
+
   static const int historyLength = 5;
   static const double circular = 50;
   static const double curvedCorners = 15;

@@ -38,8 +38,8 @@ void main() async {
       await windowManager.setAsFrameless();
     }
 
-    WindowOptions windowOptions = const WindowOptions(
-      size: Constants.defaultSize,
+    WindowOptions windowOptions = WindowOptions(
+      size: (Platform.isMacOS) ? Constants.defaultMacOSSize: Constants.defaultSize,
       minimumSize:
           (kDebugMode) ? Constants.testDesktopSize : Constants.minDesktopSize,
       center: true,
