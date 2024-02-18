@@ -39,6 +39,7 @@ void main() async {
     }
 
     WindowOptions windowOptions = const WindowOptions(
+      size: Constants.defaultSize,
       minimumSize:
           (kDebugMode) ? Constants.testDesktopSize : Constants.minDesktopSize,
       center: true,

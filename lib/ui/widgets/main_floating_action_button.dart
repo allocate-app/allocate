@@ -16,11 +16,12 @@ import '../views/sub_views/create_reminder.dart';
 import '../views/sub_views/create_todo.dart';
 
 class MainFloatingActionButton extends StatefulWidget {
-  const MainFloatingActionButton(
-      {super.key, this.fabKey, this.secondaryFabKey});
+  const MainFloatingActionButton({
+    super.key,
+    this.fabKey,
+  });
 
   final GlobalKey<ExpandableFabState>? fabKey;
-  final GlobalKey<ExpandableFabState>? secondaryFabKey;
 
   @override
   State<MainFloatingActionButton> createState() => _MainFloatingActionButton();
@@ -28,13 +29,11 @@ class MainFloatingActionButton extends StatefulWidget {
 
 class _MainFloatingActionButton extends State<MainFloatingActionButton> {
   late final GlobalKey<ExpandableFabState> _key;
-  late final GlobalKey<ExpandableFabState> _secondaryKey;
 
   @override
   void initState() {
     super.initState();
     _key = widget.fabKey ?? GlobalKey<ExpandableFabState>();
-    _secondaryKey = widget.secondaryFabKey ?? GlobalKey<ExpandableFabState>();
   }
 
   // This

@@ -70,7 +70,6 @@ class _HomeScreen extends State<HomeScreen> with WidgetsBindingObserver {
 
   late final ScrollPhysics scrollPhysics;
   late final GlobalKey<ExpandableFabState> _fabKey;
-  late final GlobalKey<ExpandableFabState> _secondaryFabKey;
 
   @override
   void initState() {
@@ -118,7 +117,6 @@ class _HomeScreen extends State<HomeScreen> with WidgetsBindingObserver {
     }
 
     _fabKey = GlobalKey<ExpandableFabState>();
-    _secondaryFabKey = GlobalKey<ExpandableFabState>();
     // Reset the initial index in ApplicationService ->
     // This route is only pushed on an application launch, relaunch,
     // Or a deeplink routing.
@@ -287,7 +285,9 @@ class _HomeScreen extends State<HomeScreen> with WidgetsBindingObserver {
   void handleDragEnd(DragEndDetails details) {
     layoutProvider.dragging = false;
     if ((0 - layoutProvider.navDrawerWidth).abs() <=
-        Constants.navigationDrawerCloseThreshold) {
+        ((layoutProvider.isMobile)
+            ? Constants.navigationDrawerMinThreshold
+            : Constants.navigationDrawerCloseThreshold)) {
       layoutProvider.navDrawerWidth = 0;
       layoutProvider.drawerOpened = false;
     }
@@ -454,7 +454,6 @@ class _HomeScreen extends State<HomeScreen> with WidgetsBindingObserver {
                   floatingActionButtonLocation: ExpandableFab.location,
                   floatingActionButton: MainFloatingActionButton(
                     fabKey: _fabKey,
-                    secondaryFabKey: _secondaryFabKey,
                   ),
                   resizeToAvoidBottomInset: false,
                   appBar: buildAppBar(mobile: false),
@@ -481,7 +480,6 @@ class _HomeScreen extends State<HomeScreen> with WidgetsBindingObserver {
         floatingActionButtonLocation: ExpandableFab.location,
         floatingActionButton: MainFloatingActionButton(
           fabKey: _fabKey,
-          secondaryFabKey: _secondaryFabKey,
         ),
         resizeToAvoidBottomInset: false,
         body: SafeArea(
