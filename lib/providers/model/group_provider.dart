@@ -426,7 +426,7 @@ class GroupProvider extends ChangeNotifier {
 
   Future<List<Group>> searchGroups(
           {required String searchString, bool toDelete = false}) async =>
-      await _groupRepo.search(searchString: searchString, toDelete: false);
+      await _groupRepo.search(searchString: searchString, toDelete: toDelete);
 
   Future<List<Group>> mostRecent({int limit = 5}) async {
     List<Group> groups = await _groupRepo.mostRecent(limit: 5);
