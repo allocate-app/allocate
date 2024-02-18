@@ -277,7 +277,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
   @override
   Widget build(BuildContext context) => LayoutBuilder(
         builder: (BuildContext context, BoxConstraints constraints) {
-          if (constraints.maxWidth > Constants.largeScreen) {
+          if (layoutProvider.largeScreen) {
             return _buildDesktopDialog(
               context: context,
             );
@@ -365,8 +365,9 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                                           horizontal: Constants.halfPadding),
                                       children: [
                                         _buildSearchBar(
-                                            padding: const EdgeInsets.all(
-                                                Constants.padding)),
+                                            padding: const EdgeInsets.symmetric(
+                                                horizontal:
+                                                    Constants.quarterPadding)),
 
                                         const PaddedDivider(
                                             padding: Constants.padding),
@@ -449,7 +450,8 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
 
                       SafeArea(
                         child: _buildSearchBar(
-                            padding: const EdgeInsets.all(Constants.padding)),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: Constants.quarterPadding)),
                       ),
 
                       const Padding(

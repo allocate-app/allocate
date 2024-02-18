@@ -127,7 +127,7 @@ class _GroupsListScreen extends State<GroupsListScreen> {
               rebuildNotifiers: [groupProvider],
               rebuildCallback: ({required List<Group> items}) {
                 groupProvider.groups = items;
-                groupProvider.rebuild = false;
+                groupProvider.softRebuild = false;
               },
               onFetch: (groupProvider.userViewModel?.reduceMotion ?? false)
                   ? null
@@ -151,6 +151,7 @@ class _GroupsListScreen extends State<GroupsListScreen> {
                 if (groupProvider.sortMethod == SortMethod.none) {
                   return ListViews.reorderableGroups(
                     key: key,
+                    listPadding: Constants.fabPadding,
                     context: context,
                     groups: items,
                     checkDelete:
@@ -168,6 +169,7 @@ class _GroupsListScreen extends State<GroupsListScreen> {
                 }
                 return ListViews.immutableGroups(
                     key: key,
+                    listPadding: Constants.fabPadding,
                     groups: items,
                     checkDelete:
                         groupProvider.userViewModel?.checkDelete ?? true,

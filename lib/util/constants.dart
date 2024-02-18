@@ -318,7 +318,7 @@ abstract class Constants {
   static const int animationDelay = 200;
   static const int subtaskDelay = 100;
   static const int hitDelay = 150;
-  static const int fadeInTime = 800;
+  static const int fadeInTime = 300;
   static const int drawerSlideTime = 500;
   static const int slideInTime = 300;
   static const int footerTime = 600;
@@ -476,7 +476,8 @@ abstract class Constants {
   static const double quadPadding = padding * 4;
   static const double outerDialogPadding = 30;
   static const double mobileDialogPadding = 10;
-
+  static const EdgeInsets fabPadding =
+      EdgeInsets.only(bottom: Constants.quadPadding * 2);
   static const int historyLength = 5;
   static const double circular = 50;
   static const double curvedCorners = 15;

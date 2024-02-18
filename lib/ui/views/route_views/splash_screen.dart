@@ -92,9 +92,6 @@ class _SplashScreen extends State<SplashScreen> {
         Provider.of<UserProvider>(context, listen: false).init(),
         NotificationService.instance.init(),
       ]);
-
-      // Splash screen should linger to give enough time for syncing.
-      await Future.delayed(const Duration(seconds: 3));
     });
   }
 

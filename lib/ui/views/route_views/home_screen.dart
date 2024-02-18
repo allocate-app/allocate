@@ -70,6 +70,7 @@ class _HomeScreen extends State<HomeScreen> with WidgetsBindingObserver {
 
   late final ScrollPhysics scrollPhysics;
   late final GlobalKey<ExpandableFabState> _fabKey;
+  late final GlobalKey<ExpandableFabState> _secondaryFabKey;
 
   @override
   void initState() {
@@ -117,6 +118,7 @@ class _HomeScreen extends State<HomeScreen> with WidgetsBindingObserver {
     }
 
     _fabKey = GlobalKey<ExpandableFabState>();
+    _secondaryFabKey = GlobalKey<ExpandableFabState>();
     // Reset the initial index in ApplicationService ->
     // This route is only pushed on an application launch, relaunch,
     // Or a deeplink routing.
@@ -192,6 +194,9 @@ class _HomeScreen extends State<HomeScreen> with WidgetsBindingObserver {
   }
 
   Future<void> syncOnline() async {
+    if (!userProvider.isConnected.value) {
+      return;
+    }
     await Future.wait([
       userProvider.syncUser(),
       toDoProvider.syncRepo(),
@@ -219,7 +224,7 @@ class _HomeScreen extends State<HomeScreen> with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) async {
-    if (AppLifecycleState.resumed == state && userProvider.isConnected.value) {
+    if (AppLifecycleState.resumed == state) {
       await syncOnline();
     }
   }
@@ -449,6 +454,7 @@ class _HomeScreen extends State<HomeScreen> with WidgetsBindingObserver {
                   floatingActionButtonLocation: ExpandableFab.location,
                   floatingActionButton: MainFloatingActionButton(
                     fabKey: _fabKey,
+                    secondaryFabKey: _secondaryFabKey,
                   ),
                   resizeToAvoidBottomInset: false,
                   appBar: buildAppBar(mobile: false),
@@ -475,6 +481,7 @@ class _HomeScreen extends State<HomeScreen> with WidgetsBindingObserver {
         floatingActionButtonLocation: ExpandableFab.location,
         floatingActionButton: MainFloatingActionButton(
           fabKey: _fabKey,
+          secondaryFabKey: _secondaryFabKey,
         ),
         resizeToAvoidBottomInset: false,
         body: SafeArea(
@@ -599,11 +606,8 @@ class _HomeScreen extends State<HomeScreen> with WidgetsBindingObserver {
         selectedIndex: layoutProvider.selectedPageIndex,
         children: [
           Padding(
-            padding: const EdgeInsets.only(
-              top: Constants.padding,
-              bottom: Constants.padding,
-              right: Constants.padding,
-              left: Constants.padding,
+            padding: const EdgeInsets.all(
+              Constants.padding,
             ),
             child: ListTile(
               shape: const RoundedRectangleBorder(

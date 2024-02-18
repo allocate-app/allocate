@@ -123,7 +123,7 @@ class _RemindersListScreen extends State<RemindersListScreen> {
                     rebuildNotifiers: [reminderProvider],
                     rebuildCallback: ({required List<Reminder> items}) {
                       reminderProvider.reminders = items;
-                      reminderProvider.rebuild = false;
+                      reminderProvider.softRebuild = false;
                     },
                     onFetch:
                         (reminderProvider.userViewModel?.reduceMotion ?? false)
@@ -155,6 +155,7 @@ class _RemindersListScreen extends State<RemindersListScreen> {
                       if (reminderProvider.sortMethod == SortMethod.none) {
                         return ListViews.reorderableReminders(
                           key: key,
+                          listPadding: Constants.fabPadding,
                           context: context,
                           reminders: items,
                           checkDelete:
@@ -166,6 +167,7 @@ class _RemindersListScreen extends State<RemindersListScreen> {
                       }
                       return ListViews.immutableReminders(
                         key: key,
+                        listPadding: Constants.fabPadding,
                         reminders: items,
                         checkDelete:
                             reminderProvider.userViewModel?.checkDelete ?? true,

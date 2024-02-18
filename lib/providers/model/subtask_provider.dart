@@ -43,6 +43,9 @@ class SubtaskProvider extends ChangeNotifier {
   }
 
   void setUser({UserViewModel? newUser}) {
+    if (newUser == userViewModel) {
+      return;
+    }
     userViewModel = newUser;
     notifyListeners();
   }

@@ -94,7 +94,7 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
     nameEditingController = TextEditingController(text: vm.name);
     nameEditingController.addListener(watchName);
 
-    descriptionEditingController = TextEditingController();
+    descriptionEditingController = TextEditingController(text: vm.description);
     descriptionEditingController.addListener(watchDescription);
   }
 
@@ -291,7 +291,7 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
   @override
   Widget build(BuildContext context) => LayoutBuilder(
           builder: (BuildContext context, BoxConstraints constraints) {
-        if (constraints.maxWidth > Constants.largeScreen) {
+        if (layoutProvider.largeScreen) {
           return _buildDesktopDialog(context: context);
         }
         return _buildMobileDialog(

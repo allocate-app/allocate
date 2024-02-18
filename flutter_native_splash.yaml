@@ -6,5 +6,5 @@ flutter_native_splash:
   android_12:
     color: "#DDDDDD"
     color_dark: "#222222"
-    image: assets/allocatelogo.png
-    image_dark: assets/allocatelogo.png
+    image: assets/allocateAndroidLogo.png
+    image_dark: assets/allocateAndroidLogo.png

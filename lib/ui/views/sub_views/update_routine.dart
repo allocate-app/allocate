@@ -209,7 +209,7 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
   @override
   Widget build(BuildContext context) => LayoutBuilder(
         builder: (BuildContext context, BoxConstraints constraints) {
-          if (constraints.maxWidth > Constants.largeScreen) {
+          if (layoutProvider.largeScreen) {
             return _buildDesktopDialog(
               context: context,
             );
@@ -378,8 +378,9 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
                 Tiles.nameTile(
                     context: context,
                     leading: ListTileWidgets.routineIcon(
+                      outerPadding: const EdgeInsets.symmetric(
+                          horizontal: Constants.halfPadding),
                       currentContext: context,
-                      scale: Constants.largeCheckboxMinScale,
                       times: value.$2,
                       handleRoutineTimeChange: (
                           {required int newRoutineTimes}) {

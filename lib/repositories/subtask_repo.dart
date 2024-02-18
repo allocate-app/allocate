@@ -113,7 +113,7 @@ class SubtaskRepo extends ChangeNotifier implements SubtaskRepository {
       }
 
       // This is to give enough time for the internet to check.
-      await Future.delayed(const Duration(seconds: 10));
+      await Future.delayed(const Duration(seconds: 2));
       if (!isConnected) {
         return;
       }

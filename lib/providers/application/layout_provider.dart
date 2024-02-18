@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:math';
 import 'dart:ui';
 
@@ -128,14 +129,19 @@ class LayoutProvider extends ChangeNotifier {
   // ie. number of tiles + user tile + room for 1 extra tile *
   // approx tile height in lp.
 
+  double get mobileMultiplier => (Platform.isIOS || Platform.isAndroid) ? 4 : 1;
+
+  double get mobileOpenedMultiplier =>
+      (Platform.isIOS || Platform.isAndroid) ? 7.5 : 1;
+
   double get tileSpace =>
       (Constants.viewRoutes.length + 2) * Constants.navDestinationHeight +
-      2.5 * Constants.doublePadding;
+      mobileMultiplier * Constants.doublePadding;
 
   double get tileSpaceOpened =>
-      (Constants.viewRoutes.length + 4 + navGroupsLength) *
+      (Constants.viewRoutes.length + 2 + (navGroupsLength + 1)) *
           Constants.navDestinationHeight +
-      3 * Constants.padding;
+      mobileOpenedMultiplier * Constants.doublePadding;
 
   double get footerOffset => max(size.height - tileSpace, 0);
 

@@ -180,7 +180,7 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
   @override
   Widget build(BuildContext context) => LayoutBuilder(
           builder: (BuildContext context, BoxConstraints constraints) {
-        if (constraints.maxWidth > Constants.largeScreen) {
+        if (layoutProvider.largeScreen) {
           return _buildDesktopDialog(context: context);
         }
         return _buildMobileDialog(

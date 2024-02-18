@@ -165,8 +165,18 @@ class RoutineProvider extends ChangeNotifier {
 
   void setUser({UserViewModel? newUser}) {
     userViewModel = newUser;
+    if (userViewModel?.routineSorter == sorter &&
+        sameRoutines(newUser: newUser)) {
+      return;
+    }
     sorter = userViewModel?.routineSorter ?? sorter;
-    setDailyRoutines().then((_) => notifyListeners());
+    setDailyRoutines();
+  }
+
+  bool sameRoutines({UserViewModel? newUser}) {
+    return newUser?.curMornID == curMorning?.id &&
+        newUser?.curAftID == curAfternoon?.id &&
+        newUser?.curEveID == curEvening?.id;
   }
 
   int getRoutineTime({Routine? routine}) {

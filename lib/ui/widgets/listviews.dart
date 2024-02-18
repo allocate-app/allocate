@@ -79,6 +79,7 @@ abstract class ListViews {
     required List<ToDo> toDos,
     bool checkDelete = false,
     bool smallScreen = false,
+    EdgeInsets listPadding = EdgeInsets.zero,
     Future<void> Function({required ToDo toDo, required int index})?
         checkboxAnimateBeforeUpdate,
     Future<void> Function({ToDo? item})? onRemove,
@@ -86,6 +87,7 @@ abstract class ListViews {
   }) =>
       ReorderableListView.builder(
           key: key,
+          padding: listPadding,
           proxyDecorator: proxyDecorator,
           buildDefaultDragHandles: false,
           physics: physics,
@@ -129,6 +131,7 @@ abstract class ListViews {
     required List<ToDo> toDos,
     bool checkDelete = false,
     bool smallScreen = false,
+    EdgeInsets listPadding = EdgeInsets.zero,
     Future<void> Function({required ToDo toDo, required int index})?
         checkboxAnimateBeforeUpdate,
     Future<void> Function({ToDo? item})? onRemove,
@@ -136,6 +139,7 @@ abstract class ListViews {
   }) =>
       ListView.builder(
           key: key,
+          padding: listPadding,
           physics: physics,
           shrinkWrap: true,
           itemCount: toDos.length,
@@ -165,6 +169,7 @@ abstract class ListViews {
     required List<ToDo> toDos,
     bool checkDelete = false,
     bool smallScreen = false,
+    EdgeInsets listPadding = EdgeInsets.zero,
     Future<void> Function({required ToDo toDo, required int index})?
         checkboxAnimateBeforeUpdate,
     Future<void> Function({ToDo? item})? onRemove,
@@ -172,6 +177,7 @@ abstract class ListViews {
   }) =>
       ReorderableListView.builder(
           key: key,
+          padding: listPadding,
           proxyDecorator: proxyDecorator,
           buildDefaultDragHandles: false,
           physics: physics,
@@ -214,6 +220,7 @@ abstract class ListViews {
     Key? key,
     required List<ToDo> toDos,
     bool smallScreen = false,
+    EdgeInsets listPadding = EdgeInsets.zero,
     Future<void> Function({required ToDo toDo, required int index})?
         checkboxAnimateBeforeUpdate,
     Future<void> Function({ToDo? item})? onRemove,
@@ -221,6 +228,7 @@ abstract class ListViews {
   }) =>
       ListView.builder(
           key: key,
+          padding: listPadding,
           physics: physics,
           shrinkWrap: true,
           itemCount: toDos.length,
@@ -247,12 +255,14 @@ abstract class ListViews {
     Key? key,
     required BuildContext context,
     required List<Routine> routines,
+    EdgeInsets listPadding = EdgeInsets.zero,
     bool checkDelete = false,
     Future<void> Function({Routine? item})? onRemove,
     ScrollPhysics physics = const NeverScrollableScrollPhysics(),
   }) =>
       ReorderableListView.builder(
           key: key,
+          padding: listPadding,
           proxyDecorator: proxyDecorator,
           buildDefaultDragHandles: false,
           physics: physics,
@@ -291,11 +301,13 @@ abstract class ListViews {
     Key? key,
     required List<Routine> routines,
     bool checkDelete = false,
+    EdgeInsets listPadding = EdgeInsets.zero,
     ScrollPhysics physics = const NeverScrollableScrollPhysics(),
     Future<void> Function({Routine? item})? onRemove,
   }) =>
       ListView.builder(
           key: key,
+          padding: listPadding,
           physics: physics,
           shrinkWrap: true,
           itemCount: routines.length,
@@ -320,6 +332,7 @@ abstract class ListViews {
     Key? key,
     required BuildContext context,
     required List<Deadline> deadlines,
+    EdgeInsets listPadding = EdgeInsets.zero,
     bool checkDelete = false,
     bool smallScreen = false,
     ScrollPhysics physics = const NeverScrollableScrollPhysics(),
@@ -328,6 +341,7 @@ abstract class ListViews {
       ReorderableListView.builder(
           key: key,
           proxyDecorator: proxyDecorator,
+          padding: listPadding,
           buildDefaultDragHandles: false,
           physics: physics,
           shrinkWrap: true,
@@ -368,12 +382,14 @@ abstract class ListViews {
     required List<Deadline> deadlines,
     bool checkDelete = false,
     smallScreen = false,
+    EdgeInsets listPadding = EdgeInsets.zero,
     ScrollPhysics physics = const NeverScrollableScrollPhysics(),
     Future<void> Function({Deadline? item})? onRemove,
   }) =>
       ListView.builder(
           key: key,
           physics: physics,
+          padding: listPadding,
           shrinkWrap: true,
           itemCount: deadlines.length,
           itemBuilder: (BuildContext context, int index) {
@@ -399,6 +415,7 @@ abstract class ListViews {
     Key? key,
     required BuildContext context,
     required List<Reminder> reminders,
+    EdgeInsets listPadding = EdgeInsets.zero,
     bool checkDelete = false,
     bool smallScreen = false,
     ScrollPhysics physics = const NeverScrollableScrollPhysics(),
@@ -406,6 +423,7 @@ abstract class ListViews {
   }) =>
       ReorderableListView.builder(
           key: key,
+          padding: listPadding,
           proxyDecorator: proxyDecorator,
           buildDefaultDragHandles: false,
           physics: physics,
@@ -447,11 +465,13 @@ abstract class ListViews {
     required List<Reminder> reminders,
     bool checkDelete = false,
     bool smallScreen = false,
+    EdgeInsets listPadding = EdgeInsets.zero,
     ScrollPhysics physics = const NeverScrollableScrollPhysics(),
     Future<void> Function({Reminder? item})? onRemove,
   }) =>
       ListView.builder(
           key: key,
+          padding: listPadding,
           physics: physics,
           shrinkWrap: true,
           itemCount: reminders.length,
@@ -487,12 +507,14 @@ abstract class ListViews {
     EdgeInsetsGeometry separatorPadding =
         const EdgeInsets.symmetric(vertical: Constants.padding),
     ScrollPhysics physics = const NeverScrollableScrollPhysics(),
+    EdgeInsets listPadding = EdgeInsets.zero,
     Future<void> Function({Group? item})? onRemove,
     void Function({List<ToDo>? items, Set<ToDo>? itemSet})? onToDoFetch,
     Future<void> Function({ToDo? item})? onToDoRemove,
   }) =>
       CustomReorderableListView.separated(
           key: key,
+          padding: listPadding,
           proxyDecorator: proxyDecorator,
           buildDefaultDragHandles: false,
           physics: physics,
@@ -541,7 +563,6 @@ abstract class ListViews {
                   padding: separatorPadding,
                   child: const SizedBox.shrink()));
 
-  // TODO: migrate to listview.separarted.
   static Widget immutableGroups({
     Key? key,
     required List<Group> groups,
@@ -550,12 +571,14 @@ abstract class ListViews {
     EdgeInsetsGeometry separatorPadding =
         const EdgeInsets.symmetric(vertical: Constants.padding),
     ScrollPhysics physics = const NeverScrollableScrollPhysics(),
+    EdgeInsets listPadding = EdgeInsets.zero,
     Future<void> Function({Group? item})? onRemove,
     void Function({List<ToDo>? items, Set<ToDo>? itemSet})? onToDoFetch,
     Future<void> Function({ToDo? item})? onToDoRemove,
   }) =>
       ListView.separated(
         key: key,
+        padding: listPadding,
         shrinkWrap: true,
         physics: physics,
         itemCount: groups.length,
@@ -719,11 +742,13 @@ abstract class ListViews {
     void Function({required IModel model})? deleteModel,
     void Function({required IModel model})? onTap,
     Future<void> Function({IModel? item})? onRemove,
+    EdgeInsets listPadding = EdgeInsets.zero,
     bool smallScreen = false,
     bool showCategory = false,
   }) =>
       ListView.builder(
           key: key,
+          padding: listPadding,
           shrinkWrap: true,
           physics: physics,
           itemCount: models.length,
@@ -755,6 +780,7 @@ abstract class ListViews {
   static Widget eventList({
     required ValueListenable<List<CalendarEvent>> selectedEvents,
     bool smallScreen = false,
+    EdgeInsets listPadding = EdgeInsets.zero,
   }) =>
       ValueListenableBuilder<List<CalendarEvent>>(
           valueListenable: selectedEvents,
@@ -762,6 +788,7 @@ abstract class ListViews {
               (BuildContext context, List<CalendarEvent> value, Widget? child) {
             return ListView.builder(
                 physics: const NeverScrollableScrollPhysics(),
+                padding: listPadding,
                 shrinkWrap: true,
                 itemCount: value.length,
                 itemBuilder: (BuildContext context, int index) {

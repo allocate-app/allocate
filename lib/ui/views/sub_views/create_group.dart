@@ -220,7 +220,7 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
   @override
   Widget build(BuildContext context) => LayoutBuilder(
         builder: (BuildContext context, BoxConstraints constraints) {
-          if (constraints.maxWidth > Constants.largeScreen) {
+          if (layoutProvider.largeScreen) {
             return _buildDesktopDialog(
               context: context,
             );
@@ -486,6 +486,8 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
                     leading: ListTileWidgets.groupIcon(
                       currentContext: context,
                       iconPadding: const EdgeInsets.all(Constants.padding),
+                      outerPadding: const EdgeInsets.symmetric(
+                          horizontal: Constants.halfPadding),
                     ),
                     errorText: errorText,
                     hintText: "Group Name",

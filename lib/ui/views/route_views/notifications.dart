@@ -88,8 +88,7 @@ class _NotificationsScreen extends State<NotificationsScreen> {
 
     if (mounted) {
       setState(() => item.fade = Fade.fadeOut);
-      await Future.delayed(
-          const Duration(milliseconds: Constants.fadeOutTime));
+      await Future.delayed(const Duration(milliseconds: Constants.fadeOutTime));
     }
   }
 
@@ -100,8 +99,7 @@ class _NotificationsScreen extends State<NotificationsScreen> {
   }
 
   @override
-  Widget build(BuildContext context) =>
-      LayoutBuilder(
+  Widget build(BuildContext context) => LayoutBuilder(
         builder: (BuildContext context, BoxConstraints constraints) {
           return Padding(
               padding: const EdgeInsets.all(Constants.padding),
@@ -140,7 +138,7 @@ class _NotificationsScreen extends State<NotificationsScreen> {
                               ExpandedListTile(
                                   initiallyExpanded: true,
                                   leading:
-                                  const Icon(Icons.announcement_rounded),
+                                      const Icon(Icons.announcement_rounded),
                                   title: const AutoSizeText(
                                     "Deadlines",
                                     maxLines: 1,
@@ -157,48 +155,43 @@ class _NotificationsScreen extends State<NotificationsScreen> {
                                         offset: (deadlineProvider.rebuild)
                                             ? 0
                                             : deadlineProvider.deadlines.length,
-                                        listviewBuilder: ({Key? key,
-                                          required BuildContext context,
-                                          required List<Deadline> items,
-                                          Future<void> Function(
-                                              {Deadline? item})?
-                                          onRemove}) =>
+                                        listviewBuilder: (
+                                                {Key? key,
+                                                required BuildContext context,
+                                                required List<Deadline> items,
+                                                Future<void> Function(
+                                                        {Deadline? item})?
+                                                    onRemove}) =>
                                             ListViews.immutableDeadlines(
                                               key: key,
                                               deadlines: items,
                                               checkDelete: deadlineProvider
-                                                  .userViewModel
-                                                  ?.checkDelete ??
+                                                      .userViewModel
+                                                      ?.checkDelete ??
                                                   true,
                                               smallScreen:
-                                              layoutProvider.smallScreen,
+                                                  layoutProvider.smallScreen,
                                               onRemove: onRemove,
                                             ),
                                         query: deadlineProvider.getUpcoming,
-                                        onFetch: (deadlineProvider.userViewModel
-                                            ?.reduceMotion ?? false)
+                                        onFetch: (deadlineProvider.userViewModel?.reduceMotion ?? false)
                                             ? null
-                                            : ({List<Deadline>? items}) =>
-                                            onFetch(
+                                            : ({List<Deadline>? items}) => onFetch(
                                                 items: items,
-                                                itemSet: deadlineProvider
-                                                    .deadlines
+                                                itemSet: deadlineProvider.deadlines
                                                     .toSet()),
-                                        onRemove: (deadlineProvider
-                                            .userViewModel?.reduceMotion ??
-                                            false)
+                                        onRemove: (deadlineProvider.userViewModel?.reduceMotion ?? false)
                                             ? null
                                             : onRemove,
                                         onAppend:
-                                        (deadlineProvider.userViewModel
-                                            ?.reduceMotion ?? false)
-                                            ? null
-                                            : onAppend,
+                                            (deadlineProvider.userViewModel?.reduceMotion ?? false)
+                                                ? null
+                                                : onAppend,
                                         rebuildNotifiers: [deadlineProvider],
                                         rebuildCallback: (
                                             {required List<Deadline> items}) {
                                           deadlineProvider.deadlines = items;
-                                          deadlineProvider.rebuild = false;
+                                          deadlineProvider.softRebuild = false;
                                         }),
                                   ]),
                               // Reminders
@@ -222,49 +215,45 @@ class _NotificationsScreen extends State<NotificationsScreen> {
                                             ? 0
                                             : reminderProvider.reminders.length,
                                         onFetch: (reminderProvider.userViewModel
-                                            ?.reduceMotion ??
-                                            false)
+                                                    ?.reduceMotion ??
+                                                false)
                                             ? null
-                                            : ({List<Reminder>? items}) =>
-                                            onFetch(
+                                            : ({List<Reminder>? items}) => onFetch(
                                                 items: items,
-                                                itemSet: reminderProvider
-                                                    .reminders
+                                                itemSet: reminderProvider.reminders
                                                     .toSet()),
-                                        onRemove: (reminderProvider
-                                            .userViewModel
-                                            ?.reduceMotion ??
-                                            false)
+                                        onRemove: (reminderProvider.userViewModel
+                                                    ?.reduceMotion ??
+                                                false)
                                             ? null
                                             : onRemove,
                                         onAppend: (reminderProvider
-                                            .userViewModel
-                                            ?.reduceMotion ??
-                                            false)
+                                                    .userViewModel
+                                                    ?.reduceMotion ??
+                                                false)
                                             ? null
                                             : onAppend,
-                                        listviewBuilder: ({Key? key,
-                                          required BuildContext context,
-                                          required List<Reminder> items,
-                                          Future<
-                                              void> Function({Reminder? item})? onRemove}) =>
+                                        listviewBuilder: (
+                                                {Key? key,
+                                                required BuildContext context,
+                                                required List<Reminder> items,
+                                                Future<void> Function({Reminder? item})? onRemove}) =>
                                             ListViews.immutableReminders(
                                               key: key,
                                               reminders: items,
                                               checkDelete: reminderProvider
-                                                  .userViewModel
-                                                  ?.checkDelete ??
+                                                      .userViewModel
+                                                      ?.checkDelete ??
                                                   true,
                                               smallScreen:
-                                              layoutProvider.smallScreen,
+                                                  layoutProvider.smallScreen,
                                               onRemove: onRemove,
                                             ),
                                         query: reminderProvider.getUpcoming,
                                         rebuildNotifiers: [reminderProvider],
-                                        rebuildCallback: (
-                                            {required List<Reminder> items}) {
+                                        rebuildCallback: ({required List<Reminder> items}) {
                                           reminderProvider.reminders = items;
-                                          reminderProvider.rebuild = false;
+                                          reminderProvider.softRebuild = false;
                                         }),
                                   ]),
                               // TODOS
@@ -288,42 +277,42 @@ class _NotificationsScreen extends State<NotificationsScreen> {
                                             ? 0
                                             : toDoProvider.toDos.length,
                                         onFetch: (toDoProvider.userViewModel
-                                            ?.reduceMotion ??
-                                            false)
+                                                    ?.reduceMotion ??
+                                                false)
                                             ? null
-                                            : ({List<ToDo>? items}) =>
-                                            onFetch(
+                                            : ({List<ToDo>? items}) => onFetch(
                                                 items: items,
                                                 itemSet:
-                                                toDoProvider.toDos.toSet()),
+                                                    toDoProvider.toDos.toSet()),
                                         onRemove: (toDoProvider.userViewModel
-                                            ?.reduceMotion ??
-                                            false)
+                                                    ?.reduceMotion ??
+                                                false)
                                             ? null
                                             : onRemove,
                                         onAppend: (toDoProvider.userViewModel
-                                            ?.reduceMotion ??
-                                            false)
+                                                    ?.reduceMotion ??
+                                                false)
                                             ? null
                                             : onAppend,
-                                        listviewBuilder: ({Key? key,
-                                          required BuildContext context,
-                                          required List<ToDo> items,
-                                          Future<void> Function({ToDo? item})?
-                                          onRemove}) =>
+                                        listviewBuilder: (
+                                                {Key? key,
+                                                required BuildContext context,
+                                                required List<ToDo> items,
+                                                Future<void> Function({ToDo? item})?
+                                                    onRemove}) =>
                                             ListViews.immutableToDos(
                                               key: key,
                                               toDos: items,
                                               checkDelete: toDoProvider
-                                                  .userViewModel
-                                                  ?.checkDelete ??
+                                                      .userViewModel
+                                                      ?.checkDelete ??
                                                   true,
                                               smallScreen:
-                                              layoutProvider.smallScreen,
+                                                  layoutProvider.smallScreen,
                                               onRemove: onRemove,
                                               checkboxAnimateBeforeUpdate: (
                                                   {required int index,
-                                                    required ToDo toDo}) async {
+                                                  required ToDo toDo}) async {
                                                 if (mounted) {
                                                   setState(() {
                                                     items[index] = toDo;
@@ -340,10 +329,9 @@ class _NotificationsScreen extends State<NotificationsScreen> {
                                             ),
                                         query: toDoProvider.getUpcoming,
                                         rebuildNotifiers: [toDoProvider],
-                                        rebuildCallback: (
-                                            {required List<ToDo> items}) {
+                                        rebuildCallback: ({required List<ToDo> items}) {
                                           toDoProvider.toDos = items;
-                                          toDoProvider.rebuild = false;
+                                          toDoProvider.softRebuild = false;
                                         }),
                                   ]),
                             ],
@@ -368,7 +356,7 @@ class _NotificationsScreen extends State<NotificationsScreen> {
                                 ExpandedListTile(
                                     initiallyExpanded: true,
                                     leading:
-                                    const Icon(Icons.announcement_rounded),
+                                        const Icon(Icons.announcement_rounded),
                                     title: const AutoSizeText(
                                       "Deadlines",
                                       maxLines: 1,
@@ -386,51 +374,49 @@ class _NotificationsScreen extends State<NotificationsScreen> {
                                           offset: (deadlineProvider.rebuild)
                                               ? 0
                                               : deadlineProvider
-                                              .secondaryDeadlines.length,
+                                                  .secondaryDeadlines.length,
                                           onFetch: (deadlineProvider
-                                              .userViewModel
-                                              ?.reduceMotion ??
-                                              false)
+                                                      .userViewModel
+                                                      ?.reduceMotion ??
+                                                  false)
                                               ? null
                                               : ({List<Deadline>? items}) =>
-                                              onFetch(
-                                                  items: items,
-                                                  itemSet: deadlineProvider
-                                                      .secondaryDeadlines
-                                                      .toSet()),
+                                                  onFetch(
+                                                      items: items,
+                                                      itemSet: deadlineProvider
+                                                          .secondaryDeadlines
+                                                          .toSet()),
                                           onRemove:
-                                          (deadlineProvider.userViewModel
-                                              ?.reduceMotion ?? false)
-                                              ? null
-                                              : onRemove,
+                                              (deadlineProvider.userViewModel?.reduceMotion ?? false)
+                                                  ? null
+                                                  : onRemove,
                                           onAppend:
-                                          (deadlineProvider.userViewModel
-                                              ?.reduceMotion ?? false)
-                                              ? null
-                                              : onAppend,
-                                          listviewBuilder: ({Key? key,
-                                            required BuildContext context,
-                                            required List<Deadline> items,
-                                            Future<
-                                                void> Function({Deadline? item})? onRemove}) =>
+                                              (deadlineProvider.userViewModel?.reduceMotion ?? false)
+                                                  ? null
+                                                  : onAppend,
+                                          listviewBuilder: (
+                                                  {Key? key,
+                                                  required BuildContext context,
+                                                  required List<Deadline> items,
+                                                  Future<void> Function({Deadline? item})? onRemove}) =>
                                               ListViews.immutableDeadlines(
                                                 key: key,
                                                 deadlines: items,
                                                 checkDelete: deadlineProvider
-                                                    .userViewModel
-                                                    ?.checkDelete ??
+                                                        .userViewModel
+                                                        ?.checkDelete ??
                                                     true,
                                                 smallScreen:
-                                                layoutProvider.smallScreen,
+                                                    layoutProvider.smallScreen,
                                                 onRemove: onRemove,
                                               ),
                                           query: deadlineProvider.getOverdues,
                                           rebuildNotifiers: [deadlineProvider],
-                                          rebuildCallback: (
-                                              {required List<Deadline> items}) {
+                                          rebuildCallback: ({required List<Deadline> items}) {
                                             deadlineProvider
                                                 .secondaryDeadlines = items;
-                                            deadlineProvider.rebuild = false;
+                                            deadlineProvider.softRebuild =
+                                                false;
                                           }),
                                     ]),
                                 // Reminders
@@ -454,54 +440,49 @@ class _NotificationsScreen extends State<NotificationsScreen> {
                                           offset: (reminderProvider.rebuild)
                                               ? 0
                                               : reminderProvider
-                                              .secondaryReminders.length,
+                                                  .secondaryReminders.length,
                                           onFetch: (reminderProvider
-                                              .userViewModel
-                                              ?.reduceMotion ??
-                                              false)
+                                                      .userViewModel
+                                                      ?.reduceMotion ??
+                                                  false)
                                               ? null
                                               : ({List<Reminder>? items}) =>
-                                              onFetch(
-                                                  items: items,
-                                                  itemSet: reminderProvider
-                                                      .secondaryReminders
-                                                      .toSet()),
-                                          onRemove: (reminderProvider
-                                              .userViewModel
-                                              ?.reduceMotion ??
-                                              false)
-                                              ? null
-                                              : onRemove,
-                                          onAppend: (reminderProvider
-                                              .userViewModel
-                                              ?.reduceMotion ??
-                                              false)
-                                              ? null
-                                              : onAppend,
-                                          listviewBuilder: ({Key? key,
-                                            required BuildContext context,
-                                            required List<Reminder> items,
-                                            Future<void> Function(
-                                                {Reminder? item})?
-                                            onRemove}) =>
+                                                  onFetch(
+                                                      items: items,
+                                                      itemSet: reminderProvider
+                                                          .secondaryReminders
+                                                          .toSet()),
+                                          onRemove:
+                                              (reminderProvider.userViewModel?.reduceMotion ?? false)
+                                                  ? null
+                                                  : onRemove,
+                                          onAppend:
+                                              (reminderProvider.userViewModel?.reduceMotion ?? false)
+                                                  ? null
+                                                  : onAppend,
+                                          listviewBuilder: (
+                                                  {Key? key,
+                                                  required BuildContext context,
+                                                  required List<Reminder> items,
+                                                  Future<void> Function({Reminder? item})? onRemove}) =>
                                               ListViews.immutableReminders(
                                                 key: key,
                                                 reminders: items,
                                                 checkDelete: reminderProvider
-                                                    .userViewModel
-                                                    ?.checkDelete ??
+                                                        .userViewModel
+                                                        ?.checkDelete ??
                                                     true,
                                                 smallScreen:
-                                                layoutProvider.smallScreen,
+                                                    layoutProvider.smallScreen,
                                                 onRemove: onRemove,
                                               ),
                                           query: reminderProvider.getOverdues,
                                           rebuildNotifiers: [reminderProvider],
-                                          rebuildCallback: (
-                                              {required List<Reminder> items}) {
+                                          rebuildCallback: ({required List<Reminder> items}) {
                                             reminderProvider
                                                 .secondaryReminders = items;
-                                            reminderProvider.rebuild = false;
+                                            reminderProvider.softRebuild =
+                                                false;
                                           }),
                                     ]),
                                 // TODOS
@@ -524,46 +505,44 @@ class _NotificationsScreen extends State<NotificationsScreen> {
                                           offset: (toDoProvider.rebuild)
                                               ? 0
                                               : toDoProvider
-                                              .secondaryToDos.length,
+                                                  .secondaryToDos.length,
                                           onFetch: (toDoProvider.userViewModel
-                                              ?.reduceMotion ??
-                                              false)
+                                                      ?.reduceMotion ??
+                                                  false)
                                               ? null
-                                              : ({List<ToDo>? items}) =>
-                                              onFetch(
+                                              : ({List<ToDo>? items}) => onFetch(
                                                   items: items,
-                                                  itemSet:
-                                                  toDoProvider.secondaryToDos
+                                                  itemSet: toDoProvider
+                                                      .secondaryToDos
                                                       .toSet()),
                                           onRemove: (toDoProvider.userViewModel
-                                              ?.reduceMotion ??
-                                              false)
+                                                      ?.reduceMotion ??
+                                                  false)
                                               ? null
                                               : onRemove,
                                           onAppend: (toDoProvider.userViewModel
-                                              ?.reduceMotion ??
-                                              false)
+                                                      ?.reduceMotion ??
+                                                  false)
                                               ? null
                                               : onAppend,
-                                          listviewBuilder: ({Key? key,
-                                            required BuildContext context,
-                                            required List<ToDo> items,
-                                            Future<void> Function(
-                                                {ToDo? item})?
-                                            onRemove}) =>
+                                          listviewBuilder: (
+                                                  {Key? key,
+                                                  required BuildContext context,
+                                                  required List<ToDo> items,
+                                                  Future<void> Function({ToDo? item})? onRemove}) =>
                                               ListViews.immutableToDos(
                                                 key: key,
                                                 toDos: items,
                                                 checkDelete: toDoProvider
-                                                    .userViewModel
-                                                    ?.checkDelete ??
+                                                        .userViewModel
+                                                        ?.checkDelete ??
                                                     true,
                                                 smallScreen:
-                                                layoutProvider.smallScreen,
+                                                    layoutProvider.smallScreen,
                                                 onRemove: onRemove,
                                                 checkboxAnimateBeforeUpdate: (
                                                     {required int index,
-                                                      required ToDo toDo}) async {
+                                                    required ToDo toDo}) async {
                                                   if (mounted) {
                                                     setState(() {
                                                       items[index] = toDo;
@@ -580,10 +559,9 @@ class _NotificationsScreen extends State<NotificationsScreen> {
                                               ),
                                           query: toDoProvider.getOverdues,
                                           rebuildNotifiers: [toDoProvider],
-                                          rebuildCallback: (
-                                              {required List<ToDo> items}) {
+                                          rebuildCallback: ({required List<ToDo> items}) {
                                             toDoProvider.secondaryToDos = items;
-                                            toDoProvider.rebuild = false;
+                                            toDoProvider.softRebuild = false;
                                           }),
                                     ]),
                               ]),

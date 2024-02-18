@@ -223,7 +223,6 @@ class UserProvider extends ChangeNotifier {
     }
     try {
       await updateUser();
-      notifyListeners();
       // This will always be a wrapped exception
     } on FailureToUploadException catch (e) {
       updating = false;

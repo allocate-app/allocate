@@ -109,7 +109,7 @@ class UserStorageService extends ChangeNotifier {
       }
 
       // This is to give enough time for the internet to check.
-      await Future.delayed(const Duration(seconds: 10));
+      await Future.delayed(const Duration(seconds: 2));
       if (!isConnected) {
         return;
       }
@@ -136,6 +136,10 @@ class UserStorageService extends ChangeNotifier {
     // In the case that the previous currentUserID was null.
     // This implies a new login, or a fresh open.
     // if not online, this will just early return.
+    // TODO: implement more robust logic - this implementation can be circumvented.
+    // any and all stored non-user related data will get uploaded instead of wiped.
+    // Wiping only happens on a full user swap once an account has been connected.
+    // TODO: revisit with Multi-User-storage && better support for multiple accounts.
     if (null == currentUserID) {
       currentUserID = newID;
       return await syncUser();

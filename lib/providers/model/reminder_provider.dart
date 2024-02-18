@@ -75,6 +75,9 @@ class ReminderProvider extends ChangeNotifier {
 
   void setUser({UserViewModel? newUser}) {
     userViewModel = newUser;
+    if (userViewModel?.reminderSorter == sorter) {
+      return;
+    }
     sorter = userViewModel?.reminderSorter ?? sorter;
     notifyListeners();
   }
@@ -439,7 +442,8 @@ class ReminderProvider extends ChangeNotifier {
       return;
     }
 
-    if(!_notificationService.validateNotificationDate(notificationDate: reminder.dueDate)){
+    if (!_notificationService.validateNotificationDate(
+        notificationDate: reminder.dueDate)) {
       return;
     }
 

@@ -65,16 +65,10 @@ class AllocateUser with EquatableMixin implements Copyable<AllocateUser> {
   int? curEveID;
 
   // Sorting preferences
-  @ignore
   GroupSorter? groupSorter;
-
-  @ignore
   DeadlineSorter? deadlineSorter;
-  @ignore
   ReminderSorter? reminderSorter;
-  @ignore
   RoutineSorter? routineSorter;
-  @ignore
   ToDoSorter? toDoSorter;
 
   @Enumerated(EnumType.ordinal)
@@ -200,21 +194,19 @@ class AllocateUser with EquatableMixin implements Copyable<AllocateUser> {
         "reduceMotion": reduceMotion,
         "groupSort": groupSorter?.sortMethod.index,
         "groupDesc": groupSorter?.descending,
-        "deadlineSort": deadlineSorter?.sortMethod,
+        "deadlineSort": deadlineSorter?.sortMethod.index,
         "deadlineDesc": deadlineSorter?.descending,
-        "routineSort": routineSorter?.sortMethod,
+        "routineSort": routineSorter?.sortMethod.index,
         "routineDesc": routineSorter?.descending,
-        "reminderSort": reminderSorter?.sortMethod,
+        "reminderSort": reminderSorter?.sortMethod.index,
         "reminderDesc": reminderSorter?.descending,
-        "toDoSort": toDoSorter?.sortMethod,
+        "toDoSort": toDoSorter?.sortMethod.index,
         "toDoDesc": toDoSorter?.descending,
         "deleteSchedule": deleteSchedule.index,
         "lastOpened": lastOpened.toIso8601String(),
         "lastUpdated": lastUpdated.toIso8601String(),
       };
 
-  // TODO: decide whether or not to copy the id.
-  // ALSO: whether or not to uuid.
   @override
   AllocateUser copy() => AllocateUser(
         id: Constants.generateID(),

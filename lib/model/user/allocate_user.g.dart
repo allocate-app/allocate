@@ -47,101 +47,131 @@ const AllocateUserSchema = CollectionSchema(
       name: r'curMornID',
       type: IsarType.long,
     ),
-    r'deleteSchedule': PropertySchema(
+    r'deadlineSorter': PropertySchema(
       id: 6,
+      name: r'deadlineSorter',
+      type: IsarType.object,
+      target: r'DeadlineSorter',
+    ),
+    r'deleteSchedule': PropertySchema(
+      id: 7,
       name: r'deleteSchedule',
       type: IsarType.byte,
       enumMap: _AllocateUserdeleteScheduleEnumValueMap,
     ),
     r'email': PropertySchema(
-      id: 7,
+      id: 8,
       name: r'email',
       type: IsarType.string,
     ),
+    r'groupSorter': PropertySchema(
+      id: 9,
+      name: r'groupSorter',
+      type: IsarType.object,
+      target: r'GroupSorter',
+    ),
     r'isSynced': PropertySchema(
-      id: 8,
+      id: 10,
       name: r'isSynced',
       type: IsarType.bool,
     ),
     r'lastOpened': PropertySchema(
-      id: 9,
+      id: 11,
       name: r'lastOpened',
       type: IsarType.dateTime,
     ),
     r'lastUpdated': PropertySchema(
-      id: 10,
+      id: 12,
       name: r'lastUpdated',
       type: IsarType.dateTime,
     ),
     r'primarySeed': PropertySchema(
-      id: 11,
+      id: 13,
       name: r'primarySeed',
       type: IsarType.long,
     ),
     r'reduceMotion': PropertySchema(
-      id: 12,
+      id: 14,
       name: r'reduceMotion',
       type: IsarType.bool,
     ),
+    r'reminderSorter': PropertySchema(
+      id: 15,
+      name: r'reminderSorter',
+      type: IsarType.object,
+      target: r'ReminderSorter',
+    ),
+    r'routineSorter': PropertySchema(
+      id: 16,
+      name: r'routineSorter',
+      type: IsarType.object,
+      target: r'RoutineSorter',
+    ),
     r'scaffoldOpacity': PropertySchema(
-      id: 13,
+      id: 17,
       name: r'scaffoldOpacity',
       type: IsarType.double,
     ),
     r'secondarySeed': PropertySchema(
-      id: 14,
+      id: 18,
       name: r'secondarySeed',
       type: IsarType.long,
     ),
     r'sidebarOpacity': PropertySchema(
-      id: 15,
+      id: 19,
       name: r'sidebarOpacity',
       type: IsarType.double,
     ),
     r'syncOnline': PropertySchema(
-      id: 16,
+      id: 20,
       name: r'syncOnline',
       type: IsarType.bool,
     ),
     r'tertiarySeed': PropertySchema(
-      id: 17,
+      id: 21,
       name: r'tertiarySeed',
       type: IsarType.long,
     ),
     r'themeType': PropertySchema(
-      id: 18,
+      id: 22,
       name: r'themeType',
       type: IsarType.byte,
       enumMap: _AllocateUserthemeTypeEnumValueMap,
     ),
     r'toDelete': PropertySchema(
-      id: 19,
+      id: 23,
       name: r'toDelete',
       type: IsarType.bool,
     ),
+    r'toDoSorter': PropertySchema(
+      id: 24,
+      name: r'toDoSorter',
+      type: IsarType.object,
+      target: r'ToDoSorter',
+    ),
     r'toneMapping': PropertySchema(
-      id: 20,
+      id: 25,
       name: r'toneMapping',
       type: IsarType.byte,
       enumMap: _AllocateUsertoneMappingEnumValueMap,
     ),
     r'useUltraHighContrast': PropertySchema(
-      id: 21,
+      id: 26,
       name: r'useUltraHighContrast',
       type: IsarType.bool,
     ),
     r'username': PropertySchema(
-      id: 22,
+      id: 27,
       name: r'username',
       type: IsarType.string,
     ),
     r'uuid': PropertySchema(
-      id: 23,
+      id: 28,
       name: r'uuid',
       type: IsarType.string,
     ),
     r'windowEffect': PropertySchema(
-      id: 24,
+      id: 29,
       name: r'windowEffect',
       type: IsarType.byte,
       enumMap: _AllocateUserwindowEffectEnumValueMap,
@@ -194,7 +224,13 @@ const AllocateUserSchema = CollectionSchema(
     )
   },
   links: {},
-  embeddedSchemas: {},
+  embeddedSchemas: {
+    r'GroupSorter': GroupSorterSchema,
+    r'DeadlineSorter': DeadlineSorterSchema,
+    r'ReminderSorter': ReminderSorterSchema,
+    r'RoutineSorter': RoutineSorterSchema,
+    r'ToDoSorter': ToDoSorterSchema
+  },
   getId: _allocateUserGetId,
   getLinks: _allocateUserGetLinks,
   attach: _allocateUserAttach,
@@ -208,9 +244,49 @@ int _allocateUserEstimateSize(
 ) {
   var bytesCount = offsets.last;
   {
+    final value = object.deadlineSorter;
+    if (value != null) {
+      bytesCount += 3 +
+          DeadlineSorterSchema.estimateSize(
+              value, allOffsets[DeadlineSorter]!, allOffsets);
+    }
+  }
+  {
     final value = object.email;
     if (value != null) {
       bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
+    final value = object.groupSorter;
+    if (value != null) {
+      bytesCount += 3 +
+          GroupSorterSchema.estimateSize(
+              value, allOffsets[GroupSorter]!, allOffsets);
+    }
+  }
+  {
+    final value = object.reminderSorter;
+    if (value != null) {
+      bytesCount += 3 +
+          ReminderSorterSchema.estimateSize(
+              value, allOffsets[ReminderSorter]!, allOffsets);
+    }
+  }
+  {
+    final value = object.routineSorter;
+    if (value != null) {
+      bytesCount += 3 +
+          RoutineSorterSchema.estimateSize(
+              value, allOffsets[RoutineSorter]!, allOffsets);
+    }
+  }
+  {
+    final value = object.toDoSorter;
+    if (value != null) {
+      bytesCount += 3 +
+          ToDoSorterSchema.estimateSize(
+              value, allOffsets[ToDoSorter]!, allOffsets);
     }
   }
   bytesCount += 3 + object.username.length * 3;
@@ -235,25 +311,55 @@ void _allocateUserSerialize(
   writer.writeLong(offsets[3], object.curAftID);
   writer.writeLong(offsets[4], object.curEveID);
   writer.writeLong(offsets[5], object.curMornID);
-  writer.writeByte(offsets[6], object.deleteSchedule.index);
-  writer.writeString(offsets[7], object.email);
-  writer.writeBool(offsets[8], object.isSynced);
-  writer.writeDateTime(offsets[9], object.lastOpened);
-  writer.writeDateTime(offsets[10], object.lastUpdated);
-  writer.writeLong(offsets[11], object.primarySeed);
-  writer.writeBool(offsets[12], object.reduceMotion);
-  writer.writeDouble(offsets[13], object.scaffoldOpacity);
-  writer.writeLong(offsets[14], object.secondarySeed);
-  writer.writeDouble(offsets[15], object.sidebarOpacity);
-  writer.writeBool(offsets[16], object.syncOnline);
-  writer.writeLong(offsets[17], object.tertiarySeed);
-  writer.writeByte(offsets[18], object.themeType.index);
-  writer.writeBool(offsets[19], object.toDelete);
-  writer.writeByte(offsets[20], object.toneMapping.index);
-  writer.writeBool(offsets[21], object.useUltraHighContrast);
-  writer.writeString(offsets[22], object.username);
-  writer.writeString(offsets[23], object.uuid);
-  writer.writeByte(offsets[24], object.windowEffect.index);
+  writer.writeObject<DeadlineSorter>(
+    offsets[6],
+    allOffsets,
+    DeadlineSorterSchema.serialize,
+    object.deadlineSorter,
+  );
+  writer.writeByte(offsets[7], object.deleteSchedule.index);
+  writer.writeString(offsets[8], object.email);
+  writer.writeObject<GroupSorter>(
+    offsets[9],
+    allOffsets,
+    GroupSorterSchema.serialize,
+    object.groupSorter,
+  );
+  writer.writeBool(offsets[10], object.isSynced);
+  writer.writeDateTime(offsets[11], object.lastOpened);
+  writer.writeDateTime(offsets[12], object.lastUpdated);
+  writer.writeLong(offsets[13], object.primarySeed);
+  writer.writeBool(offsets[14], object.reduceMotion);
+  writer.writeObject<ReminderSorter>(
+    offsets[15],
+    allOffsets,
+    ReminderSorterSchema.serialize,
+    object.reminderSorter,
+  );
+  writer.writeObject<RoutineSorter>(
+    offsets[16],
+    allOffsets,
+    RoutineSorterSchema.serialize,
+    object.routineSorter,
+  );
+  writer.writeDouble(offsets[17], object.scaffoldOpacity);
+  writer.writeLong(offsets[18], object.secondarySeed);
+  writer.writeDouble(offsets[19], object.sidebarOpacity);
+  writer.writeBool(offsets[20], object.syncOnline);
+  writer.writeLong(offsets[21], object.tertiarySeed);
+  writer.writeByte(offsets[22], object.themeType.index);
+  writer.writeBool(offsets[23], object.toDelete);
+  writer.writeObject<ToDoSorter>(
+    offsets[24],
+    allOffsets,
+    ToDoSorterSchema.serialize,
+    object.toDoSorter,
+  );
+  writer.writeByte(offsets[25], object.toneMapping.index);
+  writer.writeBool(offsets[26], object.useUltraHighContrast);
+  writer.writeString(offsets[27], object.username);
+  writer.writeString(offsets[28], object.uuid);
+  writer.writeByte(offsets[29], object.windowEffect.index);
 }
 
 AllocateUser _allocateUserDeserialize(
@@ -269,33 +375,58 @@ AllocateUser _allocateUserDeserialize(
     curAftID: reader.readLongOrNull(offsets[3]),
     curEveID: reader.readLongOrNull(offsets[4]),
     curMornID: reader.readLongOrNull(offsets[5]),
+    deadlineSorter: reader.readObjectOrNull<DeadlineSorter>(
+      offsets[6],
+      DeadlineSorterSchema.deserialize,
+      allOffsets,
+    ),
     deleteSchedule: _AllocateUserdeleteScheduleValueEnumMap[
-            reader.readByteOrNull(offsets[6])] ??
+            reader.readByteOrNull(offsets[7])] ??
         DeleteSchedule.never,
-    email: reader.readStringOrNull(offsets[7]),
+    email: reader.readStringOrNull(offsets[8]),
+    groupSorter: reader.readObjectOrNull<GroupSorter>(
+      offsets[9],
+      GroupSorterSchema.deserialize,
+      allOffsets,
+    ),
     id: id,
-    isSynced: reader.readBoolOrNull(offsets[8]) ?? false,
-    lastOpened: reader.readDateTime(offsets[9]),
-    lastUpdated: reader.readDateTime(offsets[10]),
-    primarySeed: reader.readLong(offsets[11]),
-    reduceMotion: reader.readBoolOrNull(offsets[12]) ?? false,
-    scaffoldOpacity: reader.readDoubleOrNull(offsets[13]) ?? 100,
-    secondarySeed: reader.readLongOrNull(offsets[14]),
-    sidebarOpacity: reader.readDoubleOrNull(offsets[15]) ?? 100,
-    syncOnline: reader.readBoolOrNull(offsets[16]) ?? false,
-    tertiarySeed: reader.readLongOrNull(offsets[17]),
+    isSynced: reader.readBoolOrNull(offsets[10]) ?? false,
+    lastOpened: reader.readDateTime(offsets[11]),
+    lastUpdated: reader.readDateTime(offsets[12]),
+    primarySeed: reader.readLong(offsets[13]),
+    reduceMotion: reader.readBoolOrNull(offsets[14]) ?? false,
+    reminderSorter: reader.readObjectOrNull<ReminderSorter>(
+      offsets[15],
+      ReminderSorterSchema.deserialize,
+      allOffsets,
+    ),
+    routineSorter: reader.readObjectOrNull<RoutineSorter>(
+      offsets[16],
+      RoutineSorterSchema.deserialize,
+      allOffsets,
+    ),
+    scaffoldOpacity: reader.readDoubleOrNull(offsets[17]) ?? 100,
+    secondarySeed: reader.readLongOrNull(offsets[18]),
+    sidebarOpacity: reader.readDoubleOrNull(offsets[19]) ?? 100,
+    syncOnline: reader.readBoolOrNull(offsets[20]) ?? false,
+    tertiarySeed: reader.readLongOrNull(offsets[21]),
     themeType: _AllocateUserthemeTypeValueEnumMap[
-            reader.readByteOrNull(offsets[18])] ??
+            reader.readByteOrNull(offsets[22])] ??
         ThemeType.system,
-    toDelete: reader.readBoolOrNull(offsets[19]) ?? false,
+    toDelete: reader.readBoolOrNull(offsets[23]) ?? false,
+    toDoSorter: reader.readObjectOrNull<ToDoSorter>(
+      offsets[24],
+      ToDoSorterSchema.deserialize,
+      allOffsets,
+    ),
     toneMapping: _AllocateUsertoneMappingValueEnumMap[
-            reader.readByteOrNull(offsets[20])] ??
+            reader.readByteOrNull(offsets[25])] ??
         ToneMapping.system,
-    useUltraHighContrast: reader.readBoolOrNull(offsets[21]) ?? false,
-    username: reader.readString(offsets[22]),
-    uuid: reader.readStringOrNull(offsets[23]),
+    useUltraHighContrast: reader.readBoolOrNull(offsets[26]) ?? false,
+    username: reader.readString(offsets[27]),
+    uuid: reader.readStringOrNull(offsets[28]),
     windowEffect: _AllocateUserwindowEffectValueEnumMap[
-            reader.readByteOrNull(offsets[24])] ??
+            reader.readByteOrNull(offsets[29])] ??
         Effect.disabled,
   );
   return object;
@@ -321,48 +452,78 @@ P _allocateUserDeserializeProp<P>(
     case 5:
       return (reader.readLongOrNull(offset)) as P;
     case 6:
+      return (reader.readObjectOrNull<DeadlineSorter>(
+        offset,
+        DeadlineSorterSchema.deserialize,
+        allOffsets,
+      )) as P;
+    case 7:
       return (_AllocateUserdeleteScheduleValueEnumMap[
               reader.readByteOrNull(offset)] ??
           DeleteSchedule.never) as P;
-    case 7:
-      return (reader.readStringOrNull(offset)) as P;
     case 8:
-      return (reader.readBoolOrNull(offset) ?? false) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 9:
-      return (reader.readDateTime(offset)) as P;
+      return (reader.readObjectOrNull<GroupSorter>(
+        offset,
+        GroupSorterSchema.deserialize,
+        allOffsets,
+      )) as P;
     case 10:
-      return (reader.readDateTime(offset)) as P;
+      return (reader.readBoolOrNull(offset) ?? false) as P;
     case 11:
-      return (reader.readLong(offset)) as P;
+      return (reader.readDateTime(offset)) as P;
     case 12:
-      return (reader.readBoolOrNull(offset) ?? false) as P;
+      return (reader.readDateTime(offset)) as P;
     case 13:
-      return (reader.readDoubleOrNull(offset) ?? 100) as P;
+      return (reader.readLong(offset)) as P;
     case 14:
-      return (reader.readLongOrNull(offset)) as P;
-    case 15:
-      return (reader.readDoubleOrNull(offset) ?? 100) as P;
-    case 16:
       return (reader.readBoolOrNull(offset) ?? false) as P;
+    case 15:
+      return (reader.readObjectOrNull<ReminderSorter>(
+        offset,
+        ReminderSorterSchema.deserialize,
+        allOffsets,
+      )) as P;
+    case 16:
+      return (reader.readObjectOrNull<RoutineSorter>(
+        offset,
+        RoutineSorterSchema.deserialize,
+        allOffsets,
+      )) as P;
     case 17:
-      return (reader.readLongOrNull(offset)) as P;
+      return (reader.readDoubleOrNull(offset) ?? 100) as P;
     case 18:
+      return (reader.readLongOrNull(offset)) as P;
+    case 19:
+      return (reader.readDoubleOrNull(offset) ?? 100) as P;
+    case 20:
+      return (reader.readBoolOrNull(offset) ?? false) as P;
+    case 21:
+      return (reader.readLongOrNull(offset)) as P;
+    case 22:
       return (_AllocateUserthemeTypeValueEnumMap[
               reader.readByteOrNull(offset)] ??
           ThemeType.system) as P;
-    case 19:
+    case 23:
       return (reader.readBoolOrNull(offset) ?? false) as P;
-    case 20:
+    case 24:
+      return (reader.readObjectOrNull<ToDoSorter>(
+        offset,
+        ToDoSorterSchema.deserialize,
+        allOffsets,
+      )) as P;
+    case 25:
       return (_AllocateUsertoneMappingValueEnumMap[
               reader.readByteOrNull(offset)] ??
           ToneMapping.system) as P;
-    case 21:
+    case 26:
       return (reader.readBoolOrNull(offset) ?? false) as P;
-    case 22:
+    case 27:
       return (reader.readString(offset)) as P;
-    case 23:
+    case 28:
       return (reader.readStringOrNull(offset)) as P;
-    case 24:
+    case 29:
       return (_AllocateUserwindowEffectValueEnumMap[
               reader.readByteOrNull(offset)] ??
           Effect.disabled) as P;
@@ -986,6 +1147,24 @@ extension AllocateUserQueryFilter
   }
 
   QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      deadlineSorterIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'deadlineSorter',
+      ));
+    });
+  }
+
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      deadlineSorterIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'deadlineSorter',
+      ));
+    });
+  }
+
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
       deleteScheduleEqualTo(DeleteSchedule value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
@@ -1189,6 +1368,24 @@ extension AllocateUserQueryFilter
       return query.addFilterCondition(FilterCondition.greaterThan(
         property: r'email',
         value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      groupSorterIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'groupSorter',
+      ));
+    });
+  }
+
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      groupSorterIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'groupSorter',
       ));
     });
   }
@@ -1430,6 +1627,42 @@ extension AllocateUserQueryFilter
       return query.addFilterCondition(FilterCondition.equalTo(
         property: r'reduceMotion',
         value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      reminderSorterIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'reminderSorter',
+      ));
+    });
+  }
+
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      reminderSorterIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'reminderSorter',
+      ));
+    });
+  }
+
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      routineSorterIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'routineSorter',
+      ));
+    });
+  }
+
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      routineSorterIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'routineSorter',
       ));
     });
   }
@@ -1786,6 +2019,24 @@ extension AllocateUserQueryFilter
       return query.addFilterCondition(FilterCondition.equalTo(
         property: r'toDelete',
         value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      toDoSorterIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'toDoSorter',
+      ));
+    });
+  }
+
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      toDoSorterIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'toDoSorter',
       ));
     });
   }
@@ -2201,7 +2452,42 @@ extension AllocateUserQueryFilter
 }
 
 extension AllocateUserQueryObject
-    on QueryBuilder<AllocateUser, AllocateUser, QFilterCondition> {}
+    on QueryBuilder<AllocateUser, AllocateUser, QFilterCondition> {
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      deadlineSorter(FilterQuery<DeadlineSorter> q) {
+    return QueryBuilder.apply(this, (query) {
+      return query.object(q, r'deadlineSorter');
+    });
+  }
+
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition> groupSorter(
+      FilterQuery<GroupSorter> q) {
+    return QueryBuilder.apply(this, (query) {
+      return query.object(q, r'groupSorter');
+    });
+  }
+
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition>
+      reminderSorter(FilterQuery<ReminderSorter> q) {
+    return QueryBuilder.apply(this, (query) {
+      return query.object(q, r'reminderSorter');
+    });
+  }
+
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition> routineSorter(
+      FilterQuery<RoutineSorter> q) {
+    return QueryBuilder.apply(this, (query) {
+      return query.object(q, r'routineSorter');
+    });
+  }
+
+  QueryBuilder<AllocateUser, AllocateUser, QAfterFilterCondition> toDoSorter(
+      FilterQuery<ToDoSorter> q) {
+    return QueryBuilder.apply(this, (query) {
+      return query.object(q, r'toDoSorter');
+    });
+  }
+}
 
 extension AllocateUserQueryLinks
     on QueryBuilder<AllocateUser, AllocateUser, QFilterCondition> {}
@@ -3067,6 +3353,13 @@ extension AllocateUserQueryProperty
     });
   }
 
+  QueryBuilder<AllocateUser, DeadlineSorter?, QQueryOperations>
+      deadlineSorterProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'deadlineSorter');
+    });
+  }
+
   QueryBuilder<AllocateUser, DeleteSchedule, QQueryOperations>
       deleteScheduleProperty() {
     return QueryBuilder.apply(this, (query) {
@@ -3077,6 +3370,13 @@ extension AllocateUserQueryProperty
   QueryBuilder<AllocateUser, String?, QQueryOperations> emailProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'email');
+    });
+  }
+
+  QueryBuilder<AllocateUser, GroupSorter?, QQueryOperations>
+      groupSorterProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'groupSorter');
     });
   }
 
@@ -3107,6 +3407,20 @@ extension AllocateUserQueryProperty
   QueryBuilder<AllocateUser, bool, QQueryOperations> reduceMotionProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'reduceMotion');
+    });
+  }
+
+  QueryBuilder<AllocateUser, ReminderSorter?, QQueryOperations>
+      reminderSorterProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'reminderSorter');
+    });
+  }
+
+  QueryBuilder<AllocateUser, RoutineSorter?, QQueryOperations>
+      routineSorterProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'routineSorter');
     });
   }
 
@@ -3151,6 +3465,13 @@ extension AllocateUserQueryProperty
   QueryBuilder<AllocateUser, bool, QQueryOperations> toDeleteProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'toDelete');
+    });
+  }
+
+  QueryBuilder<AllocateUser, ToDoSorter?, QQueryOperations>
+      toDoSorterProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'toDoSorter');
     });
   }
 

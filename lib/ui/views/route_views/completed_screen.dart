@@ -109,8 +109,8 @@ class _CompletedListScreen extends State<CompletedListScreen> {
                   rebuildNotifiers: [toDoProvider, groupProvider],
                   rebuildCallback: ({required List<ToDo> items}) {
                     toDoProvider.toDos = items;
-                    toDoProvider.rebuild = false;
-                    groupProvider.rebuild = false;
+                    toDoProvider.softRebuild = false;
+                    groupProvider.softRebuild = false;
                   },
                   onFetch: (toDoProvider.userViewModel?.reduceMotion ?? false)
                       ? null
@@ -135,6 +135,7 @@ class _CompletedListScreen extends State<CompletedListScreen> {
                     if (toDoProvider.sortMethod == SortMethod.none) {
                       return ListViews.reorderableToDos(
                         key: key,
+                        listPadding: Constants.fabPadding,
                         context: context,
                         toDos: items,
                         checkDelete:
@@ -157,6 +158,7 @@ class _CompletedListScreen extends State<CompletedListScreen> {
                       );
                     }
                     return ListViews.immutableToDos(
+                      listPadding: Constants.fabPadding,
                       key: key,
                       toDos: items,
                       checkDelete:

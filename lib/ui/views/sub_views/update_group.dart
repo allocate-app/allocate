@@ -93,7 +93,7 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
     nameEditingController = TextEditingController(text: vm.name);
     nameEditingController.addListener(watchName);
 
-    descriptionEditingController = TextEditingController();
+    descriptionEditingController = TextEditingController(text: vm.description);
     descriptionEditingController.addListener(watchDescription);
 
     toDoSearchController = SearchController();
@@ -232,7 +232,7 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
   @override
   Widget build(BuildContext context) => LayoutBuilder(
         builder: (BuildContext context, BoxConstraints constraints) {
-          if (constraints.maxWidth > Constants.largeScreen) {
+          if (layoutProvider.largeScreen) {
             return _buildDesktopDialog(
               context: context,
             );
@@ -500,6 +500,8 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
                     leading: ListTileWidgets.groupIcon(
                       currentContext: context,
                       iconPadding: const EdgeInsets.all(Constants.padding),
+                      outerPadding: const EdgeInsets.symmetric(
+                          horizontal: Constants.halfPadding),
                     ),
                     errorText: errorText,
                     hintText: "Group Name",

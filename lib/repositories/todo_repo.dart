@@ -119,7 +119,7 @@ class ToDoRepo extends ChangeNotifier implements ToDoRepository {
       }
 
       // This is to give enough time for the internet to check.
-      await Future.delayed(const Duration(seconds: 10));
+      await Future.delayed(const Duration(seconds: 2));
       if (!isConnected) {
         return;
       }
@@ -130,8 +130,6 @@ class ToDoRepo extends ChangeNotifier implements ToDoRepository {
     _isarClient.toDos.watchLazy().listen((_) async {
       await IsarService.instance.updateDBSize();
     });
-
-    handleUserChange();
   }
 
   Future<void> handleUserChange() async {

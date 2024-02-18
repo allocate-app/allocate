@@ -119,7 +119,7 @@ class _ToDosListScreen extends State<ToDosListScreen> {
                   rebuildNotifiers: [toDoProvider, groupProvider],
                   rebuildCallback: ({required List<ToDo> items}) {
                     toDoProvider.toDos = items;
-                    toDoProvider.rebuild = false;
+                    toDoProvider.softRebuild = false;
                   },
                   getAnimationKey: (toDoProvider.userViewModel?.reduceMotion ??
                           false)
@@ -144,6 +144,7 @@ class _ToDosListScreen extends State<ToDosListScreen> {
                     if (toDoProvider.sortMethod == SortMethod.none) {
                       return ListViews.reorderableToDos(
                         key: key,
+                        listPadding: Constants.fabPadding,
                         context: context,
                         toDos: items,
                         checkDelete:
@@ -165,6 +166,7 @@ class _ToDosListScreen extends State<ToDosListScreen> {
                     }
                     return ListViews.immutableToDos(
                       key: key,
+                      listPadding: Constants.fabPadding,
                       toDos: items,
                       checkDelete:
                           toDoProvider.userViewModel?.checkDelete ?? true,

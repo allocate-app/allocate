@@ -86,6 +86,9 @@ class ToDoProvider extends ChangeNotifier {
 
   void setUser({UserViewModel? newUser}) {
     userViewModel = newUser;
+    if (userViewModel?.toDoSorter == sorter) {
+      return;
+    }
     sorter = userViewModel?.toDoSorter ?? sorter;
     notifyListeners();
   }
@@ -165,6 +168,8 @@ class ToDoProvider extends ChangeNotifier {
       if (curToDo!.myDay) {
         myDayWeight = await getMyDayWeight();
       }
+
+      notifyListeners();
     } on FailureToCreateException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
       notifyListeners();
@@ -179,8 +184,6 @@ class ToDoProvider extends ChangeNotifier {
       notifyListeners();
       return Future.error(UnexpectedErrorException(), stacktrace);
     }
-
-    notifyListeners();
   }
 
   Future<void> updateToDo({ToDo? toDo}) async {

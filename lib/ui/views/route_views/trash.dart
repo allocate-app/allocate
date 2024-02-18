@@ -371,6 +371,7 @@ class _TrashScreen extends State<TrashScreen> {
                   thumbVisibility: true,
                   controller: mainScrollController,
                   child: ListView(
+                    padding: Constants.fabPadding,
                     shrinkWrap: true,
                     controller: mainScrollController,
                     physics: scrollPhysics,

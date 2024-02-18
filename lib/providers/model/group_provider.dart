@@ -75,6 +75,9 @@ class GroupProvider extends ChangeNotifier {
 
   void setUser({UserViewModel? newUser}) {
     userViewModel = newUser;
+    if (userViewModel?.groupSorter == sorter) {
+      return;
+    }
     sorter = userViewModel?.groupSorter ?? sorter;
     notifyListeners();
   }

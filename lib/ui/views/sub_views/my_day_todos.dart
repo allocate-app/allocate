@@ -100,8 +100,8 @@ class _MyDayToDos extends State<MyDayToDos> {
                   rebuildNotifiers: [toDoProvider, groupProvider],
                   rebuildCallback: ({required List<ToDo> items}) {
                     toDoProvider.toDos = items;
-                    toDoProvider.rebuild = false;
-                    groupProvider.rebuild = false;
+                    toDoProvider.softRebuild = false;
+                    groupProvider.softRebuild = false;
                   },
                   onFetch: (toDoProvider.userViewModel?.reduceMotion ?? false)
                       ? null
@@ -120,6 +120,7 @@ class _MyDayToDos extends State<MyDayToDos> {
                     if (toDoProvider.sortMethod == SortMethod.none) {
                       return ListViews.reorderableMyDay(
                         key: key,
+                        listPadding: Constants.fabPadding,
                         context: context,
                         toDos: items,
                         smallScreen: layoutProvider.smallScreen,
@@ -128,6 +129,7 @@ class _MyDayToDos extends State<MyDayToDos> {
                     }
                     return ListViews.immutableMyDay(
                       key: key,
+                      listPadding: Constants.fabPadding,
                       toDos: items,
                       smallScreen: layoutProvider.smallScreen,
                       onRemove: onRemove,

@@ -114,6 +114,7 @@ abstract class ListTileWidgets {
       outlinedIcon(
           currentContext: currentContext,
           iconPadding: iconPadding,
+          outerPadding: outerPadding,
           icon: const Icon(Icons.table_view_rounded));
 
   static Widget checkbox({
@@ -162,34 +163,30 @@ abstract class ListTileWidgets {
   // 1 = morning
   // 2 = aft
   // 4 = eve
-  static Icon routineGlyph({int times = 0}) {
+  static Icon routineGlyph({int times = 0, BuildContext? context}) {
+    Color? color =
+        (null != context) ? Theme.of(context).colorScheme.primary : null;
     return switch (times) {
       0 => const Icon(null),
-      1 => const Icon(Icons.wb_twilight_rounded),
-      2 => const Icon(Icons.lunch_dining_rounded),
-      4 => const Icon(Icons.bed_rounded),
-      _ => const Icon(Icons.queue_outlined),
+      1 => Icon(Icons.wb_twilight_rounded, color: color),
+      2 => Icon(Icons.lunch_dining_rounded, color: color),
+      4 => Icon(Icons.bed_rounded, color: color),
+      _ => Icon(Icons.queue_outlined, color: color),
     };
   }
 
   // TODO: factor the dialog out into a widget. This is hard to read.
   static Widget routineIcon({
     required BuildContext currentContext,
-    double scale = 1,
     int times = 0,
+    EdgeInsetsGeometry outerPadding = EdgeInsets.zero,
+    EdgeInsetsGeometry iconPadding = EdgeInsets.zero,
     required void Function({required int newRoutineTimes})
         handleRoutineTimeChange,
   }) {
-    return Transform.scale(
-      scale: scale,
-      child: OutlinedButton(
-        style: OutlinedButton.styleFrom(
-          padding: const EdgeInsets.all(Constants.doublePadding),
-          shape: const CircleBorder(),
-          side: BorderSide(
-            color: Theme.of(currentContext).colorScheme.outlineVariant,
-          ),
-        ),
+    return Padding(
+      padding: outerPadding,
+      child: IconButton.outlined(
         onPressed: () async {
           await blurredDismissible(
                   context: currentContext,
@@ -509,7 +506,10 @@ abstract class ListTileWidgets {
               // )
               .then((_) => handleRoutineTimeChange(newRoutineTimes: times));
         },
-        child: routineGlyph(times: times),
+        icon: Padding(
+          padding: iconPadding,
+          child: routineGlyph(times: times, context: currentContext),
+        ),
       ),
     );
   }

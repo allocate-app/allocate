@@ -73,6 +73,9 @@ class DeadlineProvider extends ChangeNotifier {
 
   void setUser({UserViewModel? newUser}) {
     userViewModel = newUser;
+    if (userViewModel?.deadlineSorter == sorter) {
+      return;
+    }
     sorter = userViewModel?.deadlineSorter ?? sorter;
     notifyListeners();
   }
@@ -446,10 +449,10 @@ class DeadlineProvider extends ChangeNotifier {
       return;
     }
 
-    if (!_notificationService.validateNotificationDate(notificationDate: deadline.warnDate)){
+    if (!_notificationService.validateNotificationDate(
+        notificationDate: deadline.warnDate)) {
       return;
     }
-
 
     String newDue = Jiffy.parseFromDateTime(deadline.dueDate!)
         .toLocal()

@@ -133,7 +133,7 @@ class _DeadlinesListScreen extends State<DeadlinesListScreen> {
                                   (deadlineProvider.deadlines.isEmpty ? 0 : 1)),
                   rebuildCallback: ({required List<Deadline> items}) {
                     deadlineProvider.deadlines = items;
-                    deadlineProvider.rebuild = false;
+                    deadlineProvider.softRebuild = false;
                   },
                   onFetch:
                       (deadlineProvider.userViewModel?.reduceMotion ?? false)
@@ -155,6 +155,7 @@ class _DeadlinesListScreen extends State<DeadlinesListScreen> {
                     if (deadlineProvider.sortMethod == SortMethod.none) {
                       return ListViews.reorderableDeadlines(
                         key: key,
+                        listPadding: Constants.fabPadding,
                         context: context,
                         deadlines: items,
                         checkDelete:
@@ -165,6 +166,7 @@ class _DeadlinesListScreen extends State<DeadlinesListScreen> {
                     }
                     return ListViews.immutableDeadlines(
                       key: key,
+                      listPadding: Constants.fabPadding,
                       deadlines: items,
                       checkDelete:
                           deadlineProvider.userViewModel?.checkDelete ?? true,

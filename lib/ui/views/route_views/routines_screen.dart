@@ -123,7 +123,7 @@ class _RoutinesListScreen extends State<RoutinesListScreen> {
                 rebuildNotifiers: [routineProvider],
                 rebuildCallback: ({required List<Routine> items}) {
                   routineProvider.routines = items;
-                  routineProvider.rebuild = false;
+                  routineProvider.softRebuild = false;
                 },
                 getAnimationKey: (routineProvider.userViewModel?.reduceMotion ??
                         false)
@@ -149,6 +149,7 @@ class _RoutinesListScreen extends State<RoutinesListScreen> {
                   if (routineProvider.sortMethod == SortMethod.none) {
                     return ListViews.reorderableRoutines(
                       key: key,
+                      listPadding: Constants.fabPadding,
                       context: context,
                       routines: items,
                       checkDelete:
@@ -158,6 +159,7 @@ class _RoutinesListScreen extends State<RoutinesListScreen> {
                   }
                   return ListViews.immutableRoutines(
                     key: key,
+                    listPadding: Constants.fabPadding,
                     routines: items,
                     checkDelete:
                         routineProvider.userViewModel?.checkDelete ?? true,
