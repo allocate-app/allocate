@@ -207,44 +207,39 @@ class _PaginatingListview<T extends IModel>
               onRefresh: () async {
                 await paginator.resetPagination().catchError(onError);
               },
-              child: Scrollbar(
-                thumbVisibility: true,
+              child: ListView(
+                shrinkWrap: true,
                 controller: scrollController,
-                child: ListView(
-                  shrinkWrap: true,
-                  controller: scrollController,
-                  physics: refreshPhysics,
-                  children: [
-                    IgnorePointer(
-                      ignoring: animating,
-                      child: AnimatedSwitcher(
-                        duration:
-                            const Duration(milliseconds: Constants.slideInTime),
-                        reverseDuration:
-                            const Duration(milliseconds: Constants.fadeOutTime),
-                        switchInCurve: Curves.fastLinearToSlowEaseIn,
-                        switchOutCurve: Curves.linear,
-                        transitionBuilder:
-                            (Widget child, Animation<double> animation) {
-                          if (child.key == getAnimationKey()) {
-                            return SlideTransition(
-                              position: Constants.offsetIn.animate(animation),
-                              child: child,
-                            );
-                          }
-                          return FadeTransition(
-                              opacity: animation, child: child);
-                        },
-                        child: widget.listviewBuilder(
-                          key: _animationKey,
-                          context: context,
-                          items: paginator.items!,
-                          onRemove: widget.onRemove,
-                        ),
+                physics: refreshPhysics,
+                children: [
+                  IgnorePointer(
+                    ignoring: animating,
+                    child: AnimatedSwitcher(
+                      duration:
+                          const Duration(milliseconds: Constants.slideInTime),
+                      reverseDuration:
+                          const Duration(milliseconds: Constants.fadeOutTime),
+                      switchInCurve: Curves.fastLinearToSlowEaseIn,
+                      switchOutCurve: Curves.linear,
+                      transitionBuilder:
+                          (Widget child, Animation<double> animation) {
+                        if (child.key == getAnimationKey()) {
+                          return SlideTransition(
+                            position: Constants.offsetIn.animate(animation),
+                            child: child,
+                          );
+                        }
+                        return FadeTransition(opacity: animation, child: child);
+                      },
+                      child: widget.listviewBuilder(
+                        key: _animationKey,
+                        context: context,
+                        items: paginator.items!,
+                        onRemove: widget.onRemove,
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               )),
         ),
       ),

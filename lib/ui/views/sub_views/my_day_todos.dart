@@ -44,10 +44,11 @@ class _MyDayToDos extends State<MyDayToDos> {
     if (null == items) {
       return;
     }
-    Set<ToDo> itemSet = toDoProvider.toDos.toSet();
-
+    DateTime threshold = DateTime.now();
+    threshold = threshold.copyWith(
+        millisecond: threshold.millisecond - Constants.newItemThreshold);
     for (ToDo toDo in items) {
-      if (!itemSet.contains(toDo)) {
+      if (!toDo.lastUpdated.isBefore(threshold)) {
         toDo.fade = Fade.fadeIn;
       }
     }

@@ -322,67 +322,66 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                 Flexible(
                   child: Material(
                     color: Colors.transparent,
-                    child: Scrollbar(
-                      thumbVisibility: true,
+                    child: ListView(
+                      padding:
+                          const EdgeInsets.only(top: Constants.halfPadding),
+                      physics: scrollPhysics,
+                      shrinkWrap: true,
                       controller: desktopScrollController,
-                      child: ListView(
-                        physics: scrollPhysics,
-                        shrinkWrap: true,
-                        controller: desktopScrollController,
-                        children: [
-                          Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Flexible(
-                                  child: ListView(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: Constants.halfPadding),
-                                      physics:
-                                          const NeverScrollableScrollPhysics(),
-                                      shrinkWrap: true,
-                                      children: [
-                                        // Title
-                                        _buildNameTile(),
+                      children: [
+                        Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Flexible(
+                                child: ListView(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: Constants.halfPadding),
+                                    physics:
+                                        const NeverScrollableScrollPhysics(),
+                                    shrinkWrap: true,
+                                    children: [
+                                      // Title
+                                      _buildNameTile(),
 
-                                        Padding(
-                                          padding: const EdgeInsets.only(
-                                              bottom: Constants.padding),
-                                          child: _buildPriorityTile(),
-                                        ),
+                                      Padding(
+                                        padding: const EdgeInsets.only(
+                                            bottom: Constants.padding),
+                                        child: _buildPriorityTile(),
+                                      ),
 
-                                        const PaddedDivider(
-                                            padding: Constants.padding),
-                                        _buildWarnMeTile(),
+                                      const PaddedDivider(
+                                          padding: Constants.padding),
+                                      _buildWarnMeTile(),
 
-                                        const PaddedDivider(
-                                            padding: Constants.padding),
-                                        _buildDateRangeTile(),
+                                      const PaddedDivider(
+                                          padding: Constants.padding),
+                                      _buildDateRangeTile(),
 
-                                        _buildTimeTile(),
+                                      _buildTimeTile(),
 
-                                        _buildRepeatableTile(),
-                                      ]),
-                                ),
-                                Flexible(
-                                  child: ListView(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: Constants.halfPadding),
-                                      physics:
-                                          const NeverScrollableScrollPhysics(),
-                                      shrinkWrap: true,
-                                      children: [
-                                        _buildDescriptionTile(
-                                          minLines: Constants.desktopMinLines,
-                                          maxLines: Constants
-                                              .desktopMaxLinesBeforeScroll,
-                                        ),
-                                      ]),
-                                )
-                              ]),
-                        ],
-                      ),
+                                      _buildRepeatableTile(),
+                                    ]),
+                              ),
+                              Flexible(
+                                child: ListView(
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: Constants.padding,
+                                        horizontal: Constants.halfPadding),
+                                    physics:
+                                        const NeverScrollableScrollPhysics(),
+                                    shrinkWrap: true,
+                                    children: [
+                                      _buildDescriptionTile(
+                                        minLines: Constants.desktopMinLines,
+                                        maxLines: Constants
+                                            .desktopMaxLinesBeforeScroll,
+                                      ),
+                                    ]),
+                              )
+                            ]),
+                      ],
                     ),
                   ),
                 ),

@@ -135,36 +135,33 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
                       // Header.
                       _buildHeader(),
                       Flexible(
-                        child: Scrollbar(
+                        child: ListView(
+                          shrinkWrap: true,
+                          physics: scrollPhysics,
                           controller: desktopSideController,
-                          child: ListView(
-                            shrinkWrap: true,
-                            physics: scrollPhysics,
-                            controller: desktopSideController,
-                            children: [
-                              Padding(
-                                padding: const EdgeInsets.only(
-                                    top: Constants.quadPadding +
-                                        Constants.doublePadding +
-                                        Constants.padding),
-                                child: _buildEnergyTile(),
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.only(
+                                  top: Constants.quadPadding +
+                                      Constants.doublePadding +
+                                      Constants.padding),
+                              child: _buildEnergyTile(),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.only(
+                                top: Constants.quadPadding,
+                                bottom: Constants.doublePadding,
                               ),
-                              Padding(
-                                padding: const EdgeInsets.only(
-                                  top: Constants.quadPadding,
-                                  bottom: Constants.doublePadding,
-                                ),
-                                child: _buildQuickInfo(),
-                              ),
-                              const Padding(
-                                padding:
-                                    EdgeInsets.all(Constants.halfPadding - 1),
-                                child: SizedBox.shrink(),
-                              ),
-                              _buildSignOut(),
-                              _buildDeleteAccount(),
-                            ],
-                          ),
+                              child: _buildQuickInfo(),
+                            ),
+                            const Padding(
+                              padding:
+                                  EdgeInsets.all(Constants.halfPadding - 1),
+                              child: SizedBox.shrink(),
+                            ),
+                            _buildSignOut(),
+                            _buildDeleteAccount(),
+                          ],
                         ),
                       ),
                     ],
@@ -172,27 +169,23 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
                 ),
                 Flexible(
                   flex: 2,
-                  child: Scrollbar(
-                    thumbVisibility: true,
+                  child: ListView(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: Constants.doublePadding),
                     controller: desktopScrollController,
-                    child: ListView(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: Constants.doublePadding),
-                      controller: desktopScrollController,
-                      physics: scrollPhysics,
-                      shrinkWrap: true,
-                      children: [
-                        _buildAccountSection(),
-                        _buildGeneralSection(),
-                        _buildAccessibilitySection(),
-                        _buildThemeSection(),
-                        _buildAboutSection(),
-                        const Padding(
-                          padding: EdgeInsets.all(Constants.padding),
-                          child: SizedBox.shrink(),
-                        ),
-                      ],
-                    ),
+                    physics: scrollPhysics,
+                    shrinkWrap: true,
+                    children: [
+                      _buildAccountSection(),
+                      _buildGeneralSection(),
+                      _buildAccessibilitySection(),
+                      _buildThemeSection(),
+                      _buildAboutSection(),
+                      const Padding(
+                        padding: EdgeInsets.all(Constants.padding),
+                        child: SizedBox.shrink(),
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -212,39 +205,35 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
             // Header.
             _buildHeader(),
             Flexible(
-              child: Scrollbar(
+              child: ListView(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: Constants.halfPadding),
+                shrinkWrap: true,
+                physics: scrollPhysics,
                 controller: mobileScrollController,
-                thumbVisibility: true,
-                child: ListView(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: Constants.halfPadding),
-                  shrinkWrap: true,
-                  physics: scrollPhysics,
-                  controller: mobileScrollController,
-                  children: [
-                    _buildEnergyTile(),
-                    _buildQuickInfo(),
-                    // ACCOUNT SETTNIGS
-                    _buildAccountSection(),
-                    // GENERAL SETTINGS
-                    _buildGeneralSection(),
-                    // ACCESSIBILITY
-                    _buildAccessibilitySection(),
-                    // THEME
-                    _buildThemeSection(),
-                    // ABOUT
-                    _buildAboutSection(),
-                    // SIGN OUT
-                    _buildSignOut(),
+                children: [
+                  _buildEnergyTile(),
+                  _buildQuickInfo(),
+                  // ACCOUNT SETTNIGS
+                  _buildAccountSection(),
+                  // GENERAL SETTINGS
+                  _buildGeneralSection(),
+                  // ACCESSIBILITY
+                  _buildAccessibilitySection(),
+                  // THEME
+                  _buildThemeSection(),
+                  // ABOUT
+                  _buildAboutSection(),
+                  // SIGN OUT
+                  _buildSignOut(),
 
-                    // DELETE ACCOUNT
-                    _buildDeleteAccount(),
-                    const Padding(
-                      padding: EdgeInsets.all(Constants.padding),
-                      child: SizedBox.shrink(),
-                    ),
-                  ],
-                ),
+                  // DELETE ACCOUNT
+                  _buildDeleteAccount(),
+                  const Padding(
+                    padding: EdgeInsets.all(Constants.padding),
+                    child: SizedBox.shrink(),
+                  ),
+                ],
               ),
             ),
           ],

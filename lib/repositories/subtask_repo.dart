@@ -435,6 +435,7 @@ class SubtaskRepo extends ChangeNotifier implements SubtaskRepository {
 
   Future<void> handleUpsert(PostgresChangePayload payload) async {
     Subtask subtask = Subtask.fromEntity(entity: payload.newRecord);
+    subtask.lastUpdated = DateTime.now();
     await _isarClient.writeTxn(() async {
       await _isarClient.subtasks.put(subtask);
     });

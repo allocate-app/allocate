@@ -462,6 +462,7 @@ class GroupRepo extends ChangeNotifier implements GroupRepository {
 
   Future<void> handleUpsert(PostgresChangePayload payload) async {
     Group group = Group.fromEntity(entity: payload.newRecord);
+    group.lastUpdated = DateTime.now();
     await _isarClient.writeTxn(() async {
       await _isarClient.groups.put(group);
     });

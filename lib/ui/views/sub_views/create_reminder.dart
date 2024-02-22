@@ -169,24 +169,23 @@ class _CreateReminderScreen extends State<CreateReminderScreen> {
                           const PaddedDivider(padding: Constants.halfPadding),
 
                           Flexible(
-                              child: Scrollbar(
-                                  thumbVisibility: true,
+                              child: ListView(
+                                  padding: const EdgeInsets.only(
+                                      top: Constants.halfPadding),
+                                  shrinkWrap: true,
                                   controller: mainScrollController,
-                                  child: ListView(
-                                      shrinkWrap: true,
-                                      controller: mainScrollController,
-                                      physics: scrollPhysics,
-                                      children: [
-                                        _buildNameTile(),
+                                  physics: scrollPhysics,
+                                  children: [
+                                _buildNameTile(),
 
-                                        const PaddedDivider(
-                                            padding: Constants.halfPadding),
+                                const PaddedDivider(
+                                    padding: Constants.halfPadding),
 
-                                        _buildDueDateTile(),
+                                _buildDueDateTile(),
 
-                                        // Repeatable Stuff -> Show status, on click, open a dialog.
-                                        _buildRepeatableTile(),
-                                      ]))),
+                                // Repeatable Stuff -> Show status, on click, open a dialog.
+                                _buildRepeatableTile(),
+                              ])),
                           const PaddedDivider(padding: Constants.halfPadding),
                           Tiles.createButton(
                             outerPadding: const EdgeInsets.symmetric(

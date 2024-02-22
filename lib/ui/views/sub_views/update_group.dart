@@ -263,51 +263,50 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
                 Flexible(
                   child: Material(
                     color: Colors.transparent,
-                    child: Scrollbar(
-                      thumbVisibility: true,
+                    child: ListView(
+                      padding:
+                          const EdgeInsets.only(top: Constants.halfPadding),
+                      shrinkWrap: true,
+                      physics: scrollPhysics,
                       controller: desktopScrollController,
-                      child: ListView(
-                        shrinkWrap: true,
-                        physics: scrollPhysics,
-                        controller: desktopScrollController,
-                        children: [
-                          Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Flexible(
-                                    // Name And Description.
-                                    child: ListView(
-                                        padding: const EdgeInsets.symmetric(
-                                            horizontal: Constants.padding),
-                                        shrinkWrap: true,
-                                        physics:
-                                            const NeverScrollableScrollPhysics(),
-                                        children: [
-                                      // Name
-
-                                      _buildNameTile(),
-
-                                      _buildToDosTile(),
-                                    ])),
-                                Flexible(
+                      children: [
+                        Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Flexible(
+                                  // Name And Description.
                                   child: ListView(
-                                      physics:
-                                          const NeverScrollableScrollPhysics(),
-                                      shrinkWrap: true,
                                       padding: const EdgeInsets.symmetric(
                                           horizontal: Constants.padding),
+                                      shrinkWrap: true,
+                                      physics:
+                                          const NeverScrollableScrollPhysics(),
                                       children: [
-                                        _buildDescriptionTile(
-                                            minLines: Constants.desktopMinLines,
-                                            maxLines: Constants
-                                                .desktopMaxLinesBeforeScroll)
-                                      ]),
-                                )
-                              ]),
-                        ],
-                      ),
+                                    // Name
+
+                                    _buildNameTile(),
+
+                                    _buildToDosTile(),
+                                  ])),
+                              Flexible(
+                                child: ListView(
+                                    physics:
+                                        const NeverScrollableScrollPhysics(),
+                                    shrinkWrap: true,
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: Constants.padding,
+                                        horizontal: Constants.halfPadding),
+                                    children: [
+                                      _buildDescriptionTile(
+                                          minLines: Constants.desktopMinLines,
+                                          maxLines: Constants
+                                              .desktopMaxLinesBeforeScroll)
+                                    ]),
+                              )
+                            ]),
+                      ],
                     ),
                   ),
                 ),

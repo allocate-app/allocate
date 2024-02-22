@@ -39,12 +39,14 @@ class _ToDosListScreen extends State<ToDosListScreen> {
   }
 
   void onFetch({List<ToDo>? items}) {
-    Set<ToDo> itemSet = toDoProvider.toDos.toSet();
     if (null == items) {
       return;
     }
+    DateTime threshold = DateTime.now();
+    threshold = threshold.copyWith(
+        millisecond: threshold.millisecond - Constants.newItemThreshold);
     for (ToDo toDo in items) {
-      if (!itemSet.contains(toDo)) {
+      if (!toDo.lastUpdated.isBefore(threshold)) {
         toDo.fade = Fade.fadeIn;
       }
     }

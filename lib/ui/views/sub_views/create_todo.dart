@@ -305,92 +305,91 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
               Flexible(
                 child: Material(
                   color: Colors.transparent,
-                  child: Scrollbar(
-                    thumbVisibility: true,
-                    controller: desktopScrollController,
-                    child: ListView(
-                        shrinkWrap: true,
-                        controller: desktopScrollController,
-                        physics: scrollPhysics,
-                        children: [
-                          Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Flexible(
-                                  child: ListView(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: Constants.halfPadding),
-                                      shrinkWrap: true,
-                                      physics:
-                                          const NeverScrollableScrollPhysics(),
-                                      children: [
-                                        _buildNameTile(),
-                                        _buildWeightTile(),
+                  child: ListView(
+                      padding:
+                          const EdgeInsets.only(top: Constants.halfPadding),
+                      shrinkWrap: true,
+                      controller: desktopScrollController,
+                      physics: scrollPhysics,
+                      children: [
+                        Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Flexible(
+                                child: ListView(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: Constants.halfPadding),
+                                    shrinkWrap: true,
+                                    physics:
+                                        const NeverScrollableScrollPhysics(),
+                                    children: [
+                                      _buildNameTile(),
+                                      _buildWeightTile(),
 
-                                        const PaddedDivider(
-                                            padding: Constants.padding),
-                                        // My Day
-                                        _buildMyDay(),
+                                      const PaddedDivider(
+                                          padding: Constants.padding),
+                                      // My Day
+                                      _buildMyDay(),
 
-                                        const PaddedDivider(
-                                            padding: Constants.padding),
-                                        // Priority
-                                        Padding(
+                                      const PaddedDivider(
+                                          padding: Constants.padding),
+                                      // Priority
+                                      Padding(
+                                        padding: const EdgeInsets.only(
+                                            bottom: Constants.padding),
+                                        child: _buildPriorityTile(),
+                                      ),
+                                      const PaddedDivider(
+                                          padding: Constants.padding),
+                                      // Expected Duration / RealDuration -> Show status, on click, open a dialog.
+                                      _buildDurationTile(),
+
+                                      const PaddedDivider(
+                                          padding: Constants.padding),
+                                      // DateTime -> Show status, on click, open a dialog.
+                                      _buildDateRangeTile(),
+
+                                      _buildTimeTile(),
+                                      _buildRepeatableTile(),
+                                    ]),
+                              ),
+                              Flexible(
+                                child: ListView(
+                                    physics:
+                                        const NeverScrollableScrollPhysics(),
+                                    shrinkWrap: true,
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: Constants.halfPadding),
+                                    children: [
+                                      _buildSearchBar(
                                           padding: const EdgeInsets.only(
-                                              bottom: Constants.padding),
-                                          child: _buildPriorityTile(),
-                                        ),
-                                        const PaddedDivider(
+                                              top: Constants.halfPadding,
+                                              right: Constants.quarterPadding,
+                                              left: Constants.quarterPadding)),
+
+                                      const PaddedDivider(
+                                          padding: Constants.padding),
+                                      // TaskType
+                                      _buildTaskTypeButton(),
+                                      _buildSubtasksTile(),
+
+                                      const Padding(
+                                        padding: EdgeInsets.symmetric(
+                                            vertical: Constants.padding),
+                                        child: PaddedDivider(
                                             padding: Constants.padding),
-                                        // Expected Duration / RealDuration -> Show status, on click, open a dialog.
-                                        _buildDurationTile(),
-
-                                        const PaddedDivider(
-                                            padding: Constants.padding),
-                                        // DateTime -> Show status, on click, open a dialog.
-                                        _buildDateRangeTile(),
-
-                                        _buildTimeTile(),
-                                        _buildRepeatableTile(),
-                                      ]),
-                                ),
-                                Flexible(
-                                  child: ListView(
-                                      physics:
-                                          const NeverScrollableScrollPhysics(),
-                                      shrinkWrap: true,
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: Constants.halfPadding),
-                                      children: [
-                                        _buildSearchBar(
-                                            padding: const EdgeInsets.symmetric(
-                                                horizontal:
-                                                    Constants.quarterPadding)),
-
-                                        const PaddedDivider(
-                                            padding: Constants.padding),
-                                        // TaskType
-                                        _buildTaskTypeButton(),
-                                        _buildSubtasksTile(),
-
-                                        const Padding(
-                                          padding: EdgeInsets.symmetric(
-                                              vertical: Constants.padding),
-                                          child: PaddedDivider(
-                                              padding: Constants.padding),
-                                        ),
-                                        // Description
-                                        _buildDescriptionTile(
-                                            minLines: Constants.desktopMinLines,
-                                            maxLines: Constants
-                                                .desktopMaxLinesBeforeScroll),
-                                      ]),
-                                )
-                              ]),
-                        ]),
-                  ),
+                                      ),
+                                      // Description
+                                      _buildDescriptionTile(
+                                          minLines: Constants.desktopMinLines,
+                                          maxLines: Constants
+                                              .desktopMaxLinesBeforeScroll),
+                                    ]),
+                              )
+                            ]),
+                      ]),
                 ),
               ),
 

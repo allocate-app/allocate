@@ -45,9 +45,11 @@ class _RoutinesListScreen extends State<RoutinesListScreen> {
       return;
     }
 
-    Set<Routine> itemSet = routineProvider.routines.toSet();
+    DateTime threshold = DateTime.now();
+    threshold = threshold.copyWith(
+        millisecond: threshold.millisecond - Constants.newItemThreshold);
     for (Routine routine in items) {
-      if (!itemSet.contains(routine)) {
+      if (!routine.lastUpdated.isBefore(threshold)) {
         routine.fade = Fade.fadeIn;
       }
     }

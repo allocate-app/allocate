@@ -501,6 +501,7 @@ class DeadlineRepo extends ChangeNotifier implements DeadlineRepository {
 
   Future<void> handleUpsert(PostgresChangePayload payload) async {
     Deadline deadline = Deadline.fromEntity(entity: payload.newRecord);
+    deadline.lastUpdated = DateTime.now();
     await _isarClient.writeTxn(() async {
       await _isarClient.deadlines.put(deadline);
     });
