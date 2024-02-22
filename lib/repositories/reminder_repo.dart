@@ -496,6 +496,7 @@ class ReminderRepo extends ChangeNotifier implements ReminderRepository {
 
   Future<void> handleUpsert(PostgresChangePayload payload) async {
     Reminder reminder = Reminder.fromEntity(entity: payload.newRecord);
+    reminder.lastUpdated = DateTime.now();
     await _isarClient.writeTxn(() async {
       await _isarClient.reminders.put(reminder);
     });

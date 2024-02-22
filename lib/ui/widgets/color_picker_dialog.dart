@@ -105,85 +105,80 @@ class _ColorPickerDialog extends State<ColorPickerDialog> {
                         // Colorpicker here.
                         Flexible(
                           flex: 10,
-                          child: Scrollbar(
+                          child: ListView(
                             controller: _scrollController,
-                            thumbVisibility: true,
-                            child: ListView(
-                              controller: _scrollController,
-                              shrinkWrap: true,
-                              physics: scrollPhysics,
-                              children: [
-                                ColorPicker(
-                                    enableTooltips: true,
-                                    color: curColor,
-                                    elevation: 5,
-                                    onColorChanged: (Color color) {
-                                      if (mounted) {
-                                        setState(() => curColor = color);
-                                      }
-                                    },
-                                    pickersEnabled: const <ColorPickerType,
-                                        bool>{
-                                      ColorPickerType.primary: true,
-                                      ColorPickerType.accent: true,
-                                      ColorPickerType.bw: true,
-                                      ColorPickerType.wheel: true,
-                                      ColorPickerType.custom: false,
-                                    },
-                                    pickerTypeLabels: const <ColorPickerType,
-                                        String>{
-                                      ColorPickerType.primary: "Primary",
-                                      ColorPickerType.accent: "Accent",
-                                      ColorPickerType.bw: "B&W",
-                                      ColorPickerType.wheel: "Wheel",
-                                    },
-                                    selectedPickerTypeColor:
-                                        Theme.of(context).primaryColor,
-                                    enableTonalPalette: true,
-                                    tonalColorSameSize: true,
-                                    tonalSubheading: const Text(
-                                      "Tonal palette",
-                                      style: Constants.largeBodyText,
-                                      maxLines: 1,
-                                      softWrap: true,
-                                      overflow: TextOverflow.visible,
-                                    ),
-                                    enableShadesSelection: true,
-                                    heading: const Text(
-                                      "Hue selection",
-                                      style: Constants.largeBodyText,
-                                      maxLines: 1,
-                                      softWrap: true,
-                                      overflow: TextOverflow.visible,
-                                    ),
-                                    subheading: const Text(
-                                      "Shade selection",
-                                      style: Constants.largeBodyText,
-                                      maxLines: 1,
-                                      softWrap: true,
-                                      overflow: TextOverflow.visible,
-                                    ),
-                                    showRecentColors: true,
-                                    recentColorsSubheading: const Text(
-                                      "Recent colors",
-                                      style: Constants.largeBodyText,
-                                      maxLines: 1,
-                                      softWrap: true,
-                                      overflow: TextOverflow.visible,
-                                    ),
-                                    includeIndex850: true,
-                                    borderRadius: Constants.circular,
-                                    wheelSquareBorderRadius:
-                                        Constants.curvedCorners,
-                                    wheelSquarePadding: Constants.padding,
-                                    recentColors: themeProvider.recentColors,
-                                    onRecentColorsChanged:
-                                        (List<Color> recentColors) {
-                                      themeProvider.recentColors = recentColors;
-                                      // Might need to setstate.
-                                    }),
-                              ],
-                            ),
+                            shrinkWrap: true,
+                            physics: scrollPhysics,
+                            children: [
+                              ColorPicker(
+                                  enableTooltips: true,
+                                  color: curColor,
+                                  elevation: 5,
+                                  onColorChanged: (Color color) {
+                                    if (mounted) {
+                                      setState(() => curColor = color);
+                                    }
+                                  },
+                                  pickersEnabled: const <ColorPickerType, bool>{
+                                    ColorPickerType.primary: true,
+                                    ColorPickerType.accent: true,
+                                    ColorPickerType.bw: true,
+                                    ColorPickerType.wheel: true,
+                                    ColorPickerType.custom: false,
+                                  },
+                                  pickerTypeLabels: const <ColorPickerType,
+                                      String>{
+                                    ColorPickerType.primary: "Primary",
+                                    ColorPickerType.accent: "Accent",
+                                    ColorPickerType.bw: "B&W",
+                                    ColorPickerType.wheel: "Wheel",
+                                  },
+                                  selectedPickerTypeColor:
+                                      Theme.of(context).primaryColor,
+                                  enableTonalPalette: true,
+                                  tonalColorSameSize: true,
+                                  tonalSubheading: const Text(
+                                    "Tonal palette",
+                                    style: Constants.largeBodyText,
+                                    maxLines: 1,
+                                    softWrap: true,
+                                    overflow: TextOverflow.visible,
+                                  ),
+                                  enableShadesSelection: true,
+                                  heading: const Text(
+                                    "Hue selection",
+                                    style: Constants.largeBodyText,
+                                    maxLines: 1,
+                                    softWrap: true,
+                                    overflow: TextOverflow.visible,
+                                  ),
+                                  subheading: const Text(
+                                    "Shade selection",
+                                    style: Constants.largeBodyText,
+                                    maxLines: 1,
+                                    softWrap: true,
+                                    overflow: TextOverflow.visible,
+                                  ),
+                                  showRecentColors: true,
+                                  recentColorsSubheading: const Text(
+                                    "Recent colors",
+                                    style: Constants.largeBodyText,
+                                    maxLines: 1,
+                                    softWrap: true,
+                                    overflow: TextOverflow.visible,
+                                  ),
+                                  includeIndex850: true,
+                                  borderRadius: Constants.circular,
+                                  wheelSquareBorderRadius:
+                                      Constants.curvedCorners,
+                                  wheelSquarePadding: Constants.padding,
+                                  recentColors: themeProvider.recentColors,
+                                  onRecentColorsChanged:
+                                      (List<Color> recentColors) {
+                                    themeProvider.recentColors = recentColors;
+                                    // Might need to setstate.
+                                  }),
+                            ],
                           ),
                         ),
 

@@ -45,10 +45,11 @@ class _RemindersListScreen extends State<RemindersListScreen> {
       return;
     }
 
-    Set<Reminder> itemSet = reminderProvider.reminders.toSet();
-
+    DateTime threshold = DateTime.now();
+    threshold = threshold.copyWith(
+        millisecond: threshold.millisecond - Constants.newItemThreshold);
     for (Reminder reminder in items) {
-      if (!itemSet.contains(reminder)) {
+      if (!reminder.lastUpdated.isBefore(threshold)) {
         reminder.fade = Fade.fadeIn;
       }
     }

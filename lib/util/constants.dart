@@ -325,6 +325,8 @@ abstract class Constants {
   static const int footerDelay = 100;
   static const int fadeOutTime = 125;
 
+  static const int newItemThreshold = 1000;
+
   // Pagination:
   static const int minLimitPerQuery = 50;
 

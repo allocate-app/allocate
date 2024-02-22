@@ -61,13 +61,16 @@ class _GroupsListScreen extends State<GroupsListScreen> {
     }
   }
 
-  void onFetch({List<IModel>? items, Set<IModel>? itemSet}) {
-    if (null == items || items.isEmpty || null == itemSet) {
+  void onFetch({List<IModel>? items}) {
+    if (null == items || items.isEmpty) {
       return;
     }
 
+    DateTime threshold = DateTime.now();
+    threshold = threshold.copyWith(
+        millisecond: threshold.millisecond - Constants.newItemThreshold);
     for (IModel item in items) {
-      if (!itemSet.contains(item)) {
+      if (!item.lastUpdated.isBefore(threshold)) {
         item.fade = Fade.fadeIn;
       }
     }
@@ -131,8 +134,7 @@ class _GroupsListScreen extends State<GroupsListScreen> {
               },
               onFetch: (groupProvider.userViewModel?.reduceMotion ?? false)
                   ? null
-                  : ({List<Group>? items}) => onFetch(
-                      items: items, itemSet: groupProvider.groups.toSet()),
+                  : onFetch,
               onRemove: (groupProvider.userViewModel?.reduceMotion ?? false)
                   ? null
                   : onRemove,

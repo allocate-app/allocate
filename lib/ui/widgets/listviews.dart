@@ -509,7 +509,7 @@ abstract class ListViews {
     ScrollPhysics physics = const NeverScrollableScrollPhysics(),
     EdgeInsets listPadding = EdgeInsets.zero,
     Future<void> Function({Group? item})? onRemove,
-    void Function({List<ToDo>? items, Set<ToDo>? itemSet})? onToDoFetch,
+    void Function({List<ToDo>? items})? onToDoFetch,
     Future<void> Function({ToDo? item})? onToDoRemove,
   }) =>
       CustomReorderableListView.separated(
@@ -537,10 +537,7 @@ abstract class ListViews {
                 showHandle: groups.length > 1,
                 checkDelete: checkDelete,
                 onRemove: onRemove,
-                onToDoFetch: (null != onToDoFetch)
-                    ? ({List<ToDo>? items}) => onToDoFetch(
-                        items: items, itemSet: groups[index].toDos.toSet())
-                    : null,
+                onToDoFetch: (null != onToDoFetch) ? onToDoFetch : null,
                 onToDoRemove: onToDoRemove,
               ),
             );
@@ -573,7 +570,7 @@ abstract class ListViews {
     ScrollPhysics physics = const NeverScrollableScrollPhysics(),
     EdgeInsets listPadding = EdgeInsets.zero,
     Future<void> Function({Group? item})? onRemove,
-    void Function({List<ToDo>? items, Set<ToDo>? itemSet})? onToDoFetch,
+    void Function({List<ToDo>? items})? onToDoFetch,
     Future<void> Function({ToDo? item})? onToDoRemove,
   }) =>
       ListView.separated(
@@ -595,10 +592,7 @@ abstract class ListViews {
               group: groups[index],
               checkDelete: checkDelete,
               onRemove: onRemove,
-              onToDoFetch: (null != onToDoFetch)
-                  ? ({List<ToDo>? items}) => onToDoFetch(
-                      items: items, itemSet: groups[index].toDos.toSet())
-                  : null,
+              onToDoFetch: (null != onToDoFetch) ? onToDoFetch : null,
               onToDoRemove: onToDoRemove,
             ),
           );

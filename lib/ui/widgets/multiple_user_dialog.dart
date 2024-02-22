@@ -76,67 +76,62 @@ class _MultipleUserDialog extends State<MultipleUserDialog> {
                             ),
                           )
                         ]),
-                    Scrollbar(
-                      thumbVisibility: true,
+                    ListView.separated(
+                      shrinkWrap: true,
                       controller: _scrollController,
-                      child: ListView.separated(
-                        shrinkWrap: true,
-                        controller: _scrollController,
-                        physics: _scrollPhysics,
-                        itemCount: _users.length,
-                        itemBuilder: (BuildContext context, int index) {
-                          if (null != _users[index]) {
-                            return ListTile(
-                              contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: Constants.padding),
-                              shape: const RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.all(
-                                      Radius.circular(Constants.semiCircular))),
-                              title: AutoSizeText(
-                                _users[index]!.username,
-                                overflow: TextOverflow.ellipsis,
-                                minFontSize: Constants.large,
-                                softWrap: true,
-                                maxLines: 2,
-                              ),
-                              leading: ListTileWidgets.checkbox(
-                                  outerPadding: const EdgeInsets.symmetric(
-                                      horizontal: Constants.halfPadding),
-                                  scale: 1.1,
-                                  completed: _desiredUser == _users[index],
-                                  onChanged: (bool? value) {
-                                    bool rebuild = false;
-                                    if (value!) {
-                                      rebuild = _users[index] != _desiredUser;
-                                      _desiredUser = _users[index];
-                                    }
-                                    if (rebuild) {
-                                      setState(() {});
-                                    }
-                                  }),
-                              trailing: AutoSizeText(
-                                "Last Updated: ${Jiffy.parseFromDateTime(_users[index]!.lastUpdated).format(pattern: "MMM dd yy").toString()}",
-                                overflow: TextOverflow.visible,
-                                minFontSize: Constants.large,
-                                softWrap: false,
-                                maxLines: 1,
-                              ),
-                            );
-                          }
-                          return const ListTile(
-                              title: AutoSizeText(
-                            "Invalid User",
-                            overflow: TextOverflow.visible,
-                            minFontSize: Constants.large,
-                            softWrap: false,
-                            maxLines: 1,
-                          ));
-                        },
-                        separatorBuilder: (BuildContext context, int index) {
-                          return const PaddedDivider(
-                              padding: Constants.padding);
-                        },
-                      ),
+                      physics: _scrollPhysics,
+                      itemCount: _users.length,
+                      itemBuilder: (BuildContext context, int index) {
+                        if (null != _users[index]) {
+                          return ListTile(
+                            contentPadding: const EdgeInsets.symmetric(
+                                horizontal: Constants.padding),
+                            shape: const RoundedRectangleBorder(
+                                borderRadius: BorderRadius.all(
+                                    Radius.circular(Constants.semiCircular))),
+                            title: AutoSizeText(
+                              _users[index]!.username,
+                              overflow: TextOverflow.ellipsis,
+                              minFontSize: Constants.large,
+                              softWrap: true,
+                              maxLines: 2,
+                            ),
+                            leading: ListTileWidgets.checkbox(
+                                outerPadding: const EdgeInsets.symmetric(
+                                    horizontal: Constants.halfPadding),
+                                scale: 1.1,
+                                completed: _desiredUser == _users[index],
+                                onChanged: (bool? value) {
+                                  bool rebuild = false;
+                                  if (value!) {
+                                    rebuild = _users[index] != _desiredUser;
+                                    _desiredUser = _users[index];
+                                  }
+                                  if (rebuild) {
+                                    setState(() {});
+                                  }
+                                }),
+                            trailing: AutoSizeText(
+                              "Last Updated: ${Jiffy.parseFromDateTime(_users[index]!.lastUpdated).format(pattern: "MMM dd yy").toString()}",
+                              overflow: TextOverflow.visible,
+                              minFontSize: Constants.large,
+                              softWrap: false,
+                              maxLines: 1,
+                            ),
+                          );
+                        }
+                        return const ListTile(
+                            title: AutoSizeText(
+                          "Invalid User",
+                          overflow: TextOverflow.visible,
+                          minFontSize: Constants.large,
+                          softWrap: false,
+                          maxLines: 1,
+                        ));
+                      },
+                      separatorBuilder: (BuildContext context, int index) {
+                        return const PaddedDivider(padding: Constants.padding);
+                      },
                     ),
                     Padding(
                       padding: const EdgeInsets.only(top: Constants.padding),

@@ -486,6 +486,7 @@ class RoutineRepo extends ChangeNotifier implements RoutineRepository {
 
   Future<void> handleUpsert(PostgresChangePayload payload) async {
     Routine routine = Routine.fromEntity(entity: payload.newRecord);
+    routine.lastUpdated = DateTime.now();
     await _isarClient.writeTxn(() async {
       await _isarClient.routines.put(routine);
     });

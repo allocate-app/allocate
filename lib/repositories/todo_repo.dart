@@ -511,6 +511,7 @@ class ToDoRepo extends ChangeNotifier implements ToDoRepository {
 
   Future<void> handleUpsert(PostgresChangePayload payload) async {
     ToDo toDo = ToDo.fromEntity(entity: payload.newRecord);
+    toDo.lastUpdated = DateTime.now();
     await _isarClient.writeTxn(() async {
       await _isarClient.toDos.put(toDo);
     });

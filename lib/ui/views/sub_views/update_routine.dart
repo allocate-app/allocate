@@ -173,10 +173,11 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
     if (null == items) {
       return;
     }
-    Set<Subtask> itemSet = vm.subtasks.toSet();
-
+    DateTime threshold = DateTime.now();
+    threshold = threshold.copyWith(
+        millisecond: threshold.millisecond - Constants.newItemThreshold);
     for (Subtask subtask in items) {
-      if (!itemSet.contains(subtask)) {
+      if (!subtask.lastUpdated.isBefore(threshold)) {
         subtask.fade = Fade.fadeIn;
       }
     }
@@ -237,46 +238,48 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
             Flexible(
               child: Material(
                 color: Colors.transparent,
-                child: Scrollbar(
-                  thumbVisibility: true,
-                  controller: desktopScrollController,
-                  child: ListView(
-                      shrinkWrap: true,
-                      controller: desktopScrollController,
-                      physics: scrollPhysics,
-                      children: [
-                        Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Flexible(
-                                  child: ListView(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: Constants.halfPadding),
-                                      shrinkWrap: true,
-                                      children: [
-                                    // Title
+                child: ListView(
+                    padding: const EdgeInsets.only(top: Constants.halfPadding),
+                    shrinkWrap: true,
+                    controller: desktopScrollController,
+                    physics: scrollPhysics,
+                    children: [
+                      Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Flexible(
+                                child: ListView(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: Constants.halfPadding),
+                                    shrinkWrap: true,
+                                    children: [
+                                  // Title
 
-                                    _buildNameTile(),
-                                    _buildWeightTile(),
-                                    const PaddedDivider(
-                                        padding: Constants.padding),
-                                    _buildDurationTile(),
-                                  ])),
-                              Flexible(
-                                  child: ListView(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: Constants.halfPadding),
-                                      physics:
-                                          const NeverScrollableScrollPhysics(),
-                                      shrinkWrap: true,
-                                      children: [
-                                    _buildSubtasksTile(),
-                                  ]))
-                            ]),
-                      ]),
-                ),
+                                  _buildNameTile(),
+                                  _buildWeightTile(),
+                                  const PaddedDivider(
+                                      padding: Constants.padding),
+                                  _buildDurationTile(),
+                                ])),
+                            Flexible(
+                                child: ListView(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: Constants.halfPadding),
+                                    physics:
+                                        const NeverScrollableScrollPhysics(),
+                                    shrinkWrap: true,
+                                    children: [
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: Constants.padding,
+                                        horizontal: Constants.halfPadding),
+                                    child: _buildSubtasksTile(),
+                                  ),
+                                ]))
+                          ]),
+                    ]),
               ),
             ),
 

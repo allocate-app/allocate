@@ -46,9 +46,11 @@ class _DeadlinesListScreen extends State<DeadlinesListScreen> {
       return;
     }
 
-    Set<Deadline> itemSet = deadlineProvider.deadlines.toSet();
+    DateTime threshold = DateTime.now();
+    threshold = threshold.copyWith(
+        millisecond: threshold.millisecond - Constants.newItemThreshold);
     for (Deadline deadline in items) {
-      if (!itemSet.contains(deadline)) {
+      if (!deadline.lastUpdated.isBefore(threshold)) {
         deadline.fade = Fade.fadeIn;
       }
     }

@@ -306,7 +306,6 @@ class _HomeScreen extends State<HomeScreen> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     layoutProvider.size = MediaQuery.sizeOf(context);
-    // print("MQ: ${layoutProvider.size}");
     return (Platform.isWindows)
         ? PopScope(
             canPop: false,
