@@ -39,7 +39,9 @@ void main() async {
     }
 
     WindowOptions windowOptions = WindowOptions(
-      size: (Platform.isMacOS) ? Constants.defaultMacOSSize: Constants.defaultSize,
+      size: (Platform.isMacOS)
+          ? Constants.defaultMacOSSize
+          : Constants.defaultSize,
       minimumSize:
           (kDebugMode) ? Constants.testDesktopSize : Constants.minDesktopSize,
       center: true,
@@ -278,9 +280,11 @@ class _MyAppState extends State<MyApp> {
         builder: (BuildContext context, ThemeProvider value, Widget? child) {
       return MaterialApp.router(
         // Two-finger scroll fix.
-        scrollBehavior: ScrollConfiguration.of(context).copyWith(
-          multitouchDragStrategy: MultitouchDragStrategy.latestPointer,
-        ),
+        scrollBehavior: const MaterialScrollBehavior().copyWith(
+            multitouchDragStrategy: MultitouchDragStrategy.latestPointer),
+        // ScrollConfiguration.of(context).copyWith(
+        //   multitouchDragStrategy: MultitouchDragStrategy.latestPointer,
+        // ),
         theme: value.lightTheme,
         darkTheme: value.darkTheme,
         highContrastTheme: value.highContrastLight,
