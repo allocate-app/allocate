@@ -66,6 +66,9 @@ class SupabaseService {
     // if (_supabaseClient.auth.currentSession?.isExpired ?? false) {
     //   await _supabaseClient.auth.refreshSession();
     // }
+
+    // SET THE INTERNET CONNECTION STATUS.
+    hasInternet = await InternetConnectionChecker().hasConnection;
     _initialized = true;
   }
 
