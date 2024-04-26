@@ -404,8 +404,10 @@ class ToDoProvider extends ChangeNotifier {
         toDo.myDay = false;
       }
     }
-    await _toDoRepo.updateBatch(previousMyDay);
-    myDayWeight = await _toDoRepo.getMyDayWeight();
+
+    await _toDoRepo.updateBatch(previousMyDay).whenComplete(() async {
+      myDayWeight = await _toDoRepo.getMyDayWeight();
+    });
   }
 
   Future<List<ToDo>> reorderToDos(

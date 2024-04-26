@@ -1,11 +1,11 @@
 import 'dart:io';
 import 'dart:ui';
 
-import 'package:allocate/ui/widgets/windows_titlebar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_acrylic/flutter_acrylic.dart';
 
 import '../util/constants.dart';
+import 'widgets/windows_titlebar.dart';
 
 Future<T?> blurredDismissible<T>({
   required BuildContext context,

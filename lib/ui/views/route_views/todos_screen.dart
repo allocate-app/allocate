@@ -7,6 +7,7 @@ import '../../../providers/model/group_provider.dart';
 import '../../../providers/model/todo_provider.dart';
 import '../../../util/constants.dart';
 import '../../../util/enums.dart';
+import '../../../util/sorting/todo_sorter.dart';
 import '../../blurred_dialog.dart';
 import '../../widgets/listview_header.dart';
 import '../../widgets/listviews.dart';
@@ -83,21 +84,22 @@ class _ToDosListScreen extends State<ToDosListScreen> {
         return Padding(
           padding: const EdgeInsets.all(Constants.padding),
           child: Column(mainAxisSize: MainAxisSize.min, children: [
-            ListViewHeader<ToDo>(
-                outerPadding: const EdgeInsets.all(Constants.padding),
-                header: "Tasks",
-                sorter: toDoProvider.sorter,
-                leadingIcon: const Icon(Icons.task_outlined),
-                onChanged: ({SortMethod? sortMethod}) {
-                  if (null == sortMethod) {
-                    return;
-                  }
-                  if (mounted) {
-                    setState(() {
-                      toDoProvider.sortMethod = sortMethod;
-                    });
-                  }
-                }),
+            Selector<ToDoProvider, ToDoSorter>(
+              selector: (BuildContext context, ToDoProvider tp) => tp.sorter,
+              builder:
+                  (BuildContext context, ToDoSorter sorter, Widget? child) =>
+                      ListViewHeader<ToDo>(
+                          outerPadding: const EdgeInsets.all(Constants.padding),
+                          header: "Tasks",
+                          sorter: sorter,
+                          leadingIcon: const Icon(Icons.task_outlined),
+                          onChanged: ({SortMethod? sortMethod}) {
+                            if (null == sortMethod) {
+                              return;
+                            }
+                            toDoProvider.sortMethod = sortMethod;
+                          }),
+            ),
             Tiles.createNew(
               outerPadding:
                   const EdgeInsets.symmetric(vertical: Constants.halfPadding),

@@ -1,4 +1,3 @@
-import 'package:allocate/ui/blurred_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_expandable_fab/flutter_expandable_fab.dart';
 import 'package:provider/provider.dart';
@@ -11,6 +10,7 @@ import '../../providers/model/subtask_provider.dart';
 import '../../providers/model/todo_provider.dart';
 import '../../providers/model/user_provider.dart';
 import '../../util/constants.dart';
+import '../blurred_dialog.dart';
 import '../views/sub_views/create_deadline.dart';
 import '../views/sub_views/create_reminder.dart';
 import '../views/sub_views/create_todo.dart';

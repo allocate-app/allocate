@@ -8,6 +8,7 @@ import '../../../providers/application/layout_provider.dart';
 import '../../../providers/model/todo_provider.dart';
 import '../../../util/constants.dart';
 import '../../../util/enums.dart';
+import '../../../util/sorting/todo_sorter.dart';
 import '../../widgets/listview_header.dart';
 
 class MyDayScreen extends StatefulWidget {
@@ -62,37 +63,38 @@ class _MyDayScreen extends State<MyDayScreen> {
       bool smallScreen = false}) {
     return Column(children: [
       Selector<LayoutProvider, int>(
-          selector: (BuildContext context, LayoutProvider lp) => lp.myDayIndex,
-          builder: (BuildContext context, int value, Widget? child) =>
-              ListViewHeader<ToDo>(
-                  outerPadding: const EdgeInsets.all(Constants.padding),
-                  sorter: toDoProvider.sorter,
-                  leadingIcon: const Icon(Icons.wb_sunny_outlined),
-                  subtitle: AutoSizeText(
-                      Jiffy.now().format(pattern: "EEEE, MMMM d, yyyy"),
-                      style: Constants.headerStyle,
-                      softWrap: false,
-                      maxLines: 1,
-                      overflowReplacement: AutoSizeText(
-                          Jiffy.now().format(pattern: "EE. MMM. d, 'yy"),
-                          style: Constants.headerStyle,
-                          softWrap: false,
-                          maxLines: 1,
-                          overflow: TextOverflow.visible,
-                          minFontSize: Constants.large),
-                      minFontSize: Constants.large),
-                  showSorter: (value == 0),
-                  header: "My Day",
-                  onChanged: ({SortMethod? sortMethod}) {
-                    if (null == sortMethod) {
-                      return;
-                    }
-                    if (mounted) {
-                      setState(() {
-                        toDoProvider.sortMethod = sortMethod;
-                      });
-                    }
-                  })),
+        selector: (BuildContext context, LayoutProvider lp) => lp.myDayIndex,
+        builder: (BuildContext context, int value, Widget? child) =>
+            Selector<ToDoProvider, ToDoSorter>(
+                selector: (BuildContext context, ToDoProvider tp) => tp.sorter,
+                builder: (BuildContext context, ToDoSorter sorter,
+                        Widget? child) =>
+                    ListViewHeader<ToDo>(
+                        outerPadding: const EdgeInsets.all(Constants.padding),
+                        sorter: toDoProvider.sorter,
+                        leadingIcon: const Icon(Icons.wb_sunny_outlined),
+                        subtitle: AutoSizeText(
+                            Jiffy.now().format(pattern: "EEEE, MMMM d, yyyy"),
+                            style: Constants.headerStyle,
+                            softWrap: false,
+                            maxLines: 1,
+                            overflowReplacement: AutoSizeText(
+                                Jiffy.now().format(pattern: "EE. MMM. d, 'yy"),
+                                style: Constants.headerStyle,
+                                softWrap: false,
+                                maxLines: 1,
+                                overflow: TextOverflow.visible,
+                                minFontSize: Constants.large),
+                            minFontSize: Constants.large),
+                        showSorter: (value == 0),
+                        header: "My Day",
+                        onChanged: ({SortMethod? sortMethod}) {
+                          if (null == sortMethod) {
+                            return;
+                          }
+                          toDoProvider.sortMethod = sortMethod;
+                        })),
+      ),
       Expanded(
         child: DefaultTabController(
             initialIndex: layoutProvider.myDayIndex,

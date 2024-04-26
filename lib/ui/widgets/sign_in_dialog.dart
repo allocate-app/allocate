@@ -1,4 +1,3 @@
-import 'package:allocate/ui/widgets/tiles.dart';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
@@ -8,6 +7,7 @@ import '../../providers/application/layout_provider.dart';
 import '../../providers/model/user_provider.dart';
 import '../../util/constants.dart';
 import '../../util/exceptions.dart';
+import 'tiles.dart';
 
 class SignInDialog extends StatefulWidget {
   const SignInDialog({super.key});

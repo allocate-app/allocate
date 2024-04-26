@@ -1,4 +1,3 @@
-import 'package:allocate/ui/blurred_dialog.dart';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -23,6 +22,7 @@ import '../../providers/viewmodels/todo_viewmodel.dart';
 import '../../util/constants.dart';
 import '../../util/enums.dart';
 import '../../util/interfaces/i_model.dart';
+import '../blurred_dialog.dart';
 import '../views/sub_views/update_deadline.dart';
 import '../views/sub_views/update_group.dart';
 import '../views/sub_views/update_reminder.dart';

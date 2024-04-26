@@ -1,12 +1,12 @@
 import 'dart:io';
 
-import 'package:allocate/providers/application/theme_provider.dart';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flex_color_picker/flex_color_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../providers/application/layout_provider.dart';
+import '../../../providers/application/theme_provider.dart';
 import '../../../util/constants.dart';
 
 class ColorPickerDialog extends StatefulWidget {

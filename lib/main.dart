@@ -2,7 +2,6 @@ import "dart:async";
 import "dart:io";
 import "dart:ui";
 
-import "package:allocate/util/enums.dart";
 import "package:auto_route/auto_route.dart";
 import "package:flutter/foundation.dart";
 import "package:flutter/gestures.dart";
@@ -19,6 +18,7 @@ import "services/application_service.dart";
 import "services/daily_reset_service.dart";
 import "ui/app_router.dart";
 import "util/constants.dart";
+import "util/enums.dart";
 import "util/interfaces/i_model.dart";
 
 void main() async {

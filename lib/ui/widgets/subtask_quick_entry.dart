@@ -1,4 +1,3 @@
-import 'package:allocate/ui/widgets/tiles.dart';
 import 'package:auto_size_text_field/auto_size_text_field.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
@@ -7,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../../providers/model/subtask_provider.dart';
 import '../../providers/viewmodels/subtask_viewmodel.dart';
 import '../../util/constants.dart';
+import 'tiles.dart';
 
 class SubtaskQuickEntry extends StatefulWidget {
   const SubtaskQuickEntry({

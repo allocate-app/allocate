@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'dart:ui';
 
-import 'package:allocate/providers/providers.dart';
 import 'package:flex_seed_scheme/flex_seed_scheme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -9,6 +8,17 @@ import 'package:flutter_acrylic/flutter_acrylic.dart';
 import 'package:provider/provider.dart';
 import 'package:window_manager/window_manager.dart';
 
+import '../providers/application/event_provider.dart';
+import '../providers/application/layout_provider.dart';
+import '../providers/model/deadline_provider.dart';
+import '../providers/model/group_provider.dart';
+import '../providers/model/reminder_provider.dart';
+import '../providers/model/subtask_provider.dart';
+import '../providers/model/todo_provider.dart';
+import '../providers/model/user_provider.dart';
+import '../providers/viewmodels/deadline_viewmodel.dart';
+import '../providers/viewmodels/reminder_viewmodel.dart';
+import '../providers/viewmodels/todo_viewmodel.dart';
 import '../services/application_service.dart';
 import '../ui/widgets/tiles.dart';
 import '../util/constants.dart';

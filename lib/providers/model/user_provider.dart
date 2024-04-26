@@ -1,9 +1,6 @@
 import 'dart:async';
 import 'dart:developer';
 
-import 'package:allocate/services/daily_reset_service.dart';
-import 'package:allocate/ui/widgets/tiles.dart';
-import 'package:allocate/util/enums.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:internet_connection_checker/internet_connection_checker.dart';
@@ -12,11 +9,14 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../model/user/allocate_user.dart';
 import '../../services/application_service.dart';
 import '../../services/authentication_service.dart';
+import '../../services/daily_reset_service.dart';
 import '../../services/supabase_service.dart';
 import '../../services/user_storage_service.dart';
 import '../../ui/blurred_dialog.dart';
 import '../../ui/widgets/multiple_user_dialog.dart';
+import '../../ui/widgets/tiles.dart';
 import '../../util/constants.dart';
+import '../../util/enums.dart';
 import '../../util/exceptions.dart';
 import '../../util/interfaces/authenticator.dart';
 import '../viewmodels/user_viewmodel.dart';

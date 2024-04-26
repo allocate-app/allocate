@@ -1,4 +1,3 @@
-import 'package:allocate/ui/blurred_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -7,6 +6,7 @@ import '../../../providers/application/layout_provider.dart';
 import '../../../providers/model/reminder_provider.dart';
 import '../../../util/constants.dart';
 import '../../../util/enums.dart';
+import '../../blurred_dialog.dart';
 import '../../widgets/listview_header.dart';
 import '../../widgets/listviews.dart';
 import '../../widgets/paginating_listview.dart';

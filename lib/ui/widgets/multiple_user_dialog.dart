@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:allocate/ui/widgets/padded_divider.dart';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
 import 'package:jiffy/jiffy.dart';
@@ -10,6 +9,7 @@ import '../../model/user/allocate_user.dart';
 import '../../providers/application/layout_provider.dart';
 import '../../util/constants.dart';
 import 'listtile_widgets.dart';
+import 'padded_divider.dart';
 
 class MultipleUserDialog extends StatefulWidget {
   const MultipleUserDialog({super.key, required this.users});

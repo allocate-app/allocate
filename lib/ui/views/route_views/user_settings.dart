@@ -1,7 +1,5 @@
 import "dart:io";
 
-import "package:allocate/ui/widgets/dialogs/check_delete_dialog.dart";
-import "package:allocate/ui/widgets/dialogs/update_email_dialog.dart";
 import "package:flutter/material.dart";
 import "package:intl/intl.dart";
 import "package:provider/provider.dart";
@@ -21,6 +19,8 @@ import "../../../util/enums.dart";
 import "../../../util/exceptions.dart";
 import "../../../util/numbers.dart";
 import "../../blurred_dialog.dart";
+import "../../widgets/dialogs/check_delete_dialog.dart";
+import "../../widgets/dialogs/update_email_dialog.dart";
 import "../../widgets/flushbars.dart";
 import "../../widgets/screen_header.dart";
 import "../../widgets/settings_screen_widgets.dart";

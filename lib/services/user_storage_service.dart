@@ -1,6 +1,5 @@
 import 'dart:developer';
 
-import 'package:allocate/services/daily_reset_service.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:isar/isar.dart';
@@ -9,6 +8,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import "../model/user/allocate_user.dart";
 import '../util/enums.dart';
 import '../util/exceptions.dart';
+import 'daily_reset_service.dart';
 import 'isar_service.dart';
 import 'supabase_service.dart';
 

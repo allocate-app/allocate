@@ -1,13 +1,13 @@
 import 'dart:async';
 import 'dart:developer';
 
-import 'package:allocate/model/task/subtask.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:isar/isar.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../model/task/routine.dart';
+import '../model/task/subtask.dart';
 import '../services/isar_service.dart';
 import '../services/supabase_service.dart';
 import '../util/constants.dart';

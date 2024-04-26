@@ -7,6 +7,7 @@ import '../../../providers/model/group_provider.dart';
 import '../../../providers/model/todo_provider.dart';
 import '../../../util/constants.dart';
 import '../../../util/enums.dart';
+import '../../../util/sorting/todo_sorter.dart';
 import '../../widgets/listview_header.dart';
 import '../../widgets/listviews.dart';
 import '../../widgets/paginating_listview.dart';
@@ -86,21 +87,23 @@ class _CompletedListScreen extends State<CompletedListScreen> {
         return Padding(
           padding: const EdgeInsets.all(Constants.padding),
           child: Column(mainAxisSize: MainAxisSize.min, children: [
-            ListViewHeader<ToDo>(
-                header: "Completed",
-                sorter: toDoProvider.sorter,
-                leadingIcon: const Icon(Icons.check_circle_outline_rounded),
-                outerPadding: const EdgeInsets.all(Constants.padding),
-                onChanged: ({SortMethod? sortMethod}) {
-                  if (null == sortMethod) {
-                    return;
-                  }
-                  if (mounted) {
-                    setState(() {
-                      toDoProvider.sortMethod = sortMethod;
-                    });
-                  }
-                }),
+            Selector<ToDoProvider, ToDoSorter>(
+              selector: (BuildContext context, ToDoProvider tp) => tp.sorter,
+              builder:
+                  (BuildContext context, ToDoSorter sorter, Widget? child) =>
+                      ListViewHeader<ToDo>(
+                          header: "Completed",
+                          sorter: sorter,
+                          leadingIcon:
+                              const Icon(Icons.check_circle_outline_rounded),
+                          outerPadding: const EdgeInsets.all(Constants.padding),
+                          onChanged: ({SortMethod? sortMethod}) {
+                            if (null == sortMethod) {
+                              return;
+                            }
+                            toDoProvider.sortMethod = sortMethod;
+                          }),
+            ),
             Flexible(
               child: PaginatingListview<ToDo>(
                   items: toDoProvider.toDos,

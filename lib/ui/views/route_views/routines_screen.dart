@@ -1,4 +1,3 @@
-import 'package:allocate/ui/blurred_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -7,6 +6,8 @@ import '../../../providers/application/layout_provider.dart';
 import '../../../providers/model/routine_provider.dart';
 import '../../../util/constants.dart';
 import '../../../util/enums.dart';
+import '../../../util/sorting/routine_sorter.dart';
+import '../../blurred_dialog.dart';
 import '../../widgets/listview_header.dart';
 import '../../widgets/listviews.dart';
 import '../../widgets/paginating_listview.dart';
@@ -86,21 +87,26 @@ class _RoutinesListScreen extends State<RoutinesListScreen> {
       return Padding(
         padding: const EdgeInsets.all(Constants.padding),
         child: Column(mainAxisSize: MainAxisSize.min, children: [
-          ListViewHeader<Routine>(
-              outerPadding: const EdgeInsets.all(Constants.padding),
-              header: "Routines",
-              sorter: routineProvider.sorter,
-              leadingIcon: const Icon(Icons.repeat_rounded),
-              onChanged: ({SortMethod? sortMethod}) {
-                if (null == sortMethod) {
-                  return;
-                }
-                if (mounted) {
-                  setState(() {
-                    routineProvider.sortMethod = sortMethod;
-                  });
-                }
-              }),
+          Selector<RoutineProvider, RoutineSorter>(
+            selector: (BuildContext context, RoutineProvider rp) => rp.sorter,
+            builder:
+                (BuildContext context, RoutineSorter sorter, Widget? child) =>
+                    ListViewHeader<Routine>(
+                        outerPadding: const EdgeInsets.all(Constants.padding),
+                        header: "Routines",
+                        sorter: routineProvider.sorter,
+                        leadingIcon: const Icon(Icons.repeat_rounded),
+                        onChanged: ({SortMethod? sortMethod}) {
+                          if (null == sortMethod) {
+                            return;
+                          }
+                          if (mounted) {
+                            setState(() {
+                              routineProvider.sortMethod = sortMethod;
+                            });
+                          }
+                        }),
+          ),
           Tiles.createNew(
             outerPadding:
                 const EdgeInsets.symmetric(vertical: Constants.halfPadding),

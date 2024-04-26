@@ -1,6 +1,5 @@
 import 'dart:ui';
 
-import 'package:allocate/providers/model/reminder_provider.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -14,6 +13,7 @@ import '../../model/task/subtask.dart';
 import '../../model/task/todo.dart';
 import '../../providers/model/deadline_provider.dart';
 import '../../providers/model/group_provider.dart';
+import '../../providers/model/reminder_provider.dart';
 import '../../providers/model/routine_provider.dart';
 import '../../providers/model/todo_provider.dart';
 import '../../util/constants.dart';

@@ -1,8 +1,6 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:allocate/ui/blurred_dialog.dart';
-import 'package:allocate/util/exceptions.dart';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
@@ -16,6 +14,8 @@ import '../../../providers/viewmodels/group_viewmodel.dart';
 import '../../../providers/viewmodels/todo_viewmodel.dart';
 import '../../../util/constants.dart';
 import '../../../util/enums.dart';
+import '../../../util/exceptions.dart';
+import '../../blurred_dialog.dart';
 import '../../widgets/expanded_listtile.dart';
 import '../../widgets/listtile_widgets.dart';
 import '../../widgets/listviews.dart';

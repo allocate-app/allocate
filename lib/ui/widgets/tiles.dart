@@ -1,4 +1,3 @@
-import 'package:allocate/ui/blurred_dialog.dart';
 import 'package:another_flushbar/flushbar.dart';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:auto_size_text_field/auto_size_text_field.dart';
@@ -33,6 +32,7 @@ import '../../util/constants.dart';
 import '../../util/enums.dart';
 import '../../util/interfaces/i_model.dart';
 import '../../util/numbers.dart';
+import '../blurred_dialog.dart';
 import '../views/sub_views/create_routine.dart';
 import '../views/sub_views/create_todo.dart';
 import '../views/sub_views/update_deadline.dart';

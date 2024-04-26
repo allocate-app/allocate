@@ -1,12 +1,12 @@
 import "dart:io";
 
-import "package:allocate/providers/application/layout_provider.dart";
 import "package:flutter/material.dart";
 import "package:flutter/semantics.dart";
 import "package:provider/provider.dart";
 
 import "../../../model/task/routine.dart";
 import "../../../model/task/subtask.dart";
+import "../../../providers/application/layout_provider.dart";
 import '../../../providers/model/routine_provider.dart';
 import '../../../providers/model/subtask_provider.dart';
 import "../../../providers/viewmodels/routine_viewmodel.dart";
