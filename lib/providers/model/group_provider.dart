@@ -154,6 +154,13 @@ class GroupProvider extends ChangeNotifier {
   Future<void> createGroup(Group group) async {
     try {
       curGroup = await _groupRepo.create(group);
+
+      // This should bake the index
+      for (int i = 0; i < group.toDos.length; i++) {
+        group.toDos[i].groupIndex = i;
+      }
+      await _toDoRepo.updateBatch(group.toDos);
+
       notifyListeners();
     } on FailureToCreateException catch (e) {
       log(e.cause);

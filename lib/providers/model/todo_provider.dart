@@ -73,9 +73,10 @@ class ToDoProvider extends ChangeNotifier {
     _toDoRepo.addListener(refreshMyDayAndNotify);
   }
 
+  // TODO: await these.
   Future<void> init() async {
     _toDoRepo.init();
-    myDayWeight = await getMyDayWeight();
+    myDayWeight = await _toDoRepo.getMyDayWeight();
     notifyListeners();
   }
 
@@ -166,7 +167,7 @@ class ToDoProvider extends ChangeNotifier {
       }
 
       if (curToDo!.myDay) {
-        myDayWeight = await getMyDayWeight();
+        myDayWeight = await _toDoRepo.getMyDayWeight();
       }
 
       notifyListeners();

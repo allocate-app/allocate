@@ -333,8 +333,9 @@ class SubtaskRepo extends ChangeNotifier implements SubtaskRepository {
           .taskIDEqualTo(id)
           .filter()
           .toDeleteEqualTo(false)
-          .sortByCustomViewIndex()
-          .thenByLastUpdatedDesc()
+          .sortByCompletedDesc()
+          .thenByCustomViewIndex()
+          .thenByLastUpdated()
           .offset(offset)
           .limit(limit)
           .findAll();

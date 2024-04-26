@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'dart:math';
 
-import 'package:another_flushbar/flushbar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:provider/provider.dart';
@@ -13,7 +12,9 @@ import '../../../providers/model/deadline_provider.dart';
 import '../../../providers/viewmodels/deadline_viewmodel.dart';
 import '../../../util/constants.dart';
 import '../../../util/enums.dart';
-import '../../widgets/flushbars.dart';
+import '../../../util/exceptions.dart';
+import '../../blurred_dialog.dart';
+import '../../widgets/dialogs/check_delete_dialog.dart';
 import '../../widgets/handle_repeatable_modal.dart';
 import '../../widgets/listtile_widgets.dart';
 import '../../widgets/padded_divider.dart';
@@ -32,6 +33,8 @@ class UpdateDeadlineScreen extends StatefulWidget {
 class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
   late bool _checkRepeating;
   late ValueNotifier<bool> _checkClose;
+  late ValueNotifier<bool> _updateLoading;
+  late ValueNotifier<bool> _deleteLoading;
   late ValueNotifier<String?> _nameErrorText;
 
   late final Deadline _prev;
@@ -70,6 +73,8 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
 
   void initializeParameters() {
     _checkClose = ValueNotifier(false);
+    _updateLoading = ValueNotifier(false);
+    _deleteLoading = ValueNotifier(false);
     _nameErrorText = ValueNotifier(null);
     _checkRepeating = false;
     _prev = vm.toModel();
@@ -130,22 +135,20 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
       }
     }
 
-    // Newly set warning dates should validate.
-    if (!_prev.warnMe &&
-        vm.warnMe &&
-        !deadlineProvider.validateWarnDate(
-            warnDate: vm.mergeDateTime(date: vm.warnDate, time: vm.warnTime))) {
+    try {
+      // Newly set warning dates should validate.
+      if (!_prev.warnMe &&
+          vm.warnMe &&
+          !deadlineProvider.validateWarnDate(
+              warnDate:
+                  vm.mergeDateTime(date: vm.warnDate, time: vm.warnTime))) {
+        valid = false;
+        Tiles.displayError(
+            e: InvalidDateException("Due date must be later than now."));
+      }
+    } on Exception catch (e) {
+      Tiles.displayError(e: e);
       valid = false;
-
-      Flushbar? error;
-
-      error = Flushbars.createError(
-        message: "Warn date must be later than now.",
-        context: context,
-        dismissCallback: () => error?.dismiss(),
-      );
-
-      error.show(context);
     }
 
     if (null == vm.startDate || null == vm.dueDate) {
@@ -199,7 +202,7 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
         await Tiles.displayError(e: e);
       }).whenComplete(() {
         vm.clear();
-        Navigator.pop(context);
+        _popScreen();
       });
     }
     await deadlineProvider
@@ -214,11 +217,37 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
       await Tiles.displayError(e: e);
     }).whenComplete(() {
       vm.clear();
-      Navigator.pop(context);
+      _popScreen();
+    });
+  }
+
+  Future<void> checkAndHandleDelete() async {
+    bool checkDelete = deadlineProvider.userViewModel?.checkDelete ?? true;
+    // If not checking delete -> proceed
+    if (!checkDelete) {
+      return await handleDelete();
+    }
+
+    return await blurredDismissible(
+            context: context,
+            dialog: CheckDeleteDialog(dontAsk: !checkDelete, type: "Deadline"))
+        .then((results) async {
+      if (null == results) {
+        return;
+      }
+
+      deadlineProvider.userViewModel?.checkDelete = results[1];
+
+      if (!results[0]) {
+        return;
+      }
+
+      await handleDelete();
     });
   }
 
   Future<void> handleDelete() async {
+    _deleteLoading.value = true;
     Deadline newDeadline = vm.toModel();
     if (_prev.frequency != Frequency.once &&
         RepeatableState.delta != _prev.repeatableState) {
@@ -252,7 +281,7 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
         await Tiles.displayError(e: e);
       }).whenComplete(() {
         vm.clear();
-        Navigator.pop(context);
+        _popScreen();
       });
     }
 
@@ -269,13 +298,23 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
       await Tiles.displayError(e: e);
     }).whenComplete(() {
       vm.clear();
-      Navigator.pop(context);
+      _popScreen();
     });
+
+    _deleteLoading.value = false;
   }
 
   Future<void> updateAndValidate() async {
+    _updateLoading.value = true;
     if (validateData()) {
       await handleUpdate();
+    }
+    _updateLoading.value = false;
+  }
+
+  void _popScreen() {
+    if (mounted) {
+      Navigator.pop(context);
     }
   }
 
@@ -283,7 +322,7 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
     if (willDiscard) {
       deadlineProvider.rebuild = true;
       vm.clear();
-      return Navigator.pop(context);
+      return _popScreen();
     }
     _checkClose.value = false;
   }
@@ -303,6 +342,66 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
   Dialog _buildDesktopDialog({
     required BuildContext context,
   }) {
+    Widget innerList = ListView(
+      padding: const EdgeInsets.only(
+        top: Constants.halfPadding,
+        left: Constants.padding,
+        right: Constants.padding,
+      ),
+      physics: scrollPhysics,
+      shrinkWrap: true,
+      controller: desktopScrollController,
+      children: [
+        Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Flexible(
+                child: ListView(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: Constants.halfPadding),
+                    physics: const NeverScrollableScrollPhysics(),
+                    shrinkWrap: true,
+                    children: [
+                      // Title
+                      _buildNameTile(),
+
+                      Padding(
+                        padding:
+                            const EdgeInsets.only(bottom: Constants.padding),
+                        child: _buildPriorityTile(),
+                      ),
+
+                      const PaddedDivider(padding: Constants.padding),
+                      _buildWarnMeTile(),
+
+                      const PaddedDivider(padding: Constants.padding),
+                      _buildDateRangeTile(),
+
+                      _buildTimeTile(),
+
+                      _buildRepeatableTile(),
+                    ]),
+              ),
+              Flexible(
+                child: ListView(
+                    padding: const EdgeInsets.symmetric(
+                        vertical: Constants.padding,
+                        horizontal: Constants.halfPadding),
+                    physics: const NeverScrollableScrollPhysics(),
+                    shrinkWrap: true,
+                    children: [
+                      _buildDescriptionTile(
+                        minLines: Constants.desktopMinLines,
+                        maxLines: Constants.desktopMaxLinesBeforeScroll,
+                      ),
+                    ]),
+              )
+            ]),
+      ],
+    );
+
     return Dialog(
       insetPadding: const EdgeInsets.all(Constants.outerDialogPadding),
       child: ConstrainedBox(
@@ -322,79 +421,17 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                 Flexible(
                   child: Material(
                     color: Colors.transparent,
-                    child: ListView(
-                      padding:
-                          const EdgeInsets.only(top: Constants.halfPadding),
-                      physics: scrollPhysics,
-                      shrinkWrap: true,
-                      controller: desktopScrollController,
-                      children: [
-                        Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Flexible(
-                                child: ListView(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: Constants.halfPadding),
-                                    physics:
-                                        const NeverScrollableScrollPhysics(),
-                                    shrinkWrap: true,
-                                    children: [
-                                      // Title
-                                      _buildNameTile(),
-
-                                      Padding(
-                                        padding: const EdgeInsets.only(
-                                            bottom: Constants.padding),
-                                        child: _buildPriorityTile(),
-                                      ),
-
-                                      const PaddedDivider(
-                                          padding: Constants.padding),
-                                      _buildWarnMeTile(),
-
-                                      const PaddedDivider(
-                                          padding: Constants.padding),
-                                      _buildDateRangeTile(),
-
-                                      _buildTimeTile(),
-
-                                      _buildRepeatableTile(),
-                                    ]),
-                              ),
-                              Flexible(
-                                child: ListView(
-                                    padding: const EdgeInsets.symmetric(
-                                        vertical: Constants.padding,
-                                        horizontal: Constants.halfPadding),
-                                    physics:
-                                        const NeverScrollableScrollPhysics(),
-                                    shrinkWrap: true,
-                                    children: [
-                                      _buildDescriptionTile(
-                                        minLines: Constants.desktopMinLines,
-                                        maxLines: Constants
-                                            .desktopMaxLinesBeforeScroll,
-                                      ),
-                                    ]),
-                              )
-                            ]),
-                      ],
-                    ),
+                    child: (layoutProvider.isMobile)
+                        ? Scrollbar(
+                            controller: desktopScrollController,
+                            child: innerList,
+                          )
+                        : innerList,
                   ),
                 ),
 
                 const PaddedDivider(padding: Constants.halfPadding),
-                Tiles.updateAndDeleteButtons(
-                  handleDelete: handleDelete,
-                  handleUpdate: updateAndValidate,
-                  updateButtonPadding:
-                      const EdgeInsets.symmetric(horizontal: Constants.padding),
-                  deleteButtonPadding:
-                      const EdgeInsets.symmetric(horizontal: Constants.padding),
-                ),
+                _buildUpdateDeleteRow(),
               ]),
         ),
       ),
@@ -405,6 +442,36 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
     required BuildContext context,
     bool smallScreen = false,
   }) {
+    Widget innerList = ListView(
+      padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
+      shrinkWrap: true,
+      controller: mobileScrollController,
+      physics: scrollPhysics,
+      children: [
+        _buildNameTile(),
+
+        Padding(
+          padding: const EdgeInsets.only(bottom: Constants.padding),
+          child: _buildPriorityTile(mobile: smallScreen),
+        ),
+
+        const PaddedDivider(padding: Constants.padding),
+        _buildWarnMeTile(),
+
+        const PaddedDivider(padding: Constants.padding),
+
+        _buildDescriptionTile(),
+
+        const PaddedDivider(padding: Constants.padding),
+
+        _buildDateRangeTile(),
+        // Time
+        _buildTimeTile(),
+        // Repeatable Stuff -> Show status, on click, open a dialog.
+        _buildRepeatableTile(),
+      ],
+    );
+
     return Dialog(
       insetPadding: EdgeInsets.all((smallScreen)
           ? Constants.mobileDialogPadding
@@ -420,45 +487,14 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
 
               const PaddedDivider(padding: Constants.halfPadding),
               Flexible(
-                child: ListView(
-                  shrinkWrap: true,
-                  controller: mobileScrollController,
-                  physics: scrollPhysics,
-                  children: [
-                    _buildNameTile(),
-
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: Constants.padding),
-                      child: _buildPriorityTile(mobile: smallScreen),
-                    ),
-
-                    const PaddedDivider(padding: Constants.padding),
-                    _buildWarnMeTile(),
-
-                    const PaddedDivider(padding: Constants.padding),
-
-                    _buildDescriptionTile(),
-
-                    const PaddedDivider(padding: Constants.padding),
-
-                    _buildDateRangeTile(),
-                    // Time
-                    _buildTimeTile(),
-                    // Repeatable Stuff -> Show status, on click, open a dialog.
-                    _buildRepeatableTile(),
-                  ],
-                ),
+                child: (layoutProvider.isMobile)
+                    ? Scrollbar(
+                        controller: mobileScrollController, child: innerList)
+                    : innerList,
               ),
 
               const PaddedDivider(padding: Constants.padding),
-              Tiles.updateAndDeleteButtons(
-                handleDelete: handleDelete,
-                handleUpdate: updateAndValidate,
-                updateButtonPadding:
-                    const EdgeInsets.symmetric(horizontal: Constants.padding),
-                deleteButtonPadding:
-                    const EdgeInsets.symmetric(horizontal: Constants.padding),
-              ),
+              _buildUpdateDeleteRow(),
             ]),
       ),
     );
@@ -697,5 +733,24 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
                     ],
                   )
                 : const SizedBox.shrink(),
+      );
+
+  Widget _buildUpdateDeleteRow() => ValueListenableBuilder(
+        valueListenable: _updateLoading,
+        builder: (BuildContext context, bool updateLoading, Widget? child) =>
+            ValueListenableBuilder(
+          valueListenable: _deleteLoading,
+          builder: (BuildContext context, bool deleteLoading, Widget? child) =>
+              Tiles.updateAndDeleteButtons(
+            updateLoading: updateLoading,
+            deleteLoading: deleteLoading,
+            handleDelete: checkAndHandleDelete,
+            handleUpdate: updateAndValidate,
+            updateButtonPadding:
+                const EdgeInsets.symmetric(horizontal: Constants.padding),
+            deleteButtonPadding:
+                const EdgeInsets.symmetric(horizontal: Constants.padding),
+          ),
+        ),
       );
 }

@@ -224,6 +224,7 @@ class RepeatableService {
             repeatableState: RepeatableState.normal,
             completed: false,
             repeatable: true,
+            isSynced: false,
             myDay: false,
             lastUpdated: DateTime.now(),
           );
@@ -233,6 +234,7 @@ class RepeatableService {
               originalDue: newDue,
               repeatableState: RepeatableState.normal,
               myDay: false,
+              isSynced: false,
               lastUpdated: DateTime.now());
 
           newToDo.toDelete = delta.toDelete;
@@ -305,6 +307,7 @@ class RepeatableService {
             originalDue: newDue,
             repeatableState: RepeatableState.normal,
             repeatable: true,
+            isSynced: false,
             lastUpdated: DateTime.now(),
           );
         } else {
@@ -313,6 +316,7 @@ class RepeatableService {
               originalDue: newDue,
               originalWarn: newWarn,
               repeatableState: RepeatableState.normal,
+              isSynced: false,
               lastUpdated: DateTime.now());
 
           newDeadline.toDelete = delta.toDelete;
@@ -365,12 +369,14 @@ class RepeatableService {
             dueDate: nextRepeatDate,
             repeatableState: RepeatableState.normal,
             repeatable: true,
+            isSynced: false,
             lastUpdated: DateTime.now(),
           );
         } else {
           newReminder = delta.copyWith(
               originalDue: nextRepeatDate,
               repeatableState: RepeatableState.normal,
+              isSynced: false,
               lastUpdated: DateTime.now());
 
           newReminder.toDelete = delta.toDelete;
@@ -703,6 +709,7 @@ class RepeatableService {
               completed: false,
               repeatable: true,
               myDay: false,
+              isSynced: false,
               lastUpdated: DateTime.now(),
             );
 
@@ -794,6 +801,7 @@ class RepeatableService {
               originalWarn: newWarn,
               repeatableState: RepeatableState.projected,
               repeatable: true,
+              isSynced: false,
               lastUpdated: DateTime.now(),
             );
             newRepeatables.add(newDeadline);
@@ -859,6 +867,7 @@ class RepeatableService {
               originalDue: nextRepeatDate,
               repeatableState: RepeatableState.projected,
               repeatable: true,
+              isSynced: false,
               lastUpdated: DateTime.now(),
             );
             newRepeatables.add(newReminder);

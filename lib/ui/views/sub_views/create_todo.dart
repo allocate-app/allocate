@@ -38,6 +38,8 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
   late ValueNotifier<bool> _checkClose;
   late ValueNotifier<String?> _nameErrorText;
 
+  late ValueNotifier<bool> _createLoading;
+
   late final UserProvider userProvider;
   late final ToDoProvider toDoProvider;
   late final ToDoViewModel vm;
@@ -73,6 +75,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
 
   void initializeParameters() {
     _checkClose = ValueNotifier(false);
+    _createLoading = ValueNotifier(false);
     _nameErrorText = ValueNotifier(null);
   }
 
@@ -99,6 +102,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
 
   void initializeProviders() {
     vm = Provider.of<ToDoViewModel>(context, listen: false);
+    vm.clear();
 
     vm.initGroupID = widget.initialGroup?.value;
 
@@ -191,6 +195,12 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
     return valid;
   }
 
+  void _popScreen() {
+    if (mounted) {
+      Navigator.pop(context);
+    }
+  }
+
   // This should still run even if the online throws.
   // If local create fails, something is very wrong => pop context and escape
   Future<void> handleCreate() async {
@@ -209,7 +219,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
       await Tiles.displayError(e: e);
     }).whenComplete(() {
       vm.clear();
-      Navigator.pop(context);
+      _popScreen();
     });
   }
 
@@ -224,16 +234,18 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
         await Tiles.displayError(e: e);
       }).whenComplete(() {
         vm.clear();
-        Navigator.pop(context);
+        _popScreen();
       });
     }
     _checkClose.value = false;
   }
 
   Future<void> createAndValidate() async {
+    _createLoading.value = true;
     if (validateData()) {
       await handleCreate();
     }
+    _createLoading.value = false;
   }
 
   void onFetch({List<Subtask>? items}) {
@@ -290,202 +302,205 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
 
   Dialog _buildDesktopDialog({
     required BuildContext context,
-  }) =>
-      Dialog(
-        insetPadding: const EdgeInsets.all(Constants.outerDialogPadding),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(
-              maxHeight: Constants.maxDesktopDialogHeight,
-              maxWidth: Constants.maxDesktopDialogWidth),
-          child: Padding(
-            padding: const EdgeInsets.all(Constants.padding),
-            child: Column(mainAxisSize: MainAxisSize.min, children: [
-              // Title && Close Button
-              _buildTitleBar(),
-              const PaddedDivider(padding: Constants.halfPadding),
-              Flexible(
-                child: Material(
-                  color: Colors.transparent,
+  }) {
+    Widget innerList = ListView(
+        padding: const EdgeInsets.only(
+          top: Constants.halfPadding,
+          left: Constants.padding,
+          right: Constants.padding,
+        ),
+        shrinkWrap: true,
+        controller: desktopScrollController,
+        physics: scrollPhysics,
+        children: [
+          Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Flexible(
                   child: ListView(
-                      padding:
-                          const EdgeInsets.only(top: Constants.halfPadding),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: Constants.halfPadding),
                       shrinkWrap: true,
-                      controller: desktopScrollController,
-                      physics: scrollPhysics,
+                      physics: const NeverScrollableScrollPhysics(),
                       children: [
-                        Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Flexible(
-                                child: ListView(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: Constants.halfPadding),
-                                    shrinkWrap: true,
-                                    physics:
-                                        const NeverScrollableScrollPhysics(),
-                                    children: [
-                                      _buildNameTile(),
-                                      _buildWeightTile(),
+                        _buildNameTile(),
+                        _buildWeightTile(),
 
-                                      const PaddedDivider(
-                                          padding: Constants.padding),
-                                      // My Day
-                                      _buildMyDay(),
+                        const PaddedDivider(padding: Constants.padding),
+                        // My Day
+                        _buildMyDay(),
 
-                                      const PaddedDivider(
-                                          padding: Constants.padding),
-                                      // Priority
-                                      Padding(
-                                        padding: const EdgeInsets.only(
-                                            bottom: Constants.padding),
-                                        child: _buildPriorityTile(),
-                                      ),
-                                      const PaddedDivider(
-                                          padding: Constants.padding),
-                                      // Expected Duration / RealDuration -> Show status, on click, open a dialog.
-                                      _buildDurationTile(),
+                        const PaddedDivider(padding: Constants.padding),
+                        // Priority
+                        Padding(
+                          padding:
+                              const EdgeInsets.only(bottom: Constants.padding),
+                          child: _buildPriorityTile(),
+                        ),
+                        const PaddedDivider(padding: Constants.padding),
+                        // Expected Duration / RealDuration -> Show status, on click, open a dialog.
+                        _buildDurationTile(),
 
-                                      const PaddedDivider(
-                                          padding: Constants.padding),
-                                      // DateTime -> Show status, on click, open a dialog.
-                                      _buildDateRangeTile(),
+                        const PaddedDivider(padding: Constants.padding),
+                        // DateTime -> Show status, on click, open a dialog.
+                        _buildDateRangeTile(),
 
-                                      _buildTimeTile(),
-                                      _buildRepeatableTile(),
-                                    ]),
-                              ),
-                              Flexible(
-                                child: ListView(
-                                    physics:
-                                        const NeverScrollableScrollPhysics(),
-                                    shrinkWrap: true,
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: Constants.halfPadding),
-                                    children: [
-                                      _buildSearchBar(
-                                          padding: const EdgeInsets.only(
-                                              top: Constants.halfPadding,
-                                              right: Constants.quarterPadding,
-                                              left: Constants.quarterPadding)),
-
-                                      const PaddedDivider(
-                                          padding: Constants.padding),
-                                      // TaskType
-                                      _buildTaskTypeButton(),
-                                      _buildSubtasksTile(),
-
-                                      const Padding(
-                                        padding: EdgeInsets.symmetric(
-                                            vertical: Constants.padding),
-                                        child: PaddedDivider(
-                                            padding: Constants.padding),
-                                      ),
-                                      // Description
-                                      _buildDescriptionTile(
-                                          minLines: Constants.desktopMinLines,
-                                          maxLines: Constants
-                                              .desktopMaxLinesBeforeScroll),
-                                    ]),
-                              )
-                            ]),
+                        _buildTimeTile(),
+                        _buildRepeatableTile(),
                       ]),
                 ),
-              ),
+                Flexible(
+                  child: ListView(
+                      physics: const NeverScrollableScrollPhysics(),
+                      shrinkWrap: true,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: Constants.halfPadding),
+                      children: [
+                        _buildSearchBar(
+                            padding: const EdgeInsets.only(
+                                top: Constants.halfPadding,
+                                right: Constants.quarterPadding,
+                                left: Constants.quarterPadding)),
 
-              const PaddedDivider(padding: Constants.halfPadding),
-              Tiles.createButton(
-                outerPadding:
-                    const EdgeInsets.symmetric(horizontal: Constants.padding),
-                handleCreate: createAndValidate,
+                        const PaddedDivider(padding: Constants.padding),
+                        // TaskType
+                        _buildTaskTypeButton(),
+                        _buildSubtasksTile(),
+
+                        const Padding(
+                          padding:
+                              EdgeInsets.symmetric(vertical: Constants.padding),
+                          child: PaddedDivider(padding: Constants.padding),
+                        ),
+                        // Description
+                        _buildDescriptionTile(
+                            minLines: Constants.desktopMinLines,
+                            maxLines: Constants.desktopMaxLinesBeforeScroll),
+                      ]),
+                )
+              ]),
+        ]);
+
+    return Dialog(
+      insetPadding: const EdgeInsets.all(Constants.outerDialogPadding),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(
+            maxHeight: Constants.maxDesktopDialogHeight,
+            maxWidth: Constants.maxDesktopDialogWidth),
+        child: Padding(
+          padding: const EdgeInsets.all(Constants.padding),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            // Title && Close Button
+            _buildTitleBar(),
+            const PaddedDivider(padding: Constants.halfPadding),
+            Flexible(
+              child: Material(
+                color: Colors.transparent,
+                child: (layoutProvider.isMobile)
+                    ? Scrollbar(
+                        controller: desktopScrollController,
+                        child: innerList,
+                      )
+                    : innerList,
               ),
-            ]),
-          ),
+            ),
+
+            const PaddedDivider(padding: Constants.halfPadding),
+            _buildCreateButton(),
+          ]),
         ),
-      );
+      ),
+    );
+  }
 
   Dialog _buildMobileDialog({
     required BuildContext context,
     bool smallScreen = false,
-  }) =>
-      Dialog(
-        insetPadding: EdgeInsets.all((smallScreen)
-            ? Constants.mobileDialogPadding
-            : Constants.outerDialogPadding),
-        child: Padding(
-          padding: const EdgeInsets.all(Constants.padding),
-          child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Title && Close Button
-                _buildTitleBar(),
-                const PaddedDivider(padding: Constants.halfPadding),
-                Flexible(
-                  child: ListView(
-                    shrinkWrap: true,
-                    controller: mobileScrollController,
-                    physics: scrollPhysics,
-                    children: [
-                      _buildNameTile(),
-                      _buildWeightTile(),
-                      const PaddedDivider(padding: Constants.padding),
-                      // TaskType -- This is only one-screen.
-                      _buildTaskTypeButton(),
-                      _buildSubtasksTile(),
+  }) {
+    // Inner list factored out bc of Flutter's Scrollbar change.
 
-                      const PaddedDivider(padding: Constants.padding),
-                      // My Day
-                      _buildMyDay(),
-                      const PaddedDivider(padding: Constants.padding),
-                      // Priority
-                      _buildPriorityTile(mobile: smallScreen),
+    Widget innerList = ListView(
+      padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
+      shrinkWrap: true,
+      controller: mobileScrollController,
+      physics: scrollPhysics,
+      children: [
+        _buildNameTile(),
+        _buildWeightTile(),
+        const PaddedDivider(padding: Constants.padding),
+        // TaskType -- This is only one-screen.
+        _buildTaskTypeButton(),
+        _buildSubtasksTile(),
 
-                      const Padding(
-                        padding:
-                            EdgeInsets.symmetric(vertical: Constants.padding),
-                        child: PaddedDivider(padding: Constants.padding),
-                      ),
+        const PaddedDivider(padding: Constants.padding),
+        // My Day
+        _buildMyDay(),
+        const PaddedDivider(padding: Constants.padding),
+        // Priority
+        _buildPriorityTile(mobile: smallScreen),
 
-                      SafeArea(
-                        child: _buildSearchBar(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: Constants.quarterPadding)),
-                      ),
-
-                      const Padding(
-                        padding:
-                            EdgeInsets.symmetric(vertical: Constants.padding),
-                        child: PaddedDivider(padding: Constants.padding),
-                      ),
-
-                      // Description
-                      _buildDescriptionTile(mobile: smallScreen),
-
-                      const PaddedDivider(padding: Constants.padding),
-                      // Expected Duration / RealDuration -> Show status, on click, open a dialog.
-                      _buildDurationTile(),
-
-                      const PaddedDivider(padding: Constants.padding),
-                      // DateTime -> Show status, on click, open a dialog.
-                      _buildDateRangeTile(),
-
-                      _buildTimeTile(),
-                      _buildRepeatableTile(),
-                    ],
-                  ),
-                ),
-
-                const PaddedDivider(padding: Constants.halfPadding),
-                Tiles.createButton(
-                  outerPadding:
-                      const EdgeInsets.symmetric(horizontal: Constants.padding),
-                  handleCreate: createAndValidate,
-                ),
-              ]),
+        const Padding(
+          padding: EdgeInsets.symmetric(vertical: Constants.padding),
+          child: PaddedDivider(padding: Constants.padding),
         ),
-      );
+
+        SafeArea(
+          child: _buildSearchBar(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: Constants.quarterPadding)),
+        ),
+
+        const Padding(
+          padding: EdgeInsets.symmetric(vertical: Constants.padding),
+          child: PaddedDivider(padding: Constants.padding),
+        ),
+
+        // Description
+        _buildDescriptionTile(mobile: smallScreen),
+
+        const PaddedDivider(padding: Constants.padding),
+        // Expected Duration / RealDuration -> Show status, on click, open a dialog.
+        _buildDurationTile(),
+
+        const PaddedDivider(padding: Constants.padding),
+        // DateTime -> Show status, on click, open a dialog.
+        _buildDateRangeTile(),
+
+        _buildTimeTile(),
+        _buildRepeatableTile(),
+      ],
+    );
+
+    return Dialog(
+      insetPadding: EdgeInsets.all((smallScreen)
+          ? Constants.mobileDialogPadding
+          : Constants.outerDialogPadding),
+      child: Padding(
+        padding: const EdgeInsets.all(Constants.padding),
+        child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Title && Close Button
+              _buildTitleBar(),
+              const PaddedDivider(padding: Constants.halfPadding),
+              Flexible(
+                child: (layoutProvider.isMobile)
+                    ? Scrollbar(
+                        controller: mobileScrollController,
+                        child: innerList,
+                      )
+                    : innerList,
+              ),
+
+              const PaddedDivider(padding: Constants.halfPadding),
+              _buildCreateButton(),
+            ]),
+      ),
+    );
+  }
 
   Widget _buildTitleBar() => ValueListenableBuilder<bool>(
         valueListenable: _checkClose,
@@ -762,7 +777,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                         .map((TaskType type) => ButtonSegment<TaskType>(
                             value: type,
                             label: Text(
-                              "${toBeginningOfSentenceCase(type.name)}",
+                              toBeginningOfSentenceCase(type.name),
                               softWrap: false,
                               overflow: TextOverflow.visible,
                             )))
@@ -839,5 +854,15 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                             id: vm.id, limit: Constants.numTasks[value.$1]!)),
                   )
                 : const SizedBox.shrink(),
+      );
+
+  Widget _buildCreateButton() => ValueListenableBuilder(
+        valueListenable: _createLoading,
+        builder: (BuildContext context, bool createLoading, Widget? child) =>
+            Tiles.createButton(
+                outerPadding:
+                    const EdgeInsets.symmetric(horizontal: Constants.padding),
+                handleCreate: createAndValidate,
+                loading: createLoading),
       );
 }

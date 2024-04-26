@@ -1,4 +1,4 @@
-# allocate
+# Allocate
 
 An offline-first To-Do application for avoiding burnout.
 
@@ -13,10 +13,10 @@ I hope that, one day, this app will be fully accessible, at the moment, it is no
 ## Installation:
 
 This is not yet ready for release, but if you would like to play with the project,
-feel free to clone the project and build using Flutter. You will require a supabase api key
+feel free to clone the repo and build using Flutter. You will require a supabase api key
 or to refactor to an online backend of your choosing.
 
-Online is implemented but not fully tested.
+Online functionality is implemented but not fully tested.
 
 ## What has been implemented so far:
 
@@ -24,11 +24,10 @@ Full offline functionality:
 -Creating tasks, routines, deadlines, reminders, task grouping
 -Repeating tasks, reminders, deadlines
 -Theme modifications
--Accessibility modifications (partially)
+-Accessibility modifications (partial)
 
 ## What still requires implementation:
 
--Online testing
 -Usage documentation
 
 ## Roadmap and future plans:

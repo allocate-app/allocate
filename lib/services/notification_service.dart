@@ -1,8 +1,9 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import "package:flutter_local_notifications/flutter_local_notifications.dart";
-import 'package:schedulers/schedulers.dart';
+import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 import 'package:windows_notification/notification_message.dart';
 import 'package:windows_notification/windows_notification.dart';
@@ -11,19 +12,19 @@ import '../ui/app_router.dart';
 import '../util/constants.dart';
 import '../util/exceptions.dart';
 import 'application_service.dart';
-import 'daily_reset_service.dart';
 
 // Limitations: Linux build cannot currently handle notification clicks.
 // Plugin may eventually use the new desktop standard. In the meantime looking into dbus.
-
+// Local notifications for Linux/Windows cannot be scheduled; they will not fire at the right time
+// due to process suspension.
 class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
 
-  late bool canSchedule = true;
+  late bool _canSchedule = false;
   late bool _initialized = false;
 
   // Linux/Windows only.
-  late final Map<int, TimeScheduler> desktopLocalNotifications = {};
+  late final Map<int, Timer> desktopLocalNotifications = {};
 
   // Windows only
   late final WindowsNotification winLocalNotificationPlugin;
@@ -52,7 +53,7 @@ class NotificationService {
 
   static const LinuxNotificationDetails _linuxNotificationDetails =
       LinuxNotificationDetails(
-    urgency: LinuxNotificationUrgency.normal,
+    urgency: LinuxNotificationUrgency.critical,
   );
 
   static const NotificationDetails _notificationDetails = NotificationDetails(
@@ -68,19 +69,24 @@ class NotificationService {
   static const DarwinInitializationSettings initializationSettingsDarwin =
       DarwinInitializationSettings();
 
-  static const LinuxInitializationSettings initializationSettingsLinux =
-      LinuxInitializationSettings(defaultActionName: "Open notification");
+  static final LinuxInitializationSettings initializationSettingsLinux =
+      LinuxInitializationSettings(
+          defaultActionName: "Open notification",
+          defaultIcon: AssetsLinuxIcon("assets/allocateaboutlogo.png"));
 
-  // Timezone is already initialized in the reset scheduler.
   Future<void> init() async {
-    if (_initialized) {
+    if (_initialized || _canSchedule) {
       return;
     }
 
-    canSchedule = DailyResetService.instance.timezoneInitialized;
-
-    if (!canSchedule) {
-      return;
+    try {
+      final String timeZoneName =
+          Constants.timezoneNames[DateTime.now().timeZoneOffset.inMilliseconds];
+      tz.initializeTimeZones();
+      tz.setLocalLocation(tz.getLocation(timeZoneName));
+      _canSchedule = true;
+    } on tz.TimeZoneInitException {
+      _canSchedule = false;
     }
 
     if (Platform.isWindows) {
@@ -94,7 +100,7 @@ class NotificationService {
         ?.requestNotificationsPermission();
 
     // LocalNotifierSettings
-    const initSettings = InitializationSettings(
+    final initSettings = InitializationSettings(
         android: initializationSettingsAndroid,
         iOS: initializationSettingsDarwin,
         macOS: initializationSettingsDarwin,
@@ -129,6 +135,8 @@ class NotificationService {
             details.message.group ?? Constants.applicationName);
       }
     });
+
+    _initialized = true;
   }
 
   Future<void> scheduleNotification({
@@ -137,7 +145,7 @@ class NotificationService {
     required String message,
     required String payload,
   }) async {
-    if (!canSchedule) {
+    if (!_canSchedule) {
       throw FailureToScheduleException(
           "Unable to establish Timezone for Scheduling");
     }
@@ -175,14 +183,18 @@ class NotificationService {
       required DateTime warnDate,
       required String message,
       String? payload}) async {
-    TimeScheduler timeScheduler = TimeScheduler();
-    timeScheduler.run(() async {
-      await showNotificationLinux(
-          id: id, warnDate: warnDate, message: message, payload: payload);
-      timeScheduler.dispose();
-    }, tz.TZDateTime.from(warnDate, tz.local));
+    Timer timer = Timer.periodic(const Duration(seconds: 1), (timer) async {
+      if (DateTime.now().isAfter(warnDate)) {
+        await showNotificationLinux(
+          id: id,
+          message: message,
+          payload: payload,
+        );
+        timer.cancel();
+      }
+    });
 
-    desktopLocalNotifications.addAll({id: timeScheduler});
+    desktopLocalNotifications[id] = timer;
   }
 
   Future<void> scheduleWindows(
@@ -194,21 +206,28 @@ class NotificationService {
         id.toString(), Constants.applicationName, message,
         payload: {"payload": payload}, group: Constants.applicationName);
 
-    TimeScheduler timeScheduler = TimeScheduler();
-    timeScheduler.run(() async {
-      await winLocalNotificationPlugin
-          .showNotificationPluginTemplate(notification);
-      timeScheduler.dispose();
-    }, tz.TZDateTime.from(warnDate, tz.local));
+    Timer timer = Timer.periodic(const Duration(seconds: 1), (timer) async {
+      if (DateTime.now().isAfter(warnDate)) {
+        await winLocalNotificationPlugin
+            .showNotificationPluginTemplate(notification);
+        timer.cancel();
+      }
+    });
 
-    desktopLocalNotifications.addAll({id: timeScheduler});
+    desktopLocalNotifications[id] = timer;
+  }
+
+  Future<void> showNotificationWindows(
+      {required int id, required String message, String? payload}) async {
+    NotificationMessage notification = NotificationMessage.fromPluginTemplate(
+        id.toString(), Constants.applicationName, message,
+        payload: {"payload": payload}, group: Constants.applicationName);
+    await winLocalNotificationPlugin
+        .showNotificationPluginTemplate(notification);
   }
 
   Future<void> showNotificationLinux(
-      {required int id,
-      required DateTime warnDate,
-      required String message,
-      String? payload}) async {
+      {required int id, required String message, String? payload}) async {
     await flutterLocalNotificationsPlugin.show(
         // Id
         id,
@@ -226,10 +245,11 @@ class NotificationService {
     if (null == id) {
       return;
     }
+
     if (Platform.isWindows || Platform.isLinux) {
-      desktopLocalNotifications[id]?.dispose();
+      Timer? timer = desktopLocalNotifications[id];
+      timer?.cancel();
       desktopLocalNotifications.remove(id);
-      return;
     }
 
     return await flutterLocalNotificationsPlugin.cancel(id);
@@ -243,11 +263,11 @@ class NotificationService {
 
   Future<void> cancelAllNotifications() async {
     if (Platform.isWindows || Platform.isLinux) {
-      desktopLocalNotifications.forEach((k, v) {
-        v.dispose();
-        desktopLocalNotifications.remove(k);
-      });
+      for (Timer timer in desktopLocalNotifications.values) {
+        timer.cancel();
+      }
       desktopLocalNotifications.clear();
+      return;
     }
     await flutterLocalNotificationsPlugin.cancelAll();
   }

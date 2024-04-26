@@ -58,6 +58,7 @@ class _ExpandedListTile extends State<ExpandedListTile> {
             borderRadius: const BorderRadius.all(
                 Radius.circular(Constants.semiCircular))),
         child: ExpansionTile(
+          childrenPadding: const EdgeInsets.only(right: Constants.padding),
           controller: widget.controller,
           initiallyExpanded: expanded,
           maintainState: true,

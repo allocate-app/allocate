@@ -1,7 +1,9 @@
+import 'dart:developer';
 import 'dart:io';
 
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:window_manager/window_manager.dart';
 
@@ -38,11 +40,21 @@ class SplashScreen extends StatefulWidget {
 class _SplashScreen extends State<SplashScreen> {
   final DailyResetService dailyResetProvider = DailyResetService.instance;
   late final LayoutProvider layoutProvider;
+  late final UserProvider userProvider;
 
   @override
   void initState() {
     super.initState();
     layoutProvider = Provider.of<LayoutProvider>(context, listen: false);
+    userProvider = Provider.of<UserProvider>(context, listen: false);
+
+    // Test this later -> needs to push back to home if somehow popped.
+    if (userProvider.initialized) {
+      AutoRouter.of(context).navigate(HomeRoute(
+          index: ApplicationService.instance.initialPageIndex ??
+              widget.initialIndex));
+      return;
+    }
 
     init().then((_) {
       // ROUTE TO HOME PAGE, send the initial index.
@@ -50,6 +62,15 @@ class _SplashScreen extends State<SplashScreen> {
       AutoRouter.of(context).navigate(HomeRoute(
           index: ApplicationService.instance.initialPageIndex ??
               widget.initialIndex));
+    }).catchError((e, stacktrace) async {
+      log(e, stackTrace: stacktrace);
+      await Tiles.displayError(e: e);
+
+      if (layoutProvider.isMobile) {
+        SystemNavigator.pop();
+      } else {
+        await windowManager.destroy();
+      }
     });
   }
 
@@ -65,11 +86,14 @@ class _SplashScreen extends State<SplashScreen> {
     // Initialize Isar.
     // Initialize Supabase.
     // Initialize Providers.
+
+    // -> This really is not the tea...
+    // TODO: in user init -- SYNC FIRST, THEN CALL THE DAY-RESET FUNCTION SEPARATELY.
     dailyResetProvider.addListener(dayReset);
     layoutProvider.isMobile = Platform.isIOS || Platform.isAndroid;
 
     if (Constants.supabaseURL.isEmpty || Constants.supabaseAnnonKey.isEmpty) {
-      throw BuildFailureException("App has not been configured");
+      throw BuildFailureException("App not configured");
     }
     // DBs need to be initialized before providers.
 
@@ -89,9 +113,11 @@ class _SplashScreen extends State<SplashScreen> {
         Provider.of<ReminderProvider>(context, listen: false).init(),
         Provider.of<DeadlineProvider>(context, listen: false).init(),
         Provider.of<GroupProvider>(context, listen: false).init(),
-        Provider.of<UserProvider>(context, listen: false).init(),
+        userProvider.init(),
         NotificationService.instance.init(),
       ]);
+
+      userProvider.checkDay();
     });
   }
 

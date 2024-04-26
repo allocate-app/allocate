@@ -151,6 +151,7 @@ class _NotificationsScreen extends State<NotificationsScreen> {
                                       indicatorDisplacement: 0,
                                       items: deadlineProvider.deadlines,
                                       limit: 5,
+                                      pullToRefresh: false,
                                       offset: (deadlineProvider.rebuild)
                                           ? 0
                                           : deadlineProvider.deadlines.length,
@@ -210,6 +211,7 @@ class _NotificationsScreen extends State<NotificationsScreen> {
                                       indicatorDisplacement: 0,
                                       items: reminderProvider.reminders,
                                       limit: 5,
+                                      pullToRefresh: false,
                                       offset: (reminderProvider.rebuild)
                                           ? 0
                                           : reminderProvider.reminders.length,
@@ -269,6 +271,7 @@ class _NotificationsScreen extends State<NotificationsScreen> {
                                       indicatorDisplacement: 0,
                                       items: toDoProvider.toDos,
                                       limit: 5,
+                                      pullToRefresh: false,
                                       offset: (toDoProvider.rebuild)
                                           ? 0
                                           : toDoProvider.toDos.length,
@@ -365,6 +368,7 @@ class _NotificationsScreen extends State<NotificationsScreen> {
                                         items:
                                             deadlineProvider.secondaryDeadlines,
                                         limit: 5,
+                                        pullToRefresh: false,
                                         offset: (deadlineProvider.rebuild)
                                             ? 0
                                             : deadlineProvider
@@ -428,6 +432,7 @@ class _NotificationsScreen extends State<NotificationsScreen> {
                                         items:
                                             reminderProvider.secondaryReminders,
                                         limit: 5,
+                                        pullToRefresh: false,
                                         offset: (reminderProvider.rebuild)
                                             ? 0
                                             : reminderProvider
@@ -490,6 +495,7 @@ class _NotificationsScreen extends State<NotificationsScreen> {
                                         indicatorDisplacement: 0,
                                         items: toDoProvider.secondaryToDos,
                                         limit: 5,
+                                        pullToRefresh: false,
                                         offset: (toDoProvider.rebuild)
                                             ? 0
                                             : toDoProvider

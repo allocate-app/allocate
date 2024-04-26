@@ -26,6 +26,7 @@ class UserStorageService extends ChangeNotifier {
 
   bool _subscribed = false;
   bool _initialized = false;
+  bool _syncing = false;
 
   UserStatus _status = UserStatus.normal;
 
@@ -39,7 +40,7 @@ class UserStorageService extends ChangeNotifier {
 
   String? currentUserID;
 
-  void init() {
+  Future<void> init() async {
     if (_initialized) {
       return;
     }
@@ -66,9 +67,14 @@ class UserStorageService extends ChangeNotifier {
             event: PostgresChangeEvent.delete,
             callback: handleDelete);
 
+    // Sync the repository.
+    await handleUserChange();
+
+    // Then subscribe to realtime.
     SupabaseService.instance.authSubscription.listen((AuthState data) async {
       final AuthChangeEvent event = data.event;
       switch (event) {
+        // TODO: this probably should be nuked.
         case AuthChangeEvent.initialSession:
           await handleUserChange();
           if (!_subscribed) {
@@ -113,10 +119,10 @@ class UserStorageService extends ChangeNotifier {
       if (!isConnected) {
         return;
       }
+
+      // TODO: uh, possibly create some sort of semaphore to prevent spamming sync...
       await handleUserChange();
     });
-
-    handleUserChange();
   }
 
   void resetStatus() {
@@ -124,6 +130,7 @@ class UserStorageService extends ChangeNotifier {
     _failureCache.clear();
   }
 
+  // TODO: Make this a bit more robust -> may not even be necessary.
   Future<void> handleUserChange() async {
     // This should not be null, if it is connected.
     String? newID = _supabaseClient.auth.currentUser?.id;
@@ -187,11 +194,14 @@ class UserStorageService extends ChangeNotifier {
     }
   }
 
+  // TODO: make this a bit more robust.
   Future<void> syncUser(
       {AllocateUser? onlineUser, bool skipOnline = false}) async {
-    if (!isConnected) {
+    if (!isConnected || _syncing) {
       return;
     }
+
+    _syncing = true;
 
     AllocateUser? localUser = await getUser();
 
@@ -244,7 +254,7 @@ class UserStorageService extends ChangeNotifier {
       await updateUser(user: toPut);
 
       _status = UserStatus.normal;
-
+      _syncing = false;
       notifyListeners();
     } on MultipleUsersException catch (e, stacktrace) {
       _status = UserStatus.multiple;
@@ -257,6 +267,7 @@ class UserStorageService extends ChangeNotifier {
         _failureCache.add(onlineUser);
       }
 
+      _syncing = false;
       notifyListeners();
     }
   }

@@ -1,7 +1,7 @@
 import "dart:io";
 
-import "package:allocate/ui/widgets/check_delete_dialog.dart";
-import "package:allocate/ui/widgets/update_email_dialog.dart";
+import "package:allocate/ui/widgets/dialogs/check_delete_dialog.dart";
+import "package:allocate/ui/widgets/dialogs/update_email_dialog.dart";
 import "package:flutter/material.dart";
 import "package:intl/intl.dart";
 import "package:provider/provider.dart";
@@ -283,22 +283,30 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
         selector: (BuildContext context, UserViewModel vm) => vm.bandwidth,
         builder: (BuildContext context, int value, Widget? child) =>
             SettingsScreenWidgets.energyTile(
-              weight: value.toDouble(),
-              batteryScale: remap(
-                      x: layoutProvider.width
-                          .clamp(Constants.smallScreen, Constants.largeScreen),
-                      inMin: Constants.smallScreen,
-                      inMax: Constants.largeScreen,
-                      outMin: 1,
-                      outMax: maxScale)
-                  .toDouble(),
-              handleWeightChange: (newWeight) {
-                if (null == newWeight) {
-                  return;
-                }
-                vm.bandwidth = newWeight.toInt();
-              },
-            ));
+                weight: value.toDouble(),
+                batteryScale: remap(
+                        x: layoutProvider.width.clamp(
+                            Constants.smallScreen, Constants.largeScreen),
+                        inMin: Constants.smallScreen,
+                        inMax: Constants.largeScreen,
+                        outMin: 1,
+                        outMax: maxScale)
+                    .toDouble(),
+                handleWeightChange: (newWeight) {
+                  if (null == newWeight) {
+                    return;
+                  }
+                  vm.bandwidth = newWeight.toInt();
+                },
+                onChangeEnd: (newWeight) {
+                  if (null == newWeight) {
+                    return;
+                  }
+
+                  // This needs to be explicitly set, otherwise the data will not update.
+                  vm.pushUpdate = true;
+                  vm.bandwidth = newWeight.toInt();
+                }));
   }
 
   Widget _buildAccountSection() {

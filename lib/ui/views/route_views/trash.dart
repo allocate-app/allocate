@@ -25,7 +25,7 @@ import "../../../util/constants.dart";
 import "../../../util/enums.dart";
 import "../../../util/interfaces/i_model.dart";
 import "../../blurred_dialog.dart";
-import "../../widgets/check_delete_dialog.dart";
+import "../../widgets/dialogs/check_delete_dialog.dart";
 import "../../widgets/expanded_listtile.dart";
 import "../../widgets/listviews.dart";
 import "../../widgets/paginating_listview.dart";

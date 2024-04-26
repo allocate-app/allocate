@@ -49,11 +49,16 @@ class SupabaseService {
       _supabaseClient = client;
       return;
     }
+
+    // SET THE INTERNET CONNECTION STATUS.
+    hasInternet = await InternetConnectionChecker().hasConnection;
+
+    // Test retry attempts.
     await Supabase.initialize(
         url: supabaseUrl,
         anonKey: anonKey,
         storageOptions: const StorageClientOptions(
-          retryAttempts: 10,
+          retryAttempts: 0,
         ));
     _supabaseClient = Supabase.instance.client;
 
@@ -67,8 +72,6 @@ class SupabaseService {
     //   await _supabaseClient.auth.refreshSession();
     // }
 
-    // SET THE INTERNET CONNECTION STATUS.
-    hasInternet = await InternetConnectionChecker().hasConnection;
     _initialized = true;
   }
 

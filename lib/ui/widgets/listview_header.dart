@@ -102,7 +102,7 @@ class _ListViewHeader<T> extends State<ListViewHeader<T>> {
                                 icon: getTrailingIcon() ??
                                     const Icon(Icons.swap_vert_rounded),
                                 tooltip:
-                                    "Sort by: ${toBeginningOfSentenceCase(sorter!.sortMethod.name.replaceAll("_", " "))!}");
+                                    "Sort by: ${toBeginningOfSentenceCase(sorter!.sortMethod.name.replaceAll("_", " "))}");
                           },
                           menuChildren: sorter!.sortMethods
                               .map((SortMethod method) => MenuItemButton(

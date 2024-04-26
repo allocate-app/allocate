@@ -1,62 +1,24 @@
+import 'package:cron/cron.dart';
 import 'package:flutter/foundation.dart';
-import 'package:schedulers/schedulers.dart';
-import 'package:timezone/data/latest_all.dart' as tz;
-import 'package:timezone/timezone.dart' as tz;
-
-import '../util/constants.dart';
 
 // Singleton class to notify daily resetting.
 class DailyResetService extends ChangeNotifier {
-  bool timezoneInitialized = false;
   static final DailyResetService _instance = DailyResetService._internal();
 
   static DailyResetService get instance => _instance;
-
-  late TimeScheduler resetScheduler;
+  late final Cron cron;
 
   void init() {
-    initializeTimezone();
-    if (!timezoneInitialized) {
-      return;
-    }
-    resetScheduler = TimeScheduler();
+    cron = Cron();
     initTimeScheduler();
-  }
-
-  void initializeTimezone() {
-    try {
-      tz.initializeTimeZones();
-      final String timeZoneName =
-          Constants.timezoneNames[DateTime.now().timeZoneOffset.inMilliseconds];
-      tz.setLocalLocation(tz.getLocation(timeZoneName));
-      timezoneInitialized = true;
-    } on tz.TimeZoneInitException {
-      timezoneInitialized = false;
-    }
   }
 
   void initTimeScheduler() {
-    if (!timezoneInitialized) {
-      return;
-    }
-    resetScheduler.run(
-        dailyReset,
-        tz.TZDateTime.from(
-            Constants.today.copyWith(day: Constants.today.day + 1), tz.local));
-  }
-
-  void resetTimeScheduler() {
-    if (!timezoneInitialized) {
-      return;
-    }
-    resetScheduler.dispose();
-    resetScheduler = TimeScheduler();
-    initTimeScheduler();
+    cron.schedule(Schedule.parse('0 0 * * *'), dailyReset);
   }
 
   void dailyReset() {
     notifyListeners();
-    resetTimeScheduler();
   }
 
   DailyResetService._internal();

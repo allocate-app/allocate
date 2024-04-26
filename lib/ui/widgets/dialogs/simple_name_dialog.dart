@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:provider/provider.dart';
 
-import '../../providers/application/layout_provider.dart';
-import '../../providers/viewmodels/user_viewmodel.dart';
-import '../../util/constants.dart';
-import 'tiles.dart';
+import '../../../providers/application/layout_provider.dart';
+import '../../../providers/viewmodels/user_viewmodel.dart';
+import '../../../util/constants.dart';
+import '../tiles.dart';
 
 class SimpleNameDialog extends StatefulWidget {
   const SimpleNameDialog({super.key});

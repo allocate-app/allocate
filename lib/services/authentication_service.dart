@@ -14,10 +14,15 @@ class AuthenticationService implements Authenticator {
   static AuthenticationService get instance => _instance;
 
   late final SupabaseClient _supabaseClient;
+  bool _initialized = false;
 
   @override
   void init() {
+    if (_initialized) {
+      return;
+    }
     _supabaseClient = SupabaseService.instance.supabaseClient;
+    _initialized = true;
   }
 
   // Creation happens on OTP link generation.

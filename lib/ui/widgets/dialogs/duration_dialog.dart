@@ -4,8 +4,8 @@ import 'package:flutter/rendering.dart';
 import 'package:numberpicker/numberpicker.dart';
 import 'package:provider/provider.dart';
 
-import '../../providers/application/layout_provider.dart';
-import '../../util/constants.dart';
+import '../../../providers/application/layout_provider.dart';
+import '../../../util/constants.dart';
 
 class DurationDialog extends StatefulWidget {
   const DurationDialog({super.key, this.duration = 0});

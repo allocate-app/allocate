@@ -29,7 +29,6 @@ import '../../providers/viewmodels/routine_viewmodel.dart';
 import '../../providers/viewmodels/subtask_viewmodel.dart';
 import '../../providers/viewmodels/todo_viewmodel.dart';
 import '../../services/application_service.dart';
-import '../../ui/widgets/time_dialog.dart';
 import '../../util/constants.dart';
 import '../../util/enums.dart';
 import '../../util/interfaces/i_model.dart';
@@ -43,13 +42,14 @@ import '../views/sub_views/update_routine.dart';
 import '../views/sub_views/update_subtask.dart';
 import '../views/sub_views/update_todo.dart';
 import 'battery_meter.dart';
-import 'check_delete_dialog.dart';
-import 'date_range_dialog.dart';
-import 'date_time_dialog.dart';
-import 'duration_dialog.dart';
+import 'dialogs/check_delete_dialog.dart';
+import 'dialogs/date_range_dialog.dart';
+import 'dialogs/date_time_dialog.dart';
+import 'dialogs/duration_dialog.dart';
+import 'dialogs/frequency_dialog.dart';
+import 'dialogs/time_dialog.dart';
 import 'expanded_listtile.dart';
 import 'flushbars.dart';
-import 'frequency_dialog.dart';
 import 'handle_repeatable_modal.dart';
 import 'listtile_widgets.dart';
 import 'listviews.dart';
@@ -2470,12 +2470,13 @@ abstract class Tiles {
                           value: type,
                           label: (!mobile)
                               ? Text(
-                                  "${toBeginningOfSentenceCase(type.name)}",
+                                  toBeginningOfSentenceCase(type.name),
                                   softWrap: false,
                                   overflow: TextOverflow.visible,
                                 )
                               : Text(
-                                  "${toBeginningOfSentenceCase(type.name.replaceAll("medium", "med."))}",
+                                  toBeginningOfSentenceCase(
+                                      type.name.replaceAll("medium", "med.")),
                                 )))
                       .toList(growable: false),
                   selected: <Priority>{priority},
@@ -2769,6 +2770,7 @@ abstract class Tiles {
   // CREATE/UPDATE
   static Widget createButton({
     String label = "Create",
+    bool loading = false,
     EdgeInsetsGeometry outerPadding = EdgeInsets.zero,
     required Future<void> Function() handleCreate,
   }) =>
@@ -2777,23 +2779,47 @@ abstract class Tiles {
         child: Padding(
           padding: outerPadding,
           child: FilledButton.icon(
-              label: Text(label, overflow: TextOverflow.ellipsis),
-              icon: const Icon(Icons.add_rounded),
-              onPressed: handleCreate),
+              label: (loading)
+                  ? const Text("Working", overflow: TextOverflow.ellipsis)
+                  : Text(label, overflow: TextOverflow.ellipsis),
+              icon: (loading)
+                  ? ConstrainedBox(
+                      constraints:
+                          const BoxConstraints(maxHeight: 28, maxWidth: 28),
+                      child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Transform.scale(
+                              scale: 0.65,
+                              child: const CircularProgressIndicator())),
+                    )
+                  : const Icon(Icons.add_rounded),
+              onPressed: (loading) ? null : handleCreate),
         ),
       );
 
 // DELETE
-  static Widget deleteButton({
-    EdgeInsetsGeometry outerPadding = EdgeInsets.zero,
-    required Future<void> Function() handleDelete,
-  }) =>
+  static Widget deleteButton(
+          {EdgeInsetsGeometry outerPadding = EdgeInsets.zero,
+          required Future<void> Function() handleDelete,
+          bool loading = false}) =>
       Padding(
         padding: outerPadding,
         child: FilledButton.tonalIcon(
-            label: const Text("Delete", overflow: TextOverflow.ellipsis),
-            icon: const Icon(Icons.delete_forever_rounded),
-            onPressed: handleDelete),
+            label: (loading)
+                ? const Text("Working", overflow: TextOverflow.ellipsis)
+                : const Text("Delete", overflow: TextOverflow.ellipsis),
+            icon: (loading)
+                ? ConstrainedBox(
+                    constraints:
+                        const BoxConstraints(maxHeight: 28, maxWidth: 28),
+                    child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Transform.scale(
+                            scale: 0.65,
+                            child: const CircularProgressIndicator())),
+                  )
+                : const Icon(Icons.delete_forever_rounded),
+            onPressed: (loading) ? null : handleDelete),
       );
 
 // COMBINATION UPDATE & DELETE
@@ -2802,6 +2828,8 @@ abstract class Tiles {
     EdgeInsetsGeometry deleteButtonPadding = EdgeInsets.zero,
     required Future<void> Function() handleUpdate,
     required Future<void> Function() handleDelete,
+    bool updateLoading = false,
+    bool deleteLoading = false,
   }) =>
       Align(
         alignment: Alignment.centerRight,
@@ -2810,9 +2838,11 @@ abstract class Tiles {
             mainAxisSize: MainAxisSize.min,
             children: [
               deleteButton(
+                  loading: deleteLoading,
                   outerPadding: deleteButtonPadding,
                   handleDelete: handleDelete),
               createButton(
+                  loading: updateLoading,
                   label: "Update",
                   outerPadding: updateButtonPadding,
                   handleCreate: handleUpdate)

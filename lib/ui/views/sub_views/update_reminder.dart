@@ -13,6 +13,8 @@ import '../../../providers/viewmodels/reminder_viewmodel.dart';
 import '../../../util/constants.dart';
 import '../../../util/enums.dart';
 import '../../../util/exceptions.dart';
+import '../../blurred_dialog.dart';
+import '../../widgets/dialogs/check_delete_dialog.dart';
 import '../../widgets/handle_repeatable_modal.dart';
 import '../../widgets/listtile_widgets.dart';
 import '../../widgets/padded_divider.dart';
@@ -28,6 +30,8 @@ class UpdateReminderScreen extends StatefulWidget {
 
 class _UpdateReminderScreen extends State<UpdateReminderScreen> {
   late ValueNotifier<bool> _checkClose;
+  late ValueNotifier<bool> _updateLoading;
+  late ValueNotifier<bool> _deleteLoading;
   late ValueNotifier<String?> _nameErrorText;
   late bool _checkRepeating;
 
@@ -63,6 +67,8 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
     _prev = vm.toModel();
     _checkRepeating = false;
     _checkClose = ValueNotifier(false);
+    _updateLoading = ValueNotifier(false);
+    _deleteLoading = ValueNotifier(false);
     _nameErrorText = ValueNotifier(null);
   }
 
@@ -156,7 +162,7 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
         await Tiles.displayError(e: e);
       }).whenComplete(() {
         vm.clear();
-        Navigator.pop(context);
+        _popScreen();
       });
     }
 
@@ -169,11 +175,37 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
       await Tiles.displayError(e: e);
     }).whenComplete(() {
       vm.clear();
-      Navigator.pop(context);
+      _popScreen();
+    });
+  }
+
+  Future<void> checkAndHandleDelete() async {
+    bool checkDelete = reminderProvider.userViewModel?.checkDelete ?? true;
+    // If not checking delete -> proceed
+    if (!checkDelete) {
+      return await handleDelete();
+    }
+
+    return await blurredDismissible(
+            context: context,
+            dialog: CheckDeleteDialog(dontAsk: !checkDelete, type: "Reminder"))
+        .then((results) async {
+      if (null == results) {
+        return;
+      }
+
+      reminderProvider.userViewModel?.checkDelete = results[1];
+
+      if (!results[0]) {
+        return;
+      }
+
+      await handleDelete();
     });
   }
 
   Future<void> handleDelete() async {
+    _deleteLoading.value = true;
     Reminder newReminder = vm.toModel();
     if (_prev.frequency != Frequency.once &&
         RepeatableState.delta != _prev.repeatableState) {
@@ -204,11 +236,13 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
         await Tiles.displayError(e: e);
       }).whenComplete(() {
         vm.clear();
-        Navigator.pop(context);
+        _popScreen();
       });
     }
 
-    await reminderProvider.deleteReminder().then((_) async {
+    await reminderProvider
+        .deleteReminder(reminder: newReminder)
+        .then((_) async {
       newReminder.toDelete = true;
       await eventProvider.updateEventModel(
         oldModel: _prev,
@@ -219,79 +253,90 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
       await Tiles.displayError(e: e);
     }).whenComplete(() {
       vm.clear();
-      Navigator.pop(context);
+      _popScreen();
     });
+
+    _deleteLoading.value = false;
+  }
+
+  void _popScreen() {
+    if (mounted) {
+      Navigator.pop(context);
+    }
   }
 
   void handleClose({required bool willDiscard}) {
     if (willDiscard) {
       reminderProvider.rebuild = true;
       vm.clear();
-      return Navigator.pop(context);
+      return _popScreen();
     }
 
     _checkClose.value = false;
   }
 
   Future<void> updateAndValidate() async {
+    _updateLoading.value = true;
     if (validateData()) {
       await handleUpdate();
     }
+    _updateLoading.value = false;
   }
 
   @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-        builder: (BuildContext context, BoxConstraints constraints) {
-      return Dialog(
-          insetPadding: EdgeInsets.all((layoutProvider.smallScreen)
-              ? Constants.mobileDialogPadding
-              : Constants.outerDialogPadding),
-          child: ConstrainedBox(
-              constraints: const BoxConstraints(
-                  maxHeight: Constants.smallLandscapeDialogHeight,
-                  maxWidth: Constants.smallLandscapeDialogWidth),
-              child: Padding(
-                padding: const EdgeInsets.all(Constants.padding),
-                child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      // Title && Close Button
-                      _buildTitleBar(),
+  Widget build(BuildContext context) => LayoutBuilder(
+          builder: (BuildContext context, BoxConstraints constraints) {
+        Widget innerList = ListView(
+            padding: const EdgeInsets.only(
+              top: Constants.halfPadding,
+              left: Constants.padding,
+              right: Constants.padding,
+            ),
+            shrinkWrap: true,
+            controller: mainScrollController,
+            physics: scrollPhysics,
+            children: [
+              _buildNameTile(),
 
-                      const PaddedDivider(padding: Constants.halfPadding),
-                      Flexible(
-                          child: ListView(
-                              padding: const EdgeInsets.only(
-                                  top: Constants.halfPadding),
-                              shrinkWrap: true,
-                              controller: mainScrollController,
-                              physics: scrollPhysics,
-                              children: [
-                            _buildNameTile(),
+              const PaddedDivider(padding: Constants.halfPadding),
 
-                            const PaddedDivider(padding: Constants.halfPadding),
+              _buildDueDateTile(),
 
-                            _buildDueDateTile(),
+              // Repeatable Stuff -> Show status, on click, open a dialog.
+              _buildRepeatableTile(),
+            ]);
 
-                            // Repeatable Stuff -> Show status, on click, open a dialog.
-                            _buildRepeatableTile(),
-                          ])),
-                      const PaddedDivider(padding: Constants.halfPadding),
-                      Tiles.updateAndDeleteButtons(
-                        handleDelete: handleDelete,
-                        handleUpdate: updateAndValidate,
-                        updateButtonPadding: const EdgeInsets.symmetric(
-                            horizontal: Constants.padding),
-                        deleteButtonPadding: const EdgeInsets.symmetric(
-                            horizontal: Constants.padding),
-                      ),
-                    ]),
-              )));
-    });
-  }
+        return Dialog(
+            insetPadding: EdgeInsets.all((layoutProvider.smallScreen)
+                ? Constants.mobileDialogPadding
+                : Constants.outerDialogPadding),
+            child: ConstrainedBox(
+                constraints: const BoxConstraints(
+                    maxHeight: Constants.smallLandscapeDialogHeight,
+                    maxWidth: Constants.smallLandscapeDialogWidth),
+                child: Padding(
+                  padding: const EdgeInsets.all(Constants.padding),
+                  child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        // Title && Close Button
+                        _buildTitleBar(),
+
+                        const PaddedDivider(padding: Constants.halfPadding),
+                        Flexible(
+                            child: (layoutProvider.isMobile)
+                                ? Scrollbar(
+                                    controller: mainScrollController,
+                                    child: innerList,
+                                  )
+                                : innerList),
+                        const PaddedDivider(padding: Constants.halfPadding),
+                        _buildUpdateDeleteRow(),
+                      ]),
+                )));
+      });
 
   Widget _buildTitleBar() => ValueListenableBuilder<bool>(
         valueListenable: _checkClose,
@@ -315,6 +360,8 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
                     leading: ListTileWidgets.reminderIcon(
                       currentContext: context,
                       iconPadding: const EdgeInsets.all(Constants.padding),
+                      outerPadding: const EdgeInsets.symmetric(
+                          horizontal: Constants.halfPadding),
                     ),
                     errorText: errorText,
                     hintText: "Reminder Name",
@@ -415,5 +462,24 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
                     ],
                   )
                 : const SizedBox.shrink(),
+      );
+
+  Widget _buildUpdateDeleteRow() => ValueListenableBuilder(
+        valueListenable: _updateLoading,
+        builder: (BuildContext context, bool updateLoading, Widget? child) =>
+            ValueListenableBuilder(
+          valueListenable: _deleteLoading,
+          builder: (BuildContext context, bool deleteLoading, Widget? child) =>
+              Tiles.updateAndDeleteButtons(
+            updateLoading: updateLoading,
+            deleteLoading: deleteLoading,
+            handleDelete: checkAndHandleDelete,
+            handleUpdate: updateAndValidate,
+            updateButtonPadding:
+                const EdgeInsets.symmetric(horizontal: Constants.padding),
+            deleteButtonPadding:
+                const EdgeInsets.symmetric(horizontal: Constants.padding),
+          ),
+        ),
       );
 }

@@ -125,6 +125,7 @@ class Reminder with EquatableMixin implements Copyable<Reminder>, IRepeatable {
           int? repeatSkip,
           Frequency? frequency,
           RepeatableState? repeatableState,
+          bool? isSynced,
           DateTime? lastUpdated}) =>
       Reminder(
           id: id ?? Constants.generateID(),
@@ -141,7 +142,9 @@ class Reminder with EquatableMixin implements Copyable<Reminder>, IRepeatable {
           repeatableState: repeatableState ?? this.repeatableState,
           repeatSkip: repeatSkip ?? this.repeatSkip,
           frequency: frequency ?? this.frequency,
-          lastUpdated: lastUpdated ?? DateTime.now());
+          lastUpdated: lastUpdated ?? DateTime.now(),
+          // TODO: check this, is kinda wild.
+          isSynced: isSynced ?? false);
 
   Reminder.fromEntity({required Map<String, dynamic> entity})
       : id = entity["id"] as Id,

@@ -4,10 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:provider/provider.dart';
 
-import '../../providers/application/layout_provider.dart';
-import '../../providers/model/user_provider.dart';
-import '../../util/constants.dart';
-import '../../util/exceptions.dart';
+import '../../../providers/application/layout_provider.dart';
+import '../../../providers/model/user_provider.dart';
+import '../../../util/constants.dart';
+import '../../../util/exceptions.dart';
 
 class UpdateEmailDialog extends StatefulWidget {
   const UpdateEmailDialog({super.key});
@@ -142,7 +142,9 @@ class _UpdateEmailDialog extends State<UpdateEmailDialog> {
       ),
       Future.delayed(const Duration(seconds: 3)),
     ]).then((_) {
-      Navigator.pop(context);
+      if (mounted) {
+        Navigator.pop(context);
+      }
     }).catchError((e) async {
       Tiles.displayError(e: e);
     });

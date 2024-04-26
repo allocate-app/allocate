@@ -78,13 +78,16 @@ class _SubtaskQuickEntry extends State<SubtaskQuickEntry> {
     _name = newText;
   }
 
+  // TODO: refactor this once a better solution is in place.
   void resetVM() {
+    vm.clear();
     vm.initWith(
         weight: widget.weight.toInt(),
         taskID: widget.taskID,
-        customViewIndex: widget.taskIndex);
-    _weight = widget.weight.toInt();
-    _name = "";
+        customViewIndex: widget.taskIndex,
+        name: "");
+    _weight = vm.weight;
+    _name = vm.name;
   }
 
   void setVM() {

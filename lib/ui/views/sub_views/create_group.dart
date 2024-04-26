@@ -36,6 +36,7 @@ class CreateGroupScreen extends StatefulWidget {
 
 class _CreateGroupScreen extends State<CreateGroupScreen> {
   late ValueNotifier<bool> _checkClose;
+  late ValueNotifier<bool> _createLoading;
   late ValueNotifier<String?> _nameErrorText;
 
   // Providers
@@ -66,7 +67,9 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
 
   void initializeProviders() {
     vm = Provider.of<GroupViewModel>(context, listen: false);
+    vm.clear();
     tVM = Provider.of<ToDoViewModel>(context, listen: false);
+    tVM.clear();
     groupProvider = Provider.of<GroupProvider>(context, listen: false);
     toDoProvider = Provider.of<ToDoProvider>(context, listen: false);
     layoutProvider = Provider.of<LayoutProvider>(context, listen: false);
@@ -74,6 +77,7 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
 
   void initializeParameters() {
     _checkClose = ValueNotifier(false);
+    _createLoading = ValueNotifier(false);
     _nameErrorText = ValueNotifier(null);
   }
 
@@ -148,7 +152,7 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
       await Tiles.displayError(e: e);
     }).whenComplete(() {
       vm.clear();
-      Navigator.pop(context);
+      _popScreen();
     });
   }
 
@@ -171,6 +175,12 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
     await toDoProvider.updateToDo(toDo: toDo);
   }
 
+  void _popScreen() {
+    if (mounted) {
+      Navigator.pop(context);
+    }
+  }
+
   Future<void> handleClose({required bool willDiscard}) async {
     if (willDiscard) {
       for (ToDo toDo in vm.toDos) {
@@ -182,16 +192,18 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
         await Tiles.displayError(e: e);
       }).whenComplete(() {
         vm.clear();
-        Navigator.pop(context);
+        _popScreen();
       });
     }
     _checkClose.value = false;
   }
 
   Future<void> createAndValidate() async {
+    _createLoading.value = true;
     if (validateData()) {
       await handleCreate();
     }
+    _createLoading.value = false;
   }
 
   void onFetch({List<ToDo>? items}) {
@@ -232,6 +244,52 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
       );
 
   Dialog _buildDesktopDialog({required BuildContext context}) {
+    Widget innerList = ListView(
+      padding: const EdgeInsets.only(
+        top: Constants.halfPadding,
+        left: Constants.padding,
+        right: Constants.padding,
+      ),
+      shrinkWrap: true,
+      physics: scrollPhysics,
+      controller: desktopScrollController,
+      children: [
+        Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Flexible(
+                  // Name And Description.
+                  child: ListView(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: Constants.padding),
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      children: [
+                    // Name
+
+                    _buildNameTile(),
+
+                    _buildToDosTile(),
+                  ])),
+              Flexible(
+                child: ListView(
+                    physics: const NeverScrollableScrollPhysics(),
+                    shrinkWrap: true,
+                    padding: const EdgeInsets.symmetric(
+                        vertical: Constants.padding,
+                        horizontal: Constants.halfPadding),
+                    children: [
+                      _buildDescriptionTile(
+                          minLines: Constants.desktopMinLines,
+                          maxLines: Constants.desktopMaxLinesBeforeScroll)
+                    ]),
+              )
+            ]),
+      ],
+    );
+
     return Dialog(
       insetPadding: const EdgeInsets.all(Constants.outerDialogPadding),
       child: ConstrainedBox(
@@ -252,60 +310,17 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
                 Flexible(
                   child: Material(
                     color: Colors.transparent,
-                    child: ListView(
-                      padding:
-                          const EdgeInsets.only(top: Constants.halfPadding),
-                      shrinkWrap: true,
-                      physics: scrollPhysics,
-                      controller: desktopScrollController,
-                      children: [
-                        Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Flexible(
-                                  // Name And Description.
-                                  child: ListView(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: Constants.padding),
-                                      shrinkWrap: true,
-                                      physics:
-                                          const NeverScrollableScrollPhysics(),
-                                      children: [
-                                    // Name
-
-                                    _buildNameTile(),
-
-                                    _buildToDosTile(),
-                                  ])),
-                              Flexible(
-                                child: ListView(
-                                    physics:
-                                        const NeverScrollableScrollPhysics(),
-                                    shrinkWrap: true,
-                                    padding: const EdgeInsets.symmetric(
-                                        vertical: Constants.padding,
-                                        horizontal: Constants.halfPadding),
-                                    children: [
-                                      _buildDescriptionTile(
-                                          minLines: Constants.desktopMinLines,
-                                          maxLines: Constants
-                                              .desktopMaxLinesBeforeScroll)
-                                    ]),
-                              )
-                            ]),
-                      ],
-                    ),
+                    child: (layoutProvider.isMobile)
+                        ? Scrollbar(
+                            controller: desktopScrollController,
+                            child: innerList,
+                          )
+                        : innerList,
                   ),
                 ),
 
                 const PaddedDivider(padding: Constants.halfPadding),
-                Tiles.createButton(
-                  outerPadding:
-                      const EdgeInsets.symmetric(horizontal: Constants.padding),
-                  handleCreate: createAndValidate,
-                ),
+                _buildCreateButton(),
               ]),
         ),
       ),
@@ -314,6 +329,18 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
 
   Dialog _buildMobileDialog(
       {required BuildContext context, required bool smallScreen}) {
+    Widget innerList = ListView(
+        padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
+        shrinkWrap: true,
+        controller: mobileScrollController,
+        physics: scrollPhysics,
+        children: [
+          _buildNameTile(),
+          _buildToDosTile(),
+          const PaddedDivider(padding: Constants.padding),
+          _buildDescriptionTile(mobile: smallScreen),
+        ]);
+
     return Dialog(
       insetPadding: EdgeInsets.all((smallScreen)
           ? Constants.mobileDialogPadding
@@ -330,24 +357,16 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
 
               const PaddedDivider(padding: Constants.halfPadding),
               Flexible(
-                child: ListView(
-                    shrinkWrap: true,
-                    controller: mobileScrollController,
-                    physics: scrollPhysics,
-                    children: [
-                      _buildNameTile(),
-                      _buildToDosTile(),
-                      const PaddedDivider(padding: Constants.padding),
-                      _buildDescriptionTile(mobile: smallScreen),
-                    ]),
+                child: (layoutProvider.isMobile)
+                    ? Scrollbar(
+                        controller: mobileScrollController,
+                        child: innerList,
+                      )
+                    : innerList,
               ),
 
               const PaddedDivider(padding: Constants.halfPadding),
-              Tiles.createButton(
-                outerPadding:
-                    const EdgeInsets.symmetric(horizontal: Constants.padding),
-                handleCreate: createAndValidate,
-              ),
+              _buildCreateButton(),
             ]),
       ),
     );
@@ -367,12 +386,11 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
       children: [
         PaginatingListview<ToDo>(
             items: vm.toDos,
-            query: (
-                    {int limit = Constants.minLimitPerQuery,
-                    int offset = 0}) async =>
+            query: ({int limit = Constants.intMax, int offset = 0}) async =>
                 await groupProvider.getToDosByGroupID(
                     id: vm.id, limit: limit, offset: offset),
             offset: vm.toDos.length,
+            pullToRefresh: false,
             indicatorDisplacement: 0.0,
             rebuildNotifiers: [toDoProvider],
             rebuildCallback: ({required List<ToDo> items}) {
@@ -529,5 +547,16 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
                       groupProvider.userViewModel?.checkClose ?? true;
                   vm.description = descriptionEditingController.text;
                 }),
+      );
+
+  Widget _buildCreateButton() => ValueListenableBuilder(
+        valueListenable: _createLoading,
+        builder: (BuildContext context, bool createLoading, Widget? child) =>
+            Tiles.createButton(
+          loading: createLoading,
+          outerPadding:
+              const EdgeInsets.symmetric(horizontal: Constants.padding),
+          handleCreate: createAndValidate,
+        ),
       );
 }

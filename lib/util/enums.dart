@@ -42,3 +42,7 @@ enum DeleteSchedule {
   thirtyDays,
   oneYear,
 }
+
+enum NotificationAction { set, cancel, clear }
+// this is not necessary
+// enum NotificationStatus { success, failure }

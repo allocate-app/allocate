@@ -83,3 +83,4 @@ doc/api/
 /make_config_rpm.yaml
 /dist/
 /macos/packaging/
+/mainDebug.sh

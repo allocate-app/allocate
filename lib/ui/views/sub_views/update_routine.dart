@@ -5,12 +5,15 @@ import "package:flutter/material.dart";
 import "package:flutter/semantics.dart";
 import "package:provider/provider.dart";
 
+import "../../../model/task/routine.dart";
 import "../../../model/task/subtask.dart";
 import '../../../providers/model/routine_provider.dart';
 import '../../../providers/model/subtask_provider.dart';
 import "../../../providers/viewmodels/routine_viewmodel.dart";
 import "../../../util/constants.dart";
 import "../../../util/enums.dart";
+import "../../blurred_dialog.dart";
+import "../../widgets/dialogs/check_delete_dialog.dart";
 import "../../widgets/listtile_widgets.dart";
 import "../../widgets/padded_divider.dart";
 import "../../widgets/tiles.dart";
@@ -25,6 +28,8 @@ class UpdateRoutineScreen extends StatefulWidget {
 
 class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
   late ValueNotifier<bool> _checkClose;
+  late ValueNotifier<bool> _updateLoading;
+  late ValueNotifier<bool> _deleteLoading;
   late ValueNotifier<String?> _nameErrorText;
 
   late final RoutineViewModel vm;
@@ -64,6 +69,8 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
 
   void initializeParameters() {
     _checkClose = ValueNotifier(false);
+    _updateLoading = ValueNotifier(false);
+    _deleteLoading = ValueNotifier(false);
     _nameErrorText = ValueNotifier(null);
   }
 
@@ -140,33 +147,69 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
       await Tiles.displayError(e: e);
     }).whenComplete(() {
       vm.clear();
-      Navigator.pop(context);
+      _popScreen();
     });
+  }
+
+  void _popScreen() {
+    if (mounted) {
+      Navigator.pop(context);
+    }
   }
 
   void handleClose({required bool willDiscard}) {
     if (willDiscard) {
       routineProvider.rebuild = true;
       vm.clear();
-      Navigator.pop(context);
+      _popScreen();
     }
 
     _checkClose.value = false;
   }
 
   Future<void> updateAndValidate() async {
+    _updateLoading.value = true;
     if (validateData()) {
       await handleUpdate();
     }
+    _updateLoading.value = false;
+  }
+
+  Future<void> checkAndHandleDelete() async {
+    bool checkDelete = routineProvider.userViewModel?.checkDelete ?? true;
+    // If not checking delete -> proceed
+    if (!checkDelete) {
+      return await handleDelete();
+    }
+
+    return await blurredDismissible(
+            context: context,
+            dialog: CheckDeleteDialog(dontAsk: !checkDelete, type: "Routine"))
+        .then((results) async {
+      if (null == results) {
+        return;
+      }
+
+      routineProvider.userViewModel?.checkDelete = results[1];
+
+      if (!results[0]) {
+        return;
+      }
+
+      await handleDelete();
+    });
   }
 
   Future<void> handleDelete() async {
-    return await routineProvider.deleteRoutine().catchError((e) async {
+    _deleteLoading.value = true;
+    Routine routine = vm.toModel();
+    await routineProvider.deleteRoutine(routine: routine).catchError((e) async {
       await Tiles.displayError(e: e);
     }).whenComplete(() {
       vm.clear();
-      Navigator.pop(context);
+      _popScreen();
     });
+    _deleteLoading.value = false;
   }
 
   void onFetch({List<Subtask>? items}) {
@@ -223,6 +266,51 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
   Dialog _buildDesktopDialog({
     required BuildContext context,
   }) {
+    Widget innerList = ListView(
+        padding: const EdgeInsets.only(
+          top: Constants.halfPadding,
+          left: Constants.padding,
+          right: Constants.padding,
+        ),
+        shrinkWrap: true,
+        controller: desktopScrollController,
+        physics: scrollPhysics,
+        children: [
+          Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Flexible(
+                    child: ListView(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: Constants.halfPadding),
+                        shrinkWrap: true,
+                        children: [
+                      // Title
+
+                      _buildNameTile(),
+                      _buildWeightTile(),
+                      const PaddedDivider(padding: Constants.padding),
+                      _buildDurationTile(),
+                    ])),
+                Flexible(
+                    child: ListView(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: Constants.halfPadding),
+                        physics: const NeverScrollableScrollPhysics(),
+                        shrinkWrap: true,
+                        children: [
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                            vertical: Constants.padding,
+                            horizontal: Constants.halfPadding),
+                        child: _buildSubtasksTile(),
+                      ),
+                    ]))
+              ]),
+        ]);
+
     return Dialog(
       insetPadding: const EdgeInsets.all(Constants.outerDialogPadding),
       child: ConstrainedBox(
@@ -238,60 +326,17 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
             Flexible(
               child: Material(
                 color: Colors.transparent,
-                child: ListView(
-                    padding: const EdgeInsets.only(top: Constants.halfPadding),
-                    shrinkWrap: true,
-                    controller: desktopScrollController,
-                    physics: scrollPhysics,
-                    children: [
-                      Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Flexible(
-                                child: ListView(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: Constants.halfPadding),
-                                    shrinkWrap: true,
-                                    children: [
-                                  // Title
-
-                                  _buildNameTile(),
-                                  _buildWeightTile(),
-                                  const PaddedDivider(
-                                      padding: Constants.padding),
-                                  _buildDurationTile(),
-                                ])),
-                            Flexible(
-                                child: ListView(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: Constants.halfPadding),
-                                    physics:
-                                        const NeverScrollableScrollPhysics(),
-                                    shrinkWrap: true,
-                                    children: [
-                                  Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                        vertical: Constants.padding,
-                                        horizontal: Constants.halfPadding),
-                                    child: _buildSubtasksTile(),
-                                  ),
-                                ]))
-                          ]),
-                    ]),
+                child: (layoutProvider.isMobile)
+                    ? Scrollbar(
+                        controller: desktopScrollController,
+                        child: innerList,
+                      )
+                    : innerList,
               ),
             ),
 
             const PaddedDivider(padding: Constants.halfPadding),
-            Tiles.updateAndDeleteButtons(
-              handleDelete: handleDelete,
-              updateButtonPadding:
-                  const EdgeInsets.symmetric(horizontal: Constants.padding),
-              deleteButtonPadding:
-                  const EdgeInsets.symmetric(horizontal: Constants.padding),
-              handleUpdate: updateAndValidate,
-            ),
+            _buildUpdateDeleteRow(),
           ]),
         ),
       ),
@@ -300,6 +345,23 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
 
   Dialog _buildMobileDialog(
       {required BuildContext context, bool smallScreen = false}) {
+    Widget innerList = ListView(
+      padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
+      shrinkWrap: true,
+      controller: mobileScrollController,
+      physics: scrollPhysics,
+      children: [
+        _buildNameTile(),
+        _buildWeightTile(),
+        const PaddedDivider(padding: Constants.padding),
+        // Expected Duration / RealDuration -> Show status, on click, open a dialog.
+        _buildDurationTile(),
+        const PaddedDivider(padding: Constants.padding),
+
+        _buildSubtasksTile()
+      ],
+    );
+
     return Dialog(
       insetPadding: EdgeInsets.all((smallScreen)
           ? Constants.mobileDialogPadding
@@ -314,32 +376,16 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
               _buildTitleBar(),
               const PaddedDivider(padding: Constants.halfPadding),
               Flexible(
-                child: ListView(
-                  shrinkWrap: true,
-                  controller: mobileScrollController,
-                  physics: scrollPhysics,
-                  children: [
-                    _buildNameTile(),
-                    _buildWeightTile(),
-                    const PaddedDivider(padding: Constants.padding),
-                    // Expected Duration / RealDuration -> Show status, on click, open a dialog.
-                    _buildDurationTile(),
-                    const PaddedDivider(padding: Constants.padding),
-
-                    _buildSubtasksTile()
-                  ],
-                ),
+                child: (layoutProvider.isMobile)
+                    ? Scrollbar(
+                        controller: mobileScrollController,
+                        child: innerList,
+                      )
+                    : innerList,
               ),
 
               const PaddedDivider(padding: Constants.halfPadding),
-              Tiles.updateAndDeleteButtons(
-                handleDelete: handleDelete,
-                updateButtonPadding:
-                    const EdgeInsets.symmetric(horizontal: Constants.padding),
-                deleteButtonPadding:
-                    const EdgeInsets.symmetric(horizontal: Constants.padding),
-                handleUpdate: updateAndValidate,
-              ),
+              _buildUpdateDeleteRow(),
             ]),
       ),
     );
@@ -381,6 +427,8 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
                 Tiles.nameTile(
                     context: context,
                     leading: ListTileWidgets.routineIcon(
+                      iconPadding:
+                          const EdgeInsets.all(Constants.quarterPadding),
                       outerPadding: const EdgeInsets.symmetric(
                           horizontal: Constants.halfPadding),
                       currentContext: context,
@@ -450,4 +498,23 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
                   : onRemove,
               subtasks: vm.subtasks,
               subtaskCount: routineProvider.getSubtaskCount(id: vm.id)));
+
+  Widget _buildUpdateDeleteRow() => ValueListenableBuilder(
+      valueListenable: _updateLoading,
+      builder: (BuildContext context, bool updateLoading, Widget? child) =>
+          ValueListenableBuilder(
+            valueListenable: _deleteLoading,
+            builder:
+                (BuildContext context, bool deleteLoading, Widget? child) =>
+                    Tiles.updateAndDeleteButtons(
+              updateLoading: updateLoading,
+              deleteLoading: deleteLoading,
+              handleDelete: checkAndHandleDelete,
+              updateButtonPadding:
+                  const EdgeInsets.symmetric(horizontal: Constants.padding),
+              deleteButtonPadding:
+                  const EdgeInsets.symmetric(horizontal: Constants.padding),
+              handleUpdate: updateAndValidate,
+            ),
+          ));
 }

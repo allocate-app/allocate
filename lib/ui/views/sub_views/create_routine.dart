@@ -26,6 +26,7 @@ class CreateRoutineScreen extends StatefulWidget {
 
 class _CreateRoutineScreen extends State<CreateRoutineScreen> {
   late ValueNotifier<bool> _checkClose;
+  late ValueNotifier<bool> _createLoading;
   late ValueNotifier<String?> _nameErrorText;
 
   late final RoutineViewModel vm;
@@ -55,6 +56,7 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
 
   void initializeParameters() {
     _checkClose = ValueNotifier(false);
+    _createLoading = ValueNotifier(false);
     _nameErrorText = ValueNotifier(null);
   }
 
@@ -74,6 +76,7 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
     routineProvider = Provider.of<RoutineProvider>(context, listen: false);
 
     vm = Provider.of<RoutineViewModel>(context, listen: false);
+    vm.clear();
 
     subtaskProvider = Provider.of<SubtaskProvider>(context, listen: false);
     subtaskProvider.addListener(resetSubtasks);
@@ -144,8 +147,14 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
       await Tiles.displayError(e: e);
     }).whenComplete(() {
       vm.clear();
-      Navigator.pop(context);
+      _popScreen();
     });
+  }
+
+  void _popScreen() {
+    if (mounted) {
+      Navigator.pop(context);
+    }
   }
 
   Future<void> handleClose({required bool willDiscard}) async {
@@ -159,16 +168,18 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
         await Tiles.displayError(e: e);
       }).whenComplete(() {
         vm.clear();
-        Navigator.pop(context);
+        _popScreen();
       });
     }
     _checkClose.value = false;
   }
 
   Future<void> createAndValidate() async {
+    _createLoading.value = true;
     if (validateData()) {
       await handleCreate();
     }
+    _createLoading.value = false;
   }
 
   void onFetch({List<Subtask>? items}) {
@@ -226,6 +237,51 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
   Dialog _buildDesktopDialog({
     required BuildContext context,
   }) {
+    Widget innerList = ListView(
+        padding: const EdgeInsets.only(
+          top: Constants.halfPadding,
+          left: Constants.padding,
+          right: Constants.padding,
+        ),
+        shrinkWrap: true,
+        controller: desktopScrollController,
+        physics: scrollPhysics,
+        children: [
+          Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Flexible(
+                    child: ListView(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: Constants.halfPadding),
+                        shrinkWrap: true,
+                        children: [
+                      // Title
+
+                      _buildNameTile(),
+                      _buildWeightTile(),
+                      const PaddedDivider(padding: Constants.padding),
+                      _buildDurationTile(),
+                    ])),
+                Flexible(
+                    child: ListView(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: Constants.halfPadding),
+                        physics: const NeverScrollableScrollPhysics(),
+                        shrinkWrap: true,
+                        children: [
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                            vertical: Constants.padding,
+                            horizontal: Constants.halfPadding),
+                        child: _buildSubtasksTile(),
+                      ),
+                    ]))
+              ]),
+        ]);
+
     return Dialog(
       insetPadding: const EdgeInsets.all(Constants.outerDialogPadding),
       child: ConstrainedBox(
@@ -241,57 +297,17 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
             Flexible(
               child: Material(
                 color: Colors.transparent,
-                child: ListView(
-                    padding: const EdgeInsets.only(top: Constants.halfPadding),
-                    shrinkWrap: true,
-                    controller: desktopScrollController,
-                    physics: scrollPhysics,
-                    children: [
-                      Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Flexible(
-                                child: ListView(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: Constants.halfPadding),
-                                    shrinkWrap: true,
-                                    children: [
-                                  // Title
-
-                                  _buildNameTile(),
-                                  _buildWeightTile(),
-                                  const PaddedDivider(
-                                      padding: Constants.padding),
-                                  _buildDurationTile(),
-                                ])),
-                            Flexible(
-                                child: ListView(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: Constants.halfPadding),
-                                    physics:
-                                        const NeverScrollableScrollPhysics(),
-                                    shrinkWrap: true,
-                                    children: [
-                                  Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                        vertical: Constants.padding,
-                                        horizontal: Constants.halfPadding),
-                                    child: _buildSubtasksTile(),
-                                  ),
-                                ]))
-                          ]),
-                    ]),
+                child: (layoutProvider.isMobile)
+                    ? Scrollbar(
+                        controller: desktopScrollController,
+                        child: innerList,
+                      )
+                    : innerList,
               ),
             ),
 
             const PaddedDivider(padding: Constants.halfPadding),
-            Tiles.createButton(
-              outerPadding:
-                  const EdgeInsets.symmetric(horizontal: Constants.padding),
-              handleCreate: createAndValidate,
-            ),
+            _buildCreateButton(),
           ]),
         ),
       ),
@@ -300,6 +316,23 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
 
   Dialog _buildMobileDialog(
       {required BuildContext context, bool smallScreen = false}) {
+    Widget innerList = ListView(
+      padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
+      shrinkWrap: true,
+      controller: mobileScrollController,
+      physics: scrollPhysics,
+      children: [
+        _buildNameTile(),
+        _buildWeightTile(),
+        const PaddedDivider(padding: Constants.padding),
+        // Expected Duration / RealDuration -> Show status, on click, open a dialog.
+        _buildDurationTile(),
+        const PaddedDivider(padding: Constants.padding),
+
+        _buildSubtasksTile()
+      ],
+    );
+
     return Dialog(
       insetPadding: EdgeInsets.all((smallScreen)
           ? Constants.mobileDialogPadding
@@ -314,29 +347,16 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
               _buildTitleBar(),
               const PaddedDivider(padding: Constants.halfPadding),
               Flexible(
-                child: ListView(
-                  shrinkWrap: true,
-                  controller: mobileScrollController,
-                  physics: scrollPhysics,
-                  children: [
-                    _buildNameTile(),
-                    _buildWeightTile(),
-                    const PaddedDivider(padding: Constants.padding),
-                    // Expected Duration / RealDuration -> Show status, on click, open a dialog.
-                    _buildDurationTile(),
-                    const PaddedDivider(padding: Constants.padding),
-
-                    _buildSubtasksTile()
-                  ],
-                ),
+                child: (layoutProvider.isMobile)
+                    ? Scrollbar(
+                        controller: mobileScrollController,
+                        child: innerList,
+                      )
+                    : innerList,
               ),
 
               const PaddedDivider(padding: Constants.halfPadding),
-              Tiles.createButton(
-                outerPadding:
-                    const EdgeInsets.symmetric(horizontal: Constants.padding),
-                handleCreate: createAndValidate,
-              ),
+              _buildCreateButton(),
             ]),
       ),
     );
@@ -378,6 +398,8 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
                 Tiles.nameTile(
                     context: context,
                     leading: ListTileWidgets.routineIcon(
+                      iconPadding:
+                          const EdgeInsets.all(Constants.quarterPadding),
                       outerPadding: const EdgeInsets.symmetric(
                           horizontal: Constants.halfPadding),
                       currentContext: context,
@@ -447,4 +469,15 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
                   : onRemove,
               subtasks: vm.subtasks,
               subtaskCount: routineProvider.getSubtaskCount(id: vm.id)));
+
+  Widget _buildCreateButton() => ValueListenableBuilder(
+        valueListenable: _createLoading,
+        builder: (BuildContext context, bool createLoading, Widget? child) =>
+            Tiles.createButton(
+          loading: createLoading,
+          outerPadding:
+              const EdgeInsets.symmetric(horizontal: Constants.padding),
+          handleCreate: createAndValidate,
+        ),
+      );
 }

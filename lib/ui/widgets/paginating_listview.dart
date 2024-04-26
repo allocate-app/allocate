@@ -59,14 +59,17 @@ class PaginatingListview<T extends IModel> extends StatefulWidget {
   State<PaginatingListview<T>> createState() => _PaginatingListview();
 }
 
-// Come back to this if it's needed.
+// TODO: add support for another listener to activate refresh:
+// for pages with nested scrollers, this breaks.
+// affected screens: Notifications, create/update group
+// Pages with (currently) lost functionality: Create/Update ToDo/Routine - listener would restore.
 class _PaginatingListview<T extends IModel>
     extends State<PaginatingListview<T>> {
   late final Paginator<T> paginator;
   late final ChangeNotifier? resetNotifier;
   late final ScrollController scrollController;
   late final ScrollPhysics scrollPhysics;
-  late final ScrollPhysics refreshPhysics;
+  late ScrollPhysics refreshPhysics;
 
   late ValueKey<int> _animationKey;
   late ValueKey<int> Function() getAnimationKey;
@@ -174,16 +177,88 @@ class _PaginatingListview<T extends IModel>
       return;
     }
 
-    return await paginator.appendData().catchError(onError);
+    await paginator.appendData().catchError(onError);
   }
+
+  // // This is a workaround - flutter has an ongoing issue with nested scroll competition.
+  // // TBH, not sold - might just make inner listviews non-scrollable.
+  // bool _handleNotification(ScrollNotification notification) {
+  //   if (notification is OverscrollNotification) {
+  //     double delta = notification.dragDetails?.delta.dy ?? 0;
+  //     // Abstract this out to a constant.
+  //     if (delta > 30) {
+  //       return false;
+  //     }
+  //
+  //     // Temporarily disable scrolling?
+  //     // print("disabling");
+  //     setState(() {
+  //       refreshPhysics = NeverScrollableScrollPhysics(parent: scrollPhysics);
+  //     });
+  //   }
+  //
+  //   // TODO: implement a better solution.
+  //   // Pass down state from the parent scrollbar and use that to turn scrolling back on
+  //   // for refresh.
+  //   if (notification is UserScrollNotification) {
+  //     if (notification.direction == ScrollDirection.idle) {
+  //       Future.delayed(const Duration(milliseconds: 3000)).whenComplete(() {
+  //         // print("re-enabling");
+  //         setState(() {
+  //           refreshPhysics =
+  //               AlwaysScrollableScrollPhysics(parent: scrollPhysics);
+  //         });
+  //       });
+  //     }
+  //   }
+  //
+  //   return false;
+  // }
 
   @override
   Widget build(context) {
+    // This is a workaround for Flutter's change to scrollbars.
+    Widget list = NotificationListener<ScrollNotification>(
+      child: ListView(
+        shrinkWrap: true,
+        controller: scrollController,
+        physics: refreshPhysics,
+        children: [
+          IgnorePointer(
+            ignoring: animating,
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: Constants.slideInTime),
+              reverseDuration:
+                  const Duration(milliseconds: Constants.fadeOutTime),
+              switchInCurve: Curves.fastLinearToSlowEaseIn,
+              switchOutCurve: Curves.linear,
+              transitionBuilder: (Widget child, Animation<double> animation) {
+                if (child.key == getAnimationKey()) {
+                  return SlideTransition(
+                    position: Constants.offsetIn.animate(animation),
+                    child: child,
+                  );
+                }
+                return FadeTransition(opacity: animation, child: child);
+              },
+              child: widget.listviewBuilder(
+                key: _animationKey,
+                context: context,
+                items: paginator.items!,
+                onRemove: widget.onRemove,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
     return MouseRegion(
       onEnter: (PointerEvent details) {
         if (widget.pullToRefresh) {
           _refreshFocusNode.requestFocus();
         }
+        // _refreshFocusNode.requestFocus();
       },
       onExit: (PointerEvent details) {
         _refreshFocusNode.unfocus();
@@ -195,6 +270,7 @@ class _PaginatingListview<T extends IModel>
             if (widget.pullToRefresh) {
               _refreshIndicatorKey.currentState?.show();
             }
+            // _refreshIndicatorKey.currentState?.show();
           }
         },
         child: Focus(
@@ -207,40 +283,9 @@ class _PaginatingListview<T extends IModel>
               onRefresh: () async {
                 await paginator.resetPagination().catchError(onError);
               },
-              child: ListView(
-                shrinkWrap: true,
-                controller: scrollController,
-                physics: refreshPhysics,
-                children: [
-                  IgnorePointer(
-                    ignoring: animating,
-                    child: AnimatedSwitcher(
-                      duration:
-                          const Duration(milliseconds: Constants.slideInTime),
-                      reverseDuration:
-                          const Duration(milliseconds: Constants.fadeOutTime),
-                      switchInCurve: Curves.fastLinearToSlowEaseIn,
-                      switchOutCurve: Curves.linear,
-                      transitionBuilder:
-                          (Widget child, Animation<double> animation) {
-                        if (child.key == getAnimationKey()) {
-                          return SlideTransition(
-                            position: Constants.offsetIn.animate(animation),
-                            child: child,
-                          );
-                        }
-                        return FadeTransition(opacity: animation, child: child);
-                      },
-                      child: widget.listviewBuilder(
-                        key: _animationKey,
-                        context: context,
-                        items: paginator.items!,
-                        onRemove: widget.onRemove,
-                      ),
-                    ),
-                  ),
-                ],
-              )),
+              child: (Platform.isIOS || Platform.isAndroid)
+                  ? Scrollbar(controller: scrollController, child: list)
+                  : list),
         ),
       ),
     );

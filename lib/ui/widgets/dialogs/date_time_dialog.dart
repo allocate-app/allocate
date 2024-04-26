@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:jiffy/jiffy.dart';
 import 'package:provider/provider.dart';
 
-import '../../providers/application/layout_provider.dart';
-import '../../util/constants.dart';
+import '../../../providers/application/layout_provider.dart';
+import '../../../util/constants.dart';
 
 class DateTimeDialog extends StatefulWidget {
   const DateTimeDialog({super.key, this.header = "", this.date, this.time});

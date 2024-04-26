@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import "package:flutter/services.dart";
 import "package:flutter_acrylic/flutter_acrylic.dart";
 import "package:provider/provider.dart";
+import "package:tray_manager/tray_manager.dart";
 import "package:win32_registry/win32_registry.dart";
 import "package:window_manager/window_manager.dart";
 
@@ -27,18 +28,30 @@ void main() async {
   // GLOBAL APP SCHEDULER
   DailyResetService.instance.init();
 
-  // iPadOS (and hopefully some android tablets) should ignore this.
-  if (Platform.isIOS || Platform.isAndroid) {
+  FlutterView? view = PlatformDispatcher.instance.implicitView;
+
+  Size? size = view?.physicalSize;
+  double? pixelRatio = view?.devicePixelRatio;
+  double logicalSize = (size?.shortestSide ?? 0) / (pixelRatio ?? 1);
+
+  bool isTablet = logicalSize >= Constants.smallScreen;
+
+  // iPad ignores this, Android tablets do not.
+  if ((Platform.isIOS || Platform.isAndroid) && !isTablet) {
     await SystemChrome.setPreferredOrientations(
         [DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]);
-  } else {
+  }
+
+  if (!(Platform.isIOS || Platform.isAndroid)) {
     await windowManager.ensureInitialized();
     await windowManager.setResizable(true);
     if (Platform.isWindows) {
       await windowManager.setAsFrameless();
+      await register(Constants.scheme);
     }
 
     WindowOptions windowOptions = WindowOptions(
+      title: "Allocate",
       size: (Platform.isMacOS)
           ? Constants.defaultMacOSSize
           : Constants.defaultSize,
@@ -46,11 +59,6 @@ void main() async {
           (kDebugMode) ? Constants.testDesktopSize : Constants.minDesktopSize,
       center: true,
     );
-
-    // For windows -> register deeplinking.
-    if (Platform.isWindows) {
-      await register(Constants.scheme);
-    }
 
     // For flutter acrylic + MacOS.
     await Window.initialize();
@@ -62,7 +70,7 @@ void main() async {
       await windowManager.show();
       await windowManager.focus();
       // TODO: minimize to taskbar
-      // await windowManager.setPreventClose(true);
+      await windowManager.setPreventClose(true);
     });
   }
 
@@ -89,9 +97,13 @@ void main() async {
         update: (BuildContext context, UserViewModel vm, UserProvider? up) {
           if (null == up) {
             up = UserProvider(viewModel: vm);
-            up.init();
+            up.init(firstLaunch: false);
           }
-          up.shouldUpdate = true;
+
+          if (vm.pushUpdate) {
+            up.updateUser();
+          }
+
           return up;
         }),
     ChangeNotifierProxyProvider<UserProvider, ToDoProvider>(
@@ -208,7 +220,7 @@ class MyApp extends StatefulWidget {
   State<MyApp> createState() => _MyAppState();
 }
 
-class _MyAppState extends State<MyApp> {
+class _MyAppState extends State<MyApp> with WindowListener, TrayListener {
   late final AppRouter _appRouter;
 
   // Having difficulty getting applinks to work with approuter.
@@ -219,14 +231,33 @@ class _MyAppState extends State<MyApp> {
   void initState() {
     super.initState();
     _appRouter = ApplicationService.instance.appRouter;
+    if (!(Platform.isAndroid || Platform.isIOS)) {
+      windowManager.addListener(this);
+      trayManager.addListener(this);
+      // TODO: system tray.
+    }
     // _appLinks = AppLinks();
     // _initDeepLinking();
   }
 
   @override
   void dispose() {
-    // _subscription?.cancel();
+    if (!(Platform.isAndroid || Platform.isIOS)) {
+      windowManager.removeListener(this);
+      trayManager.removeListener(this);
+    }
     super.dispose();
+  }
+
+  @override
+  void onWindowClose() async {
+    if (Platform.isWindows || Platform.isLinux) {
+      await windowManager.destroy();
+    }
+    // TODO: test -> unsure whether this returns on icon click.
+    if (Platform.isMacOS) {
+      await windowManager.hide();
+    }
   }
 
   // Future<void> _initDeepLinking() async{
@@ -314,8 +345,9 @@ class _MyAppState extends State<MyApp> {
             }
             return DeepLink([
               SplashRoute(
-                  initialIndex:
-                      Constants.viewRoutes.indexOf(Constants.settingsScreen))
+                initialIndex:
+                    Constants.viewRoutes.indexOf(Constants.settingsScreen),
+              )
             ]);
           }
 
@@ -329,17 +361,15 @@ class _MyAppState extends State<MyApp> {
             }
             return DeepLink([
               SplashRoute(
-                  initialIndex:
-                      Constants.viewRoutes.indexOf(Constants.settingsScreen))
+                initialIndex:
+                    Constants.viewRoutes.indexOf(Constants.settingsScreen),
+              )
             ]);
           }
 
           // This is just "root".
-          return DeepLink.defaultPath;
+          return DeepLink([SplashRoute(initialIndex: 0)]);
         }),
-        // These are no longer needed
-        // routerDelegate: _appRouter.delegate(),
-        // routeInformationParser: _appRouter.defaultRouteParser(),
       );
     });
   }

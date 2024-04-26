@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:provider/provider.dart';
 
+import '../../../model/task/group.dart';
 import '../../../model/task/todo.dart';
 import '../../../providers/application/layout_provider.dart';
 import '../../../providers/model/group_provider.dart';
@@ -16,6 +17,7 @@ import '../../../providers/viewmodels/todo_viewmodel.dart';
 import '../../../util/constants.dart';
 import '../../../util/enums.dart';
 import '../../blurred_dialog.dart';
+import '../../widgets/dialogs/check_delete_dialog.dart';
 import '../../widgets/expanded_listtile.dart';
 import '../../widgets/flushbars.dart';
 import '../../widgets/listtile_widgets.dart';
@@ -37,6 +39,8 @@ class UpdateGroupScreen extends StatefulWidget {
 
 class _UpdateGroupScreen extends State<UpdateGroupScreen> {
   late ValueNotifier<bool> _checkClose;
+  late ValueNotifier<bool> _updateLoading;
+  late ValueNotifier<bool> _deleteLoading;
   late ValueNotifier<String?> _nameErrorText;
 
   // Providers
@@ -78,6 +82,8 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
 
   void initializeParameters() {
     _checkClose = ValueNotifier(false);
+    _updateLoading = ValueNotifier(false);
+    _deleteLoading = ValueNotifier(false);
     _nameErrorText = ValueNotifier(null);
   }
 
@@ -171,19 +177,27 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
     await toDoProvider.updateToDo(toDo: toDo);
   }
 
+  void _popScreen() {
+    if (mounted) {
+      Navigator.pop(context);
+    }
+  }
+
   void handleClose({required bool willDiscard}) {
     if (willDiscard) {
       vm.clear();
       groupProvider.rebuild = true;
-      return Navigator.pop(context);
+      return _popScreen();
     }
     _checkClose.value = false;
   }
 
   Future<void> updateAndValidate() async {
+    _updateLoading.value = true;
     if (validateData()) {
       await handleUpdate();
     }
+    _updateLoading.value = false;
   }
 
   Future<void> handleUpdate() async {
@@ -191,17 +205,46 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
       await Tiles.displayError(e: e);
     }).whenComplete(() {
       vm.clear();
-      Navigator.pop(context);
+      _popScreen();
+    });
+  }
+
+  Future<void> checkAndHandleDelete() async {
+    bool checkDelete = groupProvider.userViewModel?.checkDelete ?? true;
+    // If not checking delete -> proceed
+    if (!checkDelete) {
+      return await handleDelete();
+    }
+
+    return await blurredDismissible(
+            context: context,
+            dialog: CheckDeleteDialog(dontAsk: !checkDelete, type: "Group"))
+        .then((results) async {
+      if (null == results) {
+        return;
+      }
+
+      groupProvider.userViewModel?.checkDelete = results[1];
+
+      if (!results[0]) {
+        return;
+      }
+
+      await handleDelete();
     });
   }
 
   Future<void> handleDelete() async {
-    await groupProvider.deleteGroup().catchError((e) async {
+    _deleteLoading.value = true;
+    Group group = vm.toModel();
+    await groupProvider.deleteGroup(group: group).catchError((e) async {
       await Tiles.displayError(e: e);
     }).whenComplete(() {
       vm.clear();
-      Navigator.pop(context);
+      _popScreen();
     });
+
+    _deleteLoading.value = false;
   }
 
   void onFetch({List<ToDo>? items}) {
@@ -244,6 +287,52 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
       );
 
   Dialog _buildDesktopDialog({required BuildContext context}) {
+    Widget innerList = ListView(
+      padding: const EdgeInsets.only(
+        top: Constants.halfPadding,
+        left: Constants.padding,
+        right: Constants.padding,
+      ),
+      shrinkWrap: true,
+      physics: scrollPhysics,
+      controller: desktopScrollController,
+      children: [
+        Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Flexible(
+                  // Name And Description.
+                  child: ListView(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: Constants.padding),
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      children: [
+                    // Name
+
+                    _buildNameTile(),
+
+                    _buildToDosTile(),
+                  ])),
+              Flexible(
+                child: ListView(
+                    physics: const NeverScrollableScrollPhysics(),
+                    shrinkWrap: true,
+                    padding: const EdgeInsets.symmetric(
+                        vertical: Constants.padding,
+                        horizontal: Constants.halfPadding),
+                    children: [
+                      _buildDescriptionTile(
+                          minLines: Constants.desktopMinLines,
+                          maxLines: Constants.desktopMaxLinesBeforeScroll)
+                    ]),
+              )
+            ]),
+      ],
+    );
+
     return Dialog(
       insetPadding: const EdgeInsets.all(Constants.outerDialogPadding),
       child: ConstrainedBox(
@@ -264,63 +353,17 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
                 Flexible(
                   child: Material(
                     color: Colors.transparent,
-                    child: ListView(
-                      padding:
-                          const EdgeInsets.only(top: Constants.halfPadding),
-                      shrinkWrap: true,
-                      physics: scrollPhysics,
-                      controller: desktopScrollController,
-                      children: [
-                        Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Flexible(
-                                  // Name And Description.
-                                  child: ListView(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: Constants.padding),
-                                      shrinkWrap: true,
-                                      physics:
-                                          const NeverScrollableScrollPhysics(),
-                                      children: [
-                                    // Name
-
-                                    _buildNameTile(),
-
-                                    _buildToDosTile(),
-                                  ])),
-                              Flexible(
-                                child: ListView(
-                                    physics:
-                                        const NeverScrollableScrollPhysics(),
-                                    shrinkWrap: true,
-                                    padding: const EdgeInsets.symmetric(
-                                        vertical: Constants.padding,
-                                        horizontal: Constants.halfPadding),
-                                    children: [
-                                      _buildDescriptionTile(
-                                          minLines: Constants.desktopMinLines,
-                                          maxLines: Constants
-                                              .desktopMaxLinesBeforeScroll)
-                                    ]),
-                              )
-                            ]),
-                      ],
-                    ),
+                    child: (layoutProvider.isMobile)
+                        ? Scrollbar(
+                            controller: desktopScrollController,
+                            child: innerList,
+                          )
+                        : innerList,
                   ),
                 ),
 
                 const PaddedDivider(padding: Constants.halfPadding),
-                Tiles.updateAndDeleteButtons(
-                  handleDelete: handleDelete,
-                  handleUpdate: updateAndValidate,
-                  updateButtonPadding:
-                      const EdgeInsets.symmetric(horizontal: Constants.padding),
-                  deleteButtonPadding:
-                      const EdgeInsets.symmetric(horizontal: Constants.padding),
-                )
+                _buildUpdateDeleteRow(),
               ]),
         ),
       ),
@@ -329,6 +372,18 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
 
   Dialog _buildMobileDialog(
       {required BuildContext context, required bool smallScreen}) {
+    Widget innerList = ListView(
+        padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
+        shrinkWrap: true,
+        controller: mobileScrollController,
+        physics: scrollPhysics,
+        children: [
+          _buildNameTile(),
+          _buildToDosTile(),
+          const PaddedDivider(padding: Constants.padding),
+          _buildDescriptionTile(mobile: smallScreen),
+        ]);
+
     return Dialog(
       insetPadding: EdgeInsets.all((smallScreen)
           ? Constants.mobileDialogPadding
@@ -342,26 +397,15 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
               _buildTitleBar(),
               const PaddedDivider(padding: Constants.halfPadding),
               Flexible(
-                child: ListView(
-                    shrinkWrap: true,
-                    controller: mobileScrollController,
-                    physics: scrollPhysics,
-                    children: [
-                      _buildNameTile(),
-                      _buildToDosTile(),
-                      const PaddedDivider(padding: Constants.padding),
-                      _buildDescriptionTile(mobile: smallScreen),
-                    ]),
+                child: (layoutProvider.isMobile)
+                    ? Scrollbar(
+                        controller: mobileScrollController,
+                        child: innerList,
+                      )
+                    : innerList,
               ),
               const PaddedDivider(padding: Constants.halfPadding),
-              Tiles.updateAndDeleteButtons(
-                handleDelete: handleDelete,
-                handleUpdate: updateAndValidate,
-                updateButtonPadding:
-                    const EdgeInsets.symmetric(horizontal: Constants.padding),
-                deleteButtonPadding:
-                    const EdgeInsets.symmetric(horizontal: Constants.padding),
-              )
+              _buildUpdateDeleteRow(),
             ]),
       ),
     );
@@ -370,6 +414,8 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
   // This could be factored into the tiles class.
   Widget _buildToDosTile(
       {ScrollPhysics physics = const NeverScrollableScrollPhysics()}) {
+    // TODO: make fix in create group tile.
+    // Factor out.
     return ExpandedListTile(
       initiallyExpanded: true,
       title: const AutoSizeText("Tasks",
@@ -382,13 +428,12 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
       children: [
         PaginatingListview<ToDo>(
             items: vm.toDos,
-            query: (
-                    {int limit = Constants.minLimitPerQuery,
-                    int offset = 0}) async =>
+            query: ({int limit = Constants.intMax, int offset = 0}) async =>
                 await groupProvider.getToDosByGroupID(
                     id: vm.id, limit: limit, offset: offset),
             offset: vm.toDos.length,
             indicatorDisplacement: 0.0,
+            pullToRefresh: false,
             rebuildNotifiers: [toDoProvider],
             rebuildCallback: ({required List<ToDo> items}) {
               vm.toDos = items;
@@ -544,4 +589,22 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
                   vm.description = descriptionEditingController.text;
                 }),
       );
+
+  Widget _buildUpdateDeleteRow() => ValueListenableBuilder(
+      valueListenable: _updateLoading,
+      builder: (BuildContext context, bool updateLoading, Widget? child) =>
+          ValueListenableBuilder(
+              valueListenable: _deleteLoading,
+              builder:
+                  (BuildContext context, bool deleteLoading, Widget? child) =>
+                      Tiles.updateAndDeleteButtons(
+                        updateLoading: updateLoading,
+                        deleteLoading: deleteLoading,
+                        handleDelete: checkAndHandleDelete,
+                        handleUpdate: updateAndValidate,
+                        updateButtonPadding: const EdgeInsets.symmetric(
+                            horizontal: Constants.padding),
+                        deleteButtonPadding: const EdgeInsets.symmetric(
+                            horizontal: Constants.padding),
+                      )));
 }

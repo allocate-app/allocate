@@ -115,7 +115,9 @@ class _SignInDialog extends State<SignInDialog> {
         throw LoginFailedException("Sign-in error, please retry.");
       }
 
-      Navigator.pop(context);
+      if (mounted) {
+        Navigator.pop(context);
+      }
     }).catchError((e) async {
       await Tiles.displayError(e: e);
     });

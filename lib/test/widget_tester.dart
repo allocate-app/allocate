@@ -6,12 +6,11 @@ import 'package:flex_seed_scheme/flex_seed_scheme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_acrylic/flutter_acrylic.dart';
-import 'package:flutter_expandable_fab/flutter_expandable_fab.dart';
 import 'package:provider/provider.dart';
 import 'package:window_manager/window_manager.dart';
 
 import '../services/application_service.dart';
-import '../ui/widgets/main_floating_action_button.dart';
+import '../ui/widgets/tiles.dart';
 import '../util/constants.dart';
 
 // This may require providers. Right now, this is just so I can build GUI things without
@@ -70,10 +69,46 @@ void main() async {
   //   }),
   // );
 
+  // Widget testWidget = Scaffold(
+  //     body: const Center(child: Text("FAB TESTER")),
+  //     floatingActionButtonLocation: ExpandableFab.location,
+  //     floatingActionButton: const MainFloatingActionButton());
+
+  ValueNotifier updateLoading = ValueNotifier(false);
+  ValueNotifier deleteLoading = ValueNotifier(false);
   Widget testWidget = Scaffold(
-      body: const Center(child: Text("FAB TESTER")),
-      floatingActionButtonLocation: ExpandableFab.location,
-      floatingActionButton: const MainFloatingActionButton());
+    body: Center(
+        child: ValueListenableBuilder(
+      valueListenable: updateLoading,
+      builder: (BuildContext context, updateLoading, Widget? child) =>
+          ValueListenableBuilder(
+        valueListenable: deleteLoading,
+        builder: (BuildContext context, deleteLoading, Widget? child) =>
+            Tiles.updateAndDeleteButtons(
+                updateLoading: updateLoading,
+                deleteLoading: deleteLoading,
+                updateButtonPadding:
+                    const EdgeInsets.symmetric(horizontal: Constants.padding),
+                deleteButtonPadding:
+                    const EdgeInsets.symmetric(horizontal: Constants.padding),
+                // Simulate delete + update logique.
+                handleDelete: () async {
+                  print("Clicked");
+                  deleteLoading.value = true;
+                  await Future.delayed(const Duration(seconds: 2));
+                  deleteLoading.value = false;
+                  print("Done");
+                },
+                handleUpdate: () async {
+                  print("Clicked");
+                  updateLoading.value = true;
+                  await Future.delayed(const Duration(seconds: 2));
+                  updateLoading.value = false;
+                  print("Done");
+                }),
+      ),
+    )),
+  );
 
   runApp(MultiProvider(providers: [
     ChangeNotifierProvider<LayoutProvider>(create: (_) {

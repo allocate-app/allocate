@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:developer';
+import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:jiffy/jiffy.dart';
@@ -63,8 +64,15 @@ class ReminderProvider extends ChangeNotifier {
     _reminderRepo.addListener(scheduleAndNotify);
   }
 
+  // TODO: repo init should be async.
   Future<void> init() async {
     _reminderRepo.init();
+
+    // Local notifications implementation for Linux/Windows doesn't have scheduling api.
+    // Must be loaded into memory on init.
+    if (Platform.isLinux || Platform.isWindows) {
+      await batchNotifications();
+    }
     notifyListeners();
   }
 

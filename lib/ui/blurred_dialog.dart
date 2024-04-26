@@ -11,7 +11,6 @@ Future<T?> blurredDismissible<T>({
   required BuildContext context,
   required Widget dialog,
 }) {
-
   return showGeneralDialog<T>(
     context: context,
     barrierDismissible: true,
@@ -23,7 +22,10 @@ Future<T?> blurredDismissible<T>({
       // There does not seem to be a way to skirt the barrier for the windows taskbar.
 
       return Stack(children: [
-        TitlebarSafeArea(child: SafeArea(child: dialog)),
+        TitlebarSafeArea(
+            child: SafeArea(
+                child: MediaQuery.removeViewInsets(
+                    context: context, removeBottom: true, child: dialog))),
         if (Platform.isWindows) ...windowsTitlebar(),
       ]);
     },
@@ -56,12 +58,15 @@ Future<T?> blurredNonDismissible<T>({
       return Stack(children: [
         TitlebarSafeArea(
           child: SafeArea(
+              maintainBottomViewPadding: true,
               child: GestureDetector(
                   behavior: HitTestBehavior.translucent,
                   onTap: () {
                     FocusScope.of(context).unfocus();
                   },
-                  child: dialog)),
+                  // Soft keyboard smooshes the dialog.
+                  child: MediaQuery.removeViewInsets(
+                      context: context, removeBottom: true, child: dialog))),
         ),
         if (Platform.isWindows) ...windowsTitlebar(),
       ]);

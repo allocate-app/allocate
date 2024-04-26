@@ -27,6 +27,7 @@ class CreateReminderScreen extends StatefulWidget {
 
 class _CreateReminderScreen extends State<CreateReminderScreen> {
   late ValueNotifier<bool> _checkClose;
+  late ValueNotifier<bool> _createLoading;
   late ValueNotifier<String?> _nameErrorText;
 
   late final ReminderProvider reminderProvider;
@@ -52,12 +53,14 @@ class _CreateReminderScreen extends State<CreateReminderScreen> {
   void initializeProviders() {
     reminderProvider = Provider.of<ReminderProvider>(context, listen: false);
     vm = Provider.of<ReminderViewModel>(context, listen: false);
+    vm.clear();
     eventProvider = Provider.of<EventProvider>(context, listen: false);
     layoutProvider = Provider.of<LayoutProvider>(context, listen: false);
   }
 
   void initializeParameters() {
     _checkClose = ValueNotifier(false);
+    _createLoading = ValueNotifier(false);
     _nameErrorText = ValueNotifier(null);
   }
 
@@ -99,12 +102,17 @@ class _CreateReminderScreen extends State<CreateReminderScreen> {
       }
     }
 
-    if (!reminderProvider.validateDueDate(
-        dueDate: vm.mergeDateTime(date: vm.dueDate, time: vm.dueTime))) {
-      valid = false;
+    try {
+      if (!reminderProvider.validateDueDate(
+          dueDate: vm.mergeDateTime(date: vm.dueDate, time: vm.dueTime))) {
+        valid = false;
 
-      Tiles.displayError(
-          e: InvalidDateException("Due date must be later than now."));
+        Tiles.displayError(
+            e: InvalidDateException("Due date must be later than now."));
+      }
+    } on Exception catch (e) {
+      valid = false;
+      Tiles.displayError(e: e);
     }
 
     if (vm.frequency == Frequency.custom) {
@@ -126,28 +134,56 @@ class _CreateReminderScreen extends State<CreateReminderScreen> {
       await Tiles.displayError(e: e);
     }).whenComplete(() {
       vm.clear();
-      Navigator.pop(context);
+      _popScreen();
     });
+  }
+
+  void _popScreen() {
+    if (mounted) {
+      Navigator.pop(context);
+    }
   }
 
   void handleClose({required bool willDiscard}) {
     if (willDiscard) {
       vm.clear();
-      Navigator.pop(context);
+      _popScreen();
     }
 
     _checkClose.value = false;
   }
 
   Future<void> createAndValidate() async {
+    _createLoading.value = true;
     if (validateData()) {
       await handleCreate();
     }
+    _createLoading.value = false;
   }
 
   @override
   Widget build(BuildContext context) => LayoutBuilder(
         builder: (BuildContext context, BoxConstraints constraints) {
+          Widget innerList = ListView(
+              padding: const EdgeInsets.only(
+                top: Constants.halfPadding,
+                left: Constants.padding,
+                right: Constants.padding,
+              ),
+              shrinkWrap: true,
+              controller: mainScrollController,
+              physics: scrollPhysics,
+              children: [
+                _buildNameTile(),
+
+                const PaddedDivider(padding: Constants.halfPadding),
+
+                _buildDueDateTile(),
+
+                // Repeatable Stuff -> Show status, on click, open a dialog.
+                _buildRepeatableTile(),
+              ]);
+
           return Dialog(
               insetPadding: EdgeInsets.all((layoutProvider.smallScreen)
                   ? Constants.mobileDialogPadding
@@ -169,29 +205,14 @@ class _CreateReminderScreen extends State<CreateReminderScreen> {
                           const PaddedDivider(padding: Constants.halfPadding),
 
                           Flexible(
-                              child: ListView(
-                                  padding: const EdgeInsets.only(
-                                      top: Constants.halfPadding),
-                                  shrinkWrap: true,
-                                  controller: mainScrollController,
-                                  physics: scrollPhysics,
-                                  children: [
-                                _buildNameTile(),
-
-                                const PaddedDivider(
-                                    padding: Constants.halfPadding),
-
-                                _buildDueDateTile(),
-
-                                // Repeatable Stuff -> Show status, on click, open a dialog.
-                                _buildRepeatableTile(),
-                              ])),
+                              child: (layoutProvider.isMobile)
+                                  ? Scrollbar(
+                                      controller: mainScrollController,
+                                      child: innerList,
+                                    )
+                                  : innerList),
                           const PaddedDivider(padding: Constants.halfPadding),
-                          Tiles.createButton(
-                            outerPadding: const EdgeInsets.symmetric(
-                                horizontal: Constants.padding),
-                            handleCreate: createAndValidate,
-                          ),
+                          _buildCreateButton(),
                         ]),
                   )));
         },
@@ -219,6 +240,8 @@ class _CreateReminderScreen extends State<CreateReminderScreen> {
                     leading: ListTileWidgets.reminderIcon(
                       currentContext: context,
                       iconPadding: const EdgeInsets.all(Constants.padding),
+                      outerPadding: const EdgeInsets.symmetric(
+                          horizontal: Constants.halfPadding),
                     ),
                     errorText: errorText,
                     hintText: "Reminder Name",
@@ -311,5 +334,16 @@ class _CreateReminderScreen extends State<CreateReminderScreen> {
                     ],
                   )
                 : const SizedBox.shrink(),
+      );
+
+  Widget _buildCreateButton() => ValueListenableBuilder(
+        valueListenable: _createLoading,
+        builder: (BuildContext context, bool createLoading, Widget? child) =>
+            Tiles.createButton(
+          loading: createLoading,
+          outerPadding:
+              const EdgeInsets.symmetric(horizontal: Constants.padding),
+          handleCreate: createAndValidate,
+        ),
       );
 }

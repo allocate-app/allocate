@@ -791,7 +791,7 @@ class DeadlineRepo extends ChangeNotifier implements DeadlineRepository {
           {int limit = Constants.minLimitPerQuery, int offset = 0}) async =>
       await _isarClient.deadlines
           .where()
-          .dueDateGreaterThan(Constants.today)
+          .dueDateGreaterThan(DateTime.now())
           .filter()
           .toDeleteEqualTo(false)
           .group((q) => q
@@ -811,7 +811,7 @@ class DeadlineRepo extends ChangeNotifier implements DeadlineRepository {
           .where()
           .dueDateIsNotNull()
           .filter()
-          .dueDateLessThan(Constants.today)
+          .dueDateLessThan(DateTime.now())
           .toDeleteEqualTo(false)
           .group((q) => q
               .repeatableStateEqualTo(RepeatableState.normal)

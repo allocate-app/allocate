@@ -100,6 +100,8 @@ class _MainFloatingActionButton extends State<MainFloatingActionButton> {
                     await blurredNonDismissible(
                         context: context, dialog: const CreateReminderScreen());
                   }),
+
+              // TODO: refactor this to hard-sync once implementation is finished.
               if (isConnected)
                 FloatingActionButton(
                     shape: const CircleBorder(),

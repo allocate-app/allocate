@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:provider/provider.dart';
@@ -21,10 +23,14 @@ class UpdateSubtaskScreen extends StatefulWidget {
 class _UpdateSubtaskScreen extends State<UpdateSubtaskScreen> {
   late ValueNotifier<bool> _checkClose;
   late ValueNotifier<String?> _nameErrorText;
+  late ValueNotifier<bool> _updateLoading;
+  late ValueNotifier<bool> _deleteLoading;
   late final SubtaskProvider subtaskProvider;
   late final SubtaskViewModel vm;
   late final LayoutProvider layoutProvider;
   late final TextEditingController nameEditingController;
+  late final ScrollController mainScrollController;
+  late final ScrollPhysics scrollPhysics;
 
   @override
   void initState() {
@@ -36,7 +42,16 @@ class _UpdateSubtaskScreen extends State<UpdateSubtaskScreen> {
 
     nameEditingController = TextEditingController(text: vm.name);
     nameEditingController.addListener(watchName);
+
+    mainScrollController = ScrollController();
+    ScrollPhysics parentPhysics = (Platform.isIOS || Platform.isMacOS)
+        ? const BouncingScrollPhysics()
+        : const ClampingScrollPhysics();
+    scrollPhysics = AlwaysScrollableScrollPhysics(parent: parentPhysics);
+
     _checkClose = ValueNotifier(false);
+    _updateLoading = ValueNotifier(false);
+    _deleteLoading = ValueNotifier(false);
     _nameErrorText = ValueNotifier(null);
     super.initState();
   }
@@ -45,6 +60,7 @@ class _UpdateSubtaskScreen extends State<UpdateSubtaskScreen> {
   void dispose() {
     nameEditingController.removeListener(watchName);
     nameEditingController.dispose();
+    mainScrollController.dispose();
 
     super.dispose();
   }
@@ -67,8 +83,68 @@ class _UpdateSubtaskScreen extends State<UpdateSubtaskScreen> {
     return true;
   }
 
+  void _popScreen() {
+    if (mounted) {
+      Navigator.pop(context);
+    }
+  }
+
   @override
   Widget build(context) {
+    Widget innerList = ListView(
+      padding: const EdgeInsets.only(
+        top: Constants.halfPadding,
+        left: Constants.padding,
+        right: Constants.padding,
+      ),
+      shrinkWrap: true,
+      controller: mainScrollController,
+      physics: scrollPhysics,
+      children: [
+        _buildNameTile(),
+        _buildWeightTile(),
+        const PaddedDivider(padding: Constants.halfPadding),
+        // TODO: consider factoring this out into a ValueListenableBuilder2.
+        ValueListenableBuilder(
+            valueListenable: _updateLoading,
+            builder:
+                (BuildContext context, bool updateLoading, Widget? child) =>
+                    ValueListenableBuilder(
+                        valueListenable: _deleteLoading,
+                        builder: (BuildContext context, bool deleteLoading,
+                                Widget? child) =>
+                            Tiles.updateAndDeleteButtons(
+                                updateLoading: updateLoading,
+                                deleteLoading: deleteLoading,
+                                updateButtonPadding: const EdgeInsets.symmetric(
+                                    horizontal: Constants.padding),
+                                deleteButtonPadding: const EdgeInsets.symmetric(
+                                    horizontal: Constants.padding),
+                                handleDelete: () async {
+                                  await subtaskProvider
+                                      .deleteSubtask(subtask: vm.toModel())
+                                      .catchError((e) async {
+                                    await Tiles.displayError(e: e);
+                                  }).whenComplete(() {
+                                    vm.clear();
+                                    _popScreen();
+                                  });
+                                },
+                                handleUpdate: () async {
+                                  if (validateData()) {
+                                    await subtaskProvider
+                                        .updateSubtask(subtask: vm.toModel())
+                                        .catchError((e) async {
+                                      await Tiles.displayError(e: e);
+                                    }).whenComplete(() {
+                                      vm.clear();
+                                      _popScreen();
+                                    });
+                                  }
+                                }))),
+      ],
+    );
+
     return LayoutBuilder(
         builder: (BuildContext context, BoxConstraints constraints) => Dialog(
             insetPadding: (layoutProvider.smallScreen)
@@ -80,40 +156,21 @@ class _UpdateSubtaskScreen extends State<UpdateSubtaskScreen> {
                   maxWidth: Constants.smallLandscapeDialogWidth),
               child: Padding(
                   padding: const EdgeInsets.all(Constants.padding),
-                  child: Column(mainAxisSize: MainAxisSize.min, children: [
-                    _buildTitleBar(),
-                    const PaddedDivider(padding: Constants.halfPadding),
-                    _buildNameTile(),
-                    _buildWeightTile(),
-                    const PaddedDivider(padding: Constants.halfPadding),
-                    Tiles.updateAndDeleteButtons(
-                        updateButtonPadding: const EdgeInsets.symmetric(
-                            horizontal: Constants.padding),
-                        deleteButtonPadding: const EdgeInsets.symmetric(
-                            horizontal: Constants.padding),
-                        handleDelete: () async {
-                          await subtaskProvider
-                              .deleteSubtask(subtask: vm.toModel())
-                              .catchError((e) async {
-                            await Tiles.displayError(e: e);
-                          }).whenComplete(() {
-                            vm.clear();
-                            Navigator.pop(context);
-                          });
-                        },
-                        handleUpdate: () async {
-                          if (validateData()) {
-                            await subtaskProvider
-                                .updateSubtask(subtask: vm.toModel())
-                                .catchError((e) async {
-                              await Tiles.displayError(e: e);
-                            }).whenComplete(() {
-                              vm.clear();
-                              Navigator.pop(context);
-                            });
-                          }
-                        }),
-                  ])),
+                  child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        _buildTitleBar(),
+                        const PaddedDivider(padding: Constants.halfPadding),
+                        Flexible(
+                          child: (layoutProvider.isMobile)
+                              ? Scrollbar(
+                                  controller: mainScrollController,
+                                  child: innerList,
+                                )
+                              : innerList,
+                        ),
+                      ])),
             )));
   }
 
@@ -121,12 +178,12 @@ class _UpdateSubtaskScreen extends State<UpdateSubtaskScreen> {
         valueListenable: _checkClose,
         builder: (BuildContext context, bool check, Widget? child) => TitleBar(
           context: context,
-          title: "Edit Task",
+          title: "Edit Subtask",
           handleClose: ({required bool willDiscard}) async {
             if (willDiscard) {
               subtaskProvider.rebuild = true;
               vm.clear();
-              return Navigator.pop(context);
+              _popScreen();
             }
             _checkClose.value = false;
           },

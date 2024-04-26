@@ -11,10 +11,10 @@ import '../../services/supabase_service.dart';
 import '../../util/constants.dart';
 import '../blurred_dialog.dart';
 import 'battery_meter.dart';
-import 'color_picker_dialog.dart';
+import 'dialogs/color_picker_dialog.dart';
+import 'dialogs/simple_name_dialog.dart';
 import 'expanded_listtile.dart';
 import 'padded_divider.dart';
-import 'simple_name_dialog.dart';
 import 'tiles.dart';
 
 abstract class SettingsScreenWidgets {
@@ -296,6 +296,7 @@ abstract class SettingsScreenWidgets {
     double weight = Constants.maxBandwidthDouble,
     double batteryScale = 1,
     void Function(double?)? handleWeightChange,
+    void Function(double?)? onChangeEnd,
   }) =>
       Column(
         mainAxisSize: MainAxisSize.min,
@@ -336,7 +337,8 @@ abstract class SettingsScreenWidgets {
                   weight: weight,
                   divisions: null,
                   max: Constants.maxBandwidthDouble,
-                  handleWeightChange: handleWeightChange),
+                  handleWeightChange: handleWeightChange,
+                  onChangeEnd: onChangeEnd),
             ),
           ),
         ],
@@ -538,43 +540,46 @@ abstract class SettingsScreenWidgets {
     // This is unlikely to be very large - so sync for now.
     // Stream will require a stateful widget.
     return FutureBuilder<String>(
-      future: Constants.roadMap, builder: (BuildContext context, AsyncSnapshot<String> snapshot) { if(snapshot.hasData && null != snapshot.data){
-        String body = snapshot.data!;
-        return Dialog(
-          insetPadding: const EdgeInsets.all(Constants.outerDialogPadding),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: Constants.roadmapWidth),
-            child: Padding(
-              padding: const EdgeInsets.all(Constants.doublePadding),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Flexible(
-                    child: ConstrainedBox(
-                        constraints: const BoxConstraints(
-                          maxHeight: Constants.smallLandscapeDialogHeight,
-                        ),
-                        child: Markdown(
-                          data: body,
-                          styleSheet: MarkdownStyleSheet(
-                            h1: Constants.hugeHeaderStyle,
-                            h2: Constants.largeHeaderStyle,
-                            h3: Constants.headerStyle,
-                          ),
-                          styleSheetTheme: MarkdownStyleSheetBaseTheme.material,
-                          shrinkWrap: true,
-                        )),
+        future: Constants.roadMap,
+        builder: (BuildContext context, AsyncSnapshot<String> snapshot) {
+          if (snapshot.hasData && null != snapshot.data) {
+            String body = snapshot.data!;
+            return Dialog(
+              insetPadding: const EdgeInsets.all(Constants.outerDialogPadding),
+              child: ConstrainedBox(
+                constraints:
+                    const BoxConstraints(maxWidth: Constants.roadmapWidth),
+                child: Padding(
+                  padding: const EdgeInsets.all(Constants.doublePadding),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Flexible(
+                        child: ConstrainedBox(
+                            constraints: const BoxConstraints(
+                              maxHeight: Constants.smallLandscapeDialogHeight,
+                            ),
+                            child: Markdown(
+                              data: body,
+                              styleSheet: MarkdownStyleSheet(
+                                h1: Constants.hugeHeaderStyle,
+                                h2: Constants.largeHeaderStyle,
+                                h3: Constants.headerStyle,
+                              ),
+                              styleSheetTheme:
+                                  MarkdownStyleSheetBaseTheme.material,
+                              shrinkWrap: true,
+                            )),
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
-            ),
-          ),
-        );
-    }
-      return const Center(child: CircularProgressIndicator());
-      }
-    );
+            );
+          }
+          return const Center(child: CircularProgressIndicator());
+        });
   }
 
   static Widget debugInfoDialog({required UserViewModel viewModel}) {

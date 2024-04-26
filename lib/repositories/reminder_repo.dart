@@ -755,7 +755,7 @@ class ReminderRepo extends ChangeNotifier implements ReminderRepository {
           {int limit = Constants.minLimitPerQuery, int offset = 0}) async =>
       await _isarClient.reminders
           .where()
-          .dueDateGreaterThan(Constants.today)
+          .dueDateGreaterThan(DateTime.now())
           .filter()
           .toDeleteEqualTo(false)
           .group((q) => q
@@ -773,7 +773,7 @@ class ReminderRepo extends ChangeNotifier implements ReminderRepository {
           {int limit = Constants.minLimitPerQuery, int offset = 0}) async =>
       await _isarClient.reminders
           .where()
-          .dueDateLessThan(Constants.today)
+          .dueDateLessThan(DateTime.now())
           .filter()
           .toDeleteEqualTo(false)
           .group((q) => q

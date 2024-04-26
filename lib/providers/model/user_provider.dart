@@ -21,6 +21,7 @@ import '../../util/exceptions.dart';
 import '../../util/interfaces/authenticator.dart';
 import '../viewmodels/user_viewmodel.dart';
 
+// TODO: clean this class up.
 class UserProvider extends ChangeNotifier {
   // This has no DI at the moment -> At some point I should probably write
   // an interface and refactor DI.
@@ -56,7 +57,7 @@ class UserProvider extends ChangeNotifier {
 
   UserViewModel? viewModel;
 
-  late Timer updateTimer;
+  // late Timer updateTimer;
 
   UserProvider({this.viewModel, Authenticator? auth})
       : isConnected = ValueNotifier<bool>(false),
@@ -65,30 +66,21 @@ class UserProvider extends ChangeNotifier {
     _userStorageService.addListener(handleUserStateChange);
   }
 
-  Future<void> init() async {
+  Future<void> init({bool firstLaunch = true}) async {
     // This should never happen.
     if (_initialized) {
       return;
     }
     _initialized = true;
-    _userStorageService.init();
+    // TODO: -> DB needs to be queried/synced BEFORE setting the user.
+    await _userStorageService.init();
     _authenticationService.init();
     initSubscription();
-    await setUser();
-    if ((viewModel?.lastOpened.copyWith(
-                hour: 0,
-                minute: 0,
-                second: 0,
-                millisecond: 0,
-                microsecond: 0) ??
-            Constants.today)
-        .isAfter(Constants.today)) {
-      DailyResetService.instance.dailyReset();
+
+    if (firstLaunch) {
+      await setUser();
     }
 
-    viewModel?.lastOpened = DateTime.now();
-
-    updateTimer = Timer.periodic(Constants.userUpdateTime, requestUpdate);
     notifyListeners();
   }
 
@@ -203,10 +195,17 @@ class UserProvider extends ChangeNotifier {
         isConnected.value = false;
         return;
       }
-      bool connection = SupabaseService.instance.isConnected;
-      isConnected.value = connection;
+
+      isConnected.value = SupabaseService.instance.isConnected;
     });
 
+    // TODO: There is likely a bug here -> on re-connection, gui not updating.
+    // This probably should just listen to the isConnected value.
+    // I think what's happening, is that supabase fails to reconnect
+    // before this runs, or, this runs, then supabase works to re-establish conn?.
+    // I am unsure.
+    // It may be best to refactor this to just listen to the supabase connection.
+    // YEAH, uh, YIKES.
     _connectivitySubscription = SupabaseService.instance.connectionSubscription
         .listen((ConnectivityResult result) async {
       // This is a bit inefficient to grab twice, but this is for syncing + GUI.
@@ -215,29 +214,27 @@ class UserProvider extends ChangeNotifier {
     });
   }
 
-  // Because this is happening in the background, I have no control
-  // over catching errors. If there is a context, this will show a snackbar.
-  void requestUpdate(Timer timer) async {
-    if (!shouldUpdate || updating || null == viewModel) {
-      return;
-    }
-    try {
-      await updateUser();
-      // This will always be a wrapped exception
-    } on FailureToUploadException catch (e) {
-      updating = false;
-      shouldUpdate = true;
-      globalGUIError(e);
-    } on FailureToUpdateException catch (e) {
-      updating = false;
-      shouldUpdate = true;
-      globalGUIError(e);
-    } on UnexpectedErrorException catch (e) {
-      updating = false;
-      shouldUpdate = false;
-      globalGUIError(e);
-    }
-  }
+  // void requestUpdate(Timer timer) async {
+  //   if (!shouldUpdate || updating || null == viewModel) {
+  //     return;
+  //   }
+  //   try {
+  //     await updateUser();
+  //     // This will always be a wrapped exception
+  //   } on FailureToUploadException catch (e) {
+  //     updating = false;
+  //     shouldUpdate = true;
+  //     globalGUIError(e);
+  //   } on FailureToUpdateException catch (e) {
+  //     updating = false;
+  //     shouldUpdate = true;
+  //     globalGUIError(e);
+  //   } on UnexpectedErrorException catch (e) {
+  //     updating = false;
+  //     shouldUpdate = false;
+  //     globalGUIError(e);
+  //   }
+  // }
 
   Future<void> globalGUIError(Exception? e) async {
     BuildContext? context =
@@ -251,9 +248,8 @@ class UserProvider extends ChangeNotifier {
     await Tiles.displayError(e: e);
   }
 
+  // TODO: refactor -> sync user only.
   Future<void> syncUser() async {
-    // UserStorage catches exceptions -> will notify accordingly.
-    // UserProvider has a handling routine.
     try {
       if (shouldUpdate) {
         await _userStorageService.updateUser(user: viewModel!.toModel());
@@ -267,9 +263,9 @@ class UserProvider extends ChangeNotifier {
   }
 
   Future<void> updateUser() async {
-    updating = true;
     try {
       await _userStorageService.updateUser(user: viewModel!.toModel());
+      viewModel!.pushUpdate = false;
       notifyListeners();
     } on FailureToUpdateException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
@@ -283,8 +279,6 @@ class UserProvider extends ChangeNotifier {
       log("Unknown error", stackTrace: stacktrace);
       return Future.error(UnexpectedErrorException(), stacktrace);
     }
-    shouldUpdate = false;
-    updating = false;
   }
 
   Future<void> signInOTP({required String email}) async {
@@ -359,7 +353,6 @@ class UserProvider extends ChangeNotifier {
   }
 
   Future<void> signOut() async {
-    // if the user is offline only, there is no need to sign out.
     try {
       await _authenticationService.signOut();
     } on AuthException catch (e, stacktrace) {
@@ -388,7 +381,6 @@ class UserProvider extends ChangeNotifier {
       log(e.cause, stackTrace: stacktrace);
       await handleUserStateChange();
       notifyListeners();
-      // This should crash the app.
     } on Error catch (e, stacktrace) {
       log("Unknown error", stackTrace: stacktrace);
       notifyListeners();
@@ -420,5 +412,24 @@ class UserProvider extends ChangeNotifier {
 
   Future<void> dayReset() async {
     await _userStorageService.deleteSweep();
+  }
+
+  void checkDay() async {
+    if ((viewModel?.lastOpened.copyWith(
+                hour: 0,
+                minute: 0,
+                second: 0,
+                millisecond: 0,
+                microsecond: 0) ??
+            Constants.today)
+        .isAfter(Constants.today)) {
+      DailyResetService.instance.dailyReset();
+    }
+
+    viewModel?.lastOpened = DateTime.now();
+  }
+
+  void updateConnectionStatus() {
+    isConnected.value = SupabaseService.instance.isConnected;
   }
 }

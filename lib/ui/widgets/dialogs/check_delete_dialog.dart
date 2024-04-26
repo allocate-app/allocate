@@ -2,9 +2,9 @@ import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../providers/application/layout_provider.dart';
-import '../../util/constants.dart';
-import '../../util/enums.dart';
+import '../../../providers/application/layout_provider.dart';
+import '../../../util/constants.dart';
+import '../../../util/enums.dart';
 
 class CheckDeleteDialog extends StatefulWidget {
   const CheckDeleteDialog(

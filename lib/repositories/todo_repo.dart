@@ -44,6 +44,9 @@ class ToDoRepo extends ChangeNotifier implements ToDoRepository {
 
   String? currentUserID;
 
+  // TODO: Refactor: this should be asynchronous...
+  // And also, WHY DOES IT NOT SYNC?
+  // TODO: id collision checker.
   @override
   void init() {
     if (_initialized) {
@@ -993,7 +996,8 @@ class ToDoRepo extends ChangeNotifier implements ToDoRepository {
               .repeatableStateEqualTo(RepeatableState.normal)
               .or()
               .repeatableStateEqualTo(RepeatableState.delta))
-          .sortByGroupIndex()
+          .sortByCompletedDesc()
+          .thenByGroupIndex()
           .thenByLastUpdated()
           .offset(offset)
           .limit(limit)
@@ -1083,9 +1087,10 @@ class ToDoRepo extends ChangeNotifier implements ToDoRepository {
           {int limit = Constants.intMax, int offset = 0}) async =>
       await _isarClient.toDos
           .where()
-          .dueDateGreaterThan(Constants.today)
+          .dueDateGreaterThan(DateTime.now())
           .filter()
           .toDeleteEqualTo(false)
+          .completedEqualTo(false)
           .group((q) => q
               .repeatableStateEqualTo(RepeatableState.normal)
               .or()
@@ -1103,8 +1108,9 @@ class ToDoRepo extends ChangeNotifier implements ToDoRepository {
           .where()
           .dueDateIsNotNull()
           .filter()
-          .dueDateLessThan(Constants.today)
+          .dueDateLessThan(DateTime.now())
           .toDeleteEqualTo(false)
+          .completedEqualTo(false)
           .group((q) => q
               .repeatableStateEqualTo(RepeatableState.normal)
               .or()

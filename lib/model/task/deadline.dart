@@ -182,6 +182,7 @@ class Deadline with EquatableMixin implements Copyable<Deadline>, IRepeatable {
         repeatDays: List.generate(repeatDays.length, (i) => repeatDays[i]),
         repeatableState: repeatableState,
         repeatSkip: repeatSkip,
+        isSynced: isSynced,
         lastUpdated: lastUpdated,
       );
 
@@ -200,6 +201,7 @@ class Deadline with EquatableMixin implements Copyable<Deadline>, IRepeatable {
           DateTime? originalDue,
           DateTime? originalWarn,
           bool? warnMe,
+          bool? isSynced,
           Priority? priority,
           bool? repeatable,
           RepeatableState? repeatableState,
@@ -230,7 +232,9 @@ class Deadline with EquatableMixin implements Copyable<Deadline>, IRepeatable {
               : List.generate(
                   this.repeatDays.length, (i) => this.repeatDays[i]),
           repeatSkip: repeatSkip ?? this.repeatSkip,
-          lastUpdated: lastUpdated ?? this.lastUpdated);
+          lastUpdated: lastUpdated ?? this.lastUpdated,
+          // TODO: Check this - is kinda wild.
+          isSynced: isSynced ?? false);
 
   @ignore
   @override

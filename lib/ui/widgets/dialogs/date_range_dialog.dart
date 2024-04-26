@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:jiffy/jiffy.dart';
 import 'package:provider/provider.dart';
 
-import '../../providers/application/layout_provider.dart';
-import '../../util/constants.dart';
+import '../../../providers/application/layout_provider.dart';
+import '../../../util/constants.dart';
 
 class DateRangeDialog extends StatefulWidget {
   const DateRangeDialog({super.key, this.startDate, this.dueDate});

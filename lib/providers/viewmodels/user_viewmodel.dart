@@ -57,6 +57,9 @@ class UserViewModel extends ChangeNotifier
   late DeadlineSorter? _deadlineSorter;
   late GroupSorter? _groupSorter;
 
+  // State flag
+  late bool _pushUpdate;
+
   // CONSTRUCTORS
   UserViewModel()
       : _id = Constants.generateID(),
@@ -87,10 +90,11 @@ class UserViewModel extends ChangeNotifier
         _routineSorter = RoutineSorter(),
         _reminderSorter = ReminderSorter(),
         _deadlineSorter = DeadlineSorter(),
-        _groupSorter = GroupSorter();
+        _groupSorter = GroupSorter(),
+        _pushUpdate = false;
 
   @override
-  void fromModel({required AllocateUser model}) {
+  void fromModel({required AllocateUser model, bool pushUpdate = false}) {
     _id = model.id;
     _uuid = model.uuid;
     _syncOnline = model.syncOnline;
@@ -124,6 +128,7 @@ class UserViewModel extends ChangeNotifier
     _reminderSorter = model.reminderSorter;
     _deadlineSorter = model.deadlineSorter;
     _groupSorter = model.groupSorter;
+    _pushUpdate = pushUpdate;
     notifyListeners();
   }
 
@@ -158,6 +163,7 @@ class UserViewModel extends ChangeNotifier
     _reminderSorter = ReminderSorter();
     _deadlineSorter = DeadlineSorter();
     _groupSorter = GroupSorter();
+    _pushUpdate = false;
     notifyListeners();
   }
 
@@ -201,6 +207,7 @@ class UserViewModel extends ChangeNotifier
 
   set id(int id) {
     _id = id;
+    _pushUpdate = true;
     notifyListeners();
   }
 
@@ -208,6 +215,7 @@ class UserViewModel extends ChangeNotifier
 
   set uuid(String? uuid) {
     _uuid = uuid;
+    _pushUpdate = true;
     notifyListeners();
   }
 
@@ -215,6 +223,7 @@ class UserViewModel extends ChangeNotifier
 
   set syncOnline(bool syncOnline) {
     _syncOnline = syncOnline;
+    _pushUpdate = true;
     notifyListeners();
   }
 
@@ -229,6 +238,7 @@ class UserViewModel extends ChangeNotifier
 
   set username(String username) {
     _username = username;
+    _pushUpdate = true;
     notifyListeners();
   }
 
@@ -236,6 +246,7 @@ class UserViewModel extends ChangeNotifier
 
   set email(String? email) {
     _email = email;
+    _pushUpdate = true;
     notifyListeners();
   }
 
@@ -250,6 +261,7 @@ class UserViewModel extends ChangeNotifier
 
   set lastOpened(DateTime lastOpened) {
     _lastOpened = lastOpened;
+    _pushUpdate = true;
     notifyListeners();
   }
 
@@ -258,6 +270,7 @@ class UserViewModel extends ChangeNotifier
 
   set curMornID(int? newID) {
     _curMornID = newID;
+    _pushUpdate = true;
     notifyListeners();
   }
 
@@ -265,6 +278,7 @@ class UserViewModel extends ChangeNotifier
 
   set curAftID(int? curAftID) {
     _curAftID = curAftID;
+    _pushUpdate = true;
     notifyListeners();
   }
 
@@ -272,6 +286,7 @@ class UserViewModel extends ChangeNotifier
 
   set curEveID(int? curEveID) {
     _curEveID = curEveID;
+    _pushUpdate = true;
     notifyListeners();
   }
 
@@ -280,6 +295,7 @@ class UserViewModel extends ChangeNotifier
 
   set themeType(ThemeType themeType) {
     _themeType = themeType;
+    _pushUpdate = true;
     notifyListeners();
   }
 
@@ -287,6 +303,7 @@ class UserViewModel extends ChangeNotifier
 
   set toneMapping(ToneMapping toneMapping) {
     _toneMapping = toneMapping;
+    _pushUpdate = true;
     notifyListeners();
   }
 
@@ -294,6 +311,7 @@ class UserViewModel extends ChangeNotifier
 
   set windowEffect(Effect windowEffect) {
     _windowEffect = windowEffect;
+    _pushUpdate = true;
     notifyListeners();
   }
 
@@ -301,6 +319,7 @@ class UserViewModel extends ChangeNotifier
 
   set primarySeed(int primarySeed) {
     _primarySeed = primarySeed;
+    _pushUpdate = true;
     notifyListeners();
   }
 
@@ -308,6 +327,7 @@ class UserViewModel extends ChangeNotifier
 
   set secondarySeed(int? secondarySeed) {
     _secondarySeed = secondarySeed;
+    _pushUpdate = true;
     notifyListeners();
   }
 
@@ -315,6 +335,7 @@ class UserViewModel extends ChangeNotifier
 
   set tertiarySeed(int? tertiarySeed) {
     _tertiarySeed = tertiarySeed;
+    _pushUpdate = true;
     notifyListeners();
   }
 
@@ -337,6 +358,7 @@ class UserViewModel extends ChangeNotifier
 
   set checkDelete(bool checkDelete) {
     _checkDelete = checkDelete;
+    _pushUpdate = true;
     notifyListeners();
   }
 
@@ -344,6 +366,7 @@ class UserViewModel extends ChangeNotifier
 
   set checkClose(bool check) {
     _checkClose = check;
+    _pushUpdate = true;
     notifyListeners();
   }
 
@@ -351,6 +374,7 @@ class UserViewModel extends ChangeNotifier
 
   set useUltraHighContrast(bool useUltraHighContrast) {
     _useUltraHighContrast = useUltraHighContrast;
+    _pushUpdate = true;
     notifyListeners();
   }
 
@@ -358,6 +382,7 @@ class UserViewModel extends ChangeNotifier
 
   set reduceMotion(bool reduceMotion) {
     _reduceMotion = reduceMotion;
+    _pushUpdate = true;
     notifyListeners();
   }
 
@@ -365,6 +390,7 @@ class UserViewModel extends ChangeNotifier
 
   set deleteSchedule(DeleteSchedule deleteSchedule) {
     _deleteSchedule = deleteSchedule;
+    _pushUpdate = true;
     notifyListeners();
   }
 
@@ -385,6 +411,7 @@ class UserViewModel extends ChangeNotifier
 
   set toDoSorter(ToDoSorter? toDoSorter) {
     _toDoSorter = toDoSorter;
+    _pushUpdate = true;
     notifyListeners();
   }
 
@@ -392,6 +419,7 @@ class UserViewModel extends ChangeNotifier
 
   set routineSorter(RoutineSorter? routineSorter) {
     _routineSorter = routineSorter;
+    _pushUpdate = true;
     notifyListeners();
   }
 
@@ -399,6 +427,7 @@ class UserViewModel extends ChangeNotifier
 
   set reminderSorter(ReminderSorter? reminderSorter) {
     _reminderSorter = reminderSorter;
+    _pushUpdate = true;
     notifyListeners();
   }
 
@@ -406,6 +435,7 @@ class UserViewModel extends ChangeNotifier
 
   set deadlineSorter(DeadlineSorter? newSorter) {
     _deadlineSorter = newSorter;
+    _pushUpdate = true;
     notifyListeners();
   }
 
@@ -413,7 +443,15 @@ class UserViewModel extends ChangeNotifier
 
   set groupSorter(GroupSorter? groupSorter) {
     _groupSorter = groupSorter;
+    _pushUpdate = true;
     notifyListeners();
+  }
+
+  bool get pushUpdate => _pushUpdate;
+
+  set pushUpdate(bool update) {
+    _pushUpdate = update;
+    // I don't thiiink this should notify?
   }
 
   @override

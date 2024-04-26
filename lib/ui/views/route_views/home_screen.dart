@@ -71,6 +71,7 @@ class _HomeScreen extends State<HomeScreen> with WidgetsBindingObserver {
   late final ScrollPhysics scrollPhysics;
   late final GlobalKey<ExpandableFabState> _fabKey;
 
+  // TODO: possibly just run the dayReset HERE.
   @override
   void initState() {
     super.initState();
@@ -175,6 +176,7 @@ class _HomeScreen extends State<HomeScreen> with WidgetsBindingObserver {
 
   Future<void> dayReset() async {
     await Future.wait([
+      // TODO: This needs to happen -AFTER- the sync has happened.
       RepeatableService.instance.generateNextRepeats(),
       userProvider.dayReset(),
       toDoProvider.dayReset(),
@@ -191,6 +193,9 @@ class _HomeScreen extends State<HomeScreen> with WidgetsBindingObserver {
     );
   }
 
+  // TODO: this should run a hard sync.
+  // TODO: implement hard sync
+  // TODO: not sure abt calendar -> for now, probably fine.
   Future<void> syncOnline() async {
     if (!userProvider.isConnected.value) {
       return;
@@ -223,7 +228,12 @@ class _HomeScreen extends State<HomeScreen> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) async {
     if (AppLifecycleState.resumed == state) {
+      // This isn't ideal.
       await syncOnline();
+      // This is to cover when cron isn't running in the bg.
+      // Probably okay to just like, sync stuff.
+      userProvider.checkDay();
+      userProvider.updateConnectionStatus();
     }
   }
 
@@ -411,7 +421,7 @@ class _HomeScreen extends State<HomeScreen> with WidgetsBindingObserver {
                                 Theme.of(context).colorScheme.outlineVariant,
                                 value),
                         child: InkWell(
-                          mouseCursor: SystemMouseCursors.resizeLeftRight,
+                          mouseCursor: SystemMouseCursors.resizeUpRightDownLeft,
                           onHover: (value) {},
                           onTapUp: (TapUpDetails details) {
                             if (!layoutProvider.drawerOpened) {
@@ -629,6 +639,7 @@ class _HomeScreen extends State<HomeScreen> with WidgetsBindingObserver {
                                 Widget? child) =>
                             Text(value)),
               ),
+              // TODO: This didn't rebuild on reconnection status.
               subtitle: ValueListenableBuilder(
                 valueListenable: userProvider.isConnected,
                 builder: (BuildContext context, bool online, Widget? child) =>
