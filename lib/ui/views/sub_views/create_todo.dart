@@ -17,6 +17,7 @@ import '../../../providers/model/subtask_provider.dart';
 import '../../../providers/model/todo_provider.dart';
 import '../../../providers/model/user_provider.dart';
 import "../../../providers/viewmodels/todo_viewmodel.dart";
+import "../../../services/application_service.dart";
 import "../../../util/constants.dart";
 import "../../../util/enums.dart";
 import "../../widgets/listtile_widgets.dart";
@@ -47,6 +48,8 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
   late final GroupProvider groupProvider;
   late final EventProvider eventProvider;
   late final LayoutProvider layoutProvider;
+
+  late ApplicationService applicationService;
 
   // Scrolling
   late final ScrollController mobileScrollController;
@@ -98,6 +101,9 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
     descriptionEditingController.addListener(watchDescription);
 
     subtasksAnchorController = MenuController();
+
+    applicationService = ApplicationService.instance;
+    applicationService.addListener(scrollToTop);
   }
 
   void initializeProviders() {
@@ -118,6 +124,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
 
   @override
   void dispose() {
+    applicationService.removeListener(scrollToTop);
     nameEditingController.removeListener(watchName);
     nameEditingController.dispose();
     descriptionEditingController.removeListener(watchDescription);
@@ -148,6 +155,23 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
     subtaskProvider.rebuild = false;
   }
 
+  void scrollToTop() {
+    if (mobileScrollController.hasClients) {
+      mobileScrollController.animateTo(
+        0,
+        duration: Constants.scrollDuration,
+        curve: Constants.scrollCurve,
+      );
+    }
+    if (desktopScrollController.hasClients) {
+      desktopScrollController.animateTo(
+        0,
+        duration: Constants.scrollDuration,
+        curve: Constants.scrollCurve,
+      );
+    }
+  }
+
   void watchName() {
     _checkClose.value = toDoProvider.userViewModel?.checkClose ?? true;
     String newText = nameEditingController.text;
@@ -172,13 +196,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
     }
     if (nameEditingController.text.isEmpty) {
       valid = false;
-      _nameErrorText.value = "Enter Task Name";
-      if (desktopScrollController.hasClients) {
-        desktopScrollController.jumpTo(0);
-      }
-      if (mobileScrollController.hasClients) {
-        mobileScrollController.jumpTo(0);
-      }
+      scrollToTop();
     }
 
     if (null == vm.startDate || null == vm.dueDate) {

@@ -50,14 +50,16 @@ class RepeatableService {
       return await handleDelta(model: newModel, single: single, delete: delete);
     }
 
+    // This is for updating a single event which exists, but the next one may not have been
+    // generated.
+    // -> Generate the next event to prevent data issues
+    // -> Consider the existing event to be a delta from the chain of repeating events.
     if (single) {
       // In the case that a model is being deleted, update the template date
       newModel.toDelete = delete;
       switch (oldModel.modelType) {
         case ModelType.task:
           if (isSameDay(newModel.startDate, Constants.today)) {
-            // In the case that a "delta" is created from a repeating event
-            // and the next one hasn't been generated. Generate it.
             await nextRepeat(model: newModel);
             newModel.frequency = Frequency.once;
           }
@@ -66,8 +68,6 @@ class RepeatableService {
           return;
         case ModelType.deadline:
           if (isSameDay(newModel.startDate, Constants.today)) {
-            // In the case that a "delta" is created from a repeating event
-            // and the next one hasn't been generated. Generate it.
             await nextRepeat(model: newModel);
             newModel.frequency = Frequency.once;
           }
@@ -76,8 +76,6 @@ class RepeatableService {
           return;
         case ModelType.reminder:
           if (isSameDay(newModel.startDate, Constants.today)) {
-            // In the case that a "delta" is created from a repeating event
-            // and the next one hasn't been generated. Generate it.
             await nextRepeat(model: newModel);
             newModel.frequency = Frequency.once;
           }
@@ -89,8 +87,6 @@ class RepeatableService {
       }
     }
 
-    // In the case that all future events are being deleted,
-    // delete any future events along with the template.
     if (delete) {
       return await deleteTemplateAndFutures(model: oldModel);
     }
@@ -217,6 +213,7 @@ class RepeatableService {
         // If there is no delta, generate accordingly.
         if (null == delta) {
           newToDo = template.copyWith(
+            id: toDo.id + 1,
             startDate: nextRepeatDate,
             originalStart: nextRepeatDate,
             dueDate: newDue,
@@ -230,6 +227,7 @@ class RepeatableService {
           );
         } else {
           newToDo = delta.copyWith(
+              id: toDo.id + 1,
               originalStart: nextRepeatDate,
               originalDue: newDue,
               repeatableState: RepeatableState.normal,
@@ -243,6 +241,14 @@ class RepeatableService {
         }
 
         toDo.repeatable = false;
+
+        // Check for collisions.
+        bool inDB = await _toDoRepository.containsID(id: newToDo.id);
+
+        while (inDB) {
+          newToDo.id = newToDo.id + 1;
+          inDB = await _toDoRepository.containsID(id: newToDo.id);
+        }
 
         return await _toDoRepository.updateBatch([toDo, newToDo]);
 
@@ -299,6 +305,7 @@ class RepeatableService {
         // If there is no delta, generate accordingly.
         if (null == delta) {
           newDeadline = template.copyWith(
+            id: deadline.id + 1,
             startDate: nextRepeatDate,
             originalStart: nextRepeatDate,
             warnDate: newWarn,
@@ -312,6 +319,7 @@ class RepeatableService {
           );
         } else {
           newDeadline = delta.copyWith(
+              id: deadline.id + 1,
               originalStart: nextRepeatDate,
               originalDue: newDue,
               originalWarn: newWarn,
@@ -325,6 +333,14 @@ class RepeatableService {
           await _deadlineRepository.delete(delta);
         }
         deadline.repeatable = false;
+
+        // Check for collisions.
+        bool inDB = await _deadlineRepository.containsID(id: newDeadline.id);
+
+        while (inDB) {
+          newDeadline.id = newDeadline.id + 1;
+          inDB = await _deadlineRepository.containsID(id: newDeadline.id);
+        }
 
         return await _deadlineRepository.updateBatch([deadline, newDeadline]);
       case ModelType.reminder:
@@ -365,6 +381,7 @@ class RepeatableService {
         // If there is no delta, generate accordingly.
         if (null == delta) {
           newReminder = template.copyWith(
+            id: reminder.id + 1,
             originalDue: nextRepeatDate,
             dueDate: nextRepeatDate,
             repeatableState: RepeatableState.normal,
@@ -374,6 +391,7 @@ class RepeatableService {
           );
         } else {
           newReminder = delta.copyWith(
+              id: reminder.id + 1,
               originalDue: nextRepeatDate,
               repeatableState: RepeatableState.normal,
               isSynced: false,
@@ -383,7 +401,16 @@ class RepeatableService {
           // Then, delete the delta
           await _reminderRepository.delete(delta);
         }
+
         reminder.repeatable = false;
+
+        // Check for collisions.
+        bool inDB = await _reminderRepository.containsID(id: newReminder.id);
+
+        while (inDB) {
+          newReminder.id = newReminder.id + 1;
+          inDB = await _reminderRepository.containsID(id: newReminder.id);
+        }
 
         return await _reminderRepository.updateBatch([reminder, newReminder]);
       default:

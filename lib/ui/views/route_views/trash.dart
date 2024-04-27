@@ -21,6 +21,7 @@ import '../../../providers/model/reminder_provider.dart';
 import '../../../providers/model/routine_provider.dart';
 import '../../../providers/model/subtask_provider.dart';
 import '../../../providers/model/todo_provider.dart';
+import "../../../services/application_service.dart";
 import "../../../util/constants.dart";
 import "../../../util/enums.dart";
 import "../../../util/interfaces/i_model.dart";
@@ -48,6 +49,8 @@ class _TrashScreen extends State<TrashScreen> {
   late final SubtaskProvider subtaskProvider;
   late final EventProvider eventProvider;
   late final LayoutProvider layoutProvider;
+
+  late ApplicationService applicationService;
 
   late final ScrollController mainScrollController;
   late final ScrollPhysics scrollPhysics;
@@ -81,6 +84,9 @@ class _TrashScreen extends State<TrashScreen> {
     searchProvider = Provider.of<SearchProvider>(context, listen: false);
     eventProvider = Provider.of<EventProvider>(context, listen: false);
     layoutProvider = Provider.of<LayoutProvider>(context, listen: false);
+
+    applicationService = ApplicationService.instance;
+    applicationService.addListener(scrollToTop);
   }
 
   void initializeControllers() {
@@ -97,10 +103,21 @@ class _TrashScreen extends State<TrashScreen> {
 
   @override
   void dispose() {
+    applicationService.removeListener(scrollToTop);
     mainScrollController.dispose();
     _searchController.removeListener(searchDeleted);
     _searchController.dispose();
     super.dispose();
+  }
+
+  void scrollToTop() {
+    if (mainScrollController.hasClients) {
+      mainScrollController.animateTo(
+        0,
+        duration: Constants.scrollDuration,
+        curve: Constants.scrollCurve,
+      );
+    }
   }
 
   void searchDeleted() {
@@ -400,6 +417,8 @@ class _TrashScreen extends State<TrashScreen> {
                             physics: const NeverScrollableScrollPhysics(),
                             padding: EdgeInsets.zero,
                             children: [
+                              // Currently set to max-query size due to nested scrollController fighting.
+                              // I have not yet solved this issue.
                               // TODOS
                               ExpandedListTile(
                                 outerPadding: const EdgeInsets.only(
@@ -416,6 +435,8 @@ class _TrashScreen extends State<TrashScreen> {
                                 ),
                                 children: [
                                   PaginatingListview<IModel>(
+                                    limit: Constants.intMax,
+                                    pullToRefresh: false,
                                     indicatorDisplacement: 0,
                                     query: toDoProvider.getDeleted,
                                     rebuildNotifiers: [
@@ -477,6 +498,8 @@ class _TrashScreen extends State<TrashScreen> {
                                 ),
                                 children: [
                                   PaginatingListview<IModel>(
+                                    limit: Constants.intMax,
+                                    pullToRefresh: false,
                                     indicatorDisplacement: 0,
                                     query: deadlineProvider.getDeleted,
                                     rebuildNotifiers: [
@@ -538,6 +561,8 @@ class _TrashScreen extends State<TrashScreen> {
                                 ),
                                 children: [
                                   PaginatingListview<IModel>(
+                                    limit: Constants.intMax,
+                                    pullToRefresh: false,
                                     indicatorDisplacement: 0,
                                     query: reminderProvider.getDeleted,
                                     rebuildNotifiers: [
@@ -597,6 +622,8 @@ class _TrashScreen extends State<TrashScreen> {
                                 ),
                                 children: [
                                   PaginatingListview<IModel>(
+                                    limit: Constants.intMax,
+                                    pullToRefresh: false,
                                     indicatorDisplacement: 0,
                                     query: routineProvider.getDeleted,
                                     rebuildNotifiers: [
@@ -654,6 +681,8 @@ class _TrashScreen extends State<TrashScreen> {
                                 ),
                                 children: [
                                   PaginatingListview<IModel>(
+                                    limit: Constants.intMax,
+                                    pullToRefresh: false,
                                     indicatorDisplacement: 0,
                                     query: groupProvider.getDeleted,
                                     rebuildNotifiers: [

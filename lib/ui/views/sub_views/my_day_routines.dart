@@ -5,6 +5,7 @@ import '../../../model/task/routine.dart';
 import '../../../model/task/subtask.dart';
 import '../../../providers/model/routine_provider.dart';
 import '../../../providers/model/subtask_provider.dart';
+import '../../../services/application_service.dart';
 import '../../../util/constants.dart';
 import '../../../util/enums.dart';
 import '../../widgets/tiles.dart';
@@ -21,6 +22,8 @@ class _MyDayRoutines extends State<MyDayRoutines> {
   late RoutineProvider routineProvider;
   late SubtaskProvider subtaskProvider;
 
+  late ApplicationService applicationService;
+
   late ScrollController mainScrollController;
   late ScrollPhysics scrollPhysics;
 
@@ -36,6 +39,9 @@ class _MyDayRoutines extends State<MyDayRoutines> {
     routineProvider = Provider.of<RoutineProvider>(context, listen: false);
     subtaskProvider = Provider.of<SubtaskProvider>(context, listen: false);
     subtaskProvider.addListener(updateSubtasks);
+
+    applicationService = ApplicationService.instance;
+    applicationService.addListener(scrollToTop);
   }
 
   void initializeControllers() {
@@ -45,11 +51,24 @@ class _MyDayRoutines extends State<MyDayRoutines> {
 
   @override
   void dispose() {
+    applicationService.removeListener(scrollToTop);
     mainScrollController.dispose();
     subtaskProvider.removeListener(updateSubtasks);
     super.dispose();
   }
 
+  void scrollToTop() {
+    if (mainScrollController.hasClients) {
+      mainScrollController.animateTo(
+        0,
+        duration: Constants.scrollDuration,
+        curve: Constants.scrollCurve,
+      );
+    }
+  }
+
+  // TODO: uh, fix this?
+  // This should be handled in the subtask widget.
   Future<void> updateSubtasks() async {
     await updateWeights();
     await getSubtasks();

@@ -4,6 +4,7 @@ import 'package:window_manager/window_manager.dart';
 
 import '../../util/constants.dart';
 
+// TODO: when on windows -> try and make the hit test transparent.
 List<Widget> windowsTitlebar() => [
       const Align(
         alignment: Alignment.topCenter,

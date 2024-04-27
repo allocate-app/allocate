@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 
 import '../../../providers/application/layout_provider.dart';
 import '../../../providers/application/theme_provider.dart';
+import '../../../services/application_service.dart';
 import '../../../util/constants.dart';
 
 class ColorPickerDialog extends StatefulWidget {
@@ -22,6 +23,7 @@ class ColorPickerDialog extends StatefulWidget {
 class _ColorPickerDialog extends State<ColorPickerDialog> {
   late final ThemeProvider themeProvider;
   late final LayoutProvider layoutProvider;
+  late final ApplicationService applicationService;
   late Color curColor;
 
   late final ScrollController _scrollController;
@@ -31,6 +33,10 @@ class _ColorPickerDialog extends State<ColorPickerDialog> {
   void initState() {
     themeProvider = Provider.of<ThemeProvider>(context, listen: false);
     layoutProvider = Provider.of<LayoutProvider>(context, listen: false);
+
+    applicationService = ApplicationService.instance;
+    applicationService.addListener(scrollToTop);
+
     curColor = widget.oldColor ?? Colors.transparent;
     _scrollController = ScrollController();
     ScrollPhysics parentPhysics = (Platform.isIOS || Platform.isMacOS)
@@ -40,8 +46,17 @@ class _ColorPickerDialog extends State<ColorPickerDialog> {
     super.initState();
   }
 
+  void scrollToTop() {
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(0,
+          duration: const Duration(milliseconds: 1000),
+          curve: Curves.fastLinearToSlowEaseIn);
+    }
+  }
+
   @override
   void dispose() {
+    applicationService.removeListener(scrollToTop);
     _scrollController.dispose();
     super.dispose();
   }

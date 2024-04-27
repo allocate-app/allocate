@@ -2,7 +2,7 @@ import '../../i_model.dart';
 import '../../sortable.dart';
 
 abstract interface class Repository<T extends IModel> {
-  void init();
+  Future<void> init();
 
   Future<T> create(T t);
 
@@ -23,7 +23,11 @@ abstract interface class Repository<T extends IModel> {
   // This is to wipe the db.
   Future<void> clearDB();
 
+  Future<bool> containsID({required int id});
+
   Future<void> syncRepo();
+
+  Future<void> refreshRepo();
 
   Future<List<T>> fetchRepo({int limit = 1000, int offset = 0});
 

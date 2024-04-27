@@ -37,7 +37,6 @@ class GroupProvider extends ChangeNotifier {
     }
   }
 
-  late Timer syncTimer;
   late final GroupRepository _groupRepo;
   late final ToDoRepository _toDoRepo;
 
@@ -69,7 +68,7 @@ class GroupProvider extends ChangeNotifier {
   }
 
   Future<void> init() async {
-    _groupRepo.init();
+    await _groupRepo.init();
     notifyListeners();
   }
 
@@ -132,6 +131,25 @@ class GroupProvider extends ChangeNotifier {
     }
   }
 
+  Future<void> refreshRepo() async {
+    try {
+      await _groupRepo.refreshRepo();
+      notifyListeners();
+    } on FailureToDeleteException catch (e, stacktrace) {
+      log(e.cause, stackTrace: stacktrace);
+      notifyListeners();
+      return Future.error(e, stacktrace);
+    } on FailureToUploadException catch (e, stacktrace) {
+      log(e.cause, stackTrace: stacktrace);
+      notifyListeners();
+      return Future.error(e, stacktrace);
+    } on Error catch (e, stacktrace) {
+      log("Unknown error", stackTrace: stacktrace);
+      notifyListeners();
+      return Future.error(UnexpectedErrorException(), stacktrace);
+    }
+  }
+
   Future<void> syncRepo() async {
     try {
       await _groupRepo.syncRepo();
@@ -153,6 +171,14 @@ class GroupProvider extends ChangeNotifier {
 
   Future<void> createGroup(Group group) async {
     try {
+      // Check for db collisions.
+      bool inDB = await _groupRepo.containsID(id: group.id);
+
+      while (inDB) {
+        group.id = group.id + 1;
+        inDB = await _groupRepo.containsID(id: group.id);
+      }
+
       curGroup = await _groupRepo.create(group);
 
       // This should bake the index

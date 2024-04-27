@@ -10,6 +10,7 @@ import "../../../providers/application/layout_provider.dart";
 import '../../../providers/model/routine_provider.dart';
 import '../../../providers/model/subtask_provider.dart';
 import "../../../providers/viewmodels/routine_viewmodel.dart";
+import "../../../services/application_service.dart";
 import "../../../util/constants.dart";
 import "../../../util/enums.dart";
 import "../../blurred_dialog.dart";
@@ -36,6 +37,8 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
   late final RoutineProvider routineProvider;
   late final SubtaskProvider subtaskProvider;
   late final LayoutProvider layoutProvider;
+
+  late ApplicationService applicationService;
 
   // Scrolling
   late final ScrollController mobileScrollController;
@@ -65,6 +68,9 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
     subtaskProvider = Provider.of<SubtaskProvider>(context, listen: false);
 
     subtaskProvider.addListener(resetSubtasks);
+
+    applicationService = ApplicationService.instance;
+    applicationService.addListener(scrollToTop);
   }
 
   void initializeParameters() {
@@ -89,12 +95,30 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
 
   @override
   void dispose() {
+    applicationService.removeListener(scrollToTop);
     nameEditingController.removeListener(watchName);
     nameEditingController.dispose();
     mobileScrollController.dispose();
     desktopScrollController.dispose();
     subtaskProvider.removeListener(resetSubtasks);
     super.dispose();
+  }
+
+  void scrollToTop() {
+    if (mobileScrollController.hasClients) {
+      mobileScrollController.animateTo(
+        0,
+        duration: Constants.scrollDuration,
+        curve: Constants.scrollCurve,
+      );
+    }
+    if (desktopScrollController.hasClients) {
+      desktopScrollController.animateTo(
+        0,
+        duration: Constants.scrollDuration,
+        curve: Constants.scrollCurve,
+      );
+    }
   }
 
   void watchName() {
@@ -129,12 +153,7 @@ class _UpdateRoutineScreen extends State<UpdateRoutineScreen> {
     if (nameEditingController.text.isEmpty) {
       valid = false;
       _nameErrorText.value = "Enter Routine Name";
-      if (desktopScrollController.hasClients) {
-        desktopScrollController.jumpTo(0);
-      }
-      if (mobileScrollController.hasClients) {
-        mobileScrollController.jumpTo(0);
-      }
+      scrollToTop();
     }
 
     return valid;

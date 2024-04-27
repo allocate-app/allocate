@@ -3,7 +3,6 @@ import 'dart:developer';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
-import 'package:internet_connection_checker/internet_connection_checker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../model/user/allocate_user.dart';
@@ -28,7 +27,6 @@ class UserProvider extends ChangeNotifier {
   final UserStorageService _userStorageService = UserStorageService.instance;
   late final Authenticator _authenticationService;
 
-  // This may not be needed.
   late ValueNotifier<bool> isConnected;
 
   late StreamSubscription<AuthState> _supabaseSubscription;
@@ -57,8 +55,6 @@ class UserProvider extends ChangeNotifier {
 
   UserViewModel? viewModel;
 
-  // late Timer updateTimer;
-
   UserProvider({this.viewModel, Authenticator? auth})
       : isConnected = ValueNotifier<bool>(false),
         myDayTotal = ValueNotifier<int>(0),
@@ -67,12 +63,10 @@ class UserProvider extends ChangeNotifier {
   }
 
   Future<void> init({bool firstLaunch = true}) async {
-    // This should never happen.
     if (_initialized) {
       return;
     }
     _initialized = true;
-    // TODO: -> DB needs to be queried/synced BEFORE setting the user.
     await _userStorageService.init();
     _authenticationService.init();
     initSubscription();
@@ -199,18 +193,21 @@ class UserProvider extends ChangeNotifier {
       isConnected.value = SupabaseService.instance.isConnected;
     });
 
-    // TODO: There is likely a bug here -> on re-connection, gui not updating.
-    // This probably should just listen to the isConnected value.
-    // I think what's happening, is that supabase fails to reconnect
-    // before this runs, or, this runs, then supabase works to re-establish conn?.
-    // I am unsure.
-    // It may be best to refactor this to just listen to the supabase connection.
-    // YEAH, uh, YIKES.
     _connectivitySubscription = SupabaseService.instance.connectionSubscription
         .listen((ConnectivityResult result) async {
+      await Future.delayed(const Duration(seconds: 3));
+      updateConnectionStatus();
+
+      // TODO: refactor this if insufficient.
+      // Retry once if not connected.
+      if (!isConnected.value) {
+        await Future.delayed(const Duration(seconds: 3));
+        updateConnectionStatus();
+      }
+
       // This is a bit inefficient to grab twice, but this is for syncing + GUI.
-      isConnected.value = await InternetConnectionChecker().hasConnection &&
-          SupabaseService.instance.isConnected;
+      // isConnected.value = await InternetConnectionChecker().hasConnection &&
+      //     SupabaseService.instance.isConnected;
     });
   }
 
@@ -330,7 +327,7 @@ class UserProvider extends ChangeNotifier {
     }
   }
 
-  // TODO: test the otp.
+  // TODO: test the otp for email change.
   Future<void> verifiyEmailChange(
       {required String newEmail, required String token}) async {
     try {

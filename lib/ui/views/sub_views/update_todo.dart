@@ -1,7 +1,6 @@
 import "dart:io";
 import "dart:math";
 
-import "package:another_flushbar/flushbar.dart";
 import "package:flutter/material.dart";
 import "package:flutter/semantics.dart";
 import "package:provider/provider.dart";
@@ -16,11 +15,11 @@ import '../../../providers/model/subtask_provider.dart';
 import '../../../providers/model/todo_provider.dart';
 import '../../../providers/model/user_provider.dart';
 import "../../../providers/viewmodels/todo_viewmodel.dart";
+import "../../../services/application_service.dart";
 import "../../../util/constants.dart";
 import "../../../util/enums.dart";
 import "../../blurred_dialog.dart";
 import "../../widgets/dialogs/check_delete_dialog.dart";
-import "../../widgets/flushbars.dart";
 import "../../widgets/handle_repeatable_modal.dart";
 import "../../widgets/listtile_widgets.dart";
 import "../../widgets/padded_divider.dart";
@@ -52,6 +51,8 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
   late final LayoutProvider layoutProvider;
   late final GroupProvider groupProvider;
   late final EventProvider eventProvider;
+
+  late final ApplicationService applicationService;
 
   // Cache for repeating events & discard
   late final ToDo _prev;
@@ -92,6 +93,9 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
     userProvider = Provider.of<UserProvider>(context, listen: false);
     eventProvider = Provider.of<EventProvider>(context, listen: false);
     layoutProvider = Provider.of<LayoutProvider>(context, listen: false);
+
+    applicationService = ApplicationService.instance;
+    applicationService.addListener(scrollToTop);
 
     subtaskProvider.addListener(resetSubtasks);
   }
@@ -137,21 +141,14 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
         .getGroupByID(id: vm.groupID)
         .then((group) => setState(() => groupEditingController.value =
             groupEditingController.value.copyWith(text: group?.name ?? "")))
-        .catchError((_) {
-      Flushbar? error;
-
-      error = Flushbars.createError(
-        message: "Error with Group Retrieval",
-        context: context,
-        dismissCallback: () => error?.dismiss(),
-      );
-
-      error.show(context);
+        .catchError((e) {
+      Tiles.displayError(e: e);
     });
   }
 
   @override
   void dispose() {
+    applicationService.removeListener(scrollToTop);
     nameEditingController.removeListener(watchName);
     nameEditingController.dispose();
     descriptionEditingController.removeListener(watchDescription);
@@ -162,6 +159,23 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
 
     subtaskProvider.removeListener(resetSubtasks);
     super.dispose();
+  }
+
+  void scrollToTop() {
+    if (mobileScrollController.hasClients) {
+      mobileScrollController.animateTo(
+        0,
+        duration: Constants.scrollDuration,
+        curve: Constants.scrollCurve,
+      );
+    }
+    if (desktopScrollController.hasClients) {
+      desktopScrollController.animateTo(
+        0,
+        duration: Constants.scrollDuration,
+        curve: Constants.scrollCurve,
+      );
+    }
   }
 
   Future<void> resetSubtasks() async {
@@ -210,12 +224,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
     if (nameEditingController.text.isEmpty) {
       valid = false;
       _nameErrorText.value = "Enter Task Name";
-      if (desktopScrollController.hasClients) {
-        desktopScrollController.jumpTo(0);
-      }
-      if (mobileScrollController.hasClients) {
-        mobileScrollController.jumpTo(0);
-      }
+      scrollToTop();
     }
 
     if (null == vm.startDate || null == vm.dueDate) {

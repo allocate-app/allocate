@@ -171,11 +171,8 @@ class AllocateUser with EquatableMixin implements Copyable<AllocateUser> {
         sidebarOpacity = Constants.defaultSidebarOpacity,
         toDelete = false;
 
-  // TODO: supabase - link user table by user.auth.uuid + email.
   Map<String, dynamic> toEntity() => {
         "id": id,
-        // Already in table -> set automatically
-        // "uuid": uuid,
         "email": email,
         "username": username,
         "bandwidth": bandwidth,

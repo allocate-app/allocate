@@ -249,6 +249,7 @@ class _MyAppState extends State<MyApp> with WindowListener, TrayListener {
     super.dispose();
   }
 
+  // TODO: refactor -> windows/linux minimize to system tray.
   @override
   void onWindowClose() async {
     if (Platform.isWindows || Platform.isLinux) {

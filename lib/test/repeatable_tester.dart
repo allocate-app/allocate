@@ -4410,9 +4410,6 @@ void main() async {
 
       expect(null != nextDate, true, reason: "Null start date");
 
-      int offset = repeatableService!.getDateTimeDayOffset(
-          start: template.startDate, end: template.dueDate);
-
       Reminder projection = template.copyWith(
         repeatable: true,
         name: "TestProjection",

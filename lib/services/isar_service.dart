@@ -29,13 +29,7 @@ class IsarService {
 
   Isar get isarClient => _isarClient;
 
-  // TODO: hook GUI thing in settings screen to look here.
-  // Use the userProvider timer to periodically check this value.
-  // Display a toast or something.
   ValueNotifier<int> dbSize = ValueNotifier(0);
-
-  // TODO: get a size in MiB here -> Add listeners to repositories
-  // Request Isar service update its own total.
 
   Future<void> init({bool? debug}) async {
     if (_initialized) {

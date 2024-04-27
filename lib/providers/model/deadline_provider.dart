@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:developer';
-import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:jiffy/jiffy.dart';
@@ -62,14 +61,15 @@ class DeadlineProvider extends ChangeNotifier {
     _deadlineRepo.addListener(scheduleAndNotify);
   }
 
-  // TODO: repo needs to have async method.
   Future<void> init() async {
-    _deadlineRepo.init();
-    // Local notifications implementation for Linux/Windows doesn't have scheduling api.
-    // Must be loaded into memory on init.
-    if (Platform.isLinux || Platform.isWindows) {
-      await batchNotifications();
-    }
+    await _deadlineRepo.init();
+
+    // This happens on repo-sync.
+    // // Local notifications implementation for Linux/Windows doesn't have scheduling api.
+    // // Must be loaded into memory on init.
+    // if (Platform.isLinux || Platform.isWindows) {
+    //   await batchNotifications();
+    // }
     notifyListeners();
   }
 
@@ -104,6 +104,31 @@ class DeadlineProvider extends ChangeNotifier {
 
   List<SortMethod> get sortMethods => sorter.sortMethods;
 
+  Future<void> refreshRepo() async {
+    try {
+      await _deadlineRepo.refreshRepo();
+      await batchNotifications();
+      notifyListeners();
+    } on FailureToDeleteException catch (e, stacktrace) {
+      notifyListeners();
+      log(e.cause, stackTrace: stacktrace);
+      notifyListeners();
+      return Future.error(e, stacktrace);
+    } on FailureToUploadException catch (e, stacktrace) {
+      log(e.cause, stackTrace: stacktrace);
+      notifyListeners();
+      return Future.error(e, stacktrace);
+    } on FailureToScheduleException catch (e, stacktrace) {
+      log(e.cause, stackTrace: stacktrace);
+      notifyListeners();
+      return Future.error(e, stacktrace);
+    } on Error catch (e, stacktrace) {
+      log("Unknown error", stackTrace: stacktrace);
+      notifyListeners();
+      return Future.error(UnexpectedErrorException(), stacktrace);
+    }
+  }
+
   Future<void> syncRepo() async {
     try {
       await _deadlineRepo.syncRepo();
@@ -131,6 +156,14 @@ class DeadlineProvider extends ChangeNotifier {
 
   Future<void> createDeadline(Deadline deadline) async {
     try {
+      // Check for db collisions.
+      bool inDB = await _deadlineRepo.containsID(id: deadline.id);
+
+      while (inDB) {
+        deadline.id = deadline.id + 1;
+        inDB = await _deadlineRepo.containsID(id: deadline.id);
+      }
+
       curDeadline = await _deadlineRepo.create(deadline);
       if (curDeadline!.repeatable) {
         await createTemplate(deadline: curDeadline!);

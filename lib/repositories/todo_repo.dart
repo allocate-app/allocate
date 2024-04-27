@@ -40,15 +40,16 @@ class ToDoRepo extends ChangeNotifier implements ToDoRepository {
   bool _subscribed = false;
   bool _initialized = false;
 
+  bool _needsRefreshing = true;
+  bool _syncing = false;
+  bool _refreshing = false;
+
   String get uuid => _supabaseClient.auth.currentUser?.id ?? "";
 
   String? currentUserID;
 
-  // TODO: Refactor: this should be asynchronous...
-  // And also, WHY DOES IT NOT SYNC?
-  // TODO: id collision checker.
   @override
-  void init() {
+  Future<void> init() async {
     if (_initialized) {
       return;
     }
@@ -79,17 +80,24 @@ class ToDoRepo extends ChangeNotifier implements ToDoRepository {
             event: PostgresChangeEvent.delete,
             callback: handleDelete);
 
+    await handleUserChange();
+
+    if (!_subscribed) {
+      _toDoStream.subscribe();
+      _subscribed = true;
+    }
+
     // Listen to auth changes.
     SupabaseService.instance.authSubscription.listen((AuthState data) async {
       final AuthChangeEvent event = data.event;
       switch (event) {
-        case AuthChangeEvent.initialSession:
-          await handleUserChange();
-          // OPEN TABLE STREAM -> insert new data.
-          if (!_subscribed) {
-            _toDoStream.subscribe();
-            _subscribed = true;
-          }
+        // case AuthChangeEvent.initialSession:
+        //   await handleUserChange();
+        //   // OPEN TABLE STREAM -> insert new data.
+        //   if (!_subscribed) {
+        //     _toDoStream.subscribe();
+        //     _subscribed = true;
+        //   }
         case AuthChangeEvent.signedIn:
           await handleUserChange();
           // This should close and re-open the subscription?
@@ -115,17 +123,22 @@ class ToDoRepo extends ChangeNotifier implements ToDoRepository {
     });
 
     // This is for online stuff.
+    // I am unsure as to what the heck I was thinking here.
     SupabaseService.instance.connectionSubscription
         .listen((ConnectivityResult result) async {
+      _needsRefreshing = true;
+
       if (result == ConnectivityResult.none) {
         return;
       }
 
       // This is to give enough time for the internet to check.
       await Future.delayed(const Duration(seconds: 2));
+
       if (!isConnected) {
         return;
       }
+
       await handleUserChange();
     });
 
@@ -135,11 +148,17 @@ class ToDoRepo extends ChangeNotifier implements ToDoRepository {
     });
   }
 
+  // Refresh: Gather unsynced data, Clear the database, then Sync.
   Future<void> handleUserChange() async {
     String? newID = _supabaseClient.auth.currentUser?.id;
 
     if (newID == currentUserID) {
-      return syncRepo();
+      if (_needsRefreshing) {
+        await refreshRepo();
+        _needsRefreshing = false;
+        return;
+      }
+      return await syncRepo();
     }
 
     // In the case that the previous currentUserID was null.
@@ -147,13 +166,19 @@ class ToDoRepo extends ChangeNotifier implements ToDoRepository {
     // if not online, this will just early return.
     if (null == currentUserID) {
       currentUserID = newID;
+
+      if (_needsRefreshing) {
+        await refreshRepo();
+        _needsRefreshing = false;
+        return;
+      }
       return await syncRepo();
     }
 
     // This implies there is a new user -> clear the DB
     // and insert the new user.
     currentUserID = newID;
-    return await swapRepo();
+    await swapRepo();
   }
 
   // Offline first -> local operation first.
@@ -418,13 +443,20 @@ class ToDoRepo extends ChangeNotifier implements ToDoRepository {
   Future<int> getOnlineCount() async =>
       _supabaseClient.from("toDos").count(CountOption.exact);
 
-  // This doesn't currently throw exceptions, as these are technically less critical.
-  // Most function happens offline.
   @override
-  Future<void> syncRepo() async {
+  Future<void> refreshRepo() async {
     if (!isConnected) {
+      _refreshing = false;
+      _syncing = false;
       return;
     }
+
+    if (_refreshing) {
+      return;
+    }
+
+    _refreshing = true;
+    _syncing = true;
 
     // Get the set of unsynced data.
     Set<ToDo> unsynced = await getUnsynced().then((_) => _.toSet());
@@ -436,14 +468,63 @@ class ToDoRepo extends ChangeNotifier implements ToDoRepository {
     List<ToDo> onlineToDos = await fetchRepo();
 
     List<ToDo> toInsert = List.empty(growable: true);
-    for (ToDo toDo in onlineToDos) {
-      ToDo? otherToDo = unsynced.lookup(toDo);
-      // Prioritize by last updated -> unsynced data will overwrite new data.
-      if (null != otherToDo &&
-          toDo.lastUpdated.isAfter(otherToDo.lastUpdated)) {
-        unsynced.remove(otherToDo);
+    for (ToDo onlineToDo in onlineToDos) {
+      ToDo? localToDo = unsynced.lookup(onlineToDo);
+      // Prioritize by last updated -> unsynced data will overwrite new data
+      // during the batch update.
+      if (null != localToDo &&
+          onlineToDo.lastUpdated.isAfter(localToDo.lastUpdated)) {
+        unsynced.remove(localToDo);
       }
-      toInsert.add(toDo);
+      toInsert.add(onlineToDo);
+    }
+
+    // Clear the DB, then add all new data.
+    // Unsynced data will be updated once remaining data has been collected.
+    await clearLocal();
+
+    await _isarClient.writeTxn(() async {
+      await _isarClient.toDos.putAll(toInsert);
+    });
+
+    insertRemaining(totalFetched: onlineToDos.length, unsynced: unsynced);
+    notifyListeners();
+  }
+
+  // This doesn't currently throw exceptions, as these are technically less critical.
+  // Most function happens offline.
+  @override
+  Future<void> syncRepo() async {
+    if (!isConnected) {
+      _syncing = false;
+      return;
+    }
+
+    if (_syncing || _refreshing) {
+      return;
+    }
+
+    _syncing = true;
+
+    // Get the set of unsynced data.
+    Set<ToDo> unsynced = await getUnsynced().then((_) => _.toSet());
+
+    // Get the online count.
+    _toDoCount = await getOnlineCount();
+
+    // Fetch new data -> by fetchRepo();
+    List<ToDo> onlineToDos = await fetchRepo();
+
+    List<ToDo> toInsert = List.empty(growable: true);
+    for (ToDo onlineToDo in onlineToDos) {
+      ToDo? localToDo = unsynced.lookup(onlineToDo);
+      // Prioritize by last updated -> unsynced data will overwrite new data
+      // during the batch update.
+      if (null != localToDo &&
+          onlineToDo.lastUpdated.isAfter(localToDo.lastUpdated)) {
+        unsynced.remove(localToDo);
+      }
+      toInsert.add(onlineToDo);
     }
 
     // Put all new data in the db.
@@ -451,36 +532,45 @@ class ToDoRepo extends ChangeNotifier implements ToDoRepository {
       await _isarClient.toDos.putAll(toInsert);
     });
 
-    // Update the unsynced data.
-    await updateBatch(unsynced.toList());
-
-    if (onlineToDos.length < _toDoCount) {
-      // Give the db a moment to refresh.
-      await Future.delayed(const Duration(seconds: 1));
-      insertRemaining(totalFetched: onlineToDos.length).whenComplete(() {
-        notifyListeners();
-      });
-    }
+    insertRemaining(totalFetched: onlineToDos.length, unsynced: unsynced);
 
     notifyListeners();
   }
 
-  Future<void> insertRemaining({required int totalFetched}) async {
+  Future<void> insertRemaining(
+      {required int totalFetched, Set<ToDo>? unsynced}) async {
+    unsynced = unsynced ?? Set.identity();
+
     List<ToDo> toInsert = List.empty(growable: true);
     while (totalFetched < _toDoCount) {
-      List<ToDo>? newToDos = await fetchRepo(offset: totalFetched);
+      List<ToDo>? onlineToDos = await fetchRepo(offset: totalFetched);
 
       // If there is no data or connection is lost, break.
-      if (newToDos.isEmpty) {
+      if (onlineToDos.isEmpty) {
         break;
       }
-      toInsert.addAll(newToDos);
-      totalFetched += newToDos.length;
+      for (ToDo onlineToDo in onlineToDos) {
+        ToDo? localToDo = unsynced.lookup(onlineToDo);
+        // Prioritize by last updated -> unsynced data will overwrite new data
+        // during the batch update.
+        if (null != localToDo &&
+            onlineToDo.lastUpdated.isAfter(localToDo.lastUpdated)) {
+          unsynced.remove(localToDo);
+        }
+        toInsert.add(onlineToDo);
+      }
+      totalFetched += onlineToDos.length;
     }
 
     await _isarClient.writeTxn(() async {
       await _isarClient.toDos.putAll(toInsert);
     });
+
+    await updateBatch(unsynced.toList());
+    _syncing = false;
+    _refreshing = false;
+
+    notifyListeners();
   }
 
   @override
@@ -509,7 +599,8 @@ class ToDoRepo extends ChangeNotifier implements ToDoRepository {
 
   Future<void> swapRepo() async {
     await clearLocal();
-    await syncRepo();
+    // This clears twice... I haven't figured how to make this more efficient yet.
+    await refreshRepo();
   }
 
   Future<void> handleUpsert(PostgresChangePayload payload) async {
@@ -565,6 +656,13 @@ class ToDoRepo extends ChangeNotifier implements ToDoRepository {
   @override
   Future<ToDo?> getByID({required int id}) async =>
       await _isarClient.toDos.where().idEqualTo(id).findFirst();
+
+  @override
+  Future<bool> containsID({required int id}) async {
+    List<ToDo> duplicates =
+        await _isarClient.toDos.where().idEqualTo(id).findAll();
+    return duplicates.isNotEmpty;
+  }
 
   @override
   Future<List<ToDo>> getRepoList(

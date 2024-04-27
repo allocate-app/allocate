@@ -35,12 +35,16 @@ class ReminderRepo extends ChangeNotifier implements ReminderRepository {
   bool _subscribed = false;
   bool _initialized = false;
 
+  bool _needsRefreshing = true;
+  bool _syncing = false;
+  bool _refreshing = false;
+
   String get uuid => _supabaseClient.auth.currentUser?.id ?? "";
 
   String? currentUserID;
 
   @override
-  void init() {
+  Future<void> init() async {
     if (_initialized) {
       return;
     }
@@ -72,17 +76,25 @@ class ReminderRepo extends ChangeNotifier implements ReminderRepository {
             event: PostgresChangeEvent.delete,
             callback: handleDelete);
 
+    await handleUserChange();
+
+    if (!_subscribed) {
+      _reminderStream.subscribe();
+      _subscribed = true;
+    }
+
     // Listen to auth changes.
     SupabaseService.instance.authSubscription.listen((AuthState data) async {
       final AuthChangeEvent event = data.event;
       switch (event) {
-        case AuthChangeEvent.initialSession:
-          await handleUserChange();
-          // OPEN TABLE STREAM -> insert new data.
-          if (!_subscribed) {
-            _reminderStream.subscribe();
-            _subscribed = true;
-          }
+        // case AuthChangeEvent.initialSession:
+        //   await handleUserChange();
+        //   // OPEN TABLE STREAM -> insert new data.
+        //   if (!_subscribed) {
+        //     _reminderStream.subscribe();
+        //     _subscribed = true;
+        //   break;
+        //   }
         case AuthChangeEvent.signedIn:
           await handleUserChange();
           // This should close and re-open the subscription?
@@ -110,12 +122,14 @@ class ReminderRepo extends ChangeNotifier implements ReminderRepository {
     // This is for online stuff.
     SupabaseService.instance.connectionSubscription
         .listen((ConnectivityResult result) async {
+      _needsRefreshing = true;
       if (result == ConnectivityResult.none) {
         return;
       }
 
       // This is to give enough time for the internet to check.
       await Future.delayed(const Duration(seconds: 2));
+
       if (!isConnected) {
         return;
       }
@@ -126,8 +140,6 @@ class ReminderRepo extends ChangeNotifier implements ReminderRepository {
     _isarClient.reminders.watchLazy().listen((_) async {
       await IsarService.instance.updateDBSize();
     });
-
-    handleUserChange();
   }
 
   Future<void> handleUserChange() async {
@@ -135,7 +147,12 @@ class ReminderRepo extends ChangeNotifier implements ReminderRepository {
 
     // Realtime Changes will handle updated data.
     if (newID == currentUserID) {
-      return syncRepo();
+      if (_needsRefreshing) {
+        await refreshRepo();
+        _needsRefreshing = false;
+        return;
+      }
+      return await syncRepo();
     }
 
     // In the case that the previous currentUserID was null.
@@ -143,6 +160,11 @@ class ReminderRepo extends ChangeNotifier implements ReminderRepository {
     // if not online, this will just early return.
     if (null == currentUserID) {
       currentUserID = newID;
+      if (_needsRefreshing) {
+        await refreshRepo();
+        _needsRefreshing = false;
+        return;
+      }
       return await syncRepo();
     }
 
@@ -402,10 +424,19 @@ class ReminderRepo extends ChangeNotifier implements ReminderRepository {
       _supabaseClient.from("reminders").count(CountOption.exact);
 
   @override
-  Future<void> syncRepo() async {
+  Future<void> refreshRepo() async {
     if (!isConnected) {
+      _refreshing = false;
+      _syncing = false;
       return;
     }
+
+    if (_refreshing) {
+      return;
+    }
+
+    _refreshing = true;
+    _syncing = true;
 
     // Get the set of unsynced data.
     Set<Reminder> unsynced = await getUnsynced().then((_) => _.toSet());
@@ -417,14 +448,63 @@ class ReminderRepo extends ChangeNotifier implements ReminderRepository {
     List<Reminder> onlineReminders = await fetchRepo();
 
     List<Reminder> toInsert = List.empty(growable: true);
-    for (Reminder reminder in onlineReminders) {
-      Reminder? otherReminder = unsynced.lookup(reminder);
-      // Prioritize by last updated -> unsynced data will overwrite new data.
-      if (null != otherReminder &&
-          reminder.lastUpdated.isAfter(otherReminder.lastUpdated)) {
-        unsynced.remove(otherReminder);
+    for (Reminder onlineReminder in onlineReminders) {
+      Reminder? localReminder = unsynced.lookup(onlineReminder);
+      // Prioritize by last updated -> unsynced data will overwrite new data
+      // during the batch update.
+      if (null != localReminder &&
+          onlineReminder.lastUpdated.isAfter(localReminder.lastUpdated)) {
+        unsynced.remove(localReminder);
       }
-      toInsert.add(reminder);
+      toInsert.add(onlineReminder);
+    }
+
+    // Clear the DB, then add all new data.
+    // Unsynced data will be updated once remaining data has been collected.
+    await clearLocal();
+
+    await _isarClient.writeTxn(() async {
+      await _isarClient.reminders.putAll(toInsert);
+    });
+
+    insertRemaining(totalFetched: onlineReminders.length, unsynced: unsynced);
+    notifyListeners();
+  }
+
+  // This doesn't currently throw exceptions, as these are technically less critical.
+  // Most function happens offline.
+  @override
+  Future<void> syncRepo() async {
+    if (!isConnected) {
+      _syncing = false;
+      return;
+    }
+
+    if (_syncing || _refreshing) {
+      return;
+    }
+
+    _syncing = true;
+
+    // Get the set of unsynced data.
+    Set<Reminder> unsynced = await getUnsynced().then((_) => _.toSet());
+
+    // Get the online count.
+    _reminderCount = await getOnlineCount();
+
+    // Fetch new data -> by fetchRepo();
+    List<Reminder> onlineReminders = await fetchRepo();
+
+    List<Reminder> toInsert = List.empty(growable: true);
+    for (Reminder onlineReminder in onlineReminders) {
+      Reminder? localReminder = unsynced.lookup(onlineReminder);
+      // Prioritize by last updated -> unsynced data will overwrite new data
+      // during the batch update.
+      if (null != localReminder &&
+          onlineReminder.lastUpdated.isAfter(localReminder.lastUpdated)) {
+        unsynced.remove(localReminder);
+      }
+      toInsert.add(onlineReminder);
     }
 
     // Put all new data in the db.
@@ -432,37 +512,44 @@ class ReminderRepo extends ChangeNotifier implements ReminderRepository {
       await _isarClient.reminders.putAll(toInsert);
     });
 
-    // Update the unsynced data.
-    await updateBatch(unsynced.toList());
-
-    if (onlineReminders.length < _reminderCount) {
-      // Give the db a moment to refresh.
-      await Future.delayed(const Duration(seconds: 1));
-      return insertRemaining(totalFetched: onlineReminders.length)
-          .whenComplete(() {
-        notifyListeners();
-      });
-    }
+    insertRemaining(totalFetched: onlineReminders.length, unsynced: unsynced);
 
     notifyListeners();
   }
 
-  Future<void> insertRemaining({required int totalFetched}) async {
+  Future<void> insertRemaining(
+      {required int totalFetched, Set<Reminder>? unsynced}) async {
+    unsynced = unsynced ?? Set.identity();
+
     List<Reminder> toInsert = List.empty(growable: true);
     while (totalFetched < _reminderCount) {
-      List<Reminder>? newReminders = await fetchRepo(offset: totalFetched);
+      List<Reminder>? onlineReminders = await fetchRepo(offset: totalFetched);
 
       // If there is no data or connection is lost, break.
-      if (newReminders.isEmpty) {
+      if (onlineReminders.isEmpty) {
         break;
       }
-      toInsert.addAll(newReminders);
-      totalFetched += newReminders.length;
+      for (Reminder onlineReminder in onlineReminders) {
+        Reminder? localReminder = unsynced.lookup(onlineReminder);
+        // Prioritize by last updated -> unsynced data will overwrite new data
+        // during the batch update.
+        if (null != localReminder &&
+            onlineReminder.lastUpdated.isAfter(localReminder.lastUpdated)) {
+          unsynced.remove(localReminder);
+        }
+        toInsert.add(onlineReminder);
+      }
+      totalFetched += onlineReminders.length;
     }
 
     await _isarClient.writeTxn(() async {
       await _isarClient.reminders.putAll(toInsert);
     });
+
+    await updateBatch(unsynced.toList());
+    _syncing = false;
+    _refreshing = false;
+    notifyListeners();
   }
 
   @override
@@ -491,7 +578,7 @@ class ReminderRepo extends ChangeNotifier implements ReminderRepository {
   Future<void> swapRepo() async {
     NotificationService.instance.cancelAllNotifications();
     await clearLocal();
-    await syncRepo();
+    await refreshRepo();
   }
 
   Future<void> handleUpsert(PostgresChangePayload payload) async {
@@ -548,6 +635,13 @@ class ReminderRepo extends ChangeNotifier implements ReminderRepository {
   @override
   Future<Reminder?> getByID({required int id}) async =>
       await _isarClient.reminders.where().idEqualTo(id).findFirst();
+
+  @override
+  Future<bool> containsID({required int id}) async {
+    List<Reminder> duplicates =
+        await _isarClient.reminders.where().idEqualTo(id).findAll();
+    return duplicates.isNotEmpty;
+  }
 
   @override
   Future<List<Reminder>> getRepoList(

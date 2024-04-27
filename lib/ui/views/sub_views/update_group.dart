@@ -14,6 +14,7 @@ import '../../../providers/model/group_provider.dart';
 import '../../../providers/model/todo_provider.dart';
 import '../../../providers/viewmodels/group_viewmodel.dart';
 import '../../../providers/viewmodels/todo_viewmodel.dart';
+import '../../../services/application_service.dart';
 import '../../../util/constants.dart';
 import '../../../util/enums.dart';
 import '../../blurred_dialog.dart';
@@ -50,6 +51,8 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
   late final ToDoProvider toDoProvider;
   late final LayoutProvider layoutProvider;
 
+  late ApplicationService applicationService;
+
   // Scrolling
   late final ScrollController desktopScrollController;
   late final ScrollController mobileScrollController;
@@ -78,6 +81,9 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
     groupProvider = Provider.of<GroupProvider>(context, listen: false);
     toDoProvider = Provider.of<ToDoProvider>(context, listen: false);
     layoutProvider = Provider.of<LayoutProvider>(context, listen: false);
+
+    applicationService = ApplicationService.instance;
+    applicationService.addListener(scrollToTop);
   }
 
   void initializeParameters() {
@@ -107,6 +113,7 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
 
   @override
   void dispose() {
+    applicationService.removeListener(scrollToTop);
     nameEditingController.removeListener(watchName);
     nameEditingController.dispose();
     descriptionEditingController.removeListener(watchDescription);
@@ -115,6 +122,23 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
     desktopScrollController.dispose();
     toDoSearchController.dispose();
     super.dispose();
+  }
+
+  void scrollToTop() {
+    if (mobileScrollController.hasClients) {
+      mobileScrollController.animateTo(
+        0,
+        duration: Constants.scrollDuration,
+        curve: Constants.scrollCurve,
+      );
+    }
+    if (desktopScrollController.hasClients) {
+      desktopScrollController.animateTo(
+        0,
+        duration: Constants.scrollDuration,
+        curve: Constants.scrollCurve,
+      );
+    }
   }
 
   void watchName() {
@@ -140,12 +164,7 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
     if (nameEditingController.text.isEmpty) {
       valid = false;
       _nameErrorText.value = "Enter Group Name";
-      if (desktopScrollController.hasClients) {
-        desktopScrollController.jumpTo(0);
-      }
-      if (mobileScrollController.hasClients) {
-        mobileScrollController.jumpTo(0);
-      }
+      scrollToTop();
     }
 
     return valid;
@@ -414,7 +433,6 @@ class _UpdateGroupScreen extends State<UpdateGroupScreen> {
   // This could be factored into the tiles class.
   Widget _buildToDosTile(
       {ScrollPhysics physics = const NeverScrollableScrollPhysics()}) {
-    // TODO: make fix in create group tile.
     // Factor out.
     return ExpandedListTile(
       initiallyExpanded: true,

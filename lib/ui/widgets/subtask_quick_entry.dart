@@ -37,6 +37,7 @@ class SubtaskQuickEntry extends StatefulWidget {
   State<SubtaskQuickEntry> createState() => _SubtaskQuickEntry();
 }
 
+// TODO: this needs complete refactoring.
 class _SubtaskQuickEntry extends State<SubtaskQuickEntry> {
   late TextEditingController nameEditingController;
   late MenuController menuController;

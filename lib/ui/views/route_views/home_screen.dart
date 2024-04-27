@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:ui';
 
@@ -66,12 +67,16 @@ class _HomeScreen extends State<HomeScreen> with WidgetsBindingObserver {
   late final LayoutProvider layoutProvider;
   late final EventProvider eventProvider;
 
+  late final ApplicationService applicationService;
+
   late final ScrollController navScrollController;
 
   late final ScrollPhysics scrollPhysics;
   late final GlobalKey<ExpandableFabState> _fabKey;
 
-  // TODO: possibly just run the dayReset HERE.
+  late Timer _refreshTimer;
+  late bool _needsRefreshing;
+
   @override
   void initState() {
     super.initState();
@@ -97,6 +102,8 @@ class _HomeScreen extends State<HomeScreen> with WidgetsBindingObserver {
     eventProvider = Provider.of<EventProvider>(context, listen: false);
     layoutProvider = Provider.of<LayoutProvider>(context, listen: false);
 
+    applicationService = ApplicationService.instance;
+
     toDoProvider.addListener(updateMyDay);
     routineProvider.addListener(updateMyDay);
     dailyResetProvider.addListener(dayReset);
@@ -118,10 +125,18 @@ class _HomeScreen extends State<HomeScreen> with WidgetsBindingObserver {
     }
 
     _fabKey = GlobalKey<ExpandableFabState>();
+
+    _needsRefreshing = false;
+
     // Reset the initial index in ApplicationService ->
     // This route is only pushed on an application launch, relaunch,
     // Or a deeplink routing.
-    ApplicationService.instance.initialPageIndex = null;
+    applicationService.initialPageIndex = null;
+
+    // Currently this is on a 30s timer.
+    // This is done to prevent repeated refreshing on app resume.
+    _refreshTimer =
+        Timer.periodic(Constants.updateTimer, (_) => _needsRefreshing = true);
   }
 
   void initializeControllers() {
@@ -176,8 +191,6 @@ class _HomeScreen extends State<HomeScreen> with WidgetsBindingObserver {
 
   Future<void> dayReset() async {
     await Future.wait([
-      // TODO: This needs to happen -AFTER- the sync has happened.
-      RepeatableService.instance.generateNextRepeats(),
       userProvider.dayReset(),
       toDoProvider.dayReset(),
       routineProvider.dayReset(),
@@ -191,12 +204,32 @@ class _HomeScreen extends State<HomeScreen> with WidgetsBindingObserver {
         return [];
       },
     );
+
+    await RepeatableService.instance.generateNextRepeats();
   }
 
-  // TODO: this should run a hard sync.
-  // TODO: implement hard sync
-  // TODO: not sure abt calendar -> for now, probably fine.
-  Future<void> syncOnline() async {
+  Future<void> refreshRepo() async {
+    if (!userProvider.isConnected.value) {
+      return;
+    }
+    await Future.wait([
+      userProvider.syncUser(),
+      toDoProvider.refreshRepo(),
+      routineProvider.refreshRepo(),
+      deadlineProvider.refreshRepo(),
+      reminderProvider.refreshRepo(),
+      groupProvider.refreshRepo(),
+      subtaskProvider.refreshRepo(),
+    ]);
+
+    // Give enough time for all of the data to be fetched.
+    await Future.delayed(const Duration(seconds: 1));
+
+    _needsRefreshing = false;
+    await eventProvider.resetCalendar();
+  }
+
+  Future<void> syncRepo() async {
     if (!userProvider.isConnected.value) {
       return;
     }
@@ -210,6 +243,10 @@ class _HomeScreen extends State<HomeScreen> with WidgetsBindingObserver {
       subtaskProvider.syncRepo(),
     ]);
 
+    // Give enough time for all of the data to be fetched.
+    // This may need increasing depending on the online bottleneck.
+    await Future.delayed(const Duration(seconds: 1));
+
     await eventProvider.resetCalendar();
   }
 
@@ -220,6 +257,7 @@ class _HomeScreen extends State<HomeScreen> with WidgetsBindingObserver {
     dailyResetProvider.removeListener(dayReset);
     groupProvider.removeListener(resetNavGroups);
     navScrollController.dispose();
+    _refreshTimer.cancel();
     IsarService.instance.dbSize.removeListener(alertSizeLimit);
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
@@ -228,12 +266,23 @@ class _HomeScreen extends State<HomeScreen> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) async {
     if (AppLifecycleState.resumed == state) {
-      // This isn't ideal.
-      await syncOnline();
+      if (_needsRefreshing) {
+        await refreshRepo();
+      } else {
+        await syncRepo();
+      }
+
       // This is to cover when cron isn't running in the bg.
       // Probably okay to just like, sync stuff.
       userProvider.checkDay();
-      userProvider.updateConnectionStatus();
+
+      if (userProvider.viewModel?.syncOnline ?? false) {
+        userProvider.updateConnectionStatus();
+      }
+    }
+
+    if (AppLifecycleState.hidden == state) {
+      _needsRefreshing = true;
     }
   }
 
@@ -316,11 +365,23 @@ class _HomeScreen extends State<HomeScreen> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     layoutProvider.size = MediaQuery.sizeOf(context);
-    return (Platform.isWindows)
-        ? PopScope(
-            canPop: false,
-            onPopInvoked: handlePop,
-            child: DragToResizeArea(
+    return Stack(children: [
+      (Platform.isWindows)
+          ? PopScope(
+              canPop: false,
+              onPopInvoked: handlePop,
+              child: DragToResizeArea(
+                child: Consumer<LayoutProvider>(builder: (BuildContext context,
+                    LayoutProvider value, Widget? child) {
+                  return (value.largeScreen)
+                      ? _buildDesktop(context: context)
+                      : _buildMobile(context: context);
+                }),
+              ),
+            )
+          : PopScope(
+              canPop: false,
+              onPopInvoked: handlePop,
               child: Consumer<LayoutProvider>(builder:
                   (BuildContext context, LayoutProvider value, Widget? child) {
                 return (value.largeScreen)
@@ -328,17 +389,20 @@ class _HomeScreen extends State<HomeScreen> with WidgetsBindingObserver {
                     : _buildMobile(context: context);
               }),
             ),
-          )
-        : PopScope(
-            canPop: false,
-            onPopInvoked: handlePop,
-            child: Consumer<LayoutProvider>(builder:
-                (BuildContext context, LayoutProvider value, Widget? child) {
-              return (value.largeScreen)
-                  ? _buildDesktop(context: context)
-                  : _buildMobile(context: context);
-            }),
-          );
+      // TODO: test on device to determine proper size.
+      // Add to blurredDismissible.
+      if (layoutProvider.isMobile)
+        Positioned(
+          top: 0,
+          left: 0,
+          right: 0,
+          height: MediaQuery.of(context).padding.top,
+          child: GestureDetector(
+              onTap: applicationService.scrollToTop,
+              excludeFromSemantics: true,
+              behavior: HitTestBehavior.translucent),
+        ),
+    ]);
   }
 
   Widget _buildDesktop({required BuildContext context}) {
@@ -639,7 +703,7 @@ class _HomeScreen extends State<HomeScreen> with WidgetsBindingObserver {
                                 Widget? child) =>
                             Text(value)),
               ),
-              // TODO: This didn't rebuild on reconnection status.
+              // TODO: Test reconnection.
               subtitle: ValueListenableBuilder(
                 valueListenable: userProvider.isConnected,
                 builder: (BuildContext context, bool online, Widget? child) =>

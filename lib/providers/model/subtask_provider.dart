@@ -38,7 +38,7 @@ class SubtaskProvider extends ChangeNotifier {
   }
 
   Future<void> init() async {
-    _subtaskRepo.init();
+    await _subtaskRepo.init();
     notifyListeners();
   }
 
@@ -48,6 +48,25 @@ class SubtaskProvider extends ChangeNotifier {
     }
     userViewModel = newUser;
     notifyListeners();
+  }
+
+  Future<void> refreshRepo() async {
+    try {
+      await _subtaskRepo.refreshRepo();
+      notifyListeners();
+    } on FailureToDeleteException catch (e, stacktrace) {
+      log(e.cause, stackTrace: stacktrace);
+      notifyListeners();
+      return Future.error(e, stacktrace);
+    } on FailureToUploadException catch (e, stacktrace) {
+      log(e.cause, stackTrace: stacktrace);
+      notifyListeners();
+      return Future.error(e, stacktrace);
+    } on Error catch (e, stacktrace) {
+      log("Unknown error", stackTrace: stacktrace);
+      notifyListeners();
+      return Future.error(UnexpectedErrorException(), stacktrace);
+    }
   }
 
   Future<void> syncRepo() async {
@@ -71,6 +90,14 @@ class SubtaskProvider extends ChangeNotifier {
 
   Future<void> createSubtask(Subtask subtask) async {
     try {
+      // Check for db collisions.
+      bool inDB = await _subtaskRepo.containsID(id: subtask.id);
+
+      while (inDB) {
+        subtask.id = subtask.id + 1;
+        inDB = await _subtaskRepo.containsID(id: subtask.id);
+      }
+
       curSubtask = await _subtaskRepo.create(subtask);
       notifyListeners();
     } on FailureToUploadException catch (e, stacktrace) {

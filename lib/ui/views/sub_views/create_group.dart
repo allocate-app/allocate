@@ -12,6 +12,7 @@ import '../../../providers/model/group_provider.dart';
 import '../../../providers/model/todo_provider.dart';
 import '../../../providers/viewmodels/group_viewmodel.dart';
 import '../../../providers/viewmodels/todo_viewmodel.dart';
+import '../../../services/application_service.dart';
 import '../../../util/constants.dart';
 import '../../../util/enums.dart';
 import '../../../util/exceptions.dart';
@@ -47,6 +48,8 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
   late final ToDoProvider toDoProvider;
   late final LayoutProvider layoutProvider;
 
+  late ApplicationService applicationService;
+
   // Scrolling
   late final ScrollController mobileScrollController;
   late final ScrollController desktopScrollController;
@@ -73,6 +76,9 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
     groupProvider = Provider.of<GroupProvider>(context, listen: false);
     toDoProvider = Provider.of<ToDoProvider>(context, listen: false);
     layoutProvider = Provider.of<LayoutProvider>(context, listen: false);
+
+    applicationService = ApplicationService.instance;
+    applicationService.addListener(scrollToTop);
   }
 
   void initializeParameters() {
@@ -101,6 +107,7 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
 
   @override
   void dispose() {
+    applicationService.removeListener(scrollToTop);
     nameEditingController.removeListener(watchName);
     nameEditingController.dispose();
     descriptionEditingController.removeListener(watchDescription);
@@ -109,6 +116,17 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
     desktopScrollController.dispose();
     toDoSearchController.dispose();
     super.dispose();
+  }
+
+  void scrollToTop() {
+    if (mobileScrollController.hasClients) {
+      mobileScrollController.animateTo(0,
+          duration: Constants.scrollDuration, curve: Constants.scrollCurve);
+    }
+    if (desktopScrollController.hasClients) {
+      desktopScrollController.animateTo(0,
+          duration: Constants.scrollDuration, curve: Constants.scrollCurve);
+    }
   }
 
   void watchName() {
@@ -134,12 +152,7 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
     if (nameEditingController.text.isEmpty) {
       valid = false;
       _nameErrorText.value = "Enter Group Name";
-      if (desktopScrollController.hasClients) {
-        desktopScrollController.jumpTo(0);
-      }
-      if (mobileScrollController.hasClients) {
-        mobileScrollController.jumpTo(0);
-      }
+      scrollToTop();
     }
 
     return valid;
@@ -372,6 +385,7 @@ class _CreateGroupScreen extends State<CreateGroupScreen> {
     );
   }
 
+  // TODO: factor out to tiles class.
   Widget _buildToDosTile(
       {ScrollPhysics physics = const NeverScrollableScrollPhysics()}) {
     return ExpandedListTile(

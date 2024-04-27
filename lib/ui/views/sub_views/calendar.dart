@@ -8,6 +8,7 @@ import 'package:table_calendar/table_calendar.dart';
 
 import '../../../providers/application/event_provider.dart';
 import '../../../providers/application/layout_provider.dart';
+import '../../../services/application_service.dart';
 import '../../../util/constants.dart';
 import '../../widgets/listviews.dart';
 
@@ -30,6 +31,8 @@ class _CalendarScreen extends State<CalendarScreen> {
 
   late LayoutProvider layoutProvider;
 
+  late ApplicationService applicationService;
+
   late bool _showRepeatingLimit;
   late bool _showEventLimit;
 
@@ -45,6 +48,7 @@ class _CalendarScreen extends State<CalendarScreen> {
 
   @override
   void dispose() {
+    applicationService.removeListener(scrollToTop);
     mainScrollController.dispose();
     super.dispose();
   }
@@ -52,6 +56,8 @@ class _CalendarScreen extends State<CalendarScreen> {
   void initializeProviders() {
     eventProvider = Provider.of<EventProvider>(context, listen: false);
     layoutProvider = Provider.of<LayoutProvider>(context, listen: false);
+    applicationService = ApplicationService.instance;
+    applicationService.addListener(scrollToTop);
   }
 
   void initializeControllers() {
@@ -59,6 +65,16 @@ class _CalendarScreen extends State<CalendarScreen> {
     scrollPhysics = (Platform.isIOS || Platform.isMacOS)
         ? const BouncingScrollPhysics()
         : const ClampingScrollPhysics();
+  }
+
+  void scrollToTop() {
+    if (mainScrollController.hasClients) {
+      mainScrollController.animateTo(
+        0,
+        duration: Constants.scrollDuration,
+        curve: Constants.scrollCurve,
+      );
+    }
   }
 
   @override

@@ -17,8 +17,6 @@ import '../../util/sorting/todo_sorter.dart';
 import '../viewmodels/user_viewmodel.dart';
 
 // TODO: IMPLEMENT PROPER GUI ERROR MSGS.
-// NOTE: This will crash if the repository is not initialized.
-// This is intentional so that I don't goof up.
 class ToDoProvider extends ChangeNotifier {
   bool _rebuild = true;
 
@@ -73,11 +71,9 @@ class ToDoProvider extends ChangeNotifier {
     _toDoRepo.addListener(refreshMyDayAndNotify);
   }
 
-  // TODO: await these.
   Future<void> init() async {
-    _toDoRepo.init();
-    myDayWeight = await _toDoRepo.getMyDayWeight();
-    notifyListeners();
+    await _toDoRepo.init();
+    await refreshMyDayAndNotify();
   }
 
   Future<void> refreshMyDayAndNotify() async {
@@ -139,6 +135,25 @@ class ToDoProvider extends ChangeNotifier {
     }
   }
 
+  Future<void> refreshRepo() async {
+    try {
+      await _toDoRepo.refreshRepo();
+      notifyListeners();
+    } on FailureToDeleteException catch (e, stacktrace) {
+      log(e.cause, stackTrace: stacktrace);
+      notifyListeners();
+      return Future.error(e, stacktrace);
+    } on FailureToUploadException catch (e, stacktrace) {
+      log(e.cause, stackTrace: stacktrace);
+      notifyListeners();
+      return Future.error(e, stacktrace);
+    } on Error catch (e, stacktrace) {
+      log("Unknown error", stackTrace: stacktrace);
+      notifyListeners();
+      return Future.error(UnexpectedErrorException(), stacktrace);
+    }
+  }
+
   Future<void> syncRepo() async {
     try {
       await _toDoRepo.syncRepo();
@@ -160,6 +175,14 @@ class ToDoProvider extends ChangeNotifier {
 
   Future<void> createToDo(ToDo toDo) async {
     try {
+      // Check for db collisions.
+      bool inDB = await _toDoRepo.containsID(id: toDo.id);
+
+      while (inDB) {
+        toDo.id = toDo.id + 1;
+        inDB = await _toDoRepo.containsID(id: toDo.id);
+      }
+
       curToDo = await _toDoRepo.create(toDo);
 
       if (curToDo!.repeatable) {
@@ -262,6 +285,7 @@ class ToDoProvider extends ChangeNotifier {
     }
     try {
       await _toDoRepo.updateBatch(toDos);
+      myDayWeight = await _toDoRepo.getMyDayWeight();
       notifyListeners();
     } on FailureToUploadException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
@@ -284,6 +308,7 @@ class ToDoProvider extends ChangeNotifier {
     }
     try {
       await _toDoRepo.delete(toDo);
+      myDayWeight = await _toDoRepo.getMyDayWeight();
       notifyListeners();
     } on FailureToDeleteException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);

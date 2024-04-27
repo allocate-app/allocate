@@ -233,7 +233,6 @@ class Deadline with EquatableMixin implements Copyable<Deadline>, IRepeatable {
                   this.repeatDays.length, (i) => this.repeatDays[i]),
           repeatSkip: repeatSkip ?? this.repeatSkip,
           lastUpdated: lastUpdated ?? this.lastUpdated,
-          // TODO: Check this - is kinda wild.
           isSynced: isSynced ?? false);
 
   @ignore

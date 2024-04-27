@@ -10,6 +10,7 @@ import '../../../providers/application/event_provider.dart';
 import '../../../providers/application/layout_provider.dart';
 import '../../../providers/model/deadline_provider.dart';
 import '../../../providers/viewmodels/deadline_viewmodel.dart';
+import '../../../services/application_service.dart';
 import '../../../util/constants.dart';
 import '../../../util/enums.dart';
 import '../../../util/exceptions.dart';
@@ -44,6 +45,8 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
   late final EventProvider eventProvider;
   late final LayoutProvider layoutProvider;
 
+  late ApplicationService applicationService;
+
   // Scrolling
   late final ScrollController mobileScrollController;
   late final ScrollController desktopScrollController;
@@ -64,6 +67,7 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
 
   @override
   void dispose() {
+    applicationService.removeListener(scrollToTop);
     mobileScrollController.dispose();
     desktopScrollController.dispose();
     nameEditingController.dispose();
@@ -86,6 +90,9 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
 
     layoutProvider = Provider.of<LayoutProvider>(context, listen: false);
     eventProvider = Provider.of<EventProvider>(context, listen: false);
+
+    applicationService = ApplicationService.instance;
+    applicationService.addListener(scrollToTop);
   }
 
   void initializeControllers() {
@@ -101,6 +108,23 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
 
     descriptionEditingController = TextEditingController(text: vm.description);
     descriptionEditingController.addListener(watchDescription);
+  }
+
+  void scrollToTop() {
+    if (mobileScrollController.hasClients) {
+      mobileScrollController.animateTo(
+        0,
+        duration: Constants.scrollDuration,
+        curve: Constants.scrollCurve,
+      );
+    }
+    if (desktopScrollController.hasClients) {
+      desktopScrollController.animateTo(
+        0,
+        duration: Constants.scrollDuration,
+        curve: Constants.scrollCurve,
+      );
+    }
   }
 
   void watchName() {
@@ -127,12 +151,7 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
     if (nameEditingController.text.isEmpty) {
       valid = false;
       _nameErrorText.value = "Enter Deadline Name";
-      if (desktopScrollController.hasClients) {
-        desktopScrollController.jumpTo(0);
-      }
-      if (mobileScrollController.hasClients) {
-        mobileScrollController.jumpTo(0);
-      }
+      scrollToTop();
     }
 
     try {

@@ -77,8 +77,8 @@ abstract class Constants {
   // 2 GB
   static int isarLimit = 1000000000 * 2;
 
-  // This might need to be shortened.
-  static const Duration userUpdateTime = Duration(seconds: 5);
+  // Update timer for full refresh.
+  static const Duration updateTimer = Duration(seconds: 30);
 
   // Task weight/duration params
   static const int lowerBound = 1;
@@ -324,6 +324,9 @@ abstract class Constants {
   static const int footerTime = 600;
   static const int footerDelay = 100;
   static const int fadeOutTime = 125;
+
+  static const Duration scrollDuration = Duration(milliseconds: 1000);
+  static const Curve scrollCurve = Curves.fastLinearToSlowEaseIn;
 
   static const int newItemThreshold = 1000;
 

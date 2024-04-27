@@ -219,7 +219,6 @@ class _UpdateEmailDialog extends State<UpdateEmailDialog> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            // TODO: factor this out. -> token challenge instead.
                             Expanded(
                               child: Padding(
                                 padding: const EdgeInsets.only(
@@ -227,7 +226,6 @@ class _UpdateEmailDialog extends State<UpdateEmailDialog> {
                                 child: _buildEmailUpdateButton(),
                               ),
                             ),
-
                             Expanded(
                                 child: Padding(
                               padding: const EdgeInsets.only(

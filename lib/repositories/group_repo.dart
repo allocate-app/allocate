@@ -35,11 +35,15 @@ class GroupRepo extends ChangeNotifier implements GroupRepository {
   bool _subscribed = false;
   bool _initialized = false;
 
+  bool _needsRefreshing = true;
+  bool _syncing = false;
+  bool _refreshing = false;
+
   String get uuid => _supabaseClient.auth.currentUser?.id ?? "";
   String? currentUserID;
 
   @override
-  void init() {
+  Future<void> init() async {
     if (_initialized) {
       return;
     }
@@ -69,17 +73,24 @@ class GroupRepo extends ChangeNotifier implements GroupRepository {
             event: PostgresChangeEvent.delete,
             callback: handleDelete);
 
+    await handleUserChange();
+
+    if (!_subscribed) {
+      _groupStream.subscribe();
+      _subscribed = true;
+    }
+
     // Listen to auth changes.
     SupabaseService.instance.authSubscription.listen((AuthState data) async {
       final AuthChangeEvent event = data.event;
       switch (event) {
-        case AuthChangeEvent.initialSession:
-          await handleUserChange();
-          // OPEN TABLE STREAM -> insert new data.
-          if (!_subscribed) {
-            _groupStream.subscribe();
-            _subscribed = true;
-          }
+        // case AuthChangeEvent.initialSession:
+        //   await handleUserChange();
+        //   // OPEN TABLE STREAM -> insert new data.
+        //   if (!_subscribed) {
+        //     _groupStream.subscribe();
+        //     _subscribed = true;
+        //   }
         case AuthChangeEvent.signedIn:
           await handleUserChange();
           // This should close and re-open the subscription?
@@ -107,6 +118,7 @@ class GroupRepo extends ChangeNotifier implements GroupRepository {
     // This is for online stuff.
     SupabaseService.instance.connectionSubscription
         .listen((ConnectivityResult result) async {
+      _needsRefreshing = true;
       if (result == ConnectivityResult.none) {
         return;
       }
@@ -123,14 +135,18 @@ class GroupRepo extends ChangeNotifier implements GroupRepository {
     _isarClient.groups.watchLazy().listen((_) async {
       await IsarService.instance.updateDBSize();
     });
-    handleUserChange();
   }
 
   Future<void> handleUserChange() async {
     String? newID = _supabaseClient.auth.currentUser?.id;
 
     if (newID == currentUserID) {
-      return syncRepo();
+      if (_needsRefreshing) {
+        await refreshRepo();
+        _needsRefreshing = false;
+        return;
+      }
+      return await syncRepo();
     }
 
     // In the case that the previous currentUserID was null.
@@ -138,6 +154,11 @@ class GroupRepo extends ChangeNotifier implements GroupRepository {
     // if not online, this will just early return.
     if (null == currentUserID) {
       currentUserID = newID;
+      if (_needsRefreshing) {
+        await refreshRepo();
+        _needsRefreshing = false;
+        return;
+      }
       return await syncRepo();
     }
 
@@ -370,10 +391,19 @@ class GroupRepo extends ChangeNotifier implements GroupRepository {
       _supabaseClient.from("groups").count(CountOption.exact);
 
   @override
-  Future<void> syncRepo() async {
+  Future<void> refreshRepo() async {
     if (!isConnected) {
+      _refreshing = false;
+      _syncing = false;
       return;
     }
+
+    if (_refreshing) {
+      return;
+    }
+
+    _refreshing = true;
+    _syncing = true;
 
     // Get the set of unsynced data.
     Set<Group> unsynced = await getUnsynced().then((_) => _.toSet());
@@ -385,14 +415,63 @@ class GroupRepo extends ChangeNotifier implements GroupRepository {
     List<Group> onlineGroups = await fetchRepo();
 
     List<Group> toInsert = List.empty(growable: true);
-    for (Group group in onlineGroups) {
-      Group? otherGroup = unsynced.lookup(group);
-      // Prioritize by last updated -> unsynced data will overwrite new data.
-      if (null != otherGroup &&
-          group.lastUpdated.isAfter(otherGroup.lastUpdated)) {
-        unsynced.remove(otherGroup);
+    for (Group onlineGroup in onlineGroups) {
+      Group? localGroup = unsynced.lookup(onlineGroup);
+      // Prioritize by last updated -> unsynced data will overwrite new data
+      // during the batch update.
+      if (null != localGroup &&
+          onlineGroup.lastUpdated.isAfter(localGroup.lastUpdated)) {
+        unsynced.remove(localGroup);
       }
-      toInsert.add(group);
+      toInsert.add(onlineGroup);
+    }
+
+    // Clear the DB, then add all new data.
+    // Unsynced data will be updated once remaining data has been collected.
+    await clearLocal();
+
+    await _isarClient.writeTxn(() async {
+      await _isarClient.groups.putAll(toInsert);
+    });
+
+    insertRemaining(totalFetched: onlineGroups.length, unsynced: unsynced);
+    notifyListeners();
+  }
+
+  // This doesn't currently throw exceptions, as these are technically less critical.
+  // Most function happens offline.
+  @override
+  Future<void> syncRepo() async {
+    if (!isConnected) {
+      _syncing = false;
+      return;
+    }
+
+    if (_syncing || _refreshing) {
+      return;
+    }
+
+    _syncing = true;
+
+    // Get the set of unsynced data.
+    Set<Group> unsynced = await getUnsynced().then((_) => _.toSet());
+
+    // Get the online count.
+    _groupCount = await getOnlineCount();
+
+    // Fetch new data -> by fetchRepo();
+    List<Group> onlineGroups = await fetchRepo();
+
+    List<Group> toInsert = List.empty(growable: true);
+    for (Group onlineGroup in onlineGroups) {
+      Group? localGroup = unsynced.lookup(onlineGroup);
+      // Prioritize by last updated -> unsynced data will overwrite new data
+      // during the batch update.
+      if (null != localGroup &&
+          onlineGroup.lastUpdated.isAfter(localGroup.lastUpdated)) {
+        unsynced.remove(localGroup);
+      }
+      toInsert.add(onlineGroup);
     }
 
     // Put all new data in the db.
@@ -400,36 +479,44 @@ class GroupRepo extends ChangeNotifier implements GroupRepository {
       await _isarClient.groups.putAll(toInsert);
     });
 
-    // Update the unsynced data.
-    await updateBatch(unsynced.toList());
-
-    if (onlineGroups.length < _groupCount) {
-      // Give the db a moment to refresh.
-      await Future.delayed(const Duration(seconds: 1));
-      insertRemaining(totalFetched: onlineGroups.length).whenComplete(() {
-        notifyListeners();
-      });
-    }
+    insertRemaining(totalFetched: onlineGroups.length, unsynced: unsynced);
 
     notifyListeners();
   }
 
-  Future<void> insertRemaining({required int totalFetched}) async {
+  Future<void> insertRemaining(
+      {required int totalFetched, Set<Group>? unsynced}) async {
+    unsynced = unsynced ?? Set.identity();
+
     List<Group> toInsert = List.empty(growable: true);
     while (totalFetched < _groupCount) {
-      List<Group>? newGroups = await fetchRepo(offset: totalFetched);
+      List<Group>? onlineGroups = await fetchRepo(offset: totalFetched);
 
       // If there is no data or connection is lost, break.
-      if (newGroups.isEmpty) {
+      if (onlineGroups.isEmpty) {
         break;
       }
-      toInsert.addAll(newGroups);
-      totalFetched += newGroups.length;
+      for (Group onlineGroup in onlineGroups) {
+        Group? localGroup = unsynced.lookup(onlineGroup);
+        // Prioritize by last updated -> unsynced data will overwrite new data
+        // during the batch update.
+        if (null != localGroup &&
+            onlineGroup.lastUpdated.isAfter(localGroup.lastUpdated)) {
+          unsynced.remove(localGroup);
+        }
+        toInsert.add(onlineGroup);
+      }
+      totalFetched += onlineGroups.length;
     }
 
     await _isarClient.writeTxn(() async {
       await _isarClient.groups.putAll(toInsert);
     });
+
+    await updateBatch(unsynced.toList());
+    _syncing = false;
+    _refreshing = false;
+    notifyListeners();
   }
 
   @override
@@ -457,7 +544,7 @@ class GroupRepo extends ChangeNotifier implements GroupRepository {
 
   Future<void> swapRepo() async {
     await clearLocal();
-    await syncRepo();
+    await refreshRepo();
   }
 
   Future<void> handleUpsert(PostgresChangePayload payload) async {
@@ -508,6 +595,13 @@ class GroupRepo extends ChangeNotifier implements GroupRepository {
       .filter()
       .toDeleteEqualTo(false)
       .findFirst();
+
+  @override
+  Future<bool> containsID({required int id}) async {
+    List<Group> duplicates =
+        await _isarClient.groups.where().idEqualTo(id).findAll();
+    return duplicates.isNotEmpty;
+  }
 
   // Basic query logic.
   @override

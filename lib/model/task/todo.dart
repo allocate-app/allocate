@@ -182,7 +182,6 @@ class ToDo with EquatableMixin implements Copyable<ToDo>, IRepeatable {
         "lastUpdated": lastUpdated.toIso8601String(),
       };
 
-  // TODO: Determine whether or not to copy id.
   @override
   ToDo copy() => ToDo(
         id: Constants.generateID(),
@@ -207,7 +206,6 @@ class ToDo with EquatableMixin implements Copyable<ToDo>, IRepeatable {
         frequency: frequency,
         repeatableState: repeatableState,
         repeatDays: List.generate(repeatDays.length, (i) => repeatDays[i]),
-        // TODO: determine whether this makes sense.
         toDelete: false,
         isSynced: false,
         repeatSkip: repeatSkip,
@@ -261,7 +259,6 @@ class ToDo with EquatableMixin implements Copyable<ToDo>, IRepeatable {
         originalStart: originalStart ?? this.originalStart,
         originalDue: originalDue ?? this.originalDue,
         myDay: myDay ?? this.myDay,
-        // TODO: figure out whether this makes sense.
         isSynced: isSynced ?? false,
         toDelete: toDelete ?? false,
         completed: completed ?? this.completed,

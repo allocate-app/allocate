@@ -194,6 +194,8 @@ class NotificationService {
       }
     });
 
+    // Cancel an existing notification if it's being re-scheduled.
+    desktopLocalNotifications[id]?.cancel();
     desktopLocalNotifications[id] = timer;
   }
 
@@ -214,6 +216,8 @@ class NotificationService {
       }
     });
 
+    // Cancel an existing notification if it's being re-scheduled.
+    desktopLocalNotifications[id]?.cancel();
     desktopLocalNotifications[id] = timer;
   }
 

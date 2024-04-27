@@ -1,9 +1,7 @@
 import 'dart:async';
 import 'dart:developer';
-import 'dart:io';
 
 import 'package:flutter/foundation.dart';
-import 'package:jiffy/jiffy.dart';
 
 import '../../model/task/reminder.dart';
 import '../../repositories/reminder_repo.dart';
@@ -64,15 +62,15 @@ class ReminderProvider extends ChangeNotifier {
     _reminderRepo.addListener(scheduleAndNotify);
   }
 
-  // TODO: repo init should be async.
   Future<void> init() async {
-    _reminderRepo.init();
+    await _reminderRepo.init();
 
-    // Local notifications implementation for Linux/Windows doesn't have scheduling api.
-    // Must be loaded into memory on init.
-    if (Platform.isLinux || Platform.isWindows) {
-      await batchNotifications();
-    }
+    // Happens on db refresh.
+    // // Local notifications implementation for Linux/Windows doesn't have scheduling api.
+    // // Must be loaded into memory on init.
+    // if (Platform.isLinux || Platform.isWindows) {
+    //   await batchNotifications();
+    // }
     notifyListeners();
   }
 
@@ -107,10 +105,32 @@ class ReminderProvider extends ChangeNotifier {
 
   List<SortMethod> get sortMethods => sorter.sortMethods;
 
+  Future<void> refreshRepo() async {
+    try {
+      await _reminderRepo.refreshRepo();
+      notifyListeners();
+    } on FailureToDeleteException catch (e, stacktrace) {
+      log(e.cause, stackTrace: stacktrace);
+      notifyListeners();
+      return Future.error(e, stacktrace);
+    } on FailureToUploadException catch (e, stacktrace) {
+      log(e.cause, stackTrace: stacktrace);
+      notifyListeners();
+      return Future.error(e, stacktrace);
+    } on FailureToScheduleException catch (e, stacktrace) {
+      log(e.cause, stackTrace: stacktrace);
+      notifyListeners();
+      return Future.error(e, stacktrace);
+    } on Error catch (e, stacktrace) {
+      log("Unknown error", stackTrace: stacktrace);
+      notifyListeners();
+      return Future.error(UnexpectedErrorException(), stacktrace);
+    }
+  }
+
   Future<void> syncRepo() async {
     try {
       await _reminderRepo.syncRepo();
-      await batchNotifications();
       notifyListeners();
     } on FailureToDeleteException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
@@ -133,6 +153,14 @@ class ReminderProvider extends ChangeNotifier {
 
   Future<void> createReminder(Reminder reminder) async {
     try {
+      // Check for db collisions.
+      bool inDB = await _reminderRepo.containsID(id: reminder.id);
+
+      while (inDB) {
+        reminder.id = reminder.id + 1;
+        inDB = await _reminderRepo.containsID(id: reminder.id);
+      }
+
       curReminder = await _reminderRepo.create(reminder);
 
       await scheduleNotification(reminder: curReminder);
@@ -455,16 +483,17 @@ class ReminderProvider extends ChangeNotifier {
       return;
     }
 
-    String newDue = Jiffy.parseFromDateTime(reminder.dueDate!)
-        .toLocal()
-        .format(pattern: "MMM d, hh:mm a")
-        .toString();
+    // Doesn't make sense to include the date.
+    // String newDue = Jiffy.parseFromDateTime(reminder.dueDate!)
+    //     .toLocal()
+    //     .format(pattern: "MMM d, hh:mm a")
+    //     .toString();
     try {
       await _notificationService.scheduleNotification(
           id: reminder.notificationID!,
           warnDate: reminder.dueDate!,
-          message:
-              "${reminder.name} is due on: $newDue\n It's okay to ask for more time.",
+          // message: "Don't forget: ${reminder.name} $newDue\n",
+          message: "Don't forget: ${reminder.name}\n",
           payload: "REMINDER\n${reminder.id}");
     } on FailureToScheduleException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);

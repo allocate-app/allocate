@@ -4,6 +4,7 @@ import 'package:another_flushbar/flushbar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../services/application_service.dart';
 import '../../util/constants.dart';
 import '../../util/interfaces/i_model.dart';
 import '../../util/paginator.dart';
@@ -59,10 +60,9 @@ class PaginatingListview<T extends IModel> extends StatefulWidget {
   State<PaginatingListview<T>> createState() => _PaginatingListview();
 }
 
-// TODO: add support for another listener to activate refresh:
-// for pages with nested scrollers, this breaks.
-// affected screens: Notifications, create/update group
-// Pages with (currently) lost functionality: Create/Update ToDo/Routine - listener would restore.
+// TODO: add support for alternative notify methods for pagination/reset.
+// Nested scrollviews do not work well with with widget.
+
 class _PaginatingListview<T extends IModel>
     extends State<PaginatingListview<T>> {
   late final Paginator<T> paginator;
@@ -70,6 +70,8 @@ class _PaginatingListview<T extends IModel>
   late final ScrollController scrollController;
   late final ScrollPhysics scrollPhysics;
   late ScrollPhysics refreshPhysics;
+
+  late ApplicationService applicationService;
 
   late ValueKey<int> _animationKey;
   late ValueKey<int> Function() getAnimationKey;
@@ -109,8 +111,23 @@ class _PaginatingListview<T extends IModel>
 
     _refreshFocusNode = FocusNode();
 
+    if (widget.pullToRefresh) {
+      applicationService = ApplicationService.instance;
+      applicationService.addListener(scrollToTop);
+    }
+
     initializeAnimation();
     super.initState();
+  }
+
+  void scrollToTop() {
+    if (scrollController.hasClients) {
+      scrollController.animateTo(
+        0,
+        duration: Constants.scrollDuration,
+        curve: Constants.scrollCurve,
+      );
+    }
   }
 
   void initializeAnimation() {
@@ -120,6 +137,9 @@ class _PaginatingListview<T extends IModel>
 
   @override
   void dispose() {
+    if (widget.pullToRefresh) {
+      applicationService.removeListener(scrollToTop);
+    }
     scrollController.removeListener(scrollListener);
     paginator.removeListener(repaint);
     scrollController.dispose();

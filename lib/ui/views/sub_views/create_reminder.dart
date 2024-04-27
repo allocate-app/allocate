@@ -10,6 +10,7 @@ import '../../../providers/application/event_provider.dart';
 import '../../../providers/application/layout_provider.dart';
 import '../../../providers/model/reminder_provider.dart';
 import '../../../providers/viewmodels/reminder_viewmodel.dart';
+import '../../../services/application_service.dart';
 import '../../../util/constants.dart';
 import '../../../util/enums.dart';
 import '../../../util/exceptions.dart';
@@ -35,6 +36,8 @@ class _CreateReminderScreen extends State<CreateReminderScreen> {
   late final EventProvider eventProvider;
   late final LayoutProvider layoutProvider;
 
+  late ApplicationService applicationService;
+
   // Name
   late final TextEditingController nameEditingController;
 
@@ -56,6 +59,8 @@ class _CreateReminderScreen extends State<CreateReminderScreen> {
     vm.clear();
     eventProvider = Provider.of<EventProvider>(context, listen: false);
     layoutProvider = Provider.of<LayoutProvider>(context, listen: false);
+    applicationService = ApplicationService.instance;
+    applicationService.addListener(scrollToTop);
   }
 
   void initializeParameters() {
@@ -76,10 +81,21 @@ class _CreateReminderScreen extends State<CreateReminderScreen> {
 
   @override
   void dispose() {
+    applicationService.removeListener(scrollToTop);
     nameEditingController.removeListener(watchName);
     mainScrollController.dispose();
     nameEditingController.dispose();
     super.dispose();
+  }
+
+  void scrollToTop() {
+    if (mainScrollController.hasClients) {
+      mainScrollController.animateTo(
+        0,
+        duration: Constants.scrollDuration,
+        curve: Constants.scrollCurve,
+      );
+    }
   }
 
   void watchName() {
@@ -97,9 +113,7 @@ class _CreateReminderScreen extends State<CreateReminderScreen> {
     if (nameEditingController.text.isEmpty) {
       valid = false;
       _nameErrorText.value = "Enter Reminder Name";
-      if (mainScrollController.hasClients) {
-        mainScrollController.jumpTo(0);
-      }
+      scrollToTop();
     }
 
     try {

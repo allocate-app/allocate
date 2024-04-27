@@ -37,11 +37,15 @@ class RoutineRepo extends ChangeNotifier implements RoutineRepository {
   bool _subscribed = false;
   bool _initialized = false;
 
+  bool _needsRefreshing = true;
+  bool _syncing = false;
+  bool _refreshing = false;
+
   String get uuid => _supabaseClient.auth.currentUser?.id ?? "";
   String? currentUserID;
 
   @override
-  void init() {
+  Future<void> init() async {
     if (_initialized) {
       return;
     }
@@ -73,17 +77,24 @@ class RoutineRepo extends ChangeNotifier implements RoutineRepository {
             event: PostgresChangeEvent.delete,
             callback: handleDelete);
 
+    await handleUserChange();
+
+    if (!_subscribed) {
+      _routineStream.subscribe();
+      _subscribed = true;
+    }
+
     // Listen to auth changes.
     SupabaseService.instance.authSubscription.listen((AuthState data) async {
       final AuthChangeEvent event = data.event;
       switch (event) {
-        case AuthChangeEvent.initialSession:
-          await handleUserChange();
-          if (!_subscribed) {
-            _routineStream.subscribe();
-            _subscribed = true;
-          }
-          break;
+        // case AuthChangeEvent.initialSession:
+        //   await handleUserChange();
+        //   if (!_subscribed) {
+        //     _routineStream.subscribe();
+        //     _subscribed = true;
+        //   }
+        //   break;
         case AuthChangeEvent.signedIn:
           await handleUserChange();
           // OPEN TABLE STREAM -> insert new data.
@@ -113,12 +124,14 @@ class RoutineRepo extends ChangeNotifier implements RoutineRepository {
     // This is for online stuff.
     SupabaseService.instance.connectionSubscription
         .listen((ConnectivityResult result) async {
+      _needsRefreshing = true;
       if (result == ConnectivityResult.none) {
         return;
       }
 
       // This is to give enough time for the internet to check.
       await Future.delayed(const Duration(seconds: 2));
+
       if (!isConnected) {
         return;
       }
@@ -129,8 +142,6 @@ class RoutineRepo extends ChangeNotifier implements RoutineRepository {
     _isarClient.routines.watchLazy().listen((_) async {
       await IsarService.instance.updateDBSize();
     });
-
-    handleUserChange();
   }
 
   Future<void> handleUserChange() async {
@@ -138,7 +149,12 @@ class RoutineRepo extends ChangeNotifier implements RoutineRepository {
 
     // Realtime Changes will handle updated data.
     if (newID == currentUserID) {
-      return syncRepo();
+      if (_needsRefreshing) {
+        await refreshRepo();
+        _needsRefreshing = false;
+        return;
+      }
+      return await syncRepo();
     }
 
     // In the case that the previous currentUserID was null.
@@ -146,13 +162,18 @@ class RoutineRepo extends ChangeNotifier implements RoutineRepository {
     // if not online, this will just early return.
     if (null == currentUserID) {
       currentUserID = newID;
+      if (_needsRefreshing) {
+        await refreshRepo();
+        _needsRefreshing = false;
+        return;
+      }
       return await syncRepo();
     }
 
     // This implies there is a new user -> clear the DB
     // and insert the new user.
     currentUserID = newID;
-    return await swapRepo();
+    await swapRepo();
   }
 
   @override
@@ -394,10 +415,19 @@ class RoutineRepo extends ChangeNotifier implements RoutineRepository {
       _supabaseClient.from("routines").count(CountOption.exact);
 
   @override
-  Future<void> syncRepo() async {
+  Future<void> refreshRepo() async {
     if (!isConnected) {
+      _refreshing = false;
+      _syncing = false;
       return;
     }
+
+    if (_refreshing) {
+      return;
+    }
+
+    _refreshing = true;
+    _syncing = true;
 
     // Get the set of unsynced data.
     Set<Routine> unsynced = await getUnsynced().then((_) => _.toSet());
@@ -409,14 +439,60 @@ class RoutineRepo extends ChangeNotifier implements RoutineRepository {
     List<Routine> onlineRoutines = await fetchRepo();
 
     List<Routine> toInsert = List.empty(growable: true);
-    for (Routine routine in onlineRoutines) {
-      Routine? otherRoutine = unsynced.lookup(routine);
-      // Prioritize by last updated -> unsynced data will overwrite new data.
-      if (null != otherRoutine &&
-          routine.lastUpdated.isAfter(otherRoutine.lastUpdated)) {
-        unsynced.remove(otherRoutine);
+    for (Routine onlineRoutine in onlineRoutines) {
+      Routine? localRoutine = unsynced.lookup(onlineRoutine);
+      // Prioritize by last updated -> unsynced data will overwrite new data
+      // during the batch update.
+      if (null != localRoutine &&
+          onlineRoutine.lastUpdated.isAfter(localRoutine.lastUpdated)) {
+        unsynced.remove(localRoutine);
       }
-      toInsert.add(routine);
+      toInsert.add(onlineRoutine);
+    }
+
+    // Clear the DB, then add all new data.
+    // Unsynced data will be updated once remaining data has been collected.
+    await clearLocal();
+
+    await _isarClient.writeTxn(() async {
+      await _isarClient.routines.putAll(toInsert);
+    });
+
+    insertRemaining(totalFetched: onlineRoutines.length, unsynced: unsynced);
+    notifyListeners();
+  }
+
+  @override
+  Future<void> syncRepo() async {
+    if (!isConnected) {
+      _syncing = false;
+      return;
+    }
+
+    if (_syncing || _refreshing) {
+      return;
+    }
+
+    _syncing = true;
+
+    // Get the set of unsynced data.
+    Set<Routine> unsynced = await getUnsynced().then((_) => _.toSet());
+
+    // Get the online count.
+    _routineCount = await getOnlineCount();
+
+    // Fetch new data -> by fetchRepo();
+    List<Routine> onlineRoutines = await fetchRepo();
+
+    List<Routine> toInsert = List.empty(growable: true);
+    for (Routine onlineRoutine in onlineRoutines) {
+      Routine? localRoutine = unsynced.lookup(onlineRoutine);
+      // Prioritize by last updated -> unsynced data will overwrite new data.
+      if (null != localRoutine &&
+          onlineRoutine.lastUpdated.isAfter(localRoutine.lastUpdated)) {
+        unsynced.remove(localRoutine);
+      }
+      toInsert.add(onlineRoutine);
     }
 
     // Put all new data in the db.
@@ -424,36 +500,45 @@ class RoutineRepo extends ChangeNotifier implements RoutineRepository {
       await _isarClient.routines.putAll(toInsert);
     });
 
-    // Update the unsynced data.
-    await updateBatch(unsynced.toList());
-
-    if (onlineRoutines.length < _routineCount) {
-      // Give the db a moment to refresh.
-      await Future.delayed(const Duration(seconds: 1));
-      insertRemaining(totalFetched: onlineRoutines.length).whenComplete(() {
-        notifyListeners();
-      });
-    }
+    insertRemaining(totalFetched: onlineRoutines.length, unsynced: unsynced);
 
     notifyListeners();
   }
 
-  Future<void> insertRemaining({required int totalFetched}) async {
+  Future<void> insertRemaining(
+      {required int totalFetched, Set<Routine>? unsynced}) async {
+    unsynced = unsynced ?? Set.identity();
+
     List<Routine> toInsert = List.empty(growable: true);
     while (totalFetched < _routineCount) {
-      List<Routine>? newRoutines = await fetchRepo(offset: totalFetched);
+      List<Routine>? onlineRoutines = await fetchRepo(offset: totalFetched);
 
       // If there is no data or connection is lost, break.
-      if (newRoutines.isEmpty) {
+      if (onlineRoutines.isEmpty) {
         break;
       }
-      toInsert.addAll(newRoutines);
-      totalFetched += newRoutines.length;
+
+      for (Routine onlineRoutine in onlineRoutines) {
+        Routine? localRoutine = unsynced.lookup(onlineRoutine);
+        // Prioritize by last updated -> unsynced data will overwrite new data.
+        if (null != localRoutine &&
+            onlineRoutine.lastUpdated.isAfter(localRoutine.lastUpdated)) {
+          unsynced.remove(localRoutine);
+        }
+        toInsert.add(onlineRoutine);
+      }
+
+      totalFetched += onlineRoutines.length;
     }
 
     await _isarClient.writeTxn(() async {
       await _isarClient.routines.putAll(toInsert);
     });
+
+    await updateBatch(unsynced.toList());
+    _syncing = false;
+    _refreshing = false;
+    notifyListeners();
   }
 
   @override
@@ -481,7 +566,7 @@ class RoutineRepo extends ChangeNotifier implements RoutineRepository {
 
   Future<void> swapRepo() async {
     await clearLocal();
-    await syncRepo();
+    await refreshRepo();
   }
 
   Future<void> handleUpsert(PostgresChangePayload payload) async {
@@ -527,6 +612,13 @@ class RoutineRepo extends ChangeNotifier implements RoutineRepository {
   @override
   Future<Routine?> getByID({required int id}) async =>
       await _isarClient.routines.where().idEqualTo(id).findFirst();
+
+  @override
+  Future<bool> containsID({required int id}) async {
+    List<Routine> duplicates =
+        await _isarClient.routines.where().idEqualTo(id).findAll();
+    return duplicates.isNotEmpty;
+  }
 
   @override
   Future<List<Routine>> getRepoList({int limit = 50, int offset = 0}) async {

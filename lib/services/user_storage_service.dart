@@ -70,17 +70,21 @@ class UserStorageService extends ChangeNotifier {
     // Sync the repository.
     await handleUserChange();
 
+    if (!_subscribed) {
+      _userStream.subscribe();
+      _subscribed = true;
+    }
+
     // Then subscribe to realtime.
     SupabaseService.instance.authSubscription.listen((AuthState data) async {
       final AuthChangeEvent event = data.event;
       switch (event) {
-        // TODO: this probably should be nuked.
-        case AuthChangeEvent.initialSession:
-          await handleUserChange();
-          if (!_subscribed) {
-            _userStream.subscribe();
-            _subscribed = true;
-          }
+        // case AuthChangeEvent.initialSession:
+        //   await handleUserChange();
+        //   if (!_subscribed) {
+        //     _userStream.subscribe();
+        //     _subscribed = true;
+        //   }
         case AuthChangeEvent.signedIn:
           await handleUserChange();
           // OPEN TABLE STREAM -> insert new data.
@@ -197,7 +201,12 @@ class UserStorageService extends ChangeNotifier {
   // TODO: make this a bit more robust.
   Future<void> syncUser(
       {AllocateUser? onlineUser, bool skipOnline = false}) async {
-    if (!isConnected || _syncing) {
+    if (!isConnected) {
+      _syncing = false;
+      return;
+    }
+
+    if (_syncing) {
       return;
     }
 

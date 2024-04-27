@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import '../../../providers/application/layout_provider.dart';
 import '../../../providers/model/subtask_provider.dart';
 import '../../../providers/viewmodels/subtask_viewmodel.dart';
+import '../../../services/application_service.dart';
 import '../../../util/constants.dart';
 import '../../widgets/listtile_widgets.dart';
 import '../../widgets/padded_divider.dart';
@@ -28,6 +29,9 @@ class _UpdateSubtaskScreen extends State<UpdateSubtaskScreen> {
   late final SubtaskProvider subtaskProvider;
   late final SubtaskViewModel vm;
   late final LayoutProvider layoutProvider;
+
+  late ApplicationService applicationService;
+
   late final TextEditingController nameEditingController;
   late final ScrollController mainScrollController;
   late final ScrollPhysics scrollPhysics;
@@ -39,6 +43,9 @@ class _UpdateSubtaskScreen extends State<UpdateSubtaskScreen> {
     vm = Provider.of<SubtaskViewModel>(context, listen: false);
 
     layoutProvider = Provider.of<LayoutProvider>(context, listen: false);
+
+    applicationService = ApplicationService.instance;
+    applicationService.addListener(scrollToTop);
 
     nameEditingController = TextEditingController(text: vm.name);
     nameEditingController.addListener(watchName);
@@ -58,11 +65,22 @@ class _UpdateSubtaskScreen extends State<UpdateSubtaskScreen> {
 
   @override
   void dispose() {
+    applicationService.removeListener(scrollToTop);
     nameEditingController.removeListener(watchName);
     nameEditingController.dispose();
     mainScrollController.dispose();
 
     super.dispose();
+  }
+
+  void scrollToTop() {
+    if (mainScrollController.hasClients) {
+      mainScrollController.animateTo(
+        0,
+        duration: Constants.scrollDuration,
+        curve: Constants.scrollCurve,
+      );
+    }
   }
 
   void watchName() {

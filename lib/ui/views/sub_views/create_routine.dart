@@ -10,6 +10,7 @@ import "../../../providers/application/layout_provider.dart";
 import '../../../providers/model/routine_provider.dart';
 import '../../../providers/model/subtask_provider.dart';
 import "../../../providers/viewmodels/routine_viewmodel.dart";
+import "../../../services/application_service.dart";
 import "../../../util/constants.dart";
 import "../../../util/enums.dart";
 import "../../widgets/listtile_widgets.dart";
@@ -33,6 +34,8 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
   late final RoutineProvider routineProvider;
   late final SubtaskProvider subtaskProvider;
   late final LayoutProvider layoutProvider;
+
+  late ApplicationService applicationService;
 
   // Scrolling
   late final ScrollController mobileScrollController;
@@ -82,16 +85,37 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
     subtaskProvider.addListener(resetSubtasks);
 
     layoutProvider = Provider.of<LayoutProvider>(context, listen: false);
+
+    applicationService = ApplicationService.instance;
+    applicationService.addListener(scrollToTop);
   }
 
   @override
   void dispose() {
+    applicationService.removeListener(scrollToTop);
     nameEditingController.removeListener(watchName);
     nameEditingController.dispose();
     mobileScrollController.dispose();
     desktopScrollController.dispose();
     subtaskProvider.removeListener(resetSubtasks);
     super.dispose();
+  }
+
+  void scrollToTop() {
+    if (mobileScrollController.hasClients) {
+      mobileScrollController.animateTo(
+        0,
+        duration: Constants.scrollDuration,
+        curve: Constants.scrollCurve,
+      );
+    }
+    if (desktopScrollController.hasClients) {
+      desktopScrollController.animateTo(
+        0,
+        duration: Constants.scrollDuration,
+        curve: Constants.scrollCurve,
+      );
+    }
   }
 
   void watchName() {
@@ -126,12 +150,7 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
     if (nameEditingController.text.isEmpty) {
       valid = false;
       _nameErrorText.value = "Enter Routine Name";
-      if (desktopScrollController.hasClients) {
-        desktopScrollController.jumpTo(0);
-      }
-      if (mobileScrollController.hasClients) {
-        mobileScrollController.jumpTo(0);
-      }
+      scrollToTop();
     }
 
     return valid;

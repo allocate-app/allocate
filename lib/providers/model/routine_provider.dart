@@ -37,8 +37,6 @@ class RoutineProvider extends ChangeNotifier {
     }
   }
 
-  late Timer syncTimer;
-
   late final RoutineRepository _routineRepo;
   late final SubtaskRepository _subtaskRepo;
 
@@ -63,7 +61,7 @@ class RoutineProvider extends ChangeNotifier {
   }
 
   Future<void> init() async {
-    _routineRepo.init();
+    await _routineRepo.init();
     await setDailyRoutines();
     notifyListeners();
   }
@@ -260,6 +258,25 @@ class RoutineProvider extends ChangeNotifier {
     }
   }
 
+  Future<void> refreshRepo() async {
+    try {
+      await _routineRepo.refreshRepo();
+      notifyListeners();
+    } on FailureToDeleteException catch (e, stacktrace) {
+      log(e.cause, stackTrace: stacktrace);
+      notifyListeners();
+      return Future.error(e, stacktrace);
+    } on FailureToUploadException catch (e, stacktrace) {
+      log(e.cause, stackTrace: stacktrace);
+      notifyListeners();
+      return Future.error(e, stacktrace);
+    } on Error catch (e, stacktrace) {
+      log("Unknown error", stackTrace: stacktrace);
+      notifyListeners();
+      return Future.error(UnexpectedErrorException(), stacktrace);
+    }
+  }
+
   Future<void> syncRepo() async {
     try {
       await _routineRepo.syncRepo();
@@ -281,6 +298,14 @@ class RoutineProvider extends ChangeNotifier {
 
   Future<void> createRoutine(Routine routine, int times) async {
     try {
+      // Check for db collisions.
+      bool inDB = await _routineRepo.containsID(id: routine.id);
+
+      while (inDB) {
+        routine.id = routine.id + 1;
+        inDB = await _routineRepo.containsID(id: routine.id);
+      }
+
       curRoutine = await _routineRepo.create(routine);
       setDailyRoutine(timeOfDay: times, routine: curRoutine);
       notifyListeners();

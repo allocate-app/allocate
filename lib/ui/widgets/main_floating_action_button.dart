@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_expandable_fab/flutter_expandable_fab.dart';
 import 'package:provider/provider.dart';
 
+import '../../providers/application/event_provider.dart';
 import '../../providers/model/deadline_provider.dart';
 import '../../providers/model/group_provider.dart';
 import '../../providers/model/reminder_provider.dart';
@@ -100,36 +101,40 @@ class _MainFloatingActionButton extends State<MainFloatingActionButton> {
                     await blurredNonDismissible(
                         context: context, dialog: const CreateReminderScreen());
                   }),
-
-              // TODO: refactor this to hard-sync once implementation is finished.
               if (isConnected)
                 FloatingActionButton(
                     shape: const CircleBorder(),
                     child: const Tooltip(
-                      message: "Sync now",
+                      message: "Refresh now",
                       child: Icon(Icons.sync_rounded),
                     ),
                     onPressed: () async {
                       final ExpandableFabState? state = _key.currentState;
+                      final EventProvider ep =
+                          Provider.of<EventProvider>(context, listen: false);
                       if (null != state) {
                         state.toggle();
                       }
                       await Future.wait([
                         Provider.of<ToDoProvider>(context, listen: false)
-                            .syncRepo(),
+                            .refreshRepo(),
                         Provider.of<RoutineProvider>(context, listen: false)
-                            .syncRepo(),
+                            .refreshRepo(),
                         Provider.of<DeadlineProvider>(context, listen: false)
-                            .syncRepo(),
+                            .refreshRepo(),
                         Provider.of<ReminderProvider>(context, listen: false)
-                            .syncRepo(),
+                            .refreshRepo(),
                         Provider.of<GroupProvider>(context, listen: false)
-                            .syncRepo(),
+                            .refreshRepo(),
                         Provider.of<SubtaskProvider>(context, listen: false)
-                            .syncRepo(),
+                            .refreshRepo(),
                         Provider.of<UserProvider>(context, listen: false)
                             .syncUser(),
                       ]);
+
+                      await Future.delayed(const Duration(seconds: 1));
+
+                      await ep.resetCalendar();
                     })
             ],
           );

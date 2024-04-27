@@ -89,6 +89,7 @@ class _SplashScreen extends State<SplashScreen> {
 
     // -> This really is not the tea...
     // TODO: in user init -- SYNC FIRST, THEN CALL THE DAY-RESET FUNCTION SEPARATELY.
+    // IN THIS CLS.
     dailyResetProvider.addListener(dayReset);
     layoutProvider.isMobile = Platform.isIOS || Platform.isAndroid;
 

@@ -38,11 +38,15 @@ class DeadlineRepo extends ChangeNotifier implements DeadlineRepository {
   bool _subscribed = false;
   bool _initialized = false;
 
+  bool _needsRefreshing = true;
+  bool _syncing = false;
+  bool _refreshing = false;
+
   String get uuid => _supabaseClient.auth.currentUser?.id ?? "";
   String? currentUserID;
 
   @override
-  void init() {
+  Future<void> init() async {
     if (_initialized) {
       return;
     }
@@ -73,17 +77,24 @@ class DeadlineRepo extends ChangeNotifier implements DeadlineRepository {
             event: PostgresChangeEvent.delete,
             callback: handleDelete);
 
+    await handleUserChange();
+
+    if (!_subscribed) {
+      _deadlineStream.subscribe();
+      _subscribed = true;
+    }
+
     // Listen to auth changes.
     SupabaseService.instance.authSubscription.listen((AuthState data) async {
       final AuthChangeEvent event = data.event;
       switch (event) {
-        case AuthChangeEvent.initialSession:
-          await handleUserChange();
-          // OPEN TABLE STREAM -> insert new data.
-          if (!_subscribed) {
-            _deadlineStream.subscribe();
-            _subscribed = true;
-          }
+        // case AuthChangeEvent.initialSession:
+        //   await handleUserChange();
+        //   // OPEN TABLE STREAM -> insert new data.
+        //   if (!_subscribed) {
+        //     _deadlineStream.subscribe();
+        //     _subscribed = true;
+        //   }
         case AuthChangeEvent.signedIn:
           await handleUserChange();
           // This should close and re-open the subscription?
@@ -111,6 +122,7 @@ class DeadlineRepo extends ChangeNotifier implements DeadlineRepository {
     // This is for online stuff.
     SupabaseService.instance.connectionSubscription
         .listen((ConnectivityResult result) async {
+      _needsRefreshing = true;
       if (result == ConnectivityResult.none) {
         return;
       }
@@ -127,8 +139,6 @@ class DeadlineRepo extends ChangeNotifier implements DeadlineRepository {
     _isarClient.deadlines.watchLazy().listen((_) async {
       await IsarService.instance.updateDBSize();
     });
-
-    handleUserChange();
   }
 
   Future<void> handleUserChange() async {
@@ -136,7 +146,12 @@ class DeadlineRepo extends ChangeNotifier implements DeadlineRepository {
 
     // Realtime Changes will handle updated data.
     if (newID == currentUserID) {
-      return syncRepo();
+      if (_needsRefreshing) {
+        await refreshRepo();
+        _needsRefreshing = false;
+        return;
+      }
+      return await syncRepo();
     }
 
     // In the case that the previous currentUserID was null.
@@ -144,6 +159,11 @@ class DeadlineRepo extends ChangeNotifier implements DeadlineRepository {
     // if not online, this will just early return.
     if (null == currentUserID) {
       currentUserID = newID;
+      if (_needsRefreshing) {
+        await refreshRepo();
+        _needsRefreshing = false;
+        return;
+      }
       return await syncRepo();
     }
 
@@ -406,10 +426,19 @@ class DeadlineRepo extends ChangeNotifier implements DeadlineRepository {
       _supabaseClient.from("deadlines").count(CountOption.exact);
 
   @override
-  Future<void> syncRepo() async {
+  Future<void> refreshRepo() async {
     if (!isConnected) {
+      _refreshing = false;
+      _syncing = false;
       return;
     }
+
+    if (_refreshing) {
+      return;
+    }
+
+    _refreshing = true;
+    _syncing = true;
 
     // Get the set of unsynced data.
     Set<Deadline> unsynced = await getUnsynced().then((_) => _.toSet());
@@ -421,14 +450,63 @@ class DeadlineRepo extends ChangeNotifier implements DeadlineRepository {
     List<Deadline> onlineDeadlines = await fetchRepo();
 
     List<Deadline> toInsert = List.empty(growable: true);
-    for (Deadline deadline in onlineDeadlines) {
-      Deadline? otherDeadline = unsynced.lookup(deadline);
-      // Prioritize by last updated -> unsynced data will overwrite new data.
-      if (null != otherDeadline &&
-          deadline.lastUpdated.isAfter(otherDeadline.lastUpdated)) {
-        unsynced.remove(otherDeadline);
+    for (Deadline onlineDeadline in onlineDeadlines) {
+      Deadline? localDeadline = unsynced.lookup(onlineDeadline);
+      // Prioritize by last updated -> unsynced data will overwrite new data
+      // during the batch update.
+      if (null != localDeadline &&
+          onlineDeadline.lastUpdated.isAfter(localDeadline.lastUpdated)) {
+        unsynced.remove(localDeadline);
       }
-      toInsert.add(deadline);
+      toInsert.add(onlineDeadline);
+    }
+
+    // Clear the DB, then add all new data.
+    // Unsynced data will be updated once remaining data has been collected.
+    await clearLocal();
+
+    await _isarClient.writeTxn(() async {
+      await _isarClient.deadlines.putAll(toInsert);
+    });
+
+    insertRemaining(totalFetched: onlineDeadlines.length, unsynced: unsynced);
+    notifyListeners();
+  }
+
+  // This doesn't currently throw exceptions, as these are technically less critical.
+  // Most function happens offline.
+  @override
+  Future<void> syncRepo() async {
+    if (!isConnected) {
+      _syncing = false;
+      return;
+    }
+
+    if (_syncing || _refreshing) {
+      return;
+    }
+
+    _syncing = true;
+
+    // Get the set of unsynced data.
+    Set<Deadline> unsynced = await getUnsynced().then((_) => _.toSet());
+
+    // Get the online count.
+    _deadlineCount = await getOnlineCount();
+
+    // Fetch new data -> by fetchRepo();
+    List<Deadline> onlineDeadlines = await fetchRepo();
+
+    List<Deadline> toInsert = List.empty(growable: true);
+    for (Deadline onlineDeadline in onlineDeadlines) {
+      Deadline? localDeadline = unsynced.lookup(onlineDeadline);
+      // Prioritize by last updated -> unsynced data will overwrite new data
+      // during the batch update.
+      if (null != localDeadline &&
+          onlineDeadline.lastUpdated.isAfter(localDeadline.lastUpdated)) {
+        unsynced.remove(localDeadline);
+      }
+      toInsert.add(onlineDeadline);
     }
 
     // Put all new data in the db.
@@ -436,36 +514,44 @@ class DeadlineRepo extends ChangeNotifier implements DeadlineRepository {
       await _isarClient.deadlines.putAll(toInsert);
     });
 
-    // Update the unsynced data.
-    await updateBatch(unsynced.toList());
-
-    if (onlineDeadlines.length < _deadlineCount) {
-      // Give the db a moment to refresh.
-      await Future.delayed(const Duration(seconds: 1));
-      insertRemaining(totalFetched: onlineDeadlines.length).whenComplete(() {
-        notifyListeners();
-      });
-    }
+    insertRemaining(totalFetched: onlineDeadlines.length, unsynced: unsynced);
 
     notifyListeners();
   }
 
-  Future<void> insertRemaining({required int totalFetched}) async {
+  Future<void> insertRemaining(
+      {required int totalFetched, Set<Deadline>? unsynced}) async {
+    unsynced = unsynced ?? Set.identity();
+
     List<Deadline> toInsert = List.empty(growable: true);
     while (totalFetched < _deadlineCount) {
-      List<Deadline>? newDeadlines = await fetchRepo(offset: totalFetched);
+      List<Deadline>? onlineDeadlines = await fetchRepo(offset: totalFetched);
 
       // If there is no data or connection is lost, break.
-      if (newDeadlines.isEmpty) {
+      if (onlineDeadlines.isEmpty) {
         break;
       }
-      toInsert.addAll(newDeadlines);
-      totalFetched += newDeadlines.length;
+      for (Deadline onlineDeadline in onlineDeadlines) {
+        Deadline? localDeadline = unsynced.lookup(onlineDeadline);
+        // Prioritize by last updated -> unsynced data will overwrite new data
+        // during the batch update.
+        if (null != localDeadline &&
+            onlineDeadline.lastUpdated.isAfter(localDeadline.lastUpdated)) {
+          unsynced.remove(localDeadline);
+        }
+        toInsert.add(onlineDeadline);
+      }
+      totalFetched += onlineDeadlines.length;
     }
 
     await _isarClient.writeTxn(() async {
       await _isarClient.deadlines.putAll(toInsert);
     });
+
+    await updateBatch(unsynced.toList());
+    _syncing = false;
+    _refreshing = false;
+    notifyListeners();
   }
 
   @override
@@ -496,7 +582,7 @@ class DeadlineRepo extends ChangeNotifier implements DeadlineRepository {
     // _deadlineStream.unsubscribe();
     // _subscribed = false;
     await clearLocal();
-    await syncRepo();
+    await refreshRepo();
   }
 
   Future<void> handleUpsert(PostgresChangePayload payload) async {
@@ -554,6 +640,13 @@ class DeadlineRepo extends ChangeNotifier implements DeadlineRepository {
   @override
   Future<Deadline?> getByID({required int id}) async =>
       await _isarClient.deadlines.where().idEqualTo(id).findFirst();
+
+  @override
+  Future<bool> containsID({required int id}) async {
+    List<Deadline> duplicates =
+        await _isarClient.deadlines.where().idEqualTo(id).findAll();
+    return duplicates.isNotEmpty;
+  }
 
   @override
   Future<List<Deadline>> getRepoList(

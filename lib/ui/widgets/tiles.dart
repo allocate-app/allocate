@@ -14,7 +14,6 @@ import '../../model/task/routine.dart';
 import '../../model/task/subtask.dart';
 import '../../model/task/todo.dart';
 import '../../providers/application/event_provider.dart';
-// import '../../providers/application/layout_provider.dart';
 import '../../providers/model/deadline_provider.dart';
 import '../../providers/model/group_provider.dart';
 import '../../providers/model/reminder_provider.dart';
@@ -1676,7 +1675,9 @@ abstract class Tiles {
                     labelText: labelText,
                   ),
                   onTap: () {
-                    Scrollable.ensureVisible(context);
+                    Scrollable.ensureVisible(context,
+                        duration: Constants.scrollDuration,
+                        curve: Constants.scrollCurve);
                   },
                   controller: controller,
                   onEditingComplete: () {
@@ -1757,7 +1758,7 @@ abstract class Tiles {
         ],
       );
 
-  // TODO: on focus, number key might be a good shortcut?
+  // TODO: Add keybind to set via number key on focus.
   static Widget weightAnchor({
     required double weight,
     double max = Constants.maxTaskWeightDouble,
@@ -1822,7 +1823,9 @@ abstract class Tiles {
             maxLines: maxLines,
             minLines: minLines,
             onTap: () {
-              Scrollable.ensureVisible(context);
+              Scrollable.ensureVisible(context,
+                  duration: Constants.scrollDuration,
+                  curve: Constants.scrollCurve);
             },
             minFontSize: minFontSize ?? Constants.large,
             decoration: InputDecoration(
