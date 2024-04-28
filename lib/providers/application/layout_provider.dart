@@ -30,6 +30,14 @@ class LayoutProvider extends ChangeNotifier {
   bool _footerTween = false;
 
   bool _navGroupsExpanded = false;
+  bool _upcomingExpanded = true;
+  bool _overdueExpanded = true;
+  // This is both overdue + upcoming
+  List<bool> toDoExpanded = List.generate(2, (_) => false);
+  List<bool> deadlineExpanded = List.generate(2, (_) => false);
+  List<bool> reminderExpanded = List.generate(2, (_) => false);
+  // My day routines
+  List<bool> routineExpanded = List.generate(3, (_) => false);
 
   PackageInfo _packageInfo = PackageInfo(
     appName: "",
@@ -110,6 +118,26 @@ class LayoutProvider extends ChangeNotifier {
   set navGroupsExpanded(bool expanded) {
     bool notify = expanded ^ _navGroupsExpanded;
     _navGroupsExpanded = expanded;
+    if (notify) {
+      notifyListeners();
+    }
+  }
+
+  bool get upcomingExpanded => _upcomingExpanded;
+
+  set upcomingExpanded(bool expanded) {
+    bool notify = expanded ^ _upcomingExpanded;
+    _upcomingExpanded = expanded;
+    if (notify) {
+      notifyListeners();
+    }
+  }
+
+  bool get overdueExpanded => _overdueExpanded;
+
+  set overdueExpanded(bool expanded) {
+    bool notify = expanded ^ _overdueExpanded;
+    _overdueExpanded = expanded;
     if (notify) {
       notifyListeners();
     }

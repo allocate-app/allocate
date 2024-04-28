@@ -12,8 +12,7 @@ class SubtaskQuickEntry extends StatefulWidget {
   const SubtaskQuickEntry({
     super.key,
     required this.taskID,
-    this.taskIndex,
-    this.weight = 0.0,
+    this.viewModel,
     this.innerPadding = EdgeInsets.zero,
     this.outerPadding = EdgeInsets.zero,
     this.menuController,
@@ -22,13 +21,12 @@ class SubtaskQuickEntry extends StatefulWidget {
     this.hintText = "",
   });
 
+  final SubtaskViewModel? viewModel;
   final MenuController? menuController;
   final EdgeInsetsGeometry outerPadding;
   final EdgeInsetsGeometry innerPadding;
   final int taskID;
-  final int? taskIndex;
   final String hintText;
-  final double weight;
 
   final void Function()? onOpen;
   final void Function()? onClose;
@@ -37,29 +35,26 @@ class SubtaskQuickEntry extends StatefulWidget {
   State<SubtaskQuickEntry> createState() => _SubtaskQuickEntry();
 }
 
-// TODO: this needs complete refactoring.
 class _SubtaskQuickEntry extends State<SubtaskQuickEntry> {
   late TextEditingController nameEditingController;
   late MenuController menuController;
 
   late final SubtaskProvider subtaskProvider;
 
-  // I ended up reusing this widget in multiple spots.
-  // The ViewModel is bound to the context.
   late final SubtaskViewModel vm;
-  late int _weight;
-  late String _name;
 
   @override
   void initState() {
     super.initState();
-    vm = Provider.of<SubtaskViewModel>(context, listen: false);
-    resetVM();
-    // vm.weight = widget.weight.toInt();
-    // vm.taskID = widget.taskID;
-    // vm.customViewIndex = widget.taskIndex ?? vm.customViewIndex;
+    vm = widget.viewModel ??
+        Provider.of<SubtaskViewModel>(context, listen: false);
+
+    vm.taskID = widget.taskID;
+
+    vm.addListener(repaint);
+
     subtaskProvider = Provider.of<SubtaskProvider>(context, listen: false);
-    nameEditingController = TextEditingController();
+    nameEditingController = TextEditingController(text: vm.name);
     nameEditingController.addListener(watchName);
 
     menuController = widget.menuController ?? MenuController();
@@ -67,37 +62,20 @@ class _SubtaskQuickEntry extends State<SubtaskQuickEntry> {
 
   @override
   void dispose() {
+    vm.removeListener(repaint);
     nameEditingController.removeListener(watchName);
     nameEditingController.dispose();
     super.dispose();
+  }
+
+  void repaint() {
+    setState(() {});
   }
 
   void watchName() {
     String newText = nameEditingController.text;
     SemanticsService.announce(newText, Directionality.of(context));
     vm.name = newText;
-    _name = newText;
-  }
-
-  // TODO: refactor this once a better solution is in place.
-  void resetVM() {
-    vm.clear();
-    vm.initWith(
-        weight: widget.weight.toInt(),
-        taskID: widget.taskID,
-        customViewIndex: widget.taskIndex,
-        name: "");
-    _weight = vm.weight;
-    _name = vm.name;
-  }
-
-  void setVM() {
-    vm.initWith(
-      weight: _weight,
-      taskID: widget.taskID,
-      customViewIndex: widget.taskIndex,
-      name: _name,
-    );
   }
 
   @override
@@ -108,86 +86,164 @@ class _SubtaskQuickEntry extends State<SubtaskQuickEntry> {
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Selector<SubtaskViewModel, String>(
-              selector: (BuildContext context, SubtaskViewModel vm) => vm.name,
-              builder: (BuildContext context, String value, Widget? child) {
-                return Expanded(
-                  child: AutoSizeTextField(
-                      controller: nameEditingController,
-                      minFontSize: Constants.large,
-                      decoration: InputDecoration(
-                          contentPadding: widget.innerPadding,
-                          hintText: widget.hintText,
-                          enabledBorder: OutlineInputBorder(
-                              borderRadius: const BorderRadius.all(
-                                  Radius.circular(Constants.semiCircular)),
-                              borderSide: BorderSide(
-                                width: 2,
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .outlineVariant,
-                                strokeAlign: BorderSide.strokeAlignOutside,
-                              )),
-                          border: const OutlineInputBorder(
-                            borderRadius: BorderRadius.all(
-                                Radius.circular(Constants.semiCircular)),
-                            borderSide: BorderSide(
-                              strokeAlign: BorderSide.strokeAlignOutside,
-                            ),
+            Expanded(
+              child: AutoSizeTextField(
+                  controller: nameEditingController,
+                  minFontSize: Constants.large,
+                  decoration: InputDecoration(
+                      contentPadding: widget.innerPadding,
+                      hintText: widget.hintText,
+                      enabledBorder: OutlineInputBorder(
+                          borderRadius: const BorderRadius.all(
+                              Radius.circular(Constants.semiCircular)),
+                          borderSide: BorderSide(
+                            width: 2,
+                            color: Theme.of(context).colorScheme.outlineVariant,
+                            strokeAlign: BorderSide.strokeAlignOutside,
                           )),
-                      onEditingComplete: () {
-                        vm.name = nameEditingController.text;
-                        _name = nameEditingController.text;
-                      }),
-                );
-              },
+                      border: const OutlineInputBorder(
+                        borderRadius: BorderRadius.all(
+                            Radius.circular(Constants.semiCircular)),
+                        borderSide: BorderSide(
+                          strokeAlign: BorderSide.strokeAlignOutside,
+                        ),
+                      )),
+                  onTap: () async {
+                    Scrollable.ensureVisible(context,
+                        duration: Constants.scrollDuration,
+                        curve: Constants.scrollCurve);
+                  },
+                  onEditingComplete: () {
+                    vm.name = nameEditingController.text;
+                    FocusScope.of(context).unfocus();
+                  }),
             ),
-            Selector<SubtaskViewModel, int>(
-                selector: (BuildContext context, SubtaskViewModel vm) =>
-                    vm.weight,
-                builder: (BuildContext context, int value, Widget? child) {
-                  return Tiles.weightAnchor(
-                      subtask: true,
-                      controller: menuController,
-                      weight: _weight.toDouble(),
-                      max: Constants.maxSubtaskWeightDouble,
-                      divisions: Constants.maxSubtaskWeight,
-                      onOpen: widget.onOpen,
-                      onClose: widget.onClose,
-                      onChangeEnd: (value) {
-                        menuController.close();
-                      },
-                      handleWeightChange: (value) {
-                        if (null == value) {
-                          return;
-                        }
-                        vm.weight = value.toInt();
-                        _weight = vm.weight;
-                      });
+
+            Tiles.weightAnchor(
+                subtask: true,
+                controller: menuController,
+                weight: vm.weight.toDouble(),
+                max: Constants.maxSubtaskWeightDouble,
+                divisions: Constants.maxSubtaskWeight,
+                onOpen: () {
+                  Scrollable.ensureVisible(context,
+                      duration: Constants.scrollDuration,
+                      curve: Constants.scrollCurve);
+                  widget.onOpen?.call();
+                },
+                onClose: widget.onClose,
+                onChangeEnd: (value) {
+                  menuController.close();
+                },
+                handleWeightChange: (value) {
+                  if (null == value) {
+                    return;
+                  }
+                  vm.weight = value.toInt();
                 }),
-            Selector<SubtaskViewModel, String>(
-                selector: (BuildContext context, SubtaskViewModel vm) =>
-                    vm.name,
-                builder: (BuildContext context, String value, Widget? child) {
-                  return IconButton.filled(
-                      icon: const Icon(Icons.add_rounded),
-                      onPressed: (nameEditingController.text.isNotEmpty)
-                          ? () async {
-                              // This is because I goofed.
-                              // I forgot that multiple widgets use this
-                              // ViewModel at once.
-                              setVM();
-                              await subtaskProvider
-                                  .createSubtask(vm.toModel())
-                                  .catchError((e) {
-                                Tiles.displayError(e: e);
-                              }).whenComplete(() {
-                                resetVM();
-                                nameEditingController.clear();
-                              });
-                            }
-                          : null);
-                }),
+
+            IconButton.filled(
+                icon: const Icon(Icons.add_rounded),
+                onPressed: (nameEditingController.text.isNotEmpty)
+                    ? () async {
+                        await subtaskProvider
+                            .createSubtask(vm.toModel())
+                            .catchError((e) {
+                          Tiles.displayError(e: e);
+                        }).whenComplete(() {
+                          vm.clear();
+                          nameEditingController.clear();
+                        });
+                      }
+                    : null),
+            // Widget needs to be decoupled from VM because of multi-instance use on my_day_routines.
+
+            // Selector<SubtaskViewModel, String>(
+            //   selector: (BuildContext context, SubtaskViewModel vm) => vm.name,
+            //   builder: (BuildContext context, String value, Widget? child) {
+            //     return Expanded(
+            //       child: AutoSizeTextField(
+            //           controller: nameEditingController,
+            //           minFontSize: Constants.large,
+            //           decoration: InputDecoration(
+            //               contentPadding: widget.innerPadding,
+            //               hintText: widget.hintText,
+            //               enabledBorder: OutlineInputBorder(
+            //                   borderRadius: const BorderRadius.all(
+            //                       Radius.circular(Constants.semiCircular)),
+            //                   borderSide: BorderSide(
+            //                     width: 2,
+            //                     color: Theme.of(context)
+            //                         .colorScheme
+            //                         .outlineVariant,
+            //                     strokeAlign: BorderSide.strokeAlignOutside,
+            //                   )),
+            //               border: const OutlineInputBorder(
+            //                 borderRadius: BorderRadius.all(
+            //                     Radius.circular(Constants.semiCircular)),
+            //                 borderSide: BorderSide(
+            //                   strokeAlign: BorderSide.strokeAlignOutside,
+            //                 ),
+            //               )),
+            //           onTap: () {
+            //             Scrollable.ensureVisible(context,
+            //                 duration: Constants.scrollDuration,
+            //                 curve: Constants.scrollCurve);
+            //           },
+            //           onEditingComplete: () {
+            //             vm.name = nameEditingController.text;
+            //             FocusScope.of(context).unfocus();
+            //           }),
+            //     );
+            //   },
+            // ),
+            // Selector<SubtaskViewModel, int>(
+            //     selector: (BuildContext context, SubtaskViewModel vm) =>
+            //         vm.weight,
+            //     builder: (BuildContext context, int value, Widget? child) {
+            //       return Tiles.weightAnchor(
+            //           subtask: true,
+            //           controller: menuController,
+            //           weight: vm.weight.toDouble(),
+            //           max: Constants.maxSubtaskWeightDouble,
+            //           divisions: Constants.maxSubtaskWeight,
+            //           onOpen: () {
+            //             Scrollable.ensureVisible(context,
+            //                 duration: Constants.scrollDuration,
+            //                 curve: Constants.scrollCurve);
+            //             widget.onOpen?.call();
+            //           },
+            //           onClose: widget.onClose,
+            //           onChangeEnd: (value) {
+            //             menuController.close();
+            //           },
+            //           handleWeightChange: (value) {
+            //             if (null == value) {
+            //               return;
+            //             }
+            //             vm.weight = value.toInt();
+            //           });
+            //     }),
+
+            // Selector<SubtaskViewModel, String>(
+            //     selector: (BuildContext context, SubtaskViewModel vm) =>
+            //         vm.name,
+            //     builder: (BuildContext context, String value, Widget? child) {
+            //       return IconButton.filled(
+            //           icon: const Icon(Icons.add_rounded),
+            //           onPressed: (nameEditingController.text.isNotEmpty)
+            //               ? () async {
+            //                   await subtaskProvider
+            //                       .createSubtask(vm.toModel())
+            //                       .catchError((e) {
+            //                     Tiles.displayError(e: e);
+            //                   }).whenComplete(() {
+            //                     vm.clear();
+            //                     nameEditingController.clear();
+            //                   });
+            //                 }
+            //               : null);
+            //     }),
           ]),
     );
   }

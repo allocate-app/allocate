@@ -120,7 +120,10 @@ class _NotificationsScreen extends State<NotificationsScreen> {
                         ExpandedListTile(
                           outerPadding:
                               const EdgeInsets.only(bottom: Constants.padding),
-                          initiallyExpanded: true,
+                          initiallyExpanded: layoutProvider.upcomingExpanded,
+                          onExpansionChanged: ({bool expanded = false}) {
+                            layoutProvider.upcomingExpanded = expanded;
+                          },
                           leading: const Icon(Icons.upcoming_rounded),
                           title: const Padding(
                             padding: EdgeInsets.symmetric(
@@ -136,7 +139,11 @@ class _NotificationsScreen extends State<NotificationsScreen> {
                           children: [
                             // Deadlines
                             ExpandedListTile(
-                                initiallyExpanded: true,
+                                initiallyExpanded:
+                                    layoutProvider.deadlineExpanded[0],
+                                onExpansionChanged: ({bool expanded = false}) {
+                                  layoutProvider.deadlineExpanded[0] = expanded;
+                                },
                                 leading: const Icon(Icons.announcement_rounded),
                                 title: const AutoSizeText(
                                   "Deadlines",
@@ -196,7 +203,11 @@ class _NotificationsScreen extends State<NotificationsScreen> {
                                 ]),
                             // Reminders
                             ExpandedListTile(
-                                initiallyExpanded: true,
+                                initiallyExpanded:
+                                    layoutProvider.reminderExpanded[0],
+                                onExpansionChanged: ({bool expanded = false}) {
+                                  layoutProvider.reminderExpanded[0] = expanded;
+                                },
                                 leading: const Icon(Icons.push_pin_rounded),
                                 title: const AutoSizeText(
                                   "Reminders",
@@ -256,7 +267,11 @@ class _NotificationsScreen extends State<NotificationsScreen> {
                                 ]),
                             // TODOS
                             ExpandedListTile(
-                                initiallyExpanded: true,
+                                initiallyExpanded:
+                                    layoutProvider.toDoExpanded[0],
+                                onExpansionChanged: ({bool expanded = false}) {
+                                  layoutProvider.toDoExpanded[0] = expanded;
+                                },
                                 leading: const Icon(Icons.task_rounded),
                                 title: const AutoSizeText(
                                   "Tasks",
@@ -334,7 +349,10 @@ class _NotificationsScreen extends State<NotificationsScreen> {
                           ],
                         ),
                         ExpandedListTile(
-                            initiallyExpanded: true,
+                            initiallyExpanded: layoutProvider.overdueExpanded,
+                            onExpansionChanged: ({bool expanded = false}) {
+                              layoutProvider.overdueExpanded = expanded;
+                            },
                             leading: const Icon(
                                 Icons.notification_important_rounded),
                             title: const Padding(
@@ -351,7 +369,13 @@ class _NotificationsScreen extends State<NotificationsScreen> {
                             children: [
                               // Deadlines
                               ExpandedListTile(
-                                  initiallyExpanded: true,
+                                  initiallyExpanded:
+                                      layoutProvider.deadlineExpanded[1],
+                                  onExpansionChanged: (
+                                      {bool expanded = false}) {
+                                    layoutProvider.deadlineExpanded[1] =
+                                        expanded;
+                                  },
                                   leading:
                                       const Icon(Icons.announcement_rounded),
                                   title: const AutoSizeText(
@@ -416,7 +440,13 @@ class _NotificationsScreen extends State<NotificationsScreen> {
                                   ]),
                               // Reminders
                               ExpandedListTile(
-                                  initiallyExpanded: true,
+                                  initiallyExpanded:
+                                      layoutProvider.reminderExpanded[1],
+                                  onExpansionChanged: (
+                                      {bool expanded = false}) {
+                                    layoutProvider.reminderExpanded[1] =
+                                        expanded;
+                                  },
                                   leading: const Icon(Icons.push_pin_rounded),
                                   title: const AutoSizeText(
                                     "Reminders",
@@ -480,7 +510,12 @@ class _NotificationsScreen extends State<NotificationsScreen> {
                                   ]),
                               // TODOS
                               ExpandedListTile(
-                                  initiallyExpanded: true,
+                                  initiallyExpanded:
+                                      layoutProvider.toDoExpanded[1],
+                                  onExpansionChanged: (
+                                      {bool expanded = false}) {
+                                    layoutProvider.toDoExpanded[1] = expanded;
+                                  },
                                   leading: const Icon(Icons.task_rounded),
                                   title: const AutoSizeText(
                                     "Tasks",

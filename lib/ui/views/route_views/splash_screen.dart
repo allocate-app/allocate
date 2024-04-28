@@ -16,7 +16,6 @@ import '../../../providers/model/subtask_provider.dart';
 import '../../../providers/model/todo_provider.dart';
 import '../../../providers/model/user_provider.dart';
 import '../../../services/application_service.dart';
-import '../../../services/daily_reset_service.dart';
 import '../../../services/isar_service.dart';
 import '../../../services/notification_service.dart';
 import '../../../services/supabase_service.dart';
@@ -26,7 +25,6 @@ import '../../app_router.dart';
 import '../../widgets/tiles.dart';
 import 'loading_screen.dart';
 
-// Open on app launch -> gives enough time for stuff to be initialized.
 @RoutePage()
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key, this.initialIndex = 0});
@@ -38,7 +36,6 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreen extends State<SplashScreen> {
-  final DailyResetService dailyResetProvider = DailyResetService.instance;
   late final LayoutProvider layoutProvider;
   late final UserProvider userProvider;
 
@@ -76,7 +73,6 @@ class _SplashScreen extends State<SplashScreen> {
 
   @override
   void dispose() {
-    dailyResetProvider.removeListener(dayReset);
     super.dispose();
   }
 
@@ -87,16 +83,11 @@ class _SplashScreen extends State<SplashScreen> {
     // Initialize Supabase.
     // Initialize Providers.
 
-    // -> This really is not the tea...
-    // TODO: in user init -- SYNC FIRST, THEN CALL THE DAY-RESET FUNCTION SEPARATELY.
-    // IN THIS CLS.
-    dailyResetProvider.addListener(dayReset);
     layoutProvider.isMobile = Platform.isIOS || Platform.isAndroid;
 
     if (Constants.supabaseURL.isEmpty || Constants.supabaseAnnonKey.isEmpty) {
       throw BuildFailureException("App not configured");
     }
-    // DBs need to be initialized before providers.
 
     await Future.wait(
       [
@@ -118,7 +109,10 @@ class _SplashScreen extends State<SplashScreen> {
         NotificationService.instance.init(),
       ]);
 
-      userProvider.checkDay();
+      if (userProvider.newDay) {
+        await dayReset();
+      }
+      userProvider.viewModel?.lastOpened = DateTime.now();
     });
   }
 

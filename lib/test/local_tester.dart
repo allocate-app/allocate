@@ -139,7 +139,10 @@ void main() async {
             up = UserProvider(viewModel: vm);
             up.init();
           }
-          up.shouldUpdate = true;
+
+          if (vm.pushUpdate) {
+            up.updateUser();
+          }
           return up;
         }),
         ChangeNotifierProxyProvider<UserProvider, ToDoProvider>(

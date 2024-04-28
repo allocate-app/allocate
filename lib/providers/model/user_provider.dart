@@ -20,7 +20,6 @@ import '../../util/exceptions.dart';
 import '../../util/interfaces/authenticator.dart';
 import '../viewmodels/user_viewmodel.dart';
 
-// TODO: clean this class up.
 class UserProvider extends ChangeNotifier {
   // This has no DI at the moment -> At some point I should probably write
   // an interface and refactor DI.
@@ -34,11 +33,15 @@ class UserProvider extends ChangeNotifier {
 
   late ValueNotifier<int> myDayTotal;
 
-  bool shouldUpdate = false;
   bool updating = false;
   bool _initialized = false;
 
   bool get initialized => _initialized;
+
+  bool get newDay => (viewModel?.lastOpened.copyWith(
+              hour: 0, minute: 0, second: 0, millisecond: 0, microsecond: 0) ??
+          Constants.today)
+      .isAfter(Constants.today);
 
   // FUTURE TODO: multiple user switching.
   int _userCount = 1;
@@ -120,7 +123,6 @@ class UserProvider extends ChangeNotifier {
 
           await _userStorageService.clearDB();
           viewModel?.fromModel(model: desiredUser);
-          shouldUpdate = true;
           await updateUser();
           notifyListeners();
           _userStorageService.resetStatus();
@@ -148,7 +150,6 @@ class UserProvider extends ChangeNotifier {
 
         await _userStorageService.clearDB();
         viewModel?.fromModel(model: desiredUser);
-        shouldUpdate = true;
         await updateUser();
         notifyListeners();
         _userStorageService.resetStatus();
@@ -245,15 +246,10 @@ class UserProvider extends ChangeNotifier {
     await Tiles.displayError(e: e);
   }
 
-  // TODO: refactor -> sync user only.
   Future<void> syncUser() async {
     try {
-      if (shouldUpdate) {
-        await _userStorageService.updateUser(user: viewModel!.toModel());
-      } else {
-        await _userStorageService.syncUser();
-        await setUser();
-      }
+      await _userStorageService.syncUser();
+      await setUser();
     } on Error catch (e, stacktrace) {
       log(e.toString(), stackTrace: stacktrace);
     }
@@ -266,11 +262,9 @@ class UserProvider extends ChangeNotifier {
       notifyListeners();
     } on FailureToUpdateException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
-      shouldUpdate = true;
       return Future.error(e, stacktrace);
     } on FailureToUploadException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
-      shouldUpdate = true;
       return Future.error(e, stacktrace);
     } on Error catch (e, stacktrace) {
       log("Unknown error", stackTrace: stacktrace);
@@ -335,7 +329,6 @@ class UserProvider extends ChangeNotifier {
       viewModel?.email = await _authenticationService.verifyEmailChangeOTP(
           email: newEmail, token: token);
 
-      shouldUpdate = true;
       await updateUser();
     } on EmailChangeException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
@@ -369,7 +362,6 @@ class UserProvider extends ChangeNotifier {
         viewModel?.fromModel(model: user);
       } else {
         viewModel?.clear();
-        shouldUpdate = true;
         await updateUser();
       }
 
@@ -412,14 +404,7 @@ class UserProvider extends ChangeNotifier {
   }
 
   void checkDay() async {
-    if ((viewModel?.lastOpened.copyWith(
-                hour: 0,
-                minute: 0,
-                second: 0,
-                millisecond: 0,
-                microsecond: 0) ??
-            Constants.today)
-        .isAfter(Constants.today)) {
+    if (newDay) {
       DailyResetService.instance.dailyReset();
     }
 

@@ -19,7 +19,9 @@ import "../../widgets/tiles.dart";
 import "../../widgets/title_bar.dart";
 
 class CreateRoutineScreen extends StatefulWidget {
-  const CreateRoutineScreen({super.key});
+  const CreateRoutineScreen({super.key, this.times});
+
+  final int? times;
 
   @override
   State<CreateRoutineScreen> createState() => _CreateRoutineScreen();
@@ -80,6 +82,7 @@ class _CreateRoutineScreen extends State<CreateRoutineScreen> {
 
     vm = Provider.of<RoutineViewModel>(context, listen: false);
     vm.clear();
+    vm.initRoutineTimes = widget.times ?? 0;
 
     subtaskProvider = Provider.of<SubtaskProvider>(context, listen: false);
     subtaskProvider.addListener(resetSubtasks);

@@ -14,6 +14,7 @@ import '../../util/interfaces/repository/model/routine_repository.dart';
 import '../../util/interfaces/repository/model/subtask_repository.dart';
 import '../../util/numbers.dart';
 import '../../util/sorting/routine_sorter.dart';
+import '../viewmodels/subtask_viewmodel.dart';
 import '../viewmodels/user_viewmodel.dart';
 
 class RoutineProvider extends ChangeNotifier {
@@ -25,6 +26,9 @@ class RoutineProvider extends ChangeNotifier {
     _rebuild = rebuild;
     if (_rebuild) {
       routines = [];
+      for (int i = 0; i < 3; i++) {
+        dailyRoutineTaskViewModels[i].clear();
+      }
       notifyListeners();
     }
   }
@@ -34,6 +38,9 @@ class RoutineProvider extends ChangeNotifier {
 
     if (_rebuild) {
       routines = [];
+      for (int i = 0; i < 3; i++) {
+        dailyRoutineTaskViewModels[i].clear();
+      }
     }
   }
 
@@ -46,6 +53,10 @@ class RoutineProvider extends ChangeNotifier {
   Routine? _curMorning;
   Routine? _curAfternoon;
   Routine? _curEvening;
+
+  // These are req'd to maintain state in the MyDay GUI
+  List<SubtaskViewModel> dailyRoutineTaskViewModels =
+      List.generate(3, (_) => SubtaskViewModel());
 
   final Map<int, ValueNotifier<int>> routineSubtaskCounts = {};
 

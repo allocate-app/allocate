@@ -61,93 +61,102 @@ class _MyDayScreen extends State<MyDayScreen> {
       {required BuildContext context,
       bool buildCalendar = false,
       bool smallScreen = false}) {
-    return Column(children: [
-      Selector<LayoutProvider, int>(
-        selector: (BuildContext context, LayoutProvider lp) => lp.myDayIndex,
-        builder: (BuildContext context, int value, Widget? child) =>
-            Selector<ToDoProvider, ToDoSorter>(
-                selector: (BuildContext context, ToDoProvider tp) => tp.sorter,
-                builder: (BuildContext context, ToDoSorter sorter,
-                        Widget? child) =>
-                    ListViewHeader<ToDo>(
-                        outerPadding: const EdgeInsets.all(Constants.padding),
-                        sorter: toDoProvider.sorter,
-                        leadingIcon: const Icon(Icons.wb_sunny_outlined),
-                        subtitle: AutoSizeText(
-                            Jiffy.now().format(pattern: "EEEE, MMMM d, yyyy"),
-                            style: Constants.headerStyle,
-                            softWrap: false,
-                            maxLines: 1,
-                            overflowReplacement: AutoSizeText(
-                                Jiffy.now().format(pattern: "EE. MMM. d, 'yy"),
+    return Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Selector<LayoutProvider, int>(
+            selector: (BuildContext context, LayoutProvider lp) =>
+                lp.myDayIndex,
+            builder: (BuildContext context, int value, Widget? child) =>
+                Selector<ToDoProvider, ToDoSorter>(
+                    selector: (BuildContext context, ToDoProvider tp) =>
+                        tp.sorter,
+                    builder: (BuildContext context, ToDoSorter sorter,
+                            Widget? child) =>
+                        ListViewHeader<ToDo>(
+                            outerPadding:
+                                const EdgeInsets.all(Constants.padding),
+                            sorter: toDoProvider.sorter,
+                            leadingIcon: const Icon(Icons.wb_sunny_outlined),
+                            subtitle: AutoSizeText(
+                                Jiffy.now()
+                                    .format(pattern: "EEEE, MMMM d, yyyy"),
                                 style: Constants.headerStyle,
                                 softWrap: false,
                                 maxLines: 1,
-                                overflow: TextOverflow.visible,
+                                overflowReplacement: AutoSizeText(
+                                    Jiffy.now()
+                                        .format(pattern: "EE. MMM. d, 'yy"),
+                                    style: Constants.headerStyle,
+                                    softWrap: false,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.visible,
+                                    minFontSize: Constants.large),
                                 minFontSize: Constants.large),
-                            minFontSize: Constants.large),
-                        showSorter: (value == 0),
-                        header: "My Day",
-                        onChanged: ({SortMethod? sortMethod}) {
-                          if (null == sortMethod) {
-                            return;
-                          }
-                          toDoProvider.sortMethod = sortMethod;
-                        })),
-      ),
-      Expanded(
-        child: DefaultTabController(
-            initialIndex: layoutProvider.myDayIndex,
-            length: (buildCalendar) ? 3 : 2,
-            child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: Constants.padding),
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        borderRadius: const BorderRadius.all(
-                            Radius.circular(Constants.semiCircular)),
-                        color: Theme.of(context)
-                            .colorScheme
-                            .surfaceVariant
-                            .withOpacity(Constants.tabBarOpacity),
-                      ),
-                      child: TabBar(
-                        onTap: (int newIndex) {
-                          layoutProvider.myDayIndex = newIndex;
-                        },
-                        indicatorSize: TabBarIndicatorSize.tab,
-                        indicator: BoxDecoration(
-                            color:
-                                Theme.of(context).colorScheme.primaryContainer,
+                            showSorter: (value == 0),
+                            header: "My Day",
+                            onChanged: ({SortMethod? sortMethod}) {
+                              if (null == sortMethod) {
+                                return;
+                              }
+                              toDoProvider.sortMethod = sortMethod;
+                            })),
+          ),
+          Expanded(
+            child: DefaultTabController(
+                initialIndex: layoutProvider.myDayIndex,
+                length: (buildCalendar) ? 3 : 2,
+                child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Padding(
+                        padding:
+                            const EdgeInsets.only(bottom: Constants.padding),
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
                             borderRadius: const BorderRadius.all(
-                                Radius.circular(Constants.semiCircular))),
-                        splashBorderRadius: const BorderRadius.all(
-                            Radius.circular(Constants.semiCircular)),
-                        dividerColor: Colors.transparent,
-                        tabs: (buildCalendar)
-                            ? Constants.tabs
-                            : Constants.tabs
-                                .sublist(0, Constants.tabs.length - 1),
+                                Radius.circular(Constants.semiCircular)),
+                            color: Theme.of(context)
+                                .colorScheme
+                                .surfaceVariant
+                                .withOpacity(Constants.tabBarOpacity),
+                          ),
+                          child: TabBar(
+                            onTap: (int newIndex) {
+                              layoutProvider.myDayIndex = newIndex;
+                            },
+                            indicatorSize: TabBarIndicatorSize.tab,
+                            indicator: BoxDecoration(
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .primaryContainer,
+                                borderRadius: const BorderRadius.all(
+                                    Radius.circular(Constants.semiCircular))),
+                            splashBorderRadius: const BorderRadius.all(
+                                Radius.circular(Constants.semiCircular)),
+                            dividerColor: Colors.transparent,
+                            tabs: (buildCalendar)
+                                ? Constants.tabs
+                                : Constants.tabs
+                                    .sublist(0, Constants.tabs.length - 1),
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
-                  Expanded(
-                    child: TabBarView(
-                      children: (buildCalendar)
-                          ? Constants.views
-                          : Constants.views
-                              .sublist(0, Constants.views.length - 1),
-                    ),
-                  ),
-                ])),
-      ),
-    ]);
+                      Expanded(
+                        child: TabBarView(
+                          children: (buildCalendar)
+                              ? Constants.views
+                              : Constants.views
+                                  .sublist(0, Constants.views.length - 1),
+                        ),
+                      ),
+                    ])),
+          ),
+        ]);
   }
 
-  // TODO: make vertical divider slideable.
   Widget buildHuge({required BuildContext context}) {
     return Padding(
         padding: const EdgeInsets.all(Constants.doublePadding),

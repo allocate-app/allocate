@@ -1298,12 +1298,17 @@ abstract class Tiles {
     MenuController? subtasksAnchorController,
     void Function()? onAnchorOpen,
     void Function()? onAnchorClose,
+    void Function({bool expanded})? onExpansionChanged,
+    bool initiallyExpanded = false,
     ScrollPhysics physics = const NeverScrollableScrollPhysics(),
     EdgeInsetsGeometry outerPadding = EdgeInsets.zero,
+    SubtaskViewModel? vm,
   }) {
     SubtaskProvider subtaskProvider =
         Provider.of<SubtaskProvider>(context, listen: false);
     return ExpandedListTile(
+        initiallyExpanded: initiallyExpanded,
+        onExpansionChanged: onExpansionChanged,
         leading: leading,
         outerPadding: outerPadding,
         title: Row(
@@ -1370,6 +1375,7 @@ abstract class Tiles {
               }),
           if (subtasks.length < limit)
             SubtaskQuickEntry(
+              viewModel: vm,
               taskID: id,
               outerPadding: const EdgeInsets.all(Constants.padding),
               innerPadding: const EdgeInsets.symmetric(
@@ -1387,6 +1393,8 @@ abstract class Tiles {
   static Widget emptyRoutineTile({
     required BuildContext context,
     int times = 0,
+    bool initiallyExpanded = false,
+    void Function({bool expanded})? onExpansionChanged,
   }) {
     RoutineProvider routineProvider =
         Provider.of<RoutineProvider>(context, listen: false);
@@ -1399,6 +1407,8 @@ abstract class Tiles {
     };
 
     return ExpandedListTile(
+      initiallyExpanded: initiallyExpanded,
+      onExpansionChanged: onExpansionChanged,
       leading: ListTileWidgets.myDayRoutineIcon(times: times, onPressed: null),
       title: Padding(
         padding: const EdgeInsets.symmetric(vertical: Constants.padding),
@@ -1434,10 +1444,8 @@ abstract class Tiles {
         addTile(
             title: "New Routine",
             onTap: () async {
-              Provider.of<RoutineViewModel>(context, listen: false)
-                  .initRoutineTimes = times;
               await blurredNonDismissible(
-                  context: context, dialog: const CreateRoutineScreen());
+                  context: context, dialog: CreateRoutineScreen(times: times));
               // await showDialog(
               //     context: context,
               //     barrierDismissible: false,
@@ -1452,19 +1460,23 @@ abstract class Tiles {
     );
   }
 
-  // TODO: fix double query
-  // Not likely to be possible, nor helpful.
   static Widget filledRoutineTile({
     required BuildContext context,
     required Routine routine,
     Future<void> Function({Subtask? item})? onSubtaskRemove,
+    void Function({bool expanded})? onExpansionChanged,
     ScrollPhysics physics = const NeverScrollableScrollPhysics(),
     int times = 0,
+    int vmIndex = 0,
+    bool initiallyExpanded = false,
   }) {
     RoutineProvider routineProvider =
         Provider.of<RoutineProvider>(context, listen: false);
     return subtasksTile(
+      vm: routineProvider.dailyRoutineTaskViewModels[vmIndex],
       id: routine.id,
+      initiallyExpanded: initiallyExpanded,
+      onExpansionChanged: onExpansionChanged,
       subtaskCount: routineProvider.getSubtaskCount(id: routine.id),
       subtasks: routine.subtasks,
       context: context,

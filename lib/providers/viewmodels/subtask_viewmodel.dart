@@ -62,15 +62,6 @@ class SubtaskViewModel extends ChangeNotifier implements ViewModel<Subtask> {
     _toDelete = false;
   }
 
-  void initWith(
-      {int? weight, int? taskID, int? customViewIndex, String? name}) {
-    clear();
-    _name = name ?? _name;
-    _weight = weight ?? _weight;
-    _taskID = taskID ?? _taskID;
-    _customViewIndex = customViewIndex ?? _customViewIndex;
-  }
-
   // GETSET
   int get id => _id;
 
@@ -104,7 +95,7 @@ class SubtaskViewModel extends ChangeNotifier implements ViewModel<Subtask> {
 
   set taskID(int? newID) {
     _taskID = newID;
-    notifyListeners();
+    // notifyListeners();
   }
 
   int get customViewIndex => _customViewIndex;

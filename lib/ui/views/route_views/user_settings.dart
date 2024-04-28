@@ -93,10 +93,6 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
 
   @override
   void dispose() {
-    userProvider.shouldUpdate = true;
-    userProvider.updateUser().catchError((e) async {
-      await Tiles.displayError(e: e);
-    });
     super.dispose();
   }
 

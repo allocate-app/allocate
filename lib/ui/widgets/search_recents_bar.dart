@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
+import 'package:provider/provider.dart';
 
+import '../../providers/application/layout_provider.dart';
 import '../../util/constants.dart';
 import '../../util/interfaces/i_model.dart';
 import 'tiles.dart';
@@ -39,11 +41,15 @@ class _SearchRecents<T extends IModel> extends State<SearchRecentsBar<T>> {
 
   late SearchController searchController;
 
+  late final LayoutProvider layoutProvider;
+
   @override
   void initState() {
     super.initState();
     searchController = widget.searchController ?? SearchController();
     searchController.addListener(announceText);
+
+    layoutProvider = Provider.of<LayoutProvider>(context, listen: false);
   }
 
   void announceText() {
@@ -55,10 +61,11 @@ class _SearchRecents<T extends IModel> extends State<SearchRecentsBar<T>> {
 
   @override
   void dispose() {
+    searchController.removeListener(announceText);
+
     if (widget.dispose) {
       disposeController();
     }
-    searchController.removeListener(announceText);
     super.dispose();
   }
 
@@ -81,55 +88,65 @@ class _SearchRecents<T extends IModel> extends State<SearchRecentsBar<T>> {
   Widget build(context) {
     return Padding(
       padding: widget.padding,
-      child: SearchAnchor.bar(
-          isFullScreen: false,
-          barSide: MaterialStatePropertyAll(widget.border ??
-              BorderSide(
-                  width: 2,
-                  strokeAlign: BorderSide.strokeAlignOutside,
-                  color: Theme.of(context).colorScheme.outlineVariant)),
-          barBackgroundColor:
-              const MaterialStatePropertyAll(Colors.transparent),
-          barElevation: const MaterialStatePropertyAll(0),
-          viewConstraints: const BoxConstraints(
-              maxHeight: Constants.maxSearchSideBeforeScroll),
-          barHintText: widget.hintText,
-          onTap: () {
-            Scrollable.ensureVisible(context,
-                duration: Constants.scrollDuration,
-                curve: Constants.scrollCurve);
-          },
-          searchController: searchController,
-          suggestionsBuilder:
-              (BuildContext context, SearchController controller) {
-            if (controller.text.isEmpty) {
-              if (searchHistory.isNotEmpty) {
-                return searchHistory
-                    .map((MapEntry<String, int> data) => Tiles.historyTile(
-                          title: data.key,
-                          onTap: () async {
-                            FocusScope.of(context).unfocus();
-                            await widget.handleDataSelection(id: data.value);
-                            controller.closeView(
-                                (widget.clearOnSelection) ? "" : data.key);
-                          },
-                        ))
-                    .toList();
-                // Consider appending the map entry here?
+      child: Focus(
+        onFocusChange: (bool hasFocus) {
+          if (hasFocus && !searchController.isOpen) {
+            FocusScope.of(context).unfocus();
+          }
+        },
+        child: SearchAnchor.bar(
+            barSide: MaterialStatePropertyAll(widget.border ??
+                BorderSide(
+                    width: 2,
+                    strokeAlign: BorderSide.strokeAlignOutside,
+                    color: Theme.of(context).colorScheme.outlineVariant)),
+            barBackgroundColor:
+                const MaterialStatePropertyAll(Colors.transparent),
+            barElevation: const MaterialStatePropertyAll(0),
+            viewConstraints: const BoxConstraints(
+              maxHeight: Constants.maxSearchSideBeforeScroll,
+            ),
+            barHintText: widget.hintText,
+            onSubmitted: (String text) {
+              FocusScope.of(context).unfocus();
+              searchController.closeView("");
+            },
+            searchController: searchController,
+            suggestionsBuilder:
+                (BuildContext context, SearchController controller) {
+              if (controller.text.isEmpty) {
+                if (searchHistory.isNotEmpty) {
+                  List<Widget> widgets = searchHistory
+                      .map((MapEntry<String, int> data) => Tiles.historyTile(
+                            title: data.key,
+                            onTap: () async {
+                              FocusScope.of(context).unfocus();
+                              await widget.handleDataSelection(id: data.value);
+                              controller.closeView(
+                                  (widget.clearOnSelection) ? "" : data.key);
+                            },
+                          ))
+                      .toList();
+                  // Consider appending the map entry here?
+                  widgets.add(_tapToUnfocus());
+                  return widgets;
+                }
+                final searchFuture = widget.mostRecent();
+                return [
+                  buildFutureList(
+                      searchFuture: searchFuture, controller: controller),
+                  _tapToUnfocus()
+                ];
               }
-              final searchFuture = widget.mostRecent();
+              // Search query iterable.
+              final searchFuture = widget.search(searchString: controller.text);
               return [
                 buildFutureList(
-                    searchFuture: searchFuture, controller: controller)
+                    searchFuture: searchFuture, controller: controller),
+                _tapToUnfocus(),
               ];
-            }
-            // Search query iterable.
-            final searchFuture = widget.search(searchString: controller.text);
-            return [
-              buildFutureList(
-                  searchFuture: searchFuture, controller: controller)
-            ];
-          }),
+            }),
+      ),
     );
   }
 
@@ -179,4 +196,13 @@ class _SearchRecents<T extends IModel> extends State<SearchRecentsBar<T>> {
           return const SizedBox.shrink();
         });
   }
+
+  Widget _tapToUnfocus() => ConstrainedBox(
+        constraints: BoxConstraints(
+            maxHeight: layoutProvider.height, maxWidth: layoutProvider.width),
+        child: GestureDetector(onTap: () {
+          FocusScope.of(context).unfocus();
+          searchController.closeView("");
+        }),
+      );
 }

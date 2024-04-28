@@ -365,12 +365,28 @@ class _HomeScreen extends State<HomeScreen> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     layoutProvider.size = MediaQuery.sizeOf(context);
-    return Stack(children: [
-      (Platform.isWindows)
-          ? PopScope(
-              canPop: false,
-              onPopInvoked: handlePop,
-              child: DragToResizeArea(
+    return GestureDetector(
+      onTap: () {
+        FocusScope.of(context).unfocus();
+      },
+      child: Stack(children: [
+        (Platform.isWindows)
+            ? PopScope(
+                canPop: false,
+                onPopInvoked: handlePop,
+                child: DragToResizeArea(
+                  child: Consumer<LayoutProvider>(builder:
+                      (BuildContext context, LayoutProvider value,
+                          Widget? child) {
+                    return (value.largeScreen)
+                        ? _buildDesktop(context: context)
+                        : _buildMobile(context: context);
+                  }),
+                ),
+              )
+            : PopScope(
+                canPop: false,
+                onPopInvoked: handlePop,
                 child: Consumer<LayoutProvider>(builder: (BuildContext context,
                     LayoutProvider value, Widget? child) {
                   return (value.largeScreen)
@@ -378,31 +394,21 @@ class _HomeScreen extends State<HomeScreen> with WidgetsBindingObserver {
                       : _buildMobile(context: context);
                 }),
               ),
-            )
-          : PopScope(
-              canPop: false,
-              onPopInvoked: handlePop,
-              child: Consumer<LayoutProvider>(builder:
-                  (BuildContext context, LayoutProvider value, Widget? child) {
-                return (value.largeScreen)
-                    ? _buildDesktop(context: context)
-                    : _buildMobile(context: context);
-              }),
-            ),
-      // TODO: test on device to determine proper size.
-      // Add to blurredDismissible.
-      if (layoutProvider.isMobile)
-        Positioned(
-          top: 0,
-          left: 0,
-          right: 0,
-          height: MediaQuery.of(context).padding.top,
-          child: GestureDetector(
-              onTap: applicationService.scrollToTop,
-              excludeFromSemantics: true,
-              behavior: HitTestBehavior.translucent),
-        ),
-    ]);
+        // TODO: test on device to determine proper size.
+        // Add to blurredDismissible.
+        if (layoutProvider.isMobile)
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            height: MediaQuery.of(context).padding.top,
+            child: GestureDetector(
+                onTap: applicationService.scrollToTop,
+                excludeFromSemantics: true,
+                behavior: HitTestBehavior.translucent),
+          ),
+      ]),
+    );
   }
 
   Widget _buildDesktop({required BuildContext context}) {
@@ -528,7 +534,7 @@ class _HomeScreen extends State<HomeScreen> with WidgetsBindingObserver {
                   floatingActionButton: MainFloatingActionButton(
                     fabKey: _fabKey,
                   ),
-                  resizeToAvoidBottomInset: false,
+                  resizeToAvoidBottomInset: true,
                   appBar: buildAppBar(mobile: false),
                   body: SafeArea(
                       child: Constants
@@ -554,7 +560,7 @@ class _HomeScreen extends State<HomeScreen> with WidgetsBindingObserver {
         floatingActionButton: MainFloatingActionButton(
           fabKey: _fabKey,
         ),
-        resizeToAvoidBottomInset: false,
+        resizeToAvoidBottomInset: true,
         body: SafeArea(
             child:
                 Constants.viewRoutes[layoutProvider.selectedPageIndex].view));
