@@ -50,6 +50,11 @@ abstract class Constants {
   static const String channelDescription =
       "To warn you of upcoming reminders and deadlines.";
 
+  static const String showKey = "show";
+  static const String hideKey = "hide";
+  static const String quitKey = "quit";
+  static const String notificationsKey = "notifications";
+
   static int generateID() {
     int newID = fastHash(uuid.v4());
     while (newID == intMax) {

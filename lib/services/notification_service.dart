@@ -2,13 +2,16 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import "package:flutter_local_notifications/flutter_local_notifications.dart";
+import 'package:provider/provider.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
+import 'package:window_manager/window_manager.dart';
 import 'package:windows_notification/notification_message.dart';
 import 'package:windows_notification/windows_notification.dart';
 
-import '../ui/app_router.dart';
+import '../providers/application/layout_provider.dart';
 import '../util/constants.dart';
 import '../util/exceptions.dart';
 import 'application_service.dart';
@@ -290,9 +293,19 @@ class NotificationService {
     // Set the routing to Notifications.
     as.initialPageIndex = 1;
 
-    // If the app is already open, push to home
-    if (as.appRouter.isRouteActive("/home")) {
-      as.appRouter.navigate(HomeRoute(index: 1));
+    BuildContext? context = as.globalNavigatorKey.currentContext;
+    if (null == context) {
+      return;
+    }
+
+    // If the application is already open, set the index in LP.
+    LayoutProvider lp = Provider.of<LayoutProvider>(context, listen: false);
+    lp.selectedPageIndex = 1;
+    if (!lp.isMobile) {
+      bool visible = await windowManager.isVisible();
+      if (!visible) {
+        await windowManager.show();
+      }
     }
   }
 

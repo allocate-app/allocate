@@ -69,9 +69,37 @@ void main() async {
     await windowManager.waitUntilReadyToShow(windowOptions, () async {
       await windowManager.show();
       await windowManager.focus();
-      // TODO: minimize to taskbar
       await windowManager.setPreventClose(true);
     });
+
+    if (Platform.isWindows || Platform.isLinux) {
+      await trayManager.setIcon(Platform.isWindows
+          ? 'assets/allocatelogo128.ico'
+          : 'assets/allocatelogo128.png');
+
+      Menu menu = Menu(
+        items: [
+          MenuItem(
+            key: Constants.showKey,
+            label: "Show Window",
+          ),
+          MenuItem(
+            key: Constants.hideKey,
+            label: "Hide Window",
+          ),
+          MenuItem.separator(),
+          MenuItem(
+              key: Constants.notificationsKey, label: "Show Notifications"),
+          MenuItem.separator(),
+          MenuItem(
+            key: Constants.quitKey,
+            label: "Quit Allocate",
+          ),
+        ],
+      );
+
+      await trayManager.setContextMenu(menu);
+    }
   }
 
   runApp(MultiProvider(providers: [
@@ -233,8 +261,9 @@ class _MyAppState extends State<MyApp> with WindowListener, TrayListener {
     _appRouter = ApplicationService.instance.appRouter;
     if (!(Platform.isAndroid || Platform.isIOS)) {
       windowManager.addListener(this);
+    }
+    if (Platform.isLinux || Platform.isWindows) {
       trayManager.addListener(this);
-      // TODO: system tray.
     }
     // _appLinks = AppLinks();
     // _initDeepLinking();
@@ -244,20 +273,59 @@ class _MyAppState extends State<MyApp> with WindowListener, TrayListener {
   void dispose() {
     if (!(Platform.isAndroid || Platform.isIOS)) {
       windowManager.removeListener(this);
+    }
+
+    if (Platform.isLinux || Platform.isWindows) {
       trayManager.removeListener(this);
     }
     super.dispose();
   }
 
-  // TODO: refactor -> windows/linux minimize to system tray.
   @override
   void onWindowClose() async {
-    if (Platform.isWindows || Platform.isLinux) {
-      await windowManager.destroy();
+    await windowManager.hide();
+  }
+
+  // TODO: test windows.
+  @override
+  void onTrayIconMouseDown() {
+    if (Platform.isLinux) {
+      trayManager.popUpContextMenu();
     }
-    // TODO: test -> unsure whether this returns on icon click.
-    if (Platform.isMacOS) {
+  }
+
+  // TODO: test windows.
+  @override
+  void onTrayIconRightMouseDown() {
+    trayManager.popUpContextMenu();
+  }
+
+  @override
+  void onTrayMenuItemClick(MenuItem menuItem) async {
+    if (menuItem.key == Constants.showKey) {
+      await windowManager.show();
+      return;
+    }
+    if (menuItem.key == Constants.notificationsKey) {
+      if (Provider.of<UserProvider>(context, listen: false).initialized) {
+        Provider.of<LayoutProvider>(context, listen: false).selectedPageIndex =
+            1;
+      } else {
+        ApplicationService.instance.initialPageIndex = 1;
+      }
+
+      bool visible = await windowManager.isVisible();
+      if (!visible) {
+        await windowManager.show();
+      }
+    }
+
+    if (menuItem.key == Constants.hideKey) {
       await windowManager.hide();
+    }
+
+    if (menuItem.key == Constants.quitKey) {
+      SystemNavigator.pop();
     }
   }
 

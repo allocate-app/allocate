@@ -17,7 +17,6 @@
 - ### Platform Code:
     - MacOS Menu bar
     - Homescreen Shortcut Widgets (iOS/Android)
-    - System tray
 
 ## Considering
 
