@@ -90,6 +90,7 @@ void main() async {
           MenuItem.separator(),
           MenuItem(
               key: Constants.notificationsKey, label: "Show Notifications"),
+          MenuItem(key: Constants.prefsKey, label: "Preferences"),
           MenuItem.separator(),
           MenuItem(
             key: Constants.quitKey,
@@ -314,10 +315,21 @@ class _MyAppState extends State<MyApp> with WindowListener, TrayListener {
         ApplicationService.instance.initialPageIndex = 1;
       }
 
-      bool visible = await windowManager.isVisible();
-      if (!visible) {
-        await windowManager.show();
+      await windowManager.show();
+      return;
+    }
+
+    if (menuItem.key == Constants.prefsKey) {
+      if (Provider.of<UserProvider>(context, listen: false).initialized) {
+        Provider.of<LayoutProvider>(context, listen: false).selectedPageIndex =
+            Constants.viewRoutes.indexOf(Constants.settingsScreen);
+      } else {
+        ApplicationService.instance.initialPageIndex =
+            Constants.viewRoutes.indexOf(Constants.settingsScreen);
       }
+
+      await windowManager.show();
+      return;
     }
 
     if (menuItem.key == Constants.hideKey) {

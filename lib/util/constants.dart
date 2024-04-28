@@ -53,6 +53,7 @@ abstract class Constants {
   static const String showKey = "show";
   static const String hideKey = "hide";
   static const String quitKey = "quit";
+  static const String prefsKey = "prefs";
   static const String notificationsKey = "notifications";
 
   static int generateID() {
