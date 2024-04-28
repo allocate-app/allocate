@@ -20,6 +20,7 @@ import "ui/app_router.dart";
 import "util/constants.dart";
 import "util/enums.dart";
 import "util/interfaces/i_model.dart";
+import "util/macos_menu_bar.dart";
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -88,8 +89,7 @@ void main() async {
             label: "Hide Window",
           ),
           MenuItem.separator(),
-          MenuItem(
-              key: Constants.notificationsKey, label: "Show Notifications"),
+          MenuItem(key: Constants.notificationsKey, label: "Notifications"),
           MenuItem(key: Constants.prefsKey, label: "Preferences"),
           MenuItem.separator(),
           MenuItem(
@@ -388,7 +388,7 @@ class _MyAppState extends State<MyApp> with WindowListener, TrayListener {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<ThemeProvider>(
+    Widget app = Consumer<ThemeProvider>(
         builder: (BuildContext context, ThemeProvider value, Widget? child) {
       return MaterialApp.router(
         // Two-finger scroll fix.
@@ -453,6 +453,13 @@ class _MyAppState extends State<MyApp> with WindowListener, TrayListener {
         }),
       );
     });
+
+    return (Platform.isMacOS)
+        ? PlatformMenuBar(
+            menus: finderBar(context: context),
+            child: app,
+          )
+        : app;
   }
 }
 

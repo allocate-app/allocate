@@ -46,6 +46,7 @@ abstract class Constants {
           ? null
           : applicationName;
   static const String applicationName = "Allocate";
+  static const String applicationVersion = "1.0.0+5";
   static const String channelID = "1";
   static const String channelDescription =
       "To warn you of upcoming reminders and deadlines.";

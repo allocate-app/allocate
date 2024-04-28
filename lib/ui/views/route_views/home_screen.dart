@@ -709,7 +709,6 @@ class _HomeScreen extends State<HomeScreen> with WidgetsBindingObserver {
                                 Widget? child) =>
                             Text(value)),
               ),
-              // TODO: Test reconnection.
               subtitle: ValueListenableBuilder(
                 valueListenable: userProvider.isConnected,
                 builder: (BuildContext context, bool online, Widget? child) =>

@@ -92,8 +92,10 @@ class _CalendarScreen extends State<CalendarScreen> {
                 },
                 child: CallbackShortcuts(
                   bindings: <ShortcutActivator, VoidCallback>{
-                    const SingleActivator(LogicalKeyboardKey.keyR,
-                        control: true, includeRepeats: false): () {
+                    SingleActivator(LogicalKeyboardKey.keyR,
+                        control: !(Platform.isMacOS || Platform.isIOS),
+                        meta: (Platform.isMacOS || Platform.isIOS),
+                        includeRepeats: false): () {
                       _refreshIndicatorKey.currentState?.show();
                     }
                   },

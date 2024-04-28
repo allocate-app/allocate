@@ -718,7 +718,6 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
                 //       );
                 //     });
               }),
-
           SettingsScreenWidgets.tapTile(
               leading: const Icon(Icons.medical_information_rounded),
               title: "Debug Information",
@@ -748,7 +747,19 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
                 //       return SettingsScreenWidgets.roadmapDialog();
                 //     });
               }),
-          // TODO: THIS MAY NEED AN EXTERNAL LICENSING SECTION.
+          SettingsScreenWidgets.tapTile(
+              leading: const Icon(Icons.sticky_note_2_rounded),
+              title: "Licenses",
+              onTap: () {
+                showLicensePage(
+                  context: context,
+                  applicationName: Constants.applicationName,
+                  applicationIcon: Image(image: Constants.appIcon),
+                  applicationVersion:
+                      "${layoutProvider.packageInfo.version}(${layoutProvider.packageInfo.buildNumber})",
+                  useRootNavigator: false,
+                );
+              }),
         ]);
   }
 

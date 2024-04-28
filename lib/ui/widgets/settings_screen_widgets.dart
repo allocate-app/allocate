@@ -507,8 +507,8 @@ abstract class SettingsScreenWidgets {
                     child: Image(image: Constants.appIcon, fit: BoxFit.fill),
                   ),
                 ),
-                AutoSizeText(
-                  packageInfo.appName,
+                const AutoSizeText(
+                  Constants.applicationName,
                   style: Constants.largeHeaderStyle,
                   minFontSize: Constants.huge,
                   maxLines: 1,

@@ -50,17 +50,20 @@ class _MainFloatingActionButton extends State<MainFloatingActionButton> {
             overlayStyle:
                 ExpandableFabOverlayStyle(blur: Constants.overlayBlur),
             openButtonBuilder: RotateFloatingActionButtonBuilder(
+              heroTag: UniqueKey(),
               fabSize: ExpandableFabSize.regular,
               child: const Icon(Icons.add_rounded),
               shape: const CircleBorder(),
             ),
             closeButtonBuilder: RotateFloatingActionButtonBuilder(
+              heroTag: UniqueKey(),
               fabSize: ExpandableFabSize.small,
               child: const Icon(Icons.close_rounded),
               shape: const CircleBorder(),
             ),
             children: [
               FloatingActionButton(
+                heroTag: UniqueKey(),
                 shape: const CircleBorder(),
                 onPressed: () async {
                   final ExpandableFabState? state = _key.currentState;
@@ -74,6 +77,7 @@ class _MainFloatingActionButton extends State<MainFloatingActionButton> {
                     message: "New Task", child: Icon(Icons.task_rounded)),
               ),
               FloatingActionButton(
+                  heroTag: UniqueKey(),
                   shape: const CircleBorder(),
                   child: const Tooltip(
                       message: "New Deadline",
@@ -88,6 +92,7 @@ class _MainFloatingActionButton extends State<MainFloatingActionButton> {
                         context: context, dialog: const CreateDeadlineScreen());
                   }),
               FloatingActionButton(
+                  heroTag: UniqueKey(),
                   shape: const CircleBorder(),
                   child: const Tooltip(
                       message: "New Reminder",
@@ -103,6 +108,7 @@ class _MainFloatingActionButton extends State<MainFloatingActionButton> {
                   }),
               if (isConnected)
                 FloatingActionButton(
+                    heroTag: UniqueKey(),
                     shape: const CircleBorder(),
                     child: const Tooltip(
                       message: "Refresh now",

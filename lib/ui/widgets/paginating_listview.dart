@@ -285,8 +285,10 @@ class _PaginatingListview<T extends IModel>
       },
       child: CallbackShortcuts(
         bindings: <ShortcutActivator, VoidCallback>{
-          const SingleActivator(LogicalKeyboardKey.keyR,
-              control: true, includeRepeats: false): () {
+          SingleActivator(LogicalKeyboardKey.keyR,
+              control: !(Platform.isMacOS || Platform.isIOS),
+              meta: !(Platform.isMacOS || Platform.isIOS),
+              includeRepeats: false): () {
             if (widget.pullToRefresh) {
               _refreshIndicatorKey.currentState?.show();
             }
