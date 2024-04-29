@@ -1834,6 +1834,11 @@ abstract class Tiles {
             controller: controller,
             maxLines: maxLines,
             minLines: minLines,
+            onChanged: (_){
+              Scrollable.ensureVisible(context,
+                  duration: Constants.scrollDuration,
+                  curve: Constants.scrollCurve);
+            },
             onTap: () {
               Scrollable.ensureVisible(context,
                   duration: Constants.scrollDuration,

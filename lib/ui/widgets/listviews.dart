@@ -606,6 +606,7 @@ abstract class ListViews {
     Key? key,
     required BuildContext context,
     required List<ToDo> toDos,
+    EdgeInsets listPadding = EdgeInsets.zero,
     ScrollPhysics physics = const NeverScrollableScrollPhysics(),
     required void Function({ToDo? toDo, bool? value}) onChanged,
     void Function({ToDo? toDo})? onTap,
@@ -617,6 +618,7 @@ abstract class ListViews {
         buildDefaultDragHandles: false,
         physics: physics,
         shrinkWrap: true,
+        padding: listPadding,
         onReorder: (int oldIndex, int newIndex) async =>
             await Provider.of<GroupProvider>(context, listen: false)
                 .reorderGroupToDos(

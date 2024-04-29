@@ -240,6 +240,7 @@ class _PaginatingListview<T extends IModel>
     // This is a workaround for Flutter's change to scrollbars.
     Widget list = NotificationListener<ScrollNotification>(
       child: ListView(
+        padding: EdgeInsets.zero,
         shrinkWrap: true,
         controller: scrollController,
         physics: refreshPhysics,

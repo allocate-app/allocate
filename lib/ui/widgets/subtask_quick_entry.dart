@@ -108,7 +108,13 @@ class _SubtaskQuickEntry extends State<SubtaskQuickEntry> {
                           strokeAlign: BorderSide.strokeAlignOutside,
                         ),
                       )),
-                  onTap: () async {
+                  onTap: () {
+
+                    Scrollable.ensureVisible(context,
+                        duration: Constants.scrollDuration,
+                        curve: Constants.scrollCurve);
+                  },
+                  onChanged: (_){
                     Scrollable.ensureVisible(context,
                         duration: Constants.scrollDuration,
                         curve: Constants.scrollCurve);

@@ -22,6 +22,7 @@ List<PlatformMenuItem> finderBar({required BuildContext context}) {
             ),
           ]),
 
+          // I do not understand why, but Flutter keeps changing this to "Settings..."
           PlatformMenuItemGroup(
             members: [
               PlatformMenuItem(

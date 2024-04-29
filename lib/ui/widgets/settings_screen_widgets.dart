@@ -221,7 +221,9 @@ abstract class SettingsScreenWidgets {
                   const BorderRadius.all(Radius.circular(Constants.circular)),
               onTap: () async {
                 await blurredDismissible(
-                    context: context, dialog: const SimpleNameDialog());
+                    context: context,
+                    keyboardOverlap: false,
+                    dialog: const SimpleNameDialog());
                 // showDialog(
                 //     useRootNavigator: false,
                 //     context: context,

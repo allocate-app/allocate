@@ -397,7 +397,9 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
                       return;
                     }
                     await blurredDismissible(
-                            context: context, dialog: const UpdateEmailDialog())
+                            context: context,
+                        keyboardOverlap: false,
+                        dialog: const UpdateEmailDialog())
                         // await showDialog<bool?>(
                         //     useRootNavigator: false,
                         //     context: context,
@@ -439,7 +441,9 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
                     title: "Sign in to cloud backup",
                     onTap: () async {
                       await blurredDismissible(
-                          context: context, dialog: const SignInDialog());
+                          context: context,
+                          keyboardOverlap: false,
+                          dialog: const SignInDialog());
                       // await showDialog(
                       //   useRootNavigator: false,
                       //   context: context,
@@ -753,7 +757,6 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
               leading: const Icon(Icons.info_outline_rounded),
               title: "About",
               onTap: () async {
-                // Future TODO: Implement MacOS specific code for opening "about" window.
                 await blurredDismissible(
                   context: context,
                   dialog: SettingsScreenWidgets.aboutDialog(

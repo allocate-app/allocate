@@ -407,7 +407,6 @@ class _HomeScreen extends State<HomeScreen> with WidgetsBindingObserver {
                       : _buildMobile(context: context);
                 }),
               ),
-        // TODO: test on device to determine proper size.
         // Add to blurredDismissible.
         if (layoutProvider.isMobile)
           Positioned(
@@ -504,7 +503,7 @@ class _HomeScreen extends State<HomeScreen> with WidgetsBindingObserver {
                                 Theme.of(context).colorScheme.outlineVariant,
                                 value),
                         child: InkWell(
-                          mouseCursor: SystemMouseCursors.resizeUpRightDownLeft,
+                          mouseCursor: (Platform.isMacOS)? SystemMouseCursors.resizeLeftRight :SystemMouseCursors.resizeUpRightDownLeft,
                           onHover: (value) {},
                           onTapUp: (TapUpDetails details) {
                             if (!layoutProvider.drawerOpened) {
@@ -547,7 +546,7 @@ class _HomeScreen extends State<HomeScreen> with WidgetsBindingObserver {
                   floatingActionButton: MainFloatingActionButton(
                     fabKey: _fabKey,
                   ),
-                  resizeToAvoidBottomInset: true,
+                  resizeToAvoidBottomInset: false,
                   appBar: buildAppBar(mobile: false),
                   body: SafeArea(
                       child: Constants
@@ -573,7 +572,7 @@ class _HomeScreen extends State<HomeScreen> with WidgetsBindingObserver {
         floatingActionButton: MainFloatingActionButton(
           fabKey: _fabKey,
         ),
-        resizeToAvoidBottomInset: true,
+        resizeToAvoidBottomInset: false,
         body: SafeArea(
             child:
                 Constants.viewRoutes[layoutProvider.selectedPageIndex].view));

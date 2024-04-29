@@ -210,6 +210,7 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
   @override
   Widget build(BuildContext context) => LayoutBuilder(
           builder: (BuildContext context, BoxConstraints constraints) {
+            MediaQuery.viewPaddingOf(context);
         if (layoutProvider.largeScreen) {
           return _buildDesktopDialog(context: context);
         }
@@ -220,6 +221,7 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
       });
 
   Dialog _buildDesktopDialog({required BuildContext context}) {
+    double insets = View.of(context).viewInsets.bottom;
     Widget innerList = ListView(
       padding: const EdgeInsets.only(
         top: Constants.halfPadding,
@@ -278,6 +280,18 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
                     ]),
               )
             ]),
+        if (layoutProvider.isMobile)
+          TweenAnimationBuilder<double>(
+              duration: const Duration(milliseconds: Constants.keyboardSlideOut),
+              curve: Curves.fastLinearToSlowEaseIn,
+              tween: Tween<double>(
+                begin: insets > Constants.keyboardInsetOpenThreshold ? Constants.keyboardInset : 0,
+                end: insets > Constants.keyboardInsetOpenThreshold ? Constants.keyboardInset : 0,
+              ),
+              builder: (BuildContext context, double value, Widget? child){
+                return SizedBox(height: value);
+              }
+          ),
       ],
     );
 
@@ -321,6 +335,7 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
     required BuildContext context,
     bool smallScreen = false,
   }) {
+    double insets = View.of(context).viewInsets.bottom;
     Widget innerList = ListView(
       padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
       shrinkWrap: true,
@@ -350,6 +365,18 @@ class _CreateDeadlineScreen extends State<CreateDeadlineScreen> {
         _buildTimeTile(),
 
         _buildRepeatableTile(),
+        if (layoutProvider.isMobile)
+          TweenAnimationBuilder<double>(
+              duration: const Duration(milliseconds: Constants.keyboardSlideOut),
+              curve: Curves.fastLinearToSlowEaseIn,
+              tween: Tween<double>(
+                begin: insets > Constants.keyboardInsetOpenThreshold ? Constants.keyboardInset : 0,
+                end: insets > Constants.keyboardInsetOpenThreshold ? Constants.keyboardInset : 0,
+              ),
+              builder: (BuildContext context, double value, Widget? child){
+                return SizedBox(height: value);
+              }
+          ),
       ],
     );
 

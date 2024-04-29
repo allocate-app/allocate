@@ -123,8 +123,6 @@ class UserStorageService extends ChangeNotifier {
       if (!isConnected) {
         return;
       }
-
-      // TODO: uh, possibly create some sort of semaphore to prevent spamming sync...
       await handleUserChange();
     });
   }

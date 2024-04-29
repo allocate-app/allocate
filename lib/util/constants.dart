@@ -328,6 +328,7 @@ abstract class Constants {
   static const int fadeInTime = 800;
   static const int drawerSlideTime = 500;
   static const int slideInTime = 300;
+  static const int keyboardSlideOut = 300;
   static const int footerTime = 600;
   static const int footerDelay = 100;
   static const int fadeOutTime = 125;
@@ -477,6 +478,9 @@ abstract class Constants {
 
   // For determining tablet
   static const double phoneSize = 550;
+
+  static const double keyboardInset = 400;
+  static const double keyboardInsetOpenThreshold = 50;
 
   static const double largeCheckboxScale = 1.5;
   static const double largeCheckboxMinScale = 1.2;

@@ -7,6 +7,7 @@ import '../../../providers/model/todo_provider.dart';
 import '../../../util/constants.dart';
 import '../../../util/enums.dart';
 import '../../../util/interfaces/i_model.dart';
+import '../../blurred_dialog.dart';
 import '../../widgets/listview_header.dart';
 import '../../widgets/listviews.dart';
 import '../../widgets/paginating_listview.dart';
@@ -114,12 +115,7 @@ class _GroupsListScreen extends State<GroupsListScreen> {
           outerPadding:
               const EdgeInsets.symmetric(vertical: Constants.halfPadding),
           context: context,
-          onTap: () async => showDialog(
-            useRootNavigator: false,
-            barrierDismissible: false,
-            context: context,
-            builder: (BuildContext context) => const CreateGroupScreen(),
-          ),
+          onTap: () async => await blurredNonDismissible(context: context, dialog: const CreateGroupScreen())
         ),
         Flexible(
           child: PaginatingListview<Group>(

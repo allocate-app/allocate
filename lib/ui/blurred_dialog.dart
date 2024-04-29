@@ -10,10 +10,10 @@ import 'widgets/windows_titlebar.dart';
 
 final bool isMobile = Platform.isIOS || Platform.isAndroid;
 
-// TODO: on-device test to ensure sizing is correct for tap area.
 Future<T?> blurredDismissible<T>({
   required BuildContext context,
   required Widget dialog,
+  bool keyboardOverlap = true
 }) {
   return showGeneralDialog<T>(
     context: context,
@@ -27,8 +27,8 @@ Future<T?> blurredDismissible<T>({
       return Stack(children: [
         TitlebarSafeArea(
             child: SafeArea(
-                child: MediaQuery.removeViewInsets(
-                    context: context, removeBottom: true, child: dialog))),
+                maintainBottomViewPadding: keyboardOverlap,
+                child: MediaQuery.removeViewInsets(context: context, removeBottom: keyboardOverlap,child: dialog))),
         if (Platform.isWindows) ...windowsTitlebar(),
         if (isMobile)
           Positioned(
@@ -62,6 +62,7 @@ Future<T?> blurredDismissible<T>({
 Future<T?> blurredNonDismissible<T>({
   required BuildContext context,
   required Widget dialog,
+  bool keyboardOverlap = true,
 }) {
   return showGeneralDialog<T>(
     context: context,
@@ -74,15 +75,18 @@ Future<T?> blurredNonDismissible<T>({
       return Stack(children: [
         TitlebarSafeArea(
           child: SafeArea(
-              maintainBottomViewPadding: true,
-              child: GestureDetector(
-                  behavior: HitTestBehavior.translucent,
-                  onTap: () {
-                    FocusScope.of(context).unfocus();
-                  },
-                  // Soft keyboard smooshes the dialog.
-                  child: MediaQuery.removeViewInsets(
-                      context: context, removeBottom: true, child: dialog))),
+              maintainBottomViewPadding: keyboardOverlap,
+              child: MediaQuery.removeViewInsets(
+                context: context,
+                removeBottom: keyboardOverlap,
+                child: GestureDetector(
+                    behavior: HitTestBehavior.translucent,
+                    onTap: () {
+                      FocusScope.of(context).unfocus();
+                    },
+                    // Soft keyboard smooshes the dialog.
+                    child: dialog),
+              )),
         ),
         if (Platform.isWindows) ...windowsTitlebar(),
         if (isMobile)

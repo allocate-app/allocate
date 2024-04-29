@@ -444,6 +444,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
   @override
   Widget build(BuildContext context) => LayoutBuilder(
         builder: (BuildContext context, BoxConstraints constraints) {
+          MediaQuery.viewPaddingOf(context);
           if (layoutProvider.largeScreen) {
             return _buildDesktopDialog(
               context: context,
@@ -457,6 +458,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
   Dialog _buildDesktopDialog({
     required BuildContext context,
   }) {
+    double insets = View.of(context).viewInsets.bottom;
     Widget innerList = ListView(
         padding: const EdgeInsets.only(
           top: Constants.halfPadding,
@@ -533,6 +535,18 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                       ]),
                 )
               ]),
+          if (layoutProvider.isMobile)
+            TweenAnimationBuilder<double>(
+                duration: const Duration(milliseconds: Constants.keyboardSlideOut),
+                curve: Curves.fastLinearToSlowEaseIn,
+                tween: Tween<double>(
+                  begin: insets > Constants.keyboardInsetOpenThreshold ? Constants.keyboardInset : 0,
+                  end: insets > Constants.keyboardInsetOpenThreshold ? Constants.keyboardInset : 0,
+                ),
+                builder: (BuildContext context, double value, Widget? child){
+                  return SizedBox(height: value);
+                }
+            ),
         ]);
 
     return Dialog(
@@ -570,6 +584,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
     required BuildContext context,
     bool smallScreen = false,
   }) {
+    double insets = View.of(context).viewInsets.bottom;
     Widget innerList = ListView(
       padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
       shrinkWrap: true,
@@ -593,11 +608,9 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
           child: PaddedDivider(padding: Constants.padding),
         ),
 
-        SafeArea(
-          child: _buildSearchBar(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: Constants.quarterPadding)),
-        ),
+        _buildSearchBar(
+            padding: const EdgeInsets.symmetric(
+                horizontal: Constants.quarterPadding)),
 
         const Padding(
           padding: EdgeInsets.symmetric(vertical: Constants.padding),
@@ -617,6 +630,18 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
 
         _buildTimeTile(),
         _buildRepeatableTile(),
+        if (layoutProvider.isMobile)
+          TweenAnimationBuilder<double>(
+              duration: const Duration(milliseconds: Constants.keyboardSlideOut),
+              curve: Curves.fastLinearToSlowEaseIn,
+              tween: Tween<double>(
+                begin: insets > Constants.keyboardInsetOpenThreshold ? Constants.keyboardInset : 0,
+                end: insets > Constants.keyboardInsetOpenThreshold ? Constants.keyboardInset : 0,
+              ),
+              builder: (BuildContext context, double value, Widget? child){
+                return SizedBox(height: value);
+              }
+          ),
       ],
     );
 

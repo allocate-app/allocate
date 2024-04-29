@@ -45,6 +45,8 @@ class _SplashScreen extends State<SplashScreen> {
     layoutProvider = Provider.of<LayoutProvider>(context, listen: false);
     userProvider = Provider.of<UserProvider>(context, listen: false);
 
+    layoutProvider.isMobile = Platform.isIOS || Platform.isAndroid;
+
     // Test this later -> needs to push back to home if somehow popped.
     if (userProvider.initialized) {
       AutoRouter.of(context).navigate(HomeRoute(
@@ -61,8 +63,8 @@ class _SplashScreen extends State<SplashScreen> {
               widget.initialIndex));
     }).catchError((e, stacktrace) async {
       log(e, stackTrace: stacktrace);
+      // Might make sense to push to an error screen and close.
       await Tiles.displayError(e: e);
-
       if (layoutProvider.isMobile) {
         SystemNavigator.pop();
       } else {
@@ -83,7 +85,6 @@ class _SplashScreen extends State<SplashScreen> {
     // Initialize Supabase.
     // Initialize Providers.
 
-    layoutProvider.isMobile = Platform.isIOS || Platform.isAndroid;
 
     if (Constants.supabaseURL.isEmpty || Constants.supabaseAnnonKey.isEmpty) {
       throw BuildFailureException("App not configured");

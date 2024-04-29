@@ -309,6 +309,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
   @override
   Widget build(BuildContext context) => LayoutBuilder(
         builder: (BuildContext context, BoxConstraints constraints) {
+          MediaQuery.viewPaddingOf(context);
           if (layoutProvider.largeScreen) {
             return _buildDesktopDialog(
               context: context,
@@ -322,6 +323,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
   Dialog _buildDesktopDialog({
     required BuildContext context,
   }) {
+    double insets = View.of(context).viewInsets.bottom;
     Widget innerList = ListView(
         padding: const EdgeInsets.only(
           top: Constants.halfPadding,
@@ -400,6 +402,18 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                       ]),
                 )
               ]),
+          if (layoutProvider.isMobile)
+            TweenAnimationBuilder<double>(
+                duration: const Duration(milliseconds: Constants.keyboardSlideOut),
+                curve: Curves.fastLinearToSlowEaseIn,
+                tween: Tween<double>(
+                  begin: insets > Constants.keyboardInsetOpenThreshold ? Constants.keyboardInset : 0,
+                  end: insets > Constants.keyboardInsetOpenThreshold ? Constants.keyboardInset : 0,
+                ),
+                builder: (BuildContext context, double value, Widget? child){
+                  return SizedBox(height: value);
+                }
+            ),
         ]);
 
     return Dialog(
@@ -439,7 +453,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
     bool smallScreen = false,
   }) {
     // Inner list factored out bc of Flutter's Scrollbar change.
-
+    double insets = View.of(context).viewInsets.bottom;
     Widget innerList = ListView(
       padding: const EdgeInsets.symmetric(horizontal: Constants.padding),
       shrinkWrap: true,
@@ -465,11 +479,9 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
           child: PaddedDivider(padding: Constants.padding),
         ),
 
-        SafeArea(
-          child: _buildSearchBar(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: Constants.quarterPadding)),
-        ),
+        _buildSearchBar(
+            padding: const EdgeInsets.symmetric(
+                horizontal: Constants.quarterPadding)),
 
         const Padding(
           padding: EdgeInsets.symmetric(vertical: Constants.padding),
@@ -489,6 +501,20 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
 
         _buildTimeTile(),
         _buildRepeatableTile(),
+
+        if (layoutProvider.isMobile)
+          TweenAnimationBuilder<double>(
+              duration: const Duration(milliseconds: Constants.keyboardSlideOut),
+              curve: Curves.fastLinearToSlowEaseIn,
+              tween: Tween<double>(
+                begin: insets > Constants.keyboardInsetOpenThreshold ? Constants.keyboardInset : 0,
+                end: insets > Constants.keyboardInsetOpenThreshold ? Constants.keyboardInset : 0,
+              ),
+              builder: (BuildContext context, double value, Widget? child){
+                return SizedBox(height: value);
+              }
+          ),
+          // SizedBox(height: View.of(context).viewInsets.bottom > 0 ? Constants.keyboardInset : 0),
       ],
     );
 
