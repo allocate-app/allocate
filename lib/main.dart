@@ -8,6 +8,7 @@ import "package:flutter/gestures.dart";
 import 'package:flutter/material.dart';
 import "package:flutter/services.dart";
 import "package:flutter_acrylic/flutter_acrylic.dart";
+import "package:macos_window_utils/window_manipulator.dart";
 import "package:provider/provider.dart";
 import "package:tray_manager/tray_manager.dart";
 import "package:win32_registry/win32_registry.dart";
@@ -20,7 +21,7 @@ import "ui/app_router.dart";
 import "util/constants.dart";
 import "util/enums.dart";
 import "util/interfaces/i_model.dart";
-import "util/macos_menu_bar.dart";
+import "ui/widgets/macos_menu_bar.dart";
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -251,6 +252,7 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> with WindowListener, TrayListener {
   late final AppRouter _appRouter;
+  late final ApplicationService _applicationService;
 
   // Having difficulty getting applinks to work with approuter.
   // late AppLinks _appLinks;
@@ -259,7 +261,8 @@ class _MyAppState extends State<MyApp> with WindowListener, TrayListener {
   @override
   void initState() {
     super.initState();
-    _appRouter = ApplicationService.instance.appRouter;
+    _applicationService = ApplicationService.instance;
+    _appRouter = _applicationService.appRouter;
     if (!(Platform.isAndroid || Platform.isIOS)) {
       windowManager.addListener(this);
     }
@@ -284,6 +287,14 @@ class _MyAppState extends State<MyApp> with WindowListener, TrayListener {
 
   @override
   void onWindowClose() async {
+    _applicationService.hidden.value = true;
+    FocusScope.of(context).unfocus();
+
+    if(Platform.isMacOS){
+      // This should be initialized by flutter acrylic.
+      await WindowManipulator.orderOut();
+      return;
+    }
     await windowManager.hide();
   }
 
@@ -302,9 +313,15 @@ class _MyAppState extends State<MyApp> with WindowListener, TrayListener {
   }
 
   @override
+  void onWindowFocus() {
+    _applicationService.hidden.value = false;
+  }
+
+  @override
   void onTrayMenuItemClick(MenuItem menuItem) async {
     if (menuItem.key == Constants.showKey) {
       await windowManager.show();
+      await windowManager.focus();
       return;
     }
     if (menuItem.key == Constants.notificationsKey) {
@@ -316,6 +333,7 @@ class _MyAppState extends State<MyApp> with WindowListener, TrayListener {
       }
 
       await windowManager.show();
+      await windowManager.focus();
       return;
     }
 
@@ -329,11 +347,12 @@ class _MyAppState extends State<MyApp> with WindowListener, TrayListener {
       }
 
       await windowManager.show();
+      await windowManager.focus();
       return;
     }
 
     if (menuItem.key == Constants.hideKey) {
-      await windowManager.hide();
+      await windowManager.close();
     }
 
     if (menuItem.key == Constants.quitKey) {
@@ -454,12 +473,45 @@ class _MyAppState extends State<MyApp> with WindowListener, TrayListener {
       );
     });
 
-    return (Platform.isMacOS)
-        ? PlatformMenuBar(
-            menus: finderBar(context: context),
-            child: app,
-          )
-        : app;
+    if (Platform.isIOS || Platform.isAndroid){
+      return app;
+    }
+
+    return ValueListenableBuilder(
+      valueListenable: _applicationService.hidden,
+      builder: (BuildContext context, bool value, Widget? child){
+        return (Platform.isMacOS)
+            ? CallbackShortcuts(
+              bindings: <ShortcutActivator, VoidCallback>{
+                const SingleActivator(LogicalKeyboardKey.keyW,
+                    meta:true,
+                    includeRepeats: false): () async {
+                  if(value){
+                    return;
+                  }
+                  await windowManager.close();
+                }
+              },
+              child: PlatformMenuBar(
+                        menus: finderBar(context: context),
+                        child: app,
+                      ),
+            )
+            : CallbackShortcuts(
+            bindings: <ShortcutActivator, VoidCallback>{
+              const SingleActivator(LogicalKeyboardKey.keyW,
+                  control: true,
+                  includeRepeats: false): () async {
+                if(value){
+                  return;
+                }
+                await windowManager.close();
+              }
+            },
+            child: app);
+      }
+    );
+
   }
 }
 

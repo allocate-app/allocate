@@ -10,6 +10,8 @@ class ApplicationService extends ChangeNotifier {
 
   static final AppRouter _appRouter = AppRouter();
 
+  ValueNotifier<bool> hidden = ValueNotifier(false);
+
   AppRouter get appRouter => _appRouter;
 
   static int? _initialStartingIndex;

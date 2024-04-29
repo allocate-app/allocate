@@ -4,10 +4,13 @@ import 'package:flutter/widgets.dart';
 import 'package:provider/provider.dart';
 import 'package:window_manager/window_manager.dart';
 
-import '../providers/application/layout_provider.dart';
-import 'constants.dart';
+import '../../providers/application/layout_provider.dart';
+import '../../services/application_service.dart';
+import '../../util/constants.dart';
 
-List<PlatformMenuItem> finderBar({required BuildContext context}) => [
+List<PlatformMenuItem> finderBar({required BuildContext context}) {
+  ApplicationService as = ApplicationService.instance;
+  return [
       // Main - label doesn't show anyway.
       PlatformMenu(
         label: Constants.applicationName,
@@ -24,7 +27,7 @@ List<PlatformMenuItem> finderBar({required BuildContext context}) => [
               PlatformMenuItem(
                 label: "Preferences...",
                 shortcut:
-                    const SingleActivator(LogicalKeyboardKey.comma, meta: true),
+                    const SingleActivator(LogicalKeyboardKey.comma,includeRepeats: false, meta: true),
                 onSelected: () {
                   Provider.of<LayoutProvider>(context, listen: false)
                           .selectedPageIndex =
@@ -68,10 +71,13 @@ List<PlatformMenuItem> finderBar({required BuildContext context}) => [
               label: 'Close',
               shortcut: const SingleActivator(
                 LogicalKeyboardKey.keyW,
+                includeRepeats: false,
                 meta: true,
               ),
-              onSelected: () async {
-                await windowManager.hide();
+              onSelected: (as.hidden.value) ? null : () async {
+                as.hidden.value = true;
+                FocusScope.of(context).unfocus();
+                await windowManager.close();
               }),
         ],
       ),
@@ -84,12 +90,12 @@ List<PlatformMenuItem> finderBar({required BuildContext context}) => [
           PlatformMenuItemGroup(members: [
             PlatformMenuItem(
               label: "Undo",
-              shortcut: SingleActivator(LogicalKeyboardKey.keyZ, meta: true),
+              shortcut: SingleActivator(LogicalKeyboardKey.keyZ,includeRepeats: false, meta: true),
               onSelectedIntent: UndoTextIntent(SelectionChangedCause.keyboard),
             ),
             PlatformMenuItem(
               label: "Redo",
-              shortcut: SingleActivator(LogicalKeyboardKey.keyZ,
+              shortcut: SingleActivator(LogicalKeyboardKey.keyZ, includeRepeats: false,
                   shift: true, meta: true),
               onSelectedIntent: RedoTextIntent(SelectionChangedCause.keyboard),
             ),
@@ -98,19 +104,19 @@ List<PlatformMenuItem> finderBar({required BuildContext context}) => [
             members: [
               PlatformMenuItem(
                 label: "Cut",
-                shortcut: SingleActivator(LogicalKeyboardKey.keyX, meta: true),
+                shortcut: SingleActivator(LogicalKeyboardKey.keyX,includeRepeats: false, meta: true),
                 onSelectedIntent:
                     CopySelectionTextIntent.cut(SelectionChangedCause.keyboard),
               ),
               PlatformMenuItem(
                   label: "Copy",
                   shortcut:
-                      SingleActivator(LogicalKeyboardKey.keyC, meta: true),
+                      SingleActivator(LogicalKeyboardKey.keyC,includeRepeats: false, meta: true),
                   onSelectedIntent: CopySelectionTextIntent.copy),
               PlatformMenuItem(
                   label: "Paste",
                   shortcut:
-                      SingleActivator(LogicalKeyboardKey.keyV, meta: true),
+                      SingleActivator(LogicalKeyboardKey.keyV,includeRepeats: false, meta: true),
                   onSelectedIntent:
                       PasteTextIntent(SelectionChangedCause.keyboard)),
               PlatformMenuItem(
@@ -119,7 +125,7 @@ List<PlatformMenuItem> finderBar({required BuildContext context}) => [
               ),
               PlatformMenuItem(
                 label: "Select All",
-                shortcut: SingleActivator(LogicalKeyboardKey.keyA, meta: true),
+                shortcut: SingleActivator(LogicalKeyboardKey.keyA,includeRepeats: false, meta: true),
                 onSelectedIntent:
                     SelectAllTextIntent(SelectionChangedCause.keyboard),
               ),
@@ -170,6 +176,7 @@ List<PlatformMenuItem> finderBar({required BuildContext context}) => [
               label: Constants.applicationName,
               onSelected: () async {
                 await windowManager.show();
+                await windowManager.focus();
               }),
         ],
       ),
@@ -178,3 +185,4 @@ List<PlatformMenuItem> finderBar({required BuildContext context}) => [
       //   label:
       // ),
     ];
+}
