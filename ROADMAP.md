@@ -15,7 +15,6 @@
 - (Actual) Screen reading
 - Proper accessible design
 - ### Platform Code:
-    - MacOS Menu bar
     - Homescreen Shortcut Widgets (iOS/Android)
 
 ## Considering

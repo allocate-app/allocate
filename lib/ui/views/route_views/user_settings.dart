@@ -14,6 +14,7 @@ import "../../../providers/model/subtask_provider.dart";
 import "../../../providers/model/todo_provider.dart";
 import '../../../providers/model/user_provider.dart';
 import "../../../providers/viewmodels/user_viewmodel.dart";
+import "../../../services/application_service.dart";
 import "../../../util/constants.dart";
 import "../../../util/enums.dart";
 import "../../../util/exceptions.dart";
@@ -51,6 +52,8 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
   late final ThemeProvider themeProvider;
   late final LayoutProvider layoutProvider;
 
+  late ApplicationService applicationService;
+
   late final ScrollController mobileScrollController;
   late final ScrollController desktopScrollController;
   late final ScrollController desktopSideController;
@@ -76,6 +79,9 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
     groupProvider = Provider.of<GroupProvider>(context, listen: false);
     subtaskProvider = Provider.of<SubtaskProvider>(context, listen: false);
 
+    applicationService = ApplicationService.instance;
+    applicationService.addListener(scrollToTop);
+
     // _mockOnline = false;
 
     _scaffoldController = MenuController();
@@ -93,12 +99,43 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
 
   @override
   void dispose() {
+    applicationService.removeListener(scrollToTop);
+    mobileScrollController.dispose();
+    desktopScrollController.dispose();
+    desktopSideController.dispose();
     super.dispose();
   }
 
   void anchorWatchScroll() {
     _scaffoldController.close();
     _sidebarController.close();
+  }
+
+  void scrollToTop() {
+    if (mobileScrollController.hasClients) {
+      mobileScrollController.animateTo(
+        0,
+        duration: Constants.scrollDuration,
+        curve: Constants.scrollCurve,
+      );
+    }
+
+    if (desktopSideController.hasClients) {
+      desktopSideController.animateTo(
+        0,
+        duration: Constants.scrollDuration,
+        curve: Constants.scrollCurve,
+      );
+    }
+
+    if (desktopScrollController.hasClients) {
+      desktopScrollController.animateTo(
+        0,
+        duration: Constants.scrollDuration,
+        curve: Constants.scrollCurve,
+      );
+    }
+
   }
 
   @override
@@ -112,6 +149,52 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
   }
 
   Widget buildWide({required BuildContext context}) {
+    Widget sideList = ListView(
+      shrinkWrap: true,
+      physics: scrollPhysics,
+      controller: desktopSideController,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(
+              top: Constants.quadPadding +
+                  Constants.doublePadding +
+                  Constants.padding),
+          child: _buildEnergyTile(),
+        ),
+        Padding(
+          padding: const EdgeInsets.only(
+            top: Constants.quadPadding,
+            bottom: Constants.doublePadding,
+          ),
+          child: _buildQuickInfo(),
+        ),
+        const Padding(
+          padding:
+          EdgeInsets.all(Constants.halfPadding - 1),
+          child: SizedBox.shrink(),
+        ),
+        _buildSignOut(),
+        _buildDeleteAccount(),
+      ],
+    );
+    Widget mainList = ListView(
+      padding: const EdgeInsets.symmetric(
+          horizontal: Constants.doublePadding),
+      controller: desktopScrollController,
+      physics: scrollPhysics,
+      shrinkWrap: true,
+      children: [
+        _buildAccountSection(),
+        _buildGeneralSection(),
+        _buildAccessibilitySection(),
+        _buildThemeSection(),
+        _buildAboutSection(),
+        const Padding(
+          padding: EdgeInsets.all(Constants.padding),
+          child: SizedBox.shrink(),
+        ),
+      ],
+    );
     return Padding(
       padding: const EdgeInsets.all(Constants.padding),
       child: Column(
@@ -131,58 +214,20 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
                       // Header.
                       _buildHeader(),
                       Flexible(
-                        child: ListView(
-                          shrinkWrap: true,
-                          physics: scrollPhysics,
+                        child: (layoutProvider.isMobile) ? Scrollbar(
                           controller: desktopSideController,
-                          children: [
-                            Padding(
-                              padding: const EdgeInsets.only(
-                                  top: Constants.quadPadding +
-                                      Constants.doublePadding +
-                                      Constants.padding),
-                              child: _buildEnergyTile(),
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.only(
-                                top: Constants.quadPadding,
-                                bottom: Constants.doublePadding,
-                              ),
-                              child: _buildQuickInfo(),
-                            ),
-                            const Padding(
-                              padding:
-                                  EdgeInsets.all(Constants.halfPadding - 1),
-                              child: SizedBox.shrink(),
-                            ),
-                            _buildSignOut(),
-                            _buildDeleteAccount(),
-                          ],
-                        ),
+                          child: sideList
+                        ) : sideList
                       ),
                     ],
                   ),
                 ),
                 Flexible(
                   flex: 2,
-                  child: ListView(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: Constants.doublePadding),
+                  child: (layoutProvider.isMobile) ? Scrollbar(
                     controller: desktopScrollController,
-                    physics: scrollPhysics,
-                    shrinkWrap: true,
-                    children: [
-                      _buildAccountSection(),
-                      _buildGeneralSection(),
-                      _buildAccessibilitySection(),
-                      _buildThemeSection(),
-                      _buildAboutSection(),
-                      const Padding(
-                        padding: EdgeInsets.all(Constants.padding),
-                        child: SizedBox.shrink(),
-                      ),
-                    ],
-                  ),
+                    child: mainList,
+                  ) : mainList,
                 ),
               ],
             ),
@@ -193,6 +238,37 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
   }
 
   Widget buildRegular({required BuildContext context}) {
+    Widget innerList = ListView(
+      padding: const EdgeInsets.symmetric(
+          horizontal: Constants.halfPadding),
+      shrinkWrap: true,
+      physics: scrollPhysics,
+      controller: mobileScrollController,
+      children: [
+        _buildEnergyTile(),
+        _buildQuickInfo(),
+        // ACCOUNT SETTNIGS
+        _buildAccountSection(),
+        // GENERAL SETTINGS
+        _buildGeneralSection(),
+        // ACCESSIBILITY
+        _buildAccessibilitySection(),
+        // THEME
+        _buildThemeSection(),
+        // ABOUT
+        _buildAboutSection(),
+        // SIGN OUT
+        _buildSignOut(),
+
+        // DELETE ACCOUNT
+        _buildDeleteAccount(),
+        const Padding(
+          padding: EdgeInsets.all(Constants.padding),
+          child: SizedBox.shrink(),
+        ),
+      ],
+    );
+
     return Padding(
         padding: const EdgeInsets.all(Constants.padding),
         child: Column(
@@ -201,36 +277,10 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
             // Header.
             _buildHeader(),
             Flexible(
-              child: ListView(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: Constants.halfPadding),
-                shrinkWrap: true,
-                physics: scrollPhysics,
+              child: (layoutProvider.isMobile) ? Scrollbar(
                 controller: mobileScrollController,
-                children: [
-                  _buildEnergyTile(),
-                  _buildQuickInfo(),
-                  // ACCOUNT SETTNIGS
-                  _buildAccountSection(),
-                  // GENERAL SETTINGS
-                  _buildGeneralSection(),
-                  // ACCESSIBILITY
-                  _buildAccessibilitySection(),
-                  // THEME
-                  _buildThemeSection(),
-                  // ABOUT
-                  _buildAboutSection(),
-                  // SIGN OUT
-                  _buildSignOut(),
-
-                  // DELETE ACCOUNT
-                  _buildDeleteAccount(),
-                  const Padding(
-                    padding: EdgeInsets.all(Constants.padding),
-                    child: SizedBox.shrink(),
-                  ),
-                ],
-              ),
+                child: innerList,
+              ) : innerList
             ),
           ],
         ));

@@ -102,8 +102,6 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
 
     subtasksAnchorController = MenuController();
 
-    applicationService = ApplicationService.instance;
-    applicationService.addListener(scrollToTop);
   }
 
   void initializeProviders() {
@@ -120,6 +118,9 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
 
     layoutProvider = Provider.of<LayoutProvider>(context, listen: false);
     subtaskProvider.addListener(resetSubtasks);
+
+    applicationService = ApplicationService.instance;
+    applicationService.addListener(scrollToTop);
   }
 
   @override

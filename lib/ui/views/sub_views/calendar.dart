@@ -111,7 +111,7 @@ class _CalendarScreen extends State<CalendarScreen> {
                       child: Consumer<EventProvider>(builder:
                           (BuildContext context, EventProvider value,
                               Widget? child) {
-                        return ListView(
+                        Widget mainList = ListView(
                             shrinkWrap: true,
                             physics: AlwaysScrollableScrollPhysics(
                                 parent: scrollPhysics),
@@ -121,7 +121,7 @@ class _CalendarScreen extends State<CalendarScreen> {
                                   _showEventLimit)
                                 ListTile(
                                   leading:
-                                      const Icon(Icons.error_outline_rounded),
+                                  const Icon(Icons.error_outline_rounded),
                                   contentPadding: const EdgeInsets.symmetric(
                                       horizontal: Constants.padding),
                                   title: const AutoSizeText(
@@ -145,7 +145,7 @@ class _CalendarScreen extends State<CalendarScreen> {
                                   _showRepeatingLimit)
                                 ListTile(
                                     leading:
-                                        const Icon(Icons.error_outline_rounded),
+                                    const Icon(Icons.error_outline_rounded),
                                     contentPadding: const EdgeInsets.symmetric(
                                         horizontal: Constants.padding),
                                     title: const AutoSizeText(
@@ -165,7 +165,9 @@ class _CalendarScreen extends State<CalendarScreen> {
                                           }
                                         })),
                               TableCalendar(
-                                  // January 1st, 5 years ago
+                                availableGestures: AvailableGestures.horizontalSwipe,
+                                dayHitTestBehavior: HitTestBehavior.translucent,
+                                // January 1st, 5 years ago
                                   firstDay: DateTime(
                                       Constants.today.year -
                                           Constants.yearOffset,
@@ -180,7 +182,7 @@ class _CalendarScreen extends State<CalendarScreen> {
                                   focusedDay: value.focusedDay,
                                   headerStyle: Constants.calendarHeaderStyle,
                                   calendarStyle:
-                                      Constants.calendarStyle(context),
+                                  Constants.calendarStyle(context),
                                   calendarFormat: CalendarFormat.month,
                                   pageJumpingEnabled: true,
                                   eventLoader: value.getEventsForDay,
@@ -195,6 +197,10 @@ class _CalendarScreen extends State<CalendarScreen> {
                                   selectedEvents: value.selectedEvents,
                                   smallScreen: layoutProvider.smallScreen),
                             ]);
+                        return (layoutProvider.isMobile) ? Scrollbar(
+                          controller: mainScrollController,
+                          child: mainList
+                        ) : mainList;
                       }),
                     ),
                   ),

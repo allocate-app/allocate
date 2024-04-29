@@ -5,6 +5,7 @@ import 'dart:ui';
 import "package:auto_route/auto_route.dart";
 import 'package:auto_size_text/auto_size_text.dart';
 import "package:flutter/material.dart";
+import 'package:flutter/rendering.dart';
 import 'package:flutter_acrylic/widgets/titlebar_safe_area.dart';
 import 'package:flutter_acrylic/widgets/transparent_macos_sidebar.dart';
 import 'package:flutter_expandable_fab/flutter_expandable_fab.dart';
@@ -103,6 +104,7 @@ class _HomeScreen extends State<HomeScreen> with WidgetsBindingObserver {
     layoutProvider = Provider.of<LayoutProvider>(context, listen: false);
 
     applicationService = ApplicationService.instance;
+    applicationService.addListener(scrollToTop);
 
     toDoProvider.addListener(updateMyDay);
     routineProvider.addListener(updateMyDay);
@@ -150,6 +152,16 @@ class _HomeScreen extends State<HomeScreen> with WidgetsBindingObserver {
 
     // Stream for watching Isar Db.
     IsarService.instance.dbSize.addListener(alertSizeLimit);
+  }
+
+  void scrollToTop(){
+    if(navScrollController.hasClients){
+      navScrollController.animateTo(
+        0,
+        duration: Constants.scrollDuration,
+        curve: Constants.scrollCurve,
+      );
+    }
   }
 
   void updateMyDay() {
@@ -256,6 +268,7 @@ class _HomeScreen extends State<HomeScreen> with WidgetsBindingObserver {
     routineProvider.removeListener(updateMyDay);
     dailyResetProvider.removeListener(dayReset);
     groupProvider.removeListener(resetNavGroups);
+    applicationService.removeListener(scrollToTop);
     navScrollController.dispose();
     _refreshTimer.cancel();
     IsarService.instance.dbSize.removeListener(alertSizeLimit);
@@ -663,7 +676,7 @@ class _HomeScreen extends State<HomeScreen> with WidgetsBindingObserver {
 
   Widget buildNavigationDrawer(
       {required BuildContext context, bool largeScreen = false}) {
-    return NavigationDrawer(
+    Widget drawer = NavigationDrawer(
         backgroundColor:
             (largeScreen && (!(Platform.isIOS || Platform.isAndroid)))
                 ? Theme.of(context)
@@ -862,5 +875,14 @@ class _HomeScreen extends State<HomeScreen> with WidgetsBindingObserver {
               ),
               child: SizedBox.shrink()),
         ]);
+
+    return (layoutProvider.isMobile) ? Scrollbar(
+      controller: navScrollController,
+      child: Scrollable(
+        controller: navScrollController,
+        viewportBuilder: (BuildContext context, ViewportOffset offset) => drawer
+          ),
+    ) : drawer;
   }
+
 }
