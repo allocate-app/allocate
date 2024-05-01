@@ -85,7 +85,6 @@ class _SplashScreen extends State<SplashScreen> {
     // Initialize Supabase.
     // Initialize Providers.
 
-
     if (Constants.supabaseURL.isEmpty || Constants.supabaseAnnonKey.isEmpty) {
       throw BuildFailureException("App not configured");
     }
@@ -109,6 +108,7 @@ class _SplashScreen extends State<SplashScreen> {
         userProvider.init(),
         NotificationService.instance.init(),
       ]);
+
 
       if (userProvider.newDay) {
         await dayReset();
