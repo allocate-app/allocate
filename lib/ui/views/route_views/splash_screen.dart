@@ -18,6 +18,7 @@ import '../../../providers/model/user_provider.dart';
 import '../../../services/application_service.dart';
 import '../../../services/isar_service.dart';
 import '../../../services/notification_service.dart';
+import '../../../services/repeatable_service.dart';
 import '../../../services/supabase_service.dart';
 import '../../../util/constants.dart';
 import '../../../util/exceptions.dart';
@@ -109,7 +110,6 @@ class _SplashScreen extends State<SplashScreen> {
         NotificationService.instance.init(),
       ]);
 
-
       if (userProvider.newDay) {
         await dayReset();
       }
@@ -130,6 +130,8 @@ class _SplashScreen extends State<SplashScreen> {
       await Tiles.displayError(e: e);
       return [];
     });
+
+    await RepeatableService.instance.generateNextRepeats();
   }
 
   @override
