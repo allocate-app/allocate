@@ -109,12 +109,11 @@ class _SubtaskQuickEntry extends State<SubtaskQuickEntry> {
                         ),
                       )),
                   onTap: () {
-
                     Scrollable.ensureVisible(context,
                         duration: Constants.scrollDuration,
                         curve: Constants.scrollCurve);
                   },
-                  onChanged: (_){
+                  onChanged: (_) {
                     Scrollable.ensureVisible(context,
                         duration: Constants.scrollDuration,
                         curve: Constants.scrollCurve);
@@ -158,6 +157,7 @@ class _SubtaskQuickEntry extends State<SubtaskQuickEntry> {
                           Tiles.displayError(e: e);
                         }).whenComplete(() {
                           vm.clear();
+                          vm.taskID = widget.taskID;
                           nameEditingController.clear();
                         });
                       }

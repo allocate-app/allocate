@@ -21,10 +21,8 @@ class SupabaseService {
   Stream<ConnectivityResult> get connectionSubscription =>
       _connectionSubscription;
 
-  // This is just to avoid any goof-ups.
   late bool _initialized = false;
 
-  // This is for internet connection
   bool hasInternet = false;
 
   bool get isConnected =>
@@ -82,7 +80,6 @@ class SupabaseService {
   SupabaseService._internal();
 }
 
-// NOTE: This will need some tweaking when actually testing supabase.
 class FakeSupabase extends Fake implements SupabaseClient {
   @override
   get auth => FakeGoTrue();
