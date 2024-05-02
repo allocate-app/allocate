@@ -41,7 +41,7 @@ class UserProvider extends ChangeNotifier {
   bool get newDay => (viewModel?.lastOpened.copyWith(
               hour: 0, minute: 0, second: 0, millisecond: 0, microsecond: 0) ??
           Constants.today)
-      .isAfter(Constants.today);
+      .isBefore(Constants.today);
 
   // FUTURE TODO: multiple user switching.
   int _userCount = 1;
