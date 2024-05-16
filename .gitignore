@@ -65,7 +65,6 @@ doc/api/
 .flutter-plugins
 .flutter-plugins-dependencies
 /run.sh
-/assets/
 /android/app/src/main/res/
 /windows/runner/resources/
 /macos/Runner/Assets.xcassets/

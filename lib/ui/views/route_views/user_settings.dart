@@ -135,7 +135,6 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
         curve: Constants.scrollCurve,
       );
     }
-
   }
 
   @override
@@ -169,8 +168,7 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
           child: _buildQuickInfo(),
         ),
         const Padding(
-          padding:
-          EdgeInsets.all(Constants.halfPadding - 1),
+          padding: EdgeInsets.all(Constants.halfPadding - 1),
           child: SizedBox.shrink(),
         ),
         _buildSignOut(),
@@ -178,8 +176,7 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
       ],
     );
     Widget mainList = ListView(
-      padding: const EdgeInsets.symmetric(
-          horizontal: Constants.doublePadding),
+      padding: const EdgeInsets.symmetric(horizontal: Constants.doublePadding),
       controller: desktopScrollController,
       physics: scrollPhysics,
       shrinkWrap: true,
@@ -214,20 +211,22 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
                       // Header.
                       _buildHeader(),
                       Flexible(
-                        child: (layoutProvider.isMobile) ? Scrollbar(
-                          controller: desktopSideController,
-                          child: sideList
-                        ) : sideList
-                      ),
+                          child: (layoutProvider.isMobile)
+                              ? Scrollbar(
+                                  controller: desktopSideController,
+                                  child: sideList)
+                              : sideList),
                     ],
                   ),
                 ),
                 Flexible(
                   flex: 2,
-                  child: (layoutProvider.isMobile) ? Scrollbar(
-                    controller: desktopScrollController,
-                    child: mainList,
-                  ) : mainList,
+                  child: (layoutProvider.isMobile)
+                      ? Scrollbar(
+                          controller: desktopScrollController,
+                          child: mainList,
+                        )
+                      : mainList,
                 ),
               ],
             ),
@@ -239,8 +238,7 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
 
   Widget buildRegular({required BuildContext context}) {
     Widget innerList = ListView(
-      padding: const EdgeInsets.symmetric(
-          horizontal: Constants.halfPadding),
+      padding: const EdgeInsets.symmetric(horizontal: Constants.halfPadding),
       shrinkWrap: true,
       physics: scrollPhysics,
       controller: mobileScrollController,
@@ -277,11 +275,12 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
             // Header.
             _buildHeader(),
             Flexible(
-              child: (layoutProvider.isMobile) ? Scrollbar(
-                controller: mobileScrollController,
-                child: innerList,
-              ) : innerList
-            ),
+                child: (layoutProvider.isMobile)
+                    ? Scrollbar(
+                        controller: mobileScrollController,
+                        child: innerList,
+                      )
+                    : innerList),
           ],
         ));
   }
@@ -398,8 +397,8 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
                     }
                     await blurredDismissible(
                             context: context,
-                        keyboardOverlap: false,
-                        dialog: const UpdateEmailDialog())
+                            keyboardOverlap: false,
+                            dialog: const UpdateEmailDialog())
                         // await showDialog<bool?>(
                         //     useRootNavigator: false,
                         //     context: context,
@@ -849,6 +848,11 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
           }
           return const SizedBox.shrink();
         });
+  }
+
+  // TODO: implement with user-account switching
+  Widget _buildNewAccount() {
+    return SizedBox.shrink();
   }
 
   // This should probably select userProvider.

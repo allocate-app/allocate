@@ -151,14 +151,16 @@ class _SubtaskQuickEntry extends State<SubtaskQuickEntry> {
                 icon: const Icon(Icons.add_rounded),
                 onPressed: (nameEditingController.text.isNotEmpty)
                     ? () async {
+                        vm.taskID = vm.taskID ?? widget.taskID;
                         await subtaskProvider
                             .createSubtask(vm.toModel())
-                            .catchError((e) {
-                          Tiles.displayError(e: e);
+                            .catchError((e) async {
+                          await Tiles.displayError(e: e);
                         }).whenComplete(() {
                           vm.clear();
                           vm.taskID = widget.taskID;
                           nameEditingController.clear();
+                          repaint();
                         });
                       }
                     : null),

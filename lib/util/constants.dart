@@ -27,6 +27,9 @@ abstract class Constants {
     defaultValue: "",
   );
 
+  static const bool offlineOnly =
+      bool.fromEnvironment("OFFLINE", defaultValue: false);
+
   static const String scheme = "io.allocate";
 
   static const String loginDeeplink = "io.allocate://login";

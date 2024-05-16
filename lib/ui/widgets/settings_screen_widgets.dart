@@ -399,7 +399,8 @@ abstract class SettingsScreenWidgets {
         trailing: AutoSizeText(
           (null != getName)
               ? getName(groupMember)
-              : toBeginningOfSentenceCase(groupMember.name)!,
+              : toBeginningOfSentenceCase(
+                  groupMember.name.replaceAll("_", " "))!,
           maxLines: 1,
           softWrap: true,
           minFontSize: Constants.xtraLarge,
