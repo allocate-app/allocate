@@ -58,7 +58,7 @@ class ToDoRepo extends ChangeNotifier implements ToDoRepository {
     _initialized = true;
 
     // I haven't faked the connection channels -> doesn't make sense to.
-    if (SupabaseService.instance.offlineDebug) {
+    if (SupabaseService.instance.offlineOnly) {
       return;
     }
     // Initialize table stream -> only listen on signIn.

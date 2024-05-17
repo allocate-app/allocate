@@ -180,7 +180,7 @@ class UserProvider extends ChangeNotifier {
   }
 
   void initSubscription() {
-    if (SupabaseService.instance.offlineDebug) {
+    if (SupabaseService.instance.offlineOnly) {
       return;
     }
 

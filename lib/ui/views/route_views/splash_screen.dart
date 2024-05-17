@@ -86,7 +86,8 @@ class _SplashScreen extends State<SplashScreen> {
     // Initialize Supabase.
     // Initialize Providers.
 
-    if (Constants.supabaseURL.isEmpty || Constants.supabaseAnnonKey.isEmpty) {
+    if ((Constants.supabaseURL.isEmpty || Constants.supabaseAnnonKey.isEmpty) &&
+        !Constants.offlineOnly) {
       throw BuildFailureException("App not configured");
     }
 
@@ -94,9 +95,9 @@ class _SplashScreen extends State<SplashScreen> {
       [
         IsarService.instance.init(),
         SupabaseService.instance.init(
-          supabaseUrl: Constants.supabaseURL,
-          anonKey: Constants.supabaseAnnonKey,
-        ),
+            supabaseUrl: Constants.supabaseURL,
+            anonKey: Constants.supabaseAnnonKey,
+            client: Constants.offlineOnly ? FakeSupabase() : null),
       ],
     ).then((_) async {
       await Future.wait([

@@ -30,9 +30,9 @@ class SupabaseService {
       null != _supabaseClient.auth.currentSession &&
       !_supabaseClient.auth.currentSession!.isExpired;
 
-  bool _debug = false;
+  bool _offline = false;
 
-  bool get offlineDebug => _debug;
+  bool get offlineOnly => _offline;
 
   Future<void> init(
       {required String supabaseUrl,
@@ -43,8 +43,9 @@ class SupabaseService {
     }
 
     if (null != client) {
-      _debug = true;
+      _offline = true;
       _supabaseClient = client;
+      _initialized = true;
       return;
     }
 

@@ -37,9 +37,6 @@ class UserSettingsScreen extends StatefulWidget {
 }
 
 class _UserSettingsScreen extends State<UserSettingsScreen> {
-  // For testing
-  // Mock online needs to be removed.
-  // late bool _mockOnline;
   late final UserProvider userProvider;
   late final UserViewModel vm;
   late final ToDoProvider toDoProvider;
@@ -62,11 +59,15 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
   late MenuController _scaffoldController;
   late MenuController _sidebarController;
 
-  // bool get _debugOffline => !SupabaseService.instance.offlineDebug;
-
-  // Factor out into functions.
   @override
   void initState() {
+    initializeProviders();
+
+    initializeControllers();
+    super.initState();
+  }
+
+  void initializeProviders() {
     userProvider = Provider.of<UserProvider>(context, listen: false);
     vm = Provider.of<UserViewModel>(context, listen: false);
     themeProvider = Provider.of<ThemeProvider>(context, listen: false);
@@ -81,9 +82,9 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
 
     applicationService = ApplicationService.instance;
     applicationService.addListener(scrollToTop);
+  }
 
-    // _mockOnline = false;
-
+  void initializeControllers() {
     _scaffoldController = MenuController();
     _sidebarController = MenuController();
 
@@ -94,7 +95,6 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
         ? const BouncingScrollPhysics()
         : const ClampingScrollPhysics();
     scrollPhysics = AlwaysScrollableScrollPhysics(parent: scrollBehaviour);
-    super.initState();
   }
 
   @override
@@ -358,9 +358,7 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
     return ValueListenableBuilder<bool>(
         valueListenable: userProvider.isConnected,
         builder: (BuildContext context, bool isConnected, Widget? child) {
-          if (isConnected
-              // || (kDebugMode && _mockOnline)
-              ) {
+          if (isConnected) {
             return SettingsScreenWidgets.settingsSection(
               context: context,
               title: "Account",
@@ -409,18 +407,11 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
                         return;
                       }
 
-                      // Uh, on a successful sign in, everything should just rebuild.
                       if (success) {
                         Flushbars.createAlert(
                           message: "Check new email to confirm change.",
                           context: context,
                         ).show(context);
-
-                        // if (kDebugMode && _debugOffline) {
-                        //   setState(() {
-                        //     // _mockOnline = true;
-                        //   });
-                        // }
                       }
                     });
                   },
@@ -819,9 +810,7 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
     return ValueListenableBuilder(
         valueListenable: userProvider.isConnected,
         builder: (BuildContext context, bool value, Widget? child) {
-          if (value
-              // || (kDebugMode && _mockOnline)
-              ) {
+          if (value) {
             return SettingsScreenWidgets.settingsSection(
               context: context,
               title: "",
@@ -831,13 +820,6 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
                         color: Theme.of(context).colorScheme.tertiary),
                     title: "Sign out",
                     onTap: () async {
-                      // // These will eventually be factored out.
-                      // if (kDebugMode && _debugOffline) {
-                      //   setState(() {
-                      //     _mockOnline = false;
-                      //   });
-                      // }
-
                       // Future TODO: multi-user accounts.
                       await userProvider.signOut().catchError((e) async {
                         await Tiles.displayError(e: e);
@@ -852,7 +834,7 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
 
   // TODO: implement with user-account switching
   Widget _buildNewAccount() {
-    return SizedBox.shrink();
+    return const SizedBox.shrink();
   }
 
   // This should probably select userProvider.
@@ -868,29 +850,16 @@ class _UserSettingsScreen extends State<UserSettingsScreen> {
             title: "Delete account",
             onTap: () async {
               await blurredDismissible<List<bool>?>(
-                      context: context,
-                      dialog: const CheckDeleteDialog(
-                        type: "Account",
-                        showCheckbox: false,
-                      ))
-                  // await showDialog<List<bool>?>(
-                  //     context: context,
-                  //     useRootNavigator: false,
-                  //     builder: (BuildContext context) {
-                  //       return const CheckDeleteDialog(
-                  //         type: "Account",
-                  //         showCheckbox: false,
-                  //       );
-                  //     })
-                  .then((deleteInfo) async {
+                  context: context,
+                  dialog: const CheckDeleteDialog(
+                    type: "Account",
+                    showCheckbox: false,
+                  )).then((deleteInfo) async {
                 if (null == deleteInfo) {
                   return;
                 }
                 bool delete = deleteInfo[0];
                 if (delete) {
-                  // PUSH LOADING SCREEN TO CONTEXT.
-                  // NUKE THE DB.
-                  // RESTORE TO HOME SCRN w/default settings.
                   Navigator.push(
                       context,
                       MaterialPageRoute(
