@@ -12,16 +12,16 @@ I hope that, one day, this app will be fully accessible, at the moment, it is no
 
 ## Installation:
 
+- see: [Allocate Documentation](https://allocate-app.github.io) for full build and install instructions
+
 - Clone the repository and build with flutter
     - If using online features, you will be required to start a supabase project and install the
       supabase cli
 
-- Full documentation with build instructions is in progress.
-
 ## Roadmap and future plans:
 
--see [ROADMAP.md](ROADMAP.md)
+- see [ROADMAP.md](ROADMAP.md)
 
 ## How to use:
 
-- Full documentation is in progress.
+- see: [Usage Documentation](https://allocate-app.github.io/docs/setting-tasks)
