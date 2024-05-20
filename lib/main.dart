@@ -18,10 +18,10 @@ import "providers/providers.dart";
 import "services/application_service.dart";
 import "services/daily_reset_service.dart";
 import "ui/app_router.dart";
+import "ui/widgets/macos_menu_bar.dart";
 import "util/constants.dart";
 import "util/enums.dart";
 import "util/interfaces/i_model.dart";
-import "ui/widgets/macos_menu_bar.dart";
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -290,7 +290,7 @@ class _MyAppState extends State<MyApp> with WindowListener, TrayListener {
     _applicationService.hidden.value = true;
     FocusScope.of(context).unfocus();
 
-    if(Platform.isMacOS){
+    if (Platform.isMacOS) {
       // This should be initialized by flutter acrylic.
       await WindowManipulator.orderOut();
       return;
@@ -357,6 +357,10 @@ class _MyAppState extends State<MyApp> with WindowListener, TrayListener {
 
     if (menuItem.key == Constants.quitKey) {
       SystemNavigator.pop();
+      // Windows issue in flutter.
+      if (Platform.isWindows) {
+        exit(0);
+      }
     }
   }
 
@@ -473,45 +477,39 @@ class _MyAppState extends State<MyApp> with WindowListener, TrayListener {
       );
     });
 
-    if (Platform.isIOS || Platform.isAndroid){
+    if (Platform.isIOS || Platform.isAndroid) {
       return app;
     }
 
     return ValueListenableBuilder(
-      valueListenable: _applicationService.hidden,
-      builder: (BuildContext context, bool value, Widget? child){
-        return (Platform.isMacOS)
-            ? CallbackShortcuts(
-              bindings: <ShortcutActivator, VoidCallback>{
-                const SingleActivator(LogicalKeyboardKey.keyW,
-                    meta:true,
-                    includeRepeats: false): () async {
-                  if(value){
-                    return;
+        valueListenable: _applicationService.hidden,
+        builder: (BuildContext context, bool value, Widget? child) {
+          return (Platform.isMacOS)
+              ? CallbackShortcuts(
+                  bindings: <ShortcutActivator, VoidCallback>{
+                    const SingleActivator(LogicalKeyboardKey.keyW,
+                        meta: true, includeRepeats: false): () async {
+                      if (value) {
+                        return;
+                      }
+                      await windowManager.close();
+                    }
+                  },
+                  child: PlatformMenuBar(
+                    menus: finderBar(context: context),
+                    child: app,
+                  ),
+                )
+              : CallbackShortcuts(bindings: <ShortcutActivator, VoidCallback>{
+                  const SingleActivator(LogicalKeyboardKey.keyW,
+                      control: true, includeRepeats: false): () async {
+                    if (value) {
+                      return;
+                    }
+                    await windowManager.close();
                   }
-                  await windowManager.close();
-                }
-              },
-              child: PlatformMenuBar(
-                        menus: finderBar(context: context),
-                        child: app,
-                      ),
-            )
-            : CallbackShortcuts(
-            bindings: <ShortcutActivator, VoidCallback>{
-              const SingleActivator(LogicalKeyboardKey.keyW,
-                  control: true,
-                  includeRepeats: false): () async {
-                if(value){
-                  return;
-                }
-                await windowManager.close();
-              }
-            },
-            child: app);
-      }
-    );
-
+                }, child: app);
+        });
   }
 }
 
