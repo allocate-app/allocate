@@ -188,7 +188,6 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
     return valid;
   }
 
-  // The error snackbar is causing an issue with popping the context..
   Future<void> handleUpdate() async {
     Deadline newDeadline = vm.toModel();
     if (_prev.frequency != Frequency.once &&
@@ -222,6 +221,7 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
       }).whenComplete(() {
         vm.clear();
         _popScreen();
+        return;
       });
     }
     await deadlineProvider
@@ -301,6 +301,7 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
       }).whenComplete(() {
         vm.clear();
         _popScreen();
+        return;
       });
     }
 
@@ -349,7 +350,7 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
   @override
   Widget build(BuildContext context) => LayoutBuilder(
           builder: (BuildContext context, BoxConstraints constraints) {
-            MediaQuery.viewPaddingOf(context);
+        MediaQuery.viewPaddingOf(context);
         if (layoutProvider.largeScreen) {
           return _buildDesktopDialog(context: context);
         }
@@ -422,16 +423,20 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
             ]),
         if (layoutProvider.isMobile)
           TweenAnimationBuilder<double>(
-              duration: const Duration(milliseconds: Constants.keyboardSlideOut),
+              duration:
+                  const Duration(milliseconds: Constants.keyboardSlideOut),
               curve: Curves.fastLinearToSlowEaseIn,
               tween: Tween<double>(
-                begin: insets > Constants.keyboardInsetOpenThreshold ? Constants.keyboardInset : 0,
-                end: insets > Constants.keyboardInsetOpenThreshold ? Constants.keyboardInset : 0,
+                begin: insets > Constants.keyboardInsetOpenThreshold
+                    ? Constants.keyboardInset
+                    : 0,
+                end: insets > Constants.keyboardInsetOpenThreshold
+                    ? Constants.keyboardInset
+                    : 0,
               ),
-              builder: (BuildContext context, double value, Widget? child){
+              builder: (BuildContext context, double value, Widget? child) {
                 return SizedBox(height: value);
-              }
-          ),
+              }),
       ],
     );
 
@@ -505,16 +510,20 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
         _buildRepeatableTile(),
         if (layoutProvider.isMobile)
           TweenAnimationBuilder<double>(
-              duration: const Duration(milliseconds: Constants.keyboardSlideOut),
+              duration:
+                  const Duration(milliseconds: Constants.keyboardSlideOut),
               curve: Curves.fastLinearToSlowEaseIn,
               tween: Tween<double>(
-                begin: insets > Constants.keyboardInsetOpenThreshold ? Constants.keyboardInset : 0,
-                end: insets > Constants.keyboardInsetOpenThreshold ? Constants.keyboardInset : 0,
+                begin: insets > Constants.keyboardInsetOpenThreshold
+                    ? Constants.keyboardInset
+                    : 0,
+                end: insets > Constants.keyboardInsetOpenThreshold
+                    ? Constants.keyboardInset
+                    : 0,
               ),
-              builder: (BuildContext context, double value, Widget? child){
+              builder: (BuildContext context, double value, Widget? child) {
                 return SizedBox(height: value);
-              }
-          ),
+              }),
       ],
     );
 

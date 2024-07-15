@@ -4447,8 +4447,11 @@ Future<void> initIsar() async {
   supabaseClient = SupabaseService.instance.supabaseClient;
   repeatableService = RepeatableService.instance;
   toDoRepo = ToDoRepo.instance;
+  toDoRepo?.init();
   deadlineRepo = DeadlineRepo.instance;
+  deadlineRepo?.init();
   reminderRepo = ReminderRepo.instance;
+  reminderRepo?.init();
   await clearIsar();
 }
 

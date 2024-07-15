@@ -179,6 +179,7 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
       }).whenComplete(() {
         vm.clear();
         _popScreen();
+        return;
       });
     }
 
@@ -253,6 +254,7 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
       }).whenComplete(() {
         vm.clear();
         _popScreen();
+        return;
       });
     }
 

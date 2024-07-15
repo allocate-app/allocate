@@ -1,4 +1,5 @@
 import "dart:async";
+import "dart:developer";
 import "dart:io";
 import "dart:ui";
 
@@ -103,6 +104,20 @@ void main() async {
       await trayManager.setContextMenu(menu);
     }
   }
+
+  // Force the app to fully crash if there's an unhandled framework error.
+  FlutterError.onError = ((details) {
+    log("Flutter framework error");
+    log("------");
+    log("Error: ${details.exception}\n"
+        "StackTrace: ${details.stack}");
+
+    if (Platform.isIOS || Platform.isWindows) {
+      exit(0);
+    } else {
+      SystemNavigator.pop();
+    }
+  });
 
   runApp(MultiProvider(providers: [
     // VIEWMODELS

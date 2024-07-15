@@ -245,7 +245,6 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
     return valid;
   }
 
-  // These need to function in spite of an online error.
   Future<void> handleUpdate() async {
     ToDo newToDo = vm.toModel();
     if (_prev.frequency != Frequency.once &&
@@ -276,6 +275,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
       }).whenComplete(() {
         vm.clear();
         _popScreen();
+        return;
       });
     }
 
@@ -336,9 +336,6 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
         return;
       }
 
-      // For all intents and purposes, only one error is probably relevant.
-      // If this gets overwritten, it'll be by a related error.
-      // Null errors are just ignored.
       await toDoProvider
           .handleRepeating(
               toDo: _prev, delta: newToDo, single: deleteSingle, delete: true)
@@ -352,8 +349,10 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
       }).catchError((e) async {
         await Tiles.displayError(e: e);
       }).whenComplete(() {
+        _deleteLoading.value = false;
         vm.clear();
         _popScreen();
+        return;
       });
     }
 
@@ -367,6 +366,7 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
     }).catchError((e) async {
       await Tiles.displayError(e: e);
     }).whenComplete(() {
+      _deleteLoading.value = false;
       vm.clear();
       _popScreen();
     });
@@ -537,16 +537,20 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
               ]),
           if (layoutProvider.isMobile)
             TweenAnimationBuilder<double>(
-                duration: const Duration(milliseconds: Constants.keyboardSlideOut),
+                duration:
+                    const Duration(milliseconds: Constants.keyboardSlideOut),
                 curve: Curves.fastLinearToSlowEaseIn,
                 tween: Tween<double>(
-                  begin: insets > Constants.keyboardInsetOpenThreshold ? Constants.keyboardInset : 0,
-                  end: insets > Constants.keyboardInsetOpenThreshold ? Constants.keyboardInset : 0,
+                  begin: insets > Constants.keyboardInsetOpenThreshold
+                      ? Constants.keyboardInset
+                      : 0,
+                  end: insets > Constants.keyboardInsetOpenThreshold
+                      ? Constants.keyboardInset
+                      : 0,
                 ),
-                builder: (BuildContext context, double value, Widget? child){
+                builder: (BuildContext context, double value, Widget? child) {
                   return SizedBox(height: value);
-                }
-            ),
+                }),
         ]);
 
     return Dialog(
@@ -632,16 +636,20 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
         _buildRepeatableTile(),
         if (layoutProvider.isMobile)
           TweenAnimationBuilder<double>(
-              duration: const Duration(milliseconds: Constants.keyboardSlideOut),
+              duration:
+                  const Duration(milliseconds: Constants.keyboardSlideOut),
               curve: Curves.fastLinearToSlowEaseIn,
               tween: Tween<double>(
-                begin: insets > Constants.keyboardInsetOpenThreshold ? Constants.keyboardInset : 0,
-                end: insets > Constants.keyboardInsetOpenThreshold ? Constants.keyboardInset : 0,
+                begin: insets > Constants.keyboardInsetOpenThreshold
+                    ? Constants.keyboardInset
+                    : 0,
+                end: insets > Constants.keyboardInsetOpenThreshold
+                    ? Constants.keyboardInset
+                    : 0,
               ),
-              builder: (BuildContext context, double value, Widget? child){
+              builder: (BuildContext context, double value, Widget? child) {
                 return SizedBox(height: value);
-              }
-          ),
+              }),
       ],
     );
 
@@ -715,7 +723,6 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
                       scale: Constants.largeCheckboxScale,
                       completed: value.$2,
                       onChanged: (bool? completed) {
-                        _checkRepeating = true;
                         _checkClose.value =
                             toDoProvider.userViewModel?.checkClose ?? true;
                         vm.completed = completed!;

@@ -154,8 +154,8 @@ class _HomeScreen extends State<HomeScreen> with WidgetsBindingObserver {
     IsarService.instance.dbSize.addListener(alertSizeLimit);
   }
 
-  void scrollToTop(){
-    if(navScrollController.hasClients){
+  void scrollToTop() {
+    if (navScrollController.hasClients) {
       navScrollController.animateTo(
         0,
         duration: Constants.scrollDuration,
@@ -220,10 +220,12 @@ class _HomeScreen extends State<HomeScreen> with WidgetsBindingObserver {
     await RepeatableService.instance.generateNextRepeats();
   }
 
+  // This will crash the app on an unhandled postgres exception.
   Future<void> refreshRepo() async {
     if (!userProvider.isConnected.value) {
       return;
     }
+
     await Future.wait([
       userProvider.syncUser(),
       toDoProvider.refreshRepo(),
@@ -232,13 +234,16 @@ class _HomeScreen extends State<HomeScreen> with WidgetsBindingObserver {
       reminderProvider.refreshRepo(),
       groupProvider.refreshRepo(),
       subtaskProvider.refreshRepo(),
-    ]);
+    ]).catchError((e) async {
+      await Tiles.displayError(e: e);
+      return [];
+    }).then((_) async {
+      // Give enough time for all of the data to be fetched.
+      await Future.delayed(const Duration(seconds: 1));
 
-    // Give enough time for all of the data to be fetched.
-    await Future.delayed(const Duration(seconds: 1));
-
-    _needsRefreshing = false;
-    await eventProvider.resetCalendar();
+      _needsRefreshing = false;
+      await eventProvider.resetCalendar();
+    });
   }
 
   Future<void> syncRepo() async {
@@ -253,13 +258,15 @@ class _HomeScreen extends State<HomeScreen> with WidgetsBindingObserver {
       reminderProvider.syncRepo(),
       groupProvider.syncRepo(),
       subtaskProvider.syncRepo(),
-    ]);
-
-    // Give enough time for all of the data to be fetched.
-    // This may need increasing depending on the online bottleneck.
-    await Future.delayed(const Duration(seconds: 1));
-
-    await eventProvider.resetCalendar();
+    ]).catchError((e) async {
+      await Tiles.displayError(e: e);
+      return [];
+    }).then((_) async {
+      // Give enough time for all of the data to be fetched.
+      // This may need increasing depending on the online bottleneck.
+      await Future.delayed(const Duration(seconds: 1));
+      await eventProvider.resetCalendar();
+    });
   }
 
   @override
@@ -503,7 +510,9 @@ class _HomeScreen extends State<HomeScreen> with WidgetsBindingObserver {
                                 Theme.of(context).colorScheme.outlineVariant,
                                 value),
                         child: InkWell(
-                          mouseCursor: (Platform.isMacOS)? SystemMouseCursors.resizeLeftRight :SystemMouseCursors.resizeUpRightDownLeft,
+                          mouseCursor: (Platform.isMacOS)
+                              ? SystemMouseCursors.resizeLeftRight
+                              : SystemMouseCursors.resizeUpRightDownLeft,
                           onHover: (value) {},
                           onTapUp: (TapUpDetails details) {
                             if (!layoutProvider.drawerOpened) {
@@ -875,13 +884,14 @@ class _HomeScreen extends State<HomeScreen> with WidgetsBindingObserver {
               child: SizedBox.shrink()),
         ]);
 
-    return (layoutProvider.isMobile) ? Scrollbar(
-      controller: navScrollController,
-      child: Scrollable(
-        controller: navScrollController,
-        viewportBuilder: (BuildContext context, ViewportOffset offset) => drawer
-          ),
-    ) : drawer;
+    return (layoutProvider.isMobile)
+        ? Scrollbar(
+            controller: navScrollController,
+            child: Scrollable(
+                controller: navScrollController,
+                viewportBuilder:
+                    (BuildContext context, ViewportOffset offset) => drawer),
+          )
+        : drawer;
   }
-
 }
