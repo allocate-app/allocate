@@ -73,6 +73,10 @@ class DeadlineProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void forceRefreshState() {
+    _deadlineRepo.forceRefreshState();
+  }
+
   Future<void> scheduleAndNotify() async {
     await batchNotifications();
     notifyListeners();

@@ -42,6 +42,10 @@ class SubtaskProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void forceRefreshState() {
+    _subtaskRepo.forceRefreshState();
+  }
+
   void setUser({UserViewModel? newUser}) {
     if (newUser == userViewModel) {
       return;

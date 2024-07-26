@@ -162,6 +162,10 @@ class RepeatableService {
     });
   }
 
+  /// TODO: Fix the multi-device IRepeatable collision.
+  /// Currently, if 2+ devices are running allocate at the same time,
+  /// they sometimes generate the next event locally, causing duplicates.
+  /// I have not yet figured out how/why this keeps happening.
   Future<void> nextRepeat({IRepeatable? model}) async {
     if (null == model) {
       return;

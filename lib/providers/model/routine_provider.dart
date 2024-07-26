@@ -77,6 +77,10 @@ class RoutineProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void forceRefreshState() {
+    _routineRepo.forceRefreshState();
+  }
+
   Routine? get curMorning => _curMorning;
 
   Routine? get curAfternoon => _curAfternoon;

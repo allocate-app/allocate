@@ -81,6 +81,10 @@ class UserProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void forceRefreshState() {
+    _userStorageService.forceRefreshState();
+  }
+
   Future<void> handleUserStateChange() async {
     switch (_userStorageService.status) {
       case UserStatus.normal:

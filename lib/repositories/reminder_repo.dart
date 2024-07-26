@@ -43,6 +43,16 @@ class ReminderRepo extends ChangeNotifier implements ReminderRepository {
 
   String? currentUserID;
 
+  // In the case of an unhandled exception during the refresh/sync functions, the flags do not get reset properly.
+  // TODO: Refactor Sync/Refresh logic to catch update exceptions.
+  // This is meant to be called on a manual-refresh activated by the user in the UI
+  @override
+  void forceRefreshState() {
+    _needsRefreshing = true;
+    _syncing = false;
+    _refreshing = false;
+  }
+
   @override
   Future<void> init() async {
     if (_initialized) {

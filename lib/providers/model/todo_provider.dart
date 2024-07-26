@@ -76,6 +76,10 @@ class ToDoProvider extends ChangeNotifier {
     await refreshMyDayAndNotify();
   }
 
+  void forceRefreshState() {
+    _toDoRepo.forceRefreshState();
+  }
+
   Future<void> refreshMyDayAndNotify() async {
     myDayWeight = await _toDoRepo.getMyDayWeight();
     notifyListeners();

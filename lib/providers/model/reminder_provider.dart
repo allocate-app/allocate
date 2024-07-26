@@ -74,6 +74,10 @@ class ReminderProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void forceRefreshState() {
+    _reminderRepo.forceRefreshState();
+  }
+
   Future<void> scheduleAndNotify() async {
     await batchNotifications();
     notifyListeners();

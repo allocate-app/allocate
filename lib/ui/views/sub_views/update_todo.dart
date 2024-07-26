@@ -788,7 +788,9 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
             Tiles.myDayTile(
           myDay: value.$1,
           canAdd: userProvider.myDayTotal.value + value.$2 <=
-              (toDoProvider.userViewModel?.bandwidth ?? Constants.maxBandwidth),
+                  (toDoProvider.userViewModel?.bandwidth ??
+                      Constants.maxBandwidth) ||
+              _prev.myDay,
           toggleMyDay: () {
             _checkClose.value = toDoProvider.userViewModel?.checkClose ?? true;
             vm.myDay = !vm.myDay;

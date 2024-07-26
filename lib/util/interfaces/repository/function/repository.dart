@@ -39,4 +39,6 @@ abstract interface class Repository<T extends IModel> {
   Future<T?> getByID({required int id});
 
   Future<List<T>> getDeleted({int limit = 50, int offset = 0});
+
+  void forceRefreshState();
 }

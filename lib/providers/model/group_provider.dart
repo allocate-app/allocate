@@ -72,6 +72,10 @@ class GroupProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void forceRefreshState() {
+    _groupRepo.forceRefreshState();
+  }
+
   void setUser({UserViewModel? newUser}) {
     userViewModel = newUser;
     if (userViewModel?.groupSorter == sorter) {

@@ -121,6 +121,9 @@ class _MainFloatingActionButton extends State<MainFloatingActionButton> {
                       if (null != state) {
                         state.toggle();
                       }
+
+                      _resetProviderRefresh();
+
                       await Future.wait([
                         Provider.of<ToDoProvider>(context, listen: false)
                             .refreshRepo(),
@@ -145,5 +148,16 @@ class _MainFloatingActionButton extends State<MainFloatingActionButton> {
             ],
           );
         });
+  }
+
+  void _resetProviderRefresh() {
+    // For preempting refresh state. Current implementation has potential for deadlock.
+    Provider.of<ToDoProvider>(context, listen: false).forceRefreshState();
+    Provider.of<RoutineProvider>(context, listen: false).forceRefreshState();
+    Provider.of<DeadlineProvider>(context, listen: false).forceRefreshState();
+    Provider.of<ReminderProvider>(context, listen: false).forceRefreshState();
+    Provider.of<GroupProvider>(context, listen: false).forceRefreshState();
+    Provider.of<SubtaskProvider>(context, listen: false).forceRefreshState();
+    Provider.of<UserProvider>(context, listen: false).forceRefreshState();
   }
 }

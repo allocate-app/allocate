@@ -40,6 +40,15 @@ class UserStorageService extends ChangeNotifier {
 
   String? currentUserID;
 
+  // In the case of an unhandled exception during the refresh/sync functions, the flags do not get reset properly.
+  // TODO: Refactor Sync/Refresh logic to catch update exceptions.
+  // This is meant to be called on a manual-refresh activated by the user in the UI
+  void forceRefreshState() {
+    bool needsRefreshing = true;
+    bool syncing = false;
+    bool refreshing = false;
+  }
+
   Future<void> init() async {
     if (_initialized) {
       return;
