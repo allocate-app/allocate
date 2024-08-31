@@ -12,13 +12,13 @@ class SupabaseService {
 
   late SupabaseClient _supabaseClient;
   late Stream<AuthState> _authSubscription;
-  late Stream<ConnectivityResult> _connectionSubscription;
+  late Stream<List<ConnectivityResult>> _connectionSubscription;
 
   SupabaseClient get supabaseClient => _supabaseClient;
 
   Stream<AuthState> get authSubscription => _authSubscription;
 
-  Stream<ConnectivityResult> get connectionSubscription =>
+  Stream<List<ConnectivityResult>> get connectionSubscription =>
       _connectionSubscription;
 
   late bool _initialized = false;
@@ -74,7 +74,7 @@ class SupabaseService {
     _initialized = true;
   }
 
-  Future<void> updateConnectionStatus(ConnectivityResult result) async {
+  Future<void> updateConnectionStatus(List<ConnectivityResult> results) async {
     hasInternet = await InternetConnectionChecker().hasConnection;
   }
 

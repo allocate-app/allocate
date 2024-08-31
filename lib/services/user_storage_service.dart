@@ -122,8 +122,8 @@ class UserStorageService extends ChangeNotifier {
 
     // This is for online stuff.
     SupabaseService.instance.connectionSubscription
-        .listen((ConnectivityResult result) async {
-      if (result == ConnectivityResult.none) {
+        .listen((List<ConnectivityResult> results) async {
+      if (results.last == ConnectivityResult.none) {
         return;
       }
 

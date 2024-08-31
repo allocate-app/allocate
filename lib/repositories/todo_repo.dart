@@ -135,10 +135,10 @@ class ToDoRepo extends ChangeNotifier implements ToDoRepository {
     // This is for online stuff.
     // I am unsure as to what the heck I was thinking here.
     SupabaseService.instance.connectionSubscription
-        .listen((ConnectivityResult result) async {
+        .listen((List<ConnectivityResult> results) async {
       _needsRefreshing = true;
 
-      if (result == ConnectivityResult.none) {
+      if (results.last == ConnectivityResult.none) {
         return;
       }
 

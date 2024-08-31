@@ -21,15 +21,14 @@ import '../../util/interfaces/authenticator.dart';
 import '../viewmodels/user_viewmodel.dart';
 
 class UserProvider extends ChangeNotifier {
-  // This has no DI at the moment -> At some point I should probably write
-  // an interface and refactor DI.
+  // TODO: Refactor to DI.
   final UserStorageService _userStorageService = UserStorageService.instance;
   late final Authenticator _authenticationService;
 
   late ValueNotifier<bool> isConnected;
 
   late StreamSubscription<AuthState> _supabaseSubscription;
-  late StreamSubscription<ConnectivityResult> _connectivitySubscription;
+  late StreamSubscription<List<ConnectivityResult>> _connectivitySubscription;
 
   late ValueNotifier<int> myDayTotal;
 
@@ -199,7 +198,7 @@ class UserProvider extends ChangeNotifier {
     });
 
     _connectivitySubscription = SupabaseService.instance.connectionSubscription
-        .listen((ConnectivityResult result) async {
+        .listen((List<ConnectivityResult> results) async {
       await Future.delayed(const Duration(seconds: 3));
       updateConnectionStatus();
 
@@ -216,33 +215,10 @@ class UserProvider extends ChangeNotifier {
     });
   }
 
-  // void requestUpdate(Timer timer) async {
-  //   if (!shouldUpdate || updating || null == viewModel) {
-  //     return;
-  //   }
-  //   try {
-  //     await updateUser();
-  //     // This will always be a wrapped exception
-  //   } on FailureToUploadException catch (e) {
-  //     updating = false;
-  //     shouldUpdate = true;
-  //     globalGUIError(e);
-  //   } on FailureToUpdateException catch (e) {
-  //     updating = false;
-  //     shouldUpdate = true;
-  //     globalGUIError(e);
-  //   } on UnexpectedErrorException catch (e) {
-  //     updating = false;
-  //     shouldUpdate = false;
-  //     globalGUIError(e);
-  //   }
-  // }
-
   Future<void> globalGUIError(Exception? e) async {
     BuildContext? context =
         ApplicationService.instance.globalNavigatorKey.currentContext;
 
-    // no way to alert the user.
     if (null == context || !context.mounted) {
       return;
     }
@@ -294,9 +270,6 @@ class UserProvider extends ChangeNotifier {
   Future<void> verifyOTP({required String email, required String token}) async {
     try {
       await _authenticationService.verifySignInOTP(email: email, token: token);
-      // // This might actually be automatic.
-      // shouldUpdate = true;
-      // await updateUser();
     } on LoginFailedException catch (e, stacktrace) {
       log(e.cause, stackTrace: stacktrace);
       return Future.error(e, stacktrace);

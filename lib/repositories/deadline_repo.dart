@@ -131,9 +131,9 @@ class DeadlineRepo extends ChangeNotifier implements DeadlineRepository {
 
     // This is for online stuff.
     SupabaseService.instance.connectionSubscription
-        .listen((ConnectivityResult result) async {
+        .listen((List<ConnectivityResult> result) async {
       _needsRefreshing = true;
-      if (result == ConnectivityResult.none) {
+      if (result.last == ConnectivityResult.none) {
         return;
       }
 
