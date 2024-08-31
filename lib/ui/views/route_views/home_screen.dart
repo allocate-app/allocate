@@ -196,7 +196,8 @@ class _HomeScreen extends State<HomeScreen> with WidgetsBindingObserver {
       return;
     }
 
-    int newKey = groupProvider.secondaryGroups[0].id;
+    Group testGroup = groupProvider.secondaryGroups[0];
+    int newKey = testGroup.id ^ testGroup.lastUpdated.millisecondsSinceEpoch;
     if (newKey != groupProvider.navKey.value) {
       groupProvider.navKey.value = newKey;
     }
@@ -302,7 +303,8 @@ class _HomeScreen extends State<HomeScreen> with WidgetsBindingObserver {
       }
     }
 
-    if (AppLifecycleState.hidden == state) {
+    if (AppLifecycleState.hidden == state ||
+        AppLifecycleState.paused == state) {
       _needsRefreshing = true;
     }
   }
@@ -352,7 +354,7 @@ class _HomeScreen extends State<HomeScreen> with WidgetsBindingObserver {
     }
   }
 
-  void handlePop(bool didPop) {
+  void handlePop(bool didPop, dynamic result) {
     // Open the navigation drawer if mobile.
     if (layoutProvider.smallScreen) {
       Scaffold.of(context).openDrawer();
@@ -394,7 +396,7 @@ class _HomeScreen extends State<HomeScreen> with WidgetsBindingObserver {
         (Platform.isWindows)
             ? PopScope(
                 canPop: false,
-                onPopInvoked: handlePop,
+                onPopInvokedWithResult: handlePop,
                 child: DragToResizeArea(
                   child: Consumer<LayoutProvider>(builder:
                       (BuildContext context, LayoutProvider value,
@@ -407,7 +409,7 @@ class _HomeScreen extends State<HomeScreen> with WidgetsBindingObserver {
               )
             : PopScope(
                 canPop: false,
-                onPopInvoked: handlePop,
+                onPopInvokedWithResult: handlePop,
                 child: Consumer<LayoutProvider>(builder: (BuildContext context,
                     LayoutProvider value, Widget? child) {
                   return (value.largeScreen)
@@ -550,7 +552,7 @@ class _HomeScreen extends State<HomeScreen> with WidgetsBindingObserver {
                   backgroundColor: (!(Platform.isIOS || Platform.isAndroid))
                       ? Theme.of(context)
                           .scaffoldBackgroundColor
-                          .withOpacity(themeProvider.scaffoldOpacity)
+                          .withValues(alpha: themeProvider.scaffoldOpacity)
                       : Theme.of(context).scaffoldBackgroundColor,
                   floatingActionButtonLocation: ExpandableFab.location,
                   floatingActionButton: MainFloatingActionButton(
@@ -574,7 +576,7 @@ class _HomeScreen extends State<HomeScreen> with WidgetsBindingObserver {
         backgroundColor: (!(Platform.isIOS || Platform.isAndroid))
             ? Theme.of(context)
                 .scaffoldBackgroundColor
-                .withOpacity(themeProvider.scaffoldOpacity)
+                .withValues(alpha: themeProvider.scaffoldOpacity)
             : Theme.of(context).scaffoldBackgroundColor,
         appBar: buildAppBar(mobile: true),
         drawer: buildNavigationDrawer(context: context, largeScreen: false),
@@ -691,7 +693,7 @@ class _HomeScreen extends State<HomeScreen> with WidgetsBindingObserver {
                 ? Theme.of(context)
                     .colorScheme
                     .surface
-                    .withOpacity(themeProvider.sidebarOpacity)
+                    .withValues(alpha: themeProvider.sidebarOpacity)
                 : null,
         onDestinationSelected: (index) {
           layoutProvider.selectedPageIndex = index;

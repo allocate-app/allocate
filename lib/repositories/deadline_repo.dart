@@ -142,7 +142,8 @@ class DeadlineRepo extends ChangeNotifier implements DeadlineRepository {
       if (!isConnected) {
         return;
       }
-      await handleUserChange();
+      forceRefreshState();
+      await refreshRepo();
     });
 
     // This is for watching db size.

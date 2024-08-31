@@ -236,27 +236,6 @@ class GroupProvider extends ChangeNotifier {
     groupNames[curGroup!.id] = curGroup!.name;
   }
 
-  // Future<void> _updateToDos(
-  //     {required List<ToDo> toDos, required int groupID}) async {
-  //   int i = 0;
-  //   for (ToDo toDo in toDos) {
-  //     toDo.groupID = groupID;
-  //     toDo.customViewIndex = i++;
-  //   }
-  //   try {
-  //     await _toDoRepo.updateBatch(toDos);
-  //   } on FailureToUploadException catch (e) {
-  //     log(e.cause);
-  //     return Future.error(e);
-  //   } on FailureToUpdateException catch (e) {
-  //     log(e.cause);
-  //     return Future.error(e);
-  //   } on Error catch (e, stacktrace) {
-  //     log("Unknown error", stackTrace: stacktrace);
-  //     return Future.error(UnexpectedErrorException(), stacktrace);
-  //   }
-  // }
-
   Future<void> deleteGroup({Group? group}) async {
     group = group ?? curGroup!;
     try {
@@ -387,6 +366,7 @@ class GroupProvider extends ChangeNotifier {
     groups.insert(newIndex, group);
     for (int i = 0; i < groups.length; i++) {
       groups[i].customViewIndex = i;
+      groups[i].lastUpdated = DateTime.now();
     }
     try {
       await _groupRepo.updateBatch(groups);
@@ -414,6 +394,7 @@ class GroupProvider extends ChangeNotifier {
     toDos.insert(newIndex, toDo);
     for (int i = 0; i < toDos.length; i++) {
       toDos[i].customViewIndex = i;
+      toDos[i].lastUpdated = DateTime.now();
     }
     try {
       await _toDoRepo.updateBatch(toDos);

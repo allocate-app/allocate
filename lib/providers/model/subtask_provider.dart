@@ -225,6 +225,7 @@ class SubtaskProvider extends ChangeNotifier {
     subtasks.insert(newIndex, subtask);
     for (int i = 0; i < subtasks.length; i++) {
       subtasks[i].customViewIndex = i;
+      subtasks[i].lastUpdated = DateTime.now();
     }
     try {
       await _subtaskRepo.updateBatch(subtasks);
@@ -244,8 +245,4 @@ class SubtaskProvider extends ChangeNotifier {
   Future<List<Subtask>> getDeleted(
           {int limit = Constants.minLimitPerQuery, int offset = 0}) async =>
       await _subtaskRepo.getDeleted(limit: limit, offset: offset);
-
-// This is going unused atm.
-// Future<List<Subtask>> getSubtasksBy() async =>
-//     await _subtaskRepo.getRepoListBy(sorter: SubtaskSorter());
 }
