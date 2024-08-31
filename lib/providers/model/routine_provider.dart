@@ -545,6 +545,7 @@ class RoutineProvider extends ChangeNotifier {
     routines.insert(newIndex, routine);
     for (int i = 0; i < routines.length; i++) {
       routines[i].customViewIndex = i;
+      routines[i].lastUpdated = DateTime.now();
     }
     try {
       await _routineRepo.updateBatch(routines);

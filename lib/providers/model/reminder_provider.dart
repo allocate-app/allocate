@@ -362,6 +362,7 @@ class ReminderProvider extends ChangeNotifier {
     reminders.insert(newIndex, reminder);
     for (int i = 0; i < reminders.length; i++) {
       reminders[i].customViewIndex = i;
+      reminders[i].lastUpdated = DateTime.now();
     }
     try {
       await _reminderRepo.updateBatch(reminders);

@@ -149,7 +149,8 @@ class ToDoRepo extends ChangeNotifier implements ToDoRepository {
         return;
       }
 
-      await handleUserChange();
+      forceRefreshState();
+      await refreshRepo();
     });
 
     // This is for watching db size.

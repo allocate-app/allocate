@@ -255,33 +255,6 @@ class ToDoProvider extends ChangeNotifier {
     }
   }
 
-  // Future<void> _updateSubtasks(
-  //     {required List<Subtask> subtasks, required int taskID}) async {
-  //   int i = 0;
-  //   // This eliminates empty subtasks and maintains proper order.
-  //   for (Subtask st in subtasks) {
-  //     if (st.name != "") {
-  //       st.taskID = taskID;
-  //       st.customViewIndex = i++;
-  //       st.lastUpdated = DateTime.now();
-  //     } else {
-  //       st.toDelete = true;
-  //     }
-  //   }
-  //   try {
-  //     await _subtaskRepo.updateBatch(subtasks);
-  //   } on FailureToUploadException catch (e, stacktrace) {
-  //     log(e.cause, stackTrace: stacktrace);
-  //     return Future.error(e, stacktrace);
-  //   } on FailureToUpdateException catch (e, stacktrace) {
-  //     log(e.cause, stackTrace: stacktrace);
-  //     return Future.error(e, stacktrace);
-  //   } on Error catch (e, stacktrace) {
-  //     log("Unknown error", stackTrace: stacktrace);
-  //     return Future.error(UnexpectedErrorException(), stacktrace);
-  //   }
-  // }
-
   Future<void> updateBatch({List<ToDo>? toDos}) async {
     toDos = toDos ?? this.toDos;
     for (ToDo toDo in toDos) {
@@ -449,6 +422,7 @@ class ToDoProvider extends ChangeNotifier {
     toDos.insert(newIndex, toDo);
     for (int i = 0; i < toDos.length; i++) {
       toDos[i].customViewIndex = i;
+      toDos[i].lastUpdated = DateTime.now();
     }
     try {
       await _toDoRepo.updateBatch(toDos);

@@ -94,13 +94,6 @@ class GroupRepo extends ChangeNotifier implements GroupRepository {
     SupabaseService.instance.authSubscription.listen((AuthState data) async {
       final AuthChangeEvent event = data.event;
       switch (event) {
-        // case AuthChangeEvent.initialSession:
-        //   await handleUserChange();
-        //   // OPEN TABLE STREAM -> insert new data.
-        //   if (!_subscribed) {
-        //     _groupStream.subscribe();
-        //     _subscribed = true;
-        //   }
         case AuthChangeEvent.signedIn:
           await handleUserChange();
           // This should close and re-open the subscription?
@@ -138,7 +131,8 @@ class GroupRepo extends ChangeNotifier implements GroupRepository {
       if (!isConnected) {
         return;
       }
-      await handleUserChange();
+      forceRefreshState();
+      await refreshRepo();
     });
 
     // This is for watching db size.

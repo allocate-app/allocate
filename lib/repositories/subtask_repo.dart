@@ -42,7 +42,6 @@ class SubtaskRepo extends ChangeNotifier implements SubtaskRepository {
   String? currentUserID;
 
   // In the case of an unhandled exception during the refresh/sync functions, the flags do not get reset properly.
-  // TODO: Refactor Sync/Refresh logic to catch update exceptions.
   // This is meant to be called on a manual-refresh activated by the user in the UI
   @override
   void forceRefreshState() {
@@ -95,16 +94,8 @@ class SubtaskRepo extends ChangeNotifier implements SubtaskRepository {
     SupabaseService.instance.authSubscription.listen((AuthState data) async {
       final AuthChangeEvent event = data.event;
       switch (event) {
-        // case AuthChangeEvent.initialSession:
-        //   await handleUserChange();
-        //   // OPEN TABLE STREAM -> insert new data.
-        //   if (!_subscribed) {
-        //     _subtaskStream.subscribe();
-        //     _subscribed = true;
-        //   }
         case AuthChangeEvent.signedIn:
           await handleUserChange();
-          // This should close and re-open the subscription?
           if (!_subscribed) {
             _subtaskStream.subscribe();
             _subscribed = true;
@@ -118,8 +109,6 @@ class SubtaskRepo extends ChangeNotifier implements SubtaskRepository {
           }
           break;
         case AuthChangeEvent.signedOut:
-          // await _subtaskStream.unsubscribe();
-          // _subscribed = false;
           break;
         default:
           break;
@@ -140,7 +129,8 @@ class SubtaskRepo extends ChangeNotifier implements SubtaskRepository {
       if (!isConnected) {
         return;
       }
-      await handleUserChange();
+      forceRefreshState();
+      await refreshRepo();
     });
 
     // This is for watching db size.

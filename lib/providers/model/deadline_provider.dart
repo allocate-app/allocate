@@ -370,6 +370,7 @@ class DeadlineProvider extends ChangeNotifier {
     deadlines.insert(newIndex, deadline);
     for (int i = 0; i < deadlines.length; i++) {
       deadlines[i].customViewIndex = i;
+      deadlines[i].lastUpdated = DateTime.now();
     }
     try {
       await _deadlineRepo.updateBatch(deadlines);

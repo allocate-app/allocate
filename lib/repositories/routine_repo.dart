@@ -145,7 +145,8 @@ class RoutineRepo extends ChangeNotifier implements RoutineRepository {
       if (!isConnected) {
         return;
       }
-      await handleUserChange();
+      forceRefreshState();
+      await refreshRepo();
     });
 
     // This is for watching db size.

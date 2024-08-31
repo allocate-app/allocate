@@ -5,6 +5,7 @@ import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:window_manager/window_manager.dart';
 
 import '../../../providers/application/layout_provider.dart';
@@ -39,12 +40,24 @@ class SplashScreen extends StatefulWidget {
 class _SplashScreen extends State<SplashScreen> {
   late final LayoutProvider layoutProvider;
   late final UserProvider userProvider;
+  late final ToDoProvider toDoProvider;
+  late final RoutineProvider routineProvider;
+  late final ReminderProvider reminderProvider;
+  late final DeadlineProvider deadlineProvider;
+  late final GroupProvider groupProvider;
+  late final SubtaskProvider subtaskProvider;
 
   @override
   void initState() {
     super.initState();
     layoutProvider = Provider.of<LayoutProvider>(context, listen: false);
     userProvider = Provider.of<UserProvider>(context, listen: false);
+    toDoProvider = Provider.of<ToDoProvider>(context, listen: false);
+    routineProvider = Provider.of<RoutineProvider>(context, listen: false);
+    reminderProvider = Provider.of<ReminderProvider>(context, listen: false);
+    deadlineProvider = Provider.of<DeadlineProvider>(context, listen: false);
+    groupProvider = Provider.of<GroupProvider>(context, listen: false);
+    subtaskProvider = Provider.of<SubtaskProvider>(context, listen: false);
 
     layoutProvider.isMobile = Platform.isIOS || Platform.isAndroid;
 
@@ -56,17 +69,27 @@ class _SplashScreen extends State<SplashScreen> {
       return;
     }
 
+    StackRouter router = AutoRouter.of(context);
+
     init().then((_) {
       // ROUTE TO HOME PAGE, send the initial index.
       // Unless it has been set by NavigatorService
-      AutoRouter.of(context).navigate(HomeRoute(
+      router.navigate(HomeRoute(
           index: ApplicationService.instance.initialPageIndex ??
               widget.initialIndex));
     }).catchError((e, stacktrace) async {
       log(e.toString(), stackTrace: stacktrace);
       // Might make sense to push to an error screen and close.
+      // TODO: implement a gui toast for errors.
+      if (e is Exception) {
+        await Tiles.displayError(e: e);
+      }
 
-      await Tiles.displayError(e: e);
+      // Supabase throws PostgrestExceptions on session restore failure.
+      if (e is PostgrestException) {
+        return;
+      }
+
       if (layoutProvider.isMobile) {
         SystemNavigator.pop();
       } else {
@@ -81,12 +104,6 @@ class _SplashScreen extends State<SplashScreen> {
   }
 
   Future<void> init() async {
-    // Check to see if supabase => the app is already opened.
-    // This can be refactored out.
-    // Initialize Isar.
-    // Initialize Supabase.
-    // Initialize Providers.
-
     if ((Constants.supabaseURL.isEmpty || Constants.supabaseAnnonKey.isEmpty) &&
         !Constants.offlineOnly) {
       throw BuildFailureException("App not configured");
@@ -102,12 +119,12 @@ class _SplashScreen extends State<SplashScreen> {
       ],
     ).then((_) async {
       await Future.wait([
-        Provider.of<ToDoProvider>(context, listen: false).init(),
-        Provider.of<RoutineProvider>(context, listen: false).init(),
-        Provider.of<SubtaskProvider>(context, listen: false).init(),
-        Provider.of<ReminderProvider>(context, listen: false).init(),
-        Provider.of<DeadlineProvider>(context, listen: false).init(),
-        Provider.of<GroupProvider>(context, listen: false).init(),
+        toDoProvider.init(),
+        routineProvider.init(),
+        subtaskProvider.init(),
+        reminderProvider.init(),
+        deadlineProvider.init(),
+        groupProvider.init(),
         userProvider.init(),
         NotificationService.instance.init(),
       ]);
@@ -121,13 +138,13 @@ class _SplashScreen extends State<SplashScreen> {
 
   Future<void> dayReset() async {
     await Future.wait([
-      Provider.of<ToDoProvider>(context, listen: false).dayReset(),
-      Provider.of<RoutineProvider>(context, listen: false).dayReset(),
-      Provider.of<SubtaskProvider>(context, listen: false).dayReset(),
-      Provider.of<ReminderProvider>(context, listen: false).dayReset(),
-      Provider.of<DeadlineProvider>(context, listen: false).dayReset(),
-      Provider.of<GroupProvider>(context, listen: false).dayReset(),
-      Provider.of<UserProvider>(context, listen: false).dayReset(),
+      toDoProvider.dayReset(),
+      routineProvider.dayReset(),
+      subtaskProvider.dayReset(),
+      reminderProvider.dayReset(),
+      deadlineProvider.dayReset(),
+      groupProvider.dayReset(),
+      userProvider.dayReset(),
     ]).catchError((e) async {
       await Tiles.displayError(e: e);
       return [];
