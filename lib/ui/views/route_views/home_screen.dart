@@ -696,6 +696,11 @@ class _HomeScreen extends State<HomeScreen> with WidgetsBindingObserver {
         onDestinationSelected: (index) {
           layoutProvider.selectedPageIndex = index;
 
+          ExpandableFabState? fabState = _fabKey.currentState;
+          if (null != fabState && fabState.isOpen) {
+            fabState.toggle();
+          }
+
           if (!largeScreen) {
             Navigator.pop(context);
           }

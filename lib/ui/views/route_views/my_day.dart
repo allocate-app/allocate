@@ -120,7 +120,7 @@ class _MyDayScreen extends State<MyDayScreen> {
                                 Radius.circular(Constants.semiCircular)),
                             color: Theme.of(context)
                                 .colorScheme
-                                .surfaceVariant
+                                .surfaceContainerHighest
                                 .withOpacity(Constants.tabBarOpacity),
                           ),
                           child: TabBar(

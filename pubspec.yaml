@@ -62,7 +62,7 @@ dependencies:
   table_calendar: ^3.0.9
   device_info_plus: ^10.1.2
   uuid: ^4.3.1
-  flutter_acrylic: ^1.1.3
+  flutter_acrylic: ^1.1.2
   macos_window_utils: ^1.4.0
   flex_seed_scheme: ^3.2.0
   flex_color_picker: ^3.3.0
@@ -75,7 +75,7 @@ dependencies:
   app_links: ^6.3.0
   connectivity_plus: ^6.0.5
   internet_connection_checker: ^2.0.0
-  flutter_expandable_fab: ^2.0.0
+  flutter_expandable_fab: 2.0.0
   flutter_native_splash: ^2.3.10
   fluentui_system_icons: ^1.1.226
   cron: ^0.6.0

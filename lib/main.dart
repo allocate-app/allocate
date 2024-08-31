@@ -54,20 +54,22 @@ void main() async {
     }
 
     WindowOptions windowOptions = WindowOptions(
-      title: "Allocate",
-      size: (Platform.isMacOS)
-          ? Constants.defaultMacOSSize
-          : Constants.defaultSize,
-      minimumSize:
-          (kDebugMode) ? Constants.testDesktopSize : Constants.minDesktopSize,
-      center: true,
-    );
+        title: "Allocate",
+        size: (Platform.isMacOS)
+            ? Constants.defaultMacOSSize
+            : Constants.defaultSize,
+        minimumSize:
+            (kDebugMode) ? Constants.testDesktopSize : Constants.minDesktopSize,
+        center: true,
+        backgroundColor: Colors.transparent);
 
     // For flutter acrylic + MacOS.
-    await Window.initialize();
-    await Window.makeTitlebarTransparent();
-    await Window.enableFullSizeContentView();
-    await Window.hideTitle();
+    if (!Platform.isLinux) {
+      await Window.initialize();
+      await Window.makeTitlebarTransparent();
+      await Window.enableFullSizeContentView();
+      await Window.hideTitle();
+    }
 
     await windowManager.waitUntilReadyToShow(windowOptions, () async {
       await windowManager.show();
@@ -379,51 +381,6 @@ class _MyAppState extends State<MyApp> with WindowListener, TrayListener {
     }
   }
 
-  // Future<void> _initDeepLinking() async{
-  //   _appLinks = AppLinks();
-  //
-  //   final Uri? appLink = await _appLinks.getInitialAppLink();
-  //   if(null != appLink){
-  //     print("initial appLink: $appLink");
-  //     handleAppLink(appLink);
-  //   }
-  //
-  //   _subscription = _appLinks.uriLinkStream.listen((uri){
-  //     print("appLink: $uri");
-  //     handleAppLink(uri);
-  //   });
-  //   print("debug");
-  // }
-  //
-  // void handleAppLink(Uri uri){
-  //  String path = uri.toString();
-  //  if(path.isEmpty){
-  //    print("empty");
-  //    return;
-  //  }
-  //
-  //  if(path.contains("login")){
-  //    print("login");
-  //   _appRouter.navigate(const LoginRoute());
-  //   return;
-  //  }
-  //  if(path.contains("validate-email")){
-  //    print("validate-email");
-  //    _appRouter.navigate(const ValidateEmailChangeRoute());
-  //    return;
-  //  }
-  //
-  //  if(path.contains("home")){
-  //    print("home");
-  //    if(!Provider.of<UserProvider>(context, listen: false).initialized){
-  //      _appRouter.navigate(SplashRoute());
-  //      return;
-  //    }
-  //    _appRouter.navigate(HomeRoute(index: 0));
-  //    return;
-  //  }
-  // }
-
   @override
   Widget build(BuildContext context) {
     Widget app = Consumer<ThemeProvider>(
@@ -432,9 +389,6 @@ class _MyAppState extends State<MyApp> with WindowListener, TrayListener {
         // Two-finger scroll fix.
         scrollBehavior: const MaterialScrollBehavior().copyWith(
             multitouchDragStrategy: MultitouchDragStrategy.latestPointer),
-        // ScrollConfiguration.of(context).copyWith(
-        //   multitouchDragStrategy: MultitouchDragStrategy.latestPointer,
-        // ),
         theme: value.lightTheme,
         darkTheme: value.darkTheme,
         highContrastTheme: value.highContrastLight,
@@ -444,7 +398,6 @@ class _MyAppState extends State<MyApp> with WindowListener, TrayListener {
           ThemeType.dark => ThemeMode.dark,
           ThemeType.system => ThemeMode.system,
         },
-        // routerConfig: _appRouter.config(),
         routerConfig: _appRouter.config(deepLinkBuilder: (deeplink) {
           // These seem to be busted - waiting on pkg maintainer
           if (deeplink.path.contains("home")) {

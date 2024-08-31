@@ -50,7 +50,7 @@ abstract class SettingsScreenWidgets {
               borderRadius: const BorderRadius.all(
                   Radius.circular(Constants.curvedCorners)),
               color: backgroundColor ??
-                  Theme.of(context).colorScheme.surfaceVariant,
+                  Theme.of(context).colorScheme.surfaceContainerHighest,
             ),
             child: ListView.separated(
                 physics: const NeverScrollableScrollPhysics(),
@@ -440,8 +440,8 @@ abstract class SettingsScreenWidgets {
           onOpen: onOpen,
           onClose: onClose,
           style: MenuStyle(
-            padding: MaterialStatePropertyAll(padding),
-            shape: const MaterialStatePropertyAll(
+            padding: WidgetStatePropertyAll(padding),
+            shape: const WidgetStatePropertyAll(
               RoundedRectangleBorder(
                 borderRadius:
                     BorderRadius.all(Radius.circular(Constants.semiCircular)),

@@ -125,10 +125,10 @@ class _FrequencyDialog extends State<FrequencyDialog> {
                                 visualDensity: VisualDensity(
                                     horizontal: VisualDensity.minimumDensity,
                                     vertical: VisualDensity.minimumDensity),
-                                padding: MaterialStatePropertyAll(
+                                padding: WidgetStatePropertyAll(
                                   EdgeInsets.all(Constants.padding),
                                 ),
-                                shape: MaterialStatePropertyAll(
+                                shape: WidgetStatePropertyAll(
                                     RoundedRectangleBorder(
                                   borderRadius: BorderRadius.all(
                                       Radius.circular(
@@ -166,9 +166,9 @@ class _FrequencyDialog extends State<FrequencyDialog> {
                             dropdownMenuEntries: Frequency.values
                                 .map((Frequency frequency) => DropdownMenuEntry(
                                     style: const ButtonStyle(
-                                      textStyle: MaterialStatePropertyAll(
+                                      textStyle: WidgetStatePropertyAll(
                                           Constants.dropdownStyle),
-                                      shape: MaterialStatePropertyAll(
+                                      shape: WidgetStatePropertyAll(
                                           RoundedRectangleBorder(
                                               borderRadius: BorderRadius.all(
                                                   Radius.circular(Constants
@@ -210,7 +210,7 @@ class _FrequencyDialog extends State<FrequencyDialog> {
                                       .map((weekDay) => InputChip(
                                           backgroundColor: Theme.of(context)
                                               .colorScheme
-                                              .surfaceVariant,
+                                              .surfaceContainerHighest,
                                           side: BorderSide(
                                             width: 2,
                                             color: Theme.of(context)

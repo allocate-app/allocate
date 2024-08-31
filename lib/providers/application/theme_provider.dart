@@ -1,3 +1,4 @@
+import 'dart:developer';
 import 'dart:io';
 
 import 'package:device_info_plus/device_info_plus.dart';
@@ -309,7 +310,6 @@ class ThemeProvider extends ChangeNotifier {
     }
 
     useTransparency = (Effect.disabled != effect);
-
     if (Platform.isLinux) {
       return;
     }
@@ -328,6 +328,10 @@ class ThemeProvider extends ChangeNotifier {
             : Constants.windowsDefaultDark;
 
     bool darkMode = _determineDarkMode(brightness: brightness);
+    log("setting window\n"
+        "dark: $darkMode\n"
+        "Window Effect: $effect\n"
+        "backgroundColor: $backgroundColor");
 
     await Window.setEffect(
       effect: getWindowEffect(effect: effect),
@@ -358,19 +362,4 @@ class ThemeProvider extends ChangeNotifier {
         Effect.transparent => WindowEffect.transparent,
         Effect.disabled => WindowEffect.solid,
       };
-
-// uservm needs to access this in its default constructor.
-// Effect get defaultWindowEffect {
-//   if (Platform.isIOS || Platform.isAndroid) {
-//     return Effect.disabled;
-//   }
-//   if (Platform.isWindows) {
-//     if (_win11) {
-//       return Effect.acrylic;
-//     }
-//     return Effect.aero;
-//   }
-//
-//   return Effect.transparent;
-// }
 }

@@ -82,10 +82,10 @@ class _ListViewHeader<T> extends State<ListViewHeader<T>> {
                               visualDensity: VisualDensity(
                                   horizontal: VisualDensity.minimumDensity,
                                   vertical: VisualDensity.minimumDensity),
-                              padding: MaterialStatePropertyAll(
+                              padding: WidgetStatePropertyAll(
                                 EdgeInsets.all(Constants.padding),
                               ),
-                              shape: MaterialStatePropertyAll(
+                              shape: WidgetStatePropertyAll(
                                   RoundedRectangleBorder(
                                 borderRadius: BorderRadius.all(
                                     Radius.circular(Constants.roundedCorners)),
@@ -107,12 +107,12 @@ class _ListViewHeader<T> extends State<ListViewHeader<T>> {
                           menuChildren: sorter!.sortMethods
                               .map((SortMethod method) => MenuItemButton(
                                     style: const ButtonStyle(
-                                      padding: MaterialStatePropertyAll(
+                                      padding: WidgetStatePropertyAll(
                                           EdgeInsets.all(
                                               Constants.doublePadding)),
-                                      textStyle: MaterialStatePropertyAll(
+                                      textStyle: WidgetStatePropertyAll(
                                           Constants.smDropdownStyle),
-                                      shape: MaterialStatePropertyAll(
+                                      shape: WidgetStatePropertyAll(
                                           RoundedRectangleBorder(
                                               borderRadius: BorderRadius.all(
                                                   Radius.circular(Constants
@@ -136,10 +136,10 @@ class _ListViewHeader<T> extends State<ListViewHeader<T>> {
                               visualDensity: VisualDensity(
                                   horizontal: VisualDensity.minimumDensity,
                                   vertical: VisualDensity.minimumDensity),
-                              padding: MaterialStatePropertyAll(
+                              padding: WidgetStatePropertyAll(
                                 EdgeInsets.all(Constants.padding),
                               ),
-                              shape: MaterialStatePropertyAll(
+                              shape: WidgetStatePropertyAll(
                                   RoundedRectangleBorder(
                                 borderRadius: BorderRadius.all(
                                     Radius.circular(Constants.roundedCorners)),
@@ -178,12 +178,12 @@ class _ListViewHeader<T> extends State<ListViewHeader<T>> {
                           dropdownMenuEntries: sorter!.sortMethods
                               .map((SortMethod method) => DropdownMenuEntry(
                                   style: const ButtonStyle(
-                                    padding: MaterialStatePropertyAll(
+                                    padding: WidgetStatePropertyAll(
                                         EdgeInsets.all(
                                             Constants.doublePadding)),
-                                    textStyle: MaterialStatePropertyAll(
+                                    textStyle: WidgetStatePropertyAll(
                                         Constants.smDropdownStyle),
-                                    shape: MaterialStatePropertyAll(
+                                    shape: WidgetStatePropertyAll(
                                         RoundedRectangleBorder(
                                             borderRadius: BorderRadius.all(
                                                 Radius.circular(

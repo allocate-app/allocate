@@ -813,7 +813,7 @@ class _CreateToDoScreen extends State<CreateToDoScreen> {
                     style: ButtonStyle(
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       visualDensity: VisualDensity.adaptivePlatformDensity,
-                      side: MaterialStatePropertyAll<BorderSide>(BorderSide(
+                      side: WidgetStatePropertyAll<BorderSide>(BorderSide(
                         width: 2,
                         color: Theme.of(context).colorScheme.outlineVariant,
                       )),

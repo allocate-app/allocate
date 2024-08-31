@@ -368,7 +368,7 @@ abstract class Constants {
   static double tabBarOpacity = 0.5;
 
   static Color dialogColor({required BuildContext context}) =>
-      Theme.of(context).colorScheme.surfaceVariant;
+      Theme.of(context).colorScheme.surfaceContainerHighest;
 
   static Color errorColor({required BuildContext context}) =>
       Theme.of(context).colorScheme.error;

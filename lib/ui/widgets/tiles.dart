@@ -1787,7 +1787,7 @@ abstract class Tiles {
         onClose: onClose,
         style: const MenuStyle(
             alignment: AlignmentDirectional(-10, 1.1),
-            shape: MaterialStatePropertyAll(RoundedRectangleBorder(
+            shape: WidgetStatePropertyAll(RoundedRectangleBorder(
                 borderRadius: BorderRadius.all(
                     Radius.circular(Constants.semiCircular))))),
         controller: controller,
@@ -2478,7 +2478,7 @@ abstract class Tiles {
                   style: ButtonStyle(
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     visualDensity: VisualDensity.adaptivePlatformDensity,
-                    side: MaterialStatePropertyAll<BorderSide>(BorderSide(
+                    side: WidgetStatePropertyAll<BorderSide>(BorderSide(
                       width: 2,
                       color: Theme.of(context).colorScheme.outlineVariant,
                     )),

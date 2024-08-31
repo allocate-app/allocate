@@ -95,14 +95,14 @@ class _SearchRecents<T extends IModel> extends State<SearchRecentsBar<T>> {
           }
         },
         child: SearchAnchor.bar(
-            barSide: MaterialStatePropertyAll(widget.border ??
+            barSide: WidgetStatePropertyAll(widget.border ??
                 BorderSide(
                     width: 2,
                     strokeAlign: BorderSide.strokeAlignOutside,
                     color: Theme.of(context).colorScheme.outlineVariant)),
             barBackgroundColor:
-                const MaterialStatePropertyAll(Colors.transparent),
-            barElevation: const MaterialStatePropertyAll(0),
+                const WidgetStatePropertyAll(Colors.transparent),
+            barElevation: const WidgetStatePropertyAll(0),
             viewConstraints: const BoxConstraints(
               maxHeight: Constants.maxSearchSideBeforeScroll,
             ),

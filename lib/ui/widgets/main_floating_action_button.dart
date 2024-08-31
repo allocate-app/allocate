@@ -48,7 +48,7 @@ class _MainFloatingActionButton extends State<MainFloatingActionButton> {
             key: _key,
             fanAngle: (isConnected) ? 110 : 90,
             overlayStyle:
-                const ExpandableFabOverlayStyle(blur: Constants.overlayBlur),
+                ExpandableFabOverlayStyle(blur: Constants.overlayBlur),
             openButtonBuilder: RotateFloatingActionButtonBuilder(
               heroTag: UniqueKey(),
               fabSize: ExpandableFabSize.regular,
@@ -67,7 +67,7 @@ class _MainFloatingActionButton extends State<MainFloatingActionButton> {
                 shape: const CircleBorder(),
                 onPressed: () async {
                   final ExpandableFabState? state = _key.currentState;
-                  if (null != state) {
+                  if (null != state && state.isOpen) {
                     state.toggle();
                   }
                   await blurredNonDismissible(
@@ -84,7 +84,7 @@ class _MainFloatingActionButton extends State<MainFloatingActionButton> {
                       child: Icon(Icons.announcement_rounded)),
                   onPressed: () async {
                     final ExpandableFabState? state = _key.currentState;
-                    if (null != state) {
+                    if (null != state && state.isOpen) {
                       state.toggle();
                     }
 
@@ -99,7 +99,7 @@ class _MainFloatingActionButton extends State<MainFloatingActionButton> {
                       child: Icon(Icons.push_pin_rounded)),
                   onPressed: () async {
                     final ExpandableFabState? state = _key.currentState;
-                    if (null != state) {
+                    if (null != state && state.isOpen) {
                       state.toggle();
                     }
 
@@ -118,7 +118,7 @@ class _MainFloatingActionButton extends State<MainFloatingActionButton> {
                       final ExpandableFabState? state = _key.currentState;
                       final EventProvider ep =
                           Provider.of<EventProvider>(context, listen: false);
-                      if (null != state) {
+                      if (null != state && state.isOpen) {
                         state.toggle();
                       }
 

@@ -56,18 +56,26 @@ static void my_application_activate(GApplication* application) {
   }
 
   gtk_window_set_default_size(window, 1280, 720);
-//  gtk_widget_show(GTK_WIDGET(window));
 
   g_autoptr(FlDartProject) project = fl_dart_project_new();
   fl_dart_project_set_dart_entrypoint_arguments(project, self->dart_entrypoint_arguments);
 
   FlView* view = fl_view_new(project);
-//  gtk_widget_show(GTK_WIDGET(view));
+
+
   gtk_container_add(GTK_CONTAINER(window), GTK_WIDGET(view));
 
   fl_register_plugins(FL_PLUGIN_REGISTRY(view));
 
   gtk_widget_grab_focus(GTK_WIDGET(view));
+  // Workaround for upstream Flutter 3.24 black screen bug.
+  // NOTE: At the moment this is only available from the main branch.
+  // 3.24 stable will throw an error when trying to build with this code.
+  // This fix will be coming in 3.25
+//  GdkRGBA background_color;
+//  gdk_rgba_parse(&background_color, "#000000");
+//  fl_view_set_background_color(view, &background_color);
+
 }
 
 // Implements GApplication::local_command_line.
@@ -86,8 +94,7 @@ static gboolean my_application_local_command_line(GApplication* application, gch
   g_application_activate(application);
   *exit_status = 0;
 
-  // This is for deeplinking.
-//  return TRUE;
+    // This is for deeplinking.
     return FALSE;
 }
 
