@@ -355,9 +355,8 @@ class _HomeScreen extends State<HomeScreen> with WidgetsBindingObserver {
   }
 
   void handlePop(bool didPop, dynamic result) {
-    // Open the navigation drawer if mobile.
     if (layoutProvider.smallScreen) {
-      Scaffold.of(context).openDrawer();
+      return;
     }
     // Otherwise, assume the swipe is to open the nav drawer.
     layoutProvider.navDrawerWidth = Constants.navigationDrawerMaxWidth;
