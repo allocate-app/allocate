@@ -1834,7 +1834,7 @@ abstract class Tiles {
             controller: controller,
             maxLines: maxLines,
             minLines: minLines,
-            onChanged: (_){
+            onChanged: (_) {
               Scrollable.ensureVisible(context,
                   duration: Constants.scrollDuration,
                   curve: Constants.scrollCurve);
