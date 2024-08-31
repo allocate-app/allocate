@@ -174,6 +174,7 @@ class _HomeScreen extends State<HomeScreen> with WidgetsBindingObserver {
     }
   }
 
+  // TODO: Refactor this; needs to be a unique key or it will not repaint.
   Future<void> resetNavGroups() async {
     List<Group> newGroups = await groupProvider.mostRecent();
 

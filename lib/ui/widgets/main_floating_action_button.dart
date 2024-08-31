@@ -48,7 +48,7 @@ class _MainFloatingActionButton extends State<MainFloatingActionButton> {
             key: _key,
             fanAngle: (isConnected) ? 110 : 90,
             overlayStyle:
-                ExpandableFabOverlayStyle(blur: Constants.overlayBlur),
+                const ExpandableFabOverlayStyle(blur: Constants.overlayBlur),
             openButtonBuilder: RotateFloatingActionButtonBuilder(
               heroTag: UniqueKey(),
               fabSize: ExpandableFabSize.regular,

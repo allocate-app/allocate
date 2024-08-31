@@ -63,8 +63,9 @@ class _SplashScreen extends State<SplashScreen> {
           index: ApplicationService.instance.initialPageIndex ??
               widget.initialIndex));
     }).catchError((e, stacktrace) async {
-      log(e, stackTrace: stacktrace);
+      log(e.toString(), stackTrace: stacktrace);
       // Might make sense to push to an error screen and close.
+
       await Tiles.displayError(e: e);
       if (layoutProvider.isMobile) {
         SystemNavigator.pop();
