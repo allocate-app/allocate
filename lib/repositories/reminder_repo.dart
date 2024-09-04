@@ -242,7 +242,7 @@ class ReminderRepo extends ChangeNotifier implements ReminderRepository {
 
     if (isConnected) {
       Map<String, dynamic> reminderEntity = reminder.toEntity();
-      reminderEntity["uuid"] = uuid;
+      reminderEntity["uuid"] = _supabaseClient.auth.currentUser!.id;
       final List<Map<String, dynamic>> response = await _supabaseClient
           .from("reminders")
           .upsert(reminderEntity)
@@ -284,7 +284,7 @@ class ReminderRepo extends ChangeNotifier implements ReminderRepository {
       ids.clear();
       List<Map<String, dynamic>> reminderEntities = reminders.map((reminder) {
         Map<String, dynamic> entity = reminder.toEntity();
-        entity["uuid"] = uuid;
+        entity["uuid"] = _supabaseClient.auth.currentUser!.id;
         return entity;
       }).toList();
       final List<Map<String, dynamic>> responses = await _supabaseClient

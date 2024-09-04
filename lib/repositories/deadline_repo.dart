@@ -87,6 +87,7 @@ class DeadlineRepo extends ChangeNotifier implements DeadlineRepository {
             event: PostgresChangeEvent.delete,
             callback: handleDelete);
 
+    // I'm not sure why this is here.
     await handleUserChange();
 
     if (!_subscribed) {
@@ -98,13 +99,6 @@ class DeadlineRepo extends ChangeNotifier implements DeadlineRepository {
     SupabaseService.instance.authSubscription.listen((AuthState data) async {
       final AuthChangeEvent event = data.event;
       switch (event) {
-        // case AuthChangeEvent.initialSession:
-        //   await handleUserChange();
-        //   // OPEN TABLE STREAM -> insert new data.
-        //   if (!_subscribed) {
-        //     _deadlineStream.subscribe();
-        //     _subscribed = true;
-        //   }
         case AuthChangeEvent.signedIn:
           await handleUserChange();
           // This should close and re-open the subscription?
@@ -241,7 +235,7 @@ class DeadlineRepo extends ChangeNotifier implements DeadlineRepository {
 
     if (isConnected) {
       Map<String, dynamic> deadlineEntity = deadline.toEntity();
-      deadlineEntity["uuid"] = uuid;
+      deadlineEntity["uuid"] = _supabaseClient.auth.currentUser!.id;
       final List<Map<String, dynamic>> response = await _supabaseClient
           .from("deadlines")
           .upsert(deadlineEntity)
@@ -283,17 +277,16 @@ class DeadlineRepo extends ChangeNotifier implements DeadlineRepository {
       ids.clear();
       List<Map<String, dynamic>> deadlineEntities = deadlines.map((deadline) {
         Map<String, dynamic> entity = deadline.toEntity();
-        entity["uuid"] = uuid;
+        entity["uuid"] = _supabaseClient.auth.currentUser!.id;
         return entity;
       }).toList();
-      for (Map<String, dynamic> deadlineEntity in deadlineEntities) {
-        final List<Map<String, dynamic>> response = await _supabaseClient
-            .from("deadlines")
-            .update(deadlineEntity)
-            .select("id");
-        id = response.last["id"];
-        ids.add(id);
-      }
+
+      final List<Map<String, dynamic>> responses = await _supabaseClient
+          .from("subtasks")
+          .upsert(deadlineEntities)
+          .select("id");
+      ids = responses.map((response) => response["id"] as int?).toList();
+
       if (ids.any((id) => null == id)) {
         throw FailureToUploadException("Failed to sync deadlines on update\n"
             "Deadline: ${deadlines.toString()}\n"

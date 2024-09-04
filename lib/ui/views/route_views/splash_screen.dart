@@ -86,7 +86,11 @@ class _SplashScreen extends State<SplashScreen> {
       }
 
       // Supabase throws PostgrestExceptions on session restore failure.
+      // TODO: find the buggy query in deadlines.
       if (e is PostgrestException) {
+        router.navigate(HomeRoute(
+            index: ApplicationService.instance.initialPageIndex ??
+                widget.initialIndex));
         return;
       }
 
