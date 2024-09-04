@@ -37,8 +37,6 @@ class SubtaskRepo extends ChangeNotifier implements SubtaskRepository {
   bool _refreshing = false;
   bool _syncing = false;
 
-  String get uuid => _supabaseClient.auth.currentUser?.id ?? "";
-
   String? currentUserID;
 
   // In the case of an unhandled exception during the refresh/sync functions, the flags do not get reset properly.
@@ -192,7 +190,7 @@ class SubtaskRepo extends ChangeNotifier implements SubtaskRepository {
 
     if (isConnected) {
       Map<String, dynamic> subtaskEntity = subtask.toEntity();
-      subtaskEntity["uuid"] = uuid;
+      subtaskEntity["uuid"] = _supabaseClient.auth.currentUser!.id;
       final List<Map<String, dynamic>> response = await _supabaseClient
           .from("subtasks")
           .insert(subtaskEntity)
@@ -510,7 +508,7 @@ class SubtaskRepo extends ChangeNotifier implements SubtaskRepository {
       List<Map<String, dynamic>> subtaskEntities = await _supabaseClient
           .from("subtasks")
           .select()
-          .eq("uuid", uuid)
+          .eq("uuid", _supabaseClient.auth.currentUser!.id)
           .order("lastUpdated", ascending: false)
           .range(offset, offset + limit);
 
@@ -569,7 +567,7 @@ class SubtaskRepo extends ChangeNotifier implements SubtaskRepository {
 
     if (isConnected) {
       Map<String, dynamic> subtaskEntity = subtask.toEntity();
-      subtaskEntity["uuid"] = uuid;
+      subtaskEntity["uuid"] = _supabaseClient.auth.currentUser!.id;
       final List<Map<String, dynamic>> response = await _supabaseClient
           .from("subtasks")
           .upsert(subtaskEntity)
@@ -608,10 +606,9 @@ class SubtaskRepo extends ChangeNotifier implements SubtaskRepository {
     }
 
     if (isConnected) {
-      ids.clear();
       List<Map<String, dynamic>> subtaskEntities = subtasks.map((subtask) {
         Map<String, dynamic> entity = subtask.toEntity();
-        entity["uuid"] = uuid;
+        entity["uuid"] = _supabaseClient.auth.currentUser!.id;
         return entity;
       }).toList();
       final List<Map<String, dynamic>> responses = await _supabaseClient

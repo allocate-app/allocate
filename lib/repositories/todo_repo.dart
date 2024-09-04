@@ -44,8 +44,6 @@ class ToDoRepo extends ChangeNotifier implements ToDoRepository {
   bool _syncing = false;
   bool _refreshing = false;
 
-  String get uuid => _supabaseClient.auth.currentUser?.id ?? "";
-
   String? currentUserID;
 
   // In the case of an unhandled exception during the refresh/sync functions, the flags do not get reset properly.
@@ -295,7 +293,6 @@ class ToDoRepo extends ChangeNotifier implements ToDoRepository {
     }
 
     if (isConnected) {
-      ids.clear();
       List<Map<String, dynamic>> toDoEntities = (toDos).map((toDo) {
         Map<String, dynamic> entity = toDo.toEntity();
         entity["uuid"] = _supabaseClient.auth.currentUser!.id;
@@ -595,7 +592,7 @@ class ToDoRepo extends ChangeNotifier implements ToDoRepository {
       List<Map<String, dynamic>> toDoEntities = await _supabaseClient
           .from("toDos")
           .select()
-          .eq("uuid", uuid)
+          .eq("uuid", _supabaseClient.auth.currentUser!.id)
           .order("lastUpdated", ascending: false)
           .range(offset, offset + limit);
       for (Map<String, dynamic> entity in toDoEntities) {

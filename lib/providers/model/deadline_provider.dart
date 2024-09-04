@@ -64,12 +64,6 @@ class DeadlineProvider extends ChangeNotifier {
   Future<void> init() async {
     await _deadlineRepo.init();
 
-    // This happens on repo-sync.
-    // // Local notifications implementation for Linux/Windows doesn't have scheduling api.
-    // // Must be loaded into memory on init.
-    // if (Platform.isLinux || Platform.isWindows) {
-    //   await batchNotifications();
-    // }
     notifyListeners();
   }
 
@@ -220,7 +214,6 @@ class DeadlineProvider extends ChangeNotifier {
         }
       }
       // This will just update.
-      // await cancelNotification(deadline: curDeadline);
       if (deadline.warnMe &&
           validateWarnDate(warnDate: curDeadline!.warnDate)) {
         await scheduleNotification(deadline: deadline);
@@ -409,8 +402,13 @@ class DeadlineProvider extends ChangeNotifier {
       bool? single = false,
       bool delete = false}) async {
     try {
+      if (RepeatableState.projected != deadline?.repeatableState &&
+          (deadline?.warnMe ?? false)) {
+        await cancelNotification(deadline: deadline);
+      }
       await _repeatService.handleRepeating(
           oldModel: deadline, newModel: delta, single: single, delete: delete);
+
       notifyListeners();
     } on InvalidRepeatingException catch (e) {
       log(e.cause);

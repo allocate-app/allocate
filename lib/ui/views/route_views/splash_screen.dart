@@ -61,15 +61,15 @@ class _SplashScreen extends State<SplashScreen> {
 
     layoutProvider.isMobile = Platform.isIOS || Platform.isAndroid;
 
+    StackRouter router = AutoRouter.of(context);
+
     // Test this later -> needs to push back to home if somehow popped.
     if (userProvider.initialized) {
-      AutoRouter.of(context).navigate(HomeRoute(
+      router.navigate(HomeRoute(
           index: ApplicationService.instance.initialPageIndex ??
               widget.initialIndex));
       return;
     }
-
-    StackRouter router = AutoRouter.of(context);
 
     init().then((_) {
       // ROUTE TO HOME PAGE, send the initial index.
@@ -85,8 +85,6 @@ class _SplashScreen extends State<SplashScreen> {
         await Tiles.displayError(e: e);
       }
 
-      // Supabase throws PostgrestExceptions on session restore failure.
-      // TODO: find the buggy query in deadlines.
       if (e is PostgrestException) {
         router.navigate(HomeRoute(
             index: ApplicationService.instance.initialPageIndex ??

@@ -275,8 +275,8 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
       }).whenComplete(() {
         vm.clear();
         _popScreen();
-        return;
       });
+      return;
     }
 
     await toDoProvider.updateToDo(toDo: newToDo).then((_) async {
@@ -352,8 +352,8 @@ class _UpdateToDoScreen extends State<UpdateToDoScreen> {
         _deleteLoading.value = false;
         vm.clear();
         _popScreen();
-        return;
       });
+      return;
     }
 
     await toDoProvider.deleteToDo(toDo: newToDo).then((_) async {

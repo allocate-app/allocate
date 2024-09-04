@@ -42,7 +42,6 @@ class DeadlineRepo extends ChangeNotifier implements DeadlineRepository {
   bool _syncing = false;
   bool _refreshing = false;
 
-  String get uuid => _supabaseClient.auth.currentUser?.id ?? "";
   String? currentUserID;
 
   // In the case of an unhandled exception during the refresh/sync functions, the flags do not get reset properly.
@@ -200,7 +199,7 @@ class DeadlineRepo extends ChangeNotifier implements DeadlineRepository {
 
     if (isConnected) {
       Map<String, dynamic> deadlineEntity = deadline.toEntity();
-      deadlineEntity["uuid"] = uuid;
+      deadlineEntity["uuid"] = _supabaseClient.auth.currentUser!.id;
       final List<Map<String, dynamic>> response = await _supabaseClient
           .from("deadlines")
           .insert(deadlineEntity)
@@ -274,7 +273,6 @@ class DeadlineRepo extends ChangeNotifier implements DeadlineRepository {
     }
 
     if (isConnected) {
-      ids.clear();
       List<Map<String, dynamic>> deadlineEntities = deadlines.map((deadline) {
         Map<String, dynamic> entity = deadline.toEntity();
         entity["uuid"] = _supabaseClient.auth.currentUser!.id;
@@ -282,7 +280,7 @@ class DeadlineRepo extends ChangeNotifier implements DeadlineRepository {
       }).toList();
 
       final List<Map<String, dynamic>> responses = await _supabaseClient
-          .from("subtasks")
+          .from("deadlines")
           .upsert(deadlineEntities)
           .select("id");
       ids = responses.map((response) => response["id"] as int?).toList();
@@ -568,7 +566,7 @@ class DeadlineRepo extends ChangeNotifier implements DeadlineRepository {
       List<Map<String, dynamic>> deadlineEntities = await _supabaseClient
           .from("deadlines")
           .select()
-          .eq("uuid", uuid)
+          .eq("uuid", _supabaseClient.auth.currentUser!.id)
           .order("lastUpdated", ascending: false)
           .range(offset, offset + limit);
 
@@ -583,8 +581,6 @@ class DeadlineRepo extends ChangeNotifier implements DeadlineRepository {
 
   Future<void> swapRepo() async {
     NotificationService.instance.cancelAllNotifications();
-    // _deadlineStream.unsubscribe();
-    // _subscribed = false;
     await clearLocal();
     await refreshRepo();
   }

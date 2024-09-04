@@ -55,7 +55,7 @@ class RepeatableService {
     // -> Generate the next event to prevent data issues
     // -> Consider the existing event to be a delta from the chain of repeating events.
     if (single) {
-      // In the case that a model is being deleted, update the template date
+      // In the case that a model is being deleted, update from the template date
       newModel.toDelete = delete;
       switch (oldModel.modelType) {
         case ModelType.task:

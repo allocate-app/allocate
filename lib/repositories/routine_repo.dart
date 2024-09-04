@@ -41,7 +41,6 @@ class RoutineRepo extends ChangeNotifier implements RoutineRepository {
   bool _syncing = false;
   bool _refreshing = false;
 
-  String get uuid => _supabaseClient.auth.currentUser?.id ?? "";
   String? currentUserID;
 
   // In the case of an unhandled exception during the refresh/sync functions, the flags do not get reset properly.
@@ -210,7 +209,7 @@ class RoutineRepo extends ChangeNotifier implements RoutineRepository {
 
     if (isConnected) {
       Map<String, dynamic> routineEntity = routine.toEntity();
-      routineEntity["uuid"] = uuid;
+      routineEntity["uuid"] = _supabaseClient.auth.currentUser!.id;
       final List<Map<String, dynamic>> response = await _supabaseClient
           .from("routines")
           .insert(routineEntity)
@@ -248,7 +247,7 @@ class RoutineRepo extends ChangeNotifier implements RoutineRepository {
 
     if (isConnected) {
       Map<String, dynamic> routineEntity = routine.toEntity();
-      routineEntity["uuid"] = uuid;
+      routineEntity["uuid"] = _supabaseClient.auth.currentUser!.id;
       final List<Map<String, dynamic>> response = await _supabaseClient
           .from("routines")
           .upsert(routineEntity)
@@ -295,7 +294,7 @@ class RoutineRepo extends ChangeNotifier implements RoutineRepository {
       List<Map<String, dynamic>> routineEntities = routines.map((routine) {
         Map<String, dynamic> entity = routine.toEntity();
 
-        entity["uuid"] = uuid;
+        entity["uuid"] = _supabaseClient.auth.currentUser!.id;
         return entity;
       }).toList();
       final List<Map<String, dynamic>> response = await _supabaseClient
@@ -562,7 +561,7 @@ class RoutineRepo extends ChangeNotifier implements RoutineRepository {
       List<Map<String, dynamic>> routineEntities = await _supabaseClient
           .from("routines")
           .select()
-          .eq("uuid", uuid)
+          .eq("uuid", _supabaseClient.auth.currentUser!.id)
           .order("lastUpdated", ascending: false)
           .range(offset, offset + limit);
 

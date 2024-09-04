@@ -254,8 +254,8 @@ class _UpdateReminderScreen extends State<UpdateReminderScreen> {
       }).whenComplete(() {
         vm.clear();
         _popScreen();
-        return;
       });
+      return;
     }
 
     await reminderProvider

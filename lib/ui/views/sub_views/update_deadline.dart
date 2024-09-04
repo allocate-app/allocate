@@ -221,8 +221,8 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
       }).whenComplete(() {
         vm.clear();
         _popScreen();
-        return;
       });
+      return;
     }
     await deadlineProvider
         .updateDeadline(deadline: newDeadline)
@@ -301,8 +301,8 @@ class _UpdateDeadlineScreen extends State<UpdateDeadlineScreen> {
       }).whenComplete(() {
         vm.clear();
         _popScreen();
-        return;
       });
+      return;
     }
 
     await deadlineProvider

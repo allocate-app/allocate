@@ -400,6 +400,9 @@ class ReminderProvider extends ChangeNotifier {
       bool? single = false,
       bool delete = false}) async {
     try {
+      if (RepeatableState.projected != reminder?.repeatableState) {
+        await cancelNotification(reminder: reminder);
+      }
       await _repeatService.handleRepeating(
           oldModel: reminder, newModel: delta, single: single, delete: delete);
       notifyListeners();

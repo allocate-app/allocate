@@ -39,7 +39,6 @@ class GroupRepo extends ChangeNotifier implements GroupRepository {
   bool _syncing = false;
   bool _refreshing = false;
 
-  String get uuid => _supabaseClient.auth.currentUser?.id ?? "";
   String? currentUserID;
 
   // In the case of an unhandled exception during the refresh/sync functions, the flags do not get reset properly.
@@ -194,7 +193,7 @@ class GroupRepo extends ChangeNotifier implements GroupRepository {
 
     if (isConnected) {
       Map<String, dynamic> groupEntity = group.toEntity();
-      groupEntity["uuid"] = uuid;
+      groupEntity["uuid"] = _supabaseClient.auth.currentUser!.id;
       final List<Map<String, dynamic>> response =
           await _supabaseClient.from("groups").insert(groupEntity).select("id");
       id = response.last["id"];
@@ -223,7 +222,7 @@ class GroupRepo extends ChangeNotifier implements GroupRepository {
 
     if (isConnected) {
       Map<String, dynamic> groupEntity = group.toEntity();
-      groupEntity["uuid"] = uuid;
+      groupEntity["uuid"] = _supabaseClient.auth.currentUser!.id;
       final List<Map<String, dynamic>> response =
           await _supabaseClient.from("groups").upsert(groupEntity).select("id");
 
@@ -263,7 +262,7 @@ class GroupRepo extends ChangeNotifier implements GroupRepository {
       ids.clear();
       List<Map<String, dynamic>> groupEntities = groups.map((group) {
         Map<String, dynamic> entity = group.toEntity();
-        entity["uuid"] = uuid;
+        entity["uuid"] = _supabaseClient.auth.currentUser!.id;
         return entity;
       }).toList();
       for (Map<String, dynamic> groupEntity in groupEntities) {
@@ -367,7 +366,7 @@ class GroupRepo extends ChangeNotifier implements GroupRepository {
         toDo.groupIndex = -1;
         toDos.add(toDo);
         Map<String, dynamic> entity = toDo.toEntity();
-        entity["uuid"] = uuid;
+        entity["uuid"] = _supabaseClient.auth.currentUser!.id;
         entities.add(entity);
       }
     }
@@ -533,7 +532,7 @@ class GroupRepo extends ChangeNotifier implements GroupRepository {
       List<Map<String, dynamic>> groupEntities = await _supabaseClient
           .from("groups")
           .select()
-          .eq("uuid", uuid)
+          .eq("uuid", _supabaseClient.auth.currentUser!.id)
           .order("lastUpdated", ascending: false)
           .range(offset, offset + limit);
 
