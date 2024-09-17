@@ -12,6 +12,9 @@ I hope that, one day, this app will be fully accessible, at the moment, it is no
 
 ## Installation:
 
+- Note: This will need to be built with Flutter 3.25+. Use the main branch if stable is not yet 3.25
+- Note: The windows tray is bugged due to an upstream dependency bug.
+
 - see: [Allocate Documentation](https://allocate-app.github.io) for full build and install instructions
 
 - Clone the repository and build with flutter
