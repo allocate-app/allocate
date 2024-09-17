@@ -312,18 +312,22 @@ class _MyAppState extends State<MyApp> with WindowListener, TrayListener {
       await WindowManipulator.orderOut();
       return;
     }
+
+    // NOTE: There is currently an upstream issue with the tray manager and flutter 3.24+
+    if (Platform.isWindows){
+      SystemNavigator.pop();
+      exit(0);
+      return;
+    }
+
     await windowManager.hide();
   }
 
-  // TODO: test windows.
   @override
   void onTrayIconMouseDown() {
-    if (Platform.isLinux) {
-      trayManager.popUpContextMenu();
-    }
+    trayManager.popUpContextMenu();
   }
 
-  // TODO: test windows.
   @override
   void onTrayIconRightMouseDown() {
     trayManager.popUpContextMenu();

@@ -42,7 +42,6 @@ List<Widget> windowsTitlebar() => [
               ),
             ),
           ),
-
           Material(
             color: Colors.transparent,
             child: InkWell(
@@ -76,14 +75,6 @@ List<Widget> windowsTitlebar() => [
               ),
             ),
           ),
-          // IconButton(
-          //   splashRadius: 2,
-          //     icon:
-          //     Icon(Icons.close),
-          //     onPressed:(){
-          //
-          //     }
-          // ),
         ]),
       )
     ];
